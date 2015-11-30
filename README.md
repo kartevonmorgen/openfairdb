@@ -20,7 +20,7 @@ The base URL is `http://api.ofdb.io/v0/`.
 
 The structure of an `entry` looks like follows:
 
-```json
+```
 {
   "id"          : String,
   "version"     : Number,
@@ -41,7 +41,7 @@ The structure of an `entry` looks like follows:
 
 The structure of a `category` looks like follows:
 
-```json
+```
 {
   "id"      : String,
   "version" : Number,
