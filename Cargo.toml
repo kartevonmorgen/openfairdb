@@ -1,0 +1,22 @@
+[package]
+name = "openfairdb"
+version = "0.0.15"
+authors = ["Markus Kohlhase <mail@markus-kohlhase.de>"]
+
+[dependencies]
+nickel = "0.8"
+r2d2 = "0.6"
+rustc-serialize = "0.3"
+hyper = "0.8"
+unicase = "1.4"
+docopt = "0.6"
+log = "0.3"
+env_logger = "0.3"
+typemap = "0.3"
+uuid = "0.1"
+geojson = "0.2"
+rusted_cypher = { version = "0.8",  features = ["rustc-serialize"] }
+
+[dependencies.r2d2_cypher]
+version = "0.0.3"
+git = "git://github.com/flosse/r2d2-cypher.git"

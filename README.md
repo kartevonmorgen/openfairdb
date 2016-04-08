@@ -51,8 +51,28 @@ The structure of a `category` looks like follows:
 }
 ```
 
+## Logging
+
+    RUST_LOG=debug ./ofdb
+
+## DB Backups
+
+The community edition of Neo4j
+[does not support online backups](https://github.com/flosse/openfairdb/issues/10)
+therefore we use a simple
+[script](https://github.com/flosse/openfairdb/blob/master/scripts/backup.sh)
+that copies the DB to `/var/lib/neo4j/backup/` once a day.
+
+### Restore a backup
+
+    systemctl stop neo
+    tar -czf /var/lib/neo4j/backup/snapshot.tar.gz /var/lib/neo4j/data/graph.db
+    rm -rf /var/lib/neo4j/data/graph.db
+    tar --strip-components=4 -C /var/lib/neo4j/data -xvzf old-backup.tar.gz "var/lib/neo4j/data/"
+    systemctl start neo
+
 # License
 
-Copyright (c) 2015 Markus Kohlhase
+Copyright (c) 2015 - 2016 Markus Kohlhase
 
 This project is licensed unter the AGPLv3 license.
