@@ -1,7 +1,18 @@
 # Open Fair DB
 
-This repository will contain the source code of the
-**Open Fair DB** project some day.
+A micro backend for [Karte von morgen](https://github.com/flosse/kartevonmorgen/)
+written in [Rust](http://rustlang.org/).
+
+## Build
+
+Requirements:
+
+- [Rust](http://rustlang.org/) 1.5
+- [Neo4j](http://neo4j.com/) 2.1.8
+
+    git clone https://github.com/flosse/openfairdb
+    cd openfairdb/
+    cargo run
 
 ## REST API
 
