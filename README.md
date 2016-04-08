@@ -3,6 +3,8 @@
 A micro backend for [Karte von morgen](https://github.com/flosse/kartevonmorgen/)
 written in [Rust](http://rustlang.org/).
 
+[![Build Status](https://travis-ci.org/flosse/openfairdb.svg?branch=master)](https://travis-ci.org/flosse/openfairdb)
+
 ## Build
 
 Requirements:
@@ -10,9 +12,11 @@ Requirements:
 - [Rust](http://rustlang.org/) 1.5
 - [Neo4j](http://neo4j.com/) 2.1.8
 
-    git clone https://github.com/flosse/openfairdb
-    cd openfairdb/
-    cargo run
+```
+git clone https://github.com/flosse/openfairdb
+cd openfairdb/
+cargo run
+```
 
 ## REST API
 
