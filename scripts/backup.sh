@@ -5,12 +5,16 @@
 BACKUP_SRC=/var/lib/neo4j/data/graph.db # which folder to backup
 BACKUP_DEST=/var/lib/neo4j/backup       # where to store the backups
 SERVICE_NAME=neo
+TIMEOUT=5
 
+CNT=0
 echo "Shutting down neo4j server to perform a backup..."
 systemctl stop $SERVICE_NAME
 sleep 1
-while pgrep $SERVICE_NAME; do
+while [ $CNT -lt $TIMEOUT ] && pgrep $SERVICE_NAME; do
+  echo $CNT
   sleep 1
+  CNT=`expr $CNT + 1`
 done
 
 TIMESTAMP=`date +%Y-%m-%d-%H%M%S`
