@@ -17,6 +17,11 @@ git clone https://github.com/flosse/openfairdb
 cd openfairdb/
 cargo run
 ```
+On NixOS you can run:
+
+```
+nix-build -E '(import <nixpkgs>{}).callPackage ./default.nix {}'
+```
 
 ## REST API
 
