@@ -54,6 +54,7 @@ The structure of an `entry` looks like follows:
   "street"      : String,
   "zip"         : String,
   "city"        : String,
+  "country"     : String,
   "email"       : String,
   "telephone"   : String,
   "homepage"    : String,

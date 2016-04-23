@@ -12,6 +12,7 @@ pub struct Entry {
   pub street      : Option<String>,
   pub zip         : Option<String>,
   pub city        : Option<String>,
+  pub country     : Option<String>,
   pub email       : Option<String>,
   pub telephone   : Option<String>,
   pub homepage    : Option<String>,
