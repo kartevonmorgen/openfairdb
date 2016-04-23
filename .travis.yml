@@ -2,6 +2,7 @@ sudo: false
 language: rust
 matrix:
   include:
+  - rust: 1.6.0 # current stable on NixOS 16.03
   - rust: nightly
   - rust: beta
   - rust: stable
