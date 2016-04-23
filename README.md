@@ -12,6 +12,10 @@ Requirements:
 - [Rust](http://rustlang.org/) 1.5
 - [Neo4j](http://neo4j.com/) 2.1.8
 
+Start Neo4j:
+- on Mac OS X: open "Neo4j Community Edition.app" in /Applications, click on "Start"
+- (other platforms?)
+
 ```
 git clone https://github.com/flosse/openfairdb
 cd openfairdb/
