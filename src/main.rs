@@ -39,8 +39,9 @@ use filter::{FilterByCategoryIds, FilterByBoundingBox};
 use search::Search;
 use sort::SortByDistanceTo;
 
-static VERSION   : &'static str = "0.0.15";
-static POOL_SIZE : u32 = 5;
+static VERSION                  : &'static str = "0.0.16";
+static POOL_SIZE                : u32 = 5;
+static MAX_INVISIBLE_RESULTS    : usize = 5;
 
 const USAGE: &'static str = "
 ofdb - openFairDB.
@@ -287,6 +288,7 @@ fn main() {
             let invisible_results = pre_filtered_entries
               .iter()
               .filter(|e| !visible_results.iter().any(|v| e.id == Some(v.clone()) ))
+              .take(MAX_INVISIBLE_RESULTS)
               .map(|x|x.clone())
               .collect::<Vec<_>>()
               .map_to_ids();
