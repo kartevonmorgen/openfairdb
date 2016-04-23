@@ -3,6 +3,7 @@ use std::error::Error;
 use rustc_serialize::json;
 use nickel::status::StatusCode;
 use rusted_cypher::error::{GraphError,Neo4jError};
+use r2d2::{GetTimeout};
 
 #[derive(Debug)]
 pub enum StoreError {
@@ -12,6 +13,7 @@ pub enum StoreError {
   Save,
   Graph(GraphError),
   Neo(Neo4jError),
+  Pool(GetTimeout)
 }
 
 impl fmt::Display for StoreError {
@@ -22,7 +24,8 @@ impl fmt::Display for StoreError {
       StoreError::InvalidId       => write!(f, "The ID is not valid"),
       StoreError::Save            => write!(f, "Could not save object"),
       StoreError::Graph(ref err)  => write!(f, "DB communication error: {}", err),
-      StoreError::Neo(ref err)    => write!(f, "DB communication error: {}", err.message)
+      StoreError::Neo(ref err)    => write!(f, "DB communication error: {}", err.message),
+      StoreError::Pool(ref err)   => write!(f, "DB connection pool error: {}", err)
     }
   }
 }
@@ -36,6 +39,7 @@ impl Error for StoreError {
       StoreError::Save            => "Could not save object",
       StoreError::Graph(ref err)  => err.description(),
       StoreError::Neo(ref err)    => &err.message,
+      StoreError::Pool(ref err)   => &err.description(),
     }
   }
 
@@ -46,7 +50,8 @@ impl Error for StoreError {
       StoreError::InvalidId       => None,
       StoreError::Save            => None,
       StoreError::Graph(ref err)  => Some(err),
-      StoreError::Neo(_)          => None
+      StoreError::Neo(_)          => None,
+      StoreError::Pool(ref err)   => Some(err)
     }
   }
 }
@@ -60,6 +65,12 @@ impl From<GraphError> for StoreError {
 impl From<Neo4jError> for StoreError {
   fn from(err: Neo4jError) -> StoreError {
     StoreError::Neo(err)
+  }
+}
+
+impl From<GetTimeout> for StoreError {
+  fn from(err: GetTimeout) -> StoreError {
+    StoreError::Pool(err)
   }
 }
 

@@ -124,24 +124,31 @@ fn main() {
             .filter(|id| id != "")
             .collect::<Vec<String>>();
           let data: &Data = res.server_data();
-          let pool = data.db.clone();
-          let entries = Entry::all(&*pool.get().unwrap()).unwrap();
+          data.db.clone().get()
+            .map_err(StoreError::Pool)
+            .map_err(AppError::Store)
+            .and_then(|ref pool|{
 
-          match ids.len() {
-            0 => encode(&entries).map_err(AppError::Encode),
-            1 => {
-                entries.iter().find(|x| x.id.clone().is_some() && x.id.clone().unwrap() == ids[0])
-                .ok_or(StoreError::NotFound).map_err(AppError::Store)
-                .and_then(|e| encode(&e).map_err(AppError::Encode))
-            },
-            _ => {
-              let x = entries.iter()
-               .filter(|e| e.id.is_some())
-               .filter(|e| ids.iter().any(|id| e.id == Some(id.clone())))
-               .collect::<Vec<&Entry>>();
-               encode(&x).map_err(AppError::Encode)
-            }
-          }
+              Entry::all(pool).map_err(AppError::Store).and_then(|entries|{
+
+                match ids.len() {
+                  0 => encode(&entries).map_err(AppError::Encode),
+                  1 => {
+                      entries.iter().find(|x| x.id.clone().is_some() && x.id.clone().unwrap() == ids[0])
+                      .ok_or(StoreError::NotFound).map_err(AppError::Store)
+                      .and_then(|e| encode(&e).map_err(AppError::Encode))
+                  },
+                  _ => {
+                    let x = entries.iter()
+                     .filter(|e| e.id.is_some())
+                     .filter(|e| ids.iter().any(|id| e.id == Some(id.clone())))
+                     .collect::<Vec<&Entry>>();
+                     encode(&x).map_err(AppError::Encode)
+                  }
+                }
+
+              })
+            })
         })
         {
           Ok(x)  => {
@@ -157,9 +164,16 @@ fn main() {
       match req.json_as::<Entry>().map_err(AppError::Io)
         .and_then(|json|{
           let data: &Data = res.server_data();
-          let pool = data.db.clone();
-          let e = json.save(&*pool.get().unwrap()).unwrap();
-          Ok(e.id.unwrap())
+          data.db.clone().get()
+            .map_err(StoreError::Pool)
+            .map_err(AppError::Store)
+            .and_then(|ref pool|
+              json.save(pool)
+                .map_err(AppError::Store)
+                .and_then(|e| e.id
+                   .ok_or(StoreError::Save).map_err(AppError::Store))
+
+          )
       })
       {
         Ok(id)  => (StatusCode::Ok, format!("{}",id)),
@@ -172,19 +186,24 @@ fn main() {
     put "/entries/:id" => |req, mut res|{
       let entry = req.json_as::<Entry>();
       let data: &Data = res.server_data();
-      let pool = data.db.clone();
       match req.param("id")
         .ok_or(ParameterError::InvalidId).map_err(AppError::Parameter)
         .and_then(|id| entry.map_err(AppError::Io)
-          .and_then(|mut new_data|
-            Entry::get(&*pool.get().unwrap(), id.to_string())
+          .and_then(|mut new_data|{
+            data.db.clone().get()
+            .map_err(StoreError::Pool)
             .map_err(AppError::Store)
-            .and_then(|_|{
-              new_data.id = Some(id.to_string());
-              new_data.save(&*pool.get().unwrap()).map_err(AppError::Store)
-              .and_then(|_| Ok(id))
-            })
-          )
+            .and_then(|ref pool|
+              Entry::get(pool, id.to_string())
+              .map_err(AppError::Store)
+              .and_then(|_|{
+                new_data.id = Some(id.to_string());
+                new_data.save(pool)
+                .map_err(AppError::Store)
+                .and_then(|_| Ok(id))
+              })
+            )
+          })
         )
       {
         Ok(id) => {
@@ -207,24 +226,30 @@ fn main() {
             .filter(|id| id != "")
             .collect::<Vec<String>>();
           let data: &Data = res.server_data();
-          let pool = data.db.clone();
-          let categories = Category::all(&*pool.get().unwrap()).unwrap();
-
-          match ids.len() {
-            0 => encode(&categories).map_err(AppError::Encode),
-            1 => {
-                categories.iter().find(|x| x.id.clone().is_some() && x.id.clone().unwrap() == ids[0])
-                .ok_or(StoreError::NotFound).map_err(AppError::Store)
-                .and_then(|e| encode(&e).map_err(AppError::Encode))
-            },
-            _ => {
-              let x = categories.iter()
-               .filter(|e| e.id.is_some())
-               .filter(|e| ids.iter().any(|id| e.id == Some(id.clone())))
-               .collect::<Vec<&Category>>();
-               encode(&x).map_err(AppError::Encode)
-            }
-          }
+          data.db.clone().get()
+            .map_err(StoreError::Pool)
+            .map_err(AppError::Store)
+            .and_then(|ref pool|{
+              Category::all(pool)
+                .map_err(AppError::Store)
+                .and_then(|categories|
+                  match ids.len() {
+                    0 => encode(&categories).map_err(AppError::Encode),
+                    1 => {
+                        categories.iter().find(|x| x.id.clone().is_some() && x.id.clone().unwrap() == ids[0])
+                        .ok_or(StoreError::NotFound).map_err(AppError::Store)
+                        .and_then(|e| encode(&e).map_err(AppError::Encode))
+                    },
+                    _ => {
+                      let x = categories.iter()
+                       .filter(|e| e.id.is_some())
+                       .filter(|e| ids.iter().any(|id| e.id == Some(id.clone())))
+                       .collect::<Vec<&Category>>();
+                       encode(&x).map_err(AppError::Encode)
+                    }
+                  }
+              )
+          })
         })
         {
           Ok(x)  => {
@@ -238,7 +263,6 @@ fn main() {
 
     get "/search" => |req, mut res| {
       let data: &Data = res.server_data();
-      let pool = data.db.clone();
       let query = req.query();
       match query
         .get("bbox")
@@ -246,59 +270,63 @@ fn main() {
         .and_then(|bbox_str| query
         .get("categories")
         .ok_or(ParameterError::InvalidCategories).map_err(AppError::Parameter)
-        .and_then(|cat_str|
-          Entry::all(&*pool.get().unwrap())
-          .map_err(AppError::Store)
-          .and_then(|entries|{
+        .and_then(|cat_str| data.db.clone().get()
+            .map_err(StoreError::Pool)
+            .map_err(AppError::Store)
+            .and_then(|ref pool|
+              Entry::all(pool)
+              .map_err(AppError::Store)
+              .and_then(|entries|{
 
-            let cat_ids:Vec<String> = cat_str
-              .split(",")
-              .map(|x|x.to_string())
-              .filter(|id| id != "")
-              .collect();
+                let cat_ids:Vec<String> = cat_str
+                  .split(",")
+                  .map(|x|x.to_string())
+                  .filter(|id| id != "")
+                  .collect();
 
-            let bbox:Vec<f64> = bbox_str
-              .split(",")
-              .map(|x| x.parse::<f64>())
-              .filter_map(|x| x.ok())
-              .collect();
+                let bbox:Vec<f64> = bbox_str
+                  .split(",")
+                  .map(|x| x.parse::<f64>())
+                  .filter_map(|x| x.ok())
+                  .collect();
 
-            if bbox.len() != 4 {
-              return Err(ParameterError::InvalidBbox).map_err(AppError::Parameter)
-            }
+                if bbox.len() != 4 {
+                  return Err(ParameterError::InvalidBbox).map_err(AppError::Parameter)
+                }
 
-            let bbox_center = geo::center(
-                &geo::Coordinate{lat: bbox[0], lng: bbox[1]},
-                &geo::Coordinate{lat: bbox[2], lng: bbox[3]});
+                let bbox_center = geo::center(
+                    &geo::Coordinate{lat: bbox[0], lng: bbox[1]},
+                    &geo::Coordinate{lat: bbox[2], lng: bbox[3]});
 
-            let cat_filtered_entries = &entries
-              .filter_by_category_ids(&cat_ids);
+                let cat_filtered_entries = &entries
+                  .filter_by_category_ids(&cat_ids);
 
-            let mut pre_filtered_entries = match query.get("text"){
-              Some(txt) => cat_filtered_entries.filter_by_search_text(&txt.to_string()),
-              None      => cat_filtered_entries.iter().map(|x|x.clone()).collect()
-            };
+                let mut pre_filtered_entries = match query.get("text"){
+                  Some(txt) => cat_filtered_entries.filter_by_search_text(&txt.to_string()),
+                  None      => cat_filtered_entries.iter().map(|x|x.clone()).collect()
+                };
 
-            pre_filtered_entries.sort_by_distance_to(&bbox_center);
+                pre_filtered_entries.sort_by_distance_to(&bbox_center);
 
-            let visible_results = pre_filtered_entries
-              .filter_by_bounding_box(&bbox)
-              .map_to_ids();
+                let visible_results = pre_filtered_entries
+                  .filter_by_bounding_box(&bbox)
+                  .map_to_ids();
 
-            let invisible_results = pre_filtered_entries
-              .iter()
-              .filter(|e| !visible_results.iter().any(|v| e.id == Some(v.clone()) ))
-              .take(MAX_INVISIBLE_RESULTS)
-              .map(|x|x.clone())
-              .collect::<Vec<_>>()
-              .map_to_ids();
+                let invisible_results = pre_filtered_entries
+                  .iter()
+                  .filter(|e| !visible_results.iter().any(|v| e.id == Some(v.clone()) ))
+                  .take(MAX_INVISIBLE_RESULTS)
+                  .map(|x|x.clone())
+                  .collect::<Vec<_>>()
+                  .map_to_ids();
 
-            let search_result = SearchResult{
-              visible   : visible_results,
-              invisible : invisible_results
-            };
-            encode(&search_result).map_err(AppError::Encode)
-          })
+                let search_result = SearchResult{
+                  visible   : visible_results,
+                  invisible : invisible_results
+                };
+                encode(&search_result).map_err(AppError::Encode)
+              })
+            )
       ))
       {
         Ok(x)  => {
