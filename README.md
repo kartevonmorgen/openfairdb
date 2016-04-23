@@ -12,9 +12,32 @@ Requirements:
 - [Rust](http://rustlang.org/) 1.5
 - [Neo4j](http://neo4j.com/) 2.1.8
 
-Start Neo4j:
-- on Mac OS X: open "Neo4j Community Edition.app" in /Applications, click on "Start"
-- (other platforms?)
+### Installing Rust & Cargo
+
+If you're using Ubuntu 16.04 LTS you can run
+
+```
+sudo apt-get install rustc cargo libssl-dev
+```
+
+### Installing Neo4j
+
+According to [debian.neo4j.org](http://debian.neo4j.org/):
+
+    wget -O - https://debian.neo4j.org/neotechnology.gpg.key | sudo apt-key add -
+    echo 'deb http://debian.neo4j.org/repo stable/' >/tmp/neo4j.list
+    sudo mv /tmp/neo4j.list /etc/apt/sources.list.d
+    sudo apt-get update
+    sudo apt-get install neo4j
+
+Neo4J should be running. You can check this with the following command
+
+    service neo4j-service status
+
+On Mac OS X to start Neo4j:
+open "Neo4j Community Edition.app" in `/Applications` and click on "Start"
+
+### Compile & Run
 
 ```
 git clone https://github.com/flosse/openfairdb
