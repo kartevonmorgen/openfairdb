@@ -187,7 +187,7 @@ fn main() {
         )
       {
         Ok(id) => {
-          (StatusCode::Ok, format!("Saved entry '{}'",id))
+          (StatusCode::Ok, format!("{}",id))
         }
         Err(ref err) => {
           let msg = format!("Could not save entry: {}", err);
