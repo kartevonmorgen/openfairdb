@@ -15,9 +15,11 @@ Requirements:
 ```
 git clone https://github.com/flosse/openfairdb
 cd openfairdb/
-cargo run
+cargo build
+./target/debug/openfairdb --enable-cors
 ```
-On NixOS you can run:
+
+On NixOS you can build the project with:
 
 ```
 nix-build -E '(import <nixpkgs>{}).callPackage ./default.nix {}'
@@ -73,7 +75,11 @@ The structure of a `category` looks like follows:
 
 ## Logging
 
-    RUST_LOG=debug ./ofdb
+    RUST_LOG=debug ./target/debug/openfairdb
+
+If you want to get stacktraces on panics use
+
+    export RUST_BACKTRACE=1
 
 ## DB Backups
 
