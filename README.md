@@ -37,6 +37,17 @@ Neo4J should be running. You can check this with the following command
 On Mac OS X to start Neo4j:
 open "Neo4j Community Edition.app" in `/Applications` and click on "Start"
 
+Open `http://localhost:7474/browser/` in a browser, login in and set a password.
+
+To disable the authentication add the following line to
+`/etc/neo4j/neo4j.properties`:
+
+    dbms.security.auth_enabled=false
+
+And don't forget to restart the server:
+
+    service neo4j-service restart
+
 ### Compile & Run
 
 ```
