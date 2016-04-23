@@ -48,7 +48,7 @@ impl Store for Entry {
          homepage    : s.homepage,
          categories  : categories
        } AS e
-       ORDER BY e.created DESC" {"id" => &id})));
+       ORDER BY e.created DESC", {"id" => &id})));
     result.rows().next().ok_or(StoreError::NotFound)
     .and_then(|r| r.get::<Entry>("e").map_err(StoreError::Graph))
 
@@ -149,7 +149,7 @@ fn create_entry(e: &Entry, graph: &GraphClient) -> Result<Entry,StoreError> {
        telephone   : s.telephone,
        homepage    : s.homepage,
        categories  : cat_ids
-     } AS new"
+     } AS new",
    {
      "id"          => &id,
      "title"       => &e.title,
@@ -216,7 +216,7 @@ fn update_entry(e: &Entry, graph: &GraphClient) -> Result<Entry,StoreError> {
        telephone   : s.telephone,
        homepage    : s.homepage,
        categories  : categories
-     } AS e"
+     } AS e",
    {
      "id"          => &id,
      "version"     => &version,
@@ -254,7 +254,7 @@ impl Store for Category {
         version : s.version,
         created : s.created,
         name    : s.name
-      } AS c" {"id" => &id})));
+      } AS c", {"id" => &id})));
     result.rows().next().ok_or(StoreError::NotFound)
     .and_then(|r| r.get::<Category>("c").map_err(StoreError::Graph))
   }
@@ -304,7 +304,7 @@ fn create_category(c: &Category, graph: &GraphClient) -> Result<Category,StoreEr
        version : s.version,
        created : s.created,
        name    : s.name
-     } AS c" {
+     } AS c", {
        "id"   => &id,
        "name" => &c.name
     })));
@@ -333,7 +333,7 @@ fn update_category(c: &Category, graph: &GraphClient) -> Result<Category,StoreEr
       version : s.version,
       created : s.created,
       name    : s.name
-    } AS c" {
+    } AS c", {
       "id"      => &id,
       "version" => &version,
       "name"    => &c.name
