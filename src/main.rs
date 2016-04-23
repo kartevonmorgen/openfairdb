@@ -187,7 +187,6 @@ fn main() {
         )
       {
         Ok(id) => {
-          res.set(MediaType::Json);
           (StatusCode::Ok, format!("Saved entry '{}'",id))
         }
         Err(ref err) => {
