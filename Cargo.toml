@@ -16,7 +16,11 @@ typemap = "0.3"
 uuid = "0.1"
 geojson = "0.2"
 rusted_cypher = { version = "0.9",  features = ["rustc-serialize"] }
+clippy = { version = "*", optional = true }
 
 [dependencies.r2d2_cypher]
 version = "0.1.0"
 git = "git://github.com/flosse/r2d2-cypher.git"
+
+[features]
+default=[]

@@ -1,5 +1,8 @@
 // Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
 
+#![cfg_attr(feature="clippy", feature(plugin))]
+#![cfg_attr(feature="clippy", plugin(clippy))]
+
 #[macro_use]
 extern crate log;
 extern crate env_logger;
