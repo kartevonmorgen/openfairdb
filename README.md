@@ -9,8 +9,8 @@ written in [Rust](http://rustlang.org/).
 
 Requirements:
 
-- [Rust](http://rustlang.org/) 1.5
-- [Neo4j](http://neo4j.com/) 2.1.8
+- [Rust](http://rustlang.org/) >= 1.6
+- [Neo4j](http://neo4j.com/) >= 2.1.8
 
 ### Installing Rust & Cargo
 
