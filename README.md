@@ -29,18 +29,20 @@ According to [debian.neo4j.org](http://debian.neo4j.org/):
     sudo mv /tmp/neo4j.list /etc/apt/sources.list.d
     sudo apt-get update
     sudo apt-get install neo4j
+    
+or follow these instructions for different operating systems: http://neo4j.com/docs/stable/server-installation.html 
 
 Neo4J should be running. You can check this with the following command
 
     service neo4j-service status
 
-On Mac OS X to start Neo4j:
+To start Neo4j on Mac OS X:
 open "Neo4j Community Edition.app" in `/Applications` and click on "Start"
 
 Open `http://localhost:7474/browser/` in a browser, login in and set a password.
 
 To disable the authentication add the following line to
-`/etc/neo4j/neo4j.properties`:
+`/etc/neo4j/neo4j.properties` (or `~/Documents/Neo4j/default.graphdb/neo4j.properties` on Mac OS X):
 
     dbms.security.auth_enabled=false
 
