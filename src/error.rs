@@ -76,17 +76,17 @@ impl From<GetTimeout> for StoreError {
 
 #[derive(Debug)]
 pub enum ParameterError {
-  InvalidId,
-  InvalidBbox,
-  InvalidCategories
+  Id,
+  Bbox,
+  Categories
 }
 
 impl fmt::Display for ParameterError {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     match *self {
-      ParameterError::InvalidId         => write!(f, "Requested ID is invalid"),
-      ParameterError::InvalidBbox       => write!(f, "Requested bounding box is invalid"),
-      ParameterError::InvalidCategories => write!(f, "Requested categories are invalid")
+      ParameterError::Id         => write!(f, "Requested ID is invalid"),
+      ParameterError::Bbox       => write!(f, "Requested bounding box is invalid"),
+      ParameterError::Categories => write!(f, "Requested categories are invalid")
     }
   }
 }
@@ -94,9 +94,9 @@ impl fmt::Display for ParameterError {
 impl Error for ParameterError {
   fn description(&self) -> &str {
     match *self {
-      ParameterError::InvalidId         => "Requested ID is invalid",
-      ParameterError::InvalidBbox       => "Requested bounding box is invalid",
-      ParameterError::InvalidCategories => "Requested categories are invalid"
+      ParameterError::Id         => "Requested ID is invalid",
+      ParameterError::Bbox       => "Requested bounding box is invalid",
+      ParameterError::Categories => "Requested categories are invalid"
     }
   }
 

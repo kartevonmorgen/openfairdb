@@ -120,7 +120,7 @@ fn main() {
 
     get "/entries/:id" => |req, mut res|{
       match req.param("id")
-        .ok_or(ParameterError::InvalidId).map_err(AppError::Parameter)
+        .ok_or(ParameterError::Id).map_err(AppError::Parameter)
         .and_then(|s|{
           let ids = s.split(",")
             .map(|x|x.to_string())
@@ -190,7 +190,7 @@ fn main() {
       let entry = req.json_as::<Entry>();
       let data: &Data = res.server_data();
       match req.param("id")
-        .ok_or(ParameterError::InvalidId).map_err(AppError::Parameter)
+        .ok_or(ParameterError::Id).map_err(AppError::Parameter)
         .and_then(|id| entry.map_err(AppError::Io)
           .and_then(|mut new_data|{
             data.db.clone().get()
@@ -222,7 +222,7 @@ fn main() {
 
     get "/categories/:id" => |req, mut res|{
       match req.param("id")
-        .ok_or(ParameterError::InvalidId).map_err(AppError::Parameter)
+        .ok_or(ParameterError::Id).map_err(AppError::Parameter)
         .and_then(|s|{
           let ids = s.split(",")
             .map(|x|x.to_string())
@@ -269,10 +269,10 @@ fn main() {
       let query = req.query();
       match query
         .get("bbox")
-        .ok_or(ParameterError::InvalidBbox).map_err(AppError::Parameter)
+        .ok_or(ParameterError::Bbox).map_err(AppError::Parameter)
         .and_then(|bbox_str| query
         .get("categories")
-        .ok_or(ParameterError::InvalidCategories).map_err(AppError::Parameter)
+        .ok_or(ParameterError::Categories).map_err(AppError::Parameter)
         .and_then(|cat_str| data.db.clone().get()
             .map_err(StoreError::Pool)
             .map_err(AppError::Store)
@@ -294,7 +294,7 @@ fn main() {
                   .collect();
 
                 if bbox.len() != 4 {
-                  return Err(ParameterError::InvalidBbox).map_err(AppError::Parameter)
+                  return Err(ParameterError::Bbox).map_err(AppError::Parameter)
                 }
 
                 let bbox_center = geo::center(
