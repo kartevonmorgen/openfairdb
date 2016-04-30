@@ -123,7 +123,7 @@ fn main() {
         .ok_or(ParameterError::Id).map_err(AppError::Parameter)
         .and_then(|s|{
           let ids = s.split(",")
-            .map(|x|x.to_string())
+            .map(|x|x.to_owned())
             .filter(|id| id != "")
             .collect::<Vec<String>>();
           let data: &Data = res.server_data();
@@ -132,25 +132,22 @@ fn main() {
             .map_err(AppError::Store)
             .and_then(|ref pool|{
 
-              Entry::all(pool).map_err(AppError::Store).and_then(|entries|{
+              Entry::all(pool).map_err(AppError::Store).and_then(|entries|
 
                 match ids.len() {
                   0 => encode(&entries).map_err(AppError::Encode),
-                  1 => {
-                      entries.iter().find(|x| x.id.clone().is_some() && x.id.clone().unwrap() == ids[0])
+                  1 => entries
+                      .iter()
+                      .find(|x| x.id == Some(ids[0].clone()))
                       .ok_or(StoreError::NotFound).map_err(AppError::Store)
-                      .and_then(|e| encode(&e).map_err(AppError::Encode))
-                  },
-                  _ => {
-                    let x = entries.iter()
-                     .filter(|e| e.id.is_some())
-                     .filter(|e| ids.iter().any(|id| e.id == Some(id.clone())))
-                     .collect::<Vec<&Entry>>();
-                     encode(&x).map_err(AppError::Encode)
-                  }
+                      .and_then(|e| encode(&e).map_err(AppError::Encode)),
+                  _ => encode(&entries
+                        .iter()
+                        .filter(|e| e.id.is_some())
+                        .filter(|e| ids.iter().any(|id| e.id == Some(id.clone())))
+                        .collect::<Vec<&Entry>>()).map_err(AppError::Encode)
                 }
-
-              })
+              )
             })
         })
         {
@@ -159,7 +156,7 @@ fn main() {
             (StatusCode::Ok, format!("{}",x))
           },
           Err(ref err) =>
-            (StatusCode::from(err), format!("Could not fetch entries: {}", err))
+            (err.into(), format!("Could not fetch entries: {}", err))
         }
       }
 
@@ -181,8 +178,7 @@ fn main() {
       {
         Ok(id)  => (StatusCode::Ok, format!("{}",id)),
         Err(ref err) =>
-          (StatusCode::from(err), format!("Could not create entry: {}", err))
-
+          (err.into(), format!("Could not create entry: {}", err))
       }
     }
 
@@ -197,10 +193,10 @@ fn main() {
             .map_err(StoreError::Pool)
             .map_err(AppError::Store)
             .and_then(|ref pool|
-              Entry::get(pool, id.to_string())
+              Entry::get(pool, id.to_owned())
               .map_err(AppError::Store)
               .and_then(|_|{
-                new_data.id = Some(id.to_string());
+                new_data.id = Some(id.to_owned());
                 new_data.save(pool)
                 .map_err(AppError::Store)
                 .and_then(|_| Ok(id))
@@ -215,7 +211,7 @@ fn main() {
         Err(ref err) => {
           let msg = format!("Could not save entry: {}", err);
           warn!("{}", msg);
-          (StatusCode::from(err), format!("Could not save entry: {}", err))
+          (err.into(), format!("Could not save entry: {}", err))
         }
       }
     }
@@ -225,7 +221,7 @@ fn main() {
         .ok_or(ParameterError::Id).map_err(AppError::Parameter)
         .and_then(|s|{
           let ids = s.split(",")
-            .map(|x|x.to_string())
+            .map(|x|x.to_owned())
             .filter(|id| id != "")
             .collect::<Vec<String>>();
           let data: &Data = res.server_data();
@@ -239,17 +235,18 @@ fn main() {
                   match ids.len() {
                     0 => encode(&categories).map_err(AppError::Encode),
                     1 => {
-                        categories.iter().find(|x| x.id.clone().is_some() && x.id.clone().unwrap() == ids[0])
-                        .ok_or(StoreError::NotFound).map_err(AppError::Store)
-                        .and_then(|e| encode(&e).map_err(AppError::Encode))
+                        let id = Some(ids[0].clone());
+                        categories
+                          .iter()
+                          .find(|x| x.id == id)
+                          .ok_or(StoreError::NotFound).map_err(AppError::Store)
+                          .and_then(|e| encode(&e).map_err(AppError::Encode))
                     },
-                    _ => {
-                      let x = categories.iter()
+                    _ =>
+                      encode(&categories.iter()
                        .filter(|e| e.id.is_some())
                        .filter(|e| ids.iter().any(|id| e.id == Some(id.clone())))
-                       .collect::<Vec<&Category>>();
-                       encode(&x).map_err(AppError::Encode)
-                    }
+                       .collect::<Vec<&Category>>()).map_err(AppError::Encode)
                   }
               )
           })
@@ -260,7 +257,7 @@ fn main() {
             (StatusCode::Ok, format!("{}",x))
           },
           Err(ref err) =>
-            (StatusCode::from(err), format!("Could not fetch categories: {}", err))
+            (err.into(), format!("Could not fetch categories: {}", err))
         }
       }
 
@@ -283,7 +280,7 @@ fn main() {
 
                 let cat_ids:Vec<String> = cat_str
                   .split(",")
-                  .map(|x|x.to_string())
+                  .map(|x|x.to_owned())
                   .filter(|id| id != "")
                   .collect();
 
@@ -305,7 +302,7 @@ fn main() {
                   .filter_by_category_ids(&cat_ids);
 
                 let mut pre_filtered_entries = match query.get("text"){
-                  Some(txt) => cat_filtered_entries.filter_by_search_text(&txt.to_string()),
+                  Some(txt) => cat_filtered_entries.filter_by_search_text(&txt.to_owned()),
                   None      => cat_filtered_entries.iter().map(|x|x.clone()).collect()
                 };
 
@@ -334,17 +331,17 @@ fn main() {
       {
         Ok(x)  => {
           res.set(MediaType::Json);
-          (StatusCode::Ok, format!("{}",x))
+          (StatusCode::Ok, format!("{}", x))
         },
         Err(ref err) =>
-          (StatusCode::from(err), format!("Could not search entries: {}", err))
+          (err.into(), format!("Could not search entries: {}", err))
       }
 
     }
 
-    get "/server/version" => |_, res| { VERSION }
+    get "/server/version" => { VERSION }
 
   });
 
-  server.listen(("127.0.0.1",args.flag_port.unwrap_or(6767)));
+  server.listen(("127.0.0.1", args.flag_port.unwrap_or(6767)));
 }
