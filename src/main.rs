@@ -86,6 +86,21 @@ fn enable_cors<'mw>(_req: &mut Request<Data>, mut res: Response<'mw,Data>) -> Mi
   res.next_middleware()
 }
 
+fn extract_ids(s: &str) -> Vec<String> {
+  s.split(",")
+   .map(|x|x.to_owned())
+   .filter(|id| id != "")
+   .collect::<Vec<String>>()
+}
+
+#[test]
+fn extract_ids_test(){
+  assert_eq!(extract_ids("abc"), vec!("abc"));
+  assert_eq!(extract_ids("a,b,c"), vec!("a","b","c"));
+  assert_eq!(extract_ids("").len(), 0);
+  assert_eq!(extract_ids("abc,,d"), vec!("abc","d"));
+}
+
 fn main() {
 
   env_logger::init().unwrap();
@@ -122,10 +137,7 @@ fn main() {
       match req.param("id")
         .ok_or(ParameterError::Id).map_err(AppError::Parameter)
         .and_then(|s|{
-          let ids = s.split(",")
-            .map(|x|x.to_owned())
-            .filter(|id| id != "")
-            .collect::<Vec<String>>();
+          let ids = extract_ids(s);
           let data: &Data = res.server_data();
           data.db.clone().get()
             .map_err(StoreError::Pool)
@@ -220,10 +232,7 @@ fn main() {
       match req.param("id")
         .ok_or(ParameterError::Id).map_err(AppError::Parameter)
         .and_then(|s|{
-          let ids = s.split(",")
-            .map(|x|x.to_owned())
-            .filter(|id| id != "")
-            .collect::<Vec<String>>();
+          let ids = extract_ids(s);
           let data: &Data = res.server_data();
           data.db.clone().get()
             .map_err(StoreError::Pool)
@@ -278,26 +287,9 @@ fn main() {
               .map_err(AppError::Store)
               .and_then(|entries|{
 
-                let cat_ids:Vec<String> = cat_str
-                  .split(",")
-                  .map(|x|x.to_owned())
-                  .filter(|id| id != "")
-                  .collect();
-
-                let bbox:Vec<f64> = bbox_str
-                  .split(",")
-                  .map(|x| x.parse::<f64>())
-                  .filter_map(|x| x.ok())
-                  .collect();
-
-                if bbox.len() != 4 {
-                  return Err(ParameterError::Bbox).map_err(AppError::Parameter)
-                }
-
-                let bbox_center = geo::center(
-                    &geo::Coordinate{lat: bbox[0], lng: bbox[1]},
-                    &geo::Coordinate{lat: bbox[2], lng: bbox[3]});
-
+                let cat_ids = extract_ids(cat_str);
+                let bbox = try!(geo::extract_bbox(bbox_str));
+                let bbox_center = geo::center(&bbox[0], &bbox[1]);
                 let cat_filtered_entries = &entries
                   .filter_by_category_ids(&cat_ids);
 

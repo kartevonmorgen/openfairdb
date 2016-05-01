@@ -1,5 +1,7 @@
 // Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
 
+use error::{AppError, ParameterError};
+
 // The Earth's radius in kilometers.
 static EARTH_RADIUS: f64 = 6371.0;
 
@@ -27,4 +29,24 @@ pub fn center(south_west: &Coordinate, north_east: &Coordinate) -> Coordinate {
     lat: (south_west.lat + north_east.lat) / 2.0,
     lng: (south_west.lng + north_east.lng) / 2.0
   }
+}
+
+pub fn extract_bbox(s: &str) -> Result<Vec<Coordinate>, AppError> {
+  let c = s
+   .split(",")
+   .map(|x| x.parse::<f64>())
+   .filter_map(|x| x.ok())
+   .collect::<Vec<f64>>();
+
+   match c.len() {
+     4  => Ok(vec!(
+            Coordinate{lat: c[0], lng: c[1]},
+            Coordinate{lat: c[2], lng: c[3]})),
+     _  => Err(ParameterError::Bbox).map_err(AppError::Parameter)
+   }
+}
+
+#[test]
+fn extract_bbox_test() {
+  assert!(extract_bbox("5,4,3").is_err());
 }

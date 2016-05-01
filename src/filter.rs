@@ -1,7 +1,7 @@
 // Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
 
 use json::Entry;
-use geojson::Bbox;
+use geo::Coordinate;
 
 pub trait FilterByCategoryIds {
   type Id;
@@ -9,16 +9,18 @@ pub trait FilterByCategoryIds {
 }
 
 pub trait FilterByBoundingBox {
-  fn filter_by_bounding_box(&self, bb: &Bbox) -> Self;
+  fn filter_by_bounding_box(&self, bb: &Vec<Coordinate>) -> Self;
 }
 
 pub trait InBbox {
-  fn in_bbox(&self, bb:&Bbox) -> bool;
+  fn in_bbox(&self, bb:&Vec<Coordinate>) -> bool;
 }
 
 impl InBbox for Entry {
-  fn in_bbox(&self, bb:&Bbox) -> bool {
-    bb.len() == 4 && self.lat >= bb[0] && self.lng >= bb[1] && self.lat <= bb[2] && self.lng <= bb[3]
+  fn in_bbox(&self, bb:&Vec<Coordinate>) -> bool {
+    bb.len() == 2 &&
+    self.lat >= bb[0].lat && self.lng >= bb[0].lng &&
+    self.lat <= bb[1].lat && self.lng <= bb[1].lng
   }
 }
 
@@ -36,7 +38,7 @@ impl FilterByCategoryIds for Vec<Entry> {
 }
 
 impl FilterByBoundingBox for Vec<Entry> {
-  fn filter_by_bounding_box(&self, bb:&Bbox) -> Vec<Entry> {
+  fn filter_by_bounding_box(&self, bb:&Vec<Coordinate>) -> Vec<Entry> {
     self
      .iter()
      .filter(|&e| e.in_bbox(bb))
