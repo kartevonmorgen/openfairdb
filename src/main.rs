@@ -11,7 +11,7 @@ extern crate nickel;
 extern crate rustc_serialize;
 extern crate hyper;
 extern crate unicase;
-extern crate docopt;
+extern crate clap;
 #[macro_use]
 extern crate rusted_cypher;
 extern crate r2d2;
@@ -33,7 +33,7 @@ use nickel::status::StatusCode;
 use hyper::header::{AccessControlAllowOrigin, AccessControlAllowHeaders, AccessControlAllowMethods};
 use hyper::method::Method;
 use r2d2_cypher::CypherConnectionManager;
-use docopt::Docopt;
+use clap::{Arg,App};
 use json::{Entry, Category, SearchResult};
 use store::Store;
 use error::{AppError, ParameterError, StoreError};
@@ -45,29 +45,6 @@ use sort::SortByDistanceTo;
 static VERSION                  : &'static str = "0.0.16";
 static POOL_SIZE                : u32 = 5;
 static MAX_INVISIBLE_RESULTS    : usize = 5;
-
-const USAGE: &'static str = "
-ofdb - openFairDB.
-
-Usage: ofdb [options]
-       ofdb (--help | --version)
-
-Options:
-  --port PORT           Port [default: 6767].
-  --db-url URL          URL to the DB [default: http://neo4j:neo4j@127.0.0.1:7474/db/data].
-  --enable-cors         Allow requests from any origin.
-  -V --version          Show version.
-  -h --help             Show this screen.
-";
-
-#[derive(Debug, RustcDecodable)]
-struct Args {
-  flag_port: Option<u16>,
-  flag_db_url: Option<String>,
-  flag_enable_cors: bool,
-  flag_help: bool,
-  flag_version: bool
-}
 
 #[derive(Debug, Clone)]
 struct Data {
@@ -105,16 +82,26 @@ fn main() {
 
   env_logger::init().unwrap();
 
-  let args: Args = Docopt::new(USAGE)
-     .and_then(|d| d.decode())
-     .unwrap_or_else(|e| e.exit());
+  let matches = App::new("openFairDB")
+    .version(VERSION)
+    .author("Markus Kohlhase <mail@markus-kohlhase.de>")
+    .arg(Arg::with_name("port")
+      .short("p")
+      .long("port")
+      .value_name("PORT")
+      .default_value("6767")
+      .help("Set the port to listen"))
+    .arg(Arg::with_name("db-url")
+      .long("db-url")
+      .value_name("URL")
+      .default_value("http://neo4j:neo4j@127.0.0.1:7474/db/data")
+      .help("URL to the Neo4j database"))
+    .arg(Arg::with_name("enable-cors")
+      .long("enable-cors")
+      .help("Allow requests from any origin"))
+    .get_matches();
 
-  if args.flag_version {
-    print!("{}",VERSION);
-    return;
-  }
-
-  let db_url  = args.flag_db_url.unwrap();
+  let db_url  = matches.value_of("db-url").unwrap().to_owned();
   let manager = CypherConnectionManager{url:db_url};
   let config  = r2d2::Config::builder().pool_size(POOL_SIZE).build();
   let pool    = r2d2::Pool::new(config, manager).unwrap();
@@ -122,7 +109,7 @@ fn main() {
 
   let mut server = Nickel::with_data(data);
 
-  if args.flag_enable_cors {
+  if matches.is_present("enable-cors") {
     server.utilize(enable_cors);
     server.options("/entries/*", middleware!{|_, mut res|
       res.set(AccessControlAllowHeaders(vec!["Content-Type".into()]));
@@ -335,5 +322,8 @@ fn main() {
 
   });
 
-  server.listen(("127.0.0.1", args.flag_port.unwrap_or(6767)));
+  server.listen((
+    "127.0.0.1",
+    matches.value_of("port").unwrap().parse::<u16>().unwrap()));
+
 }
