@@ -4,6 +4,7 @@ A micro backend for [Karte von morgen](https://github.com/flosse/kartevonmorgen/
 written in [Rust](http://rustlang.org/).
 
 [![Build Status](https://travis-ci.org/flosse/openfairdb.svg?branch=master)](https://travis-ci.org/flosse/openfairdb)
+[![Coverage Status](https://coveralls.io/repos/github/flosse/openfairdb/badge.svg?branch=master)](https://coveralls.io/github/flosse/openfairdb?branch=master)
 
 ## Build
 
