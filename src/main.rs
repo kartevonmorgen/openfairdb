@@ -19,6 +19,7 @@ extern crate r2d2_cypher;
 extern crate typemap;
 extern crate uuid;
 extern crate geojson;
+extern crate emailaddress;
 
 mod json;
 mod store;

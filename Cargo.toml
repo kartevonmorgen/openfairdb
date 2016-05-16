@@ -18,6 +18,11 @@ geojson = "0.2"
 rusted_cypher = { version = "0.9",  features = ["rustc-serialize"] }
 clippy = { version = "*", optional = true }
 
+[dependencies.emailaddress]
+version = "0.2"
+git = "git://github.com/flosse/emailaddress-rs.git"
+branch = "fix"
+
 [dependencies.r2d2_cypher]
 version = "0.1.0"
 git = "git://github.com/flosse/r2d2-cypher.git"

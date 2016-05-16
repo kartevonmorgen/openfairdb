@@ -4,6 +4,7 @@ version = "0.0.16"
 dependencies = [
  "clap 2.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "clippy 0.0.63 (registry+https://github.com/rust-lang/crates.io-index)",
+ "emailaddress 0.2.2 (git+git://github.com/flosse/emailaddress-rs.git?branch=fix)",
  "env_logger 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "geojson 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "hyper 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -84,6 +85,11 @@ dependencies = [
  "time 0.1.35 (registry+https://github.com/rust-lang/crates.io-index)",
  "url 0.5.9 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
+
+[[package]]
+name = "emailaddress"
+version = "0.2.2"
+source = "git+git://github.com/flosse/emailaddress-rs.git?branch=fix#85459da4c1ced85fd66ea7795a19090ff05e5402"
 
 [[package]]
 name = "env_logger"
