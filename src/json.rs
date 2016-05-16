@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Markus Kohlhase <mail@markus-kohlhase.de>
+// Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
 
 #[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
 pub struct Entry {
@@ -16,7 +16,8 @@ pub struct Entry {
   pub email       : Option<String>,
   pub telephone   : Option<String>,
   pub homepage    : Option<String>,
-  pub categories  : Option<Vec<String>>
+  pub categories  : Option<Vec<String>>,
+  pub license     : Option<String>,
 }
 
 #[derive(RustcDecodable, RustcEncodable, Debug, Clone)]

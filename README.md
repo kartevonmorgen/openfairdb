@@ -100,7 +100,8 @@ The structure of an `entry` looks like follows:
   "email"       : String,
   "telephone"   : String,
   "homepage"    : String,
-  "categories"  : [String]
+  "categories"  : [String],
+  "license"     : String
 }
 ```
 

@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Markus Kohlhase <mail@markus-kohlhase.de>
+// Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
 
 use json::{Entry, Category};
 use rusted_cypher::GraphClient;
@@ -47,7 +47,8 @@ impl Store for Entry {
          email       : s.email,
          telephone   : s.telephone,
          homepage    : s.homepage,
-         categories  : categories
+         categories  : categories,
+         license     : s.license
        } AS e
        ORDER BY e.created DESC", {"id" => &id})));
     result.rows().next().ok_or(StoreError::NotFound)
@@ -80,7 +81,8 @@ impl Store for Entry {
          email       : s.email,
          telephone   : s.telephone,
          homepage    : s.homepage,
-         categories  : categories
+         categories  : categories,
+         license     : s.license
        } AS e
        ORDER BY e.created DESC"));
     Ok(result
@@ -133,7 +135,8 @@ fn create_entry(e: &Entry, graph: &GraphClient) -> Result<Entry,StoreError> {
          s.country     = {country},
          s.email       = {email},
          s.telephone   = {telephone},
-         s.homepage    = {homepage}
+         s.homepage    = {homepage},
+         s.license     = {license}
      FOREACH (c IN cats |
        MERGE c-[:BELONGS_TO]->s
      )
@@ -152,7 +155,8 @@ fn create_entry(e: &Entry, graph: &GraphClient) -> Result<Entry,StoreError> {
        email       : s.email,
        telephone   : s.telephone,
        homepage    : s.homepage,
-       categories  : cat_ids
+       categories  : cat_ids,
+       homepage    : s.license
      } AS new",
    {
      "id"          => &id,
@@ -167,6 +171,7 @@ fn create_entry(e: &Entry, graph: &GraphClient) -> Result<Entry,StoreError> {
      "email"       => &e.email,
      "telephone"   => &e.telephone,
      "homepage"    => &e.homepage,
+     "license"     => &e.license,
      "categories"  => &e.categories.clone().unwrap_or(vec!())
     })));
   result.rows().next().ok_or(StoreError::Save)
@@ -200,7 +205,8 @@ fn update_entry(e: &Entry, graph: &GraphClient) -> Result<Entry,StoreError> {
          s.country     = {country},
          s.email       = {email},
          s.telephone   = {telephone},
-         s.homepage    = {homepage}
+         s.homepage    = {homepage},
+         s.license     = {license}
      FOREACH (c IN cats |
        MERGE (c)-[:BELONGS_TO]->s
      )
@@ -222,6 +228,7 @@ fn update_entry(e: &Entry, graph: &GraphClient) -> Result<Entry,StoreError> {
        email       : s.email,
        telephone   : s.telephone,
        homepage    : s.homepage,
+       license     : s.license,
        categories  : categories
      } AS e",
    {
@@ -238,6 +245,7 @@ fn update_entry(e: &Entry, graph: &GraphClient) -> Result<Entry,StoreError> {
      "email"       => &e.email,
      "telephone"   => &e.telephone,
      "homepage"    => &e.homepage,
+     "license"     => &e.license,
      "categories"  => &e.categories.clone().unwrap_or(vec!())
     })));
   result.rows().next().ok_or(StoreError::Save)
