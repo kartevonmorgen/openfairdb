@@ -75,6 +75,34 @@ impl From<GetTimeout> for StoreError {
 }
 
 #[derive(Debug)]
+pub enum ValidationError {
+  License
+}
+
+impl Error for ValidationError {
+
+  fn description(&self) -> &str {
+    match *self {
+      ValidationError::License => "Unsupported license",
+    }
+  }
+
+  fn cause(&self) -> Option<&Error> {
+    match *self {
+      _ => None
+    }
+  }
+}
+
+impl fmt::Display for ValidationError {
+  fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    match *self {
+      ValidationError::License => write!(f, "Unsupported license")
+    }
+  }
+}
+
+#[derive(Debug)]
 pub enum ParameterError {
   Id,
   Bbox,
@@ -115,6 +143,7 @@ pub enum AppError {
   Store(StoreError),
   Io(io::Error),
   Parameter(ParameterError),
+  Validation(ValidationError)
 }
 
 impl fmt::Display for AppError {
@@ -125,6 +154,7 @@ impl fmt::Display for AppError {
       AppError::Store(ref err)      => write!(f, "DB error: {}", err),
       AppError::Io(ref err)         => write!(f, "IO error: {}", err),
       AppError::Parameter(ref err)  => write!(f, "Parameter error: {}", err),
+      AppError::Validation(ref err) => write!(f, "Validation error: {}", err),
     }
   }
 }
@@ -137,6 +167,7 @@ impl Error for AppError {
       AppError::Store(ref err)      => err.description(),
       AppError::Io(ref err)         => err.description(),
       AppError::Parameter(ref err)  => err.description(),
+      AppError::Validation(ref err) => err.description(),
     }
   }
 
@@ -147,6 +178,7 @@ impl Error for AppError {
       AppError::Store(ref err)      => Some(err),
       AppError::Io(ref err)         => Some(err),
       AppError::Parameter(ref err)  => Some(err),
+      AppError::Validation(ref err) => Some(err),
     }
   }
 }
@@ -188,6 +220,7 @@ impl<'a> From<&'a AppError> for StatusCode {
       &AppError::Parse(_)        => StatusCode::BadRequest,
       &AppError::Io(_)           => StatusCode::BadRequest,
       &AppError::Parameter(_)    => StatusCode::BadRequest,
+      &AppError::Validation(_)   => StatusCode::BadRequest,
       &AppError::Store(ref err)      => match err {
         &StoreError::NotFound        => StatusCode::NotFound,
         &StoreError::InvalidVersion  => StatusCode::BadRequest,

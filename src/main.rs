@@ -27,6 +27,7 @@ mod search;
 mod filter;
 mod sort;
 mod geo;
+mod validate;
 
 use nickel::{Nickel, JsonBody, MediaType, QueryString, Request, Response, MiddlewareResult, HttpRouter};
 use nickel::status::StatusCode;
@@ -36,6 +37,7 @@ use r2d2_cypher::CypherConnectionManager;
 use clap::{Arg,App};
 use json::{Entry, Category, SearchResult};
 use store::Store;
+use validate::Validate;
 use error::{AppError, ParameterError, StoreError};
 use rustc_serialize::json::encode;
 use filter::{FilterByCategoryIds, FilterByBoundingBox};
@@ -162,6 +164,7 @@ fn main() {
     post "/entries/:id" => |req, res|{
       match req.json_as::<Entry>().map_err(AppError::Io)
         .and_then(|json|{
+          try!(json.validate().map_err(AppError::Validation));
           let data: &Data = res.server_data();
           data.db.clone().get()
             .map_err(StoreError::Pool)
