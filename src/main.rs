@@ -35,6 +35,7 @@ use nickel::status::StatusCode;
 use hyper::header::{AccessControlAllowOrigin, AccessControlAllowHeaders, AccessControlAllowMethods};
 use hyper::method::Method;
 use r2d2_cypher::CypherConnectionManager;
+use r2d2::PooledConnection;
 use clap::{Arg,App};
 use json::{Entry, Category, SearchResult};
 use store::Store;
@@ -52,6 +53,15 @@ static MAX_INVISIBLE_RESULTS    : usize = 5;
 #[derive(Debug, Clone)]
 struct Data {
   db: r2d2::Pool<CypherConnectionManager>
+}
+
+impl Data {
+  fn db_pool(&self) -> Result<PooledConnection<CypherConnectionManager>, AppError> {
+    self.db
+        .get()
+        .map_err(StoreError::Pool)
+        .map_err(AppError::Store)
+  }
 }
 
 fn enable_cors<'mw>(_req: &mut Request<Data>, mut res: Response<'mw,Data>) -> MiddlewareResult<'mw,Data> {
@@ -129,9 +139,7 @@ fn main() {
         .and_then(|s|{
           let ids = extract_ids(s);
           let data: &Data = res.server_data();
-          data.db.clone().get()
-            .map_err(StoreError::Pool)
-            .map_err(AppError::Store)
+          data.db_pool()
             .and_then(|ref pool|{
 
               Entry::all(pool).map_err(AppError::Store).and_then(|entries|
@@ -167,9 +175,7 @@ fn main() {
         .and_then(|json|{
           try!(json.validate().map_err(AppError::Validation));
           let data: &Data = res.server_data();
-          data.db.clone().get()
-            .map_err(StoreError::Pool)
-            .map_err(AppError::Store)
+          data.db_pool()
             .and_then(|ref pool|
               json.save(pool)
                 .map_err(AppError::Store)
@@ -192,10 +198,7 @@ fn main() {
         .ok_or(ParameterError::Id).map_err(AppError::Parameter)
         .and_then(|id| entry.map_err(AppError::Io)
           .and_then(|mut new_data|{
-            data.db.clone().get()
-            .map_err(StoreError::Pool)
-            .map_err(AppError::Store)
-            .and_then(|ref pool|
+            data.db_pool().and_then(|ref pool|
               Entry::get(pool, id.to_owned())
               .map_err(AppError::Store)
               .and_then(|_|{
@@ -225,10 +228,7 @@ fn main() {
         .and_then(|s|{
           let ids = extract_ids(s);
           let data: &Data = res.server_data();
-          data.db.clone().get()
-            .map_err(StoreError::Pool)
-            .map_err(AppError::Store)
-            .and_then(|ref pool|{
+          data.db_pool().and_then(|ref pool|{
               Category::all(pool)
                 .map_err(AppError::Store)
                 .and_then(|categories|
@@ -270,9 +270,7 @@ fn main() {
         .and_then(|bbox_str| query
         .get("categories")
         .ok_or(ParameterError::Categories).map_err(AppError::Parameter)
-        .and_then(|cat_str| data.db.clone().get()
-            .map_err(StoreError::Pool)
-            .map_err(AppError::Store)
+        .and_then(|cat_str| data.db_pool()
             .and_then(|ref pool|
               Entry::all(pool)
               .map_err(AppError::Store)
