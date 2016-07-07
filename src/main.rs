@@ -46,9 +46,9 @@ use filter::{FilterByCategoryIds, FilterByBoundingBox};
 use search::Search;
 use sort::SortByDistanceTo;
 
-static VERSION                  : &'static str = "0.0.16";
-static POOL_SIZE                : u32 = 5;
-static MAX_INVISIBLE_RESULTS    : usize = 5;
+static VERSION                : &'static str = env!("CARGO_PKG_VERSION");
+static POOL_SIZE              : u32 = 5;
+static MAX_INVISIBLE_RESULTS  : usize = 5;
 
 #[derive(Debug, Clone)]
 struct Data {
