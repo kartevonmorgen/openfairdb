@@ -295,7 +295,13 @@ fn main() {
 
                 let invisible_results = pre_filtered_entries
                   .iter()
-                  .filter(|e| !visible_results.iter().any(|v| e.id == Some(v.clone()) ))
+                  .filter(|e|
+                    if let Some(ref id) = e.id {
+                      !visible_results.iter().any(|v| id == v )
+                    } else {
+                      false
+                    }
+                  )
                   .take(MAX_INVISIBLE_RESULTS)
                   .map(|x|x.clone())
                   .collect::<Vec<_>>()
