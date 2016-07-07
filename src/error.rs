@@ -77,15 +77,17 @@ impl From<GetTimeout> for StoreError {
 #[derive(Debug)]
 pub enum ValidationError {
   License,
-  Email
+  Email,
+  Url,
 }
 
 impl Error for ValidationError {
 
   fn description(&self) -> &str {
     match *self {
-      ValidationError::License => "Unsupported license",
-      ValidationError::Email   => "Invalid email address"
+      ValidationError::License  => "Unsupported license",
+      ValidationError::Email    => "Invalid email address",
+      ValidationError::Url      => "Invalid URL"
     }
   }
 
@@ -100,7 +102,8 @@ impl fmt::Display for ValidationError {
   fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
     match *self {
       ValidationError::License => write!(f, "Unsupported license"),
-      ValidationError::Email   => write!(f, "Invalid email address")
+      ValidationError::Email   => write!(f, "Invalid email address"),
+      ValidationError::Url     => write!(f, "Invalid URL")
     }
   }
 }

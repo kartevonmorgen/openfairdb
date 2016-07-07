@@ -4,14 +4,21 @@ use error::ValidationError;
 use json::Entry;
 use emailaddress::EmailAddress;
 use std::str::FromStr;
+use url::Url;
 
 pub trait Validate {
   fn validate(&self) -> Result<(),ValidationError>;
 }
 
-fn email(s: &str) -> Result<(),ValidationError> {
-  EmailAddress::from_str(s)
+fn email(email: &str) -> Result<(),ValidationError> {
+  EmailAddress::from_str(email)
     .map_err(|_|ValidationError::Email)
+    .map(|_|())
+}
+
+fn homepage(url: &str) -> Result<(),ValidationError> {
+    Url::parse(url)
+    .map_err(|_|ValidationError::Url)
     .map(|_|())
 }
 
@@ -51,4 +58,10 @@ fn license_test(){
 fn email_test(){
   assert!(email("foo").is_err());
   assert!(email("foo@bar").is_ok());
+}
+
+#[test]
+fn homepage_test(){
+  assert!(homepage("https://openfairdb.org").is_ok());
+  assert!(homepage("openfairdb.org/foo").is_err());
 }

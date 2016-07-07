@@ -17,6 +17,7 @@ uuid = "0.1"
 geojson = "0.2"
 rusted_cypher = { version = "0.9",  features = ["rustc-serialize"] }
 clippy = { version = "*", optional = true }
+url = "1.1"
 
 [dependencies.emailaddress]
 version = "0.2"

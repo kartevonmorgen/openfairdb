@@ -20,6 +20,7 @@ extern crate typemap;
 extern crate uuid;
 extern crate geojson;
 extern crate emailaddress;
+extern crate url;
 
 mod json;
 mod store;
