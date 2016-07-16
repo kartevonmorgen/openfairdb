@@ -31,7 +31,7 @@ pub fn center(south_west: &Coordinate, north_east: &Coordinate) -> Coordinate {
 }
 
 pub fn extract_bbox(s: &str) -> Result<Vec<Coordinate>, AppError> {
-    let c = s.split(",")
+    let c = s.split(',')
         .map(|x| x.parse::<f64>())
         .filter_map(|x| x.ok())
         .collect::<Vec<f64>>();

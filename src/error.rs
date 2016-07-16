@@ -38,20 +38,20 @@ impl Error for StoreError {
             StoreError::InvalidVersion  => "The version property is invalid",
             StoreError::InvalidId       => "The ID is not valid",
             StoreError::Save            => "Could not save object",
-            StoreError::Graph(ref err)  => err.description(),
             StoreError::Neo(ref err)    => &err.message,
-            StoreError::Pool(ref err)   => &err.description(),
+            StoreError::Graph(ref err)  => err.description(),
+            StoreError::Pool(ref err)   => err.description(),
         }
     }
 
     fn cause(&self) -> Option<&Error> {
         match *self {
-            StoreError::NotFound        => None,
-            StoreError::InvalidVersion  => None,
-            StoreError::InvalidId       => None,
-            StoreError::Save            => None,
-            StoreError::Graph(ref err)  => Some(err),
+            StoreError::NotFound        |
+            StoreError::InvalidVersion  |
+            StoreError::InvalidId       |
+            StoreError::Save            |
             StoreError::Neo(_)          => None,
+            StoreError::Graph(ref err)  => Some(err),
             StoreError::Pool(ref err)   => Some(err)
         }
     }
@@ -218,17 +218,17 @@ impl From<ParameterError> for AppError {
 
 impl<'a> From<&'a AppError> for StatusCode {
     fn from(err: &AppError) -> StatusCode {
-        match err {
-            &AppError::Encode(_)       => StatusCode::InternalServerError,
-            &AppError::Parse(_)        => StatusCode::BadRequest,
-            &AppError::Io(_)           => StatusCode::BadRequest,
-            &AppError::Parameter(_)    => StatusCode::BadRequest,
-            &AppError::Validation(_)   => StatusCode::BadRequest,
-            &AppError::Store(ref err)  => match err {
-                &StoreError::NotFound        => StatusCode::NotFound,
-                &StoreError::InvalidVersion  => StatusCode::BadRequest,
-                &StoreError::InvalidId       => StatusCode::BadRequest,
-                _                            => StatusCode::InternalServerError
+        match *err {
+            AppError::Parse(_)        |
+            AppError::Io(_)           |
+            AppError::Parameter(_)    |
+            AppError::Validation(_)   => StatusCode::BadRequest,
+            AppError::Encode(_)       => StatusCode::InternalServerError,
+            AppError::Store(ref err)  => match *err {
+                StoreError::NotFound        => StatusCode::NotFound,
+                StoreError::InvalidVersion  |
+                StoreError::InvalidId       => StatusCode::BadRequest,
+                _                           => StatusCode::InternalServerError
             }
         }
     }

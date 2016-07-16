@@ -3,39 +3,39 @@
 use json::{Entry, Category};
 
 pub trait Search {
-    fn filter_by_search_text(&self, text: &String) -> Self;
+    fn filter_by_search_text(&self, text: &str) -> Self;
     fn map_to_ids(&self) -> Vec<String>;
 }
 
 impl Search for Vec<Entry> {
-    fn filter_by_search_text(&self, text: &String) -> Vec<Entry> {
+    fn filter_by_search_text(&self, text: &str) -> Vec<Entry> {
         by_text(self, text, entry_filter_factory)
     }
     fn map_to_ids(&self) -> Vec<String> {
-        self.iter().filter_map(|e| e.clone().id).map(|x| x.clone()).collect()
+        self.iter().cloned().filter_map(|e| e.clone().id).collect()
     }
 }
 
 impl Search for Vec<Category> {
-    fn filter_by_search_text(&self, text: &String) -> Vec<Category> {
+    fn filter_by_search_text(&self, text: &str) -> Vec<Category> {
         by_text(self, text, category_filter_factory)
     }
     fn map_to_ids(&self) -> Vec<String> {
-        self.iter().filter_map(|e| e.clone().id).map(|x| x.clone()).collect()
+        self.iter().cloned().filter_map(|e| e.clone().id).collect()
     }
 }
 
-fn by_text<'a, T: Clone, F>(collection: &'a Vec<T>, text: &String, filter: F) -> Vec<T>
+fn by_text<'a, T: Clone, F>(collection: &'a [T], text: &str, filter: F) -> Vec<T>
     where F: Fn(&'a T) -> Box<Fn(&str) -> bool + 'a>
 {
-    let txt_cpy = text.clone().to_lowercase();
+    let txt_cpy = text.to_lowercase();
     let words = txt_cpy.split(',');
     collection.iter()
         .filter(|&e| {
             let f = filter(e);
-            words.clone().any(|word| f(&word))
+            words.clone().any(|word| f(word))
         })
-        .map(|x| x.clone())
+        .cloned()
         .collect()
 }
 

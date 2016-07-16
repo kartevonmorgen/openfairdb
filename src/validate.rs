@@ -18,7 +18,7 @@ fn email(email: &str) -> Result<(), ValidationError> {
 
 fn homepage(url: &str) -> Result<(), ValidationError> {
     Url::parse(url)
-        .map_err(|err| ValidationError::Url(err))
+        .map_err(ValidationError::Url)
         .map(|_| ())
 }
 

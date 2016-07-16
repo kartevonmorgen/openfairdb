@@ -81,7 +81,7 @@ fn enable_cors<'mw>(_req: &mut Request<Data>,
 }
 
 fn extract_ids(s: &str) -> Vec<String> {
-    s.split(",")
+    s.split(',')
         .map(|x| x.to_owned())
         .filter(|id| id != "")
         .collect::<Vec<String>>()
@@ -168,7 +168,7 @@ fn main() {
         {
           Ok(x)  => {
             res.set(MediaType::Json);
-            (StatusCode::Ok, format!("{}",x))
+            (StatusCode::Ok, x)
           },
           Err(ref err) =>
             (err.into(), format!("Could not fetch entries: {}", err))
@@ -190,13 +190,13 @@ fn main() {
           )
       })
       {
-        Ok(id)  => (StatusCode::Ok, format!("{}",id)),
+        Ok(id)  => (StatusCode::Ok, id),
         Err(ref err) =>
           (err.into(), format!("Could not create entry: {}", err))
       }
     }
 
-    put "/entries/:id" => |req, mut res|{
+    put "/entries/:id" => |req, res|{
       let entry = req.json_as::<Entry>();
       let data: &Data = res.server_data();
       match req.param("id")
@@ -210,14 +210,14 @@ fn main() {
                 new_data.id = Some(id.to_owned());
                 new_data.save(pool)
                 .map_err(AppError::Store)
-                .and_then(|_| Ok(id))
+                .and_then(|_| Ok(id.to_owned()))
               })
             )
           })
         )
       {
         Ok(id) => {
-          (StatusCode::Ok, format!("{}",id))
+          (StatusCode::Ok, id)
         }
         Err(ref err) => {
           let msg = format!("Could not save entry: {}", err);
@@ -259,7 +259,7 @@ fn main() {
         {
           Ok(x)  => {
             res.set(MediaType::Json);
-            (StatusCode::Ok, format!("{}",x))
+            (StatusCode::Ok, x)
           },
           Err(ref err) =>
             (err.into(), format!("Could not fetch categories: {}", err))
@@ -289,7 +289,7 @@ fn main() {
 
                 let mut pre_filtered_entries = match query.get("text"){
                   Some(txt) => cat_filtered_entries.filter_by_search_text(&txt.to_owned()),
-                  None      => cat_filtered_entries.iter().map(|x|x.clone()).collect()
+                  None      => cat_filtered_entries.iter().cloned().collect()
                 };
 
                 pre_filtered_entries.sort_by_distance_to(&bbox_center);
@@ -308,7 +308,7 @@ fn main() {
                     }
                   )
                   .take(MAX_INVISIBLE_RESULTS)
-                  .map(|x|x.clone())
+                  .cloned()
                   .collect::<Vec<_>>()
                   .map_to_ids();
 
@@ -323,7 +323,7 @@ fn main() {
       {
         Ok(x)  => {
           res.set(MediaType::Json);
-          (StatusCode::Ok, format!("{}", x))
+          (StatusCode::Ok, x)
         },
         Err(ref err) =>
           (err.into(), format!("Could not search entries: {}", err))
@@ -331,7 +331,7 @@ fn main() {
 
     }
 
-    get "/count/entries" => |_, mut res| {
+    get "/count/entries" => |_, res| {
 
       let data: &Data = res.server_data();
       match data.db_pool()
@@ -340,7 +340,7 @@ fn main() {
               .and_then(|entries| Ok(entries.into_iter().count().to_string())))
       {
         Ok(x)  => {
-          (StatusCode::Ok, format!("{}", x))
+          (StatusCode::Ok, x)
         },
         Err(ref err) =>
           (err.into(), format!("Could not count entries: {}", err))
