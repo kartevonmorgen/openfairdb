@@ -50,11 +50,17 @@ After installation, Neo4j should be running. You can check this with the followi
     service neo4j-service status
 
 To start Neo4j, run:
+
     neo4j start
+
 or
+
     neo4j start-no-wait
+
 To stop it:
+
     neo4j stop
+
 
 ### Compile & Run
 
