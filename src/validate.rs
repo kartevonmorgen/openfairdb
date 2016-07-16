@@ -18,7 +18,7 @@ fn email(email: &str) -> Result<(),ValidationError> {
 
 fn homepage(url: &str) -> Result<(),ValidationError> {
     Url::parse(url)
-    .map_err(|_|ValidationError::Url)
+    .map_err(|err|ValidationError::Url(err))
     .map(|_|())
 }
 
@@ -39,8 +39,12 @@ impl Validate for Entry {
       .ok_or(ValidationError::License)
       .and_then(|ref l|license(l)));
 
-    if let Some(ref e) = self.email.clone() {
+    if let Some(ref e) = self.email {
       try!(email(e));
+    }
+
+    if let Some(ref h) = self.homepage {
+      try!(homepage(h));
     }
 
     Ok(())

@@ -4,6 +4,7 @@ use rustc_serialize::json;
 use nickel::status::StatusCode;
 use rusted_cypher::error::{GraphError,Neo4jError};
 use r2d2::{GetTimeout};
+use url::ParseError as UrlParseError;
 
 #[derive(Debug)]
 pub enum StoreError {
@@ -78,7 +79,7 @@ impl From<GetTimeout> for StoreError {
 pub enum ValidationError {
   License,
   Email,
-  Url,
+  Url(UrlParseError),
 }
 
 impl Error for ValidationError {
@@ -87,7 +88,7 @@ impl Error for ValidationError {
     match *self {
       ValidationError::License  => "Unsupported license",
       ValidationError::Email    => "Invalid email address",
-      ValidationError::Url      => "Invalid URL"
+      ValidationError::Url(_)   => "Invalid URL",
     }
   }
 
@@ -103,7 +104,7 @@ impl fmt::Display for ValidationError {
     match *self {
       ValidationError::License => write!(f, "Unsupported license"),
       ValidationError::Email   => write!(f, "Invalid email address"),
-      ValidationError::Url     => write!(f, "Invalid URL")
+      ValidationError::Url(_)  => write!(f, "Invalid URL")
     }
   }
 }
