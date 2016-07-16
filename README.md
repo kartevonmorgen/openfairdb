@@ -79,6 +79,8 @@ The base URL is `http://api.ofdb.io/v0/`.
 -  `GET /categories/`
 -  `GET /categories/:ID`
 -  `GET /search?text=TXT&bbox=LAT_min,LNG_min,LAT_max,LNG_max&categories=C_1,C_2,...,C_n`
+-  `GET /server/version`
+-  `GET /count/entries`
 
 #### JSON structures
 

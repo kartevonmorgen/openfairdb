@@ -327,6 +327,22 @@ fn main() {
 
     }
 
+    get "/count/entries" => |_, mut res| {
+
+      let data: &Data = res.server_data();
+      match data.db_pool()
+        .and_then(|ref pool| Entry::all(pool)
+              .map_err(AppError::Store)
+              .and_then(|entries| Ok(entries.into_iter().count().to_string())))
+      {
+        Ok(x)  => {
+          (StatusCode::Ok, format!("{}", x))
+        },
+        Err(ref err) =>
+          (err.into(), format!("Could not count entries: {}", err))
+      }
+    }
+
     get "/server/version" => { VERSION }
 
   });
