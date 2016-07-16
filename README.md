@@ -24,33 +24,37 @@ sudo apt-get install rustc cargo libssl-dev
 
 ### Installing Neo4j
 
+This readme describes the process with Neo4j Version 2.1.8.
+
 According to [debian.neo4j.org](http://debian.neo4j.org/):
 
     wget -O - https://debian.neo4j.org/neotechnology.gpg.key | sudo apt-key add -
     echo 'deb http://debian.neo4j.org/repo stable/' >/tmp/neo4j.list
     sudo mv /tmp/neo4j.list /etc/apt/sources.list.d
     sudo apt-get update
-    sudo apt-get install neo4j
+    sudo apt-get install neo4j=2.1.8
     
 or follow these instructions for different operating systems: http://neo4j.com/docs/stable/server-installation.html 
 
-Neo4J should be running. You can check this with the following command
-
-    service neo4j-service status
-
-To start Neo4j on Mac OS X:
-open "Neo4j Community Edition.app" in `/Applications` and click on "Start"
-
-Open `http://localhost:7474/browser/` in a browser, login in and set a password.
+Add the neo4j console command: 
+    sudo ln -s /var/lib/neo4j/bin/neo4j /usr/bin/neo4j
 
 To disable the authentication add the following line to
 `/etc/neo4j/neo4j.properties` (or `~/Documents/Neo4j/default.graphdb/neo4j.properties` on Mac OS X):
 
     dbms.security.auth_enabled=false
 
-And don't forget to restart the server:
 
-    service neo4j-service restart
+After installation, Neo4j should be running. You can check this with the following command
+
+    service neo4j-service status
+
+To start Neo4j, run:
+    neo4j start
+or
+    neo4j start-no-wait
+To stop it:
+    neo4j stop
 
 ### Compile & Run
 
