@@ -31,13 +31,14 @@ mod sort;
 mod geo;
 mod validate;
 
-use nickel::{Nickel, JsonBody, MediaType, QueryString, Request, Response, MiddlewareResult, HttpRouter};
+use nickel::{Nickel, JsonBody, MediaType, QueryString, Request, Response, MiddlewareResult,
+             HttpRouter};
 use nickel::status::StatusCode;
 use hyper::header::{AccessControlAllowOrigin, AccessControlAllowHeaders, AccessControlAllowMethods};
 use hyper::method::Method;
 use r2d2_cypher::CypherConnectionManager;
 use r2d2::PooledConnection;
-use clap::{Arg,App};
+use clap::{Arg, App};
 use json::{Entry, Category, SearchResult};
 use store::Store;
 use validate::Validate;
@@ -53,86 +54,89 @@ static MAX_INVISIBLE_RESULTS  : usize = 5;
 
 #[derive(Debug, Clone)]
 struct Data {
-  db: r2d2::Pool<CypherConnectionManager>
+    db: r2d2::Pool<CypherConnectionManager>,
 }
 
 impl Data {
-  fn db_pool(&self) -> Result<PooledConnection<CypherConnectionManager>, AppError> {
-    self.db
-        .get()
-        .map_err(StoreError::Pool)
-        .map_err(AppError::Store)
-  }
+    fn db_pool(&self) -> Result<PooledConnection<CypherConnectionManager>, AppError> {
+        self.db
+            .get()
+            .map_err(StoreError::Pool)
+            .map_err(AppError::Store)
+    }
 }
 
-fn enable_cors<'mw>(_req: &mut Request<Data>, mut res: Response<'mw,Data>) -> MiddlewareResult<'mw,Data> {
-  res.set(AccessControlAllowOrigin::Any);
-  res.set(AccessControlAllowHeaders(vec![
+fn enable_cors<'mw>(_req: &mut Request<Data>,
+                    mut res: Response<'mw, Data>)
+                    -> MiddlewareResult<'mw, Data> {
+    res.set(AccessControlAllowOrigin::Any);
+    res.set(AccessControlAllowHeaders(vec![
       "Origin".into(),
       "X-Requested-With".into(),
       "Content-Type".into(),
       "Accept".into(),
   ]));
 
-  res.next_middleware()
+    res.next_middleware()
 }
 
 fn extract_ids(s: &str) -> Vec<String> {
-  s.split(",")
-   .map(|x|x.to_owned())
-   .filter(|id| id != "")
-   .collect::<Vec<String>>()
+    s.split(',')
+        .map(|x| x.to_owned())
+        .filter(|id| id != "")
+        .collect::<Vec<String>>()
 }
 
 #[test]
-fn extract_ids_test(){
-  assert_eq!(extract_ids("abc"), vec!("abc"));
-  assert_eq!(extract_ids("a,b,c"), vec!("a","b","c"));
-  assert_eq!(extract_ids("").len(), 0);
-  assert_eq!(extract_ids("abc,,d"), vec!("abc","d"));
+fn extract_ids_test() {
+    assert_eq!(extract_ids("abc"), vec!("abc"));
+    assert_eq!(extract_ids("a,b,c"), vec!("a","b","c"));
+    assert_eq!(extract_ids("").len(), 0);
+    assert_eq!(extract_ids("abc,,d"), vec!("abc","d"));
 }
 
 fn main() {
 
-  env_logger::init().unwrap();
+    env_logger::init().unwrap();
 
-  let matches = App::new("openFairDB")
-    .version(VERSION)
-    .author("Markus Kohlhase <mail@markus-kohlhase.de>")
-    .arg(Arg::with_name("port")
-      .short("p")
-      .long("port")
-      .value_name("PORT")
-      .default_value("6767")
-      .help("Set the port to listen"))
-    .arg(Arg::with_name("db-url")
-      .long("db-url")
-      .value_name("URL")
-      .default_value("http://neo4j:neo4j@127.0.0.1:7474/db/data")
-      .help("URL to the Neo4j database"))
-    .arg(Arg::with_name("enable-cors")
-      .long("enable-cors")
-      .help("Allow requests from any origin"))
-    .get_matches();
+    let matches = App::new("openFairDB")
+        .version(VERSION)
+        .author("Markus Kohlhase <mail@markus-kohlhase.de>")
+        .arg(Arg::with_name("port")
+            .short("p")
+            .long("port")
+            .value_name("PORT")
+            .default_value("6767")
+            .help("Set the port to listen"))
+        .arg(Arg::with_name("db-url")
+            .long("db-url")
+            .value_name("URL")
+            .default_value("http://neo4j:neo4j@127.0.0.1:7474/db/data")
+            .help("URL to the Neo4j database"))
+        .arg(Arg::with_name("enable-cors")
+            .long("enable-cors")
+            .help("Allow requests from any origin"))
+        .get_matches();
 
-  let db_url  = matches.value_of("db-url").unwrap().to_owned();
-  let manager = CypherConnectionManager{url:db_url};
-  let config  = r2d2::Config::builder().pool_size(POOL_SIZE).build();
-  let pool    = r2d2::Pool::new(config, manager).unwrap();
-  let data    = Data{db: pool};
+    let db_url = matches.value_of("db-url").unwrap().to_owned();
+    let manager = CypherConnectionManager { url: db_url };
+    let config = r2d2::Config::builder().pool_size(POOL_SIZE).build();
+    let pool = r2d2::Pool::new(config, manager).unwrap();
+    let data = Data { db: pool };
 
-  let mut server = Nickel::with_data(data);
+    let mut server = Nickel::with_data(data);
 
-  if matches.is_present("enable-cors") {
-    server.utilize(enable_cors);
-    server.options("/entries/*", middleware!{|_, mut res|
+    if matches.is_present("enable-cors") {
+        server.utilize(enable_cors);
+        server.options("/entries/*",
+                       middleware!{|_, mut res|
       res.set(AccessControlAllowHeaders(vec!["Content-Type".into()]));
       res.set(AccessControlAllowMethods(vec![Method::Get, Method::Post, Method::Put]));
       StatusCode::Ok
     });
-  }
+    }
 
-  server.utilize(router! {
+    server.utilize(router! {
 
     get "/entries/:id" => |req, mut res|{
       match req.param("id")
@@ -164,7 +168,7 @@ fn main() {
         {
           Ok(x)  => {
             res.set(MediaType::Json);
-            (StatusCode::Ok, format!("{}",x))
+            (StatusCode::Ok, x)
           },
           Err(ref err) =>
             (err.into(), format!("Could not fetch entries: {}", err))
@@ -186,13 +190,13 @@ fn main() {
           )
       })
       {
-        Ok(id)  => (StatusCode::Ok, format!("{}",id)),
+        Ok(id)  => (StatusCode::Ok, id),
         Err(ref err) =>
           (err.into(), format!("Could not create entry: {}", err))
       }
     }
 
-    put "/entries/:id" => |req, mut res|{
+    put "/entries/:id" => |req, res|{
       let entry = req.json_as::<Entry>();
       let data: &Data = res.server_data();
       match req.param("id")
@@ -206,14 +210,14 @@ fn main() {
                 new_data.id = Some(id.to_owned());
                 new_data.save(pool)
                 .map_err(AppError::Store)
-                .and_then(|_| Ok(id))
+                .and_then(|_| Ok(id.to_owned()))
               })
             )
           })
         )
       {
         Ok(id) => {
-          (StatusCode::Ok, format!("{}",id))
+          (StatusCode::Ok, id)
         }
         Err(ref err) => {
           let msg = format!("Could not save entry: {}", err);
@@ -255,7 +259,7 @@ fn main() {
         {
           Ok(x)  => {
             res.set(MediaType::Json);
-            (StatusCode::Ok, format!("{}",x))
+            (StatusCode::Ok, x)
           },
           Err(ref err) =>
             (err.into(), format!("Could not fetch categories: {}", err))
@@ -285,7 +289,7 @@ fn main() {
 
                 let mut pre_filtered_entries = match query.get("text"){
                   Some(txt) => cat_filtered_entries.filter_by_search_text(&txt.to_owned()),
-                  None      => cat_filtered_entries.iter().map(|x|x.clone()).collect()
+                  None      => cat_filtered_entries.iter().cloned().collect()
                 };
 
                 pre_filtered_entries.sort_by_distance_to(&bbox_center);
@@ -304,7 +308,7 @@ fn main() {
                     }
                   )
                   .take(MAX_INVISIBLE_RESULTS)
-                  .map(|x|x.clone())
+                  .cloned()
                   .collect::<Vec<_>>()
                   .map_to_ids();
 
@@ -319,7 +323,7 @@ fn main() {
       {
         Ok(x)  => {
           res.set(MediaType::Json);
-          (StatusCode::Ok, format!("{}", x))
+          (StatusCode::Ok, x)
         },
         Err(ref err) =>
           (err.into(), format!("Could not search entries: {}", err))
@@ -327,12 +331,26 @@ fn main() {
 
     }
 
+    get "/count/entries" => |_, res| {
+
+      let data: &Data = res.server_data();
+      match data.db_pool()
+        .and_then(|ref pool| Entry::all(pool)
+              .map_err(AppError::Store)
+              .and_then(|entries| Ok(entries.into_iter().count().to_string())))
+      {
+        Ok(x)  => {
+          (StatusCode::Ok, x)
+        },
+        Err(ref err) =>
+          (err.into(), format!("Could not count entries: {}", err))
+      }
+    }
+
     get "/server/version" => { VERSION }
 
   });
 
-  server.listen((
-    "127.0.0.1",
-    matches.value_of("port").unwrap().parse::<u16>().unwrap()));
+    server.listen(("127.0.0.1", matches.value_of("port").unwrap().parse::<u16>().unwrap()));
 
 }
