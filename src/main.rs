@@ -175,6 +175,27 @@ fn main() {
         }
       }
 
+    get "/duplicates/" => |_, mut res|{
+      let data: &Data = res.server_data();
+      match data.db_pool()
+        .and_then(|ref pool|{
+
+          Entry::all(pool).map_err(AppError::Store)
+            .and_then(|entries|{
+              encode(&search::find_duplicates(&entries)).map_err(AppError::Encode)
+            })
+        })
+      {
+          Ok(r) => {
+            res.set(MediaType::Json);
+            (StatusCode::Ok, r)
+          },
+          Err(ref err) => {
+             (err.into(), format!("Error while trying to find duplicates: {}", err))
+          }
+      }
+    }
+
     post "/entries/:id" => |req, res|{
       match req.json_as::<Entry>().map_err(AppError::Io)
         .and_then(|json|{
