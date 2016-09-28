@@ -10,6 +10,7 @@ pub struct Coordinate {
     pub lng: f64,
 }
 
+// distance in km
 pub fn distance(a: &Coordinate, b: &Coordinate) -> f64 {
     let lat1 = a.lat.to_radians();
     let lat2 = b.lat.to_radians();
