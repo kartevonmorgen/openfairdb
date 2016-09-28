@@ -9,7 +9,7 @@ in rec {
     src = ./.;
     buildInputs = with pkgs; [
       git
-      rustPlatform.rustc
+      rustc
       pkgconfig
       openssl
       cargo

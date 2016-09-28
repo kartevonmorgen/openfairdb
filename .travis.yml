@@ -20,6 +20,7 @@ rust:
 matrix:
   fast_finish: true
   allow_failures:
+    - rust: 1.6.0
     - rust: nightly
 
 # load travis-cargo
