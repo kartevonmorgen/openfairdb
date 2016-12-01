@@ -12,7 +12,7 @@ addons:
       - binutils-dev # optional: only required for the --verify flag of coveralls
 
 rust:
-  - 1.6.0 # current stable on NixOS 16.03
+  - 1.11.0 # current stable on NixOS 16.09
   - stable
   - beta
   - nightly
@@ -20,7 +20,6 @@ rust:
 matrix:
   fast_finish: true
   allow_failures:
-    - rust: 1.6.0
     - rust: nightly
 
 # load travis-cargo

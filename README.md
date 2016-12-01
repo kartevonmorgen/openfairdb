@@ -11,7 +11,7 @@ written in [Rust](http://rustlang.org/).
 
 Requirements:
 
-- [Rust](http://rustlang.org/) >= 1.6
+- [Rust](http://rustlang.org/) >= 1.11
 - [Neo4j](http://neo4j.com/) >= 2.1.8
 
 ### Installing Rust & Cargo
