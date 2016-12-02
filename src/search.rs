@@ -1,4 +1,4 @@
-// Copyright (c) 2015 Markus Kohlhase <mail@markus-kohlhase.de>
+// Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
 
 use geo;
 use json::{Entry, Category};
@@ -180,7 +180,7 @@ pub fn levenshtein_distance(s: &str, t: &str) -> usize {
   // the first i characters of s and the first j characters of t
   // note that d has (m+1)*(n+1) values
   let mut d: Vec<Vec<usize>> = vec![];
-  for i in 0..max_s{
+  for _ in 0..max_s{
     d.push(vec![0;max_t]);
   }
 
@@ -198,14 +198,14 @@ pub fn levenshtein_distance(s: &str, t: &str) -> usize {
 
   for j in 1..max_t {
       for i in 1..max_s{
-        let substitutionCost = if s.chars().nth(i) == t.chars().nth(j) { 
-          0 
-        } else { 
-          1 
+        let substitution_cost = if s.chars().nth(i) == t.chars().nth(j) {
+          0
+        } else {
+          1
         };
         d[i][j] = min3(d[i-1][j] + 1,                   // deletion
                        d[i][j-1] + 1,                   // insertion
-                       d[i-1][j-1] + substitutionCost)  // substitution
+                       d[i-1][j-1] + substitution_cost) // substitution
       }
   }
 
@@ -220,9 +220,9 @@ fn min3(s:usize, t:usize, u:usize) -> usize {
   }
 }
 
-// TESTS:
+#[cfg(test)]
 impl Entry {
-  fn new(title: String, description: String, lat: f64, lng:f64) -> Entry{
+  fn new(title: String, description: String, lat: f64, lng:f64) -> Entry {
     Entry {
       id          : None,
       created     : None,

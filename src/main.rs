@@ -5,7 +5,7 @@
 
 #[macro_use]
 extern crate log;
-extern crate env_logger;
+extern crate slog_envlogger;
 #[macro_use]
 extern crate nickel;
 extern crate rustc_serialize;
@@ -97,7 +97,7 @@ fn extract_ids_test() {
 
 fn main() {
 
-    env_logger::init().unwrap();
+    slog_envlogger::init().unwrap();
 
     let matches = App::new("openFairDB")
         .version(VERSION)
