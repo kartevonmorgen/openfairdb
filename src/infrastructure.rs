@@ -55,11 +55,11 @@ mod web {
     use validate::Validate;
     use error::{AppError, ParameterError, StoreError};
     use rustc_serialize::json::encode;
-    use filter::{FilterByCategoryIds, FilterByBoundingBox};
-    use search::Search;
-    use sort::SortByDistanceTo;
+    use business::filter::{FilterByCategoryIds, FilterByBoundingBox};
+    use business::search::Search;
+    use business::sort::SortByDistanceTo;
     use r2d2;
-    use super::super::search;
+    use business::search;
     use super::super::geo;
 
     static POOL_SIZE: u32 = 5;

@@ -23,12 +23,9 @@ extern crate emailaddress;
 extern crate url;
 
 mod adapters;
+mod business;
 mod store;
 mod error;
-mod search;
-mod filter;
-mod sort;
-mod geo;
 mod validate;
 mod infrastructure;
 
