@@ -24,7 +24,6 @@ extern crate url;
 
 mod adapters;
 mod business;
-mod store;
 mod error;
 mod validate;
 mod infrastructure;

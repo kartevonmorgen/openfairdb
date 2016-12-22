@@ -2,7 +2,7 @@
 
 pub mod filter {
     use adapters::json::Entry;
-    use geo::Coordinate;
+    use super::geo::Coordinate;
 
     pub trait FilterByCategoryIds {
         type Id;
@@ -49,9 +49,9 @@ pub mod filter {
 }
 
 pub mod search {
-    use geo;
+    use super::geo;
     use adapters::json::{Entry, Category};
-    use geo::Coordinate;
+    use super::geo::Coordinate;
     use std::cmp::min;
     use std::collections::HashSet;
 
@@ -414,7 +414,7 @@ pub mod search {
 
 pub mod sort {
     use adapters::json::Entry;
-    use geo::{self, Coordinate};
+    use super::geo::{self, Coordinate};
 
     trait DistanceTo {
         fn distance_to(&self, &Coordinate) -> f64;

@@ -1,132 +1,86 @@
-// Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
+use nickel::{Nickel, JsonBody, MediaType, QueryString, Request, Response, MiddlewareResult,
+             HttpRouter};
+use nickel::status::StatusCode;
+use hyper::header::{AccessControlAllowOrigin, AccessControlAllowHeaders, AccessControlAllowMethods};
+use hyper::method::Method;
+use r2d2_cypher::CypherConnectionManager;
+use r2d2::PooledConnection;
+use adapters::json::{Entry, Category, SearchResult};
+use super::store::Store;
+use validate::Validate;
+use error::{AppError, ParameterError, StoreError};
+use rustc_serialize::json::encode;
+use business::filter::{FilterByCategoryIds, FilterByBoundingBox};
+use business::search::Search;
+use business::sort::SortByDistanceTo;
+use r2d2;
+use business::{search, geo};
 
-pub mod cli {
+static POOL_SIZE: u32 = 5;
+static MAX_INVISIBLE_RESULTS: usize = 5;
 
-    use clap::{Arg, App};
-    use super::web;
+#[derive(Debug, Clone)]
+struct Data {
+    db: r2d2::Pool<CypherConnectionManager>,
+}
 
-    pub fn run() {
-        let matches = App::new("openFairDB")
-            .version(env!("CARGO_PKG_VERSION"))
-            .author("Markus Kohlhase <mail@markus-kohlhase.de>")
-            .arg(Arg::with_name("port")
-                .short("p")
-                .long("port")
-                .value_name("PORT")
-                .default_value("6767")
-                .help("Set the port to listen"))
-            .arg(Arg::with_name("db-url")
-                .long("db-url")
-                .value_name("URL")
-                .default_value("http://neo4j:neo4j@127.0.0.1:7474/db/data")
-                .help("URL to the Neo4j database"))
-            .arg(Arg::with_name("enable-cors")
-                .long("enable-cors")
-                .help("Allow requests from any origin"))
-            .get_matches();
-
-        match matches.value_of("db-url") {
-            Some(db_url) => {
-                match matches.value_of("port") {
-                    Some(port) => {
-                        let port = port.parse::<u16>().unwrap();
-                        web::run(db_url, port, matches.is_present("enable-cors"));
-                    }
-                    None => println!("{}", matches.usage()),
-                }
-            }
-            None => println!("{}", matches.usage()),
-        }
+impl Data {
+    fn db_pool(&self) -> Result<PooledConnection<CypherConnectionManager>, AppError> {
+        self.db
+            .get()
+            .map_err(StoreError::Pool)
+            .map_err(AppError::Store)
     }
 }
 
-mod web {
-
-    use nickel::{Nickel, JsonBody, MediaType, QueryString, Request, Response, MiddlewareResult,
-                 HttpRouter};
-    use nickel::status::StatusCode;
-    use hyper::header::{AccessControlAllowOrigin, AccessControlAllowHeaders,
-                        AccessControlAllowMethods};
-    use hyper::method::Method;
-    use r2d2_cypher::CypherConnectionManager;
-    use r2d2::PooledConnection;
-    use adapters::json::{Entry, Category, SearchResult};
-    use store::Store;
-    use validate::Validate;
-    use error::{AppError, ParameterError, StoreError};
-    use rustc_serialize::json::encode;
-    use business::filter::{FilterByCategoryIds, FilterByBoundingBox};
-    use business::search::Search;
-    use business::sort::SortByDistanceTo;
-    use r2d2;
-    use business::search;
-    use super::super::geo;
-
-    static POOL_SIZE: u32 = 5;
-    static MAX_INVISIBLE_RESULTS: usize = 5;
-
-    #[derive(Debug, Clone)]
-    struct Data {
-        db: r2d2::Pool<CypherConnectionManager>,
-    }
-
-    impl Data {
-        fn db_pool(&self) -> Result<PooledConnection<CypherConnectionManager>, AppError> {
-            self.db
-                .get()
-                .map_err(StoreError::Pool)
-                .map_err(AppError::Store)
-        }
-    }
-
-    fn cors_middleware<'mw>(_req: &mut Request<Data>,
-                            mut res: Response<'mw, Data>)
-                            -> MiddlewareResult<'mw, Data> {
-        res.set(AccessControlAllowOrigin::Any);
-        res.set(AccessControlAllowHeaders(vec![
+fn cors_middleware<'mw>(_req: &mut Request<Data>,
+                        mut res: Response<'mw, Data>)
+                        -> MiddlewareResult<'mw, Data> {
+    res.set(AccessControlAllowOrigin::Any);
+    res.set(AccessControlAllowHeaders(vec![
           "Origin".into(),
           "X-Requested-With".into(),
           "Content-Type".into(),
           "Accept".into(),
       ]));
 
-        res.next_middleware()
-    }
+    res.next_middleware()
+}
 
-    fn extract_ids(s: &str) -> Vec<String> {
-        s.split(',')
-            .map(|x| x.to_owned())
-            .filter(|id| id != "")
-            .collect::<Vec<String>>()
-    }
+fn extract_ids(s: &str) -> Vec<String> {
+    s.split(',')
+        .map(|x| x.to_owned())
+        .filter(|id| id != "")
+        .collect::<Vec<String>>()
+}
 
-    #[test]
-    fn extract_ids_test() {
-        assert_eq!(extract_ids("abc"), vec!["abc"]);
-        assert_eq!(extract_ids("a,b,c"), vec!["a", "b", "c"]);
-        assert_eq!(extract_ids("").len(), 0);
-        assert_eq!(extract_ids("abc,,d"), vec!["abc", "d"]);
-    }
+#[test]
+fn extract_ids_test() {
+    assert_eq!(extract_ids("abc"), vec!["abc"]);
+    assert_eq!(extract_ids("a,b,c"), vec!["a", "b", "c"]);
+    assert_eq!(extract_ids("").len(), 0);
+    assert_eq!(extract_ids("abc,,d"), vec!["abc", "d"]);
+}
 
-    pub fn run(db_url: &str, port: u16, enable_cors: bool) {
-        let manager = CypherConnectionManager { url: db_url.into() };
-        let config = r2d2::Config::builder().pool_size(POOL_SIZE).build();
-        let pool = r2d2::Pool::new(config, manager).unwrap();
-        let data = Data { db: pool };
+pub fn run(db_url: &str, port: u16, enable_cors: bool) {
+    let manager = CypherConnectionManager { url: db_url.into() };
+    let config = r2d2::Config::builder().pool_size(POOL_SIZE).build();
+    let pool = r2d2::Pool::new(config, manager).unwrap();
+    let data = Data { db: pool };
 
-        let mut server = Nickel::with_data(data);
+    let mut server = Nickel::with_data(data);
 
-        if enable_cors {
-            server.utilize(cors_middleware);
-            server.options("/entries/*",
-                           middleware!{|_, mut res|
+    if enable_cors {
+        server.utilize(cors_middleware);
+        server.options("/entries/*",
+                       middleware!{|_, mut res|
                 res.set(AccessControlAllowHeaders(vec!["Content-Type".into()]));
                 res.set(AccessControlAllowMethods(vec![Method::Get, Method::Post, Method::Put]));
                 StatusCode::Ok
             });
-        }
+    }
 
-        server.utilize(router! {
+    server.utilize(router! {
 
             get "/entries/:id" => |req, mut res|{
               match req.param("id")
@@ -362,7 +316,5 @@ mod web {
 
         });
 
-        server.listen(("127.0.0.1", port));
-    }
-
+    server.listen(("127.0.0.1", port));
 }
