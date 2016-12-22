@@ -50,7 +50,7 @@ mod web {
     use hyper::method::Method;
     use r2d2_cypher::CypherConnectionManager;
     use r2d2::PooledConnection;
-    use json::{Entry, Category, SearchResult};
+    use adapters::json::{Entry, Category, SearchResult};
     use store::Store;
     use validate::Validate;
     use error::{AppError, ParameterError, StoreError};

@@ -1,6 +1,6 @@
 // Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
 
-use json::{Entry, Category};
+use adapters::json::{Entry, Category};
 use rusted_cypher::GraphClient;
 use uuid::Uuid;
 use error::StoreError;

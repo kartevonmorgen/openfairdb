@@ -22,7 +22,7 @@ extern crate geojson;
 extern crate emailaddress;
 extern crate url;
 
-mod json;
+mod adapters;
 mod store;
 mod error;
 mod search;

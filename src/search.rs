@@ -1,7 +1,7 @@
 // Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
 
 use geo;
-use json::{Entry, Category};
+use adapters::json::{Entry, Category};
 use geo::Coordinate;
 use std::cmp::min;
 use std::collections::HashSet;
