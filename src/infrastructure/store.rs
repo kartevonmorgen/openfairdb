@@ -1,21 +1,12 @@
 // Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
 
+use business::repo::Repo;
 use adapters::json::{Entry, Category};
 use rusted_cypher::GraphClient;
 use uuid::Uuid;
 use infrastructure::error::StoreError;
 
-pub trait Store {
-    type Id;
-    type Connection;
-    type Error;
-
-    fn get(&Self::Connection, Self::Id) -> Result<Self, Self::Error> where Self: Sized;
-    fn all(&Self::Connection) -> Result<Vec<Self>, Self::Error> where Self: Sized;
-    fn save(&self, &Self::Connection) -> Result<Self, Self::Error> where Self: Sized;
-}
-
-impl Store for Entry {
+impl Repo for Entry {
     type Id = String;
     type Connection = GraphClient;
     type Error = StoreError;
@@ -254,7 +245,7 @@ fn update_entry(e: &Entry, graph: &GraphClient) -> Result<Entry, StoreError> {
         .and_then(|r| r.get::<Entry>("e").map_err(StoreError::Graph))
 }
 
-impl Store for Category {
+impl Repo for Category {
     type Id = String;
     type Connection = GraphClient;
     type Error = StoreError;

@@ -6,7 +6,7 @@ use hyper::method::Method;
 use r2d2_cypher::CypherConnectionManager;
 use r2d2::PooledConnection;
 use adapters::json::{Entry, Category, SearchResult};
-use super::store::Store;
+use business::repo::Repo;
 use adapters::validate::Validate;
 use business::error::{Error,ParameterError};
 use infrastructure::error::{AppError, StoreError};
