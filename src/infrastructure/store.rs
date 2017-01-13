@@ -3,7 +3,7 @@
 use adapters::json::{Entry, Category};
 use rusted_cypher::GraphClient;
 use uuid::Uuid;
-use business::error::StoreError;
+use infrastructure::error::StoreError;
 
 pub trait Store {
     type Id;

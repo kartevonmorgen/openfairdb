@@ -1,4 +1,4 @@
-use business::error::{AppError, ParameterError};
+use business::error::{Error, ParameterError};
 
 // The Earth's radius in kilometers.
 static EARTH_RADIUS: f64 = 6371.0;
@@ -29,7 +29,7 @@ pub fn center(south_west: &Coordinate, north_east: &Coordinate) -> Coordinate {
     }
 }
 
-pub fn extract_bbox(s: &str) -> Result<Vec<Coordinate>, AppError> {
+pub fn extract_bbox(s: &str) -> Result<Vec<Coordinate>, Error> {
     let c = s.split(',')
         .map(|x| x.parse::<f64>())
         .filter_map(|x| x.ok())
@@ -46,7 +46,7 @@ pub fn extract_bbox(s: &str) -> Result<Vec<Coordinate>, AppError> {
                         lng: c[3],
                     }])
         }
-        _ => Err(ParameterError::Bbox).map_err(AppError::Parameter),
+        _ => Err(ParameterError::Bbox).map_err(Error::Parameter),
     }
 }
 

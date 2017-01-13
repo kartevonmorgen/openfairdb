@@ -8,7 +8,8 @@ use r2d2::PooledConnection;
 use adapters::json::{Entry, Category, SearchResult};
 use super::store::Store;
 use adapters::validate::Validate;
-use business::error::{AppError, ParameterError, StoreError};
+use business::error::{Error,ParameterError};
+use infrastructure::error::{AppError, StoreError};
 use rustc_serialize::json::encode;
 use business::filter::{FilterByCategoryIds, FilterByBoundingBox};
 use business::search::Search;
@@ -84,27 +85,38 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
 
             get "/entries/:id" => |req, mut res|{
               match req.param("id")
-                .ok_or(ParameterError::Id).map_err(AppError::Parameter)
+                .ok_or(ParameterError::Id)
+                    .map_err(Error::Parameter)
+                    .map_err(AppError::Business)
                 .and_then(|s|{
                   let ids = extract_ids(s);
                   let data: &Data = res.server_data();
                   data.db_pool()
                     .and_then(|ref pool|{
 
-                      Entry::all(pool).map_err(AppError::Store).and_then(|entries|
+                      Entry::all(pool)
+                        .map_err(AppError::Store)
+                        .and_then(|entries|
 
                         match ids.len() {
-                          0 => encode(&entries).map_err(AppError::Encode),
+                          0 => encode(&entries)
+                            .map_err(Error::Encode)
+                            .map_err(AppError::Business),
                           1 => entries
                               .iter()
                               .find(|x| x.id == Some(ids[0].clone()))
                               .ok_or(StoreError::NotFound).map_err(AppError::Store)
-                              .and_then(|e| encode(&e).map_err(AppError::Encode)),
+                              .and_then(|e| encode(&e)
+                                .map_err(Error::Encode)
+                                .map_err(AppError::Business)
+                              ),
                           _ => encode(&entries
                                 .iter()
                                 .filter(|e| e.id.is_some())
                                 .filter(|e| ids.iter().any(|id| e.id == Some(id.clone())))
-                                .collect::<Vec<&Entry>>()).map_err(AppError::Encode)
+                                .collect::<Vec<&Entry>>())
+                                    .map_err(Error::Encode)
+                                    .map_err(AppError::Business)
                         }
                       )
                     })
@@ -126,7 +138,9 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
 
                   Entry::all(pool).map_err(AppError::Store)
                     .and_then(|entries|{
-                      encode(&search::find_duplicates(&entries)).map_err(AppError::Encode)
+                      encode(&search::find_duplicates(&entries))
+                        .map_err(Error::Encode)
+                        .map_err(AppError::Business)
                     })
                 })
               {
@@ -141,9 +155,13 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
             }
 
             post "/entries/:id" => |req, res|{
-              match req.json_as::<Entry>().map_err(AppError::Io)
+              match req.json_as::<Entry>()
+                    .map_err(Error::Io)
+                    .map_err(AppError::Business)
                 .and_then(|json|{
-                  try!(json.validate().map_err(AppError::Validation));
+                  try!(json.validate()
+                    .map_err(Error::Validation)
+                    .map_err(AppError::Business));
                   let data: &Data = res.server_data();
                   data.db_pool()
                     .and_then(|ref pool|
@@ -165,8 +183,12 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
               let entry = req.json_as::<Entry>();
               let data: &Data = res.server_data();
               match req.param("id")
-                .ok_or(ParameterError::Id).map_err(AppError::Parameter)
-                .and_then(|id| entry.map_err(AppError::Io)
+                .ok_or(ParameterError::Id)
+                    .map_err(Error::Parameter)
+                    .map_err(AppError::Business)
+                .and_then(|id| entry
+                    .map_err(Error::Io)
+                    .map_err(AppError::Business)
                   .and_then(|mut new_data|{
                     data.db_pool().and_then(|ref pool|
                       Entry::get(pool, id.to_owned())
@@ -194,7 +216,9 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
 
             get "/categories/:id" => |req, mut res|{
               match req.param("id")
-                .ok_or(ParameterError::Id).map_err(AppError::Parameter)
+                .ok_or(ParameterError::Id)
+                    .map_err(Error::Parameter)
+                    .map_err(AppError::Business)
                 .and_then(|s|{
                   let ids = extract_ids(s);
                   let data: &Data = res.server_data();
@@ -203,20 +227,26 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
                         .map_err(AppError::Store)
                         .and_then(|categories|
                           match ids.len() {
-                            0 => encode(&categories).map_err(AppError::Encode),
+                            0 => encode(&categories)
+                                .map_err(Error::Encode)
+                                .map_err(AppError::Business),
                             1 => {
                                 let id = Some(ids[0].clone());
                                 categories
                                   .iter()
                                   .find(|x| x.id == id)
                                   .ok_or(StoreError::NotFound).map_err(AppError::Store)
-                                  .and_then(|e| encode(&e).map_err(AppError::Encode))
+                                  .and_then(|e| encode(&e)
+                                    .map_err(Error::Encode)
+                                    .map_err(AppError::Business))
                             },
                             _ =>
-                              encode(&categories.iter()
-                               .filter(|e| e.id.is_some())
-                               .filter(|e| ids.iter().any(|id| e.id == Some(id.clone())))
-                               .collect::<Vec<&Category>>()).map_err(AppError::Encode)
+                                encode(&categories.iter()
+                                    .filter(|e| e.id.is_some())
+                                    .filter(|e| ids.iter().any(|id| e.id == Some(id.clone())))
+                                    .collect::<Vec<&Category>>())
+                                        .map_err(Error::Encode)
+                                        .map_err(AppError::Business)
                           }
                       )
                   })
@@ -236,10 +266,14 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
               let query = req.query();
               match query
                 .get("bbox")
-                .ok_or(ParameterError::Bbox).map_err(AppError::Parameter)
+                .ok_or(ParameterError::Bbox)
+                    .map_err(Error::Parameter)
+                    .map_err(AppError::Business)
                 .and_then(|bbox_str| query
                 .get("categories")
-                .ok_or(ParameterError::Categories).map_err(AppError::Parameter)
+                .ok_or(ParameterError::Categories)
+                    .map_err(Error::Parameter)
+                    .map_err(AppError::Business)
                 .and_then(|cat_str| data.db_pool()
                     .and_then(|ref pool|
                       Entry::all(pool)
@@ -281,7 +315,9 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
                           visible   : visible_results,
                           invisible : invisible_results
                         };
-                        encode(&search_result).map_err(AppError::Encode)
+                        encode(&search_result)
+                            .map_err(Error::Encode)
+                            .map_err(AppError::Business)
                       })
                     )
               ))
