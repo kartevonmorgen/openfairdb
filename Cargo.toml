@@ -28,9 +28,3 @@ branch = "fix"
 [dependencies.r2d2_cypher]
 version = "0.1.0"
 git = "git://github.com/flosse/r2d2-cypher.git"
-
-[features]
-default=[]
-
-[profiles.release]
-lto = true
