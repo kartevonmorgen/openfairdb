@@ -22,14 +22,11 @@ extern crate geojson;
 extern crate emailaddress;
 extern crate url;
 
-mod adapters;
 mod business;
-mod error;
-mod validate;
+mod adapters;
 mod infrastructure;
 
 fn main() {
-
     slog_envlogger::init().unwrap();
     infrastructure::cli::run();
 }
