@@ -19,11 +19,7 @@ rusted_cypher = { version = "0.9",  features = ["rustc-serialize"] }
 clippy = { version = "*", optional = true }
 url = "0.5"
 quick-error = "1.1"
-
-[dependencies.emailaddress]
-version = "0.2"
-git = "git://github.com/flosse/emailaddress-rs.git"
-branch = "fix"
+emailaddress = "0.3"
 
 [dependencies.r2d2_cypher]
 version = "0.1.0"

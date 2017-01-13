@@ -4,7 +4,6 @@ use super::geo::Coordinate;
 use std::cmp::min;
 use std::collections::HashSet;
 
-
 pub trait Search {
     fn filter_by_search_text(&self, text: &str) -> Self;
     fn map_to_ids(&self) -> Vec<String>;
