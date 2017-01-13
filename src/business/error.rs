@@ -6,215 +6,107 @@ use rusted_cypher::error::{GraphError, Neo4jError};
 use r2d2::GetTimeout;
 use url::ParseError as UrlParseError;
 
-#[derive(Debug)]
-pub enum StoreError {
-    NotFound,
-    InvalidVersion,
-    InvalidId,
-    Save,
-    Graph(GraphError),
-    Neo(Neo4jError),
-    Pool(GetTimeout),
-}
-
-impl fmt::Display for StoreError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            StoreError::NotFound        => write!(f, "Could not find object"),
-            StoreError::InvalidVersion  => write!(f, "The version property is invalid"),
-            StoreError::InvalidId       => write!(f, "The ID is not valid"),
-            StoreError::Save            => write!(f, "Could not save object"),
-            StoreError::Graph(ref err)  => write!(f, "DB communication error: {}", err),
-            StoreError::Neo(ref err)    => write!(f, "DB communication error: {}", err.message),
-            StoreError::Pool(ref err)   => write!(f, "DB connection pool error: {}", err)
+quick_error!{
+    #[derive(Debug)]
+    pub enum StoreError {
+        NotFound{
+            description("Could not find object")
+        }
+        InvalidVersion{
+            description("The version property is invalid")
+            }
+        InvalidId{
+            description("The ID is not valid")
+            }
+        Save{
+            description("Could not save object")
+            }
+        Graph(err: GraphError){
+            from()
+            cause(err)
+            description(err.description())
+        }
+        Neo(err: Neo4jError){
+            from()
+            description(&err.message)
+        }
+        Pool(err: GetTimeout){
+            from()
+            cause(err)
+            description(err.description())
         }
     }
 }
 
-impl Error for StoreError {
-    fn description(&self) -> &str {
-        match *self {
-            StoreError::NotFound        => "Could not find object",
-            StoreError::InvalidVersion  => "The version property is invalid",
-            StoreError::InvalidId       => "The ID is not valid",
-            StoreError::Save            => "Could not save object",
-            StoreError::Neo(ref err)    => &err.message,
-            StoreError::Graph(ref err)  => err.description(),
-            StoreError::Pool(ref err)   => err.description(),
+quick_error!{
+    #[derive(Debug)]
+    pub enum ValidationError {
+        License{
+            description("Unsupported license")
         }
-    }
-
-    fn cause(&self) -> Option<&Error> {
-        match *self {
-            StoreError::NotFound        |
-            StoreError::InvalidVersion  |
-            StoreError::InvalidId       |
-            StoreError::Save            |
-            StoreError::Neo(_)          => None,
-            StoreError::Graph(ref err)  => Some(err),
-            StoreError::Pool(ref err)   => Some(err)
+        Email{
+            description("Invalid email address")
+        }
+        Url(err: UrlParseError){
+            from()
+            cause(err)
+            description(err.description())
         }
     }
 }
 
-impl From<GraphError> for StoreError {
-    fn from(err: GraphError) -> StoreError {
-        StoreError::Graph(err)
-    }
-}
-
-impl From<Neo4jError> for StoreError {
-    fn from(err: Neo4jError) -> StoreError {
-        StoreError::Neo(err)
-    }
-}
-
-impl From<GetTimeout> for StoreError {
-    fn from(err: GetTimeout) -> StoreError {
-        StoreError::Pool(err)
-    }
-}
-
-#[derive(Debug)]
-pub enum ValidationError {
-    License,
-    Email,
-    Url(UrlParseError),
-}
-
-impl Error for ValidationError {
-
-    fn description(&self) -> &str {
-        match *self {
-            ValidationError::License  => "Unsupported license",
-            ValidationError::Email    => "Invalid email address",
-            ValidationError::Url(_)   => "Invalid URL",
+quick_error!{
+    #[derive(Debug)]
+    pub enum ParameterError {
+        Id{
+            description("Requested ID is invalid")
         }
-    }
+        Bbox{
+            description("Requested bounding box is invalid")
 
-    fn cause(&self) -> Option<&Error> {
-        None
-    }
-}
-
-
-impl fmt::Display for ValidationError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            ValidationError::License => write!(f, "Unsupported license"),
-            ValidationError::Email   => write!(f, "Invalid email address"),
-            ValidationError::Url(_)  => write!(f, "Invalid URL")
+        }
+        Categories{
+            description("Requested categories are invalid")
         }
     }
 }
 
-#[derive(Debug)]
-pub enum ParameterError {
-    Id,
-    Bbox,
-    Categories,
-}
-
-impl fmt::Display for ParameterError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            ParameterError::Id         => write!(f, "Requested ID is invalid"),
-            ParameterError::Bbox       => write!(f, "Requested bounding box is invalid"),
-            ParameterError::Categories => write!(f, "Requested categories are invalid")
+quick_error!{
+    #[derive(Debug)]
+    pub enum AppError {
+        Encode(err: json::EncoderError){
+            from()
+            cause(err)
+            description(err.description())
+        }
+        Parse(err: json::ParserError){
+            from()
+            cause(err)
+            description(err.description())
+        }
+        Store(err: StoreError){
+            from()
+            cause(err)
+            description(err.description())
+        }
+        Io(err: io::Error){
+            from()
+            cause(err)
+            description(err.description())
+        }
+        Parameter(err: ParameterError){
+            from()
+            cause(err)
+            description(err.description())
+        }
+        Validation(err: ValidationError){
+            from()
+            cause(err)
+            description(err.description())
         }
     }
 }
 
-impl Error for ParameterError {
-    fn description(&self) -> &str {
-        match *self {
-            ParameterError::Id         => "Requested ID is invalid",
-            ParameterError::Bbox       => "Requested bounding box is invalid",
-            ParameterError::Categories => "Requested categories are invalid"
-        }
-    }
-
-    fn cause(&self) -> Option<&Error> {
-        None
-    }
-}
-
-#[derive(Debug)]
-pub enum AppError {
-    Encode(json::EncoderError),
-    Parse(json::ParserError),
-    Store(StoreError),
-    Io(io::Error),
-    Parameter(ParameterError),
-    Validation(ValidationError),
-}
-
-impl fmt::Display for AppError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match *self {
-            AppError::Encode(ref err)     => write!(f, "Encoding error: {}", err),
-            AppError::Parse(ref err)      => write!(f, "Parsing error: {}", err),
-            AppError::Store(ref err)      => write!(f, "DB error: {}", err),
-            AppError::Io(ref err)         => write!(f, "IO error: {}", err),
-            AppError::Parameter(ref err)  => write!(f, "Parameter error: {}", err),
-            AppError::Validation(ref err) => write!(f, "Validation error: {}", err),
-        }
-    }
-}
-
-impl Error for AppError {
-    fn description(&self) -> &str {
-        match *self {
-            AppError::Encode(ref err)     => err.description(),
-            AppError::Parse(ref err)      => err.description(),
-            AppError::Store(ref err)      => err.description(),
-            AppError::Io(ref err)         => err.description(),
-            AppError::Parameter(ref err)  => err.description(),
-            AppError::Validation(ref err) => err.description(),
-        }
-    }
-
-    fn cause(&self) -> Option<&Error> {
-        match *self {
-            AppError::Encode(ref err)     => Some(err),
-            AppError::Parse(ref err)      => Some(err),
-            AppError::Store(ref err)      => Some(err),
-            AppError::Io(ref err)         => Some(err),
-            AppError::Parameter(ref err)  => Some(err),
-            AppError::Validation(ref err) => Some(err),
-        }
-    }
-}
-
-impl From<json::EncoderError> for AppError {
-    fn from(err: json::EncoderError) -> AppError {
-        AppError::Encode(err)
-    }
-}
-
-impl From<json::ParserError> for AppError {
-    fn from(err: json::ParserError) -> AppError {
-        AppError::Parse(err)
-    }
-}
-
-impl From<StoreError> for AppError {
-    fn from(err: StoreError) -> AppError {
-        AppError::Store(err)
-    }
-}
-
-impl From<io::Error> for AppError {
-    fn from(err: io::Error) -> AppError {
-        AppError::Io(err)
-    }
-}
-
-impl From<ParameterError> for AppError {
-    fn from(err: ParameterError) -> AppError {
-        AppError::Parameter(err)
-    }
-}
 
 impl<'a> From<&'a AppError> for StatusCode {
     fn from(err: &AppError) -> StatusCode {
@@ -224,11 +116,12 @@ impl<'a> From<&'a AppError> for StatusCode {
             AppError::Parameter(_)    |
             AppError::Validation(_)   => StatusCode::BadRequest,
             AppError::Encode(_)       => StatusCode::InternalServerError,
-            AppError::Store(ref err)  => match *err {
-                StoreError::NotFound        => StatusCode::NotFound,
-                StoreError::InvalidVersion  |
-                StoreError::InvalidId       => StatusCode::BadRequest,
-                _                           => StatusCode::InternalServerError
+            AppError::Store(ref err)  =>
+                match *err {
+                    StoreError::NotFound        => StatusCode::NotFound,
+                    StoreError::InvalidVersion  |
+                    StoreError::InvalidId       => StatusCode::BadRequest,
+                    _                           => StatusCode::InternalServerError
             }
         }
     }

@@ -9,6 +9,7 @@ dependencies = [
  "hyper 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "nickel 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quick-error 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "r2d2 0.6.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "r2d2_cypher 0.1.0 (git+git://github.com/flosse/r2d2-cypher.git)",
  "rustc-serialize 0.3.21 (registry+https://github.com/rust-lang/crates.io-index)",

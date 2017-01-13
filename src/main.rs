@@ -7,6 +7,8 @@
 extern crate log;
 extern crate slog_envlogger;
 #[macro_use]
+extern crate quick_error;
+#[macro_use]
 extern crate nickel;
 extern crate rustc_serialize;
 extern crate hyper;
