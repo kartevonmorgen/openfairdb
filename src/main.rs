@@ -1,5 +1,7 @@
 // Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
 
+#![feature(try_from)]
+
 #![cfg_attr(feature="clippy", feature(plugin))]
 #![cfg_attr(feature="clippy", plugin(clippy))]
 
@@ -24,6 +26,7 @@ extern crate geojson;
 extern crate emailaddress;
 extern crate url;
 
+mod entities;
 mod business;
 mod adapters;
 mod infrastructure;

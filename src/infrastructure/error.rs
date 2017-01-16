@@ -54,7 +54,7 @@ quick_error!{
 impl<'a> From<&'a AppError> for StatusCode {
     fn from(err: &AppError) -> StatusCode {
         match *err {
-            AppError::Business(ref err)  =>
+            AppError::Business(ref err) =>
                 match *err {
                     BError::Parse(_)        |
                     BError::Io(_)           |
@@ -68,7 +68,7 @@ impl<'a> From<&'a AppError> for StatusCode {
                     StoreError::InvalidVersion  |
                     StoreError::InvalidId       => StatusCode::BadRequest,
                     _                           => StatusCode::InternalServerError
-            }
+                }
         }
     }
 }

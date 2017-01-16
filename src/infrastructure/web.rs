@@ -8,14 +8,16 @@ use r2d2::PooledConnection;
 use adapters::json::{Entry, Category, SearchResult};
 use business::repo::Repo;
 use adapters::validate::Validate;
-use business::error::{Error,ParameterError};
+use business::error::{Error, ParameterError};
 use infrastructure::error::{AppError, StoreError};
 use rustc_serialize::json::encode;
 use business::filter::{FilterByCategoryIds, FilterByBoundingBox};
-use business::search::Search;
 use business::sort::SortByDistanceTo;
 use r2d2;
 use business::{search, geo};
+use business::search::Search;
+use entities;
+use std::convert::TryFrom;
 
 static POOL_SIZE: u32 = 5;
 static MAX_INVISIBLE_RESULTS: usize = 5;
@@ -38,12 +40,10 @@ fn cors_middleware<'mw>(_req: &mut Request<Data>,
                         mut res: Response<'mw, Data>)
                         -> MiddlewareResult<'mw, Data> {
     res.set(AccessControlAllowOrigin::Any);
-    res.set(AccessControlAllowHeaders(vec![
-          "Origin".into(),
-          "X-Requested-With".into(),
-          "Content-Type".into(),
-          "Accept".into(),
-      ]));
+    res.set(AccessControlAllowHeaders(vec!["Origin".into(),
+                                           "X-Requested-With".into(),
+                                           "Content-Type".into(),
+                                           "Accept".into()]));
 
     res.next_middleware()
 }
@@ -134,15 +134,19 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
             get "/duplicates/" => |_, mut res|{
               let data: &Data = res.server_data();
               match data.db_pool()
-                .and_then(|ref pool|{
-
-                  Entry::all(pool).map_err(AppError::Store)
-                    .and_then(|entries|{
-                      encode(&search::find_duplicates(&entries))
-                        .map_err(Error::Encode)
-                        .map_err(AppError::Business)
-                    })
-                })
+                .and_then(|ref pool|
+                    {
+                      let entries = Entry::all(pool).map_err(AppError::Store)?;
+                      let entries = entries
+                        .into_iter()
+                        .map(entities::Entry::try_from)
+                        //TODO: warn on error
+                        .filter_map(|x|x.ok())
+                        .collect();
+                      let ids = search::find_duplicates(&entries);
+                      encode(&ids).map_err(Error::Encode).map_err(AppError::Business)
+                    }
+                )
               {
                   Ok(r) => {
                     res.set(MediaType::Json);
@@ -281,40 +285,42 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
                       .and_then(|entries|{
 
                         let cat_ids = extract_ids(cat_str);
-                        let bbox = try!(geo::extract_bbox(bbox_str));
+                        //TODO: get rid of unrwap
+                        let bbox = geo::extract_bbox(bbox_str).unwrap();
                         let bbox_center = geo::center(&bbox[0], &bbox[1]);
-                        let cat_filtered_entries = &entries
-                          .filter_by_category_ids(&cat_ids);
+                        let entries : Vec<entities::Entry>= entries
+                            .into_iter()
+                            .map(entities::Entry::try_from)
+                            .filter_map(|x|x.ok())
+                            .collect();
+                        let cat_filtered_entries : Vec<&entities::Entry> =
+                            entries.filter_by_category_ids(&cat_ids);
 
-                        let mut pre_filtered_entries = match query.get("text"){
+                        let pre_filtered_entries = match query.get("text") {
                           Some(txt) => cat_filtered_entries.filter_by_search_text(&txt.to_owned()),
-                          None      => cat_filtered_entries.iter().cloned().collect()
+                          None      => cat_filtered_entries
                         };
+
+                        let mut pre_filtered_entries = pre_filtered_entries
+                            .into_iter()
+                            .cloned()
+                            .collect::<Vec<entities::Entry>>();
 
                         pre_filtered_entries.sort_by_distance_to(&bbox_center);
 
-                        let visible_results = pre_filtered_entries
-                          .filter_by_bounding_box(&bbox)
-                          .map_to_ids();
+                        let visible_results = pre_filtered_entries.filter_by_bounding_box(&bbox);
 
                         let invisible_results = pre_filtered_entries
                           .iter()
-                          .filter(|e|
-                            if let Some(ref id) = e.id {
-                              !visible_results.iter().any(|v| id == v )
-                            } else {
-                              false
-                            }
-                          )
+                          .filter(|e| !visible_results.iter().any(|&v| v.id == e.id ))
                           .take(MAX_INVISIBLE_RESULTS)
-                          .cloned()
-                          .collect::<Vec<_>>()
-                          .map_to_ids();
+                          .collect::<Vec<_>>();
 
                         let search_result = SearchResult{
-                          visible   : visible_results,
-                          invisible : invisible_results
+                          visible   : visible_results.into_iter().map(|x|x.id.clone()).collect(),
+                          invisible : invisible_results.into_iter().map(|x|x.id.clone()).collect()
                         };
+
                         encode(&search_result)
                             .map_err(Error::Encode)
                             .map_err(AppError::Business)
@@ -329,10 +335,9 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
                 Err(ref err) =>
                   (err.into(), format!("Could not search entries: {}", err))
               }
+          }
 
-            }
-
-            get "/count/entries" => |_, res| {
+          get "/count/entries" => |_, res| {
 
               let data: &Data = res.server_data();
               match data.db_pool()
