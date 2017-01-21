@@ -4,13 +4,14 @@ version = "0.0.16"
 authors = ["Markus Kohlhase <mail@markus-kohlhase.de>"]
 
 [dependencies]
-r2d2 = "0.6"
+r2d2 = "0.7"
 rustc-serialize = "0.3"
 clap = "2.4"
 log = "0.3"
 slog-envlogger = "0.5"
 uuid = "0.1"
 rusted_cypher = { version = "0.9",  features = ["rustc-serialize"] }
+r2d2_cypher = "0.1.0"
 url = "0.5"
 quick-error = "1.1"
 emailaddress = "0.3"
@@ -18,10 +19,6 @@ rocket = "0.1"
 rocket_codegen = "0.1"
 rocket_contrib = "0.1"
 lazy_static = "0.2"
-serde = "=0.8.21"
-serde_json = "=0.8.4"
-serde_derive = "=0.8.21"
-
-[dependencies.r2d2_cypher]
-version = "0.1.0"
-git = "git://github.com/flosse/r2d2-cypher.git"
+serde = "0.8"
+serde_json = "0.8"
+serde_derive = "0.8"
