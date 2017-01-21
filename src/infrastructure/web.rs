@@ -1,52 +1,61 @@
-use nickel::{Nickel, JsonBody, MediaType, QueryString, Request, Response, MiddlewareResult,
-             HttpRouter};
-use nickel::status::StatusCode;
-use hyper::header::{AccessControlAllowOrigin, AccessControlAllowHeaders, AccessControlAllowMethods};
-use hyper::method::Method;
 use r2d2_cypher::CypherConnectionManager;
-use r2d2::PooledConnection;
+use r2d2::{self, Pool};
+use rocket::{self, LoggingLevel};
+use rocket_contrib::JSON;
+use rocket::response::{Response, Responder};
+use rocket::http::Status;
+use rocket::config::{Environment, Config};
 use adapters::json::{Entry, Category, SearchResult};
 use business::repo::Repo;
 use adapters::validate::Validate;
-use business::error::{Error, ParameterError};
+use business::error::Error;
 use infrastructure::error::{AppError, StoreError};
 use rustc_serialize::json::encode;
 use business::filter::{FilterByCategoryIds, FilterByBoundingBox};
 use business::sort::SortByDistanceTo;
-use r2d2;
 use business::{search, geo};
 use business::search::Search;
+use business::search::DuplicateType;
 use entities;
 use std::convert::TryFrom;
+use rusted_cypher::GraphClient;
+use std::env;
+use std::io;
 
 static POOL_SIZE: u32 = 5;
 static MAX_INVISIBLE_RESULTS: usize = 5;
+static DB_URL_KEY: &'static str = "OFDB_DATABASE_URL";
 
 #[derive(Debug, Clone)]
 struct Data {
     db: r2d2::Pool<CypherConnectionManager>,
 }
 
-impl Data {
-    fn db_pool(&self) -> Result<PooledConnection<CypherConnectionManager>, AppError> {
-        self.db
-            .get()
-            .map_err(StoreError::Pool)
-            .map_err(AppError::Store)
+lazy_static! {
+    pub static ref DB_POOL: r2d2::Pool<CypherConnectionManager> = {
+        let config = r2d2::Config::builder().pool_size(POOL_SIZE).build();
+        let db_url = env::var(DB_URL_KEY).expect(&format!("{} must be set.", DB_URL_KEY));
+        let manager = CypherConnectionManager { url: db_url.into() };
+        Pool::new(config, manager).expect("Failed to create pool.")
+    };
+}
+
+pub struct DB(r2d2::PooledConnection<CypherConnectionManager>);
+
+impl DB {
+    pub fn conn(&mut self) -> &GraphClient {
+        &*self.0
     }
 }
 
-fn cors_middleware<'mw>(_req: &mut Request<Data>,
-                        mut res: Response<'mw, Data>)
-                        -> MiddlewareResult<'mw, Data> {
-    res.set(AccessControlAllowOrigin::Any);
-    res.set(AccessControlAllowHeaders(vec!["Origin".into(),
-                                           "X-Requested-With".into(),
-                                           "Content-Type".into(),
-                                           "Accept".into()]));
-
-    res.next_middleware()
+pub fn db() -> io::Result<DB> {
+    match DB_POOL.get() {
+        Ok(conn) => Ok(DB(conn)),
+        Err(e) => Err(io::Error::new(io::ErrorKind::Other, e)),
+    }
 }
+
+type JsonResult = Result<JSON<String>, AppError>;
 
 fn extract_ids(s: &str) -> Vec<String> {
     s.split(',')
@@ -63,299 +72,189 @@ fn extract_ids_test() {
     assert_eq!(extract_ids("abc,,d"), vec!["abc", "d"]);
 }
 
-pub fn run(db_url: &str, port: u16, enable_cors: bool) {
-    let manager = CypherConnectionManager { url: db_url.into() };
-    let config = r2d2::Config::builder().pool_size(POOL_SIZE).build();
-    let pool = r2d2::Pool::new(config, manager).unwrap();
-    let data = Data { db: pool };
+#[get("/entries/<id>")]
+fn get_entry(id: &str) -> JsonResult {
+    let ids = extract_ids(id);
+    let entries = Entry::all(db()?.conn())?;
+    let e = match ids.len() {
+        0 => encode(&entries),
+        1 => {
+            let e = entries.iter()
+                .find(|x| x.id == Some(ids[0].clone()))
+                .ok_or(StoreError::NotFound)?;
+            encode(&e)
+        }
+        _ => {
+            encode(&entries.iter()
+                .filter(|e| e.id.is_some())
+                .filter(|e| ids.iter().any(|id| e.id == Some(id.clone())))
+                .collect::<Vec<&Entry>>())
+        }
+    }?;
+    Ok(JSON(e))
+}
 
-    let mut server = Nickel::with_data(data);
+#[get("/duplicates")]
+fn get_duplicates() -> Result<JSON<Vec<(String, String, DuplicateType)>>, AppError> {
+    let entries = Entry::all(db()?.conn())?;
+    let entries = entries.into_iter()
+        .map(entities::Entry::try_from)
+        .filter_map(|x| match x {
+            Ok(x) => Some(x),
+            Err(err) => {
+                warn!("Could not convert entry: {}", err);
+                None
+            }
+        })
+        .collect();
+    let ids = search::find_duplicates(&entries);
+    Ok(JSON(ids))
+}
+
+#[post("/entries/<id>", format = "application/json", data = "<e>")]
+fn post_entry(id: &str, mut e: JSON<Entry>) -> Result<JSON<()>, AppError> {
+    e.id = Some(id.into());
+    e.validate()?;
+    e.save(db()?.conn())?;
+    Ok(JSON(()))
+}
+
+#[put("/entries/<id>", format = "application/json", data = "<e>")]
+fn put_entry(id: &str, mut e: JSON<Entry>) -> Result<JSON<String>, AppError> {
+    let _ = Entry::get(db()?.conn(), id.to_string())?;
+    e.id = Some(id.to_owned());
+    e.save(db()?.conn())?;
+    Ok(JSON(id.to_string()))
+}
+
+#[get("/categories/<id>")]
+fn get_categories(id: &str) -> Result<JSON<String>, AppError> {
+    let ids = extract_ids(id);
+    let categories = Category::all(db()?.conn())?;
+    let res = match ids.len() {
+        0 => encode(&categories),
+        1 => {
+            let id = Some(ids[0].clone());
+            let e = categories.iter()
+                .find(|x| x.id == id)
+                .ok_or(StoreError::NotFound)?;
+            encode(&e)
+        }
+        _ => {
+            encode(&categories.iter()
+                .filter(|e| e.id.is_some())
+                .filter(|e| ids.iter().any(|id| e.id == Some(id.clone())))
+                .collect::<Vec<&Category>>())
+        }
+    }?;
+    Ok(JSON(res))
+}
+
+#[derive(FromForm)]
+struct SearchQuery {
+    bbox: String,
+    categories: String,
+    text: Option<String>,
+}
+
+#[get("/search?<search>")]
+fn get_search(search: SearchQuery) -> Result<JSON<SearchResult>, AppError> {
+    let entries = Entry::all(db()?.conn())?;
+    let cat_ids = extract_ids(&search.categories);
+    let bbox = geo::extract_bbox(&search.bbox).map_err(Error::Parameter)
+        .map_err(AppError::Business)?;
+    let bbox_center = geo::center(&bbox[0], &bbox[1]);
+    let entries: Vec<entities::Entry> = entries.into_iter()
+        .map(entities::Entry::try_from)
+        .filter_map(|x| x.ok())
+        .collect();
+    let cat_filtered_entries: Vec<&entities::Entry> = entries.filter_by_category_ids(&cat_ids);
+
+    let pre_filtered_entries = match search.text {
+        Some(txt) => cat_filtered_entries.filter_by_search_text(&txt.to_owned()),
+        None => cat_filtered_entries,
+    };
+
+    let mut pre_filtered_entries = pre_filtered_entries.into_iter()
+        .cloned()
+        .collect::<Vec<entities::Entry>>();
+
+    pre_filtered_entries.sort_by_distance_to(&bbox_center);
+
+    let visible_results = pre_filtered_entries.filter_by_bounding_box(&bbox);
+
+    let invisible_results = pre_filtered_entries.iter()
+        .filter(|e| !visible_results.iter().any(|&v| v.id == e.id))
+        .take(MAX_INVISIBLE_RESULTS)
+        .collect::<Vec<_>>();
+
+    let search_result = SearchResult {
+        visible: visible_results.into_iter().map(|x| x.id.clone()).collect(),
+        invisible: invisible_results.into_iter().map(|x| x.id.clone()).collect(),
+    };
+
+    Ok(JSON(search_result))
+}
+
+#[get("/count/entries")]
+fn get_count_entries() -> JsonResult {
+    let entries = Entry::all(db()?.conn())?;
+    Ok(JSON(entries.len().to_string()))
+}
+
+#[get("/server/version")]
+fn get_version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
+
+pub fn run(db_url: &str, port: u16, enable_cors: bool) {
+
+    env::set_var(DB_URL_KEY, db_url);
 
     if enable_cors {
-        server.utilize(cors_middleware);
-        server.options("/entries/*",
-                       middleware!{|_, mut res|
-                res.set(AccessControlAllowHeaders(vec!["Content-Type".into()]));
-                res.set(AccessControlAllowMethods(vec![Method::Get, Method::Post, Method::Put]));
-                StatusCode::Ok
-            });
+        panic!("This feature is currently not available until\
+        \nhttps://github.com/SergioBenitez/Rocket/pull/141\nis merged :(");
     }
 
-    server.utilize(router! {
+    let cfg = Config::default_for(Environment::Production, "/custom")
+        .unwrap()
+        .log_level(LoggingLevel::Normal)
+        .address("127.0.0.1".into())
+        .port(port as usize);
 
-            get "/entries/:id" => |req, mut res|{
-              match req.param("id")
-                .ok_or(ParameterError::Id)
-                    .map_err(Error::Parameter)
-                    .map_err(AppError::Business)
-                .and_then(|s|{
-                  let ids = extract_ids(s);
-                  let data: &Data = res.server_data();
-                  data.db_pool()
-                    .and_then(|ref pool|{
+    rocket::custom(&cfg)
+        .mount("/",
+               routes![get_entry,
+                       post_entry,
+                       put_entry,
+                       get_categories,
+                       get_search,
+                       get_duplicates,
+                       get_count_entries,
+                       get_version])
+        .launch();
+}
 
-                      Entry::all(pool)
-                        .map_err(AppError::Store)
-                        .and_then(|entries|
-
-                        match ids.len() {
-                          0 => encode(&entries)
-                            .map_err(Error::Encode)
-                            .map_err(AppError::Business),
-                          1 => entries
-                              .iter()
-                              .find(|x| x.id == Some(ids[0].clone()))
-                              .ok_or(StoreError::NotFound).map_err(AppError::Store)
-                              .and_then(|e| encode(&e)
-                                .map_err(Error::Encode)
-                                .map_err(AppError::Business)
-                              ),
-                          _ => encode(&entries
-                                .iter()
-                                .filter(|e| e.id.is_some())
-                                .filter(|e| ids.iter().any(|id| e.id == Some(id.clone())))
-                                .collect::<Vec<&Entry>>())
-                                    .map_err(Error::Encode)
-                                    .map_err(AppError::Business)
-                        }
-                      )
-                    })
-                })
-                {
-                  Ok(x)  => {
-                    res.set(MediaType::Json);
-                    (StatusCode::Ok, x)
-                  },
-                  Err(ref err) =>
-                    (err.into(), format!("Could not fetch entries: {}", err))
+impl<'r> Responder<'r> for AppError {
+    fn respond(self) -> Result<Response<'r>, Status> {
+        Err(match self {
+            AppError::Business(ref err) => {
+                match *err {
+                    Error::Parameter(_) => Status::BadRequest,
+                    Error::Io(_) => Status::InternalServerError,
                 }
-              }
-
-            get "/duplicates/" => |_, mut res|{
-              let data: &Data = res.server_data();
-              match data.db_pool()
-                .and_then(|ref pool|
-                    {
-                      let entries = Entry::all(pool).map_err(AppError::Store)?;
-                      let entries = entries
-                        .into_iter()
-                        .map(entities::Entry::try_from)
-                        //TODO: warn on error
-                        .filter_map(|x|x.ok())
-                        .collect();
-                      let ids = search::find_duplicates(&entries);
-                      encode(&ids).map_err(Error::Encode).map_err(AppError::Business)
-                    }
-                )
-              {
-                  Ok(r) => {
-                    res.set(MediaType::Json);
-                    (StatusCode::Ok, r)
-                  },
-                  Err(ref err) => {
-                     (err.into(), format!("Error while trying to find duplicates: {}", err))
-                  }
-              }
             }
-
-            post "/entries/:id" => |req, res|{
-              match req.json_as::<Entry>()
-                    .map_err(Error::Io)
-                    .map_err(AppError::Business)
-                .and_then(|json|{
-                  try!(json.validate()
-                    .map_err(Error::Validation)
-                    .map_err(AppError::Business));
-                  let data: &Data = res.server_data();
-                  data.db_pool()
-                    .and_then(|ref pool|
-                      json.save(pool)
-                        .map_err(AppError::Store)
-                        .and_then(|e| e.id
-                           .ok_or(StoreError::Save).map_err(AppError::Store))
-
-                  )
-              })
-              {
-                Ok(id)  => (StatusCode::Ok, id),
-                Err(ref err) =>
-                  (err.into(), format!("Could not create entry: {}", err))
-              }
-            }
-
-            put "/entries/:id" => |req, res|{
-              let entry = req.json_as::<Entry>();
-              let data: &Data = res.server_data();
-              match req.param("id")
-                .ok_or(ParameterError::Id)
-                    .map_err(Error::Parameter)
-                    .map_err(AppError::Business)
-                .and_then(|id| entry
-                    .map_err(Error::Io)
-                    .map_err(AppError::Business)
-                  .and_then(|mut new_data|{
-                    data.db_pool().and_then(|ref pool|
-                      Entry::get(pool, id.to_owned())
-                      .map_err(AppError::Store)
-                      .and_then(|_|{
-                        new_data.id = Some(id.to_owned());
-                        new_data.save(pool)
-                        .map_err(AppError::Store)
-                        .and_then(|_| Ok(id.to_owned()))
-                      })
-                    )
-                  })
-                )
-              {
-                Ok(id) => {
-                  (StatusCode::Ok, id)
+            AppError::Store(ref err) => {
+                match *err {
+                    StoreError::NotFound => Status::NotFound,
+                    StoreError::InvalidVersion |
+                    StoreError::InvalidId => Status::BadRequest,
+                    _ => Status::InternalServerError,
                 }
-                Err(ref err) => {
-                  let msg = format!("Could not save entry: {}", err);
-                  warn!("{}", msg);
-                  (err.into(), format!("Could not save entry: {}", err))
-                }
-              }
             }
-
-            get "/categories/:id" => |req, mut res|{
-              match req.param("id")
-                .ok_or(ParameterError::Id)
-                    .map_err(Error::Parameter)
-                    .map_err(AppError::Business)
-                .and_then(|s|{
-                  let ids = extract_ids(s);
-                  let data: &Data = res.server_data();
-                  data.db_pool().and_then(|ref pool|{
-                      Category::all(pool)
-                        .map_err(AppError::Store)
-                        .and_then(|categories|
-                          match ids.len() {
-                            0 => encode(&categories)
-                                .map_err(Error::Encode)
-                                .map_err(AppError::Business),
-                            1 => {
-                                let id = Some(ids[0].clone());
-                                categories
-                                  .iter()
-                                  .find(|x| x.id == id)
-                                  .ok_or(StoreError::NotFound).map_err(AppError::Store)
-                                  .and_then(|e| encode(&e)
-                                    .map_err(Error::Encode)
-                                    .map_err(AppError::Business))
-                            },
-                            _ =>
-                                encode(&categories.iter()
-                                    .filter(|e| e.id.is_some())
-                                    .filter(|e| ids.iter().any(|id| e.id == Some(id.clone())))
-                                    .collect::<Vec<&Category>>())
-                                        .map_err(Error::Encode)
-                                        .map_err(AppError::Business)
-                          }
-                      )
-                  })
-                })
-                {
-                  Ok(x)  => {
-                    res.set(MediaType::Json);
-                    (StatusCode::Ok, x)
-                  },
-                  Err(ref err) =>
-                    (err.into(), format!("Could not fetch categories: {}", err))
-                }
-              }
-
-            get "/search" => |req, mut res| {
-              let data: &Data = res.server_data();
-              let query = req.query();
-              match query
-                .get("bbox")
-                .ok_or(ParameterError::Bbox)
-                    .map_err(Error::Parameter)
-                    .map_err(AppError::Business)
-                .and_then(|bbox_str| query
-                .get("categories")
-                .ok_or(ParameterError::Categories)
-                    .map_err(Error::Parameter)
-                    .map_err(AppError::Business)
-                .and_then(|cat_str| data.db_pool()
-                    .and_then(|ref pool|
-                      Entry::all(pool)
-                      .map_err(AppError::Store)
-                      .and_then(|entries|{
-
-                        let cat_ids = extract_ids(cat_str);
-                        //TODO: get rid of unrwap
-                        let bbox = geo::extract_bbox(bbox_str).unwrap();
-                        let bbox_center = geo::center(&bbox[0], &bbox[1]);
-                        let entries : Vec<entities::Entry>= entries
-                            .into_iter()
-                            .map(entities::Entry::try_from)
-                            .filter_map(|x|x.ok())
-                            .collect();
-                        let cat_filtered_entries : Vec<&entities::Entry> =
-                            entries.filter_by_category_ids(&cat_ids);
-
-                        let pre_filtered_entries = match query.get("text") {
-                          Some(txt) => cat_filtered_entries.filter_by_search_text(&txt.to_owned()),
-                          None      => cat_filtered_entries
-                        };
-
-                        let mut pre_filtered_entries = pre_filtered_entries
-                            .into_iter()
-                            .cloned()
-                            .collect::<Vec<entities::Entry>>();
-
-                        pre_filtered_entries.sort_by_distance_to(&bbox_center);
-
-                        let visible_results = pre_filtered_entries.filter_by_bounding_box(&bbox);
-
-                        let invisible_results = pre_filtered_entries
-                          .iter()
-                          .filter(|e| !visible_results.iter().any(|&v| v.id == e.id ))
-                          .take(MAX_INVISIBLE_RESULTS)
-                          .collect::<Vec<_>>();
-
-                        let search_result = SearchResult{
-                          visible   : visible_results.into_iter().map(|x|x.id.clone()).collect(),
-                          invisible : invisible_results.into_iter().map(|x|x.id.clone()).collect()
-                        };
-
-                        encode(&search_result)
-                            .map_err(Error::Encode)
-                            .map_err(AppError::Business)
-                      })
-                    )
-              ))
-              {
-                Ok(x)  => {
-                  res.set(MediaType::Json);
-                  (StatusCode::Ok, x)
-                },
-                Err(ref err) =>
-                  (err.into(), format!("Could not search entries: {}", err))
-              }
-          }
-
-          get "/count/entries" => |_, res| {
-
-              let data: &Data = res.server_data();
-              match data.db_pool()
-                .and_then(|ref pool| Entry::all(pool)
-                      .map_err(AppError::Store)
-                      .and_then(|entries| Ok(entries.into_iter().count().to_string())))
-              {
-                Ok(x)  => {
-                  (StatusCode::Ok, x)
-                },
-                Err(ref err) =>
-                  (err.into(), format!("Could not count entries: {}", err))
-              }
-            }
-
-            get "/server/version" => { env!("CARGO_PKG_VERSION") }
-
-        });
-
-    server.listen(("127.0.0.1", port));
+            AppError::Parse(_) => Status::BadRequest,
+            AppError::Validation(_) => Status::BadRequest,
+            _ => Status::InternalServerError,
+        })
+    }
 }

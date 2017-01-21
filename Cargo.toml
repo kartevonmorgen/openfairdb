@@ -4,21 +4,23 @@ version = "0.0.16"
 authors = ["Markus Kohlhase <mail@markus-kohlhase.de>"]
 
 [dependencies]
-nickel = "0.8"
 r2d2 = "0.6"
 rustc-serialize = "0.3"
-hyper = "0.8"
-unicase = "1.4"
 clap = "2.4"
 log = "0.3"
 slog-envlogger = "0.5"
-typemap = "0.3"
 uuid = "0.1"
-geojson = "0.2"
 rusted_cypher = { version = "0.9",  features = ["rustc-serialize"] }
 url = "0.5"
 quick-error = "1.1"
 emailaddress = "0.3"
+rocket = "0.1"
+rocket_codegen = "0.1"
+rocket_contrib = "0.1"
+lazy_static = "0.2"
+serde = "=0.8.21"
+serde_json = "=0.8.4"
+serde_derive = "=0.8.21"
 
 [dependencies.r2d2_cypher]
 version = "0.1.0"

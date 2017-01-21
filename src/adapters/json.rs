@@ -1,7 +1,8 @@
 use entities as e;
 use std::convert::TryFrom;
+use adapters::error::ConversionError;
 
-#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
+#[derive(RustcDecodable, RustcEncodable, Serialize, Deserialize, Debug, Clone)]
 pub struct Entry {
     pub id          : Option<String>,
     pub created     : Option<u64>,
@@ -21,7 +22,7 @@ pub struct Entry {
     pub license     : Option<String>,
 }
 
-#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
+#[derive(RustcDecodable, RustcEncodable, Serialize, Deserialize, Debug, Clone)]
 pub struct Category {
     pub id        : Option<String>,
     pub created   : Option<u64>,
@@ -29,7 +30,7 @@ pub struct Category {
     pub name      : Option<String>
 }
 
-#[derive(RustcDecodable, RustcEncodable, Debug, Clone)]
+#[derive(RustcDecodable, RustcEncodable, Serialize, Deserialize, Debug, Clone)]
 pub struct SearchResult {
     pub visible   : Vec<String>,
     pub invisible : Vec<String>
@@ -74,13 +75,12 @@ impl From<e::Category> for Category {
 // JSON -> Entity
 
 impl TryFrom<Entry> for e::Entry {
-    type Err = ();
-    fn try_from(e: Entry) -> Result<e::Entry,()> {
-        //TODO: return errors
+    type Err = ConversionError;
+    fn try_from(e: Entry) -> Result<e::Entry, ConversionError> {
         Ok(e::Entry{
-            id          : e.id.unwrap(),
-            created     : e.created.unwrap(),
-            version     : e.version.unwrap(),
+            id          : e.id.ok_or_else(||ConversionError::Id)?,
+            created     : e.created.ok_or_else(||ConversionError::Created)?,
+            version     : e.version.ok_or_else(||ConversionError::Version)?,
             title       : e.title,
             description : e.description,
             lat         : e.lat,
@@ -92,21 +92,20 @@ impl TryFrom<Entry> for e::Entry {
             email       : e.email,
             telephone   : e.telephone,
             homepage    : e.homepage,
-            categories  : e.categories.unwrap(),
+            categories  : e.categories.ok_or_else(||ConversionError::Categories)?,
             license     : e.license
         })
     }
 }
 
 impl TryFrom<Category> for e::Category {
-    type Err = ();
-    fn try_from(c: Category) -> Result<e::Category,()> {
-        //TODO: return errors
+    type Err = ConversionError;
+    fn try_from(c: Category) -> Result<e::Category,ConversionError> {
         Ok(e::Category{
-            id          : c.id.unwrap(),
-            created     : c.created.unwrap(),
-            version     : c.version.unwrap(),
-            name        : c.name.unwrap(),
+            id          : c.id.ok_or_else(||ConversionError::Id)?,
+            created     : c.created.ok_or_else(||ConversionError::Created)?,
+            version     : c.version.ok_or_else(||ConversionError::Version)?,
+            name        : c.name.ok_or_else(||ConversionError::Name)?,
         })
     }
 }

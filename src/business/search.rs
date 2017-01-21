@@ -47,7 +47,7 @@ fn category_filter_factory<'a>(e: &'a Category) -> Box<Fn(&str) -> bool + 'a> {
     Box::new(move |word| e.name.to_lowercase().contains(word))
 }
 
-#[derive(Debug, PartialEq, RustcEncodable)]
+#[derive(Debug, PartialEq, RustcEncodable, Serialize)]
 pub enum DuplicateType {
     SimilarChars,
     SimilarWords,
@@ -55,12 +55,12 @@ pub enum DuplicateType {
 
 // return vector of entries like: (entry1ID, entry2ID, reason)
 // where entry1 and entry2 are similar entries
-pub fn find_duplicates(entries: &Vec<Entry>) -> Vec<(&String, &String, DuplicateType)> {
+pub fn find_duplicates(entries: &Vec<Entry>) -> Vec<(String, String, DuplicateType)> {
     let mut duplicates = Vec::new();
     for i in 0..entries.len() {
         for j in (i + 1)..entries.len() {
             if let Some(t) = is_duplicate(&entries[i], &entries[j]) {
-                duplicates.push((&entries[i].id, &entries[j].id, t));
+                duplicates.push((entries[i].id.clone(), entries[j].id.clone(), t));
             }
         }
     }

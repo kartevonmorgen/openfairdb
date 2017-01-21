@@ -1,7 +1,10 @@
 use business::error::Error as BError;
 use rusted_cypher::error::{GraphError, Neo4jError};
 use r2d2::GetTimeout;
-use nickel::status::StatusCode;
+use std::error;
+use std::io;
+use rustc_serialize::json;
+use adapters::error::ValidationError;
 
 quick_error!{
     #[derive(Debug)]
@@ -48,27 +51,25 @@ quick_error!{
             cause(err)
             description(err.description())
         }
-    }
-}
-
-impl<'a> From<&'a AppError> for StatusCode {
-    fn from(err: &AppError) -> StatusCode {
-        match *err {
-            AppError::Business(ref err) =>
-                match *err {
-                    BError::Parse(_)        |
-                    BError::Io(_)           |
-                    BError::Parameter(_)    |
-                    BError::Validation(_)   => StatusCode::BadRequest,
-                    BError::Encode(_)       => StatusCode::InternalServerError,
-                },
-            AppError::Store(ref err)  =>
-                match *err {
-                    StoreError::NotFound        => StatusCode::NotFound,
-                    StoreError::InvalidVersion  |
-                    StoreError::InvalidId       => StatusCode::BadRequest,
-                    _                           => StatusCode::InternalServerError
-                }
+        Encode(err: json::EncoderError){
+            from()
+            cause(err)
+            description(err.description())
+        }
+        Parse(err: json::ParserError){
+            from()
+            cause(err)
+            description(err.description())
+        }
+        Validation(err: ValidationError){
+            from()
+            cause(err)
+            description(err.description())
+        }
+        Other(err: Box<error::Error + Send + Sync>){
+            from()
+            description(err.description())
+            from(err: io::Error) -> (Box::new(err))
         }
     }
 }
