@@ -3,6 +3,6 @@
 pub mod error;
 pub mod repo;
 pub mod filter;
-pub mod search;
+pub mod duplicates;
 pub mod sort;
 pub mod geo;

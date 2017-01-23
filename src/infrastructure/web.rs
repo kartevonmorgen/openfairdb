@@ -11,11 +11,10 @@ use adapters::validate::Validate;
 use business::error::Error;
 use infrastructure::error::{AppError, StoreError};
 use rustc_serialize::json::encode;
-use business::filter::{FilterByCategoryIds, FilterByBoundingBox};
 use business::sort::SortByDistanceTo;
-use business::{search, geo};
-use business::search::Search;
-use business::search::DuplicateType;
+use business::{filter, geo};
+use business::filter::InBBox;
+use business::duplicates::{self, DuplicateType};
 use entities;
 use std::convert::TryFrom;
 use rusted_cypher::GraphClient;
@@ -107,7 +106,7 @@ fn get_duplicates() -> Result<JSON<Vec<(String, String, DuplicateType)>>, AppErr
             }
         })
         .collect();
-    let ids = search::find_duplicates(&entries);
+    let ids = duplicates::find_duplicates(&entries);
     Ok(JSON(ids))
 }
 
@@ -164,36 +163,37 @@ fn get_search(search: SearchQuery) -> Result<JSON<SearchResult>, AppError> {
     let bbox = geo::extract_bbox(&search.bbox).map_err(Error::Parameter)
         .map_err(AppError::Business)?;
     let bbox_center = geo::center(&bbox[0], &bbox[1]);
-    let entries: Vec<entities::Entry> = entries.into_iter()
+    let entries: Vec<_> = entries.into_iter()
         .map(entities::Entry::try_from)
         .filter_map(|x| x.ok())
         .collect();
-    let cat_filtered_entries: Vec<&entities::Entry> = entries.filter_by_category_ids(&cat_ids);
 
-    let pre_filtered_entries = match search.text {
-        Some(txt) => cat_filtered_entries.filter_by_search_text(&txt.to_owned()),
-        None => cat_filtered_entries,
+    let entries: Vec<_> = entries.into_iter()
+        .filter(|x| filter::entries_by_category_ids(&cat_ids)(&x))
+        .collect();
+
+    let mut entries = match search.text {
+        Some(txt) => {
+            entries.into_iter().filter(|x| filter::entries_by_search_text(&txt)(&x)).collect()
+        }
+        None => entries,
     };
 
-    let mut pre_filtered_entries = pre_filtered_entries.into_iter()
-        .cloned()
-        .collect::<Vec<entities::Entry>>();
+    entries.sort_by_distance_to(&bbox_center);
 
-    pre_filtered_entries.sort_by_distance_to(&bbox_center);
+    let visible_results: Vec<_> =
+        entries.iter().filter(|x| x.in_bbox(&bbox)).map(|x| x.id.clone()).collect();
 
-    let visible_results = pre_filtered_entries.filter_by_bounding_box(&bbox);
-
-    let invisible_results = pre_filtered_entries.iter()
-        .filter(|e| !visible_results.iter().any(|&v| v.id == e.id))
+    let invisible_results = entries.iter()
+        .filter(|e| !visible_results.iter().any(|v| *v == e.id))
         .take(MAX_INVISIBLE_RESULTS)
+        .map(|x| x.id.clone())
         .collect::<Vec<_>>();
 
-    let search_result = SearchResult {
-        visible: visible_results.into_iter().map(|x| x.id.clone()).collect(),
-        invisible: invisible_results.into_iter().map(|x| x.id.clone()).collect(),
-    };
-
-    Ok(JSON(search_result))
+    Ok(JSON(SearchResult {
+        visible: visible_results,
+        invisible: invisible_results,
+    }))
 }
 
 #[get("/count/entries")]

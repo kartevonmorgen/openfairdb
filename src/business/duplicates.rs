@@ -4,49 +4,6 @@ use super::geo::Coordinate;
 use std::cmp::min;
 use std::collections::HashSet;
 
-pub trait Search {
-    type Item;
-    fn filter_by_search_text(&self, text: &str) -> Vec<&Self::Item>;
-}
-
-impl<'a> Search for Vec<&'a Entry> {
-    type Item = Entry;
-    fn filter_by_search_text(&self, text: &str) -> Vec<&Entry> {
-        by_text(self.as_slice(), text, entry_filter_factory)
-    }
-}
-
-impl<'a> Search for Vec<&'a Category> {
-    type Item = Category;
-    fn filter_by_search_text(&self, text: &str) -> Vec<&Category> {
-        by_text(self.as_slice(), text, category_filter_factory)
-    }
-}
-
-fn by_text<'a, T: Clone, F>(collection: &'a [&'a T], text: &str, filter: F) -> Vec<&'a T>
-    where F: Fn(&'a T) -> Box<Fn(&str) -> bool + 'a>
-{
-    let txt_cpy = text.to_lowercase();
-    let words = txt_cpy.split(',');
-    collection.into_iter()
-        .filter(|&e| {
-            let f = filter(e);
-            words.clone().any(|word| f(word))
-        })
-        .cloned()
-        .collect()
-}
-
-fn entry_filter_factory<'a>(e: &'a Entry) -> Box<Fn(&str) -> bool + 'a> {
-    Box::new(move |word| {
-        e.title.to_lowercase().contains(word) || e.description.to_lowercase().contains(word)
-    })
-}
-
-fn category_filter_factory<'a>(e: &'a Category) -> Box<Fn(&str) -> bool + 'a> {
-    Box::new(move |word| e.name.to_lowercase().contains(word))
-}
-
 #[derive(Debug, PartialEq, RustcEncodable, Serialize)]
 pub enum DuplicateType {
     SimilarChars,
@@ -220,8 +177,7 @@ fn min3(s: usize, t: usize, u: usize) -> usize {
 mod tests {
     use super::*;
 
-    impl Entry {
-        fn new(title: String, description: String, lat: f64, lng: f64) -> Entry {
+    fn new_entry(title: String, description: String, lat: f64, lng: f64) -> Entry {
             Entry {
                 id: title.clone().into(),
                 created: 0,
@@ -240,18 +196,6 @@ mod tests {
                 categories: vec![],
                 license: None,
             }
-        }
-    }
-
-    impl Category {
-        fn new(name: &str) -> Category {
-            Category {
-                id        : name.clone().into(),
-                created   : 0,
-                version   : 0,
-                name      : name.into()
-            }
-        }
     }
     
     #[test]
@@ -266,14 +210,14 @@ mod tests {
 
     #[test]
     fn test_in_close_proximity() {
-        let e1 = Entry::new("Entry 1".to_string(),
-                            "Punkt1".to_string(),
-                            48.23153745093964,
-                            8.003816366195679);
-        let e2 = Entry::new("Entry 2".to_string(),
-                            "Punkt2".to_string(),
-                            48.23167056421013,
-                            8.003558874130248);
+        let e1 = new_entry("Entry 1".to_string(),
+                           "Punkt1".to_string(),
+                           48.23153745093964,
+                           8.003816366195679);
+        let e2 = new_entry("Entry 2".to_string(),
+                           "Punkt2".to_string(),
+                           48.23167056421013,
+                           8.003558874130248);
 
         assert_eq!(in_close_proximity(&e1, &e2, 30.0), true);
         assert_eq!(in_close_proximity(&e1, &e2, 10.0), false);
@@ -281,22 +225,22 @@ mod tests {
 
     #[test]
     fn test_similar_title() {
-        let e1 = Entry::new("0123456789".to_string(),
-                            "Hallo! Ein Eintrag".to_string(),
-                            48.23153745093964,
-                            6.003816366195679);
-        let e2 = Entry::new("01234567".to_string(),
-                            "allo! Ein Eintra".to_string(),
-                            48.23153745093964,
-                            6.003816366195679);
-        let e3 = Entry::new("eins zwei drei".to_string(),
-                            "allo! Ein Eintra".to_string(),
-                            48.23153745093964,
-                            6.003816366195679);
-        let e4 = Entry::new("eins zwei fünf sechs".to_string(),
-                            "allo! Ein Eintra".to_string(),
-                            48.23153745093964,
-                            6.003816366195679);
+        let e1 = new_entry("0123456789".to_string(),
+                           "Hallo! Ein Eintrag".to_string(),
+                           48.23153745093964,
+                           6.003816366195679);
+        let e2 = new_entry("01234567".to_string(),
+                           "allo! Ein Eintra".to_string(),
+                           48.23153745093964,
+                           6.003816366195679);
+        let e3 = new_entry("eins zwei drei".to_string(),
+                           "allo! Ein Eintra".to_string(),
+                           48.23153745093964,
+                           6.003816366195679);
+        let e4 = new_entry("eins zwei fünf sechs".to_string(),
+                           "allo! Ein Eintra".to_string(),
+                           48.23153745093964,
+                           6.003816366195679);
 
         assert_eq!(true, similar_title(&e1, &e2, 0.2, 0));  // only 2 characters changed
         assert_eq!(false, similar_title(&e1, &e2, 0.1, 0)); // more than one character changed
@@ -306,26 +250,26 @@ mod tests {
 
     #[test]
     fn test_is_duplicate() {
-        let e1 = Entry::new("Ein Eintrag Blablabla".to_string(),
-                            "Hallo! Ein Eintrag".to_string(),
-                            47.23153745093964,
-                            5.003816366195679);
-        let e2 = Entry::new("Eintrag".to_string(),
-                            "Hallo! Ein Eintrag".to_string(),
-                            47.23153745093970,
-                            5.003816366195679);
-        let e3 = Entry::new("Enn Eintrxg Blablalx".to_string(),
-                            "Hallo! Ein Eintrag".to_string(),
-                            47.23153745093955,
-                            5.003816366195679);
-        let e4 = Entry::new("En Eintrg Blablala".to_string(),
-                            "Hallo! Ein Eintrag".to_string(),
-                            47.23153745093955,
-                            5.003816366195679);
-        let e5 = Entry::new("Ein Eintrag Blabla".to_string(),
-                            "Hallo! Ein Eintrag".to_string(),
-                            40.23153745093960,
-                            5.003816366195670);
+        let e1 = new_entry("Ein Eintrag Blablabla".to_string(),
+                           "Hallo! Ein Eintrag".to_string(),
+                           47.23153745093964,
+                           5.003816366195679);
+        let e2 = new_entry("Eintrag".to_string(),
+                           "Hallo! Ein Eintrag".to_string(),
+                           47.23153745093970,
+                           5.003816366195679);
+        let e3 = new_entry("Enn Eintrxg Blablalx".to_string(),
+                           "Hallo! Ein Eintrag".to_string(),
+                           47.23153745093955,
+                           5.003816366195679);
+        let e4 = new_entry("En Eintrg Blablala".to_string(),
+                           "Hallo! Ein Eintrag".to_string(),
+                           47.23153745093955,
+                           5.003816366195679);
+        let e5 = new_entry("Ein Eintrag Blabla".to_string(),
+                           "Hallo! Ein Eintrag".to_string(),
+                           40.23153745093960,
+                           5.003816366195670);
 
         // titles have a word that is equal
         assert_eq!(Some(DuplicateType::SimilarWords), is_duplicate(&e1, &e2));
@@ -360,41 +304,6 @@ mod tests {
         assert_eq!(3, levenshtein_distance("012a34c", "0a3c")); // delete 1,2 and 4
         assert_eq!(1, levenshtein_distance("12345", "a12345")); // insert a
         assert_eq!(1, levenshtein_distance("aabaa", "aacaa"));  // replace b by c
-    }
-
-    #[test]
-    fn search_entries() {
-        let e0 = Entry::new("Eintrag".into(), "Hallo! Ein Eintrag".into(), 0.0, 0.0);
-        let e1 = Entry::new("Ein trag".into(), "Foo".into(), 0.0, 0.0);
-        let e2 = Entry::new("CSA".into(), "cool vegetables".into(), 0.0, 0.0);
-        let entries = vec![&e0, &e1, &e2];
-
-        let x = entries.filter_by_search_text("foo");
-        assert_eq!(x.len(), 1);
-        assert_eq!(x[0].id, e1.id);
-
-        let x = entries.filter_by_search_text("trag");
-        assert_eq!(x.len(), 2);
-        assert_eq!(x[0].id, e0.id);
-        assert_eq!(x[1].id, e1.id);
-
-        let x = entries.filter_by_search_text("csa");
-        assert_eq!(x.len(), 1);
-        assert_eq!(x[0].id, e2.id);
-    }
-
-    #[test]
-    fn search_categories() {
-        let c0 = Category::new("Foo");
-        let c1 = Category::new("Bar");
-        let c2 = Category::new("baz");
-        let cats = vec![&c0, &c1, &c2];
-
-        let x = cats.filter_by_search_text("foo");
-        assert_eq!(x.len(), 1);
-        assert_eq!(x[0].name, c0.name);
-        assert_eq!(cats.filter_by_search_text("bar").len(), 1);
-        assert_eq!(cats.filter_by_search_text("baz").len(), 1);
     }
 
 }
