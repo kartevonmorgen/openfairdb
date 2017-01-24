@@ -18,9 +18,6 @@ quick_error!{
         InvalidId{
             description("The ID is not valid")
             }
-        Save{
-            description("Could not save object")
-            }
         Graph(err: GraphError){
             from()
             cause(err)
