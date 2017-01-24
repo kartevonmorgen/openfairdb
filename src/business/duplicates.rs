@@ -103,22 +103,6 @@ fn words_equal_except_k_words(str1: &str, str2: &str, k: u32) -> bool {
     diff <= k
 }
 
-// returns true if the hamming distance between str1 and str2 is smaller or
-// equal as maxDist (doesn't need to calculate the full hamming distance because
-// it aborts as soon as maxDist is reached)
-fn hamming_distance_small(str1: &str, str2: &str, max_dist: usize) -> bool {
-    let mut dist = 0;
-    for i in 0..str1.chars().count() {
-        if str1.chars().nth(i) != str2.chars().nth(i) {
-            dist = dist + 1;
-            if dist > max_dist {
-                break;
-            }
-        }
-    }
-    dist <= max_dist
-}
-
 // Levenshtein Distance more realistically captures typos (all of the following
 // operations are counted as distance 1: add one character in between, delete
 // one character, change one character)
@@ -196,16 +180,6 @@ mod tests {
                 categories: vec![],
                 license: None,
             }
-    }
-    
-    #[test]
-    fn test_hamming_distance_small() {
-        assert_eq!(true, hamming_distance_small("aaaaa", "aabab", 2));
-        assert_eq!(false, hamming_distance_small("aaaaa", "abbba", 2));
-        assert_eq!(true, hamming_distance_small("aaaaaa", "abaaa", 2));
-        assert_eq!(false, hamming_distance_small("aaaaaa", "abaa", 2));
-        assert_eq!(false,
-                   hamming_distance_small("Hallo! Ein Eintrag", "Hallo! Tschüss", 4));
     }
 
     #[test]

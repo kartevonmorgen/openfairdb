@@ -30,11 +30,6 @@ pub fn entries_by_search_text<'a>(text: &'a str) -> Box<Fn(&&Entry) -> bool + 'a
     })
 }
 
-pub fn categories_by_search_text<'a>(text: &'a str) -> Box<Fn(&&Category) -> bool + 'a> {
-    let words = to_words(text);
-    Box::new(move |c| words.iter().any(|word| c.name.to_lowercase().contains(word)))
-}
-
 fn to_words(txt: &str) -> Vec<String> {
     txt.to_lowercase().split(',').map(|x| x.to_string()).collect()
 }
@@ -63,15 +58,6 @@ mod tests {
             categories  : cats.unwrap_or(vec![]),
             license     : None,
         }
-    }
-
-    fn new_category(name: &str) -> Category {
-            Category {
-                id        : name.clone().into(),
-                created   : 0,
-                version   : 0,
-                name      : name.into()
-            }
     }
 
     #[test]
@@ -192,26 +178,4 @@ mod tests {
         assert_eq!(x.len(), 1);
         assert_eq!(x[0].id, e2.id);
     }
-
-    #[test]
-    fn search_categories() {
-        let c0 = new_category("Foo");
-        let c1 = new_category("Bar");
-        let c2 = new_category("baz");
-        let cats = vec![&c0, &c1, &c2];
-
-        let filter = categories_by_search_text("foo");
-        let x: Vec<&Category> = cats.iter().cloned().filter(&*filter).collect();
-        assert_eq!(x.len(), 1);
-        assert_eq!(x[0].name, c0.name);
-
-        let filter = categories_by_search_text("ar");
-        let x: Vec<&Category> = cats.iter().cloned().filter(&*filter).collect();
-        assert_eq!(x.len(), 1);
-        assert_eq!(x[0].name, "Bar");
-        let filter = categories_by_search_text("az");
-        let x: Vec<&Category> = cats.iter().cloned().filter(&*filter).collect();
-        assert_eq!(x[0].name, "baz");
-    }
-
 }
