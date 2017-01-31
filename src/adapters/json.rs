@@ -93,6 +93,7 @@ impl TryFrom<Entry> for e::Entry {
             telephone   : e.telephone,
             homepage    : e.homepage,
             categories  : e.categories.ok_or_else(||ConversionError::Categories)?,
+            tags        : vec![],
             license     : e.license
         })
     }
