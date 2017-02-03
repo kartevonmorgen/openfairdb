@@ -36,17 +36,15 @@ pub struct Tag {
 }
 
 #[derive(Debug, Clone)]
-pub enum Relation {
+pub enum Predicate {
     IsEquivalentTo,
     IsSimilarTo,
     IsSubtypeOf
 }
 
 #[derive(Debug, Clone)]
-pub struct Triple<S,P,O> {
-    subject   : S,
-    predicate : P,
-    object    : O
+pub struct SentenceTriple {
+    subject   : String,
+    predicate : Predicate,
+    object    : String
 }
-
-pub type TagTriple = Triple<Tag,Relation,Tag>;
