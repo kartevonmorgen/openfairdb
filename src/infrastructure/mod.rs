@@ -1,4 +1,4 @@
 pub mod cli;
 mod error;
-mod store;
+mod db;
 mod web;
