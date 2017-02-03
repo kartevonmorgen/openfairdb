@@ -1,5 +1,3 @@
-// Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
-
 use clap::{Arg, App};
 use super::web;
 
