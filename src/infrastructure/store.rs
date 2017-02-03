@@ -80,7 +80,7 @@ impl Repo<Entry> for GraphClient {
             .collect::<Vec<Entry>>())
     }
 
-    fn save(&self, entry: &Entry) -> Result<(), StoreError> {
+    fn save(&mut self, entry: &Entry) -> Result<(), StoreError> {
         match entry.id {
             None => create_entry(entry, self),
             Some(_) => update_entry(entry, self),
@@ -243,7 +243,7 @@ impl Repo<Category> for GraphClient {
             .collect::<Vec<Category>>())
     }
 
-    fn save(&self, cat: &Category) -> Result<(), StoreError> {
+    fn save(&mut self, cat: &Category) -> Result<(), StoreError> {
         match cat.id {
             None => create_category(cat, self),
             Some(_) => update_category(cat, self),

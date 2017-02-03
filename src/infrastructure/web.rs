@@ -42,8 +42,8 @@ lazy_static! {
 pub struct DB(r2d2::PooledConnection<CypherConnectionManager>);
 
 impl DB {
-    pub fn conn(&mut self) -> &GraphClient {
-        &*self.0
+    pub fn conn(&mut self) -> &mut GraphClient {
+        &mut *self.0
     }
 }
 

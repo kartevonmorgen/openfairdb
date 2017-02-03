@@ -4,5 +4,5 @@ pub trait Repo<T> {
 
     fn get(&self, Self::Id) -> Result<T, Self::Error>;
     fn all(&self) -> Result<Vec<T>, Self::Error>;
-    fn save(&self, &T) -> Result<(), Self::Error>;
+    fn save(&mut self, &T) -> Result<(), Self::Error>;
 }
