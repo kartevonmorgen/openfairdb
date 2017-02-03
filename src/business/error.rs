@@ -25,6 +25,12 @@ quick_error!{
         NotFound{
             description("The requested object could not be found")
         }
+        AlreadyExists{
+            description("The object already exists")
+        }
+        InvalidVersion{
+            description("The version of the object is invalid")
+        }
         Io(err: io::Error) {
             from()
             cause(err)

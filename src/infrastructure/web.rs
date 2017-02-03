@@ -111,12 +111,8 @@ fn post_entry(e: JSON<usecase::NewEntry>) -> Result<JSON<String>, AppError> {
 }
 
 #[put("/entries/<id>", format = "application/json", data = "<e>")]
-fn put_entry(id: &str, e: JSON<json::Entry>) -> Result<JSON<String>, AppError> {
-    let _: Entry = db()?.conn().get(id.to_string())?;
-    let mut e = e.unwrap();
-    e.id = Some(id.to_owned());
-    let e = Entry::try_from(e).map_err(AdapterError::Conversion)?;
-    db()?.conn().update(&e)?;
+fn put_entry(id: &str, e: JSON<usecase::UpdateEntry>) -> Result<JSON<String>, AppError> {
+    usecase::update_entry(db()?.conn(), e.unwrap())?;
     Ok(JSON(id.to_string()))
 }
 
