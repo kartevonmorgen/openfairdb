@@ -5,17 +5,17 @@ use rocket_contrib::JSON;
 use rocket::response::{Response, Responder};
 use rocket::http::Status;
 use rocket::config::{Environment, Config};
-use adapters::json::{Entry, Category, SearchResult};
+use adapters::json;
+use entities::*;
 use business::db::Repo;
-use adapters::validate::Validate;
-use business::error::Error;
-use infrastructure::error::{AppError, StoreError};
-use rustc_serialize::json::encode;
+use adapters::error::Error as AdapterError;
+use business::error::{Error, RepoError};
+use infrastructure::error::AppError;
+use serde_json::ser::to_string;
 use business::sort::SortByDistanceTo;
-use business::{filter, geo};
+use business::{usecase, filter, geo};
 use business::filter::InBBox;
 use business::duplicates::{self, DuplicateType};
-use entities;
 use std::convert::TryFrom;
 use rusted_cypher::GraphClient;
 use std::env;
@@ -76,18 +76,22 @@ fn get_entry(id: &str) -> JsonResult {
     let ids = extract_ids(id);
     let entries: Vec<Entry> = db()?.conn().all()?;
     let e = match ids.len() {
-        0 => encode(&entries),
+        0 => {
+            to_string(&entries.into_iter()
+                .map(json::Entry::from)
+                .collect::<Vec<json::Entry>>())
+        }
         1 => {
             let e = entries.iter()
-                .find(|x| x.id == Some(ids[0].clone()))
-                .ok_or(StoreError::NotFound)?;
-            encode(&e)
+                .find(|x| x.id == ids[0].clone())
+                .ok_or(RepoError::NotFound)?;
+            to_string(&json::Entry::from(e.clone()))
         }
         _ => {
-            encode(&entries.iter()
-                .filter(|e| e.id.is_some())
-                .filter(|e| ids.iter().any(|id| e.id == Some(id.clone())))
-                .collect::<Vec<&Entry>>())
+            to_string(&entries.into_iter()
+                .filter(|e| ids.iter().any(|id| e.id == id.clone()))
+                .map(json::Entry::from)
+                .collect::<Vec<json::Entry>>())
         }
     }?;
     Ok(JSON(e))
@@ -96,35 +100,23 @@ fn get_entry(id: &str) -> JsonResult {
 #[get("/duplicates")]
 fn get_duplicates() -> Result<JSON<Vec<(String, String, DuplicateType)>>, AppError> {
     let entries: Vec<Entry> = db()?.conn().all()?;
-    let entries = entries.into_iter()
-        .map(entities::Entry::try_from)
-        .filter_map(|x| match x {
-            Ok(x) => Some(x),
-            Err(err) => {
-                warn!("Could not convert entry: {}", err);
-                None
-            }
-        })
-        .collect();
     let ids = duplicates::find_duplicates(&entries);
     Ok(JSON(ids))
 }
 
-#[post("/entries/<id>", format = "application/json", data = "<e>")]
-fn post_entry(id: &str, mut e: JSON<Entry>) -> Result<JSON<()>, AppError> {
-    e.id = Some(id.into());
-    e.validate()?;
-    let e: Entry = e.unwrap();
-    db()?.conn().save(&e)?;
-    Ok(JSON(()))
+#[post("/entries", format = "application/json", data = "<e>")]
+fn post_entry(e: JSON<usecase::NewEntry>) -> Result<JSON<String>, AppError> {
+    let id = usecase::create_new_entry(db()?.conn(), e.unwrap())?;
+    Ok(JSON(id))
 }
 
 #[put("/entries/<id>", format = "application/json", data = "<e>")]
-fn put_entry(id: &str, mut e: JSON<Entry>) -> Result<JSON<String>, AppError> {
+fn put_entry(id: &str, e: JSON<json::Entry>) -> Result<JSON<String>, AppError> {
     let _: Entry = db()?.conn().get(id.to_string())?;
+    let mut e = e.unwrap();
     e.id = Some(id.to_owned());
-    let e: Entry = e.unwrap();
-    db()?.conn().save(&e)?;
+    let e = Entry::try_from(e).map_err(AdapterError::Conversion)?;
+    db()?.conn().update(&e)?;
     Ok(JSON(id.to_string()))
 }
 
@@ -133,19 +125,23 @@ fn get_categories(id: &str) -> Result<JSON<String>, AppError> {
     let ids = extract_ids(id);
     let categories: Vec<Category> = db()?.conn().all()?;
     let res = match ids.len() {
-        0 => encode(&categories),
+        0 => {
+            to_string(&categories.into_iter()
+                .map(json::Category::from)
+                .collect::<Vec<json::Category>>())
+        }
         1 => {
-            let id = Some(ids[0].clone());
-            let e = categories.iter()
+            let id = ids[0].clone();
+            let e = categories.into_iter()
                 .find(|x| x.id == id)
-                .ok_or(StoreError::NotFound)?;
-            encode(&e)
+                .ok_or(RepoError::NotFound)?;
+            to_string(&json::Category::from(e))
         }
         _ => {
-            encode(&categories.iter()
-                .filter(|e| e.id.is_some())
-                .filter(|e| ids.iter().any(|id| e.id == Some(id.clone())))
-                .collect::<Vec<&Category>>())
+            to_string(&categories.into_iter()
+                .filter(|e| ids.iter().any(|id| e.id == id.clone()))
+                .map(json::Category::from)
+                .collect::<Vec<json::Category>>())
         }
     }?;
     Ok(JSON(res))
@@ -159,16 +155,12 @@ struct SearchQuery {
 }
 
 #[get("/search?<search>")]
-fn get_search(search: SearchQuery) -> Result<JSON<SearchResult>, AppError> {
+fn get_search(search: SearchQuery) -> Result<JSON<json::SearchResult>, AppError> {
     let entries: Vec<Entry> = db()?.conn().all()?;
     let cat_ids = extract_ids(&search.categories);
     let bbox = geo::extract_bbox(&search.bbox).map_err(Error::Parameter)
         .map_err(AppError::Business)?;
     let bbox_center = geo::center(&bbox[0], &bbox[1]);
-    let entries: Vec<_> = entries.into_iter()
-        .map(entities::Entry::try_from)
-        .filter_map(|x| x.ok())
-        .collect();
 
     let entries: Vec<_> = entries.into_iter()
         .filter(|x| filter::entries_by_category_ids(&cat_ids)(&x))
@@ -192,7 +184,7 @@ fn get_search(search: SearchQuery) -> Result<JSON<SearchResult>, AppError> {
         .map(|x| x.id.clone())
         .collect::<Vec<_>>();
 
-    Ok(JSON(SearchResult {
+    Ok(JSON(json::SearchResult {
         visible: visible_results,
         invisible: invisible_results,
     }))
@@ -243,19 +235,17 @@ impl<'r> Responder<'r> for AppError {
             AppError::Business(ref err) => {
                 match *err {
                     Error::Parameter(_) => Status::BadRequest,
-                    Error::Io(_) => Status::InternalServerError,
+                    Error::Repo(ref err) => {
+                        match *err {
+                            RepoError::NotFound => Status::NotFound,
+                            _ => Status::InternalServerError,
+                        }
+                    }
                 }
             }
-            AppError::Store(ref err) => {
-                match *err {
-                    StoreError::NotFound => Status::NotFound,
-                    StoreError::InvalidVersion |
-                    StoreError::InvalidId => Status::BadRequest,
-                    _ => Status::InternalServerError,
-                }
-            }
-            AppError::Parse(_) => Status::BadRequest,
-            AppError::Validation(_) => Status::BadRequest,
+            AppError::Parse(_) |
+            AppError::Adapter(_) => Status::BadRequest,
+
             _ => Status::InternalServerError,
         })
     }

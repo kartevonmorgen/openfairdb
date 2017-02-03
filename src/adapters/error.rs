@@ -1,22 +1,3 @@
-use url::ParseError as UrlParseError;
-
-quick_error!{
-    #[derive(Debug)]
-    pub enum ValidationError {
-        License{
-            description("Unsupported license")
-        }
-        Email{
-            description("Invalid email address")
-        }
-        Url(err: UrlParseError){
-            from()
-            cause(err)
-            description(err.description())
-        }
-    }
-}
-
 quick_error!{
     #[derive(Debug)]
     pub enum ConversionError {
@@ -34,6 +15,18 @@ quick_error!{
         }
         Categories{
             description("No categories were found")
+        }
+    }
+}
+
+quick_error!{
+    #[derive(Debug)]
+    pub enum Error {
+        Conversion(err: ConversionError){
+            from()
+            cause(err)
+            description(err.description())
+
         }
     }
 }

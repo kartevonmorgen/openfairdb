@@ -1,8 +1,13 @@
+use super::error::RepoError;
+use std::result;
+
+type Result<T> = result::Result<T, RepoError>;
+
 pub trait Repo<T> {
     type Id;
-    type Error;
 
-    fn get(&self, Self::Id) -> Result<T, Self::Error>;
-    fn all(&self) -> Result<Vec<T>, Self::Error>;
-    fn save(&mut self, &T) -> Result<(), Self::Error>;
+    fn get(&self, Self::Id) -> Result<T>;
+    fn all(&self) -> Result<Vec<T>>;
+    fn create(&mut self, &T) -> Result<()>;
+    fn update(&mut self, &T) -> Result<()>;
 }

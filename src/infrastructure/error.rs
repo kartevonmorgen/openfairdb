@@ -1,37 +1,21 @@
 use business::error::Error as BError;
-use rusted_cypher::error::{GraphError, Neo4jError};
-use r2d2::GetTimeout;
+use business::error::RepoError;
+use adapters::error::Error as AError;
+use rusted_cypher::error::GraphError;
 use std::error;
 use std::io;
 use rustc_serialize::json;
-use adapters::error::ValidationError;
+use serde_json;
 
-quick_error!{
-    #[derive(Debug)]
-    pub enum StoreError {
-        NotFound{
-            description("Could not find object")
-        }
-        InvalidVersion{
-            description("The version property is invalid")
-            }
-        InvalidId{
-            description("The ID is not valid")
-            }
-        Graph(err: GraphError){
-            from()
-            cause(err)
-            description(err.description())
-        }
-        Neo(err: Neo4jError){
-            from()
-            description(&err.message)
-        }
-        Pool(err: GetTimeout){
-            from()
-            cause(err)
-            description(err.description())
-        }
+impl From<GraphError> for RepoError {
+    fn from(err: GraphError) -> RepoError {
+        RepoError::Other(Box::new(err))
+    }
+}
+
+impl From<RepoError> for AppError {
+    fn from(err: RepoError) -> AppError {
+        AppError::Business(BError::Repo(err))
     }
 }
 
@@ -43,7 +27,7 @@ quick_error!{
             cause(err)
             description(err.description())
         }
-        Store(err: StoreError){
+        Adapter(err: AError){
             from()
             cause(err)
             description(err.description())
@@ -53,12 +37,12 @@ quick_error!{
             cause(err)
             description(err.description())
         }
-        Parse(err: json::ParserError){
+        Serialize(err: serde_json::Error){
             from()
             cause(err)
             description(err.description())
         }
-        Validation(err: ValidationError){
+        Parse(err: json::ParserError){
             from()
             cause(err)
             description(err.description())
