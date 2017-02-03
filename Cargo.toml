@@ -9,7 +9,7 @@ rustc-serialize = "0.3"
 clap = "2.4"
 log = "0.3"
 slog-envlogger = "0.5"
-uuid = "0.1"
+uuid = { version = "0.3", features = ["v4"] }
 rusted_cypher = { version = "0.9",  features = ["rustc-serialize"] }
 r2d2_cypher = "0.1.0"
 url = "0.5"

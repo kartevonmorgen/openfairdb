@@ -91,7 +91,7 @@ impl Repo<Entry> for GraphClient {
 fn create_entry(e: &Entry, graph: &GraphClient) -> Result<(), StoreError> {
 
     let id = match e.id {
-        None => Uuid::new_v4().to_simple_string(),
+        None => Uuid::new_v4().simple().to_string(),
         Some(_) => return Err(StoreError::InvalidId),
     };
 
@@ -253,7 +253,7 @@ impl Repo<Category> for GraphClient {
 
 fn create_category(c: &Category, graph: &GraphClient) -> Result<(), StoreError> {
     let id = match c.id {
-        None => Uuid::new_v4().to_simple_string(),
+        None => Uuid::new_v4().simple().to_string(),
         Some(_) => return Err(StoreError::InvalidId),
     };
     if let Some(v) = c.version {
