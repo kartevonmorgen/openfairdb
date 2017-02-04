@@ -1,48 +1,46 @@
-// Copyright (c) 2015 - 2016 Markus Kohlhase <mail@markus-kohlhase.de>
-
-use error::ValidationError;
-use json::Entry;
-use emailaddress::EmailAddress;
+use business::error::ParameterError;
 use std::str::FromStr;
+use emailaddress::EmailAddress;
 use url::Url;
+use entities::*;
 
 pub trait Validate {
-    fn validate(&self) -> Result<(), ValidationError>;
+    fn validate(&self) -> Result<(), ParameterError>;
 }
 
-fn email(email: &str) -> Result<(), ValidationError> {
+fn email(email: &str) -> Result<(), ParameterError> {
     EmailAddress::from_str(email)
-        .map_err(|_| ValidationError::Email)
+        .map_err(|_| ParameterError::Email)
         .map(|_| ())
 }
 
-fn homepage(url: &str) -> Result<(), ValidationError> {
+fn homepage(url: &str) -> Result<(), ParameterError> {
     Url::parse(url)
-        .map_err(ValidationError::Url)
+        .map_err(|_| ParameterError::Url)
         .map(|_| ())
 }
 
-fn license(s: &str) -> Result<(), ValidationError> {
+fn license(s: &str) -> Result<(), ParameterError> {
     match s {
         "CC0-1.0" | "ODbL-1.0" => Ok(()),
-        _ => Err(ValidationError::License),
+        _ => Err(ParameterError::License),
     }
 }
 
 impl Validate for Entry {
-    fn validate(&self) -> Result<(), ValidationError> {
+    fn validate(&self) -> Result<(), ParameterError> {
 
-        try!(self.license
+        self.license
             .clone()
-            .ok_or(ValidationError::License)
-            .and_then(|ref l| license(l)));
+            .ok_or(ParameterError::License)
+            .and_then(|ref l| license(l))?;
 
         if let Some(ref e) = self.email {
-            try!(email(e));
+            email(e)?;
         }
 
         if let Some(ref h) = self.homepage {
-            try!(homepage(h));
+            homepage(h)?;
         }
 
         Ok(())

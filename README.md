@@ -11,7 +11,7 @@ written in [Rust](http://rustlang.org/).
 
 Requirements:
 
-- [Rust](http://rustlang.org/) >= 1.11
+- [Rust](http://rustlang.org/) (nightly)
 - [Neo4j](http://neo4j.com/) >= 2.1.8
 
 ### Installing Rust & Cargo
@@ -19,7 +19,8 @@ Requirements:
 If you're using Ubuntu 16.04 LTS you can run
 
 ```
-sudo apt-get install rustc cargo libssl-dev
+sudo apt-get install curl libssl-dev
+curl https://sh.rustup.rs -sSf | sh
 ```
 
 ### Installing Neo4j
@@ -155,6 +156,6 @@ that copies the DB to `/var/lib/neo4j/backup/` once a day.
 
 # License
 
-Copyright (c) 2015 - 2016 Markus Kohlhase
+Copyright (c) 2015 - 2017 Markus Kohlhase
 
 This project is licensed unter the AGPLv3 license.
