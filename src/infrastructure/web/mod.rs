@@ -1,5 +1,3 @@
-use r2d2_cypher::CypherConnectionManager;
-use r2d2::{self, Pool};
 use rocket::{self, LoggingLevel};
 use rocket_contrib::JSON;
 use rocket::response::{content, Response, Responder};
@@ -15,41 +13,22 @@ use business::sort::SortByDistanceTo;
 use business::{usecase, filter, geo};
 use business::filter::InBBox;
 use business::duplicates::{self, DuplicateType};
-use rusted_cypher::GraphClient;
 use std::{env,result,io};
 
-static POOL_SIZE: u32 = 5;
 static MAX_INVISIBLE_RESULTS: usize = 5;
 static DB_URL_KEY: &'static str = "OFDB_DATABASE_URL";
 
-#[derive(Debug, Clone)]
-struct Data {
-    db: r2d2::Pool<CypherConnectionManager>,
-}
+#[cfg(not(test))]
+mod neo4j;
+#[cfg(test)]
+mod mockdb;
+#[cfg(test)]
+mod tests;
 
-lazy_static! {
-    pub static ref DB_POOL: r2d2::Pool<CypherConnectionManager> = {
-        let config = r2d2::Config::builder().pool_size(POOL_SIZE).build();
-        let db_url = env::var(DB_URL_KEY).expect(&format!("{} must be set.", DB_URL_KEY));
-        let manager = CypherConnectionManager { url: db_url.into() };
-        Pool::new(config, manager).expect("Failed to create pool.")
-    };
-}
-
-pub struct DB(r2d2::PooledConnection<CypherConnectionManager>);
-
-impl DB {
-    pub fn conn(&mut self) -> &mut GraphClient {
-        &mut *self.0
-    }
-}
-
-pub fn db() -> io::Result<DB> {
-    match DB_POOL.get() {
-        Ok(conn) => Ok(DB(conn)),
-        Err(e) => Err(io::Error::new(io::ErrorKind::Other, e)),
-    }
-}
+#[cfg(not(test))]
+fn db() -> io::Result<neo4j::DB> { neo4j::db() }
+#[cfg(test)]
+fn db() -> io::Result<mockdb::DB> { mockdb::db() }
 
 type Result<T> = result::Result<content::JSON<T>, AppError>;
 

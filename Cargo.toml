@@ -22,3 +22,8 @@ serde = "0.9"
 serde_json = "0.9"
 serde_derive = "0.9"
 chrono = "0.2"
+
+[dev-dependencies.rocket]
+version = "0.1"
+git = "https://github.com/SergioBenitez/Rocket"
+features = ["testing"]

@@ -112,14 +112,26 @@ pub fn update_entry<R: Repo<Entry,Id=String>>(r: &mut R, e: UpdateEntry) -> Resu
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
 
     use super::*;
 
     type RepoResult<T> = result::Result<T, RepoError>;
 
-    struct MockRepo<T> {
+    pub struct MockRepo<T> {
         objects: Vec<T>,
+    }
+
+    impl<T> MockRepo<T> {
+        pub fn new() -> MockRepo<T> {
+            MockRepo {
+                objects: vec![]
+            }
+        }
+
+        pub fn clear(&mut self) {
+            self.objects = vec![];
+        }
     }
 
     impl<T:Id + Clone> Repo<T> for MockRepo<T> {
