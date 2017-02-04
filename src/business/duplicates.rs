@@ -4,7 +4,7 @@ use super::geo::Coordinate;
 use std::cmp::min;
 use std::collections::HashSet;
 
-#[derive(Debug, PartialEq, RustcEncodable, Serialize)]
+#[derive(Debug, PartialEq, Serialize)]
 pub enum DuplicateType {
     SimilarChars,
     SimilarWords,

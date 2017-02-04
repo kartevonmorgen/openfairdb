@@ -4,7 +4,6 @@ use adapters::error::Error as AError;
 use rusted_cypher::error::GraphError;
 use std::error;
 use std::io;
-use rustc_serialize::json;
 use serde_json;
 
 impl From<GraphError> for RepoError {
@@ -32,17 +31,7 @@ quick_error!{
             cause(err)
             description(err.description())
         }
-        Encode(err: json::EncoderError){
-            from()
-            cause(err)
-            description(err.description())
-        }
         Serialize(err: serde_json::Error){
-            from()
-            cause(err)
-            description(err.description())
-        }
-        Parse(err: json::ParserError){
             from()
             cause(err)
             description(err.description())

@@ -5,21 +5,20 @@ authors = ["Markus Kohlhase <mail@markus-kohlhase.de>"]
 
 [dependencies]
 r2d2 = "0.7"
-rustc-serialize = "0.3"
 clap = "2.4"
 log = "0.3"
 slog-envlogger = "0.5"
 uuid = { version = "0.3", features = ["v4"] }
-rusted_cypher = { version = "0.9",  features = ["rustc-serialize"] }
-r2d2_cypher = "0.1.0"
-url = "0.5"
+rusted_cypher = "1.0"
+r2d2_cypher = { version = "0.2.0", git = "https://github.com/flosse/r2d2-cypher" }
+url = "1.4"
 quick-error = "1.1"
 emailaddress = "0.3"
-rocket = "0.1"
-rocket_codegen = "0.1"
-rocket_contrib = "0.1"
+rocket = { version = "0.1", git = "https://github.com/SergioBenitez/Rocket" }
+rocket_codegen = { version = "0.1", git = "https://github.com/SergioBenitez/Rocket" }
+rocket_contrib = { version = "0.1", git = "https://github.com/SergioBenitez/Rocket" }
 lazy_static = "0.2"
-serde = "0.8"
-serde_json = "0.8"
-serde_derive = "0.8"
+serde = "0.9"
+serde_json = "0.9"
+serde_derive = "0.9"
 chrono = "0.2"

@@ -10,7 +10,7 @@ impl Repo<Entry> for GraphClient {
     type Id = String;
 
     fn get(&self, id: Self::Id) -> Result<Entry> {
-        let result = self.cypher().exec(cypher_stmt!(
+        let result = self.exec(cypher_stmt!(
         "MATCH (e:Entry)<--(s:EntryState) WHERE e.id = {id}
          WITH max(s.version) as version
          MATCH (e:Entry)<--(s:EntryState)
@@ -36,14 +36,14 @@ impl Repo<Entry> for GraphClient {
            categories  : categories,
            license     : s.license
          } AS e
-         ORDER BY e.created DESC", {"id" => &id}))?;
+         ORDER BY e.created DESC", {"id" => &id})?)?;
         let r = result.rows().next().ok_or(RepoError::NotFound)?;
         let e = r.get::<Entry>("e")?;
         Ok(e)
     }
 
     fn all(&self) -> Result<Vec<Entry>> {
-        let result = self.cypher().exec(
+        let result = self.exec(
         "MATCH (e:Entry)<--(x:EntryState)
           WITH distinct e, max(x.created) as max
           MATCH e<--(s:EntryState)
@@ -77,7 +77,7 @@ impl Repo<Entry> for GraphClient {
     }
 
     fn create(&mut self, e: &Entry) -> Result<()> {
-        self.cypher().exec(cypher_stmt!(
+        self.exec(cypher_stmt!(
         "MATCH (c:Category)
          WHERE c.id in {categories}
          WITH
@@ -120,12 +120,12 @@ impl Repo<Entry> for GraphClient {
             "homepage"    => &e.homepage,
             "license"     => &e.license,
             "categories"  => &e.categories
-        }))?;
+        })?)?;
         Ok(())
     }
 
     fn update(&mut self, e: &Entry) -> Result<()> {
-        self.cypher().exec(cypher_stmt!(
+        self.exec(cypher_stmt!(
         "MATCH (e:Entry)<--(s:EntryState) WHERE e.id = {id}
          WITH max(s.version) as v
          MATCH (e:Entry)<--(old:EntryState)
@@ -173,7 +173,7 @@ impl Repo<Entry> for GraphClient {
             "homepage"    => &e.homepage,
             "license"     => &e.license,
             "categories"  => &e.categories
-        }))?;
+        })?)?;
         Ok(())
     }
 }
@@ -182,7 +182,7 @@ impl Repo<Category> for GraphClient {
     type Id = String;
 
     fn get(&self, id: Self::Id) -> Result<Category> {
-        let result = self.cypher().exec(cypher_stmt!(
+        let result = self.exec(cypher_stmt!(
         "MATCH (e:Category)<--(s:CategoryState) WHERE c.id = {id}
          WITH max(s.created) as created
          MATCH (x:Category)<--(s:CategoryState)
@@ -193,7 +193,7 @@ impl Repo<Category> for GraphClient {
            version : s.version,
            created : s.created,
            name    : s.name
-         } AS c", {"id" => &id}))?;
+         } AS c", {"id" => &id})?)?;
         let r = result.rows().next().ok_or(RepoError::NotFound)?;
         let c = r.get::<Category>("c")?;
         Ok(c)
@@ -201,7 +201,7 @@ impl Repo<Category> for GraphClient {
     }
 
     fn all(&self) -> Result<Vec<Category>> {
-        let result = self.cypher().exec(
+        let result = self.exec(
         "MATCH (c:Category)<--(s:CategoryState)
          RETURN {
            id      : c.id,
@@ -216,7 +216,7 @@ impl Repo<Category> for GraphClient {
     }
 
     fn create(&mut self, c: &Category) -> Result<()> {
-        self.cypher().exec(cypher_stmt!(
+        self.exec(cypher_stmt!(
         "CREATE (c:Category {id:{id}})
          MERGE c<-[:BELONGS_TO]-(s:CategoryState {
            created : timestamp(),
@@ -231,13 +231,13 @@ impl Repo<Category> for GraphClient {
          } AS c", {
            "id"   => &c.id,
            "name" => &c.name
-        }))?;
+        })?)?;
         Ok(())
     }
 
     fn update(&mut self, c: &Category) -> Result<()> {
         debug!("update category: {}", c.id);
-        self.cypher().exec(cypher_stmt!(
+        self.exec(cypher_stmt!(
         "MATCH (c:Category)<--(s:CategoryState) WHERE c.id = {id}
          WITH max(s.version) as v
          MATCH (c:Category)<--(old:CategoryState)
@@ -257,7 +257,7 @@ impl Repo<Category> for GraphClient {
            "id"      => &c.id,
            "version" => &c.version,
            "name"    => &c.name
-         }))?;
+         })?)?;
         Ok(())
     }
 }

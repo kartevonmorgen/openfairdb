@@ -1,4 +1,4 @@
-#[derive(Debug, Clone, RustcDecodable)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Entry {
     pub id          : String,
     pub created     : u64,
@@ -18,7 +18,7 @@ pub struct Entry {
     pub license     : Option<String>,
 }
 
-#[derive(Debug, Clone, RustcDecodable)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct Category {
     pub id        : String,
     pub created   : u64,

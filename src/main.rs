@@ -8,7 +8,6 @@ extern crate log;
 extern crate slog_envlogger;
 #[macro_use]
 extern crate quick_error;
-extern crate rustc_serialize;
 extern crate clap;
 #[macro_use]
 extern crate rusted_cypher;

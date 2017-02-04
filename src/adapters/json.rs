@@ -2,7 +2,7 @@ use entities as e;
 use std::convert::TryFrom;
 use adapters::error::ConversionError;
 
-#[derive(RustcDecodable, RustcEncodable, Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Entry {
     pub id          : Option<String>,
     pub created     : Option<u64>,
@@ -22,7 +22,7 @@ pub struct Entry {
     pub license     : Option<String>,
 }
 
-#[derive(RustcDecodable, RustcEncodable, Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Category {
     pub id        : Option<String>,
     pub created   : Option<u64>,

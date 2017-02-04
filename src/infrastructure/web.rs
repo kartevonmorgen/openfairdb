@@ -8,7 +8,6 @@ use rocket::config::{Environment, Config};
 use adapters::json;
 use entities::*;
 use business::db::Repo;
-use adapters::error::Error as AdapterError;
 use business::error::{Error, RepoError};
 use infrastructure::error::AppError;
 use serde_json::ser::to_string;
@@ -16,7 +15,6 @@ use business::sort::SortByDistanceTo;
 use business::{usecase, filter, geo};
 use business::filter::InBBox;
 use business::duplicates::{self, DuplicateType};
-use std::convert::TryFrom;
 use rusted_cypher::GraphClient;
 use std::{env,result,io};
 
@@ -115,13 +113,13 @@ fn get_duplicates() -> Result<JSON<Vec<(String, String, DuplicateType)>>> {
 
 #[post("/entries", format = "application/json", data = "<e>")]
 fn post_entry(e: JSON<usecase::NewEntry>) -> Result<String> {
-    let id = usecase::create_new_entry(db()?.conn(), e.unwrap())?;
+    let id = usecase::create_new_entry(db()?.conn(), e.into_inner())?;
     Ok(content::JSON(id))
 }
 
 #[put("/entries/<id>", format = "application/json", data = "<e>")]
 fn put_entry(id: &str, e: JSON<usecase::UpdateEntry>) -> Result<String> {
-    usecase::update_entry(db()?.conn(), e.unwrap())?;
+    usecase::update_entry(db()?.conn(), e.into_inner())?;
     Ok(content::JSON(id.to_string()))
 }
 
@@ -224,13 +222,14 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
         \nhttps://github.com/SergioBenitez/Rocket/pull/141\nis merged :(");
     }
 
-    let cfg = Config::default_for(Environment::Production, "/custom")
-        .unwrap()
+    let cfg = Config::build(Environment::Production)
         .log_level(LoggingLevel::Normal)
-        .address("127.0.0.1".into())
-        .port(port as usize);
+        .address("127.0.0.1")
+        .port(port)
+        .finalize()
+        .unwrap();
 
-    rocket::custom(&cfg)
+    rocket::custom(cfg,true)
         .mount("/",
                routes![get_entries,
                        get_entry,
@@ -259,7 +258,6 @@ impl<'r> Responder<'r> for AppError {
                     }
                 }
             }
-            AppError::Parse(_) |
             AppError::Adapter(_) => Status::BadRequest,
 
             _ => Status::InternalServerError,
