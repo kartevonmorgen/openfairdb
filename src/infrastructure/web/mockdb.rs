@@ -20,8 +20,7 @@ impl MockDb {
 type RepoResult<T> = result::Result<T,RepoError>;
 
 impl Repo<Entry> for MockDb {
-    type Id = String;
-    fn get(&self, id: Self::Id) -> RepoResult<Entry> {
+    fn get(&self, id: &str) -> RepoResult<Entry> {
         self.entries.get(id)
     }
     fn all(&self) -> RepoResult<Vec<Entry>> {
@@ -36,8 +35,7 @@ impl Repo<Entry> for MockDb {
 }
 
 impl Repo<Category> for MockDb {
-    type Id = String;
-    fn get(&self, id: Self::Id) -> RepoResult<Category> {
+    fn get(&self, id: &str) -> RepoResult<Category> {
         self.categories.get(id)
     }
     fn all(&self) -> RepoResult<Vec<Category>> {

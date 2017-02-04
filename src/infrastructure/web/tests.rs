@@ -25,7 +25,7 @@ fn get_all_entries() {
         categories  :  vec![],
         license     :  None,
     };
-    (super::db().unwrap().conn() as &mut Repo<Entry,Id=String>).create(&e).unwrap();
+    (super::db().unwrap().conn() as &mut Repo<Entry>).create(&e).unwrap();
     let rocket = rocket::ignite().mount("/", routes![super::get_entries]);
     let mut req = MockRequest::new(Method::Get, "/entries");
     let mut response = req.dispatch_with(&rocket);
@@ -63,7 +63,7 @@ fn get_one_entry() {
         categories  :  vec![],
         license     :  None,
     };
-    (super::db().unwrap().conn() as &mut Repo<Entry,Id=String>).create(&e).unwrap();
+    (super::db().unwrap().conn() as &mut Repo<Entry>).create(&e).unwrap();
     let rocket = rocket::ignite().mount("/", routes![super::get_entry]);
     let mut req = MockRequest::new(Method::Get, "/entries/get_one_entry_test");
     let mut response = req.dispatch_with(&rocket);
@@ -118,8 +118,8 @@ fn get_multiple_entries() {
         categories  :  vec![],
         license     :  None,
     };
-    (super::db().unwrap().conn() as &mut Repo<Entry,Id=String>).create(&one).unwrap();
-    (super::db().unwrap().conn() as &mut Repo<Entry,Id=String>).create(&two).unwrap();
+    (super::db().unwrap().conn() as &mut Repo<Entry>).create(&one).unwrap();
+    (super::db().unwrap().conn() as &mut Repo<Entry>).create(&two).unwrap();
     let rocket = rocket::ignite().mount("/", routes![super::get_entry]);
     let mut req = MockRequest::new(Method::Get, "/entries/get_multiple_entry_test_one,get_multiple_entry_test_two");
     let mut response = req.dispatch_with(&rocket);

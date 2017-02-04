@@ -84,8 +84,8 @@ pub fn create_new_entry<R: Repo<Entry>>(r: &mut R, e: NewEntry) -> Result<String
     Ok(e.id)
 }
 
-pub fn update_entry<R: Repo<Entry,Id=String>>(r: &mut R, e: UpdateEntry) -> Result<()> {
-    let old : Entry = r.get(e.id.clone())?;
+pub fn update_entry<R: Repo<Entry>>(r: &mut R, e: UpdateEntry) -> Result<()> {
+    let old : Entry = r.get(&e.id)?;
     if old.version != e.version {
         return Err(Error::Repo(RepoError::InvalidVersion))
     }
@@ -135,9 +135,8 @@ pub mod tests {
     }
 
     impl<T:Id + Clone> Repo<T> for MockRepo<T> {
-        type Id = String;
 
-        fn get(&self, id: Self::Id) -> RepoResult<T> {
+        fn get(&self, id: &str) -> RepoResult<T> {
             match self.objects.iter().find(|x| x.id() == id) {
                 Some(x) => Ok(x.clone()),
                 None => Err(RepoError::NotFound),

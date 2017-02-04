@@ -7,9 +7,8 @@ use std::result;
 type Result<T> = result::Result<T, RepoError>;
 
 impl Repo<Entry> for GraphClient {
-    type Id = String;
 
-    fn get(&self, id: Self::Id) -> Result<Entry> {
+    fn get(&self, id: &str) -> Result<Entry> {
         let result = self.exec(cypher_stmt!(
         "MATCH (e:Entry)<--(s:EntryState) WHERE e.id = {id}
          WITH max(s.version) as version
@@ -179,9 +178,8 @@ impl Repo<Entry> for GraphClient {
 }
 
 impl Repo<Category> for GraphClient {
-    type Id = String;
 
-    fn get(&self, id: Self::Id) -> Result<Category> {
+    fn get(&self, id: &str) -> Result<Category> {
         let result = self.exec(cypher_stmt!(
         "MATCH (e:Category)<--(s:CategoryState) WHERE c.id = {id}
          WITH max(s.created) as created
