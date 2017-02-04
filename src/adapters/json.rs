@@ -30,7 +30,7 @@ pub struct Category {
     pub name      : Option<String>
 }
 
-#[derive(RustcDecodable, RustcEncodable, Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Debug, Clone)]
 pub struct SearchResult {
     pub visible   : Vec<String>,
     pub invisible : Vec<String>
