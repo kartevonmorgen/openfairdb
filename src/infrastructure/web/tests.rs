@@ -137,3 +137,27 @@ fn get_multiple_entries() {
     assert!(entries.iter().any(|x|*x==one));
     assert!(entries.iter().any(|x|*x==two));
 }
+
+#[ignore]
+#[test]
+fn create_valid_tag() {
+    unimplemented!();
+}
+
+#[ignore]
+#[test]
+fn create_invalid_tag() {
+    unimplemented!();
+}
+
+#[ignore]
+#[test]
+fn create_existing_tag() {
+    unimplemented!();
+}
+
+#[ignore]
+#[test]
+fn get_all_tags() {
+    unimplemented!();
+}

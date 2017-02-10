@@ -30,6 +30,13 @@ pub struct Category {
     pub name      : Option<String>
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Tag {
+    pub id        : Option<String>,
+    pub version   : Option<u64>,
+    pub name      : String
+}
+
 #[derive(Serialize, Debug, Clone)]
 pub struct SearchResult {
     pub visible   : Vec<String>,

@@ -42,6 +42,11 @@ pub struct NewEntry {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct NewTag {
+    name : String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateEntry {
     id          : String,
     version     : u64,
@@ -109,6 +114,10 @@ pub fn update_entry<R: Repo<Entry>>(r: &mut R, e: UpdateEntry) -> Result<()> {
     };
     r.update(&e)?;
     Ok(())
+}
+
+pub fn create_new_tag<R: Repo<Tag>>(r: &mut R, e: NewTag) -> Result<String> {
+    unimplemented!()
 }
 
 #[cfg(test)]

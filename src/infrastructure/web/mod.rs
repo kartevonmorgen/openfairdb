@@ -187,6 +187,16 @@ fn get_count_entries() -> Result<String> {
     Ok(content::JSON(entries.len().to_string()))
 }
 
+#[post("/tags", format = "application/json", data = "<t>")]
+fn create_tag(t: JSON<usecase::NewTag>) -> Result<JSON<String>> {
+    unimplemented!();
+}
+
+#[get("/tags")]
+fn get_tags() -> Result<JSON<Vec<json::Tag>>> {
+    unimplemented!();
+}
+
 #[get("/server/version")]
 fn get_version() -> &'static str {
     env!("CARGO_PKG_VERSION")

@@ -25,3 +25,11 @@ pub struct Category {
     pub version   : u64,
     pub name      : String
 }
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct Tag {
+    pub id        : String,
+    pub created   : u64,
+    pub version   : u64,
+    pub name      : String
+}
