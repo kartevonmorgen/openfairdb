@@ -22,12 +22,17 @@ pub trait SortByDistanceTo {
 
 impl SortByDistanceTo for Vec<Entry> {
     fn sort_by_distance_to(&mut self, c: &Coordinate) {
-        self.sort_by(|a, _| if a.lat.is_finite() && a.lng.is_finite() {
-            Ordering::Less
-        } else {
-            warn!("inivalid coordinate: {}/{}", a.lat, a.lng);
-            Ordering::Greater
-        });
+        if !(c.lat.is_finite() && c.lng.is_finite()) {
+            return;
+        }
+        self.sort_by(|a, _|
+            if a.lat.is_finite() && a.lng.is_finite() {
+                Ordering::Less
+            } else {
+                warn!("inivalid coordinate: {}/{}", a.lat, a.lng);
+                Ordering::Greater
+            }
+        );
         self.sort_by(|a, b| {
             a.distance_to(c).partial_cmp(&b.distance_to(c)).unwrap_or(Ordering::Equal)
         })
@@ -74,8 +79,8 @@ mod tests {
         assert_eq!(entries[0].id, "b");
         assert_eq!(entries[1].id, "d");
         assert_eq!(entries[2].id, "a");
-        assert_eq!(entries[3].id, "c");
-        assert_eq!(entries[4].id, "e");
+        assert!(entries[3].id == "c" || entries[3].id == "e");
+        assert!(entries[4].id == "c" || entries[4].id == "e");
     }
 
     use std::f64::{NAN, INFINITY};
