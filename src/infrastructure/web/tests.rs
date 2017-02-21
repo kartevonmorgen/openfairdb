@@ -23,6 +23,7 @@ fn get_all_entries() {
         telephone   :  None,
         homepage    :  None,
         categories  :  vec![],
+        tags        :  vec![],
         license     :  None,
     };
     (super::db().unwrap().conn() as &mut Repo<Entry>).create(&e).unwrap();
@@ -61,6 +62,7 @@ fn get_one_entry() {
         telephone   :  None,
         homepage    :  None,
         categories  :  vec![],
+        tags        :  vec![],
         license     :  None,
     };
     (super::db().unwrap().conn() as &mut Repo<Entry>).create(&e).unwrap();
@@ -98,6 +100,7 @@ fn get_multiple_entries() {
         telephone   :  None,
         homepage    :  None,
         categories  :  vec![],
+        tags        :  vec![],
         license     :  None,
     };
     let two = Entry{
@@ -116,6 +119,7 @@ fn get_multiple_entries() {
         telephone   :  None,
         homepage    :  None,
         categories  :  vec![],
+        tags        :  vec![],
         license     :  None,
     };
     (super::db().unwrap().conn() as &mut Repo<Entry>).create(&one).unwrap();
