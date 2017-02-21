@@ -27,10 +27,25 @@ pub struct Category {
     pub name      : String
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct Tag {
     pub id        : String,
     pub created   : u64,
     pub version   : u64,
     pub name      : String
+}
+
+#[derive(Debug, Clone)]
+pub enum Predicate {
+    IsEquivalentTo,
+    IsSimilarTo,
+    IsSubtypeOf,
+    IsTaggedAs
+}
+
+#[derive(Debug, Clone)]
+pub struct SentenceTriple {
+    pub subject   : String,
+    pub predicate : Predicate,
+    pub object    : String
 }
