@@ -15,6 +15,7 @@ pub struct Entry {
     pub telephone   : Option<String>,
     pub homepage    : Option<String>,
     pub categories  : Vec<String>,
+    pub tags        : Vec<String>,
     pub license     : Option<String>,
 }
 
