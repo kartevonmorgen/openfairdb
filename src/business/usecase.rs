@@ -6,6 +6,86 @@ use super::db::Repo;
 use super::validate::Validate;
 use uuid::Uuid;
 
+////////////////
+// USE CASE: user requests an entry
+//
+// What should happen:
+// * assume the user has already the base ID (e.g. from a research by name
+//   or by tag)
+// * get the entry base of that ID
+// * get the newest entry of that ID -- TODO: this is a DB job
+// ==> just return the fitting entry the ID
+// * get the list of tags that links to that ID, updated to the newest state
+//   (respecting all additions and deletions of tags)
+//
+// * return the entry and the list of tags
+
+pub fn request_entry<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTriple>>(re : &RE, rt : &RT, rs : &RS, id : &str) -> Result<Entry> {
+    match re.get(id) {
+        Ok(e) => {
+            let tags = get_tags_for_entry_id(rt, rs, id);
+            let entry_with_tags = Entry {
+                id          :  e.id,
+                created     :  e.created,
+                version     :  e.version+1,
+                title       :  e.title,
+                description :  e.description,
+                lat         :  e.lat,
+                lng         :  e.lng,
+                street      :  e.street,
+                zip         :  e.zip,
+                city        :  e.city,
+                country     :  e.country,
+                email       :  e.email,
+                telephone   :  e.telephone,
+                homepage    :  e.homepage,
+                categories  :  e.categories,
+                tags        :  tags,
+                license     :  e.license
+            };
+            Ok(entry_with_tags)
+        },
+        Err(e) => Err(super::error::Error::Repo(e))
+    } 
+}
+
+pub fn get_tags_for_entry_id<RT : Repo<Tag>, RS : Repo<SentenceTriple>>(rt : &RT, rs : &RS, id : &str) -> Vec<String> {
+    // nur die SentenceTriples aus rs auslesen, die auf die id referenzieren
+    // und die Tag-IDs extrahieren
+    let mut matching_tag_ids : Vec<String> = vec![];
+
+    match rs.all() {
+        Ok(triples) => {
+            for t in triples {
+                match t {
+                    SentenceTriple { subject : id, predicate : Predicate::IsTaggedAs, object } => {
+                        matching_tag_ids.push(object);
+                    },
+                   _ => {}
+                }
+            }
+        }
+        Err(_) => {}
+    };
+
+    matching_tag_ids
+}
+
+pub fn get_tag_names_from_ids<RT : Repo<Tag>>(rt : RT, id : &str) -> Vec<String> {
+    let mut tag_names : Vec<String> = vec![];
+    match rt.all() {
+        Ok(tags) => {
+            for t in tags { tag_names.push(t.name) }
+        }
+        _ => {}
+    }
+    tag_names
+}
+
+//
+// USE CASE: user requests an entry (head entry, no date restriction)
+////////////////
+
 type Result<T> = result::Result<T,Error>;
 
 trait Id {
