@@ -268,6 +268,17 @@ pub fn create_new_entry<R: Repo<Entry>>(r: &mut R, e: NewEntry) -> Result<String
     Ok(e.id)
 }
 
+pub fn create_new_tag<R: Repo<Tag>>(r: &mut R, t: NewTag) -> Result<String> {
+    let t = Tag {
+        id          :  Uuid::new_v4().simple().to_string(),
+        created     :  UTC::now().timestamp() as u64,
+        version     :  0,
+        name        :  t.name
+    };
+    r.create(&t)?;
+    Ok(t.id)
+}
+
 pub fn update_entry<R: Repo<Entry>>(r: &mut R, e: UpdateEntry) -> Result<()> {
     let old : Entry = r.get(&e.id)?;
     if old.version != e.version {
@@ -296,10 +307,8 @@ pub fn update_entry<R: Repo<Entry>>(r: &mut R, e: UpdateEntry) -> Result<()> {
     Ok(())
 }
 
-pub fn create_new_tag<R: Repo<Tag>>(r: &mut R, e: NewTag) -> Result<String> {
-    unimplemented!()
-}
-
+////////////////
+// TESTS
 #[cfg(test)]
 pub mod tests {
 
