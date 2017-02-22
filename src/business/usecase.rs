@@ -145,6 +145,43 @@ pub fn get_entries_by_ids(ids : &Vec<String>) -> Vec<Entry> {
 
 
 
+////////////////
+// USE CASE: (future) onthological researches
+// 
+// What should happen:
+// * the user researches sub-class / super-class / equivalence / similarity
+//   relations to a keyword
+// * return all sub-class tags / all super-class tags / all equivalent tags /
+//   all direct similarities
+
+////////
+// sub-case: sub-classes
+
+//
+////////
+
+////////
+// sub-case: super-classes
+
+//
+////////
+
+////////
+// sub-case: equivalences
+
+//
+////////
+
+////////
+// sub-case: similarities
+
+//
+////////
+
+// USE CASE: (future) onthological researches
+////////////////
+
+
 type Result<T> = result::Result<T,Error>;
 
 trait Id {
