@@ -314,6 +314,38 @@ pub mod tests {
 
     use super::*;
 
+    #[ignore]
+    #[test]
+    // ENVIRONMENT: tags, entries, some links from tags to entries
+    // INPUT: empty vec of tags
+    // OUTPUT: empty vec of entities
+    fn empty_search_by_tags()
+    {
+        unimplemented!();
+    }
+
+    #[ignore]
+    #[test]
+    // ENVIRONMENT: tags, entries, some links from tags to entries
+    // INPUT: vec of one tag (existing)
+    // OUTPUT: vec of associated entries
+    // ASSERT: only the fitting entries are given back
+    fn search_by_one_tag()
+    {
+        unimplemented!();
+    }
+
+    #[ignore]
+    #[test]
+    // ENVIRONMENT: tags, entries, some links from tags to entries
+    // INPUT: vec of one tag (undefined)
+    // OUTPUT: vec of associated entries
+    // ASSERT: output should be empty
+    fn search_by_undefined_tag()
+    {
+        unimplemented!();
+    }
+
     type RepoResult<T> = result::Result<T, RepoError>;
 
     pub struct MockRepo<T> {
