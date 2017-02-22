@@ -86,6 +86,24 @@ pub fn get_tag_names_from_ids<RT : Repo<Tag>>(rt : RT, id : &str) -> Vec<String>
 // USE CASE: user requests an entry (head entry, no date restriction)
 ////////////////
 
+////////////////
+// USE CASE: user adds a tag to an entry
+//
+// What should happen:
+// * test whether the entry already is connected to that tag
+// * if not, search for that tag
+// * if non-existent, generate tag
+// ** save tag to repo
+// * connect entry and tag
+// ** save conection to repo
+
+pub fn add_tag_to_entry(tag : &str, entry_id : &str) -> Result<()> {
+    unimplemented!();
+}
+
+// USE CASE: user adds a tag to an entry
+////////////////
+
 type Result<T> = result::Result<T,Error>;
 
 trait Id {
