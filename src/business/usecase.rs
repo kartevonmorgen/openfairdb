@@ -104,6 +104,47 @@ pub fn add_tag_to_entry(tag : &str, entry_id : &str) -> Result<()> {
 // USE CASE: user adds a tag to an entry
 ////////////////
 
+////////////////
+// USE CASE: user researches a tag
+//
+// What should happen:
+// * assume the user only knows the keyword he wants to research
+// * find the ID associated with the keyword
+// * get a list of all entries that are linked with that tag
+// ** i.e. first, get all IDs associated with the tag
+// ** then, get the entries associated with the IDs
+// ** (future) follow equivalence and sub-class links
+//
+// * return the newest state of each entry
+
+pub fn search_by_tags(tags : &Vec<String>) -> Vec<Entry> {
+    unimplemented!();
+
+    let tag_ids = get_tag_ids_by_tags(tags);
+    let ids = get_associated_entry_ids_of_tags(&tag_ids);
+    let entries = get_entries_by_ids(&ids);
+
+    entries
+}
+
+pub fn get_tag_ids_by_tags(tags : &Vec<String>) -> Vec<String> {
+    unimplemented!();
+}
+
+pub fn get_associated_entry_ids_of_tags(tag_ids : &Vec<String>) -> Vec<String> {
+    unimplemented!();
+}
+
+pub fn get_entries_by_ids(ids : &Vec<String>) -> Vec<Entry> {
+    unimplemented!();
+}
+
+//
+// USE CASE: user researches a tag
+////////////////
+
+
+
 type Result<T> = result::Result<T,Error>;
 
 trait Id {
