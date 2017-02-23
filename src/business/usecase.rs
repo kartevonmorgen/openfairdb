@@ -71,6 +71,7 @@ pub fn get_tags_for_entry_id<RT : Repo<Tag>, RS : Repo<SentenceTriple>>(rt : &RT
     matching_tag_ids
 }
 
+// Now, as you have the tag IDs, you can get the names.
 pub fn get_tag_names_from_ids<RT : Repo<Tag>>(rt : RT, id : &str) -> Vec<String> {
     let mut tag_names : Vec<String> = vec![];
     match rt.all() {
