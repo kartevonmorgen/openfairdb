@@ -99,33 +99,31 @@ pub fn get_tag_names_from_ids<RT : Repo<Tag>>(rt : RT, id : &str) -> Vec<String>
 // ** save conection to repo
 
 pub fn add_tag_to_entry<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTriple>>(re : &RE, rt : &mut RT, rs : &RS, tag : &str, entry_id : &str) -> Result<()> {
-    let tag_id = find_or_create_tag_id_by_name(rt, tag);
+    let tag_id_res = find_or_create_tag_id_by_name(rt, tag);
     let tag_ids_of_entry : Vec<String> = get_tags_for_entry_id(rt, rs, entry_id);
-    unimplemented!();
-
-    /*
-    //tag_id?;
-    match tag_ids_of_entry.iter().find(|id| **id == tag_id.unwrap()) {
-        Some(t) => {
-            Ok(()) // we are done
+    match tag_id_res {
+        Ok(tag_id) => {
+            match tag_ids_of_entry.iter().find(|id| **id == tag_id) {
+                Some(t) => {
+                    Ok(()) // we are done
+                }
+                None => {
+                    // add a triple to the sentence repo
+                    add_is_tagged_relation(rs, entry_id, &tag_id);
+                    Ok(())
+                }
+                // TODO: Is there an Err case?  When?
+            }
         }
-        None => {
-            // add a triple to the sentence repo
-            add_is_tagged_relation(rs, entry_id, &tag_id.unwrap());
-            Ok(())
-        }
-        // TODO: Is there an Err case?  When?
+        Err(e) => Err(e)
     }
-    */
 }
 
 pub fn find_or_create_tag_id_by_name<RT : Repo<Tag>>(rt : &mut RT, tag : &str) -> Result<String> {
-    unimplemented!();
-    /*
     match rt.all() {
         Ok(tags) => {
             match tags.iter().find(|t| t.name == tag) {
-                Some(x) => { Ok(x.id) }
+                Some(x) => { Ok(x.id.clone()) }
                 None => {
                     let tag_id = create_new_tag(rt, NewTag { name : tag.to_string()  })?;
                     Ok(tag_id)
@@ -134,7 +132,6 @@ pub fn find_or_create_tag_id_by_name<RT : Repo<Tag>>(rt : &mut RT, tag : &str) -
         }
         Err(e) => Err(super::error::Error::Repo(e))
     }
-    */
 }
 
 pub fn add_is_tagged_relation<RS : Repo<SentenceTriple>>(rs : &RS, enry_id : &str, tag_id : &str) {
