@@ -191,7 +191,12 @@ pub fn get_associated_entry_ids_of_tags<RS : Repo<SentenceTriple>>(rs : &RS, tag
                     Some(found) => {
                         match triple {
                             SentenceTriple { subject, predicate : Predicate::IsTaggedAs, object } => {
-                                entry_ids.push(subject)
+                                match entry_ids.iter().find(|id| **id == subject) {
+                                    Some(_) => {}
+                                    _ => {
+                                        entry_ids.push(subject)
+                                    }
+                                }
                             }
                             _ => {}
                         }
