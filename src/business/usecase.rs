@@ -162,7 +162,23 @@ pub fn search_by_tags<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTriple
 }
 
 pub fn get_tag_ids_by_tags<RT : Repo<Tag>>(rt : &RT, tag_names : &Vec<String>) -> Vec<String> {
-    unimplemented!();
+    let mut tag_ids : Vec<String> = vec![];
+
+    match rt.all() {
+        Ok(all_tags) => {
+            for tag in all_tags {
+                match tag_names.iter().find(|name| **name == tag.name) {
+                    Some(found) => {
+                        tag_ids.push(tag.id.clone());
+                    }
+                    None => {}
+                }
+            }
+        }
+        _ => {}
+    }
+
+    tag_ids
 }
 
 pub fn get_associated_entry_ids_of_tags<RS : Repo<SentenceTriple>>(rs : &RS, tag_ids : &Vec<String>) -> Vec<String> {
