@@ -182,7 +182,28 @@ pub fn get_tag_ids_by_tags<RT : Repo<Tag>>(rt : &RT, tag_names : &Vec<String>) -
 }
 
 pub fn get_associated_entry_ids_of_tags<RS : Repo<SentenceTriple>>(rs : &RS, tag_ids : &Vec<String>) -> Vec<String> {
-    unimplemented!();
+    let mut entry_ids : Vec<String> = vec![];
+
+    match rs.all() {
+        Ok(all_triples) => {
+            for triple in all_triples {
+                match tag_ids.iter().find(|tag_id| **tag_id == triple.object) {
+                    Some(found) => {
+                        match triple {
+                            SentenceTriple { subject, predicate : Predicate::IsTaggedAs, object } => {
+                                entry_ids.push(subject)
+                            }
+                            _ => {}
+                        }
+                    }
+                    None => {}
+                }
+            }
+        }
+        _ => {}
+    }
+
+    entry_ids
 }
 
 pub fn get_entries_by_ids<RE : Repo<Entry>>(re : &RE, ids : &Vec<String>) -> Vec<Entry> {
