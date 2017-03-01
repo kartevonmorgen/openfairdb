@@ -153,25 +153,23 @@ pub fn add_is_tagged_relation<RS : Repo<SentenceTriple>>(rs : &RS, enry_id : &st
 //
 // * return the newest state of each entry
 
-pub fn search_by_tags(tags : &Vec<String>) -> Vec<Entry> {
-    unimplemented!();
-
-    let tag_ids = get_tag_ids_by_tags(tags);
-    let ids = get_associated_entry_ids_of_tags(&tag_ids);
-    let entries = get_entries_by_ids(&ids);
+pub fn search_by_tags<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTriple>>(re : &RE, rt : &mut RT, rs : &RS, tags : &Vec<String>) -> Vec<Entry> {
+    let tag_ids = get_tag_ids_by_tags(rt, tags);
+    let ids = get_associated_entry_ids_of_tags(rs, &tag_ids);
+    let entries = get_entries_by_ids(re, &ids);
 
     entries
 }
 
-pub fn get_tag_ids_by_tags(tags : &Vec<String>) -> Vec<String> {
+pub fn get_tag_ids_by_tags<RT : Repo<Tag>>(rt : &RT, tag_names : &Vec<String>) -> Vec<String> {
     unimplemented!();
 }
 
-pub fn get_associated_entry_ids_of_tags(tag_ids : &Vec<String>) -> Vec<String> {
+pub fn get_associated_entry_ids_of_tags<RS : Repo<SentenceTriple>>(rs : &RS, tag_ids : &Vec<String>) -> Vec<String> {
     unimplemented!();
 }
 
-pub fn get_entries_by_ids(ids : &Vec<String>) -> Vec<Entry> {
+pub fn get_entries_by_ids<RE : Repo<Entry>>(re : &RE, ids : &Vec<String>) -> Vec<Entry> {
     unimplemented!();
 }
 
