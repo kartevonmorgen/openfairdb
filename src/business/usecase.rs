@@ -207,7 +207,23 @@ pub fn get_associated_entry_ids_of_tags<RS : Repo<SentenceTriple>>(rs : &RS, tag
 }
 
 pub fn get_entries_by_ids<RE : Repo<Entry>>(re : &RE, ids : &Vec<String>) -> Vec<Entry> {
-    unimplemented!();
+    let mut entries : Vec<Entry> = vec![];
+
+    match re.all() {
+        Ok(all_entries) => {
+            for entry in all_entries {
+                match ids.iter().find(|id| **id == entry.id) {
+                    Some(found) => {
+                        entries.push(entry);
+                    }
+                    None => {}
+                }
+            }
+        }
+        _ => {}
+    }
+
+    entries
 }
 
 //
