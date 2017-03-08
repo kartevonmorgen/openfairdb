@@ -23,7 +23,7 @@ use uuid::Uuid;
 pub fn request_entry<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTriple>>(re : &RE, rt : &RT, rs : &RS, id : &str) -> Result<Entry> {
     match re.get(id) {
         Ok(e) => {
-            let tags = get_tags_for_entry_id(rt, rs, id);
+            let tags = get_tags_for_entry_id(rt, rs, id)?;
             let entry_with_tags = Entry {
                 id          :  e.id,
                 created     :  e.created,
@@ -49,38 +49,30 @@ pub fn request_entry<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTriple>
     } 
 }
 
-pub fn get_tags_for_entry_id<RT : Repo<Tag>, RS : Repo<SentenceTriple>>(rt : &RT, rs : &RS, id : &str) -> Vec<String> {
+pub fn get_tags_for_entry_id<RT : Repo<Tag>, RS : Repo<SentenceTriple>>(rt : &RT, rs : &RS, id : &str) -> Result<Vec<String>> {
     // nur die SentenceTriples aus rs auslesen, die auf die id referenzieren
     // und die Tag-IDs extrahieren
-    let mut matching_tag_ids : Vec<String> = vec![];
+    //let mut matching_tag_ids : Vec<String> = vec![];
 
-    match rs.all() {
-        Ok(triples) => {
-            for t in triples {
-                match t {
-                    SentenceTriple { subject : id, predicate : Predicate::IsTaggedAs, object } => {
-                        matching_tag_ids.push(object);
-                    },
-                   _ => {}
-                }
+    Ok(rs.all()?
+        .into_iter()
+        .filter_map(|t|
+            match t {
+                SentenceTriple { subject : id, predicate : Predicate::IsTaggedAs, object } => {
+                    Some(object)
+                },
+                _ => None
             }
-        }
-        Err(_) => {}
-    };
-
-    matching_tag_ids
+        )
+        .collect())
 }
 
 // Now, as you have the tag IDs, you can get the names.
-pub fn get_tag_names_from_ids<RT : Repo<Tag>>(rt : RT, id : &str) -> Vec<String> {
-    let mut tag_names : Vec<String> = vec![];
-    match rt.all() {
-        Ok(tags) => {
-            for t in tags { tag_names.push(t.name) }
-        }
-        _ => {}
-    }
-    tag_names
+pub fn get_tag_names_from_ids<RT : Repo<Tag>>(rt : RT, id : &str) -> Result<Vec<String>> {
+    Ok(rt.all()?
+        .into_iter()
+        .map(|t| t.name)
+        .collect())
 }
 
 //
@@ -100,7 +92,7 @@ pub fn get_tag_names_from_ids<RT : Repo<Tag>>(rt : RT, id : &str) -> Vec<String>
 
 pub fn add_tag_to_entry<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTriple>>(re : &RE, rt : &mut RT, rs : &RS, tag : &str, entry_id : &str) -> Result<()> {
     let tag_id_res = find_or_create_tag_id_by_name(rt, tag);
-    let tag_ids_of_entry : Vec<String> = get_tags_for_entry_id(rt, rs, entry_id);
+    let tag_ids_of_entry : Vec<String> = get_tags_for_entry_id(rt, rs, entry_id)?;
     match tag_id_res {
         Ok(tag_id) => {
             match tag_ids_of_entry.iter().find(|id| **id == tag_id) {
@@ -120,17 +112,15 @@ pub fn add_tag_to_entry<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTrip
 }
 
 pub fn find_or_create_tag_id_by_name<RT : Repo<Tag>>(rt : &mut RT, tag : &str) -> Result<String> {
-    match rt.all() {
-        Ok(tags) => {
-            match tags.iter().find(|t| t.name == tag) {
-                Some(x) => { Ok(x.id.clone()) }
-                None => {
-                    let tag_id = create_new_tag(rt, NewTag { name : tag.to_string()  })?;
-                    Ok(tag_id)
-                }
-            }
+    match rt.all()?
+        .into_iter()
+        .find(|t| t.name == tag)
+    {
+        Some(x) => Ok(x.id),
+        None => {
+            let tag_id = create_new_tag(rt, NewTag { name : tag.to_string()  })?;
+            Ok(tag_id)
         }
-        Err(e) => Err(super::error::Error::Repo(e))
     }
 }
 
@@ -153,82 +143,48 @@ pub fn add_is_tagged_relation<RS : Repo<SentenceTriple>>(rs : &RS, enry_id : &st
 //
 // * return the newest state of each entry
 
-pub fn search_by_tags<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTriple>>(re : &RE, rt : &mut RT, rs : &RS, tags : &Vec<String>) -> Vec<Entry> {
-    let tag_ids = get_tag_ids_by_tags(rt, tags);
-    let ids = get_associated_entry_ids_of_tags(rs, &tag_ids);
-    let entries = get_entries_by_ids(re, &ids);
-
-    entries
+pub fn search_by_tags<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTriple>>(re : &RE, rt : &mut RT, rs : &RS, tags : &Vec<String>) -> Result<Vec<Entry>> {
+    let tag_ids = get_tag_ids_by_tags(rt, tags)?;
+    let ids = get_associated_entry_ids_of_tags(rs, &tag_ids)?;
+    let entries = get_entries_by_ids(re, &ids)?;
+    Ok(entries)
 }
 
-pub fn get_tag_ids_by_tags<RT : Repo<Tag>>(rt : &RT, tag_names : &Vec<String>) -> Vec<String> {
-    let mut tag_ids : Vec<String> = vec![];
-
-    match rt.all() {
-        Ok(all_tags) => {
-            for tag in all_tags {
-                match tag_names.iter().find(|name| **name == tag.name) {
-                    Some(found) => {
-                        tag_ids.push(tag.id.clone());
-                    }
-                    None => {}
-                }
+pub fn get_tag_ids_by_tags<RT : Repo<Tag>>(rt : &RT, tag_names : &Vec<String>) -> Result<Vec<String>> {
+    Ok(rt.all()?
+        .into_iter()
+        .filter_map(|tag|
+            if tag_names.iter().any(|name| **name == tag.name) {
+                Some(tag.id)
+            } else {
+                None
             }
-        }
-        _ => {}
-    }
-
-    tag_ids
+        )
+        .collect())
 }
 
-pub fn get_associated_entry_ids_of_tags<RS : Repo<SentenceTriple>>(rs : &RS, tag_ids : &Vec<String>) -> Vec<String> {
-    let mut entry_ids : Vec<String> = vec![];
-
-    match rs.all() {
-        Ok(all_triples) => {
-            for triple in all_triples {
-                match tag_ids.iter().find(|tag_id| **tag_id == triple.object) {
-                    Some(found) => {
-                        match triple {
-                            SentenceTriple { subject, predicate : Predicate::IsTaggedAs, object } => {
-                                match entry_ids.iter().find(|id| **id == subject) {
-                                    Some(_) => {}
-                                    _ => {
-                                        entry_ids.push(subject)
-                                    }
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                    None => {}
+pub fn get_associated_entry_ids_of_tags<RS : Repo<SentenceTriple>>(rs : &RS, tag_ids : &Vec<String>) -> Result<Vec<String>> {
+    let mut ids = rs.all()?
+        .into_iter()
+        .filter(|triple| tag_ids.iter().any(|tag_id| *tag_id == triple.object))
+        .filter_map(|triple|
+            match triple {
+                SentenceTriple { subject, predicate : Predicate::IsTaggedAs, object } => {
+                    Some(subject)
                 }
+                _ => None
             }
-        }
-        _ => {}
-    }
-
-    entry_ids
+        )
+        .collect::<Vec<String>>();
+    ids.dedup();
+    Ok(ids)
 }
 
-pub fn get_entries_by_ids<RE : Repo<Entry>>(re : &RE, ids : &Vec<String>) -> Vec<Entry> {
-    let mut entries : Vec<Entry> = vec![];
-
-    match re.all() {
-        Ok(all_entries) => {
-            for entry in all_entries {
-                match ids.iter().find(|id| **id == entry.id) {
-                    Some(found) => {
-                        entries.push(entry);
-                    }
-                    None => {}
-                }
-            }
-        }
-        _ => {}
-    }
-
-    entries
+pub fn get_entries_by_ids<RE : Repo<Entry>>(re : &RE, ids : &Vec<String>) -> Result<Vec<Entry>> {
+    Ok(re.all()?
+        .into_iter()
+        .filter(|entry| ids.iter().any(|id| **id == entry.id))
+        .collect())
 }
 
 //
