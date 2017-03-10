@@ -99,6 +99,7 @@ pub fn add_tag_to_entry<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTrip
 
     let tag_id_res = find_or_create_tag_id_by_name(rt, tag);
     let tag_ids_of_entry : Vec<String> = get_tags_for_entry_id(rt, rs, entry_id)?;
+
     match tag_id_res {
         Ok(tag_id) => {
             match tag_ids_of_entry.iter().find(|id| **id == tag_id) {
@@ -494,8 +495,36 @@ pub mod tests {
         let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
         let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
 
+        let x = NewEntry {
+            title       : "foo".into(),
+            description : "bar".into(),
+            lat         : 0.0,
+            lng         : 0.0,
+            street      : None,
+            zip         : None,
+            city        : None,
+            country     : None,
+            email       : None,
+            telephone   : None,
+            homepage    : None,
+            categories  : vec![],
+            tags        : vec![],
+            license     : "CC0-1.0".into()
+        };
+
+        let entry_id = create_new_entry(&mut re, x).unwrap();
+
+        let tag_name  = "baz";
+
         // RUN
+
+        let result = add_tag_to_entry(&re, &mut rt, &mut rs, tag_name, &entry_id);
+
         // CHECK
+
+        assert!(result.is_ok());
+        assert_eq!(rt.objects.len(), 1);
+        assert_eq!(rs.objects.len(), 1);
     }
 
     #[test]
