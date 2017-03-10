@@ -91,9 +91,9 @@ fn get_duplicates() -> Result<Vec<(String, String, DuplicateType)>> {
 }
 
 #[post("/entries", format = "application/json", data = "<e>")]
-fn post_entry(e: JSON<usecase::NewEntry>) -> Result<String> {
+fn post_entry(e: JSON<usecase::NewEntry>) -> result::Result<String,AppError> {
     let id = usecase::create_new_entry(db()?.conn(), e.into_inner())?;
-    Ok(JSON(id))
+    Ok(id)
 }
 
 #[put("/entries/<id>", format = "application/json", data = "<e>")]
