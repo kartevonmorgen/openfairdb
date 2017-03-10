@@ -363,13 +363,25 @@ pub mod tests {
 
     use super::*;
 
+    /////////////////////////
+    // Entry Search Tests
+    /////////////////////////
+
     #[ignore]
     #[test]
     // ENVIRONMENT: tags, entries, some links from tags to entries
     // INPUT: empty vec of tags
-    // OUTPUT: empty vec of entities
+    // OUTPUT: vec of entities
+    // ASSERT: vec of entities is empty
     fn empty_search_by_tags()
     {
+       // SETUP
+       let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
+       let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
+       let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
+
+       // RUN
+       // CHECK
         unimplemented!();
     }
 
