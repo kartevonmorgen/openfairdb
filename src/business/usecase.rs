@@ -68,15 +68,6 @@ pub fn get_tags_for_entry_id<RT : Repo<Tag>, RS : Repo<SentenceTriple>>(rt : &RT
         .collect())
 }
 
-// Now, as you have the tag IDs, you can get the names.
-pub fn get_tag_names_from_ids<RT : Repo<Tag>>(rt : RT, id : &str) -> Result<Vec<String>> {
-    Ok(rt.all()?
-        .into_iter()
-        .filter(|t| t.id == id)
-        .map(|t| t.name)
-        .collect())
-}
-
 //
 // USE CASE: user requests an entry (head entry, no date restriction)
 ////////////////
