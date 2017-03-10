@@ -92,7 +92,7 @@ pub fn update_entry<R: Repo<Entry>>(r: &mut R, e: UpdateEntry) -> Result<()> {
     let e = Entry{
         id          :  e.id,
         created     :  UTC::now().timestamp() as u64,
-        version     :  e.version+1,
+        version     :  e.version,
         title       :  e.title,
         description :  e.description,
         lat         :  e.lat,
