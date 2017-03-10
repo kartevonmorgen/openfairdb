@@ -421,6 +421,65 @@ pub mod tests {
         unimplemented!();
     }
 
+    ////////////////////////////////
+    // Tag Addition Tests
+    ////////////////////////////////
+
+    #[test]
+    fn add_empty_tag_to_entry()
+    {
+       // SETUP
+       let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
+       let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
+       let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
+
+       // RUN
+       // CHECK
+    }
+
+    #[test]
+    fn add_valid_tag_to_entry()
+    {
+       // SETUP
+       let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
+       let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
+       let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
+
+       // RUN
+       // CHECK
+    }
+
+    #[test]
+    fn add_uppercase_tag_to_entry()
+    {
+       // SETUP
+       let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
+       let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
+       let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
+
+       // RUN
+       // CHECK
+    }
+
+    #[test]
+    fn add_untrimmed_tag_to_entry()
+    {
+       // SETUP
+       let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
+       let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
+       let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
+
+       // RUN
+       // CHECK
+    }
+
+    #[test]
+    fn add_tag_with_invalid_characters_to_entry()
+    {
+    }
+
+
+
     type RepoResult<T> = result::Result<T, RepoError>;
 
     pub struct MockRepo<T> {
