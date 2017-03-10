@@ -84,19 +84,6 @@ pub fn get_tags_for_entry_id<RT : Repo<Tag>, RS : Repo<SentenceTriple>>(rt : &RT
 // ** save conection to repo
 
 pub fn add_tag_to_entry<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTriple>>(re : &RE, rt : &mut RT, rs : &mut RS, tag : &str, entry_id : &str) -> Result<(String)> {
-    let t_string = tag.to_ascii_lowercase();
-    let tag = t_string.trim();
-
-    if tag == ""
-    {
-        return Err(Error::Parameter(ParameterError::Tag));
-    }
-
-    if tag.chars().find(|c| !c.is_alphabetic()).is_some()
-    {
-        return Err(Error::Parameter(ParameterError::Tag));
-    }
-
     let tag_id_res = find_or_create_tag_id_by_name(rt, tag);
     let tag_ids_of_entry : Vec<String> = get_tags_for_entry_id(rt, rs, entry_id)?;
 
@@ -119,6 +106,19 @@ pub fn add_tag_to_entry<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTrip
 }
 
 pub fn find_or_create_tag_id_by_name<RT : Repo<Tag>>(rt : &mut RT, tag : &str) -> Result<String> {
+    let t_string = tag.to_ascii_lowercase();
+    let tag = t_string.trim();
+
+    if tag == ""
+    {
+        return Err(Error::Parameter(ParameterError::Tag));
+    }
+
+    if tag.chars().find(|c| !c.is_alphabetic()).is_some()
+    {
+        return Err(Error::Parameter(ParameterError::Tag));
+    }
+
     match rt.all()?
         .into_iter()
         .find(|t| t.name == tag)
