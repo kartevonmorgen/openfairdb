@@ -86,7 +86,7 @@ pub fn create_new_entry<R: Repo<Entry>>(r: &mut R, e: NewEntry) -> Result<String
 
 pub fn update_entry<R: Repo<Entry>>(r: &mut R, e: UpdateEntry) -> Result<()> {
     let old : Entry = r.get(&e.id)?;
-    if old.version != e.version {
+    if (old.version + 1) != e.version {
         return Err(Error::Repo(RepoError::InvalidVersion))
     }
     let e = Entry{
