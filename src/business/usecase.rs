@@ -1,5 +1,6 @@
 use super::error::{Error, RepoError, ParameterError};
 use std::result;
+use std::ascii::AsciiExt;
 use chrono::*;
 use entities::*;
 use super::db::Repo;
@@ -91,8 +92,16 @@ pub fn get_tag_names_from_ids<RT : Repo<Tag>>(rt : RT, id : &str) -> Result<Vec<
 // * connect entry and tag
 // ** save conection to repo
 
-pub fn add_tag_to_entry<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTriple>>(re : &RE, rt : &mut RT, rs : &mut RS, tag : &str, entry_id : &str) -> Result<()> {
+pub fn add_tag_to_entry<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTriple>>(re : &RE, rt : &mut RT, rs : &mut RS, tag : &str, entry_id : &str) -> Result<(String)> {
+    let t_string = tag.to_ascii_lowercase();
+    let tag = t_string.trim();
+
     if tag == ""
+    {
+        return Err(Error::Parameter(ParameterError::Tag));
+    }
+
+    if tag.chars().find(|c| !c.is_alphabetic()).is_some()
     {
         return Err(Error::Parameter(ParameterError::Tag));
     }
@@ -104,12 +113,12 @@ pub fn add_tag_to_entry<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTrip
         Ok(tag_id) => {
             match tag_ids_of_entry.iter().find(|id| **id == tag_id) {
                 Some(t) => {
-                    Ok(()) // we are done
+                    Ok((tag_id)) // we are done
                 }
                 None => {
                     // add a triple to the sentence repo
                     add_is_tagged_relation(rs, entry_id, &tag_id);
-                    Ok(())
+                    Ok((tag_id))
                 }
                 // TODO: Is there an Err case?  When?
             }
@@ -535,8 +544,37 @@ pub mod tests {
         let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
         let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
 
+        let x = NewEntry {
+            title       : "foo".into(),
+            description : "bar".into(),
+            lat         : 0.0,
+            lng         : 0.0,
+            street      : None,
+            zip         : None,
+            city        : None,
+            country     : None,
+            email       : None,
+            telephone   : None,
+            homepage    : None,
+            categories  : vec![],
+            tags        : vec![],
+            license     : "CC0-1.0".into()
+        };
+
+        let entry_id = create_new_entry(&mut re, x).unwrap();
+
+        let tag_name  = "BaZ";
+
         // RUN
+
+        let result = add_tag_to_entry(&re, &mut rt, &mut rs, tag_name, &entry_id);
+
+        let result_tag_id = result.unwrap();
+        let result_tag_name = rt.get(&result_tag_id).unwrap().name;
+
         // CHECK
+
+        assert_eq!(result_tag_name, "baz");
     }
 
     #[test]
@@ -547,13 +585,75 @@ pub mod tests {
         let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
         let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
 
+        let x = NewEntry {
+            title       : "foo".into(),
+            description : "bar".into(),
+            lat         : 0.0,
+            lng         : 0.0,
+            street      : None,
+            zip         : None,
+            city        : None,
+            country     : None,
+            email       : None,
+            telephone   : None,
+            homepage    : None,
+            categories  : vec![],
+            tags        : vec![],
+            license     : "CC0-1.0".into()
+        };
+
+        let entry_id = create_new_entry(&mut re, x).unwrap();
+
+        let tag_name  = "  baz  ";
+
         // RUN
+
+        let result = add_tag_to_entry(&re, &mut rt, &mut rs, tag_name, &entry_id);
+
+        let result_tag_id = result.unwrap();
+        let result_tag_name = rt.get(&result_tag_id).unwrap().name;
+
         // CHECK
+
+        assert_eq!(result_tag_name, "baz");
     }
 
     #[test]
     fn add_tag_with_invalid_characters_to_entry()
     {
+        // SETUP
+        let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
+        let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
+        let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
+
+        let x = NewEntry {
+            title       : "foo".into(),
+            description : "bar".into(),
+            lat         : 0.0,
+            lng         : 0.0,
+            street      : None,
+            zip         : None,
+            city        : None,
+            country     : None,
+            email       : None,
+            telephone   : None,
+            homepage    : None,
+            categories  : vec![],
+            tags        : vec![],
+            license     : "CC0-1.0".into()
+        };
+
+        let entry_id = create_new_entry(&mut re, x).unwrap();
+
+        let tag_name  = "baz!";
+
+        // RUN
+
+        let result = add_tag_to_entry(&re, &mut rt, &mut rs, tag_name, &entry_id);
+
+        // CHECK
+
+        assert!(result.is_err());
     }
 
 
