@@ -387,6 +387,20 @@ pub mod tests {
 
     #[ignore]
     #[test]
+    // ENVIRONMENT:
+    // * no tags, no entries, no links
+    // * alternate: tags, and entries, but no links
+    // * alternate: tags, but no entries and links
+    // * alternate: entries, but no tags and links
+    // INPUT: a tag vec
+    // OUTPUT: vec of entities
+    // ASSERT: vec of entities is empty
+    fn search_on_empty_db()
+    {
+    }
+
+    #[ignore]
+    #[test]
     // ENVIRONMENT: tags, entries, some links from tags to entries
     // INPUT: vec of one tag (existing)
     // OUTPUT: vec of associated entries
