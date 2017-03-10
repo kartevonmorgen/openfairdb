@@ -155,7 +155,8 @@ impl Repo<Entry> for GraphClient {
          )
          WITH e, s
          MATCH s<-[:BELONGS_TO]-(c:Category)
-         WITH e, s, collect(DISTINCT c.id) as categories",
+         WITH e, s, collect(DISTINCT c.id) as categories
+         RETURN e, s, categories",
         {
             "id"          => &e.id,
             "version"     => &e.version,
