@@ -436,6 +436,63 @@ pub mod tests {
         assert_eq!(entry_vec[0].id, entry_id);
     }
 
+    #[test]
+    fn search_by_two_defined_tags()
+    {
+        // SETUP
+
+        let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
+        let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
+        let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
+
+        let x = NewEntry {
+            title       : "foo".into(),
+            description : "bar".into(),
+            lat         : 0.0,
+            lng         : 0.0,
+            street      : None,
+            zip         : None,
+            city        : None,
+            country     : None,
+            email       : None,
+            telephone   : None,
+            homepage    : None,
+            categories  : vec![],
+            tags        : vec![],
+            license     : "CC0-1.0".into()
+        };
+
+        let entry_id = create_new_entry(&mut re, x).unwrap();
+
+        let tag_name1  = "bazooka";
+        let tag_id1 = create_new_tag(&mut rt, NewTag{name:tag_name1.to_string()}).unwrap();
+
+        let tag_name2 = "bacillus";
+        let tag_id2 =  create_new_tag(&mut rt, NewTag{name:tag_name2.to_string()}).unwrap();
+
+        let tag_vec = vec![tag_name1.to_string(), tag_name2.to_string()];
+
+        rs.create(&SentenceTriple {
+            subject   : entry_id.clone(),
+            predicate : Predicate::IsTaggedAs,
+            object    : tag_id1.clone()
+        });
+        rs.create(&SentenceTriple {
+            subject   : entry_id.clone(),
+            predicate : Predicate::IsTaggedAs,
+            object    : tag_id2.clone()
+        });
+
+
+        // RUN
+        let result = search_by_tags(&re, &mut rt, &rs, &tag_vec);
+
+        // CHECK
+        let entry_vec = result.unwrap();
+        assert_eq!(entry_vec.len(), 1); // assume no doublettes
+        assert_eq!(entry_vec[0].id, entry_id);
+    }
+
     #[ignore]
     #[test]
     // ENVIRONMENT: tags, entries, some links from tags to entries
