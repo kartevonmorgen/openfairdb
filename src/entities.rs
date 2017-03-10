@@ -27,7 +27,7 @@ pub struct Category {
     pub name      : String
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Tag {
     pub id        : String,
     pub created   : u64,
