@@ -1,4 +1,4 @@
-use super::error::{Error, RepoError};
+use super::error::{Error, RepoError, ParameterError};
 use std::result;
 use chrono::*;
 use entities::*;
@@ -91,7 +91,12 @@ pub fn get_tag_names_from_ids<RT : Repo<Tag>>(rt : RT, id : &str) -> Result<Vec<
 // * connect entry and tag
 // ** save conection to repo
 
-pub fn add_tag_to_entry<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTriple>>(re : &RE, rt : &mut RT, rs : &RS, tag : &str, entry_id : &str) -> Result<()> {
+pub fn add_tag_to_entry<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTriple>>(re : &RE, rt : &mut RT, rs : &mut RS, tag : &str, entry_id : &str) -> Result<()> {
+    if tag == ""
+    {
+        return Err(Error::Parameter(ParameterError::Tag));
+    }
+
     let tag_id_res = find_or_create_tag_id_by_name(rt, tag);
     let tag_ids_of_entry : Vec<String> = get_tags_for_entry_id(rt, rs, entry_id)?;
     match tag_id_res {
@@ -125,8 +130,12 @@ pub fn find_or_create_tag_id_by_name<RT : Repo<Tag>>(rt : &mut RT, tag : &str) -
     }
 }
 
-pub fn add_is_tagged_relation<RS : Repo<SentenceTriple>>(rs : &RS, enry_id : &str, tag_id : &str) {
-    unimplemented!();
+pub fn add_is_tagged_relation<RS : Repo<SentenceTriple>>(rs : &mut RS, entry_id : &str, tag_id : &str) {
+    rs.create(&SentenceTriple {
+        subject   : entry_id.to_string(),
+        predicate : Predicate::IsTaggedAs,
+        object    : tag_id.to_string()
+    });
 }
 // USE CASE: user adds a tag to an entry
 ////////////////
@@ -247,6 +256,18 @@ impl Id for Category {
     fn id(&self) -> &str {
         &self.id
     }
+}
+
+impl Id for Tag {
+    fn id(&self) -> &str {
+        &self.id
+    }
+}
+
+
+// TODO: Use database trait to make IDs for sentence triples obsolete
+impl Id for SentenceTriple {
+    fn id(&self) -> &str { "" }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -428,49 +449,77 @@ pub mod tests {
     #[test]
     fn add_empty_tag_to_entry()
     {
-       // SETUP
-       let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
-       let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
-       let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
+        // SETUP
+        let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
+        let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
+        let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
 
-       // RUN
-       // CHECK
+        let x = NewEntry {
+            title       : "foo".into(),
+            description : "bar".into(),
+            lat         : 0.0,
+            lng         : 0.0,
+            street      : None,
+            zip         : None,
+            city        : None,
+            country     : None,
+            email       : None,
+            telephone   : None,
+            homepage    : None,
+            categories  : vec![],
+            tags        : vec![],
+            license     : "CC0-1.0".into()
+        };
+
+        let entry_id = create_new_entry(&mut re, x).unwrap();
+
+        let tag_name  = "";
+
+        // RUN
+
+        let result = add_tag_to_entry(&re, &mut rt, &mut rs, tag_name, &entry_id);
+
+        // CHECK
+
+        assert_eq!(rs.objects.len(), 0);
+        assert_eq!(rt.objects.len(), 0);
+        assert!(result.is_err());
     }
 
     #[test]
     fn add_valid_tag_to_entry()
     {
-       // SETUP
-       let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
-       let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
-       let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
+        // SETUP
+        let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
+        let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
+        let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
 
-       // RUN
-       // CHECK
+        // RUN
+        // CHECK
     }
 
     #[test]
     fn add_uppercase_tag_to_entry()
     {
-       // SETUP
-       let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
-       let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
-       let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
+        // SETUP
+        let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
+        let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
+        let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
 
-       // RUN
-       // CHECK
+        // RUN
+        // CHECK
     }
 
     #[test]
     fn add_untrimmed_tag_to_entry()
     {
-       // SETUP
-       let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
-       let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
-       let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
+        // SETUP
+        let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
+        let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
+        let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
 
-       // RUN
-       // CHECK
+        // RUN
+        // CHECK
     }
 
     #[test]
