@@ -241,7 +241,7 @@ pub mod tests {
         };
         let new = UpdateEntry {
             id          : id.clone(),
-            version     : 1,
+            version     : 2,
             title       : "foo".into(),
             description : "bar".into(),
             lat         : 0.0,
@@ -290,7 +290,7 @@ pub mod tests {
         };
         let new = UpdateEntry {
             id          : id.clone(),
-            version     : 4,
+            version     : 3,
             title       : "foo".into(),
             description : "bar".into(),
             lat         : 0.0,
