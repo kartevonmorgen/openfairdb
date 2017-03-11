@@ -16,6 +16,9 @@ quick_error!{
         Url{
             description("Invalid URL")
         }
+        Tag{
+           description("Invalid Tag")
+        }
     }
 }
 

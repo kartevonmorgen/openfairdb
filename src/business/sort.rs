@@ -60,6 +60,7 @@ mod tests {
             telephone   : None,
             homepage    : None,
             categories  : vec![],
+            tags        : vec![],
             license     : None,
         }
     }

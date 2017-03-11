@@ -187,6 +187,21 @@ fn get_count_entries() -> Result<String> {
     Ok(JSON(entries.len().to_string()))
 }
 
+#[post("/tags", format = "application/json", data = "<t>")]
+fn create_tag(t: JSON<usecase::NewTag>) -> Result<String> {
+    let id = usecase::find_or_create_tag_id_by_name(db()?.conn(),&t.name)?;
+    Ok(JSON(id))
+}
+
+#[get("/tags")]
+fn get_tags() -> Result<Vec<json::Tag>> {
+    let tags: Vec<Tag> = db()?.conn().all()?;
+    Ok(JSON(tags
+        .into_iter()
+        .map(json::Tag::from)
+        .collect::<Vec<json::Tag>>()))
+}
+
 #[get("/server/version")]
 fn get_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
@@ -219,7 +234,9 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
                        get_search,
                        get_duplicates,
                        get_count_entries,
-                       get_version])
+                       get_version,
+                       get_tags,
+                       create_tag])
         .launch();
 }
 

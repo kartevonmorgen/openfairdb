@@ -56,6 +56,7 @@ mod tests {
             telephone   : None,
             homepage    : None,
             categories  : cats.unwrap_or(vec![]),
+            tags        : vec![],
             license     : None,
         }
     }

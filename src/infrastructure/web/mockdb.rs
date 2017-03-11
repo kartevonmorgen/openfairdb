@@ -8,12 +8,14 @@ use r2d2::{self, Pool};
 pub struct MockDb {
     entries: MockRepo<Entry>,
     categories: MockRepo<Category>,
+    tags: MockRepo<Tag>,
 }
 
 impl MockDb {
     pub fn clear_all(&mut self) {
         self.entries.clear();
         self.categories.clear();
+        self.tags.clear();
     }
 }
 
@@ -49,6 +51,21 @@ impl Repo<Category> for MockDb {
     }
 }
 
+impl Repo<Tag> for MockDb {
+    fn get(&self, id: &str) -> RepoResult<Tag> {
+        self.tags.get(id)
+    }
+    fn all(&self) -> RepoResult<Vec<Tag>> {
+        self.tags.all()
+    }
+    fn create(&mut self, e: &Tag) -> RepoResult<()> {
+        self.tags.create(e)
+    }
+    fn update(&mut self, e: &Tag) -> RepoResult<()> {
+        self.tags.update(e)
+    }
+}
+
 #[derive(Debug)]
 pub struct MockDbConnectionManager;
 
@@ -60,6 +77,7 @@ impl r2d2::ManageConnection for MockDbConnectionManager {
         Ok(MockDb {
             entries: MockRepo::new(),
             categories: MockRepo::new(),
+            tags: MockRepo::new(),
         })
   }
 
