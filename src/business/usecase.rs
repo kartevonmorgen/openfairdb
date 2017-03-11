@@ -313,7 +313,7 @@ pub struct NewEntry {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct NewTag {
-    name : String,
+    pub name : String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

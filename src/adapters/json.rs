@@ -81,6 +81,16 @@ impl From<e::Category> for Category {
     }
 }
 
+impl From<e::Tag> for Tag {
+    fn from(t: e::Tag) -> Tag {
+        Tag{
+            id          : Some(t.id),
+            version     : Some(t.version),
+            name        : t.name,
+        }
+    }
+}
+
 // JSON -> Entity
 
 impl TryFrom<Entry> for e::Entry {
