@@ -834,6 +834,55 @@ pub mod tests {
         assert!(result.is_err());
     }
 
+    #[test]
+    fn get_entry_with_valid_id()
+    {
+        // SETUP
+
+        let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
+        let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
+        let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
+
+        let x = NewEntry {
+            title       : "foo".into(),
+            description : "bar".into(),
+            lat         : 0.0,
+            lng         : 0.0,
+            street      : None,
+            zip         : None,
+            city        : None,
+            country     : None,
+            email       : None,
+            telephone   : None,
+            homepage    : None,
+            categories  : vec![],
+            tags        : vec![],
+            license     : "CC0-1.0".into()
+        };
+
+        let entry_id = create_new_entry(&mut re, x).unwrap();
+
+        let tag_name  = "baz";
+
+        let tag_id = create_new_tag(&mut rt, NewTag{name:tag_name.to_string()}).unwrap();
+
+        rs.create(&SentenceTriple {
+            subject   : entry_id.clone(),
+            predicate : Predicate::IsTaggedAs,
+            object    : tag_id.clone()
+        });
+
+        // RUN
+
+        let result = request_entry(&re, &rt, &rs, &entry_id);
+
+        // CHECK
+
+        assert!(result.is_ok());
+        let entry = result.unwrap();
+        assert_eq!(entry.tags.len(), 1);
+        assert_eq!(entry.tags[0], tag_id);
+    }
 
     type RepoResult<T> = result::Result<T, RepoError>;
 
