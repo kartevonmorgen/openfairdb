@@ -87,6 +87,14 @@ fn add_entry_with_tags<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTripl
 ////////////////
 
 ////////////////
+// USE CASE: user removes a tag relation from an entry
+
+// TODO: get clear, how to remove a relation from the DB...
+
+// USE CASE: user removes a tag relation from an entry
+////////////////
+
+////////////////
 // USE CASE: user adds a tag to an entry
 //
 // What should happen:
