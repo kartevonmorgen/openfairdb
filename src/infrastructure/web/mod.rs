@@ -1,6 +1,6 @@
 use rocket::{self, LoggingLevel};
 use rocket_contrib::JSON;
-use rocket::response::{content, Response, Responder};
+use rocket::response::{Response, content, Responder};
 use rocket::http::Status;
 use rocket::config::{Environment, Config};
 use adapters::json;
@@ -30,7 +30,7 @@ fn db() -> io::Result<neo4j::DB> { neo4j::db() }
 #[cfg(test)]
 fn db() -> io::Result<mockdb::DB> { mockdb::db() }
 
-type Result<T> = result::Result<content::JSON<T>, AppError>;
+type Result<T> = result::Result<JSON<T>, AppError>;
 
 fn extract_ids(s: &str) -> Vec<String> {
     s.split(',')
@@ -48,17 +48,17 @@ fn extract_ids_test() {
 }
 
 #[get("/entries")]
-fn get_entries() -> Result<JSON<Vec<json::Entry>>> {
+fn get_entries() -> Result<Vec<json::Entry>> {
     let entries: Vec<Entry> = db()?.conn().all()?;
     let e = entries
         .into_iter()
         .map(json::Entry::from)
         .collect::<Vec<json::Entry>>();
-    Ok(content::JSON(JSON(e)))
+    Ok(JSON(e))
 }
 
 #[get("/entries/<id>")]
-fn get_entry(id: &str) -> Result<String> {
+fn get_entry(id: &str) -> result::Result<content::JSON<String>,AppError> {
     let ids = extract_ids(id);
     let entries: Vec<Entry> = db()?.conn().all()?;
     let e = match ids.len() {
@@ -84,31 +84,31 @@ fn get_entry(id: &str) -> Result<String> {
 }
 
 #[get("/duplicates")]
-fn get_duplicates() -> Result<JSON<Vec<(String, String, DuplicateType)>>> {
+fn get_duplicates() -> Result<Vec<(String, String, DuplicateType)>> {
     let entries: Vec<Entry> = db()?.conn().all()?;
     let ids = duplicates::find_duplicates(&entries);
-    Ok(content::JSON(JSON(ids)))
+    Ok(JSON(ids))
 }
 
 #[post("/entries", format = "application/json", data = "<e>")]
-fn post_entry(e: JSON<usecase::NewEntry>) -> Result<String> {
+fn post_entry(e: JSON<usecase::NewEntry>) -> result::Result<String,AppError> {
     let id = usecase::create_new_entry(db()?.conn(), e.into_inner())?;
-    Ok(content::JSON(id))
+    Ok(id)
 }
 
 #[put("/entries/<id>", format = "application/json", data = "<e>")]
 fn put_entry(id: &str, e: JSON<usecase::UpdateEntry>) -> Result<String> {
     usecase::update_entry(db()?.conn(), e.into_inner())?;
-    Ok(content::JSON(id.to_string()))
+    Ok(JSON(id.to_string()))
 }
 
 #[get("/categories")]
-fn get_categories() -> Result<JSON<Vec<json::Category>>> {
+fn get_categories() -> Result<Vec<json::Category>> {
     let categories: Vec<Category> = db()?.conn().all()?;
-    Ok(content::JSON(JSON(categories
+    Ok(JSON(categories
         .into_iter()
         .map(json::Category::from)
-        .collect::<Vec<json::Category>>())))
+        .collect::<Vec<json::Category>>()))
 }
 
 #[get("/categories/<id>")]
@@ -135,7 +135,7 @@ fn get_category(id: &str) -> Result<String> {
                 .collect::<Vec<json::Category>>())
         }
     }?;
-    Ok(content::JSON(res))
+    Ok(JSON(res))
 }
 
 #[derive(FromForm)]
@@ -146,7 +146,7 @@ struct SearchQuery {
 }
 
 #[get("/search?<search>")]
-fn get_search(search: SearchQuery) -> Result<JSON<json::SearchResult>> {
+fn get_search(search: SearchQuery) -> Result<json::SearchResult> {
     let entries: Vec<Entry> = db()?.conn().all()?;
     let cat_ids = extract_ids(&search.categories);
     let bbox = geo::extract_bbox(&search.bbox).map_err(Error::Parameter)
@@ -175,16 +175,16 @@ fn get_search(search: SearchQuery) -> Result<JSON<json::SearchResult>> {
         .map(|x| x.id.clone())
         .collect::<Vec<_>>();
 
-    Ok(content::JSON(JSON(json::SearchResult {
+    Ok(JSON(json::SearchResult {
         visible: visible_results,
         invisible: invisible_results,
-    })))
+    }))
 }
 
 #[get("/count/entries")]
 fn get_count_entries() -> Result<String> {
     let entries: Vec<Entry> = db()?.conn().all()?;
-    Ok(content::JSON(entries.len().to_string()))
+    Ok(JSON(entries.len().to_string()))
 }
 
 #[post("/tags", format = "application/json", data = "<t>")]

@@ -1,6 +1,6 @@
 [package]
 name = "openfairdb"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Markus Kohlhase <mail@markus-kohlhase.de>"]
 
 [dependencies]
@@ -10,7 +10,7 @@ log = "0.3"
 slog-envlogger = "0.5"
 uuid = { version = "0.3", features = ["v4"] }
 rusted_cypher = "1.0"
-r2d2_cypher = { version = "0.2.0", git = "https://github.com/flosse/r2d2-cypher" }
+r2d2_cypher = "0.2"
 url = "1.4"
 quick-error = "1.1"
 emailaddress = "0.3"

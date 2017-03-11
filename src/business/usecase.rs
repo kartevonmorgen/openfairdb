@@ -374,13 +374,13 @@ pub fn create_new_tag<R: Repo<Tag>>(r: &mut R, t: NewTag) -> Result<String> {
 
 pub fn update_entry<R: Repo<Entry>>(r: &mut R, e: UpdateEntry) -> Result<()> {
     let old : Entry = r.get(&e.id)?;
-    if old.version != e.version {
+    if (old.version + 1) != e.version {
         return Err(Error::Repo(RepoError::InvalidVersion))
     }
     let e = Entry{
         id          :  e.id,
         created     :  UTC::now().timestamp() as u64,
-        version     :  e.version+1,
+        version     :  e.version,
         title       :  e.title,
         description :  e.description,
         lat         :  e.lat,
@@ -1034,7 +1034,7 @@ pub mod tests {
         };
         let new = UpdateEntry {
             id          : id.clone(),
-            version     : 1,
+            version     : 2,
             title       : "foo".into(),
             description : "bar".into(),
             lat         : 0.0,
@@ -1085,7 +1085,7 @@ pub mod tests {
         };
         let new = UpdateEntry {
             id          : id.clone(),
-            version     : 4,
+            version     : 3,
             title       : "foo".into(),
             description : "bar".into(),
             lat         : 0.0,

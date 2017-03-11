@@ -152,10 +152,7 @@ impl Repo<Entry> for GraphClient {
              s.license     = {license}
          FOREACH (c IN cats |
            MERGE (c)-[:BELONGS_TO]->s
-         )
-         WITH e, s
-         MATCH s<-[:BELONGS_TO]-(c:Category)
-         WITH e, s, collect(DISTINCT c.id) as categories",
+         )",
         {
             "id"          => &e.id,
             "version"     => &e.version,
