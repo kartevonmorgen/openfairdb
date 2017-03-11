@@ -390,6 +390,60 @@ pub mod tests {
     /////////////////////////
 
     #[test]
+    // ENVIRONMENT: tags, entries, some links from tags to entries
+    // INPUT: vec of one tag (undefined)
+    // OUTPUT: vec of associated entries
+    // ASSERT: output should be empty
+    fn search_by_undefined_tag()
+    {
+        // SETUP
+
+        let mut rt : MockRepo<Tag> = MockRepo { objects : vec![] };
+        let mut re : MockRepo<Entry> = MockRepo { objects : vec![] };
+        let mut rs : MockRepo<SentenceTriple> = MockRepo { objects : vec![] };
+
+        let x = NewEntry {
+            title       : "foo".into(),
+            description : "bar".into(),
+            lat         : 0.0,
+            lng         : 0.0,
+            street      : None,
+            zip         : None,
+            city        : None,
+            country     : None,
+            email       : None,
+            telephone   : None,
+            homepage    : None,
+            categories  : vec![],
+            tags        : vec![],
+            license     : "CC0-1.0".into()
+        };
+
+        let entry_id = create_new_entry(&mut re, x).unwrap();
+
+        let tag_name  = "baz";
+
+        let tag_id = create_new_tag(&mut rt, NewTag{name:tag_name.to_string()}).unwrap();
+
+        rs.create(&SentenceTriple {
+            subject   : entry_id.clone(),
+            predicate : Predicate::IsTaggedAs,
+            object    : tag_id.clone()
+        });
+
+        // RUN
+        let result = search_by_tags(&re, &mut rt, &rs, &vec!["mock".into()]);
+
+        // CHECK
+        let entry_vec = result.unwrap();
+        assert_eq!(entry_vec.len(), 0);
+    }
+
+    #[test]
+    // ENVIRONMENT: tags, entries, some links from tags to entries
+    // INPUT: vec of one tag (existing)
+    // OUTPUT: vec of associated entries
+    // ASSERT: only the fitting entries are given back
     fn search_by_defined_tag()
     {
         // SETUP
@@ -523,28 +577,6 @@ pub mod tests {
     // ASSERT: vec of entities is empty
     fn search_on_empty_db()
     {
-    }
-
-    #[ignore]
-    #[test]
-    // ENVIRONMENT: tags, entries, some links from tags to entries
-    // INPUT: vec of one tag (existing)
-    // OUTPUT: vec of associated entries
-    // ASSERT: only the fitting entries are given back
-    fn search_by_one_tag()
-    {
-        unimplemented!();
-    }
-
-    #[ignore]
-    #[test]
-    // ENVIRONMENT: tags, entries, some links from tags to entries
-    // INPUT: vec of one tag (undefined)
-    // OUTPUT: vec of associated entries
-    // ASSERT: output should be empty
-    fn search_by_undefined_tag()
-    {
-        unimplemented!();
     }
 
     ////////////////////////////////
