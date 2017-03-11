@@ -73,6 +73,20 @@ pub fn get_tags_for_entry_id<RT : Repo<Tag>, RS : Repo<SentenceTriple>>(rt : &RT
 ////////////////
 
 ////////////////
+// USE CASE: user creates an entry with tags
+
+fn add_entry_with_tags<RE : Repo<Entry>, RT : Repo<Tag>, RS : Repo<SentenceTriple>>(re : &mut RE, rt : &mut RT, rs : &mut RS, tags : &Vec<String>, entry : NewEntry) -> Result<(String)> {
+    let entry_id = create_new_entry(re, entry)?;
+    for tag in tags.iter() {
+        add_tag_to_entry(re, rt, rs, tag, &entry_id)?;
+    }
+    Ok((entry_id))
+}
+
+// USE CASE: user creates an entry with tags
+////////////////
+
+////////////////
 // USE CASE: user adds a tag to an entry
 //
 // What should happen:
