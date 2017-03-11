@@ -38,6 +38,7 @@ pub struct NewEntry {
     telephone   : Option<String>,
     homepage    : Option<String>,
     categories  : Vec<String>,
+    tags        : Vec<String>,
     license     : String,
 }
 
@@ -57,6 +58,7 @@ pub struct UpdateEntry {
     telephone   : Option<String>,
     homepage    : Option<String>,
     categories  : Vec<String>,
+    tags        : Vec<String>,
 }
 
 pub fn create_new_entry<R: Repo<Entry>>(r: &mut R, e: NewEntry) -> Result<String>
@@ -77,6 +79,7 @@ pub fn create_new_entry<R: Repo<Entry>>(r: &mut R, e: NewEntry) -> Result<String
         telephone   :  e.telephone,
         homepage    :  e.homepage,
         categories  :  e.categories,
+        tags        :  e.tags,
         license     :  Some(e.license)
     };
     e.validate()?;
@@ -105,6 +108,7 @@ pub fn update_entry<R: Repo<Entry>>(r: &mut R, e: UpdateEntry) -> Result<()> {
         telephone   :  e.telephone,
         homepage    :  e.homepage,
         categories  :  e.categories,
+        tags        :  e.tags,
         license     :  old.license
     };
     r.update(&e)?;
@@ -181,6 +185,7 @@ pub mod tests {
             telephone   : None,
             homepage    : None,
             categories  : vec![],
+            tags        : vec![],
             license     : "CC0-1.0".into()
         };
         let mut mock_db: MockRepo<Entry> = MockRepo { objects: vec![] };
@@ -212,6 +217,7 @@ pub mod tests {
             telephone   : None,
             homepage    : None,
             categories  : vec![],
+            tags        : vec![],
             license     : "CC0-1.0".into()
         };
         let mut mock_db: MockRepo<Entry> = MockRepo { objects: vec![] };
@@ -237,6 +243,7 @@ pub mod tests {
             telephone   : None,
             homepage    : None,
             categories  : vec![],
+            tags        : vec![],
             license     : None
         };
         let new = UpdateEntry {
@@ -254,6 +261,7 @@ pub mod tests {
             telephone   : None,
             homepage    : None,
             categories  : vec![],
+            tags        : vec![],
         };
         let mut mock_db : MockRepo<Entry> = MockRepo{ objects: vec![old]};
         let now = UTC::now();
@@ -286,6 +294,7 @@ pub mod tests {
             telephone   : None,
             homepage    : None,
             categories  : vec![],
+            tags        : vec![],
             license     : None
         };
         let new = UpdateEntry {
@@ -303,6 +312,7 @@ pub mod tests {
             telephone   : None,
             homepage    : None,
             categories  : vec![],
+            tags        : vec![],
         };
         let mut mock_db : MockRepo<Entry> = MockRepo{ objects: vec![old]};
         let result = update_entry(&mut mock_db, new);
@@ -341,6 +351,7 @@ pub mod tests {
             telephone   : None,
             homepage    : None,
             categories  : vec![],
+            tags        : vec![],
         };
         let mut mock_db : MockRepo<Entry> = MockRepo{ objects: vec![]};
         let result = update_entry(&mut mock_db, new);

@@ -15,6 +15,7 @@ pub struct Entry {
     pub telephone   : Option<String>,
     pub homepage    : Option<String>,
     pub categories  : Vec<String>,
+    pub tags        : Vec<String>,
     pub license     : Option<String>,
 }
 
@@ -24,4 +25,26 @@ pub struct Category {
     pub created   : u64,
     pub version   : u64,
     pub name      : String
+}
+
+#[derive(Debug, Clone)]
+pub struct Tag {
+    pub id        : String,
+    pub created   : u64,
+    pub version   : u64,
+    pub name      : String
+}
+
+#[derive(Debug, Clone)]
+pub enum Predicate {
+    IsEquivalentTo,
+    IsSimilarTo,
+    IsSubtypeOf
+}
+
+#[derive(Debug, Clone)]
+pub struct SentenceTriple {
+    subject   : String,
+    predicate : Predicate,
+    object    : String
 }
