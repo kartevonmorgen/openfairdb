@@ -19,6 +19,7 @@ pub struct Entry {
     pub telephone   : Option<String>,
     pub homepage    : Option<String>,
     pub categories  : Option<Vec<String>>,
+    pub tags        : Option<Vec<String>>,
     pub license     : Option<String>,
 }
 
@@ -28,6 +29,13 @@ pub struct Category {
     pub created   : Option<u64>,
     pub version   : Option<u64>,
     pub name      : Option<String>
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Tag {
+    pub id        : Option<String>,
+    pub version   : Option<u64>,
+    pub name      : String
 }
 
 #[derive(Serialize, Debug, Clone)]
@@ -56,6 +64,7 @@ impl From<e::Entry> for Entry {
             telephone   : e.telephone,
             homepage    : e.homepage,
             categories  : Some(e.categories),
+            tags        : Some(e.tags),
             license     : e.license
         }
     }
@@ -93,6 +102,7 @@ impl TryFrom<Entry> for e::Entry {
             telephone   : e.telephone,
             homepage    : e.homepage,
             categories  : e.categories.ok_or_else(||ConversionError::Categories)?,
+            tags        : e.tags.unwrap_or_else(||vec![]),
             license     : e.license
         })
     }

@@ -256,3 +256,85 @@ impl Repo<Category> for GraphClient {
         Ok(())
     }
 }
+
+impl Repo<Tag> for GraphClient {
+
+    fn get(&self, id: &str) -> Result<Tag> {
+        let result = self.exec(cypher_stmt!(
+        "MATCH (e:Tag)<--(s:CategoryState) WHERE t.id = {id}
+         WITH max(s.created) as created
+         MATCH (x:Tag)<--(s:CategoryState)
+         WHERE t.id = {id} AND s.created = created
+         WITH t, s
+         RETURN {
+           id      : t.id,
+           version : s.version,
+           created : s.created,
+           name    : s.name
+         } AS t", {"id" => &id})?)?;
+        let r = result.rows().next().ok_or(RepoError::NotFound)?;
+        let t = r.get::<Tag>("t")?;
+        Ok(t)
+    }
+
+    fn all(&self) -> Result<Vec<Tag>> {
+        let result = self.exec(
+        "MATCH (t:Tag)<--(s:CategoryState)
+         RETURN {
+           id      : t.id,
+           version : s.version,
+           created : s.created,
+           name    : s.name
+         } AS t")?;
+        Ok(result
+            .rows()
+            .filter_map(|r| r.get::<Tag>("t").ok())
+            .collect::<Vec<Tag>>())
+    }
+
+    fn create(&mut self, t: &Tag) -> Result<()> {
+        self.exec(cypher_stmt!(
+        "CREATE (t:Tag {id:{id}})
+         MERGE t<-[:BELONGS_TO]-(s:CategoryState {
+           created : timestamp(),
+           version : 1,
+           name    : {name}
+         })
+         RETURN {
+           id      : t.id,
+           version : s.version,
+           created : s.created,
+           name    : s.name
+         } AS t", {
+           "id"   => &t.id,
+           "name" => &t.name
+        })?)?;
+        Ok(())
+    }
+
+    fn update(&mut self, t: &Tag) -> Result<()> {
+        debug!("update tag: {}", t.id);
+        self.exec(cypher_stmt!(
+        "MATCH (t:Category)<--(s:CategoryState) WHERE t.id = {id}
+         WITH max(s.version) as v
+         MATCH (t:Category)<--(old:CategoryState)
+         WHERE t.id = {id} AND old.version = v AND old.version + 1 = {version}
+         WITH t,e
+         MERGE t<-[:BELONGS_TO]-(s:CategoryState {
+           created : timestamp(),
+           version : {version},
+           name    : {name}
+         })
+         RETURN {
+           id      : t.id,
+           version : s.version,
+           created : s.created,
+           name    : s.name
+         } AS t", {
+           "id"      => &t.id,
+           "version" => &t.version,
+           "name"    => &t.name
+         })?)?;
+        Ok(())
+    }
+}

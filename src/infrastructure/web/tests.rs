@@ -23,6 +23,7 @@ fn get_all_entries() {
         telephone   :  None,
         homepage    :  None,
         categories  :  vec![],
+        tags        :  vec![],
         license     :  None,
     };
     (super::db().unwrap().conn() as &mut Repo<Entry>).create(&e).unwrap();
@@ -61,6 +62,7 @@ fn get_one_entry() {
         telephone   :  None,
         homepage    :  None,
         categories  :  vec![],
+        tags        :  vec![],
         license     :  None,
     };
     (super::db().unwrap().conn() as &mut Repo<Entry>).create(&e).unwrap();
@@ -98,6 +100,7 @@ fn get_multiple_entries() {
         telephone   :  None,
         homepage    :  None,
         categories  :  vec![],
+        tags        :  vec![],
         license     :  None,
     };
     let two = Entry{
@@ -116,6 +119,7 @@ fn get_multiple_entries() {
         telephone   :  None,
         homepage    :  None,
         categories  :  vec![],
+        tags        :  vec![],
         license     :  None,
     };
     (super::db().unwrap().conn() as &mut Repo<Entry>).create(&one).unwrap();
@@ -136,4 +140,28 @@ fn get_multiple_entries() {
     assert_eq!(entries.len(),2);
     assert!(entries.iter().any(|x|*x==one));
     assert!(entries.iter().any(|x|*x==two));
+}
+
+#[ignore]
+#[test]
+fn create_valid_tag() {
+    unimplemented!();
+}
+
+#[ignore]
+#[test]
+fn create_invalid_tag() {
+    unimplemented!();
+}
+
+#[ignore]
+#[test]
+fn create_existing_tag() {
+    unimplemented!();
+}
+
+#[ignore]
+#[test]
+fn get_all_tags() {
+    unimplemented!();
 }
