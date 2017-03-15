@@ -1,4 +1,4 @@
-use business::db::Repo;
+use business::db::Db;
 use entities::*;
 use rusted_cypher::GraphClient;
 use business::error::RepoError;
@@ -6,9 +6,9 @@ use std::result;
 
 type Result<T> = result::Result<T, RepoError>;
 
-impl Repo<Entry> for GraphClient {
+impl Db for GraphClient {
 
-    fn get(&self, id: &str) -> Result<Entry> {
+    fn get_entry(&self, id: &str) -> Result<Entry> {
         let result = self.exec(cypher_stmt!(
         "MATCH (e:Entry)<--(s:EntryState) WHERE e.id = {id}
          WITH max(s.version) as version
@@ -41,7 +41,7 @@ impl Repo<Entry> for GraphClient {
         Ok(e)
     }
 
-    fn all(&self) -> Result<Vec<Entry>> {
+    fn all_entries(&self) -> Result<Vec<Entry>> {
         let result = self.exec(
         "MATCH (e:Entry)<--(x:EntryState)
           WITH distinct e, max(x.created) as max
@@ -75,7 +75,7 @@ impl Repo<Entry> for GraphClient {
             .collect::<Vec<Entry>>())
     }
 
-    fn create(&mut self, e: &Entry) -> Result<()> {
+    fn create_entry(&mut self, e: &Entry) -> Result<()> {
         self.exec(cypher_stmt!(
         "MATCH (c:Category)
          WHERE c.id in {categories}
@@ -123,7 +123,7 @@ impl Repo<Entry> for GraphClient {
         Ok(())
     }
 
-    fn update(&mut self, e: &Entry) -> Result<()> {
+    fn update_entry(&mut self, e: &Entry) -> Result<()> {
         self.exec(cypher_stmt!(
         "MATCH (e:Entry)<--(s:EntryState) WHERE e.id = {id}
          WITH max(s.version) as v
@@ -172,30 +172,8 @@ impl Repo<Entry> for GraphClient {
         })?)?;
         Ok(())
     }
-}
 
-impl Repo<Category> for GraphClient {
-
-    fn get(&self, id: &str) -> Result<Category> {
-        let result = self.exec(cypher_stmt!(
-        "MATCH (e:Category)<--(s:CategoryState) WHERE c.id = {id}
-         WITH max(s.created) as created
-         MATCH (x:Category)<--(s:CategoryState)
-         WHERE c.id = {id} AND s.created = created
-         WITH c, s
-         RETURN {
-           id      : c.id,
-           version : s.version,
-           created : s.created,
-           name    : s.name
-         } AS c", {"id" => &id})?)?;
-        let r = result.rows().next().ok_or(RepoError::NotFound)?;
-        let c = r.get::<Category>("c")?;
-        Ok(c)
-            
-    }
-
-    fn all(&self) -> Result<Vec<Category>> {
+    fn all_categories(&self) -> Result<Vec<Category>> {
         let result = self.exec(
         "MATCH (c:Category)<--(s:CategoryState)
          RETURN {
@@ -208,51 +186,5 @@ impl Repo<Category> for GraphClient {
             .rows()
             .filter_map(|r| r.get::<Category>("c").ok())
             .collect::<Vec<Category>>())
-    }
-
-    fn create(&mut self, c: &Category) -> Result<()> {
-        self.exec(cypher_stmt!(
-        "CREATE (c:Category {id:{id}})
-         MERGE c<-[:BELONGS_TO]-(s:CategoryState {
-           created : timestamp(),
-           version : 1,
-           name    : {name}
-         })
-         RETURN {
-           id      : c.id,
-           version : s.version,
-           created : s.created,
-           name    : s.name
-         } AS c", {
-           "id"   => &c.id,
-           "name" => &c.name
-        })?)?;
-        Ok(())
-    }
-
-    fn update(&mut self, c: &Category) -> Result<()> {
-        debug!("update category: {}", c.id);
-        self.exec(cypher_stmt!(
-        "MATCH (c:Category)<--(s:CategoryState) WHERE c.id = {id}
-         WITH max(s.version) as v
-         MATCH (c:Category)<--(old:CategoryState)
-         WHERE c.id = {id} AND old.version = v AND old.version + 1 = {version}
-         WITH c,e
-         MERGE c<-[:BELONGS_TO]-(s:CategoryState {
-           created : timestamp(),
-           version : {version},
-           name    : {name}
-         })
-         RETURN {
-           id      : c.id,
-           version : s.version,
-           created : s.created,
-           name    : s.name
-         } AS c", {
-           "id"      => &c.id,
-           "version" => &c.version,
-           "name"    => &c.name
-         })?)?;
-        Ok(())
     }
 }

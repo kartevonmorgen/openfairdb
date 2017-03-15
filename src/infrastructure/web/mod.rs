@@ -5,7 +5,7 @@ use rocket::http::Status;
 use rocket::config::{Environment, Config};
 use adapters::json;
 use entities::*;
-use business::db::Repo;
+use business::db::Db;
 use business::error::{Error, RepoError};
 use infrastructure::error::AppError;
 use serde_json::ser::to_string;
@@ -49,8 +49,9 @@ fn extract_ids_test() {
 
 #[get("/entries")]
 fn get_entries() -> Result<Vec<json::Entry>> {
-    let entries: Vec<Entry> = db()?.conn().all()?;
-    let e = entries
+    let e = db()?
+        .conn()
+        .all_entries()?
         .into_iter()
         .map(json::Entry::from)
         .collect::<Vec<json::Entry>>();
@@ -60,7 +61,7 @@ fn get_entries() -> Result<Vec<json::Entry>> {
 #[get("/entries/<id>")]
 fn get_entry(id: &str) -> result::Result<content::JSON<String>,AppError> {
     let ids = extract_ids(id);
-    let entries: Vec<Entry> = db()?.conn().all()?;
+    let entries = db()?.conn().all_entries()?;
     let e = match ids.len() {
         0 => {
             to_string(&entries.into_iter()
@@ -85,7 +86,7 @@ fn get_entry(id: &str) -> result::Result<content::JSON<String>,AppError> {
 
 #[get("/duplicates")]
 fn get_duplicates() -> Result<Vec<(String, String, DuplicateType)>> {
-    let entries: Vec<Entry> = db()?.conn().all()?;
+    let entries = db()?.conn().all_entries()?;
     let ids = duplicates::find_duplicates(&entries);
     Ok(JSON(ids))
 }
@@ -104,7 +105,7 @@ fn put_entry(id: &str, e: JSON<usecase::UpdateEntry>) -> Result<String> {
 
 #[get("/categories")]
 fn get_categories() -> Result<Vec<json::Category>> {
-    let categories: Vec<Category> = db()?.conn().all()?;
+    let categories = db()?.conn().all_categories()?;
     Ok(JSON(categories
         .into_iter()
         .map(json::Category::from)
@@ -114,7 +115,7 @@ fn get_categories() -> Result<Vec<json::Category>> {
 #[get("/categories/<id>")]
 fn get_category(id: &str) -> Result<String> {
     let ids = extract_ids(id);
-    let categories: Vec<Category> = db()?.conn().all()?;
+    let categories = db()?.conn().all_categories()?;
     let res = match ids.len() {
         0 => {
             to_string(&categories.into_iter()
@@ -147,7 +148,7 @@ struct SearchQuery {
 
 #[get("/search?<search>")]
 fn get_search(search: SearchQuery) -> Result<json::SearchResult> {
-    let entries: Vec<Entry> = db()?.conn().all()?;
+    let entries: Vec<Entry> = db()?.conn().all_entries()?;
     let cat_ids = extract_ids(&search.categories);
     let bbox = geo::extract_bbox(&search.bbox).map_err(Error::Parameter)
         .map_err(AppError::Business)?;
@@ -183,7 +184,7 @@ fn get_search(search: SearchQuery) -> Result<json::SearchResult> {
 
 #[get("/count/entries")]
 fn get_count_entries() -> Result<String> {
-    let entries: Vec<Entry> = db()?.conn().all()?;
+    let entries = db()?.conn().all_entries()?;
     Ok(JSON(entries.len().to_string()))
 }
 

@@ -1,53 +1,11 @@
 use entities::*;
-use business::usecase::tests::MockRepo;
+use business::usecase::tests::MockDb;
 use business::db::Repo;
 use business::error::RepoError;
 use std::{io,result};
 use r2d2::{self, Pool};
 
-pub struct MockDb {
-    entries: MockRepo<Entry>,
-    categories: MockRepo<Category>,
-}
-
-impl MockDb {
-    pub fn clear_all(&mut self) {
-        self.entries.clear();
-        self.categories.clear();
-    }
-}
-
 type RepoResult<T> = result::Result<T,RepoError>;
-
-impl Repo<Entry> for MockDb {
-    fn get(&self, id: &str) -> RepoResult<Entry> {
-        self.entries.get(id)
-    }
-    fn all(&self) -> RepoResult<Vec<Entry>> {
-        self.entries.all()
-    }
-    fn create(&mut self, e: &Entry) -> RepoResult<()> {
-        self.entries.create(e)
-    }
-    fn update(&mut self, e: &Entry) -> RepoResult<()> {
-        self.entries.update(e)
-    }
-}
-
-impl Repo<Category> for MockDb {
-    fn get(&self, id: &str) -> RepoResult<Category> {
-        self.categories.get(id)
-    }
-    fn all(&self) -> RepoResult<Vec<Category>> {
-        self.categories.all()
-    }
-    fn create(&mut self, e: &Category) -> RepoResult<()> {
-        self.categories.create(e)
-    }
-    fn update(&mut self, e: &Category) -> RepoResult<()> {
-        self.categories.update(e)
-    }
-}
 
 #[derive(Debug)]
 pub struct MockDbConnectionManager;
@@ -57,10 +15,7 @@ impl r2d2::ManageConnection for MockDbConnectionManager {
   type Error = io::Error;
 
   fn connect(&self) -> Result<MockDb, io::Error> {
-        Ok(MockDb {
-            entries: MockRepo::new(),
-            categories: MockRepo::new(),
-        })
+        Ok(MockDb::new())
   }
 
   fn is_valid(&self, conn: &mut MockDb) -> Result<(), io::Error> {
