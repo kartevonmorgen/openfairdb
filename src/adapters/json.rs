@@ -19,6 +19,7 @@ pub struct Entry {
     pub telephone   : Option<String>,
     pub homepage    : Option<String>,
     pub categories  : Option<Vec<String>>,
+    pub tags        : Vec<String>,
     pub license     : Option<String>,
 }
 
@@ -38,8 +39,8 @@ pub struct SearchResult {
 
 // Entity -> JSON
 
-impl From<e::Entry> for Entry {
-    fn from(e: e::Entry) -> Entry {
+impl Entry {
+    pub fn from_entry_with_tags(e: e::Entry, tags: Vec<e::Tag>) -> Entry {
         Entry{
             id          : Some(e.id),
             created     : Some(e.created),
@@ -56,6 +57,7 @@ impl From<e::Entry> for Entry {
             telephone   : e.telephone,
             homepage    : e.homepage,
             categories  : Some(e.categories),
+            tags        : tags.into_iter().map(|e|e.id).collect(),
             license     : e.license
         }
     }

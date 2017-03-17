@@ -123,6 +123,42 @@ impl Db for GraphClient {
         Ok(())
     }
 
+    fn create_tag(&mut self, t: &Tag) -> Result<()> {
+        self.exec(cypher_stmt!("MERGE (t:Tag {id:{id}})",
+        { "id" => &t.id })?)?;
+        Ok(())
+    }
+
+    fn create_triple(&mut self, t: &Triple) -> Result<()> {
+        let predicate = match t.predicate {
+            Relation::IsTaggedWith => "IS_TAGGED_WITH"
+        };
+        let (subject_type, subject_id) = match t.subject {
+            ObjectId::Entry(ref id) => ("Entry",id),
+            ObjectId::Tag(ref id) => ("Tag",id)
+        };
+        let (object_type, object_id) = match t.object {
+            ObjectId::Entry(ref id) => ("Entry",id),
+            ObjectId::Tag(ref id) => ("Tag",id)
+        };
+        let stmt = format!(
+           "MATCH (s:{s_type})
+            WHERE s.id = \"{s_id}\"
+            WITH s
+            MATCH (o:{o_type})
+            WHERE o.id = \"{o_id}\"
+            WITH s,o
+            MERGE (s)-[:{predicate}]->(o)",
+                s_type = subject_type,
+                s_id = subject_id,
+                o_type = object_type,
+                o_id = object_id,
+                predicate = predicate
+            );
+        self.exec(stmt)?;
+        Ok(())
+    }
+
     fn update_entry(&mut self, e: &Entry) -> Result<()> {
         self.exec(cypher_stmt!(
         "MATCH (e:Entry)<--(s:EntryState) WHERE e.id = {id}
@@ -186,5 +222,55 @@ impl Db for GraphClient {
             .rows()
             .filter_map(|r| r.get::<Category>("c").ok())
             .collect::<Vec<Category>>())
+    }
+
+    fn all_triples(&self) -> Result<Vec<Triple>> {
+        //TODO: extend for category
+        let result = self.exec(
+        "MATCH (e:Entry)-[IS_TAGGED_WITH]->(t:Tag)
+         RETURN {
+           subject   : { entry: e.id },
+           predicate : \"is_tagged_with\",
+           object    : { tag: t.id }
+         } AS t")?;
+        Ok(result
+            .rows()
+            .filter_map(|r| r.get::<Triple>("t").ok())
+            .collect::<Vec<Triple>>())
+    }
+
+    fn all_tags(&self) -> Result<Vec<Tag>> {
+        let result = self.exec(
+        "MATCH (t:Tag) RETURN t")?;
+        Ok(result
+            .rows()
+            .filter_map(|r| r.get::<Tag>("t").ok())
+            .collect::<Vec<Tag>>())
+    }
+
+    fn delete_triple(&mut self, t: &Triple) -> Result<()> {
+        let predicate = match t.predicate {
+            Relation::IsTaggedWith => "IS_TAGGED_WITH"
+        };
+        let (subject_type, subject_id) = match t.subject {
+            ObjectId::Entry(ref id) => ("Entry",id),
+            ObjectId::Tag(ref id) => ("Tag",id)
+        };
+        let (object_type, object_id) = match t.object {
+            ObjectId::Entry(ref id) => ("Entry",id),
+            ObjectId::Tag(ref id) => ("Tag",id)
+        };
+        let stmt = format!(
+           "MATCH (s:{s_type})-[p:{predicate}]->(o:{o_type})
+            WHERE s.id = \"{s_id}\" AND o.id = \"{o_id}\"
+            DELETE p",
+                s_type = subject_type,
+                s_id = subject_id,
+                o_type = object_type,
+                o_id = object_id,
+                predicate = predicate
+            );
+        self.exec(stmt)?;
+        Ok(())
     }
 }

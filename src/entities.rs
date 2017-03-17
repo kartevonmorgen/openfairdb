@@ -25,3 +25,29 @@ pub struct Category {
     pub version   : u64,
     pub name      : String
 }
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct Tag {
+    pub id : String,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub enum Relation {
+    #[serde(rename="is_tagged_with")]
+    IsTaggedWith
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct Triple {
+    pub subject : ObjectId,
+    pub predicate : Relation,
+    pub object : ObjectId,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub enum ObjectId {
+    #[serde(rename="entry")]
+    Entry(String),
+    #[serde(rename="tag")]
+    Tag(String),
+}

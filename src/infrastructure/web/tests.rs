@@ -75,9 +75,9 @@ fn get_one_entry() {
         }
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '{');
-    let entry: Entry = serde_json::from_str(&body_str).unwrap();
-    assert!(entry==e);
+    assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
+    let entries: Vec<Entry> = serde_json::from_str(&body_str).unwrap();
+    assert!(entries[0]==e);
 }
 
 #[test]

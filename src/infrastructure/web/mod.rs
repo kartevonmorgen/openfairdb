@@ -53,35 +53,24 @@ fn get_entries() -> Result<Vec<json::Entry>> {
         .conn()
         .all_entries()?
         .into_iter()
-        .map(json::Entry::from)
+        //TODO
+        .map(|e|json::Entry::from_entry_with_tags(e,vec![]))
         .collect::<Vec<json::Entry>>();
     Ok(JSON(e))
 }
 
-#[get("/entries/<id>")]
-fn get_entry(id: &str) -> result::Result<content::JSON<String>,AppError> {
-    let ids = extract_ids(id);
-    let entries = db()?.conn().all_entries()?;
-    let e = match ids.len() {
-        0 => {
-            to_string(&entries.into_iter()
-                .map(json::Entry::from)
-                .collect::<Vec<json::Entry>>())
-        }
-        1 => {
-            let e = entries.iter()
-                .find(|x| x.id == ids[0].clone())
-                .ok_or(RepoError::NotFound)?;
-            to_string(&json::Entry::from(e.clone()))
-        }
-        _ => {
-            to_string(&entries.into_iter()
-                .filter(|e| ids.iter().any(|id| e.id == id.clone()))
-                .map(json::Entry::from)
-                .collect::<Vec<json::Entry>>())
-        }
-    }?;
-    Ok(content::JSON(e))
+#[get("/entries/<ids>")]
+fn get_entry(ids: &str) -> Result<Vec<json::Entry>> {
+    let ids = extract_ids(ids);
+    let entries = usecase::get_entries(db()?.conn(), &ids)?;
+    let tags = usecase::get_tags_by_entry_ids(db()?.conn(), &ids)?;
+    Ok(JSON(entries
+        .into_iter()
+        .map(|e|{
+            let t = tags.get(&e.id).cloned().unwrap_or_else(|| vec![]);
+            json::Entry::from_entry_with_tags(e,t)
+        })
+        .collect::<Vec<json::Entry>>()))
 }
 
 #[get("/duplicates")]

@@ -83,7 +83,6 @@ nix-build -E '(import <nixpkgs>{}).callPackage ./default.nix {}'
 The current REST API is quite basic and will change within the near future.
 The base URL is `http://api.ofdb.io/v0/`.
 
--  `GET /entries/:ID`
 -  `GET /entries/:ID_1,:ID_2,...,:ID_n`
 -  `POST /entries/`
 -  `PUT /entries/:ID`
@@ -114,6 +113,7 @@ The structure of an `entry` looks like follows:
   "telephone"   : String,
   "homepage"    : String,
   "categories"  : [String],
+  "tags"        : [String],
   "license"     : String
 }
 ```
