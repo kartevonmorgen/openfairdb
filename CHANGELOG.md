@@ -1,4 +1,4 @@
-## v0.2.0 (YYYY-MM-DD)
+## v0.2.0 (2017-03-19)
 
 - new: basic tagging
 - refactor: use a verbose DB trait
