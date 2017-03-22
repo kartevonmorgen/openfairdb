@@ -196,9 +196,23 @@ fn get_search(search: SearchQuery) -> Result<json::SearchResult> {
 }
 
 #[get("/count/entries")]
-fn get_count_entries() -> Result<String> {
+fn get_count_entries() -> Result<usize> {
     let entries = db()?.conn().all_entries()?;
-    Ok(JSON(entries.len().to_string()))
+    Ok(JSON(entries.len()))
+}
+
+#[get("/count/tags")]
+fn get_count_tags() -> Result<usize> {
+    let mut tags : Vec<String>= db()?.conn()
+        .all_triples()?
+        .into_iter()
+        .filter_map(|t| match t.object {
+            ObjectId::Tag(id) => Some(id),
+            _=> None
+        })
+        .collect();
+    tags.dedup();
+    Ok(JSON(tags.len()))
 }
 
 #[get("/server/version")]
@@ -233,6 +247,7 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
                        get_search,
                        get_duplicates,
                        get_count_entries,
+                       get_count_tags,
                        get_version])
         .launch();
 }
