@@ -38,27 +38,7 @@ fn to_words(txt: &str) -> Vec<String> {
 mod tests {
 
     use super::*;
-
-    fn new_entry(title: &str, description: &str, lat: f64, lng: f64, cats: Option<Vec<String>>) -> Entry {
-        Entry{
-            id          : title.clone().into(),
-            created     : 0,
-            version     : 0,
-            title       : title.into(),
-            description : description.into(),
-            lat         : lat,
-            lng         : lng,
-            street      : None,
-            zip         : None,
-            city        : None,
-            country     : None,
-            email       : None,
-            telephone   : None,
-            homepage    : None,
-            categories  : cats.unwrap_or(vec![]),
-            license     : None,
-        }
-    }
+    use business::builder::*;
 
     #[test]
     fn is_in_bounding_box() {
@@ -70,9 +50,19 @@ mod tests {
                           lat: 10.0,
                           lng: 10.0,
                       }];
-        let e = new_entry("foo", "bar", 5.0, 5.0, None);
+        let e = Entry::build()
+            .title("foo")
+            .description("bar")
+            .lat(5.0)
+            .lng(5.0)
+            .finish();
         assert_eq!(e.in_bbox(&bb), true);
-        let e = new_entry("foo", "bar", 10.1, 10.0, None);
+        let e = Entry::build()
+            .title("foo")
+            .description("bar")
+            .lat(10.1)
+            .lng(10.0)
+            .finish();
         assert_eq!(e.in_bbox(&bb), false);
     }
 
@@ -82,7 +72,10 @@ mod tests {
                           lat: 10.0,
                           lng: 10.0,
                       }];
-        let e = new_entry("", "", 5.0, 5.0, None);
+        let e = Entry::build()
+            .lat(5.0)
+            .lng(5.0)
+            .finish();
         assert_eq!(e.in_bbox(&bb), false);
     }
 
@@ -96,18 +89,22 @@ mod tests {
                           lat: 10.0,
                           lng: 10.0,
                       }];
-        let entries = vec![new_entry("", "", 5.0, 5.0, None),
-                           new_entry("", "", -5.0, 5.0, None),
-                           new_entry("", "", 10.0, 10.1, None)];
+        let entries = vec![
+            Entry::build().lat(5.0).lng(5.0).finish(),
+            Entry::build().lat(-5.0).lng(5.0).finish(),
+            Entry::build().lat(10.0).lng(10.1).finish(),
+        ];
         assert_eq!(entries.iter().filter(|&x| x.in_bbox(&bb)).collect::<Vec<&Entry>>().len(),
                    2);
     }
 
     #[test]
     fn filter_by_category() {
-        let entries = vec![new_entry("", "", 5.0, 5.0, Some(vec!["a".into()])),
-                           new_entry("", "", -5.0, 5.0, Some(vec!["c".into()])),
-                           new_entry("", "", 10.0, 10.1, Some(vec!["b".into(), "a".into()]))];
+        let entries = vec![
+            Entry::build().categories(vec!["a"]).finish(),
+            Entry::build().categories(vec!["c"]).finish(),
+            Entry::build().categories(vec!["b","a"]).finish(),
+        ];
         let ab = vec!["a".into(), "b".into()];
         let x: Vec<&Entry> = entries.iter().filter(&*entries_by_category_ids(&ab)).collect();
         assert_eq!(x.len(), 2);
@@ -121,8 +118,10 @@ mod tests {
 
     #[test]
     fn search_entries_by_title() {
-        let entries = vec![new_entry("a title", "x".into(), 0.0, 0.0, None),
-                           new_entry("not so interesting", "y", 0.0, 0.0, None)];
+        let entries = vec![
+            Entry::build().title("a title").description("x").finish(),
+            Entry::build().title("not so interesting").description("y").finish(),
+        ];
         let filter = entries_by_search_text("a");
         let x: Vec<&Entry> = entries.iter().filter(&*filter).collect();
         assert_eq!(x.len(), 1);
@@ -134,9 +133,11 @@ mod tests {
 
     #[test]
     fn search_entries_by_description() {
-        let entries = vec![new_entry("a", "x", 0.0, 0.0, None),
-                           new_entry("b", "y", 0.0, 0.0, None),
-                           new_entry("c", "x", 0.0, 0.0, None)];
+        let entries = vec![
+            Entry::build().title("a").description("x").finish(),
+            Entry::build().title("b").description("y").finish(),
+            Entry::build().title("c").description("x").finish(),
+        ];
         let filter = entries_by_search_text("x");
         let x: Vec<&Entry> = entries.iter().filter(&*filter).collect();
         assert_eq!(x.len(), 2);
@@ -144,9 +145,11 @@ mod tests {
 
     #[test]
     fn search_with_multiple_words() {
-        let entries = vec![new_entry("SoLaWi", "mit gemüse", 0.0, 0.0, None),
-                           new_entry("csa", "This is a great csa", 0.0, 0.0, None),
-                           new_entry("solawi", "Das ist eine tolle solawi", 0.0, 0.0, None)];
+        let entries = vec![
+            Entry::build().title("SoLaWi").description("mit gemüse").finish(),
+            Entry::build().title("csa").description("This is a great csa").finish(),
+            Entry::build().title("solawi").description("Das ist eine tolle solawi").finish(),
+        ];
         let filter = entries_by_search_text("csa,toll");
         let x: Vec<&Entry> = entries.iter().filter(&*filter).collect();
         assert_eq!(x.len(), 2);
@@ -157,9 +160,9 @@ mod tests {
 
     #[test]
     fn search_and_ignore_capitalisation() {
-        let e0 = new_entry("Eintrag", "Hallo! Ein EinTrag", 0.0, 0.0, None);
-        let e1 = new_entry("Ein trag", "foo", 0.0, 0.0, None);
-        let e2 = new_entry("CSA", "cool vegetables", 0.0, 0.0, None);
+        let e0 = Entry::build().title("Eintrag").description("Hallo! Ein EinTrag").finish();
+        let e1 = Entry::build().title("Ein trag").description("foo").finish();
+        let e2 = Entry::build().title("CSA").description("cool vegetables").finish();
         let entries = vec![&e0, &e1, &e2];
 
         let filter = entries_by_search_text("Foo");
