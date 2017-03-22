@@ -9,6 +9,10 @@ struct EntryBuild {
 }
 
 impl EntryBuild {
+    pub fn id(mut self, id: &str) -> Self {
+        self.entry.id = id.into();
+        self
+    }
     pub fn title(mut self, title: &str) -> Self {
         self.entry.title = title.into();
         self
@@ -32,7 +36,6 @@ impl EntryBuild {
             .collect();
         self
     }
-
     pub fn finish(self) -> Entry {
         self.entry
     }

@@ -1,6 +1,6 @@
 use rocket::{self, LoggingLevel};
 use rocket_contrib::JSON;
-use rocket::response::{Response, content, Responder};
+use rocket::response::{Response, Responder};
 use rocket::http::Status;
 use rocket::config::{Environment, Config};
 use adapters::json;
@@ -133,6 +133,7 @@ struct SearchQuery {
     bbox: String,
     categories: String,
     text: Option<String>,
+    tags: Option<String>,
 }
 
 #[get("/search?<search>")]
@@ -143,27 +144,50 @@ fn get_search(search: SearchQuery) -> Result<json::SearchResult> {
         .map_err(AppError::Business)?;
     let bbox_center = geo::center(&bbox[0], &bbox[1]);
 
-    let entries: Vec<_> = entries.into_iter()
-        .filter(|x| filter::entries_by_category_ids(&cat_ids)(&x))
+    let mut entries: Vec<_> = entries.iter()
+        .filter(&*filter::entries_by_category_ids(&cat_ids))
         .collect();
+
+    if let Some(tags_str) = search.tags {
+        let tags = extract_ids(&tags_str);
+        if tags.len() > 0 {
+            let triple = db()?.conn().all_triples()?;
+            entries = entries.into_iter()
+                .filter(&*filter::entries_by_tags(
+                    &tags,
+                    &triple,
+                    filter::Combination::Or
+                ))
+                .collect();
+        }
+    }
 
     let mut entries = match search.text {
         Some(txt) => {
-            entries.into_iter().filter(|x| filter::entries_by_search_text(&txt)(&x)).collect()
+            entries.into_iter().filter(&*filter::entries_by_search_text(&txt)).collect()
         }
         None => entries,
     };
 
+    let mut entries : Vec<Entry> = entries.into_iter().cloned().collect();
     entries.sort_by_distance_to(&bbox_center);
 
     let visible_results: Vec<_> =
-        entries.iter().filter(|x| x.in_bbox(&bbox)).map(|x| x.id.clone()).collect();
+        entries
+            .iter()
+            .filter(|x| x.in_bbox(&bbox))
+            .map(|x| &x.id)
+            .cloned()
+            .collect();
 
-    let invisible_results = entries.iter()
-        .filter(|e| !visible_results.iter().any(|v| *v == e.id))
-        .take(MAX_INVISIBLE_RESULTS)
-        .map(|x| x.id.clone())
-        .collect::<Vec<_>>();
+    let invisible_results =
+        entries
+            .iter()
+            .filter(|e| !visible_results.iter().any(|v| *v == e.id))
+            .take(MAX_INVISIBLE_RESULTS)
+            .map(|x| &x.id)
+            .cloned()
+            .collect::<Vec<_>>();
 
     Ok(JSON(json::SearchResult {
         visible: visible_results,

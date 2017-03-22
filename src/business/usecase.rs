@@ -3,6 +3,7 @@ use std::result;
 use chrono::*;
 use entities::*;
 use super::db::Db;
+use super::filter;
 use super::validate::Validate;
 use uuid::Uuid;
 use std::collections::HashMap;
@@ -153,26 +154,17 @@ fn set_tag_relations<D:Db>(db: &mut D, entry: &str, tags: &Vec<String>) -> Resul
     Ok(())
 }
 
-fn get_tag_ids_for_entry_id(triples: &Vec<Triple>, entry_id : &str) -> Vec<Tag> {
+pub fn get_tag_ids_for_entry_id(triples: &Vec<Triple>, entry_id : &str) -> Vec<Tag> {
     triples
         .iter()
-        .filter_map(|triple|
-            match *triple {
-                Triple { subject: ObjectId::Entry(ref e_id), predicate: Relation::IsTaggedWith, ref object } => {
-                    if e_id == entry_id {
-                        match *object {
-                            ObjectId::Tag(ref tag_id) => {
-                                Some(tag_id)
-                            },
-                            _ => None
-                        }
-                    } else {
-                        None
-                    }
-                },
+        .filter(&*filter::triple_by_entry_id(entry_id))
+        .filter(|triple| triple.predicate == Relation::IsTaggedWith)
+        .map(|triple|&triple.object)
+        .filter_map(|object|
+            match *object {
+                ObjectId::Tag(ref tag_id) => Some(tag_id),
                 _ => None
-            }
-        )
+            })
         .cloned()
         .map(|tag_id|Tag{id: tag_id})
         .collect()
