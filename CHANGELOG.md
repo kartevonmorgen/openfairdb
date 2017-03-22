@@ -1,3 +1,7 @@
+## v0.2.1 (2017-03-22)
+
+- new: filter by tags
+
 ## v0.2.0 (2017-03-19)
 
 - new: basic tagging

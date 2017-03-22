@@ -162,7 +162,7 @@ fn get_search(search: SearchQuery) -> Result<json::SearchResult> {
         }
     }
 
-    let mut entries = match search.text {
+    let entries = match search.text {
         Some(txt) => {
             entries.into_iter().filter(&*filter::entries_by_search_text(&txt)).collect()
         }
