@@ -1,9 +1,7 @@
-use entities::*;
 use business::usecase::tests::MockDb;
-use business::db::Repo;
 use business::error::RepoError;
 use std::{io,result};
-use r2d2::{self, Pool};
+use r2d2::{self, Pool, InitializationError};
 
 type RepoResult<T> = result::Result<T,RepoError>;
 
@@ -18,7 +16,7 @@ impl r2d2::ManageConnection for MockDbConnectionManager {
         Ok(MockDb::new())
   }
 
-  fn is_valid(&self, conn: &mut MockDb) -> Result<(), io::Error> {
+  fn is_valid(&self, _: &mut MockDb) -> Result<(), io::Error> {
       Ok(())
   }
 
@@ -27,25 +25,10 @@ impl r2d2::ManageConnection for MockDbConnectionManager {
   }
 }
 
-lazy_static! {
-    pub static ref DB_POOL: r2d2::Pool<MockDbConnectionManager> = {
-        let config = r2d2::Config::builder().pool_size(1).build();
-        let manager = MockDbConnectionManager{};
-        Pool::new(config, manager).expect("Failed to create pool.")
-    };
-}
+pub type ConnectionPool = Pool<MockDbConnectionManager>;
 
-pub struct DB(r2d2::PooledConnection<MockDbConnectionManager>);
-
-impl DB {
-    pub fn conn(&mut self) -> &mut MockDb {
-        &mut self.0
-    }
-}
-
-pub fn db() -> io::Result<DB> {
-    match DB_POOL.get() {
-        Ok(conn) => Ok(DB(conn)),
-        Err(e) => Err(io::Error::new(io::ErrorKind::Other, e)),
-    }
+pub fn create_connection_pool() -> result::Result<ConnectionPool, InitializationError> {
+    let config = r2d2::Config::builder().pool_size(1).build();
+    let manager = MockDbConnectionManager{};
+    Pool::new(config, manager)
 }

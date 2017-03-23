@@ -2,6 +2,7 @@
 
 #![feature(plugin,try_from,custom_derive)]
 #![plugin(rocket_codegen)]
+#![allow(unmanaged_state)]
 
 #[macro_use]
 extern crate log;
@@ -18,8 +19,6 @@ extern crate emailaddress;
 extern crate url;
 extern crate rocket;
 extern crate rocket_contrib;
-#[macro_use]
-extern crate lazy_static;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;

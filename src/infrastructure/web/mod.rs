@@ -1,4 +1,4 @@
-use rocket::{self, LoggingLevel};
+use rocket::{self, Rocket, State, LoggingLevel};
 use rocket_contrib::JSON;
 use rocket::response::{Response, Responder};
 use rocket::http::Status;
@@ -13,12 +13,11 @@ use business::sort::SortByDistanceTo;
 use business::{usecase, filter, geo};
 use business::filter::InBBox;
 use business::duplicates::{self, DuplicateType};
-use std::{env,result,io};
+use std::result;
+use r2d2::{self,Pool};
 
 static MAX_INVISIBLE_RESULTS: usize = 5;
-static DB_URL_KEY: &'static str = "OFDB_DATABASE_URL";
 
-#[cfg(not(test))]
 mod neo4j;
 #[cfg(test)]
 mod mockdb;
@@ -26,9 +25,9 @@ mod mockdb;
 mod tests;
 
 #[cfg(not(test))]
-fn db() -> io::Result<neo4j::DB> { neo4j::db() }
+type DbPool = neo4j::ConnectionPool;
 #[cfg(test)]
-fn db() -> io::Result<mockdb::DB> { mockdb::db() }
+type DbPool = mockdb::ConnectionPool;
 
 type Result<T> = result::Result<JSON<T>, AppError>;
 
@@ -48,9 +47,8 @@ fn extract_ids_test() {
 }
 
 #[get("/entries")]
-fn get_entries() -> Result<Vec<json::Entry>> {
-    let e = db()?
-        .conn()
+fn get_entries(db: State<DbPool>) -> Result<Vec<json::Entry>> {
+    let e = db.get()?
         .all_entries()?
         .into_iter()
         //TODO
@@ -60,10 +58,10 @@ fn get_entries() -> Result<Vec<json::Entry>> {
 }
 
 #[get("/entries/<ids>")]
-fn get_entry(ids: &str) -> Result<Vec<json::Entry>> {
+fn get_entry(db: State<DbPool>, ids: &str) -> Result<Vec<json::Entry>> {
     let ids = extract_ids(ids);
-    let entries = usecase::get_entries(db()?.conn(), &ids)?;
-    let tags = usecase::get_tags_by_entry_ids(db()?.conn(), &ids)?;
+    let entries = usecase::get_entries(&*db.get()?, &ids)?;
+    let tags = usecase::get_tags_by_entry_ids(&mut*db.get()?, &ids)?;
     Ok(JSON(entries
         .into_iter()
         .map(|e|{
@@ -74,27 +72,27 @@ fn get_entry(ids: &str) -> Result<Vec<json::Entry>> {
 }
 
 #[get("/duplicates")]
-fn get_duplicates() -> Result<Vec<(String, String, DuplicateType)>> {
-    let entries = db()?.conn().all_entries()?;
+fn get_duplicates(db: State<DbPool>) -> Result<Vec<(String, String, DuplicateType)>> {
+    let entries = db.get()?.all_entries()?;
     let ids = duplicates::find_duplicates(&entries);
     Ok(JSON(ids))
 }
 
 #[post("/entries", format = "application/json", data = "<e>")]
-fn post_entry(e: JSON<usecase::NewEntry>) -> result::Result<String,AppError> {
-    let id = usecase::create_new_entry(db()?.conn(), e.into_inner())?;
+fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<String,AppError> {
+    let id = usecase::create_new_entry(&mut*db.get()?, e.into_inner())?;
     Ok(id)
 }
 
 #[put("/entries/<id>", format = "application/json", data = "<e>")]
-fn put_entry(id: &str, e: JSON<usecase::UpdateEntry>) -> Result<String> {
-    usecase::update_entry(db()?.conn(), e.into_inner())?;
+fn put_entry(db: State<DbPool>, id: &str, e: JSON<usecase::UpdateEntry>) -> Result<String> {
+    usecase::update_entry(&mut*db.get()?, e.into_inner())?;
     Ok(JSON(id.to_string()))
 }
 
 #[get("/categories")]
-fn get_categories() -> Result<Vec<json::Category>> {
-    let categories = db()?.conn().all_categories()?;
+fn get_categories(db: State<DbPool>) -> Result<Vec<json::Category>> {
+    let categories = db.get()?.all_categories()?;
     Ok(JSON(categories
         .into_iter()
         .map(json::Category::from)
@@ -102,9 +100,9 @@ fn get_categories() -> Result<Vec<json::Category>> {
 }
 
 #[get("/categories/<id>")]
-fn get_category(id: &str) -> Result<String> {
+fn get_category(db: State<DbPool>, id: &str) -> Result<String> {
     let ids = extract_ids(id);
-    let categories = db()?.conn().all_categories()?;
+    let categories = db.get()?.all_categories()?;
     let res = match ids.len() {
         0 => {
             to_string(&categories.into_iter()
@@ -137,8 +135,8 @@ struct SearchQuery {
 }
 
 #[get("/search?<search>")]
-fn get_search(search: SearchQuery) -> Result<json::SearchResult> {
-    let entries: Vec<Entry> = db()?.conn().all_entries()?;
+fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResult> {
+    let entries: Vec<Entry> = db.get()?.all_entries()?;
     let cat_ids = extract_ids(&search.categories);
     let bbox = geo::extract_bbox(&search.bbox).map_err(Error::Parameter)
         .map_err(AppError::Business)?;
@@ -151,7 +149,7 @@ fn get_search(search: SearchQuery) -> Result<json::SearchResult> {
     if let Some(tags_str) = search.tags {
         let tags = extract_ids(&tags_str);
         if tags.len() > 0 {
-            let triple = db()?.conn().all_triples()?;
+            let triple = db.get()?.all_triples()?;
             entries = entries.into_iter()
                 .filter(&*filter::entries_by_tags(
                     &tags,
@@ -196,14 +194,14 @@ fn get_search(search: SearchQuery) -> Result<json::SearchResult> {
 }
 
 #[get("/count/entries")]
-fn get_count_entries() -> Result<usize> {
-    let entries = db()?.conn().all_entries()?;
+fn get_count_entries(db: State<DbPool>) -> Result<usize> {
+    let entries = db.get()?.all_entries()?;
     Ok(JSON(entries.len()))
 }
 
 #[get("/count/tags")]
-fn get_count_tags() -> Result<usize> {
-    let mut tags : Vec<String>= db()?.conn()
+fn get_count_tags(db: State<DbPool>) -> Result<usize> {
+    let mut tags : Vec<String>= db.get()?
         .all_triples()?
         .into_iter()
         .filter_map(|t| match t.object {
@@ -220,9 +218,26 @@ fn get_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
-pub fn run(db_url: &str, port: u16, enable_cors: bool) {
+fn rocket_instance<T:r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Rocket {
 
-    env::set_var(DB_URL_KEY, db_url);
+    rocket::custom(cfg,true)
+        .manage(pool)
+        .mount("/",
+               routes![get_entries,
+                       get_entry,
+                       post_entry,
+                       put_entry,
+                       get_categories,
+                       get_category,
+                       get_search,
+                       get_duplicates,
+                       get_count_entries,
+                       get_count_tags,
+                       get_version])
+
+}
+
+pub fn run(db_url: &str, port: u16, enable_cors: bool) {
 
     if enable_cors {
         panic!("This feature is currently not available until\
@@ -236,20 +251,9 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
         .finalize()
         .unwrap();
 
-    rocket::custom(cfg,true)
-        .mount("/",
-               routes![get_entries,
-                       get_entry,
-                       post_entry,
-                       put_entry,
-                       get_categories,
-                       get_category,
-                       get_search,
-                       get_duplicates,
-                       get_count_entries,
-                       get_count_tags,
-                       get_version])
-        .launch();
+    let pool = neo4j::create_connection_pool(db_url).unwrap();
+
+    rocket_instance(cfg,pool).launch();
 }
 
 impl<'r> Responder<'r> for AppError {

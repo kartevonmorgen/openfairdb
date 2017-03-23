@@ -5,6 +5,7 @@ use rusted_cypher::error::GraphError;
 use std::error;
 use std::io;
 use serde_json;
+use r2d2;
 
 impl From<GraphError> for RepoError {
     fn from(err: GraphError) -> RepoError {
@@ -40,6 +41,9 @@ quick_error!{
             from()
             description(err.description())
             from(err: io::Error) -> (Box::new(err))
+        }
+        R2d2(err: r2d2::GetTimeout){
+            from()
         }
     }
 }

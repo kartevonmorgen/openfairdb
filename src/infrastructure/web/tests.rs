@@ -1,9 +1,23 @@
-use super::rocket;
+use rocket::{Rocket, LoggingLevel};
+use rocket::config::{Environment, Config};
 use rocket::testing::MockRequest;
 use rocket::http::{Status, Method};
 use entities::*;
-use business::db::{Db,Repo};
+use business::db::Db;
+use business::builder::*;
+use business::usecase::tests::MockDb;
 use serde_json;
+use super::mockdb;
+
+fn server() -> (Rocket, mockdb::ConnectionPool) {
+    let cfg = Config::build(Environment::Development)
+        .log_level(LoggingLevel::Debug)
+        .finalize()
+        .unwrap();
+    let pool = mockdb::create_connection_pool().unwrap();
+    let rocket = super::rocket_instance(cfg, pool.clone());
+    (rocket, pool)
+}
 
 #[test]
 fn get_all_entries() {
@@ -25,8 +39,8 @@ fn get_all_entries() {
         categories  :  vec![],
         license     :  None,
     };
-    super::db().unwrap().conn().create_entry(&e).unwrap();
-    let rocket = rocket::ignite().mount("/", routes![super::get_entries]);
+    let (rocket, pool) = server();
+    pool.get().unwrap().create_entry(&e).unwrap();
     let mut req = MockRequest::new(Method::Get, "/entries");
     let mut response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
@@ -63,8 +77,8 @@ fn get_one_entry() {
         categories  :  vec![],
         license     :  None,
     };
-    super::db().unwrap().conn().create_entry(&e).unwrap();
-    let rocket = rocket::ignite().mount("/", routes![super::get_entry]);
+    let (rocket, db) = server();
+    db.get().unwrap().create_entry(&e).unwrap();
     let mut req = MockRequest::new(Method::Get, "/entries/get_one_entry_test");
     let mut response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
@@ -118,9 +132,9 @@ fn get_multiple_entries() {
         categories  :  vec![],
         license     :  None,
     };
-    super::db().unwrap().conn().create_entry(&one).unwrap();
-    super::db().unwrap().conn().create_entry(&two).unwrap();
-    let rocket = rocket::ignite().mount("/", routes![super::get_entry]);
+    let (rocket, db) = server();
+    db.get().unwrap().create_entry(&one).unwrap();
+    db.get().unwrap().create_entry(&two).unwrap();
     let mut req = MockRequest::new(Method::Get, "/entries/get_multiple_entry_test_one,get_multiple_entry_test_two");
     let mut response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
