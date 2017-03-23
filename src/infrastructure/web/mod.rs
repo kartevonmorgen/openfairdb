@@ -129,22 +129,28 @@ fn get_category(db: State<DbPool>, id: &str) -> Result<String> {
 #[derive(FromForm)]
 struct SearchQuery {
     bbox: String,
-    categories: String,
+    categories: Option<String>,
     text: Option<String>,
     tags: Option<String>,
 }
 
 #[get("/search?<search>")]
 fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResult> {
+
     let entries: Vec<Entry> = db.get()?.all_entries()?;
-    let cat_ids = extract_ids(&search.categories);
+
     let bbox = geo::extract_bbox(&search.bbox).map_err(Error::Parameter)
         .map_err(AppError::Business)?;
     let bbox_center = geo::center(&bbox[0], &bbox[1]);
 
-    let mut entries: Vec<_> = entries.iter()
-        .filter(&*filter::entries_by_category_ids(&cat_ids))
-        .collect();
+    let mut entries : Vec<&Entry> = entries.iter().collect();
+
+    if let Some(cat_str) = search.categories {
+        let cat_ids = extract_ids(&cat_str);
+        entries = entries.into_iter()
+            .filter(&*filter::entries_by_category_ids(&cat_ids))
+            .collect();
+    }
 
     if let Some(tags_str) = search.tags {
         let tags = extract_ids(&tags_str);

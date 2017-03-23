@@ -267,14 +267,6 @@ pub mod tests {
                 triples: vec![]
             }
         }
-
-        pub fn clear_all(&mut self) {
-            self.entries.clear();
-            self.categories.clear();
-            self.tags.clear();
-            self.triples.clear();
-        }
-
     }
 
     fn get<T:Clone + Id>(objects: &Vec<T>, id: &str) -> RepoResult<T> {
@@ -567,7 +559,7 @@ pub mod tests {
             license     : "CC0-1.0".into()
         };
         let mut mock_db = MockDb::new();
-        let id = create_new_entry(&mut mock_db, x).unwrap();
+        create_new_entry(&mut mock_db, x).unwrap();
         assert_eq!(mock_db.tags.len(),2);
         assert_eq!(mock_db.entries.len(),1);
         assert_eq!(mock_db.triples.len(),2);

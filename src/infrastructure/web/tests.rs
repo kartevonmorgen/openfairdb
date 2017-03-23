@@ -5,7 +5,6 @@ use rocket::http::{Status, Method};
 use entities::*;
 use business::db::Db;
 use business::builder::*;
-use business::usecase::tests::MockDb;
 use serde_json;
 use super::mockdb;
 
@@ -52,7 +51,7 @@ fn get_all_entries() {
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
-    assert!(body_str.contains("\"id\":\"get_all_entries_test\""));
+    assert!(body_str.contains(r#""id":"get_all_entries_test""#));
     let entries: Vec<Entry> = serde_json::from_str(&body_str).unwrap();
     assert!(entries.iter().any(|x|*x==e));
 }
@@ -150,4 +149,38 @@ fn get_multiple_entries() {
     assert_eq!(entries.len(),2);
     assert!(entries.iter().any(|x|*x==one));
     assert!(entries.iter().any(|x|*x==two));
+}
+
+#[test]
+fn search_with_categories() {
+    let entries = vec![
+        Entry::build().id("a").categories(vec!["foo"]).finish(),
+        Entry::build().id("b").categories(vec!["foo"]).finish(),
+        Entry::build().id("c").categories(vec!["bar"]).finish(),
+    ];
+    let (rocket, db) = server();
+    db.get().unwrap().entries = entries;
+    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&categories=foo");
+    let mut response = req.dispatch_with(&rocket);
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains("\"b\""));
+    assert!(body_str.contains("\"a\""));
+    assert!(!body_str.contains("\"c\""));
+
+    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&categories=bar");
+    let mut response = req.dispatch_with(&rocket);
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(!body_str.contains("\"b\""));
+    assert!(!body_str.contains("\"a\""));
+    assert!(body_str.contains("\"c\""));
+
+    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10");
+    let mut response = req.dispatch_with(&rocket);
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains("\"b\""));
+    assert!(body_str.contains("\"a\""));
+    assert!(body_str.contains("\"c\""));
 }

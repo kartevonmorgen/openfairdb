@@ -1,9 +1,6 @@
 use business::usecase::tests::MockDb;
-use business::error::RepoError;
-use std::{io,result};
+use std::io;
 use r2d2::{self, Pool, InitializationError};
-
-type RepoResult<T> = result::Result<T,RepoError>;
 
 #[derive(Debug)]
 pub struct MockDbConnectionManager;
@@ -27,7 +24,7 @@ impl r2d2::ManageConnection for MockDbConnectionManager {
 
 pub type ConnectionPool = Pool<MockDbConnectionManager>;
 
-pub fn create_connection_pool() -> result::Result<ConnectionPool, InitializationError> {
+pub fn create_connection_pool() -> Result<ConnectionPool, InitializationError> {
     let config = r2d2::Config::builder().pool_size(1).build();
     let manager = MockDbConnectionManager{};
     Pool::new(config, manager)
