@@ -2,11 +2,10 @@ use rocket::{Rocket, LoggingLevel};
 use rocket::config::{Environment, Config};
 use rocket::testing::MockRequest;
 use rocket::http::{Status, Method};
-use entities::*;
 use business::db::Db;
 use business::builder::*;
 use serde_json;
-use super::mockdb;
+use super::*;
 
 fn server() -> (Rocket, mockdb::ConnectionPool) {
     let cfg = Config::build(Environment::Development)
@@ -183,4 +182,86 @@ fn search_with_categories() {
     assert!(body_str.contains("\"b\""));
     assert!(body_str.contains("\"a\""));
     assert!(body_str.contains("\"c\""));
+}
+
+#[test]
+fn search_with_tags() {
+    let entries = vec![
+        Entry::build().id("a").categories(vec!["foo"]).finish(),
+        Entry::build().id("b").categories(vec!["foo"]).finish(),
+        Entry::build().id("c").categories(vec!["foo"]).finish(),
+    ];
+    let triples = vec![
+        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("csa".into())},
+        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bio".into())},
+        Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bio".into())}
+    ];
+    let (rocket, db) = server();
+    db.get().unwrap().entries = entries;
+    db.get().unwrap().triples = triples;
+    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&tags=csa");
+    let mut response = req.dispatch_with(&rocket);
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains(r#""visible":["b"]"#));
+
+    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&tags=bio");
+    let mut response = req.dispatch_with(&rocket);
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains("\"b\""));
+    assert!(body_str.contains("\"c\""));
+    assert!(!body_str.contains("\"a\""));
+}
+
+#[test]
+fn search_with_hash_tags() {
+    let entries = vec![
+        Entry::build().id("a").finish(),
+        Entry::build().id("b").finish(),
+        Entry::build().id("c").finish(),
+    ];
+    let triples = vec![
+        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("csa".into())},
+        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bio".into())},
+        Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bio".into())}
+    ];
+    let (rocket, db) = server();
+    db.get().unwrap().entries = entries;
+    db.get().unwrap().triples = triples;
+    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&text=%23csa");
+    let mut response = req.dispatch_with(&rocket);
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains(r#""visible":["b"]"#));
+}
+
+#[test]
+fn extract_ids_test() {
+    assert_eq!(extract_ids("abc"), vec!["abc"]);
+    assert_eq!(extract_ids("a,b,c"), vec!["a", "b", "c"]);
+    assert_eq!(extract_ids("").len(), 0);
+    assert_eq!(extract_ids("abc,,d"), vec!["abc", "d"]);
+}
+
+#[test]
+fn extract_single_hash_tag_from_text() {
+    assert_eq!(extract_hash_tags("none").len(),0);
+    assert_eq!(extract_hash_tags("#").len(),0);
+    assert_eq!(extract_hash_tags("foo #bar none"),vec!["bar".to_string()]);
+    assert_eq!(extract_hash_tags("foo #bar,none"),vec!["bar".to_string()]);
+    assert_eq!(extract_hash_tags("foo#bar,none"),vec!["bar".to_string()]);
+    assert_eq!(extract_hash_tags("foo#bar none#baz"),vec!["bar".to_string(),"baz".to_string()]);
+    assert_eq!(extract_hash_tags("#bar#baz"),vec!["bar".to_string(),"baz".to_string()]);
+    assert_eq!(extract_hash_tags("#a-long-tag#baz"),vec!["a-long-tag".to_string(),"baz".to_string()]);
+    assert_eq!(extract_hash_tags("#-").len(),0);
+    assert_eq!(extract_hash_tags("#tag-"),vec!["tag".to_string()]);
+}
+
+#[test]
+fn remove_hash_tag_from_text() {
+    assert_eq!(remove_hash_tags("some #tag"), "some");
+    assert_eq!(remove_hash_tags("some#tag"), "some");
+    assert_eq!(remove_hash_tags("#tag"), "");
+    assert_eq!(remove_hash_tags("some #text with #tags"), "some with");
 }

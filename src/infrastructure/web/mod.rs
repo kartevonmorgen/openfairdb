@@ -15,6 +15,7 @@ use business::filter::InBBox;
 use business::duplicates::{self, DuplicateType};
 use std::result;
 use r2d2::{self,Pool};
+use regex::Regex;
 
 static MAX_INVISIBLE_RESULTS: usize = 5;
 
@@ -36,14 +37,6 @@ fn extract_ids(s: &str) -> Vec<String> {
         .map(|x| x.to_owned())
         .filter(|id| id != "")
         .collect::<Vec<String>>()
-}
-
-#[test]
-fn extract_ids_test() {
-    assert_eq!(extract_ids("abc"), vec!["abc"]);
-    assert_eq!(extract_ids("a,b,c"), vec!["a", "b", "c"]);
-    assert_eq!(extract_ids("").len(), 0);
-    assert_eq!(extract_ids("abc,,d"), vec!["abc", "d"]);
 }
 
 #[get("/entries")]
@@ -134,6 +127,22 @@ struct SearchQuery {
     tags: Option<String>,
 }
 
+lazy_static! {
+    static ref HASH_TAG_REGEX: Regex = Regex::new(r"#(?P<tag>\w+((-\w+)*)?)").unwrap();
+}
+
+fn extract_hash_tags(text: &str) -> Vec<String> {
+    let mut res : Vec<String> = vec![];
+    for cap in HASH_TAG_REGEX.captures_iter(text) {
+        res.push(cap["tag"].into());
+    }
+    res
+}
+
+fn remove_hash_tags(text: &str) -> String {
+    HASH_TAG_REGEX.replace_all(text, "").into_owned().replace("  ", " ").trim().into()
+}
+
 #[get("/search?<search>")]
 fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResult> {
 
@@ -152,21 +161,30 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResu
             .collect();
     }
 
+    let mut tags = vec![];
+
+    if let Some(ref txt) = search.text {
+        tags = extract_hash_tags(txt);
+    }
+
     if let Some(tags_str) = search.tags {
-        let tags = extract_ids(&tags_str);
-        if tags.len() > 0 {
-            let triple = db.get()?.all_triples()?;
-            entries = entries.into_iter()
-                .filter(&*filter::entries_by_tags(
-                    &tags,
-                    &triple,
-                    filter::Combination::Or
-                ))
-                .collect();
+        for t in extract_ids(&tags_str) {
+            tags.push(t);
         }
     }
 
-    let entries = match search.text {
+    if tags.len() > 0 {
+        let triple = db.get()?.all_triples()?;
+        entries = entries.into_iter()
+            .filter(&*filter::entries_by_tags(
+                &tags,
+                &triple,
+                filter::Combination::Or
+            ))
+            .collect();
+    }
+
+    let entries = match search.text.map(|t|remove_hash_tags(&t)) {
         Some(txt) => {
             entries.into_iter().filter(&*filter::entries_by_search_text(&txt)).collect()
         }

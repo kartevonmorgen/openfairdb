@@ -252,10 +252,10 @@ pub mod tests {
     type RepoResult<T> = result::Result<T, RepoError>;
 
     pub struct MockDb {
-        entries: Vec<Entry>,
-        categories: Vec<Category>,
-        tags: Vec<Tag>,
-        triples: Vec<Triple>,
+        pub entries: Vec<Entry>,
+        pub categories: Vec<Category>,
+        pub tags: Vec<Tag>,
+        pub triples: Vec<Triple>,
     }
 
     impl MockDb {
