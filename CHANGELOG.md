@@ -1,3 +1,12 @@
+## v0.2.2 (2017-03-23)
+
+- new: search by hash tags
+- new: `/count/tags`
+- new: `categories` is now optional in `/search?`
+- fix: `/count/entries`
+- refactor: use `State` to manage DB connections
+- chore: update `rocket` to `v0.2.3`
+
 ## v0.2.1 (2017-03-22)
 
 - new: filter by tags

@@ -77,7 +77,7 @@ impl From<e::Category> for Category {
 // JSON -> Entity
 
 impl TryFrom<Entry> for e::Entry {
-    type Err = ConversionError;
+    type Error = ConversionError;
     fn try_from(e: Entry) -> Result<e::Entry, ConversionError> {
         Ok(e::Entry{
             id          : e.id.ok_or_else(||ConversionError::Id)?,
@@ -101,7 +101,7 @@ impl TryFrom<Entry> for e::Entry {
 }
 
 impl TryFrom<Category> for e::Category {
-    type Err = ConversionError;
+    type Error = ConversionError;
     fn try_from(c: Category) -> Result<e::Category,ConversionError> {
         Ok(e::Category{
             id          : c.id.ok_or_else(||ConversionError::Id)?,
