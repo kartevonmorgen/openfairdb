@@ -90,7 +90,7 @@ pub struct UpdateEntry {
     tags        : Vec<String>,
 }
 
-fn create_missing_tags<D:Db>(db: &mut D, tags: &Vec<String>) -> Result<()> {
+fn create_missing_tags<D:Db>(db: &mut D, tags: &[String]) -> Result<()> {
     let existing_tags = db.all_tags()?;
     for new_t in tags {
         if !existing_tags.iter().any(|t|t.id == *new_t){
@@ -105,7 +105,7 @@ struct Diff<T> {
     deleted: Vec<T>
 }
 
-fn get_triple_diff(old: &Vec<Triple>, new: &Vec<Triple>) -> Diff<Triple> {
+fn get_triple_diff(old: &[Triple], new: &[Triple]) -> Diff<Triple> {
 
     let to_create = new
         .iter()
@@ -126,7 +126,7 @@ fn get_triple_diff(old: &Vec<Triple>, new: &Vec<Triple>) -> Diff<Triple> {
 }
 
 
-fn set_tag_relations<D:Db>(db: &mut D, entry: &str, tags: &Vec<String>) -> Result<()> {
+fn set_tag_relations<D:Db>(db: &mut D, entry: &str, tags: &[String]) -> Result<()> {
     create_missing_tags(db, tags)?;
     let subject = ObjectId::Entry(entry.into());
     let old_triples = db.all_triples()?
@@ -168,7 +168,7 @@ pub fn get_tag_ids<D:Db>(db: &D) -> Result<Vec<String>> {
     Ok(tags)
 }
 
-pub fn get_tag_ids_for_entry_id(triples: &Vec<Triple>, entry_id : &str) -> Vec<Tag> {
+pub fn get_tag_ids_for_entry_id(triples: &[Triple], entry_id : &str) -> Vec<Tag> {
     triples
         .iter()
         .filter(&*filter::triple_by_entry_id(entry_id))
@@ -184,7 +184,7 @@ pub fn get_tag_ids_for_entry_id(triples: &Vec<Triple>, entry_id : &str) -> Vec<T
         .collect()
 }
 
-pub fn get_tags_by_entry_ids<D:Db>(db : &D, ids : &Vec<String>) -> Result<HashMap<String, Vec<Tag>>> {
+pub fn get_tags_by_entry_ids<D:Db>(db : &D, ids : &[String]) -> Result<HashMap<String, Vec<Tag>>> {
     let triples = db.all_triples()?;
     Ok(ids
         .iter()
@@ -195,7 +195,7 @@ pub fn get_tags_by_entry_ids<D:Db>(db : &D, ids : &Vec<String>) -> Result<HashMa
         .collect())
 }
 
-pub fn get_entries<D:Db>(db : &D, ids : &Vec<String>) -> Result<Vec<Entry>> {
+pub fn get_entries<D:Db>(db : &D, ids : &[String]) -> Result<Vec<Entry>> {
     let entries = db
         .all_entries()?
         .into_iter()
@@ -283,7 +283,7 @@ pub mod tests {
         }
     }
 
-    fn get<T:Clone + Id>(objects: &Vec<T>, id: &str) -> RepoResult<T> {
+    fn get<T:Clone + Id>(objects: &[T], id: &str) -> RepoResult<T> {
         match objects.iter().find(|x| x.id() == id) {
             Some(x) => Ok(x.clone()),
             None => Err(RepoError::NotFound),

@@ -22,7 +22,7 @@ impl InBBox for Entry {
     }
 }
 
-pub fn entries_by_category_ids<'a>(ids: &'a Vec<String>) -> Box<Fn(&&Entry) -> bool + 'a> {
+pub fn entries_by_category_ids<'a>(ids: &'a [String]) -> Box<Fn(&&Entry) -> bool + 'a> {
     Box::new(move |e| ids.iter().any(|c| e.categories.iter().any(|x| x == c)))
 }
 
@@ -36,7 +36,7 @@ pub fn triple_by_entry_id<'a>(entry_id : &'a str) -> Box<Fn(&&Triple) -> bool + 
     )
 }
 
-pub fn entries_by_tags<'a>(tags: &'a Vec<String>, triples: &'a Vec<Triple>, combination: Combination) -> Box<Fn(&&Entry) -> bool + 'a> {
+pub fn entries_by_tags<'a>(tags: &'a [String], triples: &'a [Triple], combination: Combination) -> Box<Fn(&&Entry) -> bool + 'a> {
 
 
     let triples : Vec<(&String, &String)> = triples
