@@ -83,6 +83,12 @@ fn put_entry(db: State<DbPool>, id: &str, e: JSON<usecase::UpdateEntry>) -> Resu
     Ok(JSON(id.to_string()))
 }
 
+#[get("/tags")]
+fn get_tags(db: State<DbPool>) -> Result<Vec<String>> {
+    let tags = usecase::get_tag_ids(&*db.get()?)?;
+    Ok(JSON(tags))
+}
+
 #[get("/categories")]
 fn get_categories(db: State<DbPool>) -> Result<Vec<json::Category>> {
     let categories = db.get()?.all_categories()?;
@@ -225,15 +231,7 @@ fn get_count_entries(db: State<DbPool>) -> Result<usize> {
 
 #[get("/count/tags")]
 fn get_count_tags(db: State<DbPool>) -> Result<usize> {
-    let mut tags : Vec<String>= db.get()?
-        .all_triples()?
-        .into_iter()
-        .filter_map(|t| match t.object {
-            ObjectId::Tag(id) => Some(id),
-            _=> None
-        })
-        .collect();
-    tags.dedup();
+    let tags = usecase::get_tag_ids(&*db.get()?)?;
     Ok(JSON(tags.len()))
 }
 
@@ -252,6 +250,7 @@ fn rocket_instance<T:r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Rock
                        post_entry,
                        put_entry,
                        get_categories,
+                       get_tags,
                        get_category,
                        get_search,
                        get_duplicates,

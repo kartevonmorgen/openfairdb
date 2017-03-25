@@ -154,6 +154,20 @@ fn set_tag_relations<D:Db>(db: &mut D, entry: &str, tags: &Vec<String>) -> Resul
     Ok(())
 }
 
+pub fn get_tag_ids<D:Db>(db: &D) -> Result<Vec<String>> {
+    let mut tags : Vec<String> = db
+        .all_triples()?
+        .into_iter()
+        .filter(|t|t.predicate == Relation::IsTaggedWith)
+        .filter_map(|t| match t.object {
+           ObjectId::Tag(id) => Some(id),
+            _ => None
+        })
+        .collect();
+    tags.dedup();
+    Ok(tags)
+}
+
 pub fn get_tag_ids_for_entry_id(triples: &Vec<Triple>, entry_id : &str) -> Vec<Tag> {
     triples
         .iter()
