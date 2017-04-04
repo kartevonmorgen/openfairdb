@@ -41,8 +41,8 @@ pub fn entries_by_tags<'a>(tags: &'a [String], triples: &'a [Triple], combinatio
 
     let triples : Vec<(&String, &String)> = triples
         .into_iter()
-        .filter_map(|x| match x {
-            &Triple {
+        .filter_map(|x| match *x {
+            Triple {
                 subject   : ObjectId::Entry(ref e_id),
                 predicate : Relation::IsTaggedWith,
                 object    : ObjectId::Tag(ref t_id)
@@ -55,7 +55,7 @@ pub fn entries_by_tags<'a>(tags: &'a [String], triples: &'a [Triple], combinatio
         Combination::Or => {
             Box::new(move |entry|
                 tags.iter()
-                    .any(|ref tag| triples.iter().any(|t| *t.0 == entry.id && t.1 == *tag))
+                    .any(|tag| triples.iter().any(|t| *t.0 == entry.id && t.1 == tag))
             )
         },
         Combination::And => {

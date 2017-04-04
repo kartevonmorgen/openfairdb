@@ -26,9 +26,9 @@ pub fn find_duplicates(entries: &[Entry]) -> Vec<(String, String, DuplicateType)
 
 // returns a DuplicateType if the two entries have a similar title, returns None otherwise
 fn is_duplicate(e1: &Entry, e2: &Entry) -> Option<DuplicateType> {
-    if similar_title(&e1, &e2, 0.3, 0) && in_close_proximity(&e1, &e2, 100.0) {
+    if similar_title(e1, e2, 0.3, 0) && in_close_proximity(e1, e2, 100.0) {
         Some(DuplicateType::SimilarChars)
-    } else if similar_title(&e1, &e2, 0.0, 2) && in_close_proximity(&e1, &e2, 100.0) {
+    } else if similar_title(e1, e2, 0.0, 2) && in_close_proximity(e1, e2, 100.0) {
         Some(DuplicateType::SimilarWords)
     } else {
         None
@@ -36,7 +36,7 @@ fn is_duplicate(e1: &Entry, e2: &Entry) -> Option<DuplicateType> {
 }
 
 fn in_close_proximity(e1: &Entry, e2: &Entry, max_dist_meters: f64) -> bool {
-    entry_distance_in_meters(&e1, &e2) <= max_dist_meters
+    entry_distance_in_meters(e1, e2) <= max_dist_meters
 }
 
 fn entry_distance_in_meters(e1: &Entry, e2: &Entry) -> f64 {
@@ -75,16 +75,7 @@ fn words_equal_except_k_words(str1: &str, str2: &str, k: u32) -> bool {
         return false;
     }
 
-    let s1: &str;
-    let s2: &str;
-
-    if len1 <= len2 {
-        s1 = str1;
-        s2 = str2;
-    } else {
-        s1 = str2;
-        s2 = str1;
-    }
+    let (s1, s2) = if len1 <= len2 { (str1, str2) } else { (str2, str1) };
 
     let words = s1.split_whitespace();
 
@@ -95,9 +86,9 @@ fn words_equal_except_k_words(str1: &str, str2: &str, k: u32) -> bool {
         set.insert(w);
     }
 
-    for w in s2.split(" ") {
+    for w in s2.split(' ') {
         if !set.contains(w) {
-            diff = diff + 1;
+            diff += 1;
         }
     }
     diff <= k

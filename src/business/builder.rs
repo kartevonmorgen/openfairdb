@@ -4,7 +4,7 @@ pub trait EntryBuilder {
     fn build() -> EntryBuild;
 }
 
-struct EntryBuild {
+pub struct EntryBuild {
     entry: Entry
 }
 

@@ -54,7 +54,7 @@ fn get_entries(db: State<DbPool>) -> Result<Vec<json::Entry>> {
 fn get_entry(db: State<DbPool>, ids: &str) -> Result<Vec<json::Entry>> {
     let ids = extract_ids(ids);
     let entries = usecase::get_entries(&*db.get()?, &ids)?;
-    let tags = usecase::get_tags_by_entry_ids(&mut*db.get()?, &ids)?;
+    let tags = usecase::get_tags_by_entry_ids(&*db.get()?, &ids)?;
     Ok(JSON(entries
         .into_iter()
         .map(|e|{
@@ -179,7 +179,7 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResu
         }
     }
 
-    if tags.len() > 0 {
+    if !tags.is_empty() {
         let triple = db.get()?.all_triples()?;
         entries = entries.into_iter()
             .filter(&*filter::entries_by_tags(
