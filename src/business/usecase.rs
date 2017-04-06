@@ -4,9 +4,10 @@ use chrono::*;
 use entities::*;
 use super::db::Db;
 use super::filter;
-use super::validate::Validate;
+use super::validate::{self, Validate};
 use uuid::Uuid;
 use std::collections::HashMap;
+use pwhash::bcrypt;
 
 type Result<T> = result::Result<T,Error>;
 
@@ -32,14 +33,22 @@ impl Id for Tag {
     }
 }
 
+impl Id for User {
+    fn id(&self) -> String {
+        self.username.clone()
+    }
+}
+
 fn triple_id(t: &Triple) -> String {
     let (s_type, s_id) = match t.subject {
         ObjectId::Entry(ref id) => ("entry", id),
-        ObjectId::Tag(ref id) => ("tag", id)
+        ObjectId::Tag(ref id) => ("tag", id),
+        ObjectId::User(ref id) => ("user", id)
     };
     let (o_type, o_id) = match t.object {
         ObjectId::Entry(ref id) => ("entry", id),
-        ObjectId::Tag(ref id) => ("tag", id)
+        ObjectId::Tag(ref id) => ("tag", id),
+        ObjectId::User(ref id) => ("user", id)
     };
     let p_type = match t.predicate {
         Relation::IsTaggedWith => "is_tagged_with"
@@ -69,6 +78,13 @@ pub struct NewEntry {
     categories  : Vec<String>,
     tags        : Vec<String>,
     license     : String,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct NewUser {
+    username: String,
+    password: String,
+    email: String
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -204,6 +220,19 @@ pub fn get_entries<D:Db>(db : &D, ids : &[String]) -> Result<Vec<Entry>> {
     Ok(entries)
 }
 
+pub fn create_new_user<D: Db>(db: &mut D, u: NewUser) -> Result<()> {
+    validate::username(&u.username)?;
+    validate::password(&u.password)?;
+    validate::email(&u.email)?;
+    let pw = bcrypt::hash(&u.password)?;
+    db.create_user(&User{
+        username: u.username,
+        password: pw,
+        email: u.email,
+    })?;
+    Ok(())
+}
+
 pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String>
  {
     let new_entry = Entry{
@@ -270,6 +299,7 @@ pub mod tests {
         pub categories: Vec<Category>,
         pub tags: Vec<Tag>,
         pub triples: Vec<Triple>,
+        pub users: Vec<User>,
     }
 
     impl MockDb {
@@ -278,7 +308,8 @@ pub mod tests {
                 entries: vec![],
                 categories: vec![],
                 tags: vec![],
-                triples: vec![]
+                triples: vec![],
+                users: vec![]
             }
         }
     }
@@ -321,8 +352,16 @@ pub mod tests {
             create(&mut self.triples, e)
         }
 
+        fn create_user(&mut self, u: &User) -> RepoResult<()> {
+            create(&mut self.users, u)
+        }
+
         fn get_entry(&self, id: &str) -> RepoResult<Entry> {
             get(&self.entries,id)
+        }
+
+        fn get_user(&self, id: &str) -> RepoResult<User> {
+            get(&self.users,id)
         }
 
         fn all_entries(&self) -> RepoResult<Vec<Entry>> {
@@ -685,27 +724,109 @@ pub mod tests {
         let res = get_tags_by_entry_ids(&mock_db, &vec![id.clone()]).unwrap();
         assert_eq!(res.get(&id).cloned().unwrap(), vec![Tag{id: "vegan".into()}]);
     }
-}
 
-#[test]
-fn get_correct_tag_ids_for_entry_id() {
-    let triples = vec![
-            Triple{
-                subject: ObjectId::Entry("a".into()),
-                predicate: Relation::IsTaggedWith,
-                object: ObjectId::Tag("bio".into()),
-            },
-            Triple{
-                subject: ObjectId::Entry("a".into()),
-                predicate: Relation::IsTaggedWith,
-                object: ObjectId::Tag("fair".into()),
-            },
-            Triple{
-                subject: ObjectId::Entry("b".into()),
-                predicate: Relation::IsTaggedWith,
-                object: ObjectId::Tag("fair".into()),
-            }
-        ];
-    let res = get_tag_ids_for_entry_id(&triples, "a");
-    assert_eq!(res,vec![Tag{id:"bio".into()},Tag{id:"fair".into()}])
+    #[test]
+    fn get_correct_tag_ids_for_entry_id() {
+        let triples = vec![
+                Triple{
+                    subject: ObjectId::Entry("a".into()),
+                    predicate: Relation::IsTaggedWith,
+                    object: ObjectId::Tag("bio".into()),
+                },
+                Triple{
+                    subject: ObjectId::Entry("a".into()),
+                    predicate: Relation::IsTaggedWith,
+                    object: ObjectId::Tag("fair".into()),
+                },
+                Triple{
+                    subject: ObjectId::Entry("b".into()),
+                    predicate: Relation::IsTaggedWith,
+                    object: ObjectId::Tag("fair".into()),
+                }
+            ];
+        let res = get_tag_ids_for_entry_id(&triples, "a");
+        assert_eq!(res,vec![Tag{id:"bio".into()},Tag{id:"fair".into()}])
+    }
+
+    #[test]
+    fn create_user_with_invalid_name(){
+        let mut db = MockDb::new();
+        let u = NewUser{
+            username: "".into(),
+            password: "bar".into(),
+            email: "foo@baz.io".into()
+        };
+        assert!(create_new_user(&mut db,u).is_err());
+        let u = NewUser{
+            username: "also&invalid".into(),
+            password: "bar".into(),
+            email: "foo@baz.io".into()
+        };
+        assert!(create_new_user(&mut db,u).is_err());
+        let u = NewUser{
+            username: "thisisvalid".into(),
+            password: "very_secret".into(),
+            email: "foo@baz.io".into()
+        };
+        assert!(create_new_user(&mut db,u).is_ok());
+    }
+
+    #[test]
+    fn create_user_with_invalid_password(){
+        let mut db = MockDb::new();
+        let u = NewUser{
+            username: "user".into(),
+            password: "".into(),
+            email: "foo@baz.io".into()
+        };
+        assert!(create_new_user(&mut db,u).is_err());
+        let u = NewUser{
+            username: "user".into(),
+            password: "not valid".into(),
+            email: "foo@baz.io".into()
+        };
+        assert!(create_new_user(&mut db,u).is_err());
+        let u = NewUser{
+            username: "user".into(),
+            password: "validpass".into(),
+            email: "foo@baz.io".into()
+        };
+        assert!(create_new_user(&mut db,u).is_ok());
+    }
+
+    #[test]
+    fn create_user_with_invalid_email(){
+        let mut db = MockDb::new();
+        let u = NewUser{
+            username: "user".into(),
+            password: "pass".into(),
+            email: "".into()
+        };
+        assert!(create_new_user(&mut db,u).is_err());
+        let u = NewUser{
+            username: "user".into(),
+            password: "pass".into(),
+            email: "fooo@".into()
+        };
+        assert!(create_new_user(&mut db,u).is_err());
+        let u = NewUser{
+            username: "user".into(),
+            password: "pass".into(),
+            email: "fooo@bar.io".into()
+        };
+        assert!(create_new_user(&mut db,u).is_ok());
+    }
+
+    #[test]
+    fn encrypt_user_password(){
+        let mut db = MockDb::new();
+        let u = NewUser{
+            username: "user".into(),
+            password: "pass".into(),
+            email: "foo@bar.io".into()
+        };
+        assert!(create_new_user(&mut db,u).is_ok());
+        assert!(db.users[0].password != "pass");
+        assert!(bcrypt::verify("pass", &db.users[0].password));
+    }
 }

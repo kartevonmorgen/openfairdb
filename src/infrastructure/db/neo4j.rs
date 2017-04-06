@@ -41,6 +41,16 @@ impl Db for GraphClient {
         Ok(e)
     }
 
+    fn get_user(&self, username: &str) -> Result<User> {
+        let result = self.exec(cypher_stmt!(
+        "MATCH u:User
+         WHERE u.username = {username}",
+        { "username" => username })?)?;
+        let r = result.rows().next().ok_or(RepoError::NotFound)?;
+        let u = r.get::<User>("u")?;
+        Ok(u)
+    }
+
     fn all_entries(&self) -> Result<Vec<Entry>> {
         let result = self.exec(
         "MATCH (e:Entry)<--(x:EntryState)
@@ -129,17 +139,36 @@ impl Db for GraphClient {
         Ok(())
     }
 
+    fn create_user(&mut self, u: &User) -> Result<()> {
+        self.exec(cypher_stmt!(
+        "MERGE (
+           u:User {
+             username:{username},
+             password:{password},
+             email:{email},
+           }
+        )",
+        {
+            "username" => &u.username,
+            "password" => &u.password,
+            "email"    => &u.email
+        })?)?;
+        Ok(())
+    }
+
     fn create_triple(&mut self, t: &Triple) -> Result<()> {
         let predicate = match t.predicate {
             Relation::IsTaggedWith => "IS_TAGGED_WITH"
         };
         let (subject_type, subject_id) = match t.subject {
             ObjectId::Entry(ref id) => ("Entry",id),
-            ObjectId::Tag(ref id) => ("Tag",id)
+            ObjectId::Tag(ref id) => ("Tag",id),
+            ObjectId::User(ref id) => ("User",id)
         };
         let (object_type, object_id) = match t.object {
             ObjectId::Entry(ref id) => ("Entry",id),
-            ObjectId::Tag(ref id) => ("Tag",id)
+            ObjectId::Tag(ref id) => ("Tag",id),
+            ObjectId::User(ref id) => ("User",id)
         };
         let stmt = format!(
            "MATCH (s:{s_type})
@@ -254,11 +283,13 @@ impl Db for GraphClient {
         };
         let (subject_type, subject_id) = match t.subject {
             ObjectId::Entry(ref id) => ("Entry",id),
-            ObjectId::Tag(ref id) => ("Tag",id)
+            ObjectId::Tag(ref id) => ("Tag",id),
+            ObjectId::User(ref id) => ("User",id)
         };
         let (object_type, object_id) = match t.object {
             ObjectId::Entry(ref id) => ("Entry",id),
-            ObjectId::Tag(ref id) => ("Tag",id)
+            ObjectId::Tag(ref id) => ("Tag",id),
+            ObjectId::User(ref id) => ("User",id)
         };
         let stmt = format!(
            "MATCH (s:{s_type})-[p:{predicate}]->(o:{o_type})

@@ -23,6 +23,7 @@ serde_derive = "0.9"
 chrono = "0.2"
 lazy_static = "0.2"
 regex = "0.2"
+pwhash = "0.1"
 
 [dev-dependencies.rocket]
 version = "0.2"

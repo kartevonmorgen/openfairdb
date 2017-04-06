@@ -50,4 +50,13 @@ pub enum ObjectId {
     Entry(String),
     #[serde(rename="tag")]
     Tag(String),
+    #[serde(rename="user")]
+    User(String),
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct User {
+    pub username: String,
+    pub password: String,
+    pub email: String
 }

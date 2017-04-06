@@ -223,6 +223,12 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResu
     }))
 }
 
+#[post("/users", format = "application/json", data = "<u>")]
+fn post_user(db: State<DbPool>, u: JSON<usecase::NewUser>) -> result::Result<(),AppError> {
+    usecase::create_new_user(&mut*db.get()?, u.into_inner())?;
+    Ok(())
+}
+
 #[get("/count/entries")]
 fn get_count_entries(db: State<DbPool>) -> Result<usize> {
     let entries = db.get()?.all_entries()?;
@@ -248,6 +254,7 @@ fn rocket_instance<T:r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Rock
                routes![get_entries,
                        get_entry,
                        post_entry,
+                       post_user,
                        put_entry,
                        get_categories,
                        get_tags,
@@ -291,6 +298,7 @@ impl<'r> Responder<'r> for AppError {
                             _ => Status::InternalServerError,
                         }
                     }
+                    Error::Pwhash(_) => Status::InternalServerError
                 }
             }
             AppError::Adapter(_) => Status::BadRequest,

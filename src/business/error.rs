@@ -1,5 +1,6 @@
 use std::io;
 use std::error;
+use pwhash;
 
 quick_error!{
     #[derive(Debug)]
@@ -15,6 +16,12 @@ quick_error!{
         }
         Url{
             description("Invalid URL")
+        }
+        UserName{
+            description("Invalid username")
+        }
+        Password{
+            description("Invalid password")
         }
     }
 }
@@ -51,6 +58,11 @@ quick_error!{
             description(err.description())
         }
         Repo(err: RepoError){
+            from()
+            cause(err)
+            description(err.description())
+        }
+        Pwhash(err: pwhash::error::Error){
             from()
             cause(err)
             description(err.description())

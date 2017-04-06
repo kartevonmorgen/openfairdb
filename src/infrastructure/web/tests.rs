@@ -1,11 +1,12 @@
 use rocket::{Rocket, LoggingLevel};
 use rocket::config::{Environment, Config};
 use rocket::testing::MockRequest;
-use rocket::http::{Status, Method};
+use rocket::http::{Status, Method, ContentType};
 use business::db::Db;
 use business::builder::*;
 use serde_json;
 use super::*;
+use pwhash::bcrypt;
 
 fn server() -> (Rocket, mockdb::ConnectionPool) {
     let cfg = Config::build(Environment::Development)
@@ -264,4 +265,17 @@ fn remove_hash_tag_from_text() {
     assert_eq!(remove_hash_tags("some#tag"), "some");
     assert_eq!(remove_hash_tags("#tag"), "");
     assert_eq!(remove_hash_tags("some #text with #tags"), "some with");
+}
+
+#[test]
+fn create_new_user() {
+    let (rocket, db) = server();
+    let mut req = MockRequest::new(Method::Post, "/users")
+        .header(ContentType::JSON)
+        .body(r#"{"username":"foo","email":"foo@bar.com","password":"bar"}"#);
+    let response = req.dispatch_with(&rocket);
+    assert_eq!(response.status(), Status::Ok);
+    let u = db.get().unwrap().get_user("foo").unwrap();
+    assert_eq!(u.username, "foo");
+    assert!(bcrypt::verify("bar", &u.password));
 }

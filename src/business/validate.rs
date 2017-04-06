@@ -3,12 +3,17 @@ use std::str::FromStr;
 use emailaddress::EmailAddress;
 use url::Url;
 use entities::*;
+use regex::Regex;
+
+lazy_static! {
+    static ref USERNAME_REGEX: Regex = Regex::new(r"^[a-z0-9]{1,12}$").unwrap();
+}
 
 pub trait Validate {
     fn validate(&self) -> Result<(), ParameterError>;
 }
 
-fn email(email: &str) -> Result<(), ParameterError> {
+pub fn email(email: &str) -> Result<(), ParameterError> {
     EmailAddress::from_str(email)
         .map_err(|_| ParameterError::Email)
         .map(|_| ())
@@ -25,6 +30,21 @@ fn license(s: &str) -> Result<(), ParameterError> {
         "CC0-1.0" | "ODbL-1.0" => Ok(()),
         _ => Err(ParameterError::License),
     }
+}
+
+pub fn username(name: &str) -> Result<(), ParameterError> {
+    if !USERNAME_REGEX.is_match(name) {
+        return Err(ParameterError::UserName);
+    }
+    Ok(())
+}
+
+pub fn password(pw: &str) -> Result<(), ParameterError> {
+    //TODO: use regex
+    if pw == "" || pw.contains(" ") {
+        return Err(ParameterError::Password);
+    }
+    Ok(())
 }
 
 impl Validate for Entry {
