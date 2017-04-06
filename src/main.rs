@@ -15,7 +15,7 @@ extern crate rusted_cypher;
 extern crate r2d2;
 extern crate r2d2_cypher;
 extern crate uuid;
-extern crate emailaddress;
+extern crate fast_chemail;
 extern crate url;
 extern crate rocket;
 extern crate rocket_contrib;

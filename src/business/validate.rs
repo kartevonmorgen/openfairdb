@@ -1,6 +1,5 @@
 use business::error::ParameterError;
-use std::str::FromStr;
-use emailaddress::EmailAddress;
+use fast_chemail::is_valid_email;
 use url::Url;
 use entities::*;
 use regex::Regex;
@@ -14,9 +13,10 @@ pub trait Validate {
 }
 
 pub fn email(email: &str) -> Result<(), ParameterError> {
-    EmailAddress::from_str(email)
-        .map_err(|_| ParameterError::Email)
-        .map(|_| ())
+    if !is_valid_email(email) {
+        return Err(ParameterError::Email);
+    }
+    Ok(())
 }
 
 fn homepage(url: &str) -> Result<(), ParameterError> {
@@ -77,7 +77,8 @@ fn license_test() {
 #[test]
 fn email_test() {
     assert!(email("foo").is_err());
-    assert!(email("foo@bar").is_ok());
+    assert!(email("foo@bar").is_err());
+    assert!(email("foo@bar.tld").is_ok());
 }
 
 #[test]
