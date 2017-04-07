@@ -19,44 +19,6 @@ fn server() -> (Rocket, mockdb::ConnectionPool) {
 }
 
 #[test]
-fn get_all_entries() {
-    let e = Entry{
-        id          :  "get_all_entries_test".into(),
-        created     :  0,
-        version     :  0,
-        title       :  "some".into(),
-        description :  "desc".into(),
-        lat         :  0.0,
-        lng         :  0.0,
-        street      :  None,
-        zip         :  None,
-        city        :  None,
-        country     :  None,
-        email       :  None,
-        telephone   :  None,
-        homepage    :  None,
-        categories  :  vec![],
-        license     :  None,
-    };
-    let (rocket, pool) = server();
-    pool.get().unwrap().create_entry(&e).unwrap();
-    let mut req = MockRequest::new(Method::Get, "/entries");
-    let mut response = req.dispatch_with(&rocket);
-    assert_eq!(response.status(), Status::Ok);
-    for h in response.headers() {
-        match h.name.as_str() {
-            "Content-Type" => assert_eq!(h.value, "application/json"),
-            _ => { /* let these through */ }
-        }
-    }
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
-    assert!(body_str.contains(r#""id":"get_all_entries_test""#));
-    let entries: Vec<Entry> = serde_json::from_str(&body_str).unwrap();
-    assert!(entries.iter().any(|x|*x==e));
-}
-
-#[test]
 fn get_one_entry() {
     let e = Entry{
         id          :  "get_one_entry_test".into(),

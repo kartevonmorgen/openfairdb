@@ -39,17 +39,6 @@ fn extract_ids(s: &str) -> Vec<String> {
         .collect::<Vec<String>>()
 }
 
-#[get("/entries")]
-fn get_entries(db: State<DbPool>) -> Result<Vec<json::Entry>> {
-    let e = db.get()?
-        .all_entries()?
-        .into_iter()
-        //TODO
-        .map(|e|json::Entry::from_entry_with_tags_and_ratings(e,vec![],vec![]))
-        .collect::<Vec<json::Entry>>();
-    Ok(JSON(e))
-}
-
 #[get("/entries/<ids>")]
 fn get_entry(db: State<DbPool>, ids: &str) -> Result<Vec<json::Entry>> {
     let ids = extract_ids(ids);
@@ -252,8 +241,7 @@ fn rocket_instance<T:r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Rock
     rocket::custom(cfg,true)
         .manage(pool)
         .mount("/",
-               routes![get_entries,
-                       get_entry,
+               routes![get_entry,
                        post_entry,
                        post_user,
                        post_rating,
