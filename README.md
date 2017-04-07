@@ -19,8 +19,10 @@ Requirements:
 If you're using Ubuntu 16.04 LTS you can run
 
 ```
-sudo apt-get install curl libssl-dev
+sudo apt-get install curl libssl-dev gcc
 curl https://sh.rustup.rs -sSf | sh
+rustup install nightly
+rustup default nightly
 ```
 
 ### Installing Neo4j
@@ -69,7 +71,7 @@ To stop it:
 git clone https://github.com/flosse/openfairdb
 cd openfairdb/
 cargo build
-./target/debug/openfairdb --enable-cors
+./target/debug/openfairdb
 ```
 
 On NixOS you can build the project with:
