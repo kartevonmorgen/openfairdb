@@ -1,4 +1,4 @@
-use super::error::{Error, RepoError};
+use super::error::{Error, ParameterError, RepoError};
 use std::result;
 use chrono::*;
 use entities::*;
@@ -42,19 +42,38 @@ impl Id for User {
     }
 }
 
+impl Id for Comment {
+    fn id(&self) -> String {
+        self.id.clone()
+    }
+}
+
+impl Id for Rating {
+    fn id(&self) -> String {
+        self.id.clone()
+    }
+}
+
 fn triple_id(t: &Triple) -> String {
     let (s_type, s_id) = match t.subject {
         ObjectId::Entry(ref id) => ("entry", id),
         ObjectId::Tag(ref id) => ("tag", id),
-        ObjectId::User(ref id) => ("user", id)
+        ObjectId::User(ref id) => ("user", id),
+        ObjectId::Comment(ref id) => ("comment", id),
+        ObjectId::Rating(ref id) => ("rating", id)
     };
     let (o_type, o_id) = match t.object {
         ObjectId::Entry(ref id) => ("entry", id),
         ObjectId::Tag(ref id) => ("tag", id),
-        ObjectId::User(ref id) => ("user", id)
+        ObjectId::User(ref id) => ("user", id),
+        ObjectId::Comment(ref id) => ("comment", id),
+        ObjectId::Rating(ref id) => ("rating", id)
     };
     let p_type = match t.predicate {
-        Relation::IsTaggedWith => "is_tagged_with"
+        Relation::IsTaggedWith => "is_tagged_with",
+        Relation::IsRatedWith => "is_rated_with",
+        Relation::IsCommentedWith => "is_commented_with",
+        Relation::CreatedBy => "created_by"
     };
     format!("{}-{}-{}-{}-{}",s_type,s_id,p_type,o_type,o_id)
 }
@@ -107,6 +126,15 @@ pub struct UpdateEntry {
     homepage    : Option<String>,
     categories  : Vec<String>,
     tags        : Vec<String>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct RateEntry {
+    entry: String,
+    value: i8,
+    context: RatingContext,
+    comment: String,
+    user: Option<String>
 }
 
 fn create_missing_tags<D:Db>(db: &mut D, tags: &[String]) -> Result<()> {
@@ -287,5 +315,40 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
     };
     db.update_entry(&new_entry)?;
     set_tag_relations(db, &new_entry.id, &e.tags)?;
+    Ok(())
+}
+
+pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
+    let e = db.get_entry(&r.entry)?;
+    if r.comment.len() < 1 {
+        return Err(Error::Parameter(ParameterError::EmptyComment));
+    }
+    if r.value > 2 || r.value < -1 {
+        return Err(Error::Parameter(ParameterError::RatingValue));
+    }
+    let now = UTC::now().timestamp() as u64;
+    let rating_id = Uuid::new_v4().simple().to_string();
+    let comment_id = Uuid::new_v4().simple().to_string();
+    db.create_rating(&Rating{
+        id      : rating_id.clone(),
+        created : now,
+        value   : r.value,
+        context : r.context
+    })?;
+    db.create_comment(&Comment{
+        id      : comment_id.clone(),
+        created : now,
+        text    : r.comment,
+    })?;
+    db.create_triple(&Triple{
+        subject: ObjectId::Entry(e.id),
+        predicate: Relation::IsRatedWith,
+        object: ObjectId::Rating(rating_id.clone()),
+    })?;
+    db.create_triple(&Triple{
+        subject: ObjectId::Rating(rating_id),
+        predicate: Relation::IsCommentedWith,
+        object: ObjectId::Comment(comment_id),
+    })?;
     Ok(())
 }

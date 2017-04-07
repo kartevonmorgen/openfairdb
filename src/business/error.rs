@@ -23,6 +23,12 @@ quick_error!{
         Password{
             description("Invalid password")
         }
+        EmptyComment{
+            description("Empty comment")
+        }
+        RatingValue{
+            description("Rating value out of range")
+        }
     }
 }
 

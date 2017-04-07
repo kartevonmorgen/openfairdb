@@ -86,13 +86,16 @@ The current REST API is quite basic and will change within the near future.
 The base URL is `http://api.ofdb.io/v0/`.
 
 -  `GET /entries/:ID_1,:ID_2,...,:ID_n`
--  `POST /entries/`
+-  `POST /entries`
 -  `PUT /entries/:ID`
 -  `GET /categories/`
 -  `GET /categories/:ID`
 -  `GET /search?text=TXT&bbox=LAT_min,LNG_min,LAT_max,LNG_max&categories=C_1,C_2,...,C_n`
--  `GET /server/version`
 -  `GET /count/entries`
+-  `GET /count/tags`
+-  `GET /server/version`
+-  `POST /users`
+-  `POST /ratings`
 
 #### JSON structures
 

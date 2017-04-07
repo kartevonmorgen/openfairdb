@@ -17,6 +17,8 @@ pub trait Db {
    fn create_tag(&mut self, &Tag) -> Result<()>;
    fn create_triple(&mut self, &Triple) -> Result<()>;
    fn create_user(&mut self, &User) -> Result<()>;
+   fn create_comment(&mut self, &Comment) -> Result<()>;
+   fn create_rating(&mut self, &Rating) -> Result<()>;
 
    fn get_entry(&self, &str) -> Result<Entry>;
    fn get_user(&self, &str) -> Result<User>;

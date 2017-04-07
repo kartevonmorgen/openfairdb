@@ -156,19 +156,62 @@ impl Db for GraphClient {
         Ok(())
     }
 
+    fn create_rating(&mut self, r: &Rating) -> Result<()> {
+        self.exec(cypher_stmt!(
+        "MERGE (
+           r:Rating {
+             id      : {id},
+             created : {created},
+             value   : {value},
+             context : {context},
+           }
+        )",
+        {
+            "id"        => &r.id,
+            "created"   => &r.created,
+            "value"     => &r.value,
+            "context"   => &r.context
+        })?)?;
+        Ok(())
+    }
+
+    fn create_comment(&mut self, c: &Comment) -> Result<()> {
+        self.exec(cypher_stmt!(
+        "MERGE (
+           c:Comment {
+             id      : {id},
+             created : {created},
+             text    : {text},
+           }
+        )",
+        {
+            "id"        => &c.id,
+            "created"   => &c.created,
+            "value"     => &c.text
+        })?)?;
+        Ok(())
+    }
+
     fn create_triple(&mut self, t: &Triple) -> Result<()> {
         let predicate = match t.predicate {
-            Relation::IsTaggedWith => "IS_TAGGED_WITH"
+            Relation::IsTaggedWith => "IS_TAGGED_WITH",
+            Relation::IsRatedWith => "IS_RATED_WITH",
+            Relation::IsCommentedWith => "IS_COMMENTED_WITH",
+            Relation::CreatedBy => "CREATED_BY"
         };
         let (subject_type, subject_id) = match t.subject {
             ObjectId::Entry(ref id) => ("Entry",id),
             ObjectId::Tag(ref id) => ("Tag",id),
-            ObjectId::User(ref id) => ("User",id)
+            ObjectId::User(ref id) => ("User",id),
+            ObjectId::Comment(ref id) => ("Comment",id),
+            ObjectId::Rating(ref id) => ("Rating",id)
         };
         let (object_type, object_id) = match t.object {
             ObjectId::Entry(ref id) => ("Entry",id),
             ObjectId::Tag(ref id) => ("Tag",id),
-            ObjectId::User(ref id) => ("User",id)
+            ObjectId::User(ref id) => ("User",id),
+            ObjectId::Comment(ref id) => ("Comment",id),
+            ObjectId::Rating(ref id) => ("Rating",id)
         };
         let stmt = format!(
            "MATCH (s:{s_type})
@@ -279,17 +322,24 @@ impl Db for GraphClient {
 
     fn delete_triple(&mut self, t: &Triple) -> Result<()> {
         let predicate = match t.predicate {
-            Relation::IsTaggedWith => "IS_TAGGED_WITH"
+            Relation::IsTaggedWith => "IS_TAGGED_WITH",
+            Relation::IsRatedWith => "IS_RATED_WITH",
+            Relation::IsCommentedWith => "IS_COMMENTED_WITH",
+            Relation::CreatedBy => "CREATED_BY"
         };
         let (subject_type, subject_id) = match t.subject {
             ObjectId::Entry(ref id) => ("Entry",id),
             ObjectId::Tag(ref id) => ("Tag",id),
-            ObjectId::User(ref id) => ("User",id)
+            ObjectId::User(ref id) => ("User",id),
+            ObjectId::Comment(ref id) => ("Comment",id),
+            ObjectId::Rating(ref id) => ("Rating",id)
         };
         let (object_type, object_id) = match t.object {
             ObjectId::Entry(ref id) => ("Entry",id),
             ObjectId::Tag(ref id) => ("Tag",id),
-            ObjectId::User(ref id) => ("User",id)
+            ObjectId::User(ref id) => ("User",id),
+            ObjectId::Comment(ref id) => ("Comment",id),
+            ObjectId::Rating(ref id) => ("Rating",id)
         };
         let stmt = format!(
            "MATCH (s:{s_type})-[p:{predicate}]->(o:{o_type})

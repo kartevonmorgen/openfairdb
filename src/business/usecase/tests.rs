@@ -1,4 +1,5 @@
 use super::*;
+use business::builder::EntryBuilder;
 
 type RepoResult<T> = result::Result<T, RepoError>;
 
@@ -8,6 +9,8 @@ pub struct MockDb {
     pub tags: Vec<Tag>,
     pub triples: Vec<Triple>,
     pub users: Vec<User>,
+    pub ratings: Vec<Rating>,
+    pub comments: Vec<Comment>,
 }
 
 impl MockDb {
@@ -17,7 +20,9 @@ impl MockDb {
             categories: vec![],
             tags: vec![],
             triples: vec![],
-            users: vec![]
+            users: vec![],
+            ratings: vec![],
+            comments: vec![]
         }
     }
 }
@@ -62,6 +67,14 @@ impl Db for MockDb {
 
     fn create_user(&mut self, u: &User) -> RepoResult<()> {
         create(&mut self.users, u)
+    }
+
+    fn create_comment(&mut self, c: &Comment) -> RepoResult<()> {
+        create(&mut self.comments, c)
+    }
+
+    fn create_rating(&mut self, r: &Rating) -> RepoResult<()> {
+        create(&mut self.ratings, r)
     }
 
     fn get_entry(&self, id: &str) -> RepoResult<Entry> {
@@ -536,4 +549,81 @@ fn encrypt_user_password(){
     assert!(create_new_user(&mut db,u).is_ok());
     assert!(db.users[0].password != "pass");
     assert!(bcrypt::verify("pass", &db.users[0].password));
+}
+
+
+#[test]
+fn rate_non_existing_entry(){
+    let mut db = MockDb::new();
+    assert!(rate_entry(&mut db,RateEntry{
+        entry: "does_not_exist".into(),
+        comment: "a comment".into(),
+        context: RatingContext::Fair,
+        user: None,
+        value: 2
+    }).is_err());
+}
+
+#[test]
+fn rate_with_empty_comment(){
+    let mut db = MockDb::new();
+    let e = Entry::build().id("foo").finish();
+    db.entries = vec![e];
+    assert!(rate_entry(&mut db,RateEntry{
+        entry: "foo".into(),
+        comment: "".into(),
+        context: RatingContext::Fair,
+        user: None,
+        value: 2
+    }).is_err());
+}
+
+#[test]
+fn rate_with_invalid_value_comment(){
+    let mut db = MockDb::new();
+    let e = Entry::build().id("foo").finish();
+    db.entries = vec![e];
+    assert!(rate_entry(&mut db,RateEntry{
+        entry: "foo".into(),
+        comment: "comment".into(),
+        context: RatingContext::Fair,
+        user: None,
+        value: 3
+    }).is_err());
+    assert!(rate_entry(&mut db,RateEntry{
+        entry: "foo".into(),
+        comment: "comment".into(),
+        context: RatingContext::Fair,
+        user: None,
+        value: -2
+    }).is_err());
+}
+
+#[test]
+fn rate_without_login(){
+    let mut db = MockDb::new();
+    let e = Entry::build().id("foo").finish();
+    db.entries = vec![e];
+    assert!(rate_entry(&mut db,RateEntry{
+        entry: "foo".into(),
+        comment: "comment".into(),
+        context: RatingContext::Fair,
+        user: None,
+        value: 2
+    }).is_ok());
+    assert_eq!(db.ratings.len(),1);
+    assert_eq!(db.comments.len(),1);
+    assert_eq!(db.triples.len(),2);
+    assert_eq!(db.triples[0].subject,ObjectId::Entry("foo".into()));
+    assert_eq!(db.triples[0].predicate,Relation::IsRatedWith);
+    assert!(match db.triples[0].object {
+        ObjectId::Rating(_) => true, _ => false
+    });
+    assert!(match db.triples[1].subject {
+        ObjectId::Rating(_) => true, _ => false
+    });
+    assert_eq!(db.triples[1].predicate,Relation::IsCommentedWith);
+    assert!(match db.triples[1].object {
+        ObjectId::Comment(_) => true, _ => false
+    });
 }

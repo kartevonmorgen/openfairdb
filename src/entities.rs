@@ -34,7 +34,13 @@ pub struct Tag {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub enum Relation {
     #[serde(rename="is_tagged_with")]
-    IsTaggedWith
+    IsTaggedWith,
+    #[serde(rename="is_rated_with")]
+    IsRatedWith,
+    #[serde(rename="is_commented_with")]
+    IsCommentedWith,
+    #[serde(rename="created_by")]
+    CreatedBy
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -52,6 +58,10 @@ pub enum ObjectId {
     Tag(String),
     #[serde(rename="user")]
     User(String),
+    #[serde(rename="comment")]
+    Comment(String),
+    #[serde(rename="rating")]
+    Rating(String),
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -59,4 +69,35 @@ pub struct User {
     pub username: String,
     pub password: String,
     pub email: String
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct Comment {
+    pub id: String,
+    pub created: u64,
+    pub text: String
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub enum RatingContext {
+   #[serde(rename="diversity")]
+   Diversity,
+   #[serde(rename="renewable")]
+   Renewable,
+   #[serde(rename="fair")]
+   Fair,
+   #[serde(rename="humanity")]
+   Humanity,
+   #[serde(rename="transparency")]
+   Transparency,
+   #[serde(rename="solidarity")]
+   Solidarity
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct Rating {
+    pub id: String,
+    pub created: u64,
+    pub value: i8,
+    pub context: RatingContext
 }

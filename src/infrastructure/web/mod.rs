@@ -229,6 +229,12 @@ fn post_user(db: State<DbPool>, u: JSON<usecase::NewUser>) -> result::Result<(),
     Ok(())
 }
 
+#[post("/ratings", format = "application/json", data = "<u>")]
+fn post_rating(db: State<DbPool>, u: JSON<usecase::RateEntry>) -> result::Result<(),AppError> {
+    usecase::rate_entry(&mut*db.get()?, u.into_inner())?;
+    Ok(())
+}
+
 #[get("/count/entries")]
 fn get_count_entries(db: State<DbPool>) -> Result<usize> {
     let entries = db.get()?.all_entries()?;
@@ -255,6 +261,7 @@ fn rocket_instance<T:r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Rock
                        get_entry,
                        post_entry,
                        post_user,
+                       post_rating,
                        put_entry,
                        get_categories,
                        get_tags,

@@ -279,3 +279,15 @@ fn create_new_user() {
     assert_eq!(u.username, "foo");
     assert!(bcrypt::verify("bar", &u.password));
 }
+
+#[test]
+fn create_rating() {
+    let (rocket, db) = server();
+    db.get().unwrap().entries = vec![ Entry::build().id("foo").finish() ];
+    let mut req = MockRequest::new(Method::Post, "/ratings")
+        .header(ContentType::JSON)
+        .body(r#"{"value": 1,"context":"fair","entry":"foo","comment":"test"}"#);
+    let response = req.dispatch_with(&rocket);
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(db.get().unwrap().ratings[0].value,1);
+}
