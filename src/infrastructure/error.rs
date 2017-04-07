@@ -1,6 +1,5 @@
 use business::error::Error as BError;
 use business::error::RepoError;
-use adapters::error::Error as AError;
 use rusted_cypher::error::GraphError;
 use std::error;
 use std::io;
@@ -23,11 +22,6 @@ quick_error!{
     #[derive(Debug)]
     pub enum AppError {
         Business(err: BError){
-            from()
-            cause(err)
-            description(err.description())
-        }
-        Adapter(err: AError){
             from()
             cause(err)
             description(err.description())

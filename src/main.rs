@@ -1,6 +1,6 @@
 // Copyright (c) 2015 - 2017 Markus Kohlhase <mail@markus-kohlhase.de>
 
-#![feature(plugin,try_from,custom_derive)]
+#![feature(plugin,custom_derive)]
 #![plugin(rocket_codegen)]
 #![allow(unmanaged_state)]
 

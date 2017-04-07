@@ -90,12 +90,9 @@ fn get_tags(db: State<DbPool>) -> Result<Vec<String>> {
 }
 
 #[get("/categories")]
-fn get_categories(db: State<DbPool>) -> Result<Vec<json::Category>> {
+fn get_categories(db: State<DbPool>) -> Result<Vec<Category>> {
     let categories = db.get()?.all_categories()?;
-    Ok(JSON(categories
-        .into_iter()
-        .map(json::Category::from)
-        .collect::<Vec<json::Category>>()))
+    Ok(JSON(categories))
 }
 
 #[get("/categories/<id>")]
@@ -103,23 +100,19 @@ fn get_category(db: State<DbPool>, id: &str) -> Result<String> {
     let ids = extract_ids(id);
     let categories = db.get()?.all_categories()?;
     let res = match ids.len() {
-        0 => {
-            to_string(&categories.into_iter()
-                .map(json::Category::from)
-                .collect::<Vec<json::Category>>())
-        }
+        0 => to_string(&categories),
+
         1 => {
             let id = ids[0].clone();
             let e = categories.into_iter()
                 .find(|x| x.id == id)
                 .ok_or(RepoError::NotFound)?;
-            to_string(&json::Category::from(e))
+            to_string(&e)
         }
         _ => {
             to_string(&categories.into_iter()
                 .filter(|e| ids.iter().any(|id| e.id == id.clone()))
-                .map(json::Category::from)
-                .collect::<Vec<json::Category>>())
+                .collect::<Vec<Category>>())
         }
     }?;
     Ok(JSON(res))
@@ -308,7 +301,6 @@ impl<'r> Responder<'r> for AppError {
                     Error::Pwhash(_) => Status::InternalServerError
                 }
             }
-            AppError::Adapter(_) => Status::BadRequest,
 
             _ => Status::InternalServerError,
         })
