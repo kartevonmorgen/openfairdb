@@ -45,7 +45,7 @@ fn get_entries(db: State<DbPool>) -> Result<Vec<json::Entry>> {
         .all_entries()?
         .into_iter()
         //TODO
-        .map(|e|json::Entry::from_entry_with_tags(e,vec![]))
+        .map(|e|json::Entry::from_entry_with_tags_and_ratings(e,vec![],vec![]))
         .collect::<Vec<json::Entry>>();
     Ok(JSON(e))
 }
@@ -55,11 +55,13 @@ fn get_entry(db: State<DbPool>, ids: &str) -> Result<Vec<json::Entry>> {
     let ids = extract_ids(ids);
     let entries = usecase::get_entries(&*db.get()?, &ids)?;
     let tags = usecase::get_tags_by_entry_ids(&*db.get()?, &ids)?;
+    let ratings = usecase::get_ratings_by_entry_ids(&*db.get()?, &ids)?;
     Ok(JSON(entries
         .into_iter()
         .map(|e|{
             let t = tags.get(&e.id).cloned().unwrap_or_else(|| vec![]);
-            json::Entry::from_entry_with_tags(e,t)
+            let r = ratings.get(&e.id).cloned().unwrap_or_else(|| vec![]);
+            json::Entry::from_entry_with_tags_and_ratings(e,t,r)
         })
         .collect::<Vec<json::Entry>>()))
 }

@@ -101,6 +101,10 @@ impl Db for MockDb {
         Ok(self.triples.clone())
     }
 
+    fn all_ratings(&self) -> RepoResult<Vec<Rating>> {
+        Ok(self.ratings.clone())
+    }
+
     fn update_entry(&mut self, e: &Entry) -> RepoResult<()> {
         update(&mut self.entries, e)
     }
@@ -466,7 +470,35 @@ fn get_correct_tag_ids_for_entry_id() {
             }
         ];
     let res = get_tag_ids_for_entry_id(&triples, "a");
-    assert_eq!(res,vec![Tag{id:"bio".into()},Tag{id:"fair".into()}])
+    assert_eq!(res,vec!["bio".to_string(),"fair".to_string()])
+}
+
+#[test]
+fn get_correct_rating_ids_for_entry_id() {
+    let triples = vec![
+            Triple{
+                subject: ObjectId::Entry("a".into()),
+                predicate: Relation::IsRatedWith,
+                object: ObjectId::Rating("foo".into()),
+            },
+            Triple{
+                subject: ObjectId::Entry("a".into()),
+                predicate: Relation::IsRatedWith,
+                object: ObjectId::Rating("bar".into()),
+            },
+            Triple{
+                subject: ObjectId::Entry("a".into()),
+                predicate: Relation::IsTaggedWith,
+                object: ObjectId::Tag("bio".into()),
+            },
+            Triple{
+                subject: ObjectId::Entry("b".into()),
+                predicate: Relation::IsRatedWith,
+                object: ObjectId::Rating("baz".into()),
+            }
+        ];
+    let res = get_rating_ids_for_entry_id(&triples, "a");
+    assert_eq!(res,vec!["foo".to_string(),"bar".to_string()])
 }
 
 #[test]

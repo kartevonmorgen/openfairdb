@@ -18,6 +18,7 @@ pub struct Entry {
     pub homepage    : Option<String>,
     pub categories  : Vec<String>,
     pub tags        : Vec<String>,
+    pub ratings     : Vec<String>,
     pub license     : Option<String>,
 }
 
@@ -30,7 +31,7 @@ pub struct SearchResult {
 // Entity -> JSON
 
 impl Entry {
-    pub fn from_entry_with_tags(e: e::Entry, tags: Vec<e::Tag>) -> Entry {
+    pub fn from_entry_with_tags_and_ratings(e: e::Entry, tags: Vec<e::Tag>, ratings: Vec<e::Rating>) -> Entry {
         Entry{
             id          : e.id,
             created     : e.created,
@@ -48,6 +49,7 @@ impl Entry {
             homepage    : e.homepage,
             categories  : e.categories,
             tags        : tags.into_iter().map(|e|e.id).collect(),
+            ratings     : ratings.into_iter().map(|r|r.id).collect(),
             license     : e.license,
         }
     }

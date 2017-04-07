@@ -320,6 +320,15 @@ impl Db for GraphClient {
             .collect::<Vec<Tag>>())
     }
 
+    fn all_ratings(&self) -> Result<Vec<Rating>> {
+        let result = self.exec(
+        "MATCH (r:Rating) RETURN t")?;
+        Ok(result
+            .rows()
+            .filter_map(|r| r.get::<Rating>("r").ok())
+            .collect::<Vec<Rating>>())
+    }
+
     fn delete_triple(&mut self, t: &Triple) -> Result<()> {
         let predicate = match t.predicate {
             Relation::IsTaggedWith => "IS_TAGGED_WITH",

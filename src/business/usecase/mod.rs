@@ -215,7 +215,7 @@ pub fn get_tag_ids<D:Db>(db: &D) -> Result<Vec<String>> {
     Ok(tags)
 }
 
-pub fn get_tag_ids_for_entry_id(triples: &[Triple], entry_id : &str) -> Vec<Tag> {
+pub fn get_tag_ids_for_entry_id(triples: &[Triple], entry_id : &str) -> Vec<String> {
     triples
         .iter()
         .filter(&*filter::triple_by_entry_id(entry_id))
@@ -227,7 +227,21 @@ pub fn get_tag_ids_for_entry_id(triples: &[Triple], entry_id : &str) -> Vec<Tag>
                 _ => None
             })
         .cloned()
-        .map(|tag_id|Tag{id: tag_id})
+        .collect()
+}
+
+pub fn get_rating_ids_for_entry_id(triples: &[Triple], entry_id : &str) -> Vec<String> {
+    triples
+        .iter()
+        .filter(&*filter::triple_by_entry_id(entry_id))
+        .filter(|triple| triple.predicate == Relation::IsRatedWith)
+        .map(|triple|&triple.object)
+        .filter_map(|object|
+            match *object {
+                ObjectId::Rating(ref r_id) => Some(r_id),
+                _ => None
+            })
+        .cloned()
         .collect()
 }
 
@@ -238,6 +252,25 @@ pub fn get_tags_by_entry_ids<D:Db>(db : &D, ids : &[String]) -> Result<HashMap<S
         .map(|id|(
             id.clone(),
             get_tag_ids_for_entry_id(&triples, id)
+                .into_iter()
+                .map(|tag_id|Tag{id: tag_id})
+                .collect()
+        ))
+        .collect())
+}
+
+pub fn get_ratings_by_entry_ids<D:Db>(db : &D, ids : &[String]) -> Result<HashMap<String, Vec<Rating>>> {
+    let triples = db.all_triples()?;
+    let ratings = db.all_ratings()?;
+    Ok(ids
+        .iter()
+        .map(|id|(
+            id.clone(),
+            get_rating_ids_for_entry_id(&triples, id)
+                .iter()
+                .filter_map(|r_id| ratings.iter().find(|x| x.id == *r_id))
+                .cloned()
+                .collect()
         ))
         .collect())
 }
