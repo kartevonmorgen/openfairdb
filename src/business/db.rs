@@ -28,6 +28,7 @@ pub trait Db {
    fn all_tags(&self) -> Result<Vec<Tag>>;
    fn all_triples(&self) -> Result<Vec<Triple>>;
    fn all_ratings(&self) -> Result<Vec<Rating>>;
+   fn all_comments(&self) -> Result<Vec<Comment>>;
 
    fn update_entry(&mut self, &Entry) -> Result<()>;
 

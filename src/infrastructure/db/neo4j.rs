@@ -322,11 +322,20 @@ impl Db for GraphClient {
 
     fn all_ratings(&self) -> Result<Vec<Rating>> {
         let result = self.exec(
-        "MATCH (r:Rating) RETURN t")?;
+        "MATCH (r:Rating) RETURN r")?;
         Ok(result
             .rows()
             .filter_map(|r| r.get::<Rating>("r").ok())
             .collect::<Vec<Rating>>())
+    }
+
+    fn all_comments(&self) -> Result<Vec<Comment>> {
+        let result = self.exec(
+        "MATCH (c:Comment) RETURN c")?;
+        Ok(result
+            .rows()
+            .filter_map(|r| r.get::<Comment>("c").ok())
+            .collect::<Vec<Comment>>())
     }
 
     fn delete_triple(&mut self, t: &Triple) -> Result<()> {

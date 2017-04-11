@@ -130,11 +130,11 @@ pub struct UpdateEntry {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct RateEntry {
-    entry: String,
-    value: i8,
-    context: RatingContext,
-    comment: String,
-    user: Option<String>
+    pub entry: String,
+    pub value: i8,
+    pub context: RatingContext,
+    pub comment: String,
+    pub user: Option<String>
 }
 
 fn create_missing_tags<D:Db>(db: &mut D, tags: &[String]) -> Result<()> {
@@ -218,7 +218,7 @@ pub fn get_tag_ids<D:Db>(db: &D) -> Result<Vec<String>> {
 pub fn get_tag_ids_for_entry_id(triples: &[Triple], entry_id : &str) -> Vec<String> {
     triples
         .iter()
-        .filter(&*filter::triple_by_entry_id(entry_id))
+        .filter(&*filter::triple_by_subject(ObjectId::Entry(entry_id.into())))
         .filter(|triple| triple.predicate == Relation::IsTaggedWith)
         .map(|triple|&triple.object)
         .filter_map(|object|
@@ -233,7 +233,7 @@ pub fn get_tag_ids_for_entry_id(triples: &[Triple], entry_id : &str) -> Vec<Stri
 pub fn get_rating_ids_for_entry_id(triples: &[Triple], entry_id : &str) -> Vec<String> {
     triples
         .iter()
-        .filter(&*filter::triple_by_entry_id(entry_id))
+        .filter(&*filter::triple_by_subject(ObjectId::Entry(entry_id.into())))
         .filter(|triple| triple.predicate == Relation::IsRatedWith)
         .map(|triple|&triple.object)
         .filter_map(|object|
@@ -243,6 +243,61 @@ pub fn get_rating_ids_for_entry_id(triples: &[Triple], entry_id : &str) -> Vec<S
             })
         .cloned()
         .collect()
+}
+
+pub fn get_ratings<D:Db>(db: &D, ids : &[String]) -> Result<Vec<Rating>> {
+    Ok(db
+        .all_ratings()?
+        .iter()
+        .filter(|x|ids.iter().any(|id|*id==x.id))
+        .cloned()
+        .collect())
+}
+
+pub fn get_comment_ids_for_rating_id(triples: &[Triple], rating_id: &str) -> Vec<String> {
+    triples
+        .iter()
+        .filter(&*filter::triple_by_subject(ObjectId::Rating(rating_id.into())))
+        .filter(|triple| triple.predicate == Relation::IsCommentedWith)
+        .map(|triple|&triple.object)
+        .filter_map(|object|
+            match *object {
+                ObjectId::Comment(ref r_id) => Some(r_id),
+                _ => None
+            })
+        .cloned()
+        .collect()
+}
+
+pub fn get_user_id_for_comment_id(triples: &[Triple], comment_id: &str) -> Option<String> {
+    triples
+        .iter()
+        .filter(&*filter::triple_by_subject(ObjectId::Comment(comment_id.into())))
+        .filter(|triple| triple.predicate == Relation::CreatedBy)
+        .map(|triple|&triple.object)
+        .filter_map(|object|
+            match *object {
+                ObjectId::User(ref r_id) => Some(r_id),
+                _ => None
+            })
+        .cloned()
+        .last()
+}
+
+pub fn get_user_id_for_rating_id(triples: &[Triple], rating_id: &str) -> Option<String> {
+    let r_id = ObjectId::Rating(rating_id.to_string());
+    triples
+        .iter()
+        .filter(&*filter::triple_by_subject(r_id))
+        .filter(|triple| triple.predicate == Relation::CreatedBy)
+        .map(|triple|&triple.object)
+        .filter_map(|object|
+            match *object {
+                ObjectId::User(ref r_id) => Some(r_id),
+                _ => None
+            })
+        .cloned()
+        .last()
 }
 
 pub fn get_tags_by_entry_ids<D:Db>(db : &D, ids : &[String]) -> Result<HashMap<String, Vec<Tag>>> {
@@ -269,6 +324,22 @@ pub fn get_ratings_by_entry_ids<D:Db>(db : &D, ids : &[String]) -> Result<HashMa
             get_rating_ids_for_entry_id(&triples, id)
                 .iter()
                 .filter_map(|r_id| ratings.iter().find(|x| x.id == *r_id))
+                .cloned()
+                .collect()
+        ))
+        .collect())
+}
+
+pub fn get_comments_by_rating_ids<D:Db>(db : &D, ids : &[String]) -> Result<HashMap<String, Vec<Comment>>> {
+    let triples = db.all_triples()?;
+    let comments = db.all_comments()?;
+    Ok(ids
+        .iter()
+        .map(|id|(
+            id.clone(),
+            get_comment_ids_for_rating_id(&triples, id)
+                .iter()
+                .filter_map(|c_id| comments.iter().find(|x| x.id == *c_id))
                 .cloned()
                 .collect()
         ))

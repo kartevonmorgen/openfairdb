@@ -219,6 +219,37 @@ fn post_rating(db: State<DbPool>, u: JSON<usecase::RateEntry>) -> result::Result
     Ok(())
 }
 
+#[get("/ratings/<id>")]
+fn get_ratings(db: State<DbPool>, id: &str)-> Result<Vec<json::Rating>>{
+    let ratings = usecase::get_ratings(&*db.get()?,&extract_ids(id))?;
+    let r_ids : Vec<String> = ratings
+        .iter()
+        .map(|r|r.id.clone())
+        .collect();
+    let comments = usecase::get_comments_by_rating_ids(&*db.get()?,&r_ids)?;
+    let triples = db.get()?.all_triples()?;
+    let result = ratings
+        .into_iter()
+        .map(|x|json::Rating{
+            id       : x.id.clone(),
+            created  : x.created,
+            user     : usecase::get_user_id_for_rating_id(&triples,&x.id),
+            value    : x.value,
+            context  : x.context,
+            comments : comments.get(&x.id).cloned().unwrap_or_else(|| vec![])
+                .into_iter()
+                .map(|c|json::Comment{
+                    id: c.id.clone(),
+                    created: c.created,
+                    text: c.text,
+                    user: usecase::get_user_id_for_comment_id(&triples,&c.id)
+                 })
+                .collect()
+        })
+        .collect();
+    Ok(JSON(result))
+}
+
 #[get("/count/entries")]
 fn get_count_entries(db: State<DbPool>) -> Result<usize> {
     let entries = db.get()?.all_entries()?;
@@ -248,6 +279,7 @@ fn rocket_instance<T:r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Rock
                        put_entry,
                        get_categories,
                        get_tags,
+                       get_ratings,
                        get_category,
                        get_search,
                        get_duplicates,

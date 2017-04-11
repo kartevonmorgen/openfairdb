@@ -105,6 +105,10 @@ impl Db for MockDb {
         Ok(self.ratings.clone())
     }
 
+    fn all_comments(&self) -> RepoResult<Vec<Comment>> {
+        Ok(self.comments.clone())
+    }
+
     fn update_entry(&mut self, e: &Entry) -> RepoResult<()> {
         update(&mut self.entries, e)
     }

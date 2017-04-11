@@ -26,14 +26,8 @@ pub fn entries_by_category_ids<'a>(ids: &'a [String]) -> Box<Fn(&&Entry) -> bool
     Box::new(move |e| ids.iter().any(|c| e.categories.iter().any(|x| x == c)))
 }
 
-pub fn triple_by_entry_id<'a>(entry_id : &'a str) -> Box<Fn(&&Triple) -> bool + 'a> {
-    Box::new(move |triple|
-        if let ObjectId::Entry(ref id) = triple.subject {
-            id == entry_id
-        } else {
-            false
-        }
-    )
+pub fn triple_by_subject<'a>(o_id : ObjectId) -> Box<Fn(&&Triple) -> bool + 'a> {
+    Box::new(move |triple| o_id == triple.subject)
 }
 
 pub fn entries_by_tags<'a>(tags: &'a [String], triples: &'a [Triple], combination: Combination) -> Box<Fn(&&Entry) -> bool + 'a> {

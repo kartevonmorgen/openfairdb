@@ -1,6 +1,6 @@
 use entities as e;
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize)]
 pub struct Entry {
     pub id          : String,
     pub created     : u64,
@@ -22,7 +22,25 @@ pub struct Entry {
     pub license     : Option<String>,
 }
 
-#[derive(Serialize, Debug, Clone)]
+#[derive(Serialize,Deserialize)]
+pub struct Rating {
+    pub id          : String,
+    pub created     : u64,
+    pub user        : Option<String>,
+    pub value       : i8,
+    pub context     : e::RatingContext,
+    pub comments    : Vec<Comment>
+}
+
+#[derive(Serialize,Deserialize)]
+pub struct Comment {
+    pub id          : String,
+    pub created     : u64,
+    pub text        : String,
+    pub user        : Option<String>
+}
+
+#[derive(Serialize)]
 pub struct SearchResult {
     pub visible   : Vec<String>,
     pub invisible : Vec<String>

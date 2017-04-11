@@ -40,6 +40,13 @@ fn get_one_entry() {
     };
     let (rocket, db) = server();
     db.get().unwrap().create_entry(&e).unwrap();
+    usecase::rate_entry(&mut *db.get().unwrap(), usecase::RateEntry{
+        context : RatingContext::Humanity,
+        value   : 2,
+        user    : None,
+        entry   : "get_one_entry_test".into(),
+        comment : "bla".into(),
+    }).unwrap();
     let mut req = MockRequest::new(Method::Get, "/entries/get_one_entry_test");
     let mut response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
@@ -52,6 +59,8 @@ fn get_one_entry() {
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
     let entries: Vec<Entry> = serde_json::from_str(&body_str).unwrap();
+    let rid = db.get().unwrap().ratings[0].id.clone();
+    assert!(body_str.contains(&format!(r#""ratings":["{}"]"#,rid)));
     assert!(entries[0]==e);
 }
 
@@ -252,4 +261,33 @@ fn create_rating() {
     let response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(db.get().unwrap().ratings[0].value,1);
+}
+
+#[test]
+fn get_one_rating() {
+    let e = Entry::build().id("foo").finish();
+    let (rocket, db) = server();
+    db.get().unwrap().create_entry(&e).unwrap();
+    usecase::rate_entry(&mut *db.get().unwrap(), usecase::RateEntry{
+        context : RatingContext::Humanity,
+        value   : 2,
+        user    : None,
+        entry   : "foo".into(),
+        comment : "bla".into(),
+    }).unwrap();
+    let rid = db.get().unwrap().ratings[0].id.clone();
+    let mut req = MockRequest::new(Method::Get, format!("/ratings/{}",rid));
+    let mut response = req.dispatch_with(&rocket);
+    assert_eq!(response.status(), Status::Ok);
+    for h in response.headers() {
+        match h.name.as_str() {
+            "Content-Type" => assert_eq!(h.value, "application/json"),
+            _ => { /* let these through */ }
+        }
+    }
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
+    let ratings: Vec<json::Rating> = serde_json::from_str(&body_str).unwrap();
+    assert_eq!(ratings[0].id,rid);
+    assert_eq!(ratings[0].comments.len(),1);
 }
