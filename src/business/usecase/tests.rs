@@ -595,7 +595,7 @@ fn rate_non_existing_entry(){
         entry: "does_not_exist".into(),
         title: "title".into(),
         comment: "a comment".into(),
-        context: RatingContext::Fair,
+        context: RatingContext::Fairness,
         user: None,
         value: 2
     }).is_err());
@@ -610,7 +610,7 @@ fn rate_with_empty_comment(){
         entry: "foo".into(),
         comment: "".into(),
         title: "title".into(),
-        context: RatingContext::Fair,
+        context: RatingContext::Fairness,
         user: None,
         value: 2
     }).is_err());
@@ -625,7 +625,7 @@ fn rate_with_invalid_value_comment(){
         entry: "foo".into(),
         comment: "comment".into(),
         title: "title".into(),
-        context: RatingContext::Fair,
+        context: RatingContext::Fairness,
         user: None,
         value: 3
     }).is_err());
@@ -633,7 +633,7 @@ fn rate_with_invalid_value_comment(){
         entry: "foo".into(),
         title: "title".into(),
         comment: "comment".into(),
-        context: RatingContext::Fair,
+        context: RatingContext::Fairness,
         user: None,
         value: -2
     }).is_err());
@@ -648,7 +648,7 @@ fn rate_without_login(){
         entry: "foo".into(),
         comment: "comment".into(),
         title: "title".into(),
-        context: RatingContext::Fair,
+        context: RatingContext::Fairness,
         user: None,
         value: 2
     }).is_ok());

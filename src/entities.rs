@@ -84,8 +84,8 @@ pub enum RatingContext {
    Diversity,
    #[serde(rename="renewable")]
    Renewable,
-   #[serde(rename="fair")]
-   Fair,
+   #[serde(rename="fairness")]
+   Fairness,
    #[serde(rename="humanity")]
    Humanity,
    #[serde(rename="transparency")]

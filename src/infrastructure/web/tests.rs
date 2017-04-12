@@ -258,7 +258,7 @@ fn create_rating() {
     db.get().unwrap().entries = vec![ Entry::build().id("foo").finish() ];
     let mut req = MockRequest::new(Method::Post, "/ratings")
         .header(ContentType::JSON)
-        .body(r#"{"value": 1,"context":"fair","entry":"foo","comment":"test", "title":"idontcare"}"#);
+        .body(r#"{"value": 1,"context":"fairness","entry":"foo","comment":"test", "title":"idontcare"}"#);
     let response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(db.get().unwrap().ratings[0].value,1);
