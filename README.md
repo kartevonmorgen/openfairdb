@@ -96,6 +96,7 @@ The base URL is `http://api.ofdb.io/v0/`.
 -  `GET /server/version`
 -  `POST /users`
 -  `POST /ratings`
+-  `GET /ratings`
 
 #### JSON structures
 
@@ -132,6 +133,20 @@ The structure of a `category` looks like follows:
   "created" : Number,
   "name"    : String,
   "parent"  : String
+}
+```
+
+The structure of an `rating` looks like follows:
+
+```
+{
+  "id"          : String,
+  "created"     : Number,
+  "title"       : String,
+  "user"        : String,
+  "value"       : Number,
+  "context"     : String,
+  "comments"    : Array,
 }
 ```
 

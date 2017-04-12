@@ -1,3 +1,10 @@
+## v0.2.3 (2017-04-12)
+
+- new basic rating support
+- new: `GET /tags`
+- new: `user` entity + account creation
+- new: disallow fetching all entries at once
+
 ## v0.2.2 (2017-03-23)
 
 - new: search by hash tags
