@@ -131,6 +131,7 @@ pub struct UpdateEntry {
 #[derive(Deserialize, Debug, Clone)]
 pub struct RateEntry {
     pub entry: String,
+    pub title: String,
     pub value: i8,
     pub context: RatingContext,
     pub comment: String,
@@ -436,6 +437,7 @@ pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
     db.create_rating(&Rating{
         id      : rating_id.clone(),
         created : now,
+        title   : r.title,
         value   : r.value,
         context : r.context
     })?;

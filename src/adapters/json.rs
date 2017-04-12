@@ -25,6 +25,7 @@ pub struct Entry {
 #[derive(Serialize,Deserialize)]
 pub struct Rating {
     pub id          : String,
+    pub title       : String,
     pub created     : u64,
     pub user        : Option<String>,
     pub value       : i8,

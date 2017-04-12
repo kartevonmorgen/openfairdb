@@ -593,6 +593,7 @@ fn rate_non_existing_entry(){
     let mut db = MockDb::new();
     assert!(rate_entry(&mut db,RateEntry{
         entry: "does_not_exist".into(),
+        title: "title".into(),
         comment: "a comment".into(),
         context: RatingContext::Fair,
         user: None,
@@ -608,6 +609,7 @@ fn rate_with_empty_comment(){
     assert!(rate_entry(&mut db,RateEntry{
         entry: "foo".into(),
         comment: "".into(),
+        title: "title".into(),
         context: RatingContext::Fair,
         user: None,
         value: 2
@@ -622,12 +624,14 @@ fn rate_with_invalid_value_comment(){
     assert!(rate_entry(&mut db,RateEntry{
         entry: "foo".into(),
         comment: "comment".into(),
+        title: "title".into(),
         context: RatingContext::Fair,
         user: None,
         value: 3
     }).is_err());
     assert!(rate_entry(&mut db,RateEntry{
         entry: "foo".into(),
+        title: "title".into(),
         comment: "comment".into(),
         context: RatingContext::Fair,
         user: None,
@@ -643,6 +647,7 @@ fn rate_without_login(){
     assert!(rate_entry(&mut db,RateEntry{
         entry: "foo".into(),
         comment: "comment".into(),
+        title: "title".into(),
         context: RatingContext::Fair,
         user: None,
         value: 2

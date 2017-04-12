@@ -233,6 +233,7 @@ fn get_ratings(db: State<DbPool>, id: &str)-> Result<Vec<json::Rating>>{
         .map(|x|json::Rating{
             id       : x.id.clone(),
             created  : x.created,
+            title    : x.title,
             user     : usecase::get_user_id_for_rating_id(&triples,&x.id),
             value    : x.value,
             context  : x.context,

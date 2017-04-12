@@ -235,12 +235,14 @@ impl Db for GraphClient {
         self.exec(cypher_stmt!(
         "MERGE (r:Rating {
              id      : {id},
+             title   : {title},
              created : {created},
              value   : {value},
              context : {context}
         })",
         {
             "id"        => &r.id,
+            "title"     => &r.title,
             "created"   => &r.created,
             "value"     => &r.value,
             "context"   => &r.context

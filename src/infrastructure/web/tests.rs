@@ -43,6 +43,7 @@ fn get_one_entry() {
     usecase::rate_entry(&mut *db.get().unwrap(), usecase::RateEntry{
         context : RatingContext::Humanity,
         value   : 2,
+        title   : "title".into(),
         user    : None,
         entry   : "get_one_entry_test".into(),
         comment : "bla".into(),
@@ -257,7 +258,7 @@ fn create_rating() {
     db.get().unwrap().entries = vec![ Entry::build().id("foo").finish() ];
     let mut req = MockRequest::new(Method::Post, "/ratings")
         .header(ContentType::JSON)
-        .body(r#"{"value": 1,"context":"fair","entry":"foo","comment":"test"}"#);
+        .body(r#"{"value": 1,"context":"fair","entry":"foo","comment":"test", "title":"idontcare"}"#);
     let response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(db.get().unwrap().ratings[0].value,1);
@@ -272,6 +273,7 @@ fn get_one_rating() {
         context : RatingContext::Humanity,
         value   : 2,
         user    : None,
+        title   : "title".into(),
         entry   : "foo".into(),
         comment : "bla".into(),
     }).unwrap();
