@@ -6,6 +6,81 @@ use std::result;
 
 type Result<T> = result::Result<T, RepoError>;
 
+fn neo4j_edge_name<'a>(t: &'a Triple) -> &'a str {
+    match t.predicate {
+       Relation::IsTaggedWith    => "IS_TAGGED_WITH",
+       Relation::IsRatedWith     => "IS_RATED_WITH",
+       Relation::IsCommentedWith => "IS_COMMENTED_WITH",
+       Relation::CreatedBy       => "CREATED_BY"
+    }.into()
+}
+
+fn object_id_to_neo4j_label<'a>(id: &'a ObjectId) -> (&'a str,&'a str) {
+    match *id {
+        ObjectId::Entry(ref id) => ("Entry",id),
+        ObjectId::Tag(ref id) => ("Tag",id),
+        ObjectId::User(ref id) => ("User",id),
+        ObjectId::Comment(ref id) => ("Comment",id),
+        ObjectId::Rating(ref id) => ("Rating",id)
+    }
+}
+
+fn neo4j_label_to_object_id(label: &str, id: String) -> Option<ObjectId> {
+    match label {
+        "Entry"     => Some(ObjectId::Entry(id)),
+        "Tag"       => Some(ObjectId::Tag(id)),
+        "User"      => Some(ObjectId::User(id)),
+        "Comment"   => Some(ObjectId::Comment(id)),
+        "Rating"    => Some(ObjectId::Rating(id)),
+        _           => None,
+    }
+}
+
+fn neo4j_relation_to_relation(rel: &str) -> Option<Relation> {
+    match rel {
+        "IS_TAGGED_WITH"    => Some(Relation::IsTaggedWith),
+        "IS_RATED_WITH"     => Some(Relation::IsRatedWith),
+        "IS_COMMENTED_WITH" => Some(Relation::IsCommentedWith),
+        "CREATED_BY"        => Some(Relation::CreatedBy),
+        _                   => None
+    }
+}
+
+
+#[derive(Deserialize,Debug)]
+struct Neo4jObj {
+    labels: Vec<String>,
+    id: String
+}
+
+#[derive(Deserialize,Debug)]
+struct Neo4jTriple {
+    subject: Neo4jObj,
+    predicate: String,
+    object: Neo4jObj
+}
+
+fn from_neo_triple(t: Neo4jTriple) -> Option<Triple> {
+    if t.subject.labels.is_empty() || t.object.labels.is_empty() {
+        warn!("No labels found in {:?}",t);
+        return None;
+    }
+    let subject = neo4j_label_to_object_id(&t.subject.labels[0], t.subject.id);
+    let predicate = neo4j_relation_to_relation(&t.predicate);
+    let object = neo4j_label_to_object_id(&t.object.labels[0], t.object.id);
+
+    if let (Some(s), Some(p), Some(o)) = (subject, predicate, object) {
+        Some(Triple {
+            subject: s,
+            predicate: p,
+            object: o
+        })
+    } else {
+        None
+    }
+}
+
+
 impl Db for GraphClient {
 
     fn get_entry(&self, id: &str) -> Result<Entry> {
@@ -158,14 +233,12 @@ impl Db for GraphClient {
 
     fn create_rating(&mut self, r: &Rating) -> Result<()> {
         self.exec(cypher_stmt!(
-        "MERGE (
-           r:Rating {
+        "MERGE (r:Rating {
              id      : {id},
              created : {created},
              value   : {value},
-             context : {context},
-           }
-        )",
+             context : {context}
+        })",
         {
             "id"        => &r.id,
             "created"   => &r.created,
@@ -181,38 +254,23 @@ impl Db for GraphClient {
            c:Comment {
              id      : {id},
              created : {created},
-             text    : {text},
+             text    : {text}
            }
         )",
         {
             "id"        => &c.id,
             "created"   => &c.created,
-            "value"     => &c.text
+            "text"      => &c.text
         })?)?;
         Ok(())
     }
 
     fn create_triple(&mut self, t: &Triple) -> Result<()> {
-        let predicate = match t.predicate {
-            Relation::IsTaggedWith => "IS_TAGGED_WITH",
-            Relation::IsRatedWith => "IS_RATED_WITH",
-            Relation::IsCommentedWith => "IS_COMMENTED_WITH",
-            Relation::CreatedBy => "CREATED_BY"
-        };
-        let (subject_type, subject_id) = match t.subject {
-            ObjectId::Entry(ref id) => ("Entry",id),
-            ObjectId::Tag(ref id) => ("Tag",id),
-            ObjectId::User(ref id) => ("User",id),
-            ObjectId::Comment(ref id) => ("Comment",id),
-            ObjectId::Rating(ref id) => ("Rating",id)
-        };
-        let (object_type, object_id) = match t.object {
-            ObjectId::Entry(ref id) => ("Entry",id),
-            ObjectId::Tag(ref id) => ("Tag",id),
-            ObjectId::User(ref id) => ("User",id),
-            ObjectId::Comment(ref id) => ("Comment",id),
-            ObjectId::Rating(ref id) => ("Rating",id)
-        };
+
+        let predicate = neo4j_edge_name(t);
+        let (subject_type, subject_id) = object_id_to_neo4j_label(&t.subject);
+        let (object_type, object_id) = object_id_to_neo4j_label(&t.object);
+
         let stmt = format!(
            "MATCH (s:{s_type})
             WHERE s.id = \"{s_id}\"
@@ -297,17 +355,25 @@ impl Db for GraphClient {
     }
 
     fn all_triples(&self) -> Result<Vec<Triple>> {
-        //TODO: extend for category
         let result = self.exec(
-        "MATCH (e:Entry)-[IS_TAGGED_WITH]->(t:Tag)
+        "MATCH (s)-[p]->(o)
+         WHERE (s.id IS NOT NULL) AND (o.id IS NOT NULL)
          RETURN {
-           subject   : { entry: e.id },
-           predicate : \"is_tagged_with\",
-           object    : { tag: t.id }
+            subject: { id: s.id, labels: labels(s) },
+            predicate: type(p),
+            object: { id: o.id, labels: labels(o) }
          } AS t")?;
         Ok(result
             .rows()
-            .filter_map(|r| r.get::<Triple>("t").ok())
+            .filter_map(|r|{
+                match r.get::<Neo4jTriple>("t") {
+                    Err(err) => {
+                         warn!("{}",err);
+                         None
+                    }
+                    Ok(t) => from_neo_triple(t)
+                }
+            })
             .collect::<Vec<Triple>>())
     }
 
@@ -339,26 +405,9 @@ impl Db for GraphClient {
     }
 
     fn delete_triple(&mut self, t: &Triple) -> Result<()> {
-        let predicate = match t.predicate {
-            Relation::IsTaggedWith => "IS_TAGGED_WITH",
-            Relation::IsRatedWith => "IS_RATED_WITH",
-            Relation::IsCommentedWith => "IS_COMMENTED_WITH",
-            Relation::CreatedBy => "CREATED_BY"
-        };
-        let (subject_type, subject_id) = match t.subject {
-            ObjectId::Entry(ref id) => ("Entry",id),
-            ObjectId::Tag(ref id) => ("Tag",id),
-            ObjectId::User(ref id) => ("User",id),
-            ObjectId::Comment(ref id) => ("Comment",id),
-            ObjectId::Rating(ref id) => ("Rating",id)
-        };
-        let (object_type, object_id) = match t.object {
-            ObjectId::Entry(ref id) => ("Entry",id),
-            ObjectId::Tag(ref id) => ("Tag",id),
-            ObjectId::User(ref id) => ("User",id),
-            ObjectId::Comment(ref id) => ("Comment",id),
-            ObjectId::Rating(ref id) => ("Rating",id)
-        };
+        let predicate = neo4j_edge_name(t);
+        let (subject_type, subject_id) = object_id_to_neo4j_label(&t.subject);
+        let (object_type, object_id) = object_id_to_neo4j_label(&t.object);
         let stmt = format!(
            "MATCH (s:{s_type})-[p:{predicate}]->(o:{o_type})
             WHERE s.id = \"{s_id}\" AND o.id = \"{o_id}\"
