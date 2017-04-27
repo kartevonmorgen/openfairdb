@@ -178,4 +178,4 @@ that copies the DB to `/var/lib/neo4j/backup/` once a day.
 
 Copyright (c) 2015 - 2017 Markus Kohlhase
 
-This project is licensed unter the AGPLv3 license.
+This project is licensed under the AGPLv3 license.
