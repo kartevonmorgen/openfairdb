@@ -1,12 +1,12 @@
 use rocket::{self, Rocket, State, LoggingLevel};
 use rocket_contrib::JSON;
 use rocket::response::{Response, Responder};
-use rocket::http::Status;
+use rocket::http::{Status, Cookie, Session};
 use rocket::config::{Environment, Config};
 use adapters::json;
 use entities::*;
 use business::db::Db;
-use business::error::{Error, RepoError};
+use business::error::{Error, RepoError, ParameterError};
 use infrastructure::error::AppError;
 use serde_json::ser::to_string;
 use business::sort::SortByDistanceTo;
@@ -207,6 +207,19 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResu
     }))
 }
 
+#[post("/login", format = "application/json", data = "<login>")]
+fn login(db: State<DbPool>, mut session: Session, login: JSON<usecase::Login>) -> Result<()> {
+    let id = usecase::login(&mut*db.get()?, login.into_inner())?;
+    session.set(Cookie::new("user_id", id));
+    Ok(JSON(()))
+}
+
+#[post("/logout")]
+fn logout(mut session: Session) -> Result<()> {
+    session.remove(Cookie::named("user_id"));
+    Ok(JSON(()))
+}
+
 #[post("/users", format = "application/json", data = "<u>")]
 fn post_user(db: State<DbPool>, u: JSON<usecase::NewUser>) -> result::Result<(),AppError> {
     usecase::create_new_user(&mut*db.get()?, u.into_inner())?;
@@ -273,7 +286,9 @@ fn rocket_instance<T:r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Rock
     rocket::custom(cfg,true)
         .manage(pool)
         .mount("/",
-               routes![get_entry,
+               routes![login,
+                       logout,
+                       get_entry,
                        post_entry,
                        post_user,
                        post_rating,
@@ -314,7 +329,12 @@ impl<'r> Responder<'r> for AppError {
         Err(match self {
             AppError::Business(ref err) => {
                 match *err {
-                    Error::Parameter(_) => Status::BadRequest,
+                    Error::Parameter(ref err) => {
+                         match *err {
+                            ParameterError::Credentials => Status::Unauthorized,
+                            _ => Status::BadRequest,
+                         }
+                    }
                     Error::Repo(ref err) => {
                         match *err {
                             RepoError::NotFound => Status::NotFound,

@@ -29,6 +29,9 @@ quick_error!{
         RatingValue{
             description("Rating value out of range")
         }
+        Credentials {
+            description("Invalid credentials")
+        }
     }
 }
 

@@ -52,6 +52,7 @@ fn get_one_entry() {
     let mut req = MockRequest::new(Method::Get, "/entries/get_one_entry_test");
     let mut response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
+    assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -110,6 +111,7 @@ fn get_multiple_entries() {
     let mut req = MockRequest::new(Method::Get, "/entries/get_multiple_entry_test_one,get_multiple_entry_test_two");
     let mut response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
+    assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -283,6 +285,7 @@ fn get_one_rating() {
     let mut req = MockRequest::new(Method::Get, format!("/ratings/{}",rid));
     let mut response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
+    assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -294,4 +297,47 @@ fn get_one_rating() {
     let ratings: Vec<json::Rating> = serde_json::from_str(&body_str).unwrap();
     assert_eq!(ratings[0].id,rid);
     assert_eq!(ratings[0].comments.len(),1);
+}
+
+#[test]
+fn login_with_invalid_credentials() {
+    let (rocket, _) = server();
+    let mut req = MockRequest::new(Method::Post, format!("/login"))
+        .header(ContentType::JSON)
+        .body(r#"{"username": "foo", "password": "bar"}"#);
+    let response = req.dispatch_with(&rocket);
+    assert!(!response.headers().iter().any(|h|h.name.as_str() == "Set-Cookie"));
+    assert_eq!(response.status(), Status::Unauthorized);
+}
+
+#[test]
+fn login_with_valid_credentials() {
+    let (rocket, db) = server();
+    db.get().unwrap().users = vec![
+        User{ username: "foo".into(), password: bcrypt::hash("bar").unwrap(), email: "foo@bar".into() }
+    ];
+    let mut req = MockRequest::new(Method::Post, format!("/login"))
+        .header(ContentType::JSON)
+        .body(r#"{"username": "foo", "password": "bar"}"#);
+    let response = req.dispatch_with(&rocket);
+    assert_eq!(response.status(), Status::Ok);
+    assert!(response.headers().iter().any(|h|h.name.as_str() == "Set-Cookie"));
+    for h in response.headers().iter() {
+        match h.name.as_str() {
+            "Set-Cookie" => {
+                 assert!(h.value.contains("user_id"));
+                 assert!(h.value.contains("Expires"));
+            }
+            _ => { /* let these through */ }
+        }
+    }
+}
+
+#[test]
+fn logout() {
+    let (rocket, _) = server();
+    let mut req = MockRequest::new(Method::Post, format!("/logout"))
+        .header(ContentType::JSON);
+    let response = req.dispatch_with(&rocket);
+    assert_eq!(response.status(), Status::Ok);
 }

@@ -109,6 +109,12 @@ pub struct NewUser {
     email: String
 }
 
+#[derive(Deserialize, Debug, Clone)]
+pub struct Login {
+    username: String,
+    password: String
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateEntry {
     id          : String,
@@ -368,6 +374,26 @@ pub fn create_new_user<D: Db>(db: &mut D, u: NewUser) -> Result<()> {
         email: u.email,
     })?;
     Ok(())
+}
+
+pub fn login<D: Db>(db: &mut D, login: Login) -> Result<String> {
+    match db.get_user(&login.username) {
+        Ok(u) => {
+            if bcrypt::verify(&login.password, &u.password) {
+                Ok(u.username)
+            } else {
+                Err(Error::Parameter(ParameterError::Credentials))
+            }
+        }
+        Err(err) => {
+            match err {
+                RepoError::NotFound => {
+                    Err(Error::Parameter(ParameterError::Credentials))
+                }
+                _=> Err(Error::Repo(RepoError::Other(Box::new(err))))
+            }
+        }
+    }
 }
 
 pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String>
