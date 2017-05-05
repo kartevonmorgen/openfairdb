@@ -118,8 +118,9 @@ impl Db for GraphClient {
 
     fn get_user(&self, username: &str) -> Result<User> {
         let result = self.exec(cypher_stmt!(
-        "MATCH u:User
-         WHERE u.username = {username}",
+        "MATCH (u:User)
+         WHERE u.username = {username}
+         RETURN u",
         { "username" => username })?)?;
         let r = result.rows().next().ok_or(RepoError::NotFound)?;
         let u = r.get::<User>("u")?;
@@ -220,7 +221,7 @@ impl Db for GraphClient {
            u:User {
              username:{username},
              password:{password},
-             email:{email},
+             email:{email}
            }
         )",
         {
