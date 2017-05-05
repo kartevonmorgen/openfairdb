@@ -40,8 +40,8 @@ fn extract_ids(s: &str) -> Vec<String> {
 }
 
 #[get("/entries/<ids>")]
-fn get_entry(db: State<DbPool>, ids: &str) -> Result<Vec<json::Entry>> {
-    let ids = extract_ids(ids);
+fn get_entry(db: State<DbPool>, ids: String) -> Result<Vec<json::Entry>> {
+    let ids = extract_ids(&ids);
     let entries = usecase::get_entries(&*db.get()?, &ids)?;
     let tags = usecase::get_tags_by_entry_ids(&*db.get()?, &ids)?;
     let ratings = usecase::get_ratings_by_entry_ids(&*db.get()?, &ids)?;
@@ -69,9 +69,9 @@ fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<S
 }
 
 #[put("/entries/<id>", format = "application/json", data = "<e>")]
-fn put_entry(db: State<DbPool>, id: &str, e: JSON<usecase::UpdateEntry>) -> Result<String> {
+fn put_entry(db: State<DbPool>, id: String, e: JSON<usecase::UpdateEntry>) -> Result<String> {
     usecase::update_entry(&mut*db.get()?, e.into_inner())?;
-    Ok(JSON(id.to_string()))
+    Ok(JSON(id))
 }
 
 #[get("/tags")]
@@ -87,8 +87,8 @@ fn get_categories(db: State<DbPool>) -> Result<Vec<Category>> {
 }
 
 #[get("/categories/<id>")]
-fn get_category(db: State<DbPool>, id: &str) -> Result<String> {
-    let ids = extract_ids(id);
+fn get_category(db: State<DbPool>, id: String) -> Result<String> {
+    let ids = extract_ids(&id);
     let categories = db.get()?.all_categories()?;
     let res = match ids.len() {
         0 => to_string(&categories),
@@ -220,8 +220,8 @@ fn post_rating(db: State<DbPool>, u: JSON<usecase::RateEntry>) -> result::Result
 }
 
 #[get("/ratings/<id>")]
-fn get_ratings(db: State<DbPool>, id: &str)-> Result<Vec<json::Rating>>{
-    let ratings = usecase::get_ratings(&*db.get()?,&extract_ids(id))?;
+fn get_ratings(db: State<DbPool>, id: String)-> Result<Vec<json::Rating>>{
+    let ratings = usecase::get_ratings(&*db.get()?,&extract_ids(&id))?;
     let r_ids : Vec<String> = ratings
         .iter()
         .map(|r|r.id.clone())

@@ -51,7 +51,7 @@ fn get_one_entry() {
     let mut req = MockRequest::new(Method::Get, "/entries/get_one_entry_test");
     let mut response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
-    for h in response.headers() {
+    for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
             _ => { /* let these through */ }
@@ -109,7 +109,7 @@ fn get_multiple_entries() {
     let mut req = MockRequest::new(Method::Get, "/entries/get_multiple_entry_test_one,get_multiple_entry_test_two");
     let mut response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
-    for h in response.headers() {
+    for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
             _ => { /* let these through */ }
@@ -281,7 +281,7 @@ fn get_one_rating() {
     let mut req = MockRequest::new(Method::Get, format!("/ratings/{}",rid));
     let mut response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
-    for h in response.headers() {
+    for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
             _ => { /* let these through */ }
