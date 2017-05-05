@@ -99,6 +99,7 @@ pub struct Rating {
     pub id: String,
     pub created: u64,
     pub title: String,
+    pub references: Vec<String>,
     pub value: i8,
     pub context: RatingContext
 }

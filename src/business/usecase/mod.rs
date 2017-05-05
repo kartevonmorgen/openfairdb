@@ -135,6 +135,7 @@ pub struct RateEntry {
     pub value: i8,
     pub context: RatingContext,
     pub comment: String,
+    pub references: Option<Vec<String>>,
     pub user: Option<String>
 }
 
@@ -435,11 +436,12 @@ pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
     let rating_id = Uuid::new_v4().simple().to_string();
     let comment_id = Uuid::new_v4().simple().to_string();
     db.create_rating(&Rating{
-        id      : rating_id.clone(),
-        created : now,
-        title   : r.title,
-        value   : r.value,
-        context : r.context
+        id          : rating_id.clone(),
+        created     : now,
+        title       : r.title,
+        value       : r.value,
+        references  : r.references.unwrap_or_else(||vec![]),
+        context     : r.context
     })?;
     db.create_comment(&Comment{
         id      : comment_id.clone(),
