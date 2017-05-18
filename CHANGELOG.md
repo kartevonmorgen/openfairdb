@@ -1,4 +1,4 @@
-## v0.2.4 (2017-05-xx)
+## v0.2.4 (2017-05-19)
 
 - new: add `references` to rating struct
 - new: `/login`
