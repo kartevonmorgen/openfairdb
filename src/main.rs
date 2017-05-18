@@ -34,6 +34,6 @@ mod adapters;
 mod infrastructure;
 
 fn main() {
-    slog_envlogger::init().unwrap();
+    let _guard = slog_envlogger::init().unwrap();
     infrastructure::cli::run();
 }

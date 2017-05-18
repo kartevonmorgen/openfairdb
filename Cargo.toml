@@ -5,20 +5,20 @@ authors = ["Markus Kohlhase <mail@markus-kohlhase.de>"]
 
 [dependencies]
 r2d2 = "0.7"
-clap = "2.23"
+clap = "2"
 log = "0.3"
-slog-envlogger = "0.5"
+slog-envlogger = "2"
 uuid = { version = "0.5", features = ["v4"] }
-rusted_cypher = "1.1"
+rusted_cypher = "1"
 r2d2_cypher = "0.3"
-url = "1.4"
-quick-error = "1.1"
+url = "1"
+quick-error = "1"
 rocket = { git = "https://github.com/SergioBenitez/rocket" }
 rocket_codegen = { git = "https://github.com/SergioBenitez/rocket" }
 rocket_contrib = { git = "https://github.com/SergioBenitez/rocket" }
-serde = "1.0"
-serde_json = "1.0"
-serde_derive = "1.0"
+serde = "1"
+serde_json = "1"
+serde_derive = "1"
 chrono = "0.3"
 lazy_static = "0.2"
 regex = "0.2"
