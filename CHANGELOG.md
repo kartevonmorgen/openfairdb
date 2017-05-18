@@ -1,3 +1,10 @@
+## v0.2.4 (2017-05-xx)
+
+- new: add `references` to rating struct
+- new: `/login`
+- new: `/logout`
+- chore: use git master branch of `rocket`
+
 ## v0.2.3 (2017-04-12)
 
 - new basic rating support
