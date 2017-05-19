@@ -147,7 +147,6 @@ The structure of an `rating` looks like follows:
   "value"       : Number,
   "context"     : String,
   "comments"    : Array,
-  "references"  : Array,
 }
 ```
 

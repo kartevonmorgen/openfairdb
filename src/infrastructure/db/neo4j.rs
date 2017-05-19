@@ -235,20 +235,18 @@ impl Db for GraphClient {
     fn create_rating(&mut self, r: &Rating) -> Result<()> {
         self.exec(cypher_stmt!(
         "MERGE (r:Rating {
-             id         : {id},
-             title      : {title},
-             created    : {created},
-             value      : {value},
-             context    : {context},
-             references : {references}
+             id      : {id},
+             title   : {title},
+             created : {created},
+             value   : {value},
+             context : {context}
         })",
         {
-            "id"         => &r.id,
-            "title"      => &r.title,
-            "created"    => &r.created,
-            "value"      => &r.value,
-            "context"    => &r.context,
-            "references" => &r.references
+            "id"        => &r.id,
+            "title"     => &r.title,
+            "created"   => &r.created,
+            "value"     => &r.value,
+            "context"   => &r.context
         })?)?;
         Ok(())
     }
