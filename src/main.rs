@@ -34,6 +34,7 @@ mod adapters;
 mod infrastructure;
 
 fn main() {
-    let _guard = slog_envlogger::init().unwrap();
+    // TODO: setup proper logging with rocket!
+    // let _guard = slog_envlogger::init().unwrap();
     infrastructure::cli::run();
 }
