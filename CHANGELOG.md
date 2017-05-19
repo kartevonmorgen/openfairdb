@@ -1,3 +1,8 @@
+## v0.2.5 (2017-05-19)
+
+- fix: revert `references` path
+- fix: defer proper logging with rocket
+
 ## v0.2.4 (2017-05-19)
 
 - new: add `references` to rating struct
