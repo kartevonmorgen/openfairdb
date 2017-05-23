@@ -39,12 +39,42 @@ impl SortByDistanceTo for Vec<Entry> {
     }
 }
 
+pub trait Rating {
+    fn average_rating(&[Rating], &[Triple]);
+}
+
+impl Rating for Entry {
+    fn average_rating(&self, &[Rating], &[Triple]){
+        triples
+        .into_iter()
+        .filter_map(|x| match *x {
+            Triple {
+                subject   : ObjectId::Entry(ref e_id),
+                predicate : Relation::IsRatedWith,
+                object    : ObjectId::Rating(ref r_id)
+            } => Some((e_id,r_id)),
+            _ => None
+        });
+    }
+}
+
+pub trait SortByAverageRating {
+    fn sort_by_avg_rating(&mut self, &[Rating], &[Triple]);
+}
+
+impl SortByAverageRating for Vec<Entry> {
+    fn sort_by_avg_rating(ratings: &[Rating], triples: &[Triple]){
+
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
     use super::*;
 
-    fn new_entry(id: &str, lat: f64, lng: f64) -> Entry { Entry{
+    fn new_entry(id: &str, lat: f64, lng: f64) -> Entry { 
+        Entry{
             id          : id.into(),
             created     : 0,
             version     : 0,
@@ -62,6 +92,37 @@ mod tests {
             categories  : vec![],
             license     : None,
         }
+    }
+
+    fn new_rating(id: &str, value: i8) -> Rating {
+        Rating{
+            id         : id.into(),
+            created    : 0,
+            title      : "blubb".into(),
+            value      : value.into(), 
+            context    : RatingContext::Diversity
+        }
+    }
+
+    #[test]
+    fn test_average_rating() {
+        let entry = new_entry("a", 0.0, 0.0);
+
+        let ratings = vec![
+            new_rating("1", 0),
+            new_rating("2", 0),
+            new_rating("3", 3),
+            new_rating("3", 3)
+        ]
+
+        let triples = vec![
+            Triple{ 
+                subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("1".into())},
+                subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("2".into())},
+                subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("3".into())},
+        ];
+
+        assert_eq!(entry.average_rating(ratings, triples), 1.5);
     }
 
     #[test]
