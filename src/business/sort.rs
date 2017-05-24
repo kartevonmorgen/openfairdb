@@ -124,6 +124,7 @@ mod tests {
     fn test_average_rating() {
         let mut entry1 = new_entry("a", 0.0, 0.0);
         let mut entry2 = new_entry("b", 0.0, 0.0);
+        let mut entry3 = new_entry("c", 0.0, 0.0);
 
         let ratings = vec![
             new_rating("1", 0),
@@ -145,6 +146,7 @@ mod tests {
 
         assert_eq!(entry1.average_rating(&ratings, &triples), 1.5);
         assert_eq!(entry2.average_rating(&ratings, &triples), 0.0);
+        assert_eq!(entry3.average_rating(&ratings, &triples), 0.0);
     }
 
     #[test]
