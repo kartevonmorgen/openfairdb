@@ -29,7 +29,7 @@ impl SortByDistanceTo for Vec<Entry> {
             if a.lat.is_finite() && a.lng.is_finite() {
                 Ordering::Less
             } else {
-                warn!("inivalid coordinate: {}/{}", a.lat, a.lng);
+                warn!("invalid coordinate: {}/{}", a.lat, a.lng);
                 Ordering::Greater
             }
         );
@@ -39,12 +39,12 @@ impl SortByDistanceTo for Vec<Entry> {
     }
 }
 
-pub trait RatedEntity {
-    fn average_rating(&mut self, &[Rating], &[Triple]) -> f64;
+pub trait Rated {
+    fn average_rating(&self, &[Rating], &[Triple]) -> f64;
 }
 
-impl RatedEntity for Entry {
-    fn average_rating(&mut self, ratings: &[Rating], triples: &[Triple]) -> f64{
+impl Rated for Entry {
+    fn average_rating(&self, ratings: &[Rating], triples: &[Triple]) -> f64 {
         let entry_ratings : Vec<(&String, &String)> = triples
             .into_iter()
             .filter_map(|x| match *x {
@@ -57,11 +57,17 @@ impl RatedEntity for Entry {
             })
             .filter(|entry_rating| *entry_rating.0 == self.id).collect();
 
-        ratings
+        let avg = ratings
             .into_iter()
             .filter_map(|rating| if entry_ratings.iter().any(|entry_rating| *entry_rating.1 == rating.id) { Some(rating) } else { None })
             .fold(0, |acc, ref rating| acc + rating.value) as f64
-            / entry_ratings.len() as f64
+            / entry_ratings.len() as f64;
+
+        if !avg.is_nan() { 
+            avg as f64
+        } else { 
+            0.0
+        }
     }
 }
 
@@ -71,13 +77,16 @@ pub trait SortByAverageRating {
 
 impl SortByAverageRating for Vec<Entry> {
     fn sort_by_avg_rating(&mut self, ratings: &[Rating], triples: &[Triple]){
-
+        self.sort_by(|a, b| {
+            b.average_rating(ratings, triples)
+            .partial_cmp(&a.average_rating(ratings, triples))
+            .unwrap_or(Ordering::Equal)
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
-
     use super::*;
 
     fn new_entry(id: &str, lat: f64, lng: f64) -> Entry { 
@@ -113,23 +122,69 @@ mod tests {
 
     #[test]
     fn test_average_rating() {
-        let mut entry = new_entry("a", 0.0, 0.0);
+        let mut entry1 = new_entry("a", 0.0, 0.0);
+        let mut entry2 = new_entry("b", 0.0, 0.0);
 
         let ratings = vec![
             new_rating("1", 0),
             new_rating("2", 0),
             new_rating("3", 3),
-            new_rating("4", 3)
+            new_rating("4", 3),
+            new_rating("5", -3),
+            new_rating("6", 3),
         ];
 
         let triples = vec![
             Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("1".into())},
             Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("2".into())},
             Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("3".into())},
-            Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("4".into())}
+            Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("4".into())},
+            Triple{subject: ObjectId::Entry("b".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("5".into())},
+            Triple{subject: ObjectId::Entry("b".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("6".into())},
         ];
 
-        assert_eq!(entry.average_rating(&ratings, &triples), 1.5);
+        assert_eq!(entry1.average_rating(&ratings, &triples), 1.5);
+        assert_eq!(entry2.average_rating(&ratings, &triples), 0.0);
+    }
+
+    #[test]
+    fn test_sort_by_avg_rating(){
+        let mut entries = vec![
+            new_entry("a", 0.0, 0.0),
+            new_entry("b", 0.0, 0.0),
+            new_entry("c", 0.0, 0.0),
+            new_entry("d", 0.0, 0.0),
+            new_entry("e", 0.0, 0.0),
+        ];
+
+        let ratings = vec![
+            new_rating("1", 0),
+            new_rating("2", 10),
+            new_rating("3", 3),
+            new_rating("4", -1),
+            new_rating("5", 0),
+        ];
+
+        let triples = vec![
+            Triple{subject: ObjectId::Entry("b".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("1".into())},
+            Triple{subject: ObjectId::Entry("b".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("2".into())},
+            Triple{subject: ObjectId::Entry("c".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("3".into())},
+            Triple{subject: ObjectId::Entry("d".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("4".into())},
+            Triple{subject: ObjectId::Entry("e".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("5".into())},
+        ];
+
+        entries.sort_by_avg_rating(&ratings, &triples);
+
+
+        assert_eq!(entries[0].id, "b");
+        assert_eq!(entries[1].id, "c");
+        assert!(entries[2].id == "a" || entries[2].id == "e");
+        assert!(entries[3].id == "a" || entries[3].id == "e");
+        assert_eq!(entries[4].id, "d");
+
+
+        // tests:
+        // - negative ratings
     }
 
     #[test]
