@@ -73,7 +73,7 @@ impl Rated for Entry {
         let num_rated_contexts = avg_ratings.iter().fold(0, |acc, &r| acc + if r.is_some() {1} else {0});
 
         if(num_rated_contexts > 0){
-            sum as f64 / num_rated_contexts as f64
+            sum / 6.0
         } else{
             0.0
         }
@@ -171,7 +171,7 @@ mod tests {
             Triple{subject: ObjectId::Entry("b".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("6".into())},
         ];
 
-        assert_eq!(entry1.avg_rating(&ratings, &triples), 1.5);
+        assert_eq!(entry1.avg_rating(&ratings, &triples), 0.25);
         assert_eq!(entry2.avg_rating(&ratings, &triples), 0.0);
         assert_eq!(entry3.avg_rating(&ratings, &triples), 0.0);
     }
@@ -183,9 +183,9 @@ mod tests {
 
         let ratings = vec![
             new_rating("1", 0, RatingContext::Diversity),
-            new_rating("2", 2, RatingContext::Renewable),
-            new_rating("3", 4, RatingContext::Fairness),
-            new_rating("4", 4, RatingContext::Fairness),
+            new_rating("2", 10, RatingContext::Renewable),
+            new_rating("3", 7, RatingContext::Fairness),
+            new_rating("4", 9, RatingContext::Fairness),
             new_rating("5", -3, RatingContext::Diversity),
             new_rating("6", 3, RatingContext::Fairness),
         ];
@@ -199,7 +199,7 @@ mod tests {
             Triple{subject: ObjectId::Entry("b".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("6".into())},
         ];
 
-        assert_eq!(entry1.avg_rating(&ratings, &triples), 2.0);
+        assert_eq!(entry1.avg_rating(&ratings, &triples), 3.0);
         assert_eq!(entry2.avg_rating(&ratings, &triples), 0.0);
     }
 
