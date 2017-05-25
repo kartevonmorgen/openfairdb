@@ -1,5 +1,7 @@
 use entities::*;
 use std::cmp::Ordering;
+use std::iter::FilterMap;
+use std::slice::Iter;
 use super::geo::{self, Coordinate};
 
 trait DistanceTo {
@@ -40,11 +42,12 @@ impl SortByDistanceTo for Vec<Entry> {
 }
 
 pub trait Rated {
-    fn average_rating(&self, &[Rating], &[Triple]) -> f64;
+    fn avg_rating(&self, &[Rating], &[Triple]) -> f64;
+    fn avg_rating_for_context(&self, &[Rating], &Vec<(&String, &String)>, RatingContext) -> Option<f64>;
 }
 
 impl Rated for Entry {
-    fn average_rating(&self, ratings: &[Rating], triples: &[Triple]) -> f64 {
+    fn avg_rating(&self, ratings: &[Rating], triples: &[Triple]) -> f64 {
         let entry_ratings : Vec<(&String, &String)> = triples
             .into_iter()
             .filter_map(|x| match *x {
@@ -57,16 +60,40 @@ impl Rated for Entry {
             })
             .filter(|entry_rating| *entry_rating.0 == self.id).collect();
 
-        let avg = ratings
-            .into_iter()
-            .filter_map(|rating| if entry_ratings.iter().any(|entry_rating| *entry_rating.1 == rating.id) { Some(rating) } else { None })
-            .fold(0, |acc, ref rating| acc + rating.value) as f64
-            / entry_ratings.len() as f64;
+        let avg_ratings = vec![
+            self.avg_rating_for_context(ratings, &entry_ratings, RatingContext::Diversity),
+            self.avg_rating_for_context(ratings, &entry_ratings, RatingContext::Renewable),
+            self.avg_rating_for_context(ratings, &entry_ratings, RatingContext::Fairness),
+            self.avg_rating_for_context(ratings, &entry_ratings, RatingContext::Humanity),
+            self.avg_rating_for_context(ratings, &entry_ratings, RatingContext::Transparency),
+            self.avg_rating_for_context(ratings, &entry_ratings, RatingContext::Solidarity),
+        ];
+            
+        let sum = avg_ratings.iter().fold(0.0, |acc, &r| acc + r.unwrap_or(0.0));
+        let num_rated_contexts = avg_ratings.iter().fold(0, |acc, &r| acc + if r.is_some() {1} else {0});
 
-        if !avg.is_nan() { 
-            avg as f64
-        } else { 
+        if(num_rated_contexts > 0){
+            sum as f64 / num_rated_contexts as f64
+        } else{
             0.0
+        }
+    }
+
+    fn avg_rating_for_context(&self, ratings: &[Rating], entry_ratings: &Vec<(&String, &String)>, context: RatingContext) -> Option<f64> {
+        let applicable_ratings : Vec<&Rating> = ratings.into_iter()
+            .filter_map(|rating| if rating.context == context
+                && entry_ratings.iter()
+                .any(|entry_rating| *entry_rating.1 == rating.id) { Some(rating) } else { None })
+            .collect();
+
+        let sum = applicable_ratings.iter().fold(0, |acc, ref rating| acc + rating.value) as f64;
+        let n = applicable_ratings.len();
+
+        let avg = sum / n as f64;
+        if avg.is_nan() { 
+            None
+        } else { 
+            Some(avg as f64)
         }
     }
 }
@@ -78,8 +105,8 @@ pub trait SortByAverageRating {
 impl SortByAverageRating for Vec<Entry> {
     fn sort_by_avg_rating(&mut self, ratings: &[Rating], triples: &[Triple]){
         self.sort_by(|a, b| {
-            b.average_rating(ratings, triples)
-            .partial_cmp(&a.average_rating(ratings, triples))
+            b.avg_rating(ratings, triples)
+            .partial_cmp(&a.avg_rating(ratings, triples))
             .unwrap_or(Ordering::Equal)
         })
     }
@@ -110,29 +137,29 @@ mod tests {
         }
     }
 
-    fn new_rating(id: &str, value: i8) -> Rating {
+    fn new_rating(id: &str, value: i8, context: RatingContext) -> Rating {
         Rating{
             id         : id.into(),
             created    : 0,
             title      : "blubb".into(),
             value      : value.into(), 
-            context    : RatingContext::Diversity
+            context    : context
         }
     }
 
     #[test]
     fn test_average_rating() {
-        let mut entry1 = new_entry("a", 0.0, 0.0);
-        let mut entry2 = new_entry("b", 0.0, 0.0);
-        let mut entry3 = new_entry("c", 0.0, 0.0);
+        let entry1 = new_entry("a", 0.0, 0.0);
+        let entry2 = new_entry("b", 0.0, 0.0);
+        let entry3 = new_entry("c", 0.0, 0.0);
 
         let ratings = vec![
-            new_rating("1", 0),
-            new_rating("2", 0),
-            new_rating("3", 3),
-            new_rating("4", 3),
-            new_rating("5", -3),
-            new_rating("6", 3),
+            new_rating("1", 0, RatingContext::Diversity),
+            new_rating("2", 0, RatingContext::Diversity),
+            new_rating("3", 3, RatingContext::Diversity),
+            new_rating("4", 3, RatingContext::Diversity),
+            new_rating("5", -3, RatingContext::Diversity),
+            new_rating("6", 3, RatingContext::Diversity),
         ];
 
         let triples = vec![
@@ -144,9 +171,36 @@ mod tests {
             Triple{subject: ObjectId::Entry("b".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("6".into())},
         ];
 
-        assert_eq!(entry1.average_rating(&ratings, &triples), 1.5);
-        assert_eq!(entry2.average_rating(&ratings, &triples), 0.0);
-        assert_eq!(entry3.average_rating(&ratings, &triples), 0.0);
+        assert_eq!(entry1.avg_rating(&ratings, &triples), 1.5);
+        assert_eq!(entry2.avg_rating(&ratings, &triples), 0.0);
+        assert_eq!(entry3.avg_rating(&ratings, &triples), 0.0);
+    }
+
+    #[test]
+    fn test_average_rating_different_contexts() {
+        let entry1 = new_entry("a", 0.0, 0.0);
+        let entry2 = new_entry("b", 0.0, 0.0);
+
+        let ratings = vec![
+            new_rating("1", 0, RatingContext::Diversity),
+            new_rating("2", 2, RatingContext::Renewable),
+            new_rating("3", 4, RatingContext::Fairness),
+            new_rating("4", 4, RatingContext::Fairness),
+            new_rating("5", -3, RatingContext::Diversity),
+            new_rating("6", 3, RatingContext::Fairness),
+        ];
+
+        let triples = vec![
+            Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("1".into())},
+            Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("2".into())},
+            Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("3".into())},
+            Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("4".into())},
+            Triple{subject: ObjectId::Entry("b".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("5".into())},
+            Triple{subject: ObjectId::Entry("b".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("6".into())},
+        ];
+
+        assert_eq!(entry1.avg_rating(&ratings, &triples), 2.0);
+        assert_eq!(entry2.avg_rating(&ratings, &triples), 0.0);
     }
 
     #[test]
@@ -160,11 +214,11 @@ mod tests {
         ];
 
         let ratings = vec![
-            new_rating("1", 0),
-            new_rating("2", 10),
-            new_rating("3", 3),
-            new_rating("4", -1),
-            new_rating("5", 0),
+            new_rating("1", 0, RatingContext::Diversity),
+            new_rating("2", 10, RatingContext::Diversity),
+            new_rating("3", 3, RatingContext::Diversity),
+            new_rating("4", -1, RatingContext::Diversity),
+            new_rating("5", 0, RatingContext::Diversity),
         ];
 
         let triples = vec![
