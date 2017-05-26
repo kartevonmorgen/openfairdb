@@ -1,3 +1,9 @@
+## v0.2.6 (2017-05-26)
+
+- new(ranking): calculate average rating of an entry in each rating context separately
+- new(ranking): calculate average rating of an entry by taking average of all rating contexts
+- new(ranking): rank search results by average rating
+
 ## v0.2.5 (2017-05-19)
 
 - fix: revert `references` path
