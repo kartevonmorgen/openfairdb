@@ -75,30 +75,6 @@ pub fn entries_by_search_text<'a>(text: &'a str) -> Box<Fn(&&Entry) -> bool + 'a
     })
 }
 
-pub fn entries_by_tags_or_search_text<'a>(text: &'a str, tags: &'a [String], triples: &'a [Triple]) -> Box<Fn(&&Entry) -> bool + 'a> {
-    let tag_triples : Vec<(&String, &String)> = triples
-        .into_iter()
-        .filter_map(|x| match *x {
-            Triple {
-                subject   : ObjectId::Entry(ref e_id),
-                predicate : Relation::IsTaggedWith,
-                object    : ObjectId::Tag(ref t_id)
-            } => Some((e_id,t_id)),
-            _ => None
-        })
-        .collect();
-
-    let words = to_words(text);
-
-    Box::new(move |entry|
-        tags.iter()
-            .any(|tag| tag_triples.iter().any(|t| *t.0 == entry.id && t.1 == tag))
-        || words.iter().any(|word| {
-            entry.title.to_lowercase().contains(word) || entry.description.to_lowercase().contains(word)
-        })
-    )
-}
-
 fn to_words(txt: &str) -> Vec<String> {
     txt.to_lowercase().split(',').map(|x| x.to_string()).collect()
 }
@@ -273,48 +249,6 @@ mod tests {
         let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags(&tags,&triples, Combination::Or)).collect();
         assert_eq!(x.len(), 2);
         let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags(&tags,&triples, Combination::And)).collect();
-        assert_eq!(x.len(), 0);
-    }
-
-    #[test]
-    fn filter_by_tags_or_text() {
-        let entries = vec![
-            Entry::build().id("a").title("solawi").finish(),
-            Entry::build().id("b").title("blabla").description("blubb").finish(),
-            Entry::build().id("c").finish(),
-        ];
-        let tags = vec!["csa".into()];
-        let solawi = "solawi";
-        let blubb = "blubb";
-        let slowtec = "slowtec";
-        let no_triples = vec![];
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&slowtec, &tags,&no_triples)).collect();
-        assert_eq!(x.len(), 0);
-
-        let triples = vec![
-            Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("csa".into())},
-            Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo".into())}
-        ];
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&slowtec, &tags,&triples)).collect();
-        assert_eq!(x.len(), 1);
-        assert_eq!(x[0].id,"b");
-        let tags = vec!["csa".into(),"foo".into()];
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&slowtec, &tags,&triples)).collect();
-        assert_eq!(x.len(), 2);
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&slowtec, &tags,&triples)).collect();
-        assert_eq!(x.len(), 0);
-
-        let triples = vec![
-            Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("csa".into())},
-            Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo".into())}
-        ];
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&slowtec, &tags,&triples)).collect();
-        assert_eq!(x.len(), 1);
-        assert_eq!(x[0].id,"b");
-        let tags = vec!["csa".into(),"foo".into()];
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&slowtec, &tags,&triples)).collect();
-        assert_eq!(x.len(), 2);
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&slowtec, &tags,&triples)).collect();
         assert_eq!(x.len(), 0);
     }
 }
