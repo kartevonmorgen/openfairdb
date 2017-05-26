@@ -1,6 +1,6 @@
 [package]
 name = "openfairdb"
-version = "0.2.5"
+version = "0.2.6"
 authors = ["Markus Kohlhase <mail@markus-kohlhase.de>"]
 
 [dependencies]
