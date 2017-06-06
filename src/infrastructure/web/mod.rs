@@ -9,7 +9,7 @@ use business::db::Db;
 use business::error::{Error, RepoError, ParameterError};
 use infrastructure::error::AppError;
 use serde_json::ser::to_string;
-use business::sort::SortByAverageRating;
+use business::sort::SortByDistanceTo;
 use business::{usecase, filter, geo};
 use business::filter::InBBox;
 use business::duplicates::{self, DuplicateType};
@@ -163,12 +163,12 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResu
         }
     }
 
-    let triples = db.get()?.all_triples()?;
-    if !tags.is_empty() {    
+    if !tags.is_empty() {
+        let triple = db.get()?.all_triples()?;
         entries = entries.into_iter()
             .filter(&*filter::entries_by_tags(
                 &tags,
-                &triples,
+                &triple,
                 filter::Combination::Or
             ))
             .collect();
@@ -182,10 +182,7 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResu
     };
 
     let mut entries : Vec<Entry> = entries.into_iter().cloned().collect();
-
-    let all_ratings = db.get()?.all_ratings()?;
-
-    entries.sort_by_avg_rating(&all_ratings, &triples);
+    entries.sort_by_distance_to(&bbox_center);
 
     let visible_results: Vec<_> =
         entries
@@ -311,7 +308,7 @@ fn rocket_instance<T:r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Rock
 pub fn run(db_url: &str, port: u16, enable_cors: bool) {
 
     if enable_cors {
-        panic!("enable-cors is currently not available until\
+        panic!("This feature is currently not available until\
         \nhttps://github.com/SergioBenitez/Rocket/pull/141\nis merged :(");
     }
 
@@ -328,7 +325,7 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
 }
 
 impl<'r> Responder<'r> for AppError {
-    fn respond(self) -> result::Result<Response<'r>, Status> {
+    fn respond_to(self, _: &rocket::Request) -> result::Result<Response<'r>, Status> {
         Err(match self {
             AppError::Business(ref err) => {
                 match *err {
