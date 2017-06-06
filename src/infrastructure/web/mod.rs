@@ -328,7 +328,7 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
 }
 
 impl<'r> Responder<'r> for AppError {
-    fn respond(self) -> result::Result<Response<'r>, Status> {
+    fn respond_to(self, _: &rocket::Request) -> result::Result<Response<'r>, Status> {
         Err(match self {
             AppError::Business(ref err) => {
                 match *err {
