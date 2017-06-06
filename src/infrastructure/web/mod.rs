@@ -311,7 +311,7 @@ fn rocket_instance<T:r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Rock
 pub fn run(db_url: &str, port: u16, enable_cors: bool) {
 
     if enable_cors {
-        panic!("enable-cors is currently not available until\
+        panic!("This feature is currently not available until\
         \nhttps://github.com/SergioBenitez/Rocket/pull/141\nis merged :(");
     }
 
@@ -328,7 +328,7 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
 }
 
 impl<'r> Responder<'r> for AppError {
-    fn respond(self) -> result::Result<Response<'r>, Status> {
+    fn respond_to(self, _: &rocket::Request) -> result::Result<Response<'r>, Status> {
         Err(match self {
             AppError::Business(ref err) => {
                 match *err {
