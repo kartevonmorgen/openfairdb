@@ -1,7 +1,5 @@
 use entities::*;
 use std::cmp::Ordering;
-use std::iter::FilterMap;
-use std::slice::Iter;
 use super::geo::{self, Coordinate};
 
 trait DistanceTo {
@@ -10,11 +8,7 @@ trait DistanceTo {
 
 impl DistanceTo for Entry {
     fn distance_to(&self, c: &Coordinate) -> f64 {
-        geo::distance(&Coordinate {
-                          lat: self.lat,
-                          lng: self.lng,
-                      },
-                      c)
+        geo::distance(&Coordinate { lat: self.lat, lng: self.lng, }, c)
     }
 }
 
@@ -35,20 +29,22 @@ impl SortByDistanceTo for Vec<Entry> {
                 Ordering::Greater
             }
         );
-        self.sort_by(|a, b| {
-            a.distance_to(c).partial_cmp(&b.distance_to(c)).unwrap_or(Ordering::Equal)
-        })
+        self.sort_by(|a, b| a
+            .distance_to(c)
+            .partial_cmp(&b.distance_to(c))
+            .unwrap_or(Ordering::Equal)
+        )
     }
 }
 
 pub trait Rated {
     fn avg_rating(&self, &[Rating], &[Triple]) -> f64;
-    fn avg_rating_for_context(&self, &[Rating], &Vec<(&String, &String)>, RatingContext) -> Option<f64>;
+    fn avg_rating_for_context(&self, &[Rating], &[(&String, &String)], RatingContext) -> Option<f64>;
 }
 
 impl Rated for Entry {
     fn avg_rating(&self, ratings: &[Rating], triples: &[Triple]) -> f64 {
-        let entry_ratings : Vec<(&String, &String)> = triples
+        let entry_ratings: Vec<(&String, &String)> = triples
             .into_iter()
             .filter_map(|x| match *x {
                 Triple {
@@ -58,35 +54,40 @@ impl Rated for Entry {
                 } => Some((e_id, r_id)),
                 _ => None
             })
-            .filter(|entry_rating| *entry_rating.0 == self.id).collect();
+            .filter(|entry_rating| *entry_rating.0 == self.id)
+            .collect();
+
+        use self::RatingContext::*;
 
         let avg_ratings = vec![
-            self.avg_rating_for_context(ratings, &entry_ratings, RatingContext::Diversity),
-            self.avg_rating_for_context(ratings, &entry_ratings, RatingContext::Renewable),
-            self.avg_rating_for_context(ratings, &entry_ratings, RatingContext::Fairness),
-            self.avg_rating_for_context(ratings, &entry_ratings, RatingContext::Humanity),
-            self.avg_rating_for_context(ratings, &entry_ratings, RatingContext::Transparency),
-            self.avg_rating_for_context(ratings, &entry_ratings, RatingContext::Solidarity),
+            self.avg_rating_for_context(ratings, &entry_ratings, Diversity),
+            self.avg_rating_for_context(ratings, &entry_ratings, Renewable),
+            self.avg_rating_for_context(ratings, &entry_ratings, Fairness),
+            self.avg_rating_for_context(ratings, &entry_ratings, Humanity),
+            self.avg_rating_for_context(ratings, &entry_ratings, Transparency),
+            self.avg_rating_for_context(ratings, &entry_ratings, Solidarity),
         ];
             
         let sum = avg_ratings.iter().fold(0.0, |acc, &r| acc + r.unwrap_or(0.0));
         let num_rated_contexts = avg_ratings.iter().fold(0, |acc, &r| acc + if r.is_some() {1} else {0});
 
-        if(num_rated_contexts > 0){
+        if num_rated_contexts > 0 {
             sum / 6.0
-        } else{
+        } else {
             0.0
         }
     }
 
-    fn avg_rating_for_context(&self, ratings: &[Rating], entry_ratings: &Vec<(&String, &String)>, context: RatingContext) -> Option<f64> {
+    fn avg_rating_for_context(&self, ratings: &[Rating], entry_ratings: &[(&String, &String)], context: RatingContext) -> Option<f64> {
         let applicable_ratings : Vec<&Rating> = ratings.into_iter()
             .filter_map(|rating| if rating.context == context
                 && entry_ratings.iter()
                 .any(|entry_rating| *entry_rating.1 == rating.id) { Some(rating) } else { None })
             .collect();
 
-        let sum = applicable_ratings.iter().fold(0, |acc, ref rating| acc + rating.value) as f64;
+        let sum = applicable_ratings
+            .iter()
+            .fold(0, |acc, rating| acc + rating.value) as f64;
         let n = applicable_ratings.len();
 
         let avg = sum / n as f64;
@@ -104,11 +105,11 @@ pub trait SortByAverageRating {
 
 impl SortByAverageRating for Vec<Entry> {
     fn sort_by_avg_rating(&mut self, ratings: &[Rating], triples: &[Triple]){
-        self.sort_by(|a, b| {
-            b.avg_rating(ratings, triples)
+        self.sort_by(|a, b| b
+            .avg_rating(ratings, triples)
             .partial_cmp(&a.avg_rating(ratings, triples))
             .unwrap_or(Ordering::Equal)
-        })
+        )
     }
 }
 
@@ -250,10 +251,7 @@ mod tests {
                                new_entry("c", 1.0, 1.0),
                                new_entry("d", 0.0, 0.5),
                                new_entry("e", -1.0, -1.0)];
-        let x = Coordinate {
-            lat: 0.0,
-            lng: 0.0,
-        };
+        let x = Coordinate { lat: 0.0, lng: 0.0 };
         entries.sort_by_distance_to(&x);
         assert_eq!(entries[0].id, "b");
         assert_eq!(entries[1].id, "d");
@@ -271,21 +269,16 @@ mod tests {
                                new_entry("c", 2.0, 0.0),
                                new_entry("d", NAN, NAN),
                                new_entry("e", 1.0, 0.0)];
-        let x = Coordinate {
-            lat: 0.0,
-            lng: 0.0,
-        };
+        let x = Coordinate { lat: 0.0, lng: 0.0 };
         entries.sort_by_distance_to(&x);
         assert_eq!(entries[0].id, "e");
         assert_eq!(entries[1].id, "c");
 
-        let mut entries =
-            vec![new_entry("a", 2.0, 0.0), new_entry("b", 0.0, 0.0), new_entry("c", 1.0, 0.0)];
+        let mut entries = vec![new_entry("a", 2.0, 0.0),
+                               new_entry("b", 0.0, 0.0),
+                               new_entry("c", 1.0, 0.0)];
 
-        let x = Coordinate {
-            lat: NAN,
-            lng: 0.0,
-        };
+        let x = Coordinate { lat: NAN, lng: 0.0 };
         entries.sort_by_distance_to(&x);
         assert_eq!(entries[0].id, "a");
         assert_eq!(entries[1].id, "b");

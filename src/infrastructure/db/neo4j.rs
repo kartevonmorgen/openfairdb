@@ -6,7 +6,7 @@ use std::result;
 
 type Result<T> = result::Result<T, RepoError>;
 
-fn neo4j_edge_name<'a>(t: &'a Triple) -> &'a str {
+fn neo4j_edge_name(t: &Triple) -> &str {
     match t.predicate {
        Relation::IsTaggedWith    => "IS_TAGGED_WITH",
        Relation::IsRatedWith     => "IS_RATED_WITH",
@@ -15,7 +15,7 @@ fn neo4j_edge_name<'a>(t: &'a Triple) -> &'a str {
     }.into()
 }
 
-fn object_id_to_neo4j_label<'a>(id: &'a ObjectId) -> (&'a str,&'a str) {
+fn object_id_to_neo4j_label(id: &ObjectId) -> (&str,&str) {
     match *id {
         ObjectId::Entry(ref id) => ("Entry",id),
         ObjectId::Tag(ref id) => ("Tag",id),
@@ -62,7 +62,7 @@ struct Neo4jTriple {
 
 fn from_neo_triple(t: Neo4jTriple) -> Option<Triple> {
     if t.subject.labels.is_empty() || t.object.labels.is_empty() {
-        warn!("No labels found in {:?}",t);
+        warn!("No labels found in {:?}", t);
         return None;
     }
     let subject = neo4j_label_to_object_id(&t.subject.labels[0], t.subject.id);
@@ -82,7 +82,6 @@ fn from_neo_triple(t: Neo4jTriple) -> Option<Triple> {
 
 
 impl Db for GraphClient {
-
     fn get_entry(&self, id: &str) -> Result<Entry> {
         let result = self.exec(cypher_stmt!(
         "MATCH (e:Entry)<--(s:EntryState) WHERE e.id = {id}

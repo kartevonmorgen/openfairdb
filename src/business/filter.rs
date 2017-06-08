@@ -17,7 +17,9 @@ impl InBBox for Entry {
             warn!("invalid bounding box: {:?}", bb);
             return false;
         }
-        bb.len() == 2 && self.lat >= bb[0].lat && self.lng >= bb[0].lng && self.lat <= bb[1].lat &&
+        self.lat >= bb[0].lat &&
+        self.lng >= bb[0].lng &&
+        self.lat <= bb[1].lat &&
         self.lng <= bb[1].lng
     }
 }
@@ -26,14 +28,14 @@ pub fn entries_by_category_ids<'a>(ids: &'a [String]) -> Box<Fn(&&Entry) -> bool
     Box::new(move |e| ids.iter().any(|c| e.categories.iter().any(|x| x == c)))
 }
 
-pub fn triple_by_subject<'a>(o_id : ObjectId) -> Box<Fn(&&Triple) -> bool + 'a> {
+pub fn triple_by_subject<'a>(o_id: ObjectId) -> Box<Fn(&&Triple) -> bool + 'a> {
     Box::new(move |triple| o_id == triple.subject)
 }
 
-pub fn entries_by_tags<'a>(tags: &'a [String], triples: &'a [Triple], combination: Combination) -> Box<Fn(&&Entry) -> bool + 'a> {
+pub fn entries_by_tags<'a>(tags: &'a [String], triples: &'a [Triple], combination: &Combination) -> Box<Fn(&&Entry) -> bool + 'a> {
 
 
-    let triples : Vec<(&String, &String)> = triples
+    let triples: Vec<(&String, &String)> = triples
         .into_iter()
         .filter_map(|x| match *x {
             Triple {
@@ -45,7 +47,7 @@ pub fn entries_by_tags<'a>(tags: &'a [String], triples: &'a [Triple], combinatio
         })
         .collect();
 
-    match combination {
+    match *combination {
         Combination::Or => {
             Box::new(move |entry|
                 tags.iter()
@@ -76,7 +78,10 @@ pub fn entries_by_search_text<'a>(text: &'a str) -> Box<Fn(&&Entry) -> bool + 'a
 }
 
 fn to_words(txt: &str) -> Vec<String> {
-    txt.to_lowercase().split(',').map(|x| x.to_string()).collect()
+    txt.to_lowercase()
+        .split(',')
+        .map(|x| x.to_string())
+        .collect()
 }
 
 #[cfg(test)]
@@ -236,19 +241,19 @@ mod tests {
         ];
         let tags = vec!["csa".into()];
         let no_triples = vec![];
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags(&tags,&no_triples, Combination::Or)).collect();
+        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags(&tags,&no_triples, &Combination::Or)).collect();
         assert_eq!(x.len(), 0);
         let triples = vec![
             Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("csa".into())},
             Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo".into())}
         ];
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags(&tags,&triples, Combination::Or)).collect();
+        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags(&tags,&triples, &Combination::Or)).collect();
         assert_eq!(x.len(), 1);
         assert_eq!(x[0].id,"b");
         let tags = vec!["csa".into(),"foo".into()];
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags(&tags,&triples, Combination::Or)).collect();
+        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags(&tags,&triples, &Combination::Or)).collect();
         assert_eq!(x.len(), 2);
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags(&tags,&triples, Combination::And)).collect();
+        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags(&tags,&triples, &Combination::And)).collect();
         assert_eq!(x.len(), 0);
     }
 }

@@ -257,13 +257,13 @@ fn create_new_user() {
 #[test]
 fn create_rating() {
     let (rocket, db) = server();
-    db.get().unwrap().entries = vec![ Entry::build().id("foo").finish() ];
+    db.get().unwrap().entries = vec![Entry::build().id("foo").finish()];
     let mut req = MockRequest::new(Method::Post, "/ratings")
         .header(ContentType::JSON)
         .body(r#"{"value": 1,"context":"fairness","entry":"foo","comment":"test", "title":"idontcare"}"#);
     let response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
-    assert_eq!(db.get().unwrap().ratings[0].value,1);
+    assert_eq!(db.get().unwrap().ratings[0].value, 1);
 }
 
 #[test]
@@ -334,8 +334,7 @@ fn login_with_valid_credentials() {
 #[test]
 fn logout() {
     let (rocket, _) = server();
-    let mut req = MockRequest::new(Method::Post, format!("/logout"))
-        .header(ContentType::JSON);
+    let mut req = MockRequest::new(Method::Post, format!("/logout")).header(ContentType::JSON);
     let response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
 }

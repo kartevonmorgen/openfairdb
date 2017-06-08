@@ -12,25 +12,24 @@ pub trait Repo<T> {
 }
 
 pub trait Db {
+    fn create_entry(&mut self, &Entry) -> Result<()>;
+    fn create_tag(&mut self, &Tag) -> Result<()>;
+    fn create_triple(&mut self, &Triple) -> Result<()>;
+    fn create_user(&mut self, &User) -> Result<()>;
+    fn create_comment(&mut self, &Comment) -> Result<()>;
+    fn create_rating(&mut self, &Rating) -> Result<()>;
 
-   fn create_entry(&mut self, &Entry) -> Result<()>;
-   fn create_tag(&mut self, &Tag) -> Result<()>;
-   fn create_triple(&mut self, &Triple) -> Result<()>;
-   fn create_user(&mut self, &User) -> Result<()>;
-   fn create_comment(&mut self, &Comment) -> Result<()>;
-   fn create_rating(&mut self, &Rating) -> Result<()>;
+    fn get_entry(&self, &str) -> Result<Entry>;
+    fn get_user(&self, &str) -> Result<User>;
 
-   fn get_entry(&self, &str) -> Result<Entry>;
-   fn get_user(&self, &str) -> Result<User>;
+    fn all_entries(&self) -> Result<Vec<Entry>>;
+    fn all_categories(&self) -> Result<Vec<Category>>;
+    fn all_tags(&self) -> Result<Vec<Tag>>;
+    fn all_triples(&self) -> Result<Vec<Triple>>;
+    fn all_ratings(&self) -> Result<Vec<Rating>>;
+    fn all_comments(&self) -> Result<Vec<Comment>>;
 
-   fn all_entries(&self) -> Result<Vec<Entry>>;
-   fn all_categories(&self) -> Result<Vec<Category>>;
-   fn all_tags(&self) -> Result<Vec<Tag>>;
-   fn all_triples(&self) -> Result<Vec<Triple>>;
-   fn all_ratings(&self) -> Result<Vec<Rating>>;
-   fn all_comments(&self) -> Result<Vec<Comment>>;
+    fn update_entry(&mut self, &Entry) -> Result<()>;
 
-   fn update_entry(&mut self, &Entry) -> Result<()>;
-
-   fn delete_triple(&mut self, &Triple) -> Result<()>;
+    fn delete_triple(&mut self, &Triple) -> Result<()>;
 }
