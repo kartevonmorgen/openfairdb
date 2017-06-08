@@ -4,6 +4,7 @@ use rocket::testing::MockRequest;
 use rocket::http::{Status, Method, ContentType};
 use business::db::Db;
 use business::builder::*;
+use infrastructure;
 use serde_json;
 use super::*;
 use pwhash::bcrypt;
@@ -163,48 +164,69 @@ fn search_with_categories() {
 fn search_with_tags() {
     let entries = vec![
         Entry::build().id("a").categories(vec!["foo"]).finish(),
-        Entry::build().id("b").categories(vec!["foo"]).finish(),
-        Entry::build().id("c").categories(vec!["foo"]).finish(),
+        Entry::build().id("b").categories(vec!["foo"]).finish(),    // bla-blubb, foo-bar
+        Entry::build().id("c").categories(vec!["foo"]).finish(),    // foo-bar
     ];
     let triples = vec![
-        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("csa".into())},
-        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bio".into())},
-        Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bio".into())}
+        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bla-blubb".into())},
+        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())},
+        Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())}
     ];
     let (rocket, db) = server();
     db.get().unwrap().entries = entries;
     db.get().unwrap().triples = triples;
-    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&tags=csa");
+    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&tags=bla-blubb");
     let mut response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains(r#""visible":["b"]"#));
 
-    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&tags=bio");
+    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&tags=foo-bar");
     let mut response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains("\"b\""));
     assert!(body_str.contains("\"c\""));
-    assert!(!body_str.contains("\"a\""));
 }
 
 #[test]
 fn search_with_hash_tags() {
     let entries = vec![
         Entry::build().id("a").finish(),
-        Entry::build().id("b").finish(),
-        Entry::build().id("c").finish(),
+        Entry::build().id("b").finish(),    // bla-blubb, foo-bar
+        Entry::build().id("c").finish(),    // foo-bar
     ];
     let triples = vec![
-        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("csa".into())},
-        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bio".into())},
-        Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bio".into())}
+        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bla-blubb".into())},
+        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())},
+        Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())}
     ];
     let (rocket, db) = server();
     db.get().unwrap().entries = entries;
     db.get().unwrap().triples = triples;
-    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&text=%23csa");
+    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&text=%23bla-blubb");
+    let mut response = req.dispatch_with(&rocket);
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains(r#""visible":["b"]"#));
+}
+
+#[test]
+fn search_with_and_without_tags() {
+    let entries = vec![
+        Entry::build().id("a").title("foo").finish(),
+        Entry::build().id("b").title("foo").finish(),    // bla-blubb, foo-bar
+        Entry::build().id("c").title("foo").finish(),    // foo-bar
+    ];
+    let triples = vec![
+        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bla-blubb".into())},
+        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())},
+        Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())}
+    ];
+    let (rocket, db) = server();
+    db.get().unwrap().entries = entries;
+    db.get().unwrap().triples = triples;
+    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&text=bla-blubb");
     let mut response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
@@ -338,4 +360,14 @@ fn logout() {
         .header(ContentType::JSON);
     let response = req.dispatch_with(&rocket);
     assert_eq!(response.status(), Status::Ok);
+}
+
+#[test]
+fn to_words(){
+    let text = "blabla bla-blubb #foo-bar";
+    let words = infrastructure::web::to_words(&text);
+    assert_eq!(words.len(), 3);
+    assert_eq!(words[0], "blabla");
+    assert_eq!(words[1], "bla-blubb");
+    assert_eq!(words[2], "#foo-bar");
 }
