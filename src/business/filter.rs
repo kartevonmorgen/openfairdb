@@ -90,14 +90,13 @@ pub fn entries_by_tags_or_search_text<'a>(text: &'a str, tags: &'a [String], tri
 
     let words = to_words(text);
 
-    // either tags match or search string matches or both are empty:
     Box::new(move |entry|
         tags.iter()
             .any(|tag| tag_triples.iter().any(|t| *t.0 == entry.id && t.1 == tag))
-        || (text.len() > 0 && words.iter().any(|word| {
-            entry.title.to_lowercase().contains(word) || entry.description.to_lowercase().contains(word)
-        }))
-        || (text.len() == 0 && tags.len() == 0)
+            || (text.len() > 0 && words.iter().any(|word| {
+                entry.title.to_lowercase().contains(word) || entry.description.to_lowercase().contains(word)
+            }))
+            || (text.len() == 0 && (tags.len() == 0 || tags[0] == ""))
     )
 }
 
