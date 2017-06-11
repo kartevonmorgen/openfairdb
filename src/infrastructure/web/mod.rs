@@ -171,28 +171,26 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResu
         }
     }
 
-    let triples = db.get()?.all_triples()?;
-    if !tags.is_empty() {    
-        entries = entries.into_iter()
-            .filter(&*filter::entries_by_tags(
-                &tags,
-                &triples,
-                &filter::Combination::Or
-            ))
-            .collect();
+    // search tags even without preceding #:
+    if let Some(ref txt) = search.text {
+        for t in to_words(txt){
+            tags.push(t);
+        }
     }
 
-    let entries = match search.text.map(|t| remove_hash_tags(&t)) {
-        Some(txt) => {
-            entries
-                .into_iter()
-                .filter(&*filter::entries_by_search_text(&txt))
-                .collect()
-        }
-        None => entries,
+    let triples = db.get()?.all_triples()?;
+
+    let text = match search.text {
+        Some(txt) => remove_hash_tags(&txt),
+        None => "".into()
     };
 
-    let mut entries: Vec<Entry> = entries.into_iter().cloned().collect();
+    let entries : Vec<&Entry> = entries
+        .into_iter()
+        .filter(&*filter::entries_by_tags_or_search_text(&text, &tags, &triples))
+        .collect();
+
+    let mut entries : Vec<Entry> = entries.into_iter().cloned().collect();
 
     let all_ratings = db.get()?.all_ratings()?;
 
@@ -217,6 +215,10 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResu
         visible: visible_results,
         invisible: invisible_results,
     }))
+}
+
+fn to_words(txt: &str) -> Vec<String> {
+    txt.to_lowercase().split(' ').map(|x| x.to_string()).collect()
 }
 
 #[post("/login", format = "application/json", data = "<login>")]
@@ -301,8 +303,8 @@ fn rocket_instance<T: r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Roc
                routes![login,
                        logout,
                        get_entry,
-                       post_entry,
-                       post_user,
+                       post_entry
+,                       post_user,
                        post_rating,
                        put_entry,
                        get_categories,
