@@ -41,7 +41,7 @@ pub fn username(name: &str) -> Result<(), ParameterError> {
 
 pub fn password(pw: &str) -> Result<(), ParameterError> {
     //TODO: use regex
-    if pw == "" || pw.contains(" ") {
+    if pw == "" || pw.contains(' ') {
         return Err(ParameterError::Password);
     }
     Ok(())

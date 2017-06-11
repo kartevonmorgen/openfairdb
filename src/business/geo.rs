@@ -59,10 +59,7 @@ mod tests {
 
     #[test]
     fn no_distance() {
-        let c0 = Coordinate {
-            lat: 0.0,
-            lng: 0.0,
-        };
+        let c0 = Coordinate { lat: 0.0, lng: 0.0 };
         assert_eq!(distance(&c0, &c0), 0.0);
         let c10 = Coordinate {
             lat: 10.0,

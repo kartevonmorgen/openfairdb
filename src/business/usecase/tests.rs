@@ -27,16 +27,16 @@ impl MockDb {
     }
 }
 
-fn get<T:Clone + Id>(objects: &[T], id: &str) -> RepoResult<T> {
+fn get<T: Clone + Id>(objects: &[T], id: &str) -> RepoResult<T> {
     match objects.iter().find(|x| x.id() == id) {
         Some(x) => Ok(x.clone()),
         None => Err(RepoError::NotFound),
     }
 }
 
-fn create<T:Clone + Id>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
+fn create<T: Clone + Id>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
     if objects.iter().any(|x| x.id() == e.id()) {
-        return Err(RepoError::AlreadyExists)
+        return Err(RepoError::AlreadyExists);
     } else {
         objects.push(e.clone());
     }
@@ -47,7 +47,7 @@ fn update<T: Clone + Id>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
     if let Some(pos) = objects.iter().position(|x| x.id() == e.id()) {
         objects[pos] = e.clone();
     } else {
-        return Err(RepoError::NotFound)
+        return Err(RepoError::NotFound);
     }
     Ok(())
 }
@@ -78,11 +78,11 @@ impl Db for MockDb {
     }
 
     fn get_entry(&self, id: &str) -> RepoResult<Entry> {
-        get(&self.entries,id)
+        get(&self.entries, id)
     }
 
     fn get_user(&self, id: &str) -> RepoResult<User> {
-        get(&self.users,id)
+        get(&self.users, id)
     }
 
     fn all_entries(&self) -> RepoResult<Vec<Entry>> {
@@ -114,7 +114,11 @@ impl Db for MockDb {
     }
 
     fn delete_triple(&mut self, t: &Triple) -> RepoResult<()> {
-        self.triples = self.triples.clone().into_iter().filter(|x| x != t).collect();
+        self.triples = self.triples
+            .clone()
+            .into_iter()
+            .filter(|x| x != t)
+            .collect();
         Ok(())
     }
 }
@@ -141,7 +145,7 @@ fn create_new_valid_entry() {
     let now = UTC::now();
     let id = create_new_entry(&mut mock_db, x).unwrap();
     assert!(Uuid::parse_str(&id).is_ok());
-    assert_eq!(mock_db.entries.len(),1);
+    assert_eq!(mock_db.entries.len(), 1);
     let x = &mock_db.entries[0];
     assert_eq!(x.title, "foo");
     assert_eq!(x.description, "bar");
@@ -174,7 +178,7 @@ fn create_entry_with_invalid_email() {
 }
 
 #[test]
-fn update_valid_entry(){
+fn update_valid_entry() {
     let id = Uuid::new_v4().simple().to_string();
     let old = Entry {
         id          : id.clone(),
@@ -215,7 +219,7 @@ fn update_valid_entry(){
     mock_db.entries = vec![old];
     let now = UTC::now();
     assert!(update_entry(&mut mock_db, new).is_ok());
-    assert_eq!(mock_db.entries.len(),1);
+    assert_eq!(mock_db.entries.len(), 1);
     let x = &mock_db.entries[0];
     assert_eq!(x.street, Some("street".into()));
     assert_eq!(x.description, "bar");
@@ -225,7 +229,7 @@ fn update_valid_entry(){
 }
 
 #[test]
-fn update_entry_with_invalid_version(){
+fn update_entry_with_invalid_version() {
     let id = Uuid::new_v4().simple().to_string();
     let old = Entry {
         id          : id.clone(),
@@ -309,17 +313,17 @@ fn update_non_existing_entry(){
     match result.err().unwrap() {
         Error::Repo(err) => {
             match err {
-                RepoError::NotFound => { },
+                RepoError::NotFound => {}
                 _ => {
                     panic!("invalid error type");
                 }
             }
-        },
+        }
         _ => {
             panic!("invalid error type");
         }
     }
-    assert_eq!(mock_db.entries.len(),0);
+    assert_eq!(mock_db.entries.len(), 0);
 }
 
 #[test]
@@ -342,9 +346,9 @@ fn add_new_valid_entry_with_tags() {
     };
     let mut mock_db = MockDb::new();
     create_new_entry(&mut mock_db, x).unwrap();
-    assert_eq!(mock_db.tags.len(),2);
-    assert_eq!(mock_db.entries.len(),1);
-    assert_eq!(mock_db.triples.len(),2);
+    assert_eq!(mock_db.tags.len(), 2);
+    assert_eq!(mock_db.entries.len(), 1);
+    assert_eq!(mock_db.triples.len(), 2);
 }
 
 #[test]
@@ -396,7 +400,7 @@ fn calc_triple_diff(){
 }
 
 #[test]
-fn update_valid_entry_with_tags(){
+fn update_valid_entry_with_tags() {
     let id = Uuid::new_v4().simple().to_string();
     let old = Entry {
         id          : id.clone(),
@@ -474,7 +478,7 @@ fn get_correct_tag_ids_for_entry_id() {
             }
         ];
     let res = get_tag_ids_for_entry_id(&triples, "a");
-    assert_eq!(res,vec!["bio".to_string(),"fair".to_string()])
+    assert_eq!(res, vec!["bio".to_string(), "fair".to_string()])
 }
 
 #[test]
@@ -502,94 +506,94 @@ fn get_correct_rating_ids_for_entry_id() {
             }
         ];
     let res = get_rating_ids_for_entry_id(&triples, "a");
-    assert_eq!(res,vec!["foo".to_string(),"bar".to_string()])
+    assert_eq!(res, vec!["foo".to_string(), "bar".to_string()])
 }
 
 #[test]
-fn create_user_with_invalid_name(){
+fn create_user_with_invalid_name() {
     let mut db = MockDb::new();
-    let u = NewUser{
+    let u = NewUser {
         username: "".into(),
         password: "bar".into(),
-        email: "foo@baz.io".into()
+        email: "foo@baz.io".into(),
     };
-    assert!(create_new_user(&mut db,u).is_err());
-    let u = NewUser{
+    assert!(create_new_user(&mut db, u).is_err());
+    let u = NewUser {
         username: "also&invalid".into(),
         password: "bar".into(),
-        email: "foo@baz.io".into()
+        email: "foo@baz.io".into(),
     };
-    assert!(create_new_user(&mut db,u).is_err());
-    let u = NewUser{
+    assert!(create_new_user(&mut db, u).is_err());
+    let u = NewUser {
         username: "thisisvalid".into(),
         password: "very_secret".into(),
-        email: "foo@baz.io".into()
+        email: "foo@baz.io".into(),
     };
-    assert!(create_new_user(&mut db,u).is_ok());
+    assert!(create_new_user(&mut db, u).is_ok());
 }
 
 #[test]
-fn create_user_with_invalid_password(){
+fn create_user_with_invalid_password() {
     let mut db = MockDb::new();
-    let u = NewUser{
+    let u = NewUser {
         username: "user".into(),
         password: "".into(),
-        email: "foo@baz.io".into()
+        email: "foo@baz.io".into(),
     };
-    assert!(create_new_user(&mut db,u).is_err());
-    let u = NewUser{
+    assert!(create_new_user(&mut db, u).is_err());
+    let u = NewUser {
         username: "user".into(),
         password: "not valid".into(),
-        email: "foo@baz.io".into()
+        email: "foo@baz.io".into(),
     };
-    assert!(create_new_user(&mut db,u).is_err());
-    let u = NewUser{
+    assert!(create_new_user(&mut db, u).is_err());
+    let u = NewUser {
         username: "user".into(),
         password: "validpass".into(),
-        email: "foo@baz.io".into()
+        email: "foo@baz.io".into(),
     };
-    assert!(create_new_user(&mut db,u).is_ok());
+    assert!(create_new_user(&mut db, u).is_ok());
 }
 
 #[test]
-fn create_user_with_invalid_email(){
+fn create_user_with_invalid_email() {
     let mut db = MockDb::new();
-    let u = NewUser{
+    let u = NewUser {
         username: "user".into(),
         password: "pass".into(),
-        email: "".into()
+        email: "".into(),
     };
-    assert!(create_new_user(&mut db,u).is_err());
-    let u = NewUser{
+    assert!(create_new_user(&mut db, u).is_err());
+    let u = NewUser {
         username: "user".into(),
         password: "pass".into(),
-        email: "fooo@".into()
+        email: "fooo@".into(),
     };
-    assert!(create_new_user(&mut db,u).is_err());
-    let u = NewUser{
+    assert!(create_new_user(&mut db, u).is_err());
+    let u = NewUser {
         username: "user".into(),
         password: "pass".into(),
-        email: "fooo@bar.io".into()
+        email: "fooo@bar.io".into(),
     };
-    assert!(create_new_user(&mut db,u).is_ok());
+    assert!(create_new_user(&mut db, u).is_ok());
 }
 
 #[test]
-fn encrypt_user_password(){
+fn encrypt_user_password() {
     let mut db = MockDb::new();
-    let u = NewUser{
+    let u = NewUser {
         username: "user".into(),
         password: "pass".into(),
-        email: "foo@bar.io".into()
+        email: "foo@bar.io".into(),
     };
-    assert!(create_new_user(&mut db,u).is_ok());
+    assert!(create_new_user(&mut db, u).is_ok());
     assert!(db.users[0].password != "pass");
     assert!(bcrypt::verify("pass", &db.users[0].password));
 }
 
 
 #[test]
-fn rate_non_existing_entry(){
+fn rate_non_existing_entry() {
     let mut db = MockDb::new();
     assert!(rate_entry(&mut db,RateEntry{
         entry: "does_not_exist".into(),
@@ -602,7 +606,7 @@ fn rate_non_existing_entry(){
 }
 
 #[test]
-fn rate_with_empty_comment(){
+fn rate_with_empty_comment() {
     let mut db = MockDb::new();
     let e = Entry::build().id("foo").finish();
     db.entries = vec![e];
@@ -617,7 +621,7 @@ fn rate_with_empty_comment(){
 }
 
 #[test]
-fn rate_with_invalid_value_comment(){
+fn rate_with_invalid_value_comment() {
     let mut db = MockDb::new();
     let e = Entry::build().id("foo").finish();
     db.entries = vec![e];
@@ -640,7 +644,7 @@ fn rate_with_invalid_value_comment(){
 }
 
 #[test]
-fn rate_without_login(){
+fn rate_without_login() {
     let mut db = MockDb::new();
     let e = Entry::build().id("foo").finish();
     db.entries = vec![e];

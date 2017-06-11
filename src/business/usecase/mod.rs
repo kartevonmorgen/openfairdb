@@ -12,7 +12,7 @@ use pwhash::bcrypt;
 #[cfg(test)]
 pub mod tests;
 
-type Result<T> = result::Result<T,Error>;
+type Result<T> = result::Result<T, Error>;
 
 trait Id {
     fn id(&self) -> String;
@@ -75,7 +75,7 @@ fn triple_id(t: &Triple) -> String {
         Relation::IsCommentedWith => "is_commented_with",
         Relation::CreatedBy => "created_by"
     };
-    format!("{}-{}-{}-{}-{}",s_type,s_id,p_type,o_type,o_id)
+    format!("{}-{}-{}-{}-{}", s_type, s_id, p_type, o_type, o_id)
 }
 
 impl Id for Triple {
@@ -144,11 +144,11 @@ pub struct RateEntry {
     pub user: Option<String>
 }
 
-fn create_missing_tags<D:Db>(db: &mut D, tags: &[String]) -> Result<()> {
+fn create_missing_tags<D: Db>(db: &mut D, tags: &[String]) -> Result<()> {
     let existing_tags = db.all_tags()?;
     for new_t in tags {
-        if !existing_tags.iter().any(|t|t.id == *new_t){
-            db.create_tag(&Tag{id:new_t.clone()})?;
+        if !existing_tags.iter().any(|t| t.id == *new_t) {
+            db.create_tag(&Tag { id: new_t.clone() })?;
         }
     }
     Ok(())
@@ -173,20 +173,20 @@ fn get_triple_diff(old: &[Triple], new: &[Triple]) -> Diff<Triple> {
         .cloned()
         .collect::<Vec<Triple>>();
 
-    Diff{
+    Diff {
         new: to_create,
         deleted: to_delete
     }
 }
 
 
-fn set_tag_relations<D:Db>(db: &mut D, entry: &str, tags: &[String]) -> Result<()> {
+fn set_tag_relations<D: Db>(db: &mut D, entry: &str, tags: &[String]) -> Result<()> {
     create_missing_tags(db, tags)?;
     let subject = ObjectId::Entry(entry.into());
     let old_triples = db.all_triples()?
         .into_iter()
-        .filter(|x|x.subject == subject)
-        .filter(|x|x.predicate == Relation::IsTaggedWith)
+        .filter(|x| x.subject == subject)
+        .filter(|x| x.predicate == Relation::IsTaggedWith)
         .collect::<Vec<Triple>>();
     let new_triples = tags
         .into_iter()
@@ -212,7 +212,7 @@ pub fn get_tag_ids<D:Db>(db: &D) -> Result<Vec<String>> {
     let mut tags : Vec<String> = db
         .all_triples()?
         .into_iter()
-        .filter(|t|t.predicate == Relation::IsTaggedWith)
+        .filter(|t| t.predicate == Relation::IsTaggedWith)
         .filter_map(|t| match t.object {
            ObjectId::Tag(id) => Some(id),
             _ => None
@@ -222,7 +222,7 @@ pub fn get_tag_ids<D:Db>(db: &D) -> Result<Vec<String>> {
     Ok(tags)
 }
 
-pub fn get_tag_ids_for_entry_id(triples: &[Triple], entry_id : &str) -> Vec<String> {
+pub fn get_tag_ids_for_entry_id(triples: &[Triple], entry_id: &str) -> Vec<String> {
     triples
         .iter()
         .filter(&*filter::triple_by_subject(ObjectId::Entry(entry_id.into())))
@@ -237,7 +237,7 @@ pub fn get_tag_ids_for_entry_id(triples: &[Triple], entry_id : &str) -> Vec<Stri
         .collect()
 }
 
-pub fn get_rating_ids_for_entry_id(triples: &[Triple], entry_id : &str) -> Vec<String> {
+pub fn get_rating_ids_for_entry_id(triples: &[Triple], entry_id: &str) -> Vec<String> {
     triples
         .iter()
         .filter(&*filter::triple_by_subject(ObjectId::Entry(entry_id.into())))
@@ -307,7 +307,7 @@ pub fn get_user_id_for_rating_id(triples: &[Triple], rating_id: &str) -> Option<
         .last()
 }
 
-pub fn get_tags_by_entry_ids<D:Db>(db : &D, ids : &[String]) -> Result<HashMap<String, Vec<Tag>>> {
+pub fn get_tags_by_entry_ids<D: Db>(db: &D, ids: &[String]) -> Result<HashMap<String, Vec<Tag>>> {
     let triples = db.all_triples()?;
     Ok(ids
         .iter()
@@ -357,7 +357,7 @@ pub fn get_entries<D:Db>(db : &D, ids : &[String]) -> Result<Vec<Entry>> {
     let entries = db
         .all_entries()?
         .into_iter()
-        .filter(|e|ids.iter().any(|id| *id == e.id))
+        .filter(|e| ids.iter().any(|id| *id == e.id))
         .collect();
     Ok(entries)
 }

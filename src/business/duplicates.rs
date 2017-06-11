@@ -75,7 +75,11 @@ fn words_equal_except_k_words(str1: &str, str2: &str, k: u32) -> bool {
         return false;
     }
 
-    let (s1, s2) = if len1 <= len2 { (str1, str2) } else { (str2, str1) };
+    let (s1, s2) = if len1 <= len2 {
+        (str1, str2)
+    } else {
+        (str2, str1)
+    };
 
     let words = s1.split_whitespace();
 
