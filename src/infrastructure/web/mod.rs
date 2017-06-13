@@ -1,6 +1,8 @@
 use rocket::{self, Rocket, State, LoggingLevel};
 use rocket_contrib::JSON;
 use rocket::response::{Response, Responder};
+use rocket::request::{self, FromRequest, Request};
+use rocket::Outcome;
 use rocket::http::{Status, Cookie, Cookies};
 use rocket::config::{Environment, Config};
 use adapters::json;
@@ -38,6 +40,24 @@ fn extract_ids(s: &str) -> Vec<String> {
         .map(|x| x.to_owned())
         .filter(|id| id != "")
         .collect::<Vec<String>>()
+}
+
+#[derive(Debug)]
+struct User(String);
+
+impl<'a, 'r> FromRequest<'a, 'r> for User {
+    type Error = ();
+
+    fn from_request(request: &'a Request<'r>) -> request::Outcome<User, ()> {
+        let user = request.cookies()
+            .get_private(COOKIE_USER_KEY)
+            .and_then(|cookie| cookie.value().parse().ok())
+            .map(|id| User(id));
+        match user {
+            Some(user) => Outcome::Success(user),
+            None => Outcome::Failure((Status::Unauthorized, ()))
+        }
+    }
 }
 
 #[get("/entries/<ids>")]
@@ -235,6 +255,12 @@ fn logout(mut cookies: Cookies) -> Result<()> {
     Ok(JSON(()))
 }
 
+#[get("/users/<id>", format = "application/json")]
+fn get_user(db: State<DbPool>, user: User, id: String) -> result::Result<JSON<json::User>,AppError> {
+    let (username, email) = usecase::get_user(&mut*db.get()?, &user.0, &id)?;
+    Ok(JSON(json::User{ username, email }))
+}
+
 #[post("/users", format = "application/json", data = "<u>")]
 fn post_user(db: State<DbPool>, u: JSON<usecase::NewUser>) -> result::Result<(),AppError> {
     usecase::create_new_user(&mut*db.get()?, u.into_inner())?;
@@ -308,6 +334,7 @@ fn rocket_instance<T: r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Roc
                        post_user,
                        post_rating,
                        put_entry,
+                       get_user,
                        get_categories,
                        get_tags,
                        get_ratings,

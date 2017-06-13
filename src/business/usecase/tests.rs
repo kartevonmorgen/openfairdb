@@ -579,7 +579,31 @@ fn create_user_with_invalid_email() {
 }
 
 #[test]
-fn encrypt_user_password() {
+fn create_user_with_existing_username(){
+    let mut db = MockDb::new();
+    db.users = vec![User{
+        username: "foo".into(),
+        password: "bar".into(),
+        email: "baz@foo.bar".into()
+    }];
+    let u = NewUser{
+        username: "foo".into(),
+        password: "pass".into(),
+        email: "user@server.tld".into()
+    };
+    match create_new_user(&mut db,u).err().unwrap() {
+        Error::Parameter(err) => match err {
+            ParameterError::UserExists => {
+                // ok
+            },
+            _ => { panic!("invalid error") }
+        },
+        _ => { panic!("invalid error") }
+    }
+}
+
+#[test]
+fn encrypt_user_password(){
     let mut db = MockDb::new();
     let u = NewUser {
         username: "user".into(),
@@ -590,7 +614,6 @@ fn encrypt_user_password() {
     assert!(db.users[0].password != "pass");
     assert!(bcrypt::verify("pass", &db.users[0].password));
 }
-
 
 #[test]
 fn rate_non_existing_entry() {
@@ -671,4 +694,22 @@ fn rate_without_login() {
     assert!(match db.triples[1].object {
         ObjectId::Comment(_) => true, _ => false
     });
+}
+
+#[test]
+fn receive_different_user() {
+    let mut db = MockDb::new();
+    db.users = vec![
+        User{
+            username: "a".into(),
+            password: "a".into(),
+            email: "a@foo.bar".into()
+        },
+        User{
+            username: "b".into(),
+            password: "b".into(),
+            email: "b@foo.bar".into()
+        }];
+    assert!(get_user(&mut db, "a", "b").is_err());
+    assert!(get_user(&mut db, "a", "a").is_ok());
 }

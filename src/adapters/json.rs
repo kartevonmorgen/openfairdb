@@ -47,6 +47,12 @@ pub struct SearchResult {
     pub invisible : Vec<String>
 }
 
+#[derive(Serialize)]
+pub struct User {
+    pub username: String,
+    pub email: String
+}
+
 // Entity -> JSON
 
 impl Entry {

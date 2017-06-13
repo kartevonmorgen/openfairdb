@@ -403,6 +403,47 @@ fn logout() {
         .value(), "");
 }
 
+// TODO: make this test pass!
+#[ignore]
+#[test]
+fn get_user() {
+    let (client, db) = setup();
+    db.get().unwrap().users = vec![
+        User{ username: "a".into(), password: bcrypt::hash("a").unwrap(), email: "a@bar".into() },
+        User{ username: "b".into(), password: bcrypt::hash("b").unwrap(), email: "b@bar".into() }
+    ];
+    let response = client.post("/login")
+        .header(ContentType::JSON)
+        .body(r#"{"username": "a", "password": "a"}"#)
+        .dispatch();
+
+    let user_id_cookie = response
+                        .headers()
+                        .iter()
+                        .filter(|h|h.name.as_str() == "Set-Cookie")
+                        .map(|h|h.value)
+                        .find(|v|v.contains("user_id=")).unwrap()
+                        .parse::<Cookie>().unwrap()
+                        .value()
+                        .to_string();
+
+    let response = client.get("/users/b")
+        .header(ContentType::JSON)
+        .cookie(Cookie::new("user_id",user_id_cookie.clone()))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Forbidden);
+
+    let mut response = client.get("/users/a")
+        .header(ContentType::JSON)
+        .cookie(Cookie::new("user_id",user_id_cookie))
+        .dispatch();
+
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(body_str,r#"{"username":"a","email":"a@bar"}"#);
+}
+
 #[test]
 fn to_words(){
     let text = "blabla bla-blubb #foo-bar";
