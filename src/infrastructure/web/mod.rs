@@ -1,7 +1,9 @@
 use rocket::{self, Rocket, State, LoggingLevel};
 use rocket_contrib::JSON;
 use rocket::response::{Response, Responder};
-use rocket::http::{Status, Cookie, Session};
+use rocket::request::{self, FromRequest, Request};
+use rocket::Outcome;
+use rocket::http::{Status, Cookie, Cookies};
 use rocket::config::{Environment, Config};
 use adapters::json;
 use entities::*;
@@ -17,7 +19,8 @@ use std::result;
 use r2d2::{self, Pool};
 use regex::Regex;
 
-static MAX_INVISIBLE_RESULTS: usize = 5;
+static MAX_INVISIBLE_RESULTS : usize = 5;
+static COOKIE_USER_KEY       : &str  = "user_id";
 
 mod neo4j;
 #[cfg(test)]
@@ -37,6 +40,24 @@ fn extract_ids(s: &str) -> Vec<String> {
         .map(|x| x.to_owned())
         .filter(|id| id != "")
         .collect::<Vec<String>>()
+}
+
+#[derive(Debug)]
+struct User(String);
+
+impl<'a, 'r> FromRequest<'a, 'r> for User {
+    type Error = ();
+
+    fn from_request(request: &'a Request<'r>) -> request::Outcome<User, ()> {
+        let user = request.cookies()
+            .get_private(COOKIE_USER_KEY)
+            .and_then(|cookie| cookie.value().parse().ok())
+            .map(|id| User(id));
+        match user {
+            Some(user) => Outcome::Success(user),
+            None => Outcome::Failure((Status::Unauthorized, ()))
+        }
+    }
 }
 
 #[get("/entries/<ids>")]
@@ -222,16 +243,22 @@ fn to_words(txt: &str) -> Vec<String> {
 }
 
 #[post("/login", format = "application/json", data = "<login>")]
-fn login(db: State<DbPool>, mut session: Session, login: JSON<usecase::Login>) -> Result<()> {
-    let id = usecase::login(&mut *db.get()?, login.into_inner())?;
-    session.set(Cookie::new("user_id", id));
+fn login(db: State<DbPool>, mut cookies: Cookies, login: JSON<usecase::Login>) -> Result<()> {
+    let id = usecase::login(&mut*db.get()?, login.into_inner())?;
+    cookies.add_private(Cookie::new(COOKIE_USER_KEY, id));
     Ok(JSON(()))
 }
 
-#[post("/logout")]
-fn logout(mut session: Session) -> Result<()> {
-    session.remove(Cookie::named("user_id"));
+#[post("/logout", format = "application/json")]
+fn logout(mut cookies: Cookies) -> Result<()> {
+    cookies.remove_private(Cookie::named(COOKIE_USER_KEY));
     Ok(JSON(()))
+}
+
+#[get("/users/<id>", format = "application/json")]
+fn get_user(db: State<DbPool>, user: User, id: String) -> result::Result<JSON<json::User>,AppError> {
+    let (username, email) = usecase::get_user(&mut*db.get()?, &user.0, &id)?;
+    Ok(JSON(json::User{ username, email }))
 }
 
 #[post("/users", format = "application/json", data = "<u>")]
@@ -303,10 +330,11 @@ fn rocket_instance<T: r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Roc
                routes![login,
                        logout,
                        get_entry,
-                       post_entry
-,                       post_user,
+                       post_entry,
+                       post_user,
                        post_rating,
                        put_entry,
+                       get_user,
                        get_categories,
                        get_tags,
                        get_ratings,

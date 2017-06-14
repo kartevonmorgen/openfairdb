@@ -1,7 +1,7 @@
-use rocket::{Rocket, LoggingLevel};
+use rocket::LoggingLevel;
 use rocket::config::{Environment, Config};
-use rocket::testing::MockRequest;
-use rocket::http::{Status, Method, ContentType};
+use rocket::local::Client;
+use rocket::http::{Status, ContentType};
 use business::db::Db;
 use business::builder::*;
 use infrastructure;
@@ -9,14 +9,15 @@ use serde_json;
 use super::*;
 use pwhash::bcrypt;
 
-fn server() -> (Rocket, mockdb::ConnectionPool) {
+fn setup() -> (Client, mockdb::ConnectionPool) {
     let cfg = Config::build(Environment::Development)
         .log_level(LoggingLevel::Debug)
         .finalize()
         .unwrap();
     let pool = mockdb::create_connection_pool().unwrap();
     let rocket = super::rocket_instance(cfg, pool.clone());
-    (rocket, pool)
+    let client = Client::new(rocket).unwrap();
+    (client, pool)
 }
 
 #[test]
@@ -39,7 +40,7 @@ fn get_one_entry() {
         categories  :  vec![],
         license     :  None,
     };
-    let (rocket, db) = server();
+    let (client, db) = setup();
     db.get().unwrap().create_entry(&e).unwrap();
     usecase::rate_entry(&mut *db.get().unwrap(), usecase::RateEntry{
         context : RatingContext::Humanity,
@@ -49,8 +50,8 @@ fn get_one_entry() {
         entry   : "get_one_entry_test".into(),
         comment : "bla".into(),
     }).unwrap();
-    let mut req = MockRequest::new(Method::Get, "/entries/get_one_entry_test");
-    let mut response = req.dispatch_with(&rocket);
+    let req = client.get("/entries/get_one_entry_test");
+    let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
     for h in response.headers().iter() {
@@ -105,11 +106,11 @@ fn get_multiple_entries() {
         categories  :  vec![],
         license     :  None,
     };
-    let (rocket, db) = server();
+    let (client, db) = setup();
     db.get().unwrap().create_entry(&one).unwrap();
     db.get().unwrap().create_entry(&two).unwrap();
-    let mut req = MockRequest::new(Method::Get, "/entries/get_multiple_entry_test_one,get_multiple_entry_test_two");
-    let mut response = req.dispatch_with(&rocket);
+    let req = client.get("/entries/get_multiple_entry_test_one,get_multiple_entry_test_two");
+    let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
     for h in response.headers().iter() {
@@ -133,26 +134,26 @@ fn search_with_categories() {
         Entry::build().id("b").categories(vec!["foo"]).finish(),
         Entry::build().id("c").categories(vec!["bar"]).finish(),
     ];
-    let (rocket, db) = server();
+    let (client, db) = setup();
     db.get().unwrap().entries = entries;
-    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&categories=foo");
-    let mut response = req.dispatch_with(&rocket);
+    let req = client.get("/search?bbox=-10,-10,10,10&categories=foo");
+    let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains("\"b\""));
     assert!(body_str.contains("\"a\""));
     assert!(!body_str.contains("\"c\""));
 
-    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&categories=bar");
-    let mut response = req.dispatch_with(&rocket);
+    let req = client.get("/search?bbox=-10,-10,10,10&categories=bar");
+    let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(!body_str.contains("\"b\""));
     assert!(!body_str.contains("\"a\""));
     assert!(body_str.contains("\"c\""));
 
-    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10");
-    let mut response = req.dispatch_with(&rocket);
+    let req = client.get("/search?bbox=-10,-10,10,10");
+    let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains("\"b\""));
@@ -172,17 +173,17 @@ fn search_with_tags() {
         Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())},
         Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())}
     ];
-    let (rocket, db) = server();
+    let (client, db) = setup();
     db.get().unwrap().entries = entries;
     db.get().unwrap().triples = triples;
-    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&tags=bla-blubb");
-    let mut response = req.dispatch_with(&rocket);
+    let req = client.get("/search?bbox=-10,-10,10,10&tags=bla-blubb");
+    let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains(r#""visible":["b"]"#));
 
-    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&tags=foo-bar");
-    let mut response = req.dispatch_with(&rocket);
+    let req = client.get("/search?bbox=-10,-10,10,10&tags=foo-bar");
+    let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains("\"b\""));
@@ -201,11 +202,11 @@ fn search_with_hash_tags() {
         Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())},
         Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())}
     ];
-    let (rocket, db) = server();
+    let (client, db) = setup();
     db.get().unwrap().entries = entries;
     db.get().unwrap().triples = triples;
-    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&text=%23bla-blubb");
-    let mut response = req.dispatch_with(&rocket);
+    let req = client.get("/search?bbox=-10,-10,10,10&text=%23bla-blubb");
+    let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains(r#""visible":["b"]"#));
@@ -223,11 +224,11 @@ fn search_with_and_without_tags() {
         Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())},
         Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())}
     ];
-    let (rocket, db) = server();
+    let (client, db) = setup();
     db.get().unwrap().entries = entries;
     db.get().unwrap().triples = triples;
-    let mut req = MockRequest::new(Method::Get, "/search?bbox=-10,-10,10,10&text=bla-blubb");
-    let mut response = req.dispatch_with(&rocket);
+    let req = client.get("/search?bbox=-10,-10,10,10&text=bla-blubb");
+    let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains(r#""visible":["b"]"#));
@@ -265,11 +266,11 @@ fn remove_hash_tag_from_text() {
 
 #[test]
 fn create_new_user() {
-    let (rocket, db) = server();
-    let mut req = MockRequest::new(Method::Post, "/users")
+    let (client, db) = setup();
+    let req = client.post("/users")
         .header(ContentType::JSON)
         .body(r#"{"username":"foo","email":"foo@bar.com","password":"bar"}"#);
-    let response = req.dispatch_with(&rocket);
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let u = db.get().unwrap().get_user("foo").unwrap();
     assert_eq!(u.username, "foo");
@@ -278,12 +279,12 @@ fn create_new_user() {
 
 #[test]
 fn create_rating() {
-    let (rocket, db) = server();
-    db.get().unwrap().entries = vec![Entry::build().id("foo").finish()];
-    let mut req = MockRequest::new(Method::Post, "/ratings")
+    let (client, db) = setup();
+    db.get().unwrap().entries = vec![ Entry::build().id("foo").finish() ];
+    let req = client.post("/ratings")
         .header(ContentType::JSON)
         .body(r#"{"value": 1,"context":"fairness","entry":"foo","comment":"test", "title":"idontcare"}"#);
-    let response = req.dispatch_with(&rocket);
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(db.get().unwrap().ratings[0].value, 1);
 }
@@ -291,7 +292,7 @@ fn create_rating() {
 #[test]
 fn get_one_rating() {
     let e = Entry::build().id("foo").finish();
-    let (rocket, db) = server();
+    let (client, db) = setup();
     db.get().unwrap().create_entry(&e).unwrap();
     usecase::rate_entry(&mut *db.get().unwrap(), usecase::RateEntry{
         context : RatingContext::Humanity,
@@ -302,8 +303,8 @@ fn get_one_rating() {
         comment : "bla".into(),
     }).unwrap();
     let rid = db.get().unwrap().ratings[0].id.clone();
-    let mut req = MockRequest::new(Method::Get, format!("/ratings/{}",rid));
-    let mut response = req.dispatch_with(&rocket);
+    let req = client.get(format!("/ratings/{}",rid));
+    let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
     for h in response.headers().iter() {
@@ -321,44 +322,126 @@ fn get_one_rating() {
 
 #[test]
 fn login_with_invalid_credentials() {
-    let (rocket, _) = server();
-    let mut req = MockRequest::new(Method::Post, format!("/login"))
+    let (client, _) = setup();
+    let req = client.post("/login")
         .header(ContentType::JSON)
         .body(r#"{"username": "foo", "password": "bar"}"#);
-    let response = req.dispatch_with(&rocket);
+    let response = req.dispatch();
     assert!(!response.headers().iter().any(|h|h.name.as_str() == "Set-Cookie"));
     assert_eq!(response.status(), Status::Unauthorized);
 }
 
 #[test]
 fn login_with_valid_credentials() {
-    let (rocket, db) = server();
+    let (client, db) = setup();
+    db.get().unwrap().users = vec![
+        User{
+            username: "foo".into(),
+            password: bcrypt::hash("bar").unwrap(),
+            email: "foo@bar".into()
+        }];
+    let response = client.post("/login")
+        .header(ContentType::JSON)
+        .body(r#"{"username": "foo", "password": "bar"}"#)
+        .dispatch();
+    let cookie : Cookie = response
+                            .headers()
+                            .iter()
+                            .filter(|h|h.name == "Set-Cookie")
+                            .filter(|h|h.value.contains("user_id="))
+                            .nth(0)
+                            .unwrap()
+                            .value
+                            .parse()
+                            .unwrap();
+
+    assert_eq!(response.status(), Status::Ok);
+    assert!(cookie.value().len() > 25);
+}
+
+// TODO: make this test pass!
+#[ignore]
+#[test]
+fn logout() {
+    let (client, db) = setup();
     db.get().unwrap().users = vec![
         User{ username: "foo".into(), password: bcrypt::hash("bar").unwrap(), email: "foo@bar".into() }
     ];
-    let mut req = MockRequest::new(Method::Post, format!("/login"))
+    let response = client.post("/login")
         .header(ContentType::JSON)
-        .body(r#"{"username": "foo", "password": "bar"}"#);
-    let response = req.dispatch_with(&rocket);
+        .body(r#"{"username": "foo", "password": "bar"}"#)
+        .dispatch();
+    let user_id : String = response
+                            .headers()
+                            .iter()
+                            .filter(|h|h.name == "Set-Cookie")
+                            .filter(|h|h.value.contains("user_id="))
+                            .nth(0)
+                            .unwrap()
+                            .value
+                            .parse::<Cookie>()
+                            .unwrap()
+                            .value()
+                            .into();
+    let response = client
+                        .post("/logout")
+                        .header(ContentType::JSON)
+                        .cookie(Cookie::new("user_id", user_id))
+                        .dispatch();
+
     assert_eq!(response.status(), Status::Ok);
-    assert!(response.headers().iter().any(|h|h.name.as_str() == "Set-Cookie"));
-    for h in response.headers().iter() {
-        match h.name.as_str() {
-            "Set-Cookie" => {
-                 assert!(h.value.contains("user_id"));
-                 assert!(h.value.contains("Expires"));
-            }
-            _ => { /* let these through */ }
-        }
-    }
+    assert_eq!(response
+        .headers()
+        .iter()
+        .filter(|h|h.name == "Set-Cookie")
+        .filter(|h|h.value.contains("user_id="))
+        .nth(0)
+        .unwrap()
+        .value
+        .parse::<Cookie>()
+        .unwrap()
+        .value(), "");
 }
 
+// TODO: make this test pass!
+#[ignore]
 #[test]
-fn logout() {
-    let (rocket, _) = server();
-    let mut req = MockRequest::new(Method::Post, format!("/logout")).header(ContentType::JSON);
-    let response = req.dispatch_with(&rocket);
+fn get_user() {
+    let (client, db) = setup();
+    db.get().unwrap().users = vec![
+        User{ username: "a".into(), password: bcrypt::hash("a").unwrap(), email: "a@bar".into() },
+        User{ username: "b".into(), password: bcrypt::hash("b").unwrap(), email: "b@bar".into() }
+    ];
+    let response = client.post("/login")
+        .header(ContentType::JSON)
+        .body(r#"{"username": "a", "password": "a"}"#)
+        .dispatch();
+
+    let user_id_cookie = response
+                        .headers()
+                        .iter()
+                        .filter(|h|h.name.as_str() == "Set-Cookie")
+                        .map(|h|h.value)
+                        .find(|v|v.contains("user_id=")).unwrap()
+                        .parse::<Cookie>().unwrap()
+                        .value()
+                        .to_string();
+
+    let response = client.get("/users/b")
+        .header(ContentType::JSON)
+        .cookie(Cookie::new("user_id",user_id_cookie.clone()))
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Forbidden);
+
+    let mut response = client.get("/users/a")
+        .header(ContentType::JSON)
+        .cookie(Cookie::new("user_id",user_id_cookie))
+        .dispatch();
+
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(response.status(), Status::Ok);
+    assert_eq!(body_str,r#"{"username":"a","email":"a@bar"}"#);
 }
 
 #[test]

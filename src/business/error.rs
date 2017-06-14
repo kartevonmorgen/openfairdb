@@ -20,6 +20,9 @@ quick_error!{
         UserName{
             description("Invalid username")
         }
+        UserExists{
+            description("The user already exits")
+        }
         Password{
             description("Invalid password")
         }
@@ -31,6 +34,9 @@ quick_error!{
         }
         Credentials {
             description("Invalid credentials")
+        }
+        Forbidden{
+            description("This is not allowed")
         }
     }
 }

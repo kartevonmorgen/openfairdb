@@ -366,6 +366,9 @@ pub fn create_new_user<D: Db>(db: &mut D, u: NewUser) -> Result<()> {
     validate::username(&u.username)?;
     validate::password(&u.password)?;
     validate::email(&u.email)?;
+    if db.get_user(&u.username).is_ok() {
+        return Err(Error::Parameter(ParameterError::UserExists));
+    }
     let pw = bcrypt::hash(&u.password)?;
     db.create_user(&User{
         username: u.username,
@@ -373,6 +376,14 @@ pub fn create_new_user<D: Db>(db: &mut D, u: NewUser) -> Result<()> {
         email: u.email,
     })?;
     Ok(())
+}
+
+pub fn get_user<D: Db>(db: &mut D, login: &str, user: &str) -> Result<(String,String)> {
+    if login != user {
+        return Err(Error::Parameter(ParameterError::Forbidden))
+    }
+    let u = db.get_user(user)?;
+    Ok((u.username, u.email))
 }
 
 pub fn login<D: Db>(db: &mut D, login: Login) -> Result<String> {
