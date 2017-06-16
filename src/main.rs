@@ -27,6 +27,7 @@ extern crate chrono;
 extern crate lazy_static;
 extern crate regex;
 extern crate pwhash;
+extern crate quoted_printable;
 
 mod entities;
 mod business;

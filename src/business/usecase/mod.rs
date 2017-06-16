@@ -84,22 +84,22 @@ impl Id for Triple {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct NewEntry {
-    title       : String,
-    description : String,
-    lat         : f64,
-    lng         : f64,
-    street      : Option<String>,
-    zip         : Option<String>,
-    city        : Option<String>,
-    country     : Option<String>,
-    email       : Option<String>,
-    telephone   : Option<String>,
-    homepage    : Option<String>,
-    categories  : Vec<String>,
-    tags        : Vec<String>,
-    license     : String,
+    pub title       : String,
+    pub description : String,
+    pub lat         : f64,
+    pub lng         : f64,
+    pub street      : Option<String>,
+    pub zip         : Option<String>,
+    pub city        : Option<String>,
+    pub country     : Option<String>,
+    pub email       : Option<String>,
+    pub telephone   : Option<String>,
+    pub homepage    : Option<String>,
+    pub categories  : Vec<String>,
+    pub tags        : Vec<String>,
+    pub license     : String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -117,21 +117,21 @@ pub struct Login {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateEntry {
-    id          : String,
-    version     : u64,
-    title       : String,
-    description : String,
-    lat         : f64,
-    lng         : f64,
-    street      : Option<String>,
-    zip         : Option<String>,
-    city        : Option<String>,
-    country     : Option<String>,
-    email       : Option<String>,
-    telephone   : Option<String>,
-    homepage    : Option<String>,
-    categories  : Vec<String>,
-    tags        : Vec<String>,
+    pub id          : String,
+    pub version     : u64,
+    pub title       : String,
+    pub description : String,
+    pub lat         : f64,
+    pub lng         : f64,
+    pub street      : Option<String>,
+    pub zip         : Option<String>,
+    pub city        : Option<String>,
+    pub country     : Option<String>,
+    pub email       : Option<String>,
+    pub telephone   : Option<String>,
+    pub homepage    : Option<String>,
+    pub categories  : Vec<String>,
+    pub tags        : Vec<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]

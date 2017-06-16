@@ -15,12 +15,14 @@ use business::sort::SortByAverageRating;
 use business::{usecase, filter, geo};
 use business::filter::InBBox;
 use business::duplicates::{self, DuplicateType};
-use std::result;
+use std::{result,thread};
 use r2d2::{self, Pool};
 use regex::Regex;
+use super::mail;
 
 static MAX_INVISIBLE_RESULTS : usize = 5;
 static COOKIE_USER_KEY       : &str  = "user_id";
+static ADMIN_MAIL            : &str  = "mail@markus-kohlhase.de";
 
 mod neo4j;
 #[cfg(test)]
@@ -85,13 +87,33 @@ fn get_duplicates(db: State<DbPool>) -> Result<Vec<(String, String, DuplicateTyp
 
 #[post("/entries", format = "application/json", data = "<e>")]
 fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<String, AppError> {
-    let id = usecase::create_new_entry(&mut *db.get()?, e.into_inner())?;
+    let e = e.into_inner();
+    let id = usecase::create_new_entry(&mut *db.get()?, e.clone())?;
+    let mail = mail::create(
+        &[ADMIN_MAIL.into()],
+        &format!("Neuer Eintrag: {}", e.title),
+        &format!("{:?}", e));
+    thread::spawn(move ||{
+        if let Err(err) = mail::send(&mail) {
+            warn!("Could not send mail: {}", err);
+        }
+    });
     Ok(id)
 }
 
 #[put("/entries/<id>", format = "application/json", data = "<e>")]
 fn put_entry(db: State<DbPool>, id: String, e: JSON<usecase::UpdateEntry>) -> Result<String> {
-    usecase::update_entry(&mut *db.get()?, e.into_inner())?;
+    let e = e.into_inner();
+    usecase::update_entry(&mut *db.get()?, e.clone())?;
+    let mail = mail::create(
+        &[ADMIN_MAIL.into()],
+        &format!("Veränderter Eintrag: {}", e.title),
+        &format!("{:?}", e));
+    thread::spawn(move ||{
+        if let Err(err) = mail::send(&mail) {
+            warn!("Could not send mail: {}", err);
+        }
+    });
     Ok(JSON(id))
 }
 

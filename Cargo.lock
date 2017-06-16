@@ -9,6 +9,7 @@ dependencies = [
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "pwhash 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "quick-error 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "quoted_printable 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "r2d2 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "r2d2_cypher 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -338,6 +339,11 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 [[package]]
 name = "quote"
 version = "0.3.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "quoted_printable"
+version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
@@ -915,6 +921,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum pwhash 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "e13b76f7965ed95c1dfe1f5eb5607d12de34af86140212dde3defa15c8ccbe0f"
 "checksum quick-error 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3c36987d4978eb1be2e422b1e0423a557923a5c3e7e6f31d5699e9aafaefa469"
 "checksum quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)" = "7a6e920b65c65f10b2ae65c831a81a073a89edd28c7cce89475bff467ab4167a"
+"checksum quoted_printable 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ebb55456d1e18dddfac0fedcc552ed3f690a645c5629b39e1a9d2ae544313178"
 "checksum r2d2 0.7.2 (registry+https://github.com/rust-lang/crates.io-index)" = "1dd448c29d0ed83cfe187ffb8608fa07c47abdd7997f3f478f3a6223ad3f97fb"
 "checksum r2d2_cypher 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "69a25375baeacdd2b5f249a3046bed8ba5905be66b3f92f1a0f017a16cfe321d"
 "checksum rand 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)" = "022e0636ec2519ddae48154b028864bdce4eaf7d35226ab8e65c611be97b189d"
