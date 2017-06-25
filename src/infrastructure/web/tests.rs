@@ -1,4 +1,4 @@
-use rocket::LoggingLevel;
+use rocket::logger::LoggingLevel;
 use rocket::config::{Environment, Config};
 use rocket::local::Client;
 use rocket::http::{Status, ContentType};

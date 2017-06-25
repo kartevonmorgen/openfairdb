@@ -1,4 +1,5 @@
-use rocket::{self, Rocket, State, LoggingLevel};
+use rocket::{self, Rocket, State };
+use rocket::logger::LoggingLevel;
 use rocket_contrib::JSON;
 use rocket::response::{Response, Responder};
 use rocket::request::{self, FromRequest, Request};

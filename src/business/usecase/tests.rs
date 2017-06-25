@@ -142,7 +142,7 @@ fn create_new_valid_entry() {
         license     : "CC0-1.0".into()
     };
     let mut mock_db = MockDb::new();
-    let now = UTC::now();
+    let now = Utc::now();
     let id = create_new_entry(&mut mock_db, x).unwrap();
     assert!(Uuid::parse_str(&id).is_ok());
     assert_eq!(mock_db.entries.len(), 1);
@@ -217,7 +217,7 @@ fn update_valid_entry() {
     };
     let mut mock_db = MockDb::new();
     mock_db.entries = vec![old];
-    let now = UTC::now();
+    let now = Utc::now();
     assert!(update_entry(&mut mock_db, new).is_ok());
     assert_eq!(mock_db.entries.len(), 1);
     let x = &mock_db.entries[0];

@@ -410,7 +410,7 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String>
  {
     let new_entry = Entry{
         id          :  Uuid::new_v4().simple().to_string(),
-        created     :  UTC::now().timestamp() as u64,
+        created     :  Utc::now().timestamp() as u64,
         version     :  0,
         title       :  e.title,
         description :  e.description,
@@ -439,7 +439,7 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
     }
     let new_entry = Entry{
         id          :  e.id,
-        created     :  UTC::now().timestamp() as u64,
+        created     :  Utc::now().timestamp() as u64,
         version     :  e.version,
         title       :  e.title,
         description :  e.description,
@@ -468,7 +468,7 @@ pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
     if r.value > 2 || r.value < -1 {
         return Err(Error::Parameter(ParameterError::RatingValue));
     }
-    let now = UTC::now().timestamp() as u64;
+    let now = Utc::now().timestamp() as u64;
     let rating_id = Uuid::new_v4().simple().to_string();
     let comment_id = Uuid::new_v4().simple().to_string();
     db.create_rating(&Rating{
