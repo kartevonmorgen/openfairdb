@@ -28,6 +28,7 @@ extern crate lazy_static;
 extern crate regex;
 extern crate pwhash;
 extern crate quoted_printable;
+extern crate toml;
 
 mod entities;
 mod business;

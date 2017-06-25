@@ -39,5 +39,8 @@ quick_error!{
         R2d2(err: r2d2::GetTimeout){
             from()
         }
+        Toml(err: ::toml::de::Error){
+            from()
+        }
     }
 }

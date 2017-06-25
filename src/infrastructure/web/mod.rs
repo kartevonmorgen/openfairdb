@@ -20,10 +20,22 @@ use std::{result,thread};
 use r2d2::{self, Pool};
 use regex::Regex;
 use super::mail;
+use super::cfg;
 
 static MAX_INVISIBLE_RESULTS : usize = 5;
 static COOKIE_USER_KEY       : &str  = "user_id";
-static ADMIN_MAIL            : &str  = "mail@markus-kohlhase.de";
+
+lazy_static! {
+    static ref CONFIG: cfg::Config = {
+        match cfg::Config::load("config.toml") {
+            Ok(cfg) => cfg,
+            Err(e) => {
+                warn!("coult not read configuration file 'config.toml': {}", e);
+                cfg::Config::default()
+            }
+        }
+    };
+}
 
 mod neo4j;
 #[cfg(test)]
@@ -91,7 +103,7 @@ fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<S
     let e = e.into_inner();
     let id = usecase::create_new_entry(&mut *db.get()?, e.clone())?;
     let mail = mail::create(
-        &[ADMIN_MAIL.into()],
+        &CONFIG.notification.send_to,
         &format!("Neuer Eintrag: {}", e.title),
         &format!("{:?}", e));
     thread::spawn(move ||{
@@ -107,7 +119,7 @@ fn put_entry(db: State<DbPool>, id: String, e: JSON<usecase::UpdateEntry>) -> Re
     let e = e.into_inner();
     usecase::update_entry(&mut *db.get()?, e.clone())?;
     let mail = mail::create(
-        &[ADMIN_MAIL.into()],
+        &CONFIG.notification.send_to,
         &format!("Veränderter Eintrag: {}", e.title),
         &format!("{:?}", e));
     thread::spawn(move ||{
