@@ -3,10 +3,17 @@ use std::io::prelude::*;
 use std::io::{Error, ErrorKind, Result};
 use chrono::*;
 use quoted_printable::encode;
+use fast_chemail::is_valid_email;
 
 const FROM_ADDRESS : &str = "\"Karte von morgen\" <no-reply@kartevonmorgen.org>";
 
-pub fn create(to: &[String], subject: &str, body: &str) -> String {
+pub fn create(to: &[String], subject: &str, body: &str) -> Result<String> {
+
+    let to : Vec<_> = to.into_iter().filter(|m|is_valid_email(m)).cloned().collect();
+
+    if to.is_empty() {
+        return Err(Error::new(ErrorKind::Other,"No valid email adresses specified"));
+    }
 
     let now = Local::now()
         .format("%d %b %Y %H:%M:%S %z")
@@ -14,7 +21,7 @@ pub fn create(to: &[String], subject: &str, body: &str) -> String {
 
     let subject = format!("=?UTF-8?Q?{}?=", String::from_utf8_lossy(&encode(subject.as_bytes())));
 
-    format!(
+    Ok(format!(
        "Date:{date}\r\n\
         From:{from}\r\n\
         To:{to}\r\n\
@@ -27,7 +34,7 @@ pub fn create(to: &[String], subject: &str, body: &str) -> String {
         to      = to.join(","),
         subject = subject,
         body    = body
-     )
+     ))
 }
 
 pub fn send(mail: &str) -> Result<()> {
@@ -49,7 +56,7 @@ mod tests {
 
     #[test]
     fn create_simple_mail(){
-        let mail = create(&vec!["mail@test.org".into()], "My Subject", "Hello Mail");
+        let mail = create(&vec!["mail@test.org".into()], "My Subject", "Hello Mail").unwrap();
         let expected = "From:\"Karte von morgen\" <no-reply@kartevonmorgen.org>\r\n\
                         To:mail@test.org\r\n\
                         Subject:=?UTF-8?Q?My Subject?=\r\n\
@@ -57,5 +64,11 @@ mod tests {
                         Content-Type: text/plain; charset=utf-8\r\n\r\n\
                         Hello Mail";
         assert!(mail.contains(expected));
+    }
+
+    #[test]
+    fn check_addresses(){
+        assert!(create(&vec![], "foo", "bar").is_err());
+        assert!(create(&vec!["not-valid".into()], "foo", "bar").is_err());
     }
 }

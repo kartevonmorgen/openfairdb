@@ -75,6 +75,21 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
     }
 }
 
+fn notify(subject: &str, body: &str) {
+    match mail::create(&CONFIG.notification.send_to, subject, body) {
+        Ok(mail) => {
+            thread::spawn(move ||{
+                if let Err(err) = mail::send(&mail) {
+                    warn!("Could not send mail: {}", err);
+                }
+            });
+        }
+        Err(e) => {
+            warn!("could not create notifiction mail: {}", e);
+        }
+    }
+}
+
 #[get("/entries/<ids>")]
 fn get_entry(db: State<DbPool>, ids: String) -> Result<Vec<json::Entry>> {
     let ids = extract_ids(&ids);
@@ -102,15 +117,7 @@ fn get_duplicates(db: State<DbPool>) -> Result<Vec<(String, String, DuplicateTyp
 fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<String, AppError> {
     let e = e.into_inner();
     let id = usecase::create_new_entry(&mut *db.get()?, e.clone())?;
-    let mail = mail::create(
-        &CONFIG.notification.send_to,
-        &format!("Neuer Eintrag: {}", e.title),
-        &format!("{:?}", e));
-    thread::spawn(move ||{
-        if let Err(err) = mail::send(&mail) {
-            warn!("Could not send mail: {}", err);
-        }
-    });
+    notify(&format!("Neuer Eintrag: {}", e.title),&format!("{:?}",e));
     Ok(id)
 }
 
@@ -118,15 +125,7 @@ fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<S
 fn put_entry(db: State<DbPool>, id: String, e: JSON<usecase::UpdateEntry>) -> Result<String> {
     let e = e.into_inner();
     usecase::update_entry(&mut *db.get()?, e.clone())?;
-    let mail = mail::create(
-        &CONFIG.notification.send_to,
-        &format!("Veränderter Eintrag: {}", e.title),
-        &format!("{:?}", e));
-    thread::spawn(move ||{
-        if let Err(err) = mail::send(&mail) {
-            warn!("Could not send mail: {}", err);
-        }
-    });
+    notify(&format!("Veränderter Eintrag: {}", e.title),&format!("{:?}",e));
     Ok(JSON(id))
 }
 
