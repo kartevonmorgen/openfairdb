@@ -1,6 +1,7 @@
 use std;
 use std::io::prelude::*;
 use std::fs::File;
+use std::path::Path;
 use toml;
 use super::error::AppError;
 use fast_chemail::is_valid_email;
@@ -30,7 +31,9 @@ pub struct NotificationCfg {
 }
 
 impl Config {
-    pub fn load(file_name: &str) -> Result<Config> {
+    pub fn load<P>(file_name: P) -> Result<Config>
+        where P: AsRef<Path>
+     {
         match File::open(file_name) {
            Ok(mut f) => {
                 let mut toml_str = String::new();

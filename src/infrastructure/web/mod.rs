@@ -16,7 +16,7 @@ use business::sort::SortByAverageRating;
 use business::{usecase, filter, geo};
 use business::filter::InBBox;
 use business::duplicates::{self, DuplicateType};
-use std::{result,thread};
+use std::{result,thread,env};
 use r2d2::{self, Pool};
 use regex::Regex;
 use super::mail;
@@ -27,10 +27,19 @@ static COOKIE_USER_KEY       : &str  = "user_id";
 
 lazy_static! {
     static ref CONFIG: cfg::Config = {
-        match cfg::Config::load("config.toml") {
-            Ok(cfg) => cfg,
+        match env::current_dir() {
+            Ok(cwd) => {
+                let path = cwd.as_path().join("config.toml");
+                match cfg::Config::load(path) {
+                    Ok(cfg) => cfg,
+                    Err(e) => {
+                        warn!("could not read configuration file 'config.toml': {}", e);
+                        cfg::Config::default()
+                    }
+                }
+            }
             Err(e) => {
-                warn!("coult not read configuration file 'config.toml': {}", e);
+                warn!("could not determine current working directory: {}", e);
                 cfg::Config::default()
             }
         }
