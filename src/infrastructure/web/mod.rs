@@ -291,6 +291,7 @@ fn get_ratings(db: State<DbPool>, id: String)-> Result<Vec<json::Rating>>{
             user     : usecase::get_user_id_for_rating_id(&triples,&x.id),
             value    : x.value,
             context  : x.context,
+            source   : x.source.unwrap_or("no-source".into()),
             comments : comments.get(&x.id).cloned().unwrap_or_else(|| vec![])
                 .into_iter()
                 .map(|c|json::Comment{

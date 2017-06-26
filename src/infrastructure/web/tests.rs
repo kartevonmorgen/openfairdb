@@ -49,6 +49,7 @@ fn get_one_entry() {
         user    : None,
         entry   : "get_one_entry_test".into(),
         comment : "bla".into(),
+        source  : Some("blabla".into())
     }).unwrap();
     let req = client.get("/entries/get_one_entry_test");
     let mut response = req.dispatch();
@@ -283,7 +284,7 @@ fn create_rating() {
     db.get().unwrap().entries = vec![ Entry::build().id("foo").finish() ];
     let req = client.post("/ratings")
         .header(ContentType::JSON)
-        .body(r#"{"value": 1,"context":"fairness","entry":"foo","comment":"test", "title":"idontcare"}"#);
+        .body(r#"{"value": 1,"context":"fairness","entry":"foo","comment":"test", "title":"idontcare", "source":"source..."}"#);
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(db.get().unwrap().ratings[0].value, 1);
@@ -301,7 +302,53 @@ fn get_one_rating() {
         title   : "title".into(),
         entry   : "foo".into(),
         comment : "bla".into(),
+        source  : Some("blabla".into())
     }).unwrap();
+    let rid = db.get().unwrap().ratings[0].id.clone();
+    let req = client.get(format!("/ratings/{}",rid));
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
+    for h in response.headers().iter() {
+        match h.name.as_str() {
+            "Content-Type" => assert_eq!(h.value, "application/json"),
+            _ => { /* let these through */ }
+        }
+    }
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
+    let ratings: Vec<json::Rating> = serde_json::from_str(&body_str).unwrap();
+    assert_eq!(ratings[0].id,rid);
+    assert_eq!(ratings[0].comments.len(),1);
+}
+
+
+#[test]
+fn ratings_with_and_without_source() {
+    let e1 = Entry::build().id("foo").finish();
+    let e2 = Entry::build().id("bar").finish();
+    let (client, db) = setup();
+    db.get().unwrap().create_entry(&e1).unwrap();
+    db.get().unwrap().create_entry(&e2).unwrap();
+    usecase::rate_entry(&mut *db.get().unwrap(), usecase::RateEntry{
+        context : RatingContext::Humanity,
+        value   : 2,
+        user    : None,
+        title   : "title".into(),
+        entry   : "foo".into(),
+        comment : "bla".into(),
+        source  : Some("blabla blabla".into())
+    }).unwrap();
+    usecase::rate_entry(&mut *db.get().unwrap(), usecase::RateEntry{
+        context : RatingContext::Humanity,
+        value   : 2,
+        user    : None,
+        title   : "title".into(),
+        entry   : "bar".into(),
+        comment : "bla".into(),
+        source  : Some("blabla blabla".into())
+    }).unwrap();
+
     let rid = db.get().unwrap().ratings[0].id.clone();
     let req = client.get(format!("/ratings/{}",rid));
     let mut response = req.dispatch();

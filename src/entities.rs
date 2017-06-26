@@ -100,5 +100,6 @@ pub struct Rating {
     pub created: u64,
     pub title: String,
     pub value: i8,
-    pub context: RatingContext
+    pub context: RatingContext,
+    pub source: Option<String>
 }

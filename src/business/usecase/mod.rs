@@ -141,6 +141,7 @@ pub struct RateEntry {
     pub value: i8,
     pub context: RatingContext,
     pub comment: String,
+    pub source: Option<String>,
     pub user: Option<String>
 }
 
@@ -476,7 +477,8 @@ pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
         created : now,
         title   : r.title,
         value   : r.value,
-        context : r.context
+        context : r.context,
+        source  : r.source
     })?;
     db.create_comment(&Comment{
         id      : comment_id.clone(),

@@ -144,7 +144,8 @@ mod tests {
             created    : 0,
             title      : "blubb".into(),
             value      : value.into(), 
-            context    : context
+            context    : context,
+            source     : Some("blabla".into())
         }
     }
 

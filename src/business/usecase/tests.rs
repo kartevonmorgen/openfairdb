@@ -624,7 +624,8 @@ fn rate_non_existing_entry() {
         comment: "a comment".into(),
         context: RatingContext::Fairness,
         user: None,
-        value: 2
+        value: 2,
+        source: Some("source".into())
     }).is_err());
 }
 
@@ -639,7 +640,8 @@ fn rate_with_empty_comment() {
         title: "title".into(),
         context: RatingContext::Fairness,
         user: None,
-        value: 2
+        value: 2,
+        source: Some("source".into())
     }).is_err());
 }
 
@@ -654,7 +656,8 @@ fn rate_with_invalid_value_comment() {
         title: "title".into(),
         context: RatingContext::Fairness,
         user: None,
-        value: 3
+        value: 3,
+        source: Some("source".into())
     }).is_err());
     assert!(rate_entry(&mut db,RateEntry{
         entry: "foo".into(),
@@ -662,7 +665,8 @@ fn rate_with_invalid_value_comment() {
         comment: "comment".into(),
         context: RatingContext::Fairness,
         user: None,
-        value: -2
+        value: -2,
+        source: Some("source".into())
     }).is_err());
 }
 
@@ -677,7 +681,8 @@ fn rate_without_login() {
         title: "title".into(),
         context: RatingContext::Fairness,
         user: None,
-        value: 2
+        value: 2,
+        source: Some("source".into())
     }).is_ok());
     assert_eq!(db.ratings.len(),1);
     assert_eq!(db.comments.len(),1);

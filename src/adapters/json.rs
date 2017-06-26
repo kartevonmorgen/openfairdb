@@ -30,7 +30,8 @@ pub struct Rating {
     pub user        : Option<String>,
     pub value       : i8,
     pub context     : e::RatingContext,
-    pub comments    : Vec<Comment>
+    pub comments    : Vec<Comment>,
+    pub source      : String
 }
 
 #[derive(Serialize,Deserialize)]

@@ -238,14 +238,16 @@ impl Db for GraphClient {
              title   : {title},
              created : {created},
              value   : {value},
-             context : {context}
+             context : {context},
+             source  : {source}
         })",
         {
             "id"        => &r.id,
             "title"     => &r.title,
             "created"   => &r.created,
             "value"     => &r.value,
-            "context"   => &r.context
+            "context"   => &r.context,
+            "source"    => &r.source
         })?)?;
         Ok(())
     }
