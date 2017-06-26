@@ -1,4 +1,5 @@
-use rocket::{self, Rocket, State, LoggingLevel};
+use rocket::{self, Rocket, State };
+use rocket::logger::LoggingLevel;
 use rocket_contrib::JSON;
 use rocket::response::{Response, Responder};
 use rocket::request::{self, FromRequest, Request};
@@ -15,12 +16,35 @@ use business::sort::SortByAverageRating;
 use business::{usecase, filter, geo};
 use business::filter::InBBox;
 use business::duplicates::{self, DuplicateType};
-use std::result;
+use std::{result,thread,env};
 use r2d2::{self, Pool};
 use regex::Regex;
+use super::mail;
+use super::cfg;
 
 static MAX_INVISIBLE_RESULTS : usize = 5;
 static COOKIE_USER_KEY       : &str  = "user_id";
+
+lazy_static! {
+    static ref CONFIG: cfg::Config = {
+        match env::current_dir() {
+            Ok(cwd) => {
+                let path = cwd.as_path().join("config.toml");
+                match cfg::Config::load(path) {
+                    Ok(cfg) => cfg,
+                    Err(e) => {
+                        warn!("could not read configuration file 'config.toml': {}", e);
+                        cfg::Config::default()
+                    }
+                }
+            }
+            Err(e) => {
+                warn!("could not determine current working directory: {}", e);
+                cfg::Config::default()
+            }
+        }
+    };
+}
 
 mod neo4j;
 #[cfg(test)]
@@ -60,6 +84,21 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
     }
 }
 
+fn notify(subject: &str, body: &str) {
+    match mail::create(&CONFIG.notification.send_to, subject, body) {
+        Ok(mail) => {
+            thread::spawn(move ||{
+                if let Err(err) = mail::send(&mail) {
+                    warn!("Could not send mail: {}", err);
+                }
+            });
+        }
+        Err(e) => {
+            warn!("could not create notifiction mail: {}", e);
+        }
+    }
+}
+
 #[get("/entries/<ids>")]
 fn get_entry(db: State<DbPool>, ids: String) -> Result<Vec<json::Entry>> {
     let ids = extract_ids(&ids);
@@ -85,13 +124,17 @@ fn get_duplicates(db: State<DbPool>) -> Result<Vec<(String, String, DuplicateTyp
 
 #[post("/entries", format = "application/json", data = "<e>")]
 fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<String, AppError> {
-    let id = usecase::create_new_entry(&mut *db.get()?, e.into_inner())?;
+    let e = e.into_inner();
+    let id = usecase::create_new_entry(&mut *db.get()?, e.clone())?;
+    notify(&format!("Neuer Eintrag: {}", e.title),&format!("{:?}",e));
     Ok(id)
 }
 
 #[put("/entries/<id>", format = "application/json", data = "<e>")]
 fn put_entry(db: State<DbPool>, id: String, e: JSON<usecase::UpdateEntry>) -> Result<String> {
-    usecase::update_entry(&mut *db.get()?, e.into_inner())?;
+    let e = e.into_inner();
+    usecase::update_entry(&mut *db.get()?, e.clone())?;
+    notify(&format!("Veränderter Eintrag: {}", e.title),&format!("{:?}",e));
     Ok(JSON(id))
 }
 

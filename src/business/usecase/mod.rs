@@ -84,22 +84,22 @@ impl Id for Triple {
     }
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct NewEntry {
-    title       : String,
-    description : String,
-    lat         : f64,
-    lng         : f64,
-    street      : Option<String>,
-    zip         : Option<String>,
-    city        : Option<String>,
-    country     : Option<String>,
-    email       : Option<String>,
-    telephone   : Option<String>,
-    homepage    : Option<String>,
-    categories  : Vec<String>,
-    tags        : Vec<String>,
-    license     : String,
+    pub title       : String,
+    pub description : String,
+    pub lat         : f64,
+    pub lng         : f64,
+    pub street      : Option<String>,
+    pub zip         : Option<String>,
+    pub city        : Option<String>,
+    pub country     : Option<String>,
+    pub email       : Option<String>,
+    pub telephone   : Option<String>,
+    pub homepage    : Option<String>,
+    pub categories  : Vec<String>,
+    pub tags        : Vec<String>,
+    pub license     : String,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -117,21 +117,21 @@ pub struct Login {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateEntry {
-    id          : String,
-    version     : u64,
-    title       : String,
-    description : String,
-    lat         : f64,
-    lng         : f64,
-    street      : Option<String>,
-    zip         : Option<String>,
-    city        : Option<String>,
-    country     : Option<String>,
-    email       : Option<String>,
-    telephone   : Option<String>,
-    homepage    : Option<String>,
-    categories  : Vec<String>,
-    tags        : Vec<String>,
+    pub id          : String,
+    pub version     : u64,
+    pub title       : String,
+    pub description : String,
+    pub lat         : f64,
+    pub lng         : f64,
+    pub street      : Option<String>,
+    pub zip         : Option<String>,
+    pub city        : Option<String>,
+    pub country     : Option<String>,
+    pub email       : Option<String>,
+    pub telephone   : Option<String>,
+    pub homepage    : Option<String>,
+    pub categories  : Vec<String>,
+    pub tags        : Vec<String>,
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -411,7 +411,7 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String>
  {
     let new_entry = Entry{
         id          :  Uuid::new_v4().simple().to_string(),
-        created     :  UTC::now().timestamp() as u64,
+        created     :  Utc::now().timestamp() as u64,
         version     :  0,
         title       :  e.title,
         description :  e.description,
@@ -440,7 +440,7 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
     }
     let new_entry = Entry{
         id          :  e.id,
-        created     :  UTC::now().timestamp() as u64,
+        created     :  Utc::now().timestamp() as u64,
         version     :  e.version,
         title       :  e.title,
         description :  e.description,
@@ -469,7 +469,7 @@ pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
     if r.value > 2 || r.value < -1 {
         return Err(Error::Parameter(ParameterError::RatingValue));
     }
-    let now = UTC::now().timestamp() as u64;
+    let now = Utc::now().timestamp() as u64;
     let rating_id = Uuid::new_v4().simple().to_string();
     let comment_id = Uuid::new_v4().simple().to_string();
     db.create_rating(&Rating{
