@@ -211,7 +211,6 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResu
     let bbox = geo::extract_bbox(&search.bbox)
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
-    let bbox_center = geo::center(&bbox[0], &bbox[1]);
 
     let mut entries: Vec<&Entry> = entries.iter().collect();
 
