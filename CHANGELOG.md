@@ -1,3 +1,9 @@
+## v0.2.7 (2017-07-03)
+
+- include search results where tags match search words (also when they are not preceded by "#")
+- give the possibility to add sources when rating an entry
+- add basic mail notification (to emails in a config file)
+
 ## v0.2.6 (2017-05-26)
 
 - new(ranking): calculate average rating of an entry in each rating context separately
