@@ -232,10 +232,8 @@ impl Db for GraphClient {
     }
 
     fn create_rating(&mut self, r: &Rating) -> Result<()> {
-        let s = r.source.clone();
-        println!("source: {}", s.unwrap_or("no source".into()));
         self.exec(cypher_stmt!(
-        "MERGE (r:Rating {
+        "CREATE (r:Rating {
              id      : {id},
              title   : {title},
              created : {created},
@@ -251,7 +249,6 @@ impl Db for GraphClient {
             "context"   => &r.context,
             "source"    => &r.source
         })?)?;
-        println!("Ok");
         Ok(())
     }
 
