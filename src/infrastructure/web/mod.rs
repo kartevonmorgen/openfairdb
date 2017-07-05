@@ -84,7 +84,14 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
     }
 }
 
+#[derive(Debug, Serialize, Deserialize)]
+struct MapViewSubscription{
+    pub bbox: Vec<geo::Coordinate>,
+    pub username: String
+}
+
 fn notify(subject: &str, body: &str) {
+    println!("sending email to {:?}", &CONFIG.notification.send_to);
     match mail::create(&CONFIG.notification.send_to, subject, body) {
         Ok(mail) => {
             thread::spawn(move ||{
@@ -297,10 +304,10 @@ fn logout(mut cookies: Cookies) -> Result<()> {
     Ok(JSON(()))
 }
 
-#[post("/subscribe-to-map-view", format = "application/json", data = "<bbox>")]
-fn subscribe_to_map_view(mut bbox: JSON<Vec<geo::Coordinate>>) -> Result<()> {
-    let bbox = bbox.into_inner();
-    println!("unimplemented! subscribe bbox: {:?}", bbox);
+#[post("/subscribe-to-map-view", format = "application/json", data = "<subscription>")]
+fn subscribe_to_map_view(mut subscription: JSON<MapViewSubscription>) -> Result<()> {
+    let subscription = subscription.into_inner();
+    println!("unimplemented! subscribe: bbox: {:?}, user: {:?}", subscription.bbox, subscription.username);
     Ok(JSON(()))
 }
 

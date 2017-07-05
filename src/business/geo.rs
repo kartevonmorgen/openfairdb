@@ -3,7 +3,7 @@ use business::error::ParameterError;
 // The Earth's radius in kilometers.
 static EARTH_RADIUS: f64 = 6371.0;
 
-#[derive(Debug, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Coordinate {
     pub lat: f64,
     pub lng: f64,
