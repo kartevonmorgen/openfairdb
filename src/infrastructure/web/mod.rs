@@ -297,6 +297,13 @@ fn logout(mut cookies: Cookies) -> Result<()> {
     Ok(JSON(()))
 }
 
+#[post("/subscribe-to-map-view", format = "application/json", data = "<bbox>")]
+fn subscribe_to_map_view(mut bbox: JSON<Vec<geo::Coordinate>>) -> Result<()> {
+    let bbox = bbox.into_inner();
+    println!("unimplemented! subscribe bbox: {:?}", bbox);
+    Ok(JSON(()))
+}
+
 #[get("/users/<id>", format = "application/json")]
 fn get_user(db: State<DbPool>, user: User, id: String) -> result::Result<JSON<json::User>,AppError> {
     let (username, email) = usecase::get_user(&mut*db.get()?, &user.0, &id)?;
@@ -372,6 +379,7 @@ fn rocket_instance<T: r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Roc
         .mount("/",
                routes![login,
                        logout,
+                       subscribe_to_map_view,
                        get_entry,
                        post_entry,
                        post_user,
