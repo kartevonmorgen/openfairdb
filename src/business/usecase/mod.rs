@@ -73,7 +73,8 @@ fn triple_id(t: &Triple) -> String {
         Relation::IsTaggedWith => "is_tagged_with",
         Relation::IsRatedWith => "is_rated_with",
         Relation::IsCommentedWith => "is_commented_with",
-        Relation::CreatedBy => "created_by"
+        Relation::CreatedBy => "created_by",
+        Relation::SubscribedTo => "subscribed_to"
     };
     format!("{}-{}-{}-{}-{}", s_type, s_id, p_type, o_type, o_id)
 }
@@ -495,5 +496,18 @@ pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
         predicate: Relation::IsCommentedWith,
         object: ObjectId::Comment(comment_id),
     })?;
+    Ok(())
+}
+
+pub fn subscribe_to_bbox(bbox: Vec<Coordinate>, username: &str) -> Result<()>{
+    debug!("subscribe to bbox: {:?}, user: {:?}", bbox, username);
+    // 1. validate bbox
+    // 2. check if user has already a subscribtion
+    // 3.a) if subscribtion
+    //    modify
+    // 3.b) if not
+    //    create
+    //    safe
+    // create_or_modify(subscrition)
     Ok(())
 }

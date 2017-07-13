@@ -1,13 +1,8 @@
 use business::error::ParameterError;
+use entities::Coordinate;
 
 // The Earth's radius in kilometers.
 static EARTH_RADIUS: f64 = 6371.0;
-
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
-pub struct Coordinate {
-    pub lat: f64,
-    pub lng: f64,
-}
 
 // distance in km
 pub fn distance(a: &Coordinate, b: &Coordinate) -> f64 {

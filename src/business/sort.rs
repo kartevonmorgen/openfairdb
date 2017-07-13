@@ -1,6 +1,6 @@
 use entities::*;
 use std::cmp::Ordering;
-use super::geo::{self, Coordinate};
+use super::geo;
 
 trait DistanceTo {
     fn distance_to(&self, &Coordinate) -> f64;

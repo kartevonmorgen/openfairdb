@@ -11,7 +11,8 @@ fn neo4j_edge_name(t: &Triple) -> &str {
        Relation::IsTaggedWith    => "IS_TAGGED_WITH",
        Relation::IsRatedWith     => "IS_RATED_WITH",
        Relation::IsCommentedWith => "IS_COMMENTED_WITH",
-       Relation::CreatedBy       => "CREATED_BY"
+       Relation::CreatedBy       => "CREATED_BY",
+       Relation::SubscribedTo    => "SUBSCRIBED_TO"
     }.into()
 }
 

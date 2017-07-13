@@ -67,27 +67,21 @@ fn extract_ids(s: &str) -> Vec<String> {
 }
 
 #[derive(Debug)]
-struct User(String);
+struct Login(String);
 
-impl<'a, 'r> FromRequest<'a, 'r> for User {
+impl<'a, 'r> FromRequest<'a, 'r> for Login {
     type Error = ();
 
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<User, ()> {
+    fn from_request(request: &'a Request<'r>) -> request::Outcome<Login, ()> {
         let user = request.cookies()
             .get_private(COOKIE_USER_KEY)
             .and_then(|cookie| cookie.value().parse().ok())
-            .map(|id| User(id));
+            .map(|id| Login(id));
         match user {
             Some(user) => Outcome::Success(user),
             None => Outcome::Failure((Status::Unauthorized, ()))
         }
     }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct MapViewSubscription{
-    pub bbox: Vec<geo::Coordinate>,
-    pub username: String
 }
 
 fn notify(subject: &str, body: &str) {
@@ -304,15 +298,17 @@ fn logout(mut cookies: Cookies) -> Result<()> {
     Ok(JSON(()))
 }
 
-#[post("/subscribe-to-map-view", format = "application/json", data = "<subscription>")]
-fn subscribe_to_map_view(mut subscription: JSON<MapViewSubscription>) -> Result<()> {
-    let subscription = subscription.into_inner();
-    println!("unimplemented! subscribe: bbox: {:?}, user: {:?}", subscription.bbox, subscription.username);
+#[post("/subscribe-to-map-view", format = "application/json", data = "<coordinates>")]
+fn subscribe_to_bbox(user: Login, coordinates: JSON<Vec<Coordinate>>) -> Result<()> {
+    let coordinates = coordinates.into_inner();
+    let Login(username) = user;
+    debug!("subscribe: bbox: {:?}", coordinates);
+    usecase::subscribe_to_bbox(coordinates, &username)?;
     Ok(JSON(()))
 }
 
 #[get("/users/<id>", format = "application/json")]
-fn get_user(db: State<DbPool>, user: User, id: String) -> result::Result<JSON<json::User>,AppError> {
+fn get_user(db: State<DbPool>, user: Login, id: String) -> result::Result<JSON<json::User>,AppError> {
     let (username, email) = usecase::get_user(&mut*db.get()?, &user.0, &id)?;
     Ok(JSON(json::User{ username, email }))
 }
@@ -386,7 +382,7 @@ fn rocket_instance<T: r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Roc
         .mount("/",
                routes![login,
                        logout,
-                       subscribe_to_map_view,
+                       subscribe_to_bbox,
                        get_entry,
                        post_entry,
                        post_user,

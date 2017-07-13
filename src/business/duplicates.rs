@@ -1,6 +1,5 @@
 use entities::*;
 use super::geo;
-use super::geo::Coordinate;
 use std::cmp::min;
 use std::collections::HashSet;
 

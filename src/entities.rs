@@ -40,7 +40,9 @@ pub enum Relation {
     #[serde(rename="is_commented_with")]
     IsCommentedWith,
     #[serde(rename="created_by")]
-    CreatedBy
+    CreatedBy,
+    #[serde(rename="subscribed_to")]
+    SubscribedTo
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -102,4 +104,22 @@ pub struct Rating {
     pub value: i8,
     pub context: RatingContext,
     pub source: Option<String>
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct Coordinate {
+    pub lat: f64,
+    pub lng: f64,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct Bbox {
+    pub north_east: Coordinate,
+    pub south_west: Coordinate
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct BboxSubscription {
+    pub id: String,
+    pub bbox: Bbox
 }
