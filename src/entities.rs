@@ -64,6 +64,8 @@ pub enum ObjectId {
     Comment(String),
     #[serde(rename="rating")]
     Rating(String),
+    #[serde(rename="bbox_subscription")]
+    BboxSubscription(String)
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]

@@ -1,5 +1,5 @@
 use business::error::ParameterError;
-use entities::Coordinate;
+use entities::{Coordinate, Bbox};
 
 // The Earth's radius in kilometers.
 static EARTH_RADIUS: f64 = 6371.0;
@@ -45,6 +45,13 @@ pub fn extract_bbox(s: &str) -> Result<Vec<Coordinate>, ParameterError> {
         }
         _ => Err(ParameterError::Bbox),
     }
+}
+
+pub fn is_in_bbox(lat: &f64, lng: &f64, bbox: &Bbox) -> bool {
+    *lat >= bbox.south_west.lat &&
+    *lng >= bbox.south_west.lng &&
+    *lat <= bbox.north_east.lat &&
+    *lng <= bbox.north_east.lng
 }
 
 #[cfg(test)]
@@ -177,5 +184,75 @@ mod tests {
                          });
         assert_eq!(res.lat, 0.0);
         assert_eq!(res.lng, 0.0);
+    }
+
+    #[test]
+    fn test_is_in_bbox(){
+        let bbox1 = Bbox{
+            south_west: Coordinate{
+                lat: 0.0,
+                lng: 0.0
+            },
+            north_east: Coordinate{
+                lat: 10.0,
+                lng: 10.0
+            }
+        };
+        let bbox2 = Bbox{
+            south_west: Coordinate{
+                lat: -10.0,
+                lng: 0.0
+            },
+            north_east: Coordinate{
+                lat: 0.0,
+                lng: 10.0
+            }
+        };
+        let bbox3 = Bbox{
+            south_west: Coordinate{
+                lat: -10.0,
+                lng: -10.0
+            },
+            north_east: Coordinate{
+                lat: 0.0,
+                lng: 0.0
+            }
+        };
+        let bbox4 = Bbox{
+            south_west: Coordinate{
+                lat: 0.0,
+                lng: -10.0
+            },
+            north_east: Coordinate{
+                lat: 10.0,
+                lng: 0.0
+            }
+        };
+
+        let lat1 = 5.0;
+        let lng1 = 5.0;
+        let lat2 = -5.0;
+        let lng2 = 5.0;
+        let lat3 = -5.0;
+        let lng3 = -5.0;
+        let lat4 = 5.0;
+        let lng4 = -5.0;
+
+        assert!(is_in_bbox(&lat1, &lng1, &bbox1));
+        assert!(!is_in_bbox(&lat1, &lng1, &bbox2));
+        assert!(!is_in_bbox(&lat1, &lng1, &bbox3));
+        assert!(!is_in_bbox(&lat1, &lng1, &bbox4));
+        assert!(!is_in_bbox(&lat2, &lng2, &bbox1));
+        assert!(is_in_bbox(&lat2, &lng2, &bbox2));
+        assert!(!is_in_bbox(&lat2, &lng2, &bbox3));
+        assert!(!is_in_bbox(&lat2, &lng2, &bbox4));
+        assert!(!is_in_bbox(&lat3, &lng3, &bbox1));
+        assert!(!is_in_bbox(&lat3, &lng3, &bbox2));
+        assert!(is_in_bbox(&lat3, &lng3, &bbox3));
+        assert!(!is_in_bbox(&lat3, &lng3, &bbox4));
+        assert!(!is_in_bbox(&lat4, &lng4, &bbox1));
+        assert!(!is_in_bbox(&lat4, &lng4, &bbox2));
+        assert!(!is_in_bbox(&lat4, &lng4, &bbox3));
+        assert!(is_in_bbox(&lat4, &lng4, &bbox4));
     }
 }

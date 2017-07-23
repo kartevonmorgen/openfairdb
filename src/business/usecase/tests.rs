@@ -1,5 +1,7 @@
 use super::*;
 use business::builder::EntryBuilder;
+use entities;
+use business;
 
 type RepoResult<T> = result::Result<T, RepoError>;
 
@@ -11,6 +13,7 @@ pub struct MockDb {
     pub users: Vec<User>,
     pub ratings: Vec<Rating>,
     pub comments: Vec<Comment>,
+    pub bbox_subscriptions: Vec<BboxSubscription>
 }
 
 impl MockDb {
@@ -22,7 +25,8 @@ impl MockDb {
             triples: vec![],
             users: vec![],
             ratings: vec![],
-            comments: vec![]
+            comments: vec![],
+            bbox_subscriptions: vec![]
         }
     }
 }
@@ -77,6 +81,10 @@ impl Db for MockDb {
         create(&mut self.ratings, r)
     }
 
+    fn create_bbox_subscription(&mut self, s: &BboxSubscription) -> RepoResult<()> {
+        create(&mut self.bbox_subscriptions, s)
+    }
+
     fn get_entry(&self, id: &str) -> RepoResult<Entry> {
         get(&self.entries, id)
     }
@@ -107,6 +115,14 @@ impl Db for MockDb {
 
     fn all_comments(&self) -> RepoResult<Vec<Comment>> {
         Ok(self.comments.clone())
+    }
+
+    fn all_users(&self) -> RepoResult<Vec<User>> {
+        Ok(self.users.clone())
+    }
+
+    fn all_bbox_subscriptions(&self) -> RepoResult<Vec<BboxSubscription>> {
+        Ok(self.bbox_subscriptions.clone())
     }
 
     fn update_entry(&mut self, e: &Entry) -> RepoResult<()> {
@@ -717,4 +733,146 @@ fn receive_different_user() {
         }];
     assert!(get_user(&mut db, "a", "b").is_err());
     assert!(get_user(&mut db, "a", "a").is_ok());
+}
+
+#[test]
+fn test_create_bbox_subscription(){
+    let mut db = MockDb::new();
+    let bbox_new = entities::Bbox{
+        north_east: Coordinate{
+            lat: 10.0,
+            lng: 10.0
+        },
+        south_west: Coordinate{
+            lat: 10.0,
+            lng: 5.0
+        }
+    };
+
+    let username = "a";
+    db.create_user(&User{
+        username: username.into(),
+        password: username.into(),
+        email: "abc@abc.de".into()
+    });
+
+    assert!(business::usecase::create_or_modify_subscription(&bbox_new, username.into(), &mut db).is_ok());
+    
+    let user_subscriptions : Vec<String>  = db.triples.clone()
+        .into_iter()
+        .filter_map(|triple| match triple {
+            Triple {
+                subject     : ObjectId::User(ref u_id),
+                predicate   : Relation::SubscribedTo,
+                object      : ObjectId::BboxSubscription(ref s_id)
+            } => Some((u_id.clone(), s_id.clone())),
+            _ => None
+        })
+        .filter(|user_subscription| *user_subscription.0 == *username)
+        .map(|user_and_subscription| user_and_subscription.1)
+        .collect();
+
+    let bbox_subscription = db.all_bbox_subscriptions().unwrap()[0].clone();
+    assert_eq!(bbox_subscription.bbox.north_east.lat, 10.0);   
+}
+
+#[test]
+fn modify_bbox_subscription(){
+    let mut db = MockDb::new();
+
+    let bbox_old = entities::Bbox{
+        north_east: Coordinate{
+            lat: 50.0,
+            lng: 10.0
+        },
+        south_west: Coordinate{
+            lat: 50.0,
+            lng: 5.0
+        }
+    };
+
+    let bbox_new = entities::Bbox{
+        north_east: Coordinate{
+            lat: 10.0,
+            lng: 10.0
+        },
+        south_west: Coordinate{
+            lat: 10.0,
+            lng: 5.0
+        }
+    };
+
+    let username = "a";
+    db.create_user(&User{
+        username: username.into(),
+        password: username.into(),
+        email: "abc@abc.de".into()
+    });
+
+    let bbox_subscription = BboxSubscription {
+        id: "123".into(),
+        bbox: bbox_old
+    };
+    db.create_bbox_subscription(&bbox_subscription.clone());
+
+    db.create_triple(
+        &Triple{
+            subject: ObjectId::User("a".into()),
+            predicate: Relation::SubscribedTo,
+            object: ObjectId::BboxSubscription("123".into()),
+    });
+
+    assert!(business::usecase::create_or_modify_subscription(&bbox_new, username.into(), &mut db).is_ok());
+    
+    let user_subscriptions : Vec<String>  = db.triples.clone()
+        .into_iter()
+        .filter_map(|triple| match triple {
+            Triple {
+                subject     : ObjectId::User(ref u_id),
+                predicate   : Relation::SubscribedTo,
+                object      : ObjectId::BboxSubscription(ref s_id)
+            } => Some((u_id.clone(), s_id.clone())),
+            _ => None
+        })
+        .filter(|user_subscription| *user_subscription.0 == *username)
+        .map(|user_and_subscription| user_and_subscription.1)
+        .collect();
+
+    let bbox_subscriptions : Vec<BboxSubscription> = db.bbox_subscriptions
+        .into_iter()
+        .filter(|subscription| subscription.id == user_subscriptions[0])
+        .collect();
+    assert_eq!(bbox_subscriptions.len(), 1);
+    assert_eq!(bbox_subscriptions[0].clone().bbox.north_east.lat, 10.0);
+}
+
+#[test]
+fn test_email_addresses_to_notify(){
+    let mut db = MockDb::new();
+    let bbox_new = entities::Bbox{
+        north_east: Coordinate{
+            lat: 10.0,
+            lng: 10.0
+        },
+        south_west: Coordinate{
+            lat: 0.0,
+            lng: 0.0
+        }
+    };
+
+    let username = "a";
+    db.create_user(&User{
+    username: username.into(),
+        password: username.into(),
+        email: "abc@abc.de".into()
+    });
+
+    business::usecase::create_or_modify_subscription(&bbox_new, username.into(), &mut db);
+    
+    let email_addresses = business::usecase::email_addresses_to_notify(&5.0, &5.0, &mut db);
+    assert_eq!(email_addresses.len(), 1);
+    assert_eq!(email_addresses[0], "abc@abc.de");
+
+    let no_email_addresses = business::usecase::email_addresses_to_notify(&20.0, &20.0, &mut db);
+    assert_eq!(no_email_addresses.len(), 0);
 }

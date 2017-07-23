@@ -84,8 +84,8 @@ impl<'a, 'r> FromRequest<'a, 'r> for Login {
     }
 }
 
-fn notify(subject: &str, body: &str) {
-    println!("sending email to {:?}", &CONFIG.notification.send_to);
+fn notify_admins(subject: &str, body: &str) {
+    debug!("sending email to {:?}", &CONFIG.notification.send_to);
     match mail::create(&CONFIG.notification.send_to, subject, body) {
         Ok(mail) => {
             thread::spawn(move ||{
@@ -95,7 +95,26 @@ fn notify(subject: &str, body: &str) {
             });
         }
         Err(e) => {
-            warn!("could not create notifiction mail: {}", e);
+            warn!("could not create notification mail: {}", e);
+        }
+    }
+}
+
+fn notify_about_entry(e: &usecase::NewEntry, id: &str, email_addresses: Vec<String>) {
+    debug!("sending email to {:?}", email_addresses);
+    let subject = String::from("Karte von Morgen - neuer Eintrag: ") + &e.title;
+    let body = format!("https:://prototyp.kartevonmorgen.org/?entry={}", id);
+
+    match mail::create(&email_addresses, &subject, &body) {
+        Ok(mail) => {
+            thread::spawn(move ||{
+                if let Err(err) = mail::send(&mail) {
+                    warn!("Could not send mail: {}", err);
+                }
+            });
+        }
+        Err(e) => {
+            warn!("could not create notification mail: {}", e);
         }
     }
 }
@@ -127,7 +146,11 @@ fn get_duplicates(db: State<DbPool>) -> Result<Vec<(String, String, DuplicateTyp
 fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<String, AppError> {
     let e = e.into_inner();
     let id = usecase::create_new_entry(&mut *db.get()?, e.clone())?;
-    notify(&format!("Neuer Eintrag: {}", e.title),&format!("{:?}",e));
+    let email_addresses = usecase::email_addresses_to_notify(&e.lat, &e.lng, &mut *db.get()?);
+    debug!("NOTIFY: {:?}", email_addresses);
+    notify_about_entry(&e, &id, email_addresses);
+
+    notify_admins(&format!("Neuer Eintrag: {}", e.title),&format!("{:?}",e));
     Ok(id)
 }
 
@@ -135,7 +158,7 @@ fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<S
 fn put_entry(db: State<DbPool>, id: String, e: JSON<usecase::UpdateEntry>) -> Result<String> {
     let e = e.into_inner();
     usecase::update_entry(&mut *db.get()?, e.clone())?;
-    notify(&format!("Veränderter Eintrag: {}", e.title),&format!("{:?}",e));
+    notify_admins(&format!("Veränderter Eintrag: {}", e.title),&format!("{:?}",e));
     Ok(JSON(id))
 }
 
@@ -298,12 +321,11 @@ fn logout(mut cookies: Cookies) -> Result<()> {
     Ok(JSON(()))
 }
 
-#[post("/subscribe-to-map-view", format = "application/json", data = "<coordinates>")]
-fn subscribe_to_bbox(user: Login, coordinates: JSON<Vec<Coordinate>>) -> Result<()> {
+#[post("/subscribe-to-bbox", format = "application/json", data = "<coordinates>")]
+fn subscribe_to_bbox(user: Login, coordinates: JSON<Vec<Coordinate>>, db: State<DbPool>) -> Result<()> {
     let coordinates = coordinates.into_inner();
     let Login(username) = user;
-    debug!("subscribe: bbox: {:?}", coordinates);
-    usecase::subscribe_to_bbox(coordinates, &username)?;
+    usecase::subscribe_to_bbox(&coordinates, &username, &mut*db.get()?)?;
     Ok(JSON(()))
 }
 

@@ -18,6 +18,7 @@ pub trait Db {
     fn create_user(&mut self, &User) -> Result<()>;
     fn create_comment(&mut self, &Comment) -> Result<()>;
     fn create_rating(&mut self, &Rating) -> Result<()>;
+    fn create_bbox_subscription(&mut self, &BboxSubscription) -> Result<()>;
 
     fn get_entry(&self, &str) -> Result<Entry>;
     fn get_user(&self, &str) -> Result<User>;
@@ -28,6 +29,8 @@ pub trait Db {
     fn all_triples(&self) -> Result<Vec<Triple>>;
     fn all_ratings(&self) -> Result<Vec<Rating>>;
     fn all_comments(&self) -> Result<Vec<Comment>>;
+    fn all_users(&self) -> Result<Vec<User>>;
+    fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>>;
 
     fn update_entry(&mut self, &Entry) -> Result<()>;
 
