@@ -100,10 +100,29 @@ fn notify_admins(subject: &str, body: &str) {
     }
 }
 
-fn notify_about_entry(e: &usecase::NewEntry, id: &str, email_addresses: Vec<String>) {
+fn notify_create_entry(e: &usecase::NewEntry, id: &str, email_addresses: Vec<String>) {
     debug!("sending email to {:?}", email_addresses);
     let subject = String::from("Karte von Morgen - neuer Eintrag: ") + &e.title;
     let body = format!("https:://prototyp.kartevonmorgen.org/?entry={}", id);
+
+    match mail::create(&email_addresses, &subject, &body) {
+        Ok(mail) => {
+            thread::spawn(move ||{
+                if let Err(err) = mail::send(&mail) {
+                    warn!("Could not send mail: {}", err);
+                }
+            });
+        }
+        Err(e) => {
+            warn!("could not create notification mail: {}", e);
+        }
+    }
+}
+
+fn notify_update_entry(e: &usecase::UpdateEntry, email_addresses: Vec<String>) {
+    debug!("sending email to {:?}", email_addresses);
+    let subject = String::from("Karte von Morgen - Eintrag verändert: ") + &e.title;
+    let body = format!("https:://prototyp.kartevonmorgen.org/?entry={}", e.id);
 
     match mail::create(&email_addresses, &subject, &body) {
         Ok(mail) => {
@@ -148,7 +167,7 @@ fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<S
     let id = usecase::create_new_entry(&mut *db.get()?, e.clone())?;
     let email_addresses = usecase::email_addresses_to_notify(&e.lat, &e.lng, &mut *db.get()?);
     debug!("NOTIFY: {:?}", email_addresses);
-    notify_about_entry(&e, &id, email_addresses);
+    notify_create_entry(&e, &id, email_addresses);
 
     notify_admins(&format!("Neuer Eintrag: {}", e.title),&format!("{:?}",e));
     Ok(id)
@@ -158,6 +177,9 @@ fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<S
 fn put_entry(db: State<DbPool>, id: String, e: JSON<usecase::UpdateEntry>) -> Result<String> {
     let e = e.into_inner();
     usecase::update_entry(&mut *db.get()?, e.clone())?;
+    let email_addresses = usecase::email_addresses_to_notify(&e.lat, &e.lng, &mut *db.get()?);
+    debug!("NOTIFY: {:?}", email_addresses);
+    notify_update_entry(&e, email_addresses);
     notify_admins(&format!("Veränderter Eintrag: {}", e.title),&format!("{:?}",e));
     Ok(JSON(id))
 }
