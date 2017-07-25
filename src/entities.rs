@@ -70,7 +70,7 @@ pub enum ObjectId {
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct User {
-    pub username: String,
+    pub id: String,
     pub password: String,
     pub email: String
 }
@@ -116,12 +116,15 @@ pub struct Coordinate {
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Bbox {
-    pub north_east: Coordinate,
-    pub south_west: Coordinate
+    pub south_west: Coordinate,
+    pub north_east: Coordinate
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct BboxSubscription {
     pub id: String,
-    pub bbox: Bbox
+    pub south_west_lat: f64,
+    pub south_west_lng: f64,
+    pub north_east_lat: f64,
+    pub north_east_lng: f64,
 }

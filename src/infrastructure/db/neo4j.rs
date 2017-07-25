@@ -122,9 +122,9 @@ impl Db for GraphClient {
     fn get_user(&self, username: &str) -> Result<User> {
         let result = self.exec(cypher_stmt!(
         "MATCH (u:User)
-         WHERE u.username = {username}
+         WHERE u.id = {id}
          RETURN u",
-        { "username" => username })?)?;
+        { "id" => username })?)?;
         let r = result.rows().next().ok_or(RepoError::NotFound)?;
         let u = r.get::<User>("u")?;
         Ok(u)
@@ -222,13 +222,13 @@ impl Db for GraphClient {
         self.exec(cypher_stmt!(
         "MERGE (
            u:User {
-             username:{username},
+             id:{id},
              password:{password},
              email:{email}
            }
         )",
         {
-            "username" => &u.username,
+            "id"       => &u.id,
             "password" => &u.password,
             "email"    => &u.email
         })?)?;
@@ -267,10 +267,10 @@ impl Db for GraphClient {
         })",
         {
             "id"        => &s.id,
-            "north_east_lat" => &s.bbox.north_east.lat,
-            "north_east_lng" => &s.bbox.north_east.lng,
-            "south_west_lat" => &s.bbox.south_west.lat,
-            "south_west_lng" => &s.bbox.south_west.lng
+            "north_east_lat" => &s.north_east_lat,
+            "north_east_lng" => &s.north_east_lng,
+            "south_west_lat" => &s.south_west_lat,
+            "south_west_lng" => &s.south_west_lng
         })?;
         self.exec(query)?;
         Ok(())
@@ -314,7 +314,7 @@ impl Db for GraphClient {
                 o_id = object_id,
                 predicate = predicate
             );
-        self.exec(stmt)?;
+        self.exec(stmt.clone())?;
         Ok(())
     }
 
@@ -443,7 +443,7 @@ impl Db for GraphClient {
     }
 
     fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>>{
-        let result = self.exec("MATCH (s:BBoxSubscription) RETURN s")?;
+        let result = self.exec("MATCH (s:BboxSubscription) RETURN s")?;
         Ok(result
             .rows()
             .filter_map(|s| s.get::<BboxSubscription>("s").ok())

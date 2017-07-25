@@ -85,7 +85,6 @@ impl<'a, 'r> FromRequest<'a, 'r> for Login {
 }
 
 fn notify_admins(subject: &str, body: &str) {
-    debug!("sending email to {:?}", &CONFIG.notification.send_to);
     match mail::create(&CONFIG.notification.send_to, subject, body) {
         Ok(mail) => {
             thread::spawn(move ||{
@@ -101,7 +100,6 @@ fn notify_admins(subject: &str, body: &str) {
 }
 
 fn notify_create_entry(e: &usecase::NewEntry, id: &str, email_addresses: Vec<String>) {
-    debug!("sending email to {:?}", email_addresses);
     let subject = String::from("Karte von Morgen - neuer Eintrag: ") + &e.title;
     let body = format!("https:://prototyp.kartevonmorgen.org/?entry={}", id);
 
@@ -120,7 +118,6 @@ fn notify_create_entry(e: &usecase::NewEntry, id: &str, email_addresses: Vec<Str
 }
 
 fn notify_update_entry(e: &usecase::UpdateEntry, email_addresses: Vec<String>) {
-    debug!("sending email to {:?}", email_addresses);
     let subject = String::from("Karte von Morgen - Eintrag verändert: ") + &e.title;
     let body = format!("https:://prototyp.kartevonmorgen.org/?entry={}", e.id);
 
@@ -166,7 +163,6 @@ fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<S
     let e = e.into_inner();
     let id = usecase::create_new_entry(&mut *db.get()?, e.clone())?;
     let email_addresses = usecase::email_addresses_to_notify(&e.lat, &e.lng, &mut *db.get()?);
-    debug!("NOTIFY: {:?}", email_addresses);
     notify_create_entry(&e, &id, email_addresses);
 
     notify_admins(&format!("Neuer Eintrag: {}", e.title),&format!("{:?}",e));
@@ -178,7 +174,6 @@ fn put_entry(db: State<DbPool>, id: String, e: JSON<usecase::UpdateEntry>) -> Re
     let e = e.into_inner();
     usecase::update_entry(&mut *db.get()?, e.clone())?;
     let email_addresses = usecase::email_addresses_to_notify(&e.lat, &e.lng, &mut *db.get()?);
-    debug!("NOTIFY: {:?}", email_addresses);
     notify_update_entry(&e, email_addresses);
     notify_admins(&format!("Veränderter Eintrag: {}", e.title),&format!("{:?}",e));
     Ok(JSON(id))

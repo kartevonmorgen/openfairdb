@@ -39,7 +39,7 @@ impl Id for Tag {
 
 impl Id for User {
     fn id(&self) -> String {
-        self.username.clone()
+        self.id.clone()
     }
 }
 
@@ -382,7 +382,7 @@ pub fn create_new_user<D: Db>(db: &mut D, u: NewUser) -> Result<()> {
     }
     let pw = bcrypt::hash(&u.password)?;
     db.create_user(&User{
-        username: u.username,
+        id: u.username,
         password: pw,
         email: u.email,
     })?;
@@ -394,14 +394,14 @@ pub fn get_user<D: Db>(db: &mut D, login: &str, user: &str) -> Result<(String,St
         return Err(Error::Parameter(ParameterError::Forbidden))
     }
     let u = db.get_user(user)?;
-    Ok((u.username, u.email))
+    Ok((u.id, u.email))
 }
 
 pub fn login<D: Db>(db: &mut D, login: Login) -> Result<String> {
     match db.get_user(&login.username) {
         Ok(u) => {
             if bcrypt::verify(&login.password, &u.password) {
-                Ok(u.username)
+                Ok(u.id)
             } else {
                 Err(Error::Parameter(ParameterError::Credentials))
             }
@@ -509,17 +509,15 @@ pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
 
 pub fn subscribe_to_bbox(coordinates: &Vec<Coordinate>, username: &str, db: &mut Db) -> Result<()>{
     if coordinates.len() != 2 {
-        debug!("error 1");
         return Err(Error::Parameter(ParameterError::Bbox));
     }
     let bbox = Bbox {
-        north_east: coordinates[0].clone(),
-        south_west: coordinates[1].clone()
+        south_west: coordinates[0].clone(),
+        north_east: coordinates[1].clone()
     };
     validate::bbox(&bbox)?;
 
     create_or_modify_subscription(&bbox, username.into(), db)?;
-
     Ok(())
 }
 
@@ -550,7 +548,10 @@ pub fn create_or_modify_subscription(bbox: &Bbox, username: String, db: &mut Db)
     let s_id = Uuid::new_v4().simple().to_string();
     db.create_bbox_subscription(&BboxSubscription{
         id: s_id.clone(),
-        bbox: bbox.clone()
+        south_west_lat: bbox.south_west.lat,
+        south_west_lng: bbox.south_west.lng,
+        north_east_lat: bbox.north_east.lat,
+        north_east_lng: bbox.north_east.lng,
     })?;
 
     db.create_triple(&Triple{
@@ -576,7 +577,7 @@ pub fn email_addresses_to_notify(lat: &f64, lng: &f64, db: &mut Db) -> Vec<Strin
         .map(|(u_id, s_id)| (db.all_users()
             .unwrap()
             .into_iter()
-            .filter(|u| u.username == u_id)
+            .filter(|u| u.id == u_id)
             .map(|u| u.email)
             .nth(0).unwrap(),
             s_id))
@@ -584,11 +585,26 @@ pub fn email_addresses_to_notify(lat: &f64, lng: &f64, db: &mut Db) -> Vec<Strin
             .unwrap()
             .into_iter()
             .filter(|s| s.id == s_id)
-            .map(|s| s.bbox)
+            .map(|s| Bbox{
+                south_west: Coordinate {
+                    lat: s.south_west_lat,
+                    lng: s.south_west_lng
+                },
+                north_east: Coordinate {
+                    lat: s.north_east_lat,
+                    lng: s.north_east_lng
+                }
+            })
             .nth(0).unwrap()))
         .collect();
 
-    let emails_to_notify : Vec<String> = users_and_bboxes
+    let user_triples : Vec<Triple> = db.all_triples()
+        .unwrap()
+        .into_iter()
+        .filter(|triple| triple.subject == ObjectId::User("123".into()))
+        .collect();
+
+    let emails_to_notify : Vec<String> = users_and_bboxes.clone()
         .into_iter()
         .filter(|&(ref email, ref bbox)| geo::is_in_bbox(lat, lng, &bbox))
         .map(|(email, bbox)| email)
