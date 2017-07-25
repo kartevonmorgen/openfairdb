@@ -346,6 +346,13 @@ fn subscribe_to_bbox(user: Login, coordinates: JSON<Vec<Coordinate>>, db: State<
     Ok(JSON(()))
 }
 
+#[post("/unsubscribe-all-bboxes")]
+fn unsubscribe_all_bboxes(user: Login, db: State<DbPool>) -> Result<()> {
+    let Login(username) = user;
+    usecase::unsubscribe_all_bboxes(&username, &mut*db.get()?)?;
+    Ok(JSON(()))
+}
+
 #[get("/users/<id>", format = "application/json")]
 fn get_user(db: State<DbPool>, user: Login, id: String) -> result::Result<JSON<json::User>,AppError> {
     let (username, email) = usecase::get_user(&mut*db.get()?, &user.0, &id)?;
