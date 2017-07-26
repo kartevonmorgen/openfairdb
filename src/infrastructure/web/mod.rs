@@ -500,7 +500,7 @@ impl<'r> Responder<'r> for AppError {
                     Error::Parameter(ref err) => {
                          match *err {
                             ParameterError::Credentials => Status::Unauthorized,
-                            ParameterError::UserExists => <Status>::new(400, "UserExists")
+                            ParameterError::UserExists => <Status>::new(400, "UserExists"),
                             _ => Status::BadRequest,
                          }
                     }
