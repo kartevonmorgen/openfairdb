@@ -54,6 +54,15 @@ pub struct User {
     pub email: String
 }
 
+#[derive(Serialize)]
+pub struct BboxSubscription{
+    pub id              : String,
+    pub south_west_lat  : f64,
+    pub south_west_lng  : f64,
+    pub north_east_lat  : f64,
+    pub north_east_lng  : f64,
+}
+
 // Entity -> JSON
 
 impl Entry {

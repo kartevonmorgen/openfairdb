@@ -6,7 +6,7 @@ quick_error!{
     #[derive(Debug)]
     pub enum ParameterError {
         Bbox{
-            description("Requested bounding box is invalid")
+            description("Bounding box is invalid")
         }
         License{
             description("Unsupported license")

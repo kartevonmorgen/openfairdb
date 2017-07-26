@@ -274,7 +274,7 @@ fn create_new_user() {
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let u = db.get().unwrap().get_user("foo").unwrap();
-    assert_eq!(u.username, "foo");
+    assert_eq!(u.id, "foo");
     assert!(bcrypt::verify("bar", &u.password));
 }
 
@@ -383,7 +383,7 @@ fn login_with_valid_credentials() {
     let (client, db) = setup();
     db.get().unwrap().users = vec![
         User{
-            username: "foo".into(),
+            id: "foo".into(),
             password: bcrypt::hash("bar").unwrap(),
             email: "foo@bar".into()
         }];
@@ -412,7 +412,7 @@ fn login_with_valid_credentials() {
 fn logout() {
     let (client, db) = setup();
     db.get().unwrap().users = vec![
-        User{ username: "foo".into(), password: bcrypt::hash("bar").unwrap(), email: "foo@bar".into() }
+        User{ id: "foo".into(), password: bcrypt::hash("bar").unwrap(), email: "foo@bar".into() }
     ];
     let response = client.post("/login")
         .header(ContentType::JSON)
@@ -456,8 +456,8 @@ fn logout() {
 fn get_user() {
     let (client, db) = setup();
     db.get().unwrap().users = vec![
-        User{ username: "a".into(), password: bcrypt::hash("a").unwrap(), email: "a@bar".into() },
-        User{ username: "b".into(), password: bcrypt::hash("b").unwrap(), email: "b@bar".into() }
+        User{ id: "a".into(), password: bcrypt::hash("a").unwrap(), email: "a@bar".into() },
+        User{ id: "b".into(), password: bcrypt::hash("b").unwrap(), email: "b@bar".into() }
     ];
     let response = client.post("/login")
         .header(ContentType::JSON)

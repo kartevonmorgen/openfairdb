@@ -40,7 +40,9 @@ pub enum Relation {
     #[serde(rename="is_commented_with")]
     IsCommentedWith,
     #[serde(rename="created_by")]
-    CreatedBy
+    CreatedBy,
+    #[serde(rename="subscribed_to")]
+    SubscribedTo
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -62,11 +64,13 @@ pub enum ObjectId {
     Comment(String),
     #[serde(rename="rating")]
     Rating(String),
+    #[serde(rename="bbox_subscription")]
+    BboxSubscription(String)
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct User {
-    pub username: String,
+    pub id: String,
     pub password: String,
     pub email: String
 }
@@ -102,4 +106,25 @@ pub struct Rating {
     pub value: i8,
     pub context: RatingContext,
     pub source: Option<String>
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+pub struct Coordinate {
+    pub lat: f64,
+    pub lng: f64,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct Bbox {
+    pub south_west: Coordinate,
+    pub north_east: Coordinate
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct BboxSubscription {
+    pub id: String,
+    pub south_west_lat: f64,
+    pub south_west_lng: f64,
+    pub north_east_lat: f64,
+    pub north_east_lng: f64,
 }

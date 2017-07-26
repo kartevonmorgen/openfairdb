@@ -7,6 +7,7 @@ use rocket::Outcome;
 use rocket::http::{Status, Cookie, Cookies};
 use rocket::config::{Environment, Config};
 use adapters::json;
+use adapters::user_communication;
 use entities::*;
 use business::db::Db;
 use business::error::{Error, RepoError, ParameterError};
@@ -67,16 +68,16 @@ fn extract_ids(s: &str) -> Vec<String> {
 }
 
 #[derive(Debug)]
-struct User(String);
+struct Login(String);
 
-impl<'a, 'r> FromRequest<'a, 'r> for User {
+impl<'a, 'r> FromRequest<'a, 'r> for Login {
     type Error = ();
 
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<User, ()> {
+    fn from_request(request: &'a Request<'r>) -> request::Outcome<Login, ()> {
         let user = request.cookies()
             .get_private(COOKIE_USER_KEY)
             .and_then(|cookie| cookie.value().parse().ok())
-            .map(|id| User(id));
+            .map(|id| Login(id));
         match user {
             Some(user) => Outcome::Success(user),
             None => Outcome::Failure((Status::Unauthorized, ()))
@@ -84,17 +85,61 @@ impl<'a, 'r> FromRequest<'a, 'r> for User {
     }
 }
 
-fn notify(subject: &str, body: &str) {
-    match mail::create(&CONFIG.notification.send_to, subject, body) {
-        Ok(mail) => {
-            thread::spawn(move ||{
-                if let Err(err) = mail::send(&mail) {
-                    warn!("Could not send mail: {}", err);
-                }
-            });
+fn notify_create_entry(email_addresses: Vec<String>, e: &usecase::NewEntry, id: &str, all_categories: Vec<Category>) {
+    let subject = String::from("Karte von Morgen - neuer Eintrag: ") + &e.title;
+    let categories : Vec<String> = all_categories
+        .into_iter()
+        .filter(|c| e.categories.clone().into_iter().any(|c_id| *c.id == c_id))
+        .map(|c| c.name)
+        .collect();
+
+    let body = user_communication::new_entry_email(e, id, categories);
+
+    debug!("sending emails to: {:?}", email_addresses);
+
+    for email_address in email_addresses.clone() {
+        let to = vec![email_address];
+        match mail::create(&to, &subject, &body) {
+            Ok(mail) => {
+                thread::spawn(move ||{
+                    if let Err(err) = mail::send(&mail) {
+                        warn!("Could not send mail: {}", err);
+                    }
+                });
+            }
+            Err(e) => {
+                warn!("could not create notification mail: {}", e);
+            }
         }
-        Err(e) => {
-            warn!("could not create notifiction mail: {}", e);
+    }
+}
+
+fn notify_update_entry(email_addresses: Vec<String>, e: &usecase::UpdateEntry, all_categories: Vec<Category>) {
+    let subject = String::from("Karte von Morgen - Eintrag verändert: ") + &e.title;
+
+    let categories : Vec<String> = all_categories
+        .into_iter()
+        .filter(|c| e.categories.clone().into_iter().any(|c_id| *c.id == c_id))
+        .map(|c| c.name)
+        .collect();
+
+    let body = user_communication::changed_entry_email(e, categories);
+
+    debug!("sending to: {:?}", email_addresses);
+
+    for email_address in email_addresses.clone() {
+        let to = vec![email_address];
+        match mail::create(&to, &subject, &body) {
+            Ok(mail) => {
+                thread::spawn(move ||{
+                    if let Err(err) = mail::send(&mail) {
+                        warn!("Could not send mail: {}", err);
+                    }
+                });
+            }
+            Err(e) => {
+                warn!("could not create notification mail: {}", e);
+            }
         }
     }
 }
@@ -126,7 +171,9 @@ fn get_duplicates(db: State<DbPool>) -> Result<Vec<(String, String, DuplicateTyp
 fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<String, AppError> {
     let e = e.into_inner();
     let id = usecase::create_new_entry(&mut *db.get()?, e.clone())?;
-    notify(&format!("Neuer Eintrag: {}", e.title),&format!("{:?}",e));
+    let email_addresses = usecase::email_addresses_to_notify(&e.lat, &e.lng, &mut *db.get()?);
+    let all_categories = db.get()?.all_categories()?;
+    notify_create_entry(email_addresses, &e, &id, all_categories);
     Ok(id)
 }
 
@@ -134,7 +181,9 @@ fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<S
 fn put_entry(db: State<DbPool>, id: String, e: JSON<usecase::UpdateEntry>) -> Result<String> {
     let e = e.into_inner();
     usecase::update_entry(&mut *db.get()?, e.clone())?;
-    notify(&format!("Veränderter Eintrag: {}", e.title),&format!("{:?}",e));
+    let email_addresses = usecase::email_addresses_to_notify(&e.lat, &e.lng, &mut *db.get()?);
+    let all_categories = db.get()?.all_categories()?;
+    notify_update_entry(email_addresses, &e, all_categories);
     Ok(JSON(id))
 }
 
@@ -297,8 +346,39 @@ fn logout(mut cookies: Cookies) -> Result<()> {
     Ok(JSON(()))
 }
 
+#[post("/subscribe-to-bbox", format = "application/json", data = "<coordinates>")]
+fn subscribe_to_bbox(user: Login, coordinates: JSON<Vec<Coordinate>>, db: State<DbPool>) -> Result<()> {
+    let coordinates = coordinates.into_inner();
+    let Login(username) = user;
+    usecase::subscribe_to_bbox(&coordinates, &username, &mut*db.get()?)?;
+    Ok(JSON(()))
+}
+
+#[delete("/unsubscribe-all-bboxes")]
+fn unsubscribe_all_bboxes(user: Login, db: State<DbPool>) -> Result<()> {
+    let Login(username) = user;
+    usecase::unsubscribe_all_bboxes(&username, &mut*db.get()?)?;
+    Ok(JSON(()))
+}
+
+#[get("/bbox-subscriptions")]
+fn get_bbox_subscriptions(db: State<DbPool>, user: Login) -> Result<Vec<json::BboxSubscription>> {
+    let Login(username) = user;
+    let user_subscriptions = usecase::get_bbox_subscriptions(&username, &*db.get()?)?
+        .into_iter()
+        .map(|s| json::BboxSubscription{
+            id: s.id,
+            south_west_lat: s.south_west_lat,
+            south_west_lng: s.south_west_lng,
+            north_east_lat: s.north_east_lat,
+            north_east_lng: s.north_east_lng,
+        })
+        .collect();
+    Ok(JSON(user_subscriptions))
+}
+
 #[get("/users/<id>", format = "application/json")]
-fn get_user(db: State<DbPool>, user: User, id: String) -> result::Result<JSON<json::User>,AppError> {
+fn get_user(db: State<DbPool>, user: Login, id: String) -> result::Result<JSON<json::User>,AppError> {
     let (username, email) = usecase::get_user(&mut*db.get()?, &user.0, &id)?;
     Ok(JSON(json::User{ username, email }))
 }
@@ -372,6 +452,9 @@ fn rocket_instance<T: r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Roc
         .mount("/",
                routes![login,
                        logout,
+                       subscribe_to_bbox,
+                       get_bbox_subscriptions,
+                       unsubscribe_all_bboxes,
                        get_entry,
                        post_entry,
                        post_user,

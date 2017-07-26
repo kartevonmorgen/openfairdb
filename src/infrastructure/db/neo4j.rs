@@ -11,7 +11,8 @@ fn neo4j_edge_name(t: &Triple) -> &str {
        Relation::IsTaggedWith    => "IS_TAGGED_WITH",
        Relation::IsRatedWith     => "IS_RATED_WITH",
        Relation::IsCommentedWith => "IS_COMMENTED_WITH",
-       Relation::CreatedBy       => "CREATED_BY"
+       Relation::CreatedBy       => "CREATED_BY",
+       Relation::SubscribedTo    => "SUBSCRIBED_TO"
     }.into()
 }
 
@@ -21,7 +22,8 @@ fn object_id_to_neo4j_label(id: &ObjectId) -> (&str,&str) {
         ObjectId::Tag(ref id) => ("Tag",id),
         ObjectId::User(ref id) => ("User",id),
         ObjectId::Comment(ref id) => ("Comment",id),
-        ObjectId::Rating(ref id) => ("Rating",id)
+        ObjectId::Rating(ref id) => ("Rating",id),
+        ObjectId::BboxSubscription(ref id) => ("BboxSubscription", id)
     }
 }
 
@@ -32,6 +34,7 @@ fn neo4j_label_to_object_id(label: &str, id: String) -> Option<ObjectId> {
         "User"      => Some(ObjectId::User(id)),
         "Comment"   => Some(ObjectId::Comment(id)),
         "Rating"    => Some(ObjectId::Rating(id)),
+        "BboxSubscription" => Some(ObjectId::BboxSubscription(id)),
         _           => None,
     }
 }
@@ -42,6 +45,7 @@ fn neo4j_relation_to_relation(rel: &str) -> Option<Relation> {
         "IS_RATED_WITH"     => Some(Relation::IsRatedWith),
         "IS_COMMENTED_WITH" => Some(Relation::IsCommentedWith),
         "CREATED_BY"        => Some(Relation::CreatedBy),
+        "SUBSCRIBED_TO"     => Some(Relation::SubscribedTo),
         _                   => None
     }
 }
@@ -118,9 +122,9 @@ impl Db for GraphClient {
     fn get_user(&self, username: &str) -> Result<User> {
         let result = self.exec(cypher_stmt!(
         "MATCH (u:User)
-         WHERE u.username = {username}
+         WHERE u.id = {id}
          RETURN u",
-        { "username" => username })?)?;
+        { "id" => username })?)?;
         let r = result.rows().next().ok_or(RepoError::NotFound)?;
         let u = r.get::<User>("u")?;
         Ok(u)
@@ -218,13 +222,13 @@ impl Db for GraphClient {
         self.exec(cypher_stmt!(
         "MERGE (
            u:User {
-             username:{username},
+             id:{id},
              password:{password},
              email:{email}
            }
         )",
         {
-            "username" => &u.username,
+            "id"       => &u.id,
             "password" => &u.password,
             "email"    => &u.email
         })?)?;
@@ -251,6 +255,27 @@ impl Db for GraphClient {
         })?)?;
         Ok(())
     }
+
+    fn create_bbox_subscription(&mut self, s: &BboxSubscription) -> Result<()> {
+        let query = cypher_stmt!(
+        "CREATE (s:BboxSubscription {
+            id      : {id},
+            north_east_lat : {north_east_lat},
+            north_east_lng : {north_east_lng},
+            south_west_lat : {south_west_lat},
+            south_west_lng : {south_west_lng}
+        })",
+        {
+            "id"        => &s.id,
+            "north_east_lat" => &s.north_east_lat,
+            "north_east_lng" => &s.north_east_lng,
+            "south_west_lat" => &s.south_west_lat,
+            "south_west_lng" => &s.south_west_lng
+        })?;
+        self.exec(query)?;
+        Ok(())
+    }
+
 
     fn create_comment(&mut self, c: &Comment) -> Result<()> {
         self.exec(cypher_stmt!(
@@ -289,7 +314,7 @@ impl Db for GraphClient {
                 o_id = object_id,
                 predicate = predicate
             );
-        self.exec(stmt)?;
+        self.exec(stmt.clone())?;
         Ok(())
     }
 
@@ -399,6 +424,15 @@ impl Db for GraphClient {
             .collect::<Vec<Rating>>())
     }
 
+    fn all_users(&self) -> Result<Vec<User>> {
+        let result = self.exec(
+        "MATCH (u:User) RETURN u")?;
+        Ok(result
+            .rows()
+            .filter_map(|u| u.get::<User>("u").ok())
+            .collect::<Vec<User>>())
+    }
+
     fn all_comments(&self) -> Result<Vec<Comment>> {
         let result = self.exec(
         "MATCH (c:Comment) RETURN c")?;
@@ -406,6 +440,14 @@ impl Db for GraphClient {
             .rows()
             .filter_map(|r| r.get::<Comment>("c").ok())
             .collect::<Vec<Comment>>())
+    }
+
+    fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>>{
+        let result = self.exec("MATCH (s:BboxSubscription) RETURN s")?;
+        Ok(result
+            .rows()
+            .filter_map(|s| s.get::<BboxSubscription>("s").ok())
+            .collect::<Vec<BboxSubscription>>())
     }
 
     fn delete_triple(&mut self, t: &Triple) -> Result<()> {
@@ -422,6 +464,17 @@ impl Db for GraphClient {
                 o_id = object_id,
                 predicate = predicate
             );
+        self.exec(stmt)?;
+        Ok(())
+    }
+
+    fn delete_bbox_subscription(&mut self, s_id: &str) -> Result<()> {
+        let stmt = format!(
+            "MATCH (s)
+            WHERE s.id = \"{s_id}\"
+            OPTIONAL MATCH ()-[p]-(s)
+            DELETE s, p",
+            s_id = s_id);
         self.exec(stmt)?;
         Ok(())
     }

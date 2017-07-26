@@ -1,5 +1,4 @@
 use entities::*;
-use super::geo::Coordinate;
 
 pub trait InBBox {
     fn in_bbox(&self, bb: &[Coordinate]) -> bool;

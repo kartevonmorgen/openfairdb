@@ -8,6 +8,7 @@ use super::validate::{self, Validate};
 use uuid::Uuid;
 use std::collections::HashMap;
 use pwhash::bcrypt;
+use super::geo;
 
 #[cfg(test)]
 pub mod tests;
@@ -38,7 +39,7 @@ impl Id for Tag {
 
 impl Id for User {
     fn id(&self) -> String {
-        self.username.clone()
+        self.id.clone()
     }
 }
 
@@ -54,26 +55,35 @@ impl Id for Rating {
     }
 }
 
+impl Id for BboxSubscription {
+    fn id(&self) -> String {
+        self.id.clone()
+    }
+}
+
 fn triple_id(t: &Triple) -> String {
     let (s_type, s_id) = match t.subject {
         ObjectId::Entry(ref id) => ("entry", id),
         ObjectId::Tag(ref id) => ("tag", id),
         ObjectId::User(ref id) => ("user", id),
         ObjectId::Comment(ref id) => ("comment", id),
-        ObjectId::Rating(ref id) => ("rating", id)
+        ObjectId::Rating(ref id) => ("rating", id),
+        ObjectId::BboxSubscription(ref id) => ("bbox_subscription", id)
     };
     let (o_type, o_id) = match t.object {
         ObjectId::Entry(ref id) => ("entry", id),
         ObjectId::Tag(ref id) => ("tag", id),
         ObjectId::User(ref id) => ("user", id),
         ObjectId::Comment(ref id) => ("comment", id),
-        ObjectId::Rating(ref id) => ("rating", id)
+        ObjectId::Rating(ref id) => ("rating", id),
+        ObjectId::BboxSubscription(ref id) => ("bbox_subscription", id)
     };
     let p_type = match t.predicate {
         Relation::IsTaggedWith => "is_tagged_with",
         Relation::IsRatedWith => "is_rated_with",
         Relation::IsCommentedWith => "is_commented_with",
-        Relation::CreatedBy => "created_by"
+        Relation::CreatedBy => "created_by",
+        Relation::SubscribedTo => "subscribed_to"
     };
     format!("{}-{}-{}-{}-{}", s_type, s_id, p_type, o_type, o_id)
 }
@@ -372,7 +382,7 @@ pub fn create_new_user<D: Db>(db: &mut D, u: NewUser) -> Result<()> {
     }
     let pw = bcrypt::hash(&u.password)?;
     db.create_user(&User{
-        username: u.username,
+        id: u.username,
         password: pw,
         email: u.email,
     })?;
@@ -384,14 +394,14 @@ pub fn get_user<D: Db>(db: &mut D, login: &str, user: &str) -> Result<(String,St
         return Err(Error::Parameter(ParameterError::Forbidden))
     }
     let u = db.get_user(user)?;
-    Ok((u.username, u.email))
+    Ok((u.id, u.email))
 }
 
 pub fn login<D: Db>(db: &mut D, login: Login) -> Result<String> {
     match db.get_user(&login.username) {
         Ok(u) => {
             if bcrypt::verify(&login.password, &u.password) {
-                Ok(u.username)
+                Ok(u.id)
             } else {
                 Err(Error::Parameter(ParameterError::Credentials))
             }
@@ -407,8 +417,7 @@ pub fn login<D: Db>(db: &mut D, login: Login) -> Result<String> {
     }
 }
 
-pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String>
- {
+pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
     let new_entry = Entry{
         id          :  Uuid::new_v4().simple().to_string(),
         created     :  Utc::now().timestamp() as u64,
@@ -496,4 +505,158 @@ pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
         object: ObjectId::Comment(comment_id),
     })?;
     Ok(())
+}
+
+pub fn subscribe_to_bbox(coordinates: &Vec<Coordinate>, username: &str, db: &mut Db) -> Result<()>{
+    if coordinates.len() != 2 {
+        return Err(Error::Parameter(ParameterError::Bbox));
+    }
+    let bbox = Bbox {
+        south_west: coordinates[0].clone(),
+        north_east: coordinates[1].clone()
+    };
+    validate::bbox(&bbox)?;
+
+    create_or_modify_subscription(&bbox, username.into(), db)?;
+    Ok(())
+}
+
+pub fn get_bbox_subscriptions(username: &str, db: &Db) -> Result<Vec<BboxSubscription>>{
+    let user_subscriptions : Vec<String>  = db.all_triples()?
+        .into_iter()
+        .filter_map(|triple| match triple {
+            Triple {
+                subject     : ObjectId::User(ref u_id),
+                predicate   : Relation::SubscribedTo,
+                object      : ObjectId::BboxSubscription(ref s_id)
+            } => Some((u_id.clone(), s_id.clone())),
+            _ => None
+        })
+        .filter(|user_subscription| *user_subscription.0 == *username)
+        .map(|user_and_subscription| user_and_subscription.1)
+        .collect();
+    if user_subscriptions.len() > 0 {
+        return Ok(db.all_bbox_subscriptions()?
+            .into_iter()
+            .filter(|s| user_subscriptions
+                .clone()
+                .into_iter()
+                .any(|id| s.id == id))
+            .collect());
+    } else{
+        return Ok(vec![]);
+    }
+}
+
+pub fn create_or_modify_subscription(bbox: &Bbox, username: String, db: &mut Db) -> Result<()>{
+    let user_subscriptions : Vec<String>  = db.all_triples()?
+        .into_iter()
+        .filter_map(|triple| match triple {
+            Triple {
+                subject     : ObjectId::User(ref u_id),
+                predicate   : Relation::SubscribedTo,
+                object      : ObjectId::BboxSubscription(ref s_id)
+            } => Some((u_id.clone(), s_id.clone())),
+            _ => None
+        })
+        .filter(|user_subscription| *user_subscription.0 == *username)
+        .map(|user_and_subscription| user_and_subscription.1)
+        .collect();
+
+    if user_subscriptions.len() > 0 {
+        db.delete_bbox_subscription(&user_subscriptions[0].clone());      
+    }
+
+    let s_id = Uuid::new_v4().simple().to_string();
+    db.create_bbox_subscription(&BboxSubscription{
+        id: s_id.clone(),
+        south_west_lat: bbox.south_west.lat,
+        south_west_lng: bbox.south_west.lng,
+        north_east_lat: bbox.north_east.lat,
+        north_east_lng: bbox.north_east.lng,
+    })?;
+
+    db.create_triple(&Triple{
+        subject     : ObjectId::User(username),
+        predicate   : Relation::SubscribedTo,
+        object      : ObjectId::BboxSubscription(s_id.into())
+    })?;
+    Ok(())
+}
+
+pub fn unsubscribe_all_bboxes(username: &str, db: &mut Db) -> Result<()>{
+    let users : Vec<User> = db.all_users()?
+        .into_iter()
+        .filter(|u| *u.id == *username)
+        .collect();
+    let u_id = &users[0].id;
+    let user_subscriptions : Vec<String>  = db.all_triples()?
+        .into_iter()
+        .filter_map(|triple| match triple {
+            Triple {
+                subject     : ObjectId::User(ref u_id),
+                predicate   : Relation::SubscribedTo,
+                object      : ObjectId::BboxSubscription(ref s_id)
+            } => Some((u_id.clone(), s_id.clone())),
+            _ => None
+        })
+        .filter(|user_subscription| *user_subscription.0 == *username)
+        .map(|user_and_subscription| user_and_subscription.1)
+        .collect();
+
+    for s_id in user_subscriptions {
+        db.delete_bbox_subscription(&s_id)?;
+    }
+    Ok(())
+}
+
+pub fn email_addresses_to_notify(lat: &f64, lng: &f64, db: &mut Db) -> Vec<String>{
+    let users_and_bboxes : Vec<(String, Bbox)> = db.all_triples()
+        .unwrap()
+        .into_iter()
+        .filter_map(|triple| match triple {
+            Triple {
+                subject     : ObjectId::User(ref u_id),
+                predicate   : Relation::SubscribedTo,
+                object      : ObjectId::BboxSubscription(ref s_id)
+            } => Some((u_id.clone(), s_id.clone())),
+            _ => None
+        })
+        .map(|(u_id, s_id)| (db.all_users()
+            .unwrap()
+            .into_iter()
+            .filter(|u| u.id == u_id)
+            .map(|u| u.email)
+            .nth(0).unwrap(),
+            s_id))
+        .map(|(u_id, s_id)| (u_id, db.all_bbox_subscriptions()
+            .unwrap()
+            .into_iter()
+            .filter(|s| s.id == s_id)
+            .map(|s| Bbox{
+                south_west: Coordinate {
+                    lat: s.south_west_lat,
+                    lng: s.south_west_lng
+                },
+                north_east: Coordinate {
+                    lat: s.north_east_lat,
+                    lng: s.north_east_lng
+                }
+            })
+            .nth(0).unwrap()))
+        .collect();
+
+    let user_triples : Vec<Triple> = db.all_triples()
+        .unwrap()
+        .into_iter()
+        .filter(|triple| triple.subject == ObjectId::User("123".into()))
+        .collect();
+
+    let emails_to_notify : Vec<String> = users_and_bboxes.clone()
+        .into_iter()
+        .filter(|&(ref email, ref bbox)| geo::is_in_bbox(lat, lng, &bbox))
+        .map(|(email, bbox)| email)
+        .collect();
+
+    emails_to_notify
 }
