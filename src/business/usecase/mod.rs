@@ -564,7 +564,7 @@ pub fn create_or_modify_subscription(bbox: &Bbox, username: String, db: &mut Db)
         .collect();
 
     if user_subscriptions.len() > 0 {
-        db.delete_bbox_subscription(&user_subscriptions[0].clone());      
+        db.delete_bbox_subscription(&user_subscriptions[0].clone())?;      
     }
 
     let s_id = Uuid::new_v4().simple().to_string();
@@ -585,11 +585,6 @@ pub fn create_or_modify_subscription(bbox: &Bbox, username: String, db: &mut Db)
 }
 
 pub fn unsubscribe_all_bboxes(username: &str, db: &mut Db) -> Result<()>{
-    let users : Vec<User> = db.all_users()?
-        .into_iter()
-        .filter(|u| *u.id == *username)
-        .collect();
-    let u_id = &users[0].id;
     let user_subscriptions : Vec<String>  = db.all_triples()?
         .into_iter()
         .filter_map(|triple| match triple {
@@ -646,16 +641,10 @@ pub fn email_addresses_to_notify(lat: &f64, lng: &f64, db: &mut Db) -> Vec<Strin
             .nth(0).unwrap()))
         .collect();
 
-    let user_triples : Vec<Triple> = db.all_triples()
-        .unwrap()
-        .into_iter()
-        .filter(|triple| triple.subject == ObjectId::User("123".into()))
-        .collect();
-
     let emails_to_notify : Vec<String> = users_and_bboxes.clone()
         .into_iter()
-        .filter(|&(ref email, ref bbox)| geo::is_in_bbox(lat, lng, &bbox))
-        .map(|(email, bbox)| email)
+        .filter(|&(_, ref bbox)| geo::is_in_bbox(lat, lng, &bbox))
+        .map(|(email, _)| email)
         .collect();
 
     emails_to_notify

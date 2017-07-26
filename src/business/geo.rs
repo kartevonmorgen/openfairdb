@@ -18,7 +18,6 @@ pub fn distance(a: &Coordinate, b: &Coordinate) -> f64 {
     EARTH_RADIUS * c
 }
 
-
 pub fn center(south_west: &Coordinate, north_east: &Coordinate) -> Coordinate {
     Coordinate {
         lat: (south_west.lat + north_east.lat) / 2.0,
