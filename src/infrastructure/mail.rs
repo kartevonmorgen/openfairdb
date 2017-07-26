@@ -21,51 +21,59 @@ pub fn create(to: &[String], subject: &str, body: &str) -> Result<String> {
 
     let subject = format!("=?UTF-8?Q?{}?=", String::from_utf8_lossy(&encode(subject.as_bytes())));
 
-    Ok(format!(
+    let email = format!(
        "Date:{date}\r\n\
         From:{from}\r\n\
         To:{to}\r\n\
         Subject:{subject}\r\n\
         MIME-Version: 1.0\r\n\
-        Content-Type: text/plain; charset=utf-8\r\n\r\n\
+        Content-Type: text/plain; charset=utf-8\r\n\
         {body}",
         date    = now.as_str(),
         from    = FROM_ADDRESS,
         to      = to.join(","),
         subject = subject,
         body    = body
-     ))
+     );
+
+    debug!("sending email: {}", &email);
+    
+    Ok(email)
 }
 
-pub fn create_with_bcc(bcc: &[String], subject: &str, body: &str) -> Result<String> {
+// pub fn create_with_bcc(bcc: &[String], subject: &str, body: &str) -> Result<String> {
 
-    let bcc : Vec<_> = bcc.into_iter().filter(|m|is_valid_email(m)).cloned().collect();
+//     let bcc : Vec<_> = bcc.into_iter().filter(|m|is_valid_email(m)).cloned().collect();
 
-    if bcc.is_empty() {
-        return Err(Error::new(ErrorKind::Other,"No valid email adresses specified"));
-    }
+//     if bcc.is_empty() {
+//         return Err(Error::new(ErrorKind::Other,"No valid email adresses specified"));
+//     }
 
-    let now = Local::now()
-        .format("%d %b %Y %H:%M:%S %z")
-        .to_string();
+//     let now = Local::now()
+//         .format("%d %b %Y %H:%M:%S %z")
+//         .to_string();
 
-    let subject = format!("=?UTF-8?Q?{}?=", String::from_utf8_lossy(&encode(subject.as_bytes())));
+//     let subject = format!("=?UTF-8?Q?{}?=", String::from_utf8_lossy(&encode(subject.as_bytes())));
 
-    Ok(format!(
-       "Date:{date}\r\n\
-        From:{from}\r\n\
-        Bcc:{bcc}\r\n\
-        Subject:{subject}\r\n\
-        MIME-Version: 1.0\r\n\
-        Content-Type: text/plain; charset=utf-8\r\n\r\n\
-        {body}",
-        date    = now.as_str(),
-        from    = FROM_ADDRESS,
-        bcc      = bcc.join(","),
-        subject = subject,
-        body    = body
-     ))
-}
+//     let email = format!(
+//        "Date:{date}\r\n
+//         From:{from}\r\n
+//         To:\r\n
+//         Bcc:{bcc}\r\n
+//         Subject:{subject}\r\n
+//         MIME-Version: 1.0\r\n
+//         Content-Type: text/plain; charset=utf-8\r\n\r\n
+//         {body}",
+//         date    = now.as_str(),
+//         from    = FROM_ADDRESS,
+//         bcc     = bcc.join(","),
+//         subject = subject,
+//         body    = body
+//      );
+//     debug!("sending email: {}", email);
+
+//     Ok(email)
+// }
 
 pub fn send(mail: &str) -> Result<()> {
     let mut child = Command::new("sendmail")
@@ -91,7 +99,7 @@ mod tests {
                         To:mail@test.org\r\n\
                         Subject:=?UTF-8?Q?My Subject?=\r\n\
                         MIME-Version: 1.0\r\n\
-                        Content-Type: text/plain; charset=utf-8\r\n\r\n\
+                        Content-Type: text/plain; charset=utf-8\r\n\
                         Hello Mail";
         assert!(mail.contains(expected));
     }

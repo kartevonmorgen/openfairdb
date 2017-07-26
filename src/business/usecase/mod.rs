@@ -521,6 +521,33 @@ pub fn subscribe_to_bbox(coordinates: &Vec<Coordinate>, username: &str, db: &mut
     Ok(())
 }
 
+pub fn get_bbox_subscriptions(username: &str, db: &Db) -> Result<Vec<BboxSubscription>>{
+    let user_subscriptions : Vec<String>  = db.all_triples()?
+        .into_iter()
+        .filter_map(|triple| match triple {
+            Triple {
+                subject     : ObjectId::User(ref u_id),
+                predicate   : Relation::SubscribedTo,
+                object      : ObjectId::BboxSubscription(ref s_id)
+            } => Some((u_id.clone(), s_id.clone())),
+            _ => None
+        })
+        .filter(|user_subscription| *user_subscription.0 == *username)
+        .map(|user_and_subscription| user_and_subscription.1)
+        .collect();
+    if user_subscriptions.len() > 0 {
+        return Ok(db.all_bbox_subscriptions()?
+            .into_iter()
+            .filter(|s| user_subscriptions
+                .clone()
+                .into_iter()
+                .any(|id| s.id == id))
+            .collect());
+    } else{
+        return Ok(vec![]);
+    }
+}
+
 pub fn create_or_modify_subscription(bbox: &Bbox, username: String, db: &mut Db) -> Result<()>{
     let user_subscriptions : Vec<String>  = db.all_triples()?
         .into_iter()
@@ -537,12 +564,7 @@ pub fn create_or_modify_subscription(bbox: &Bbox, username: String, db: &mut Db)
         .collect();
 
     if user_subscriptions.len() > 0 {
-        db.delete_triple(&Triple {
-            subject     : ObjectId::User(username.clone()),
-            predicate   : Relation::SubscribedTo,
-            object      : ObjectId::BboxSubscription(user_subscriptions[0].clone())
-        })?;
-        // ToDo: delete BboxSubscription?        
+        db.delete_bbox_subscription(&user_subscriptions[0].clone());      
     }
 
     let s_id = Uuid::new_v4().simple().to_string();
@@ -559,6 +581,32 @@ pub fn create_or_modify_subscription(bbox: &Bbox, username: String, db: &mut Db)
         predicate   : Relation::SubscribedTo,
         object      : ObjectId::BboxSubscription(s_id.into())
     })?;
+    Ok(())
+}
+
+pub fn unsubscribe_all_bboxes(username: &str, db: &mut Db) -> Result<()>{
+    let users : Vec<User> = db.all_users()?
+        .into_iter()
+        .filter(|u| *u.id == *username)
+        .collect();
+    let u_id = &users[0].id;
+    let user_subscriptions : Vec<String>  = db.all_triples()?
+        .into_iter()
+        .filter_map(|triple| match triple {
+            Triple {
+                subject     : ObjectId::User(ref u_id),
+                predicate   : Relation::SubscribedTo,
+                object      : ObjectId::BboxSubscription(ref s_id)
+            } => Some((u_id.clone(), s_id.clone())),
+            _ => None
+        })
+        .filter(|user_subscription| *user_subscription.0 == *username)
+        .map(|user_and_subscription| user_and_subscription.1)
+        .collect();
+
+    for s_id in user_subscriptions {
+        db.delete_bbox_subscription(&s_id)?;
+    }
     Ok(())
 }
 
