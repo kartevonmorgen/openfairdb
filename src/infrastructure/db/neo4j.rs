@@ -122,9 +122,9 @@ impl Db for GraphClient {
     fn get_user(&self, username: &str) -> Result<User> {
         let result = self.exec(cypher_stmt!(
         "MATCH (u:User)
-         WHERE u.id = {id}
+         WHERE u.username = {username}
          RETURN u",
-        { "id" => username })?)?;
+        { "username" => username })?)?;
         let r = result.rows().next().ok_or(RepoError::NotFound)?;
         let u = r.get::<User>("u")?;
         Ok(u)
@@ -364,6 +364,17 @@ impl Db for GraphClient {
             "homepage"    => &e.homepage,
             "license"     => &e.license,
             "categories"  => &e.categories
+        })?)?;
+        Ok(())
+    }
+
+    fn confirm_email_address(&mut self, u_id: &str) -> Result<()> {
+        self.exec(cypher_stmt!(
+        "MATCH (u:User) WHERE s.id = {u_id}
+        SET u.email_confirmed = {email_confirmed}",
+        {
+            "u_id" => u_id,
+            "email_confirmed" => true
         })?)?;
         Ok(())
     }

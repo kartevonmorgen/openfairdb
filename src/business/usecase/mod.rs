@@ -380,20 +380,23 @@ pub fn create_new_user<D: Db>(db: &mut D, u: NewUser) -> Result<()> {
     if db.get_user(&u.username).is_ok() {
         return Err(Error::Parameter(ParameterError::UserExists));
     }
+
     let pw = bcrypt::hash(&u.password)?;
     db.create_user(&User{
-        id: u.username,
+        id: Uuid::new_v4().simple().to_string(),
+        username: u.username,
         password: pw,
         email: u.email,
+        email_confirmed: false
     })?;
     Ok(())
 }
 
-pub fn get_user<D: Db>(db: &mut D, login: &str, user: &str) -> Result<(String,String)> {
-    if login != user {
+pub fn get_user<D: Db>(db: &mut D, login: &str, username: &str) -> Result<(String,String)> {
+    if login != username {
         return Err(Error::Parameter(ParameterError::Forbidden))
     }
-    let u = db.get_user(user)?;
+    let u = db.get_user(username)?;
     Ok((u.id, u.email))
 }
 
@@ -401,7 +404,11 @@ pub fn login<D: Db>(db: &mut D, login: Login) -> Result<String> {
     match db.get_user(&login.username) {
         Ok(u) => {
             if bcrypt::verify(&login.password, &u.password) {
-                Ok(u.id)
+                if u.email_confirmed {
+                    Ok(u.id)
+                } else{
+                    Err(Error::Parameter(ParameterError::EmailNotConfirmed))
+                }
             } else {
                 Err(Error::Parameter(ParameterError::Credentials))
             }
@@ -416,6 +423,13 @@ pub fn login<D: Db>(db: &mut D, login: Login) -> Result<String> {
         }
     }
 }
+
+pub fn confirm_email_address<D: Db>(u_id: &str, db: &mut D) -> Result<()>{
+    db.confirm_email_address(u_id)?;
+    Ok(())
+}
+
+
 
 pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
     let new_entry = Entry{

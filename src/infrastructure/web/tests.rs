@@ -274,7 +274,7 @@ fn create_new_user() {
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let u = db.get().unwrap().get_user("foo").unwrap();
-    assert_eq!(u.id, "foo");
+    assert_eq!(u.username, "foo");
     assert!(bcrypt::verify("bar", &u.password));
 }
 
@@ -383,9 +383,11 @@ fn login_with_valid_credentials() {
     let (client, db) = setup();
     db.get().unwrap().users = vec![
         User{
-            id: "foo".into(),
+            id: "123".into(),
+            username: "foo".into(),
             password: bcrypt::hash("bar").unwrap(),
-            email: "foo@bar".into()
+            email: "foo@bar".into(),
+            email_confirmed: true
         }];
     let response = client.post("/login")
         .header(ContentType::JSON)
@@ -412,7 +414,13 @@ fn login_with_valid_credentials() {
 fn logout() {
     let (client, db) = setup();
     db.get().unwrap().users = vec![
-        User{ id: "foo".into(), password: bcrypt::hash("bar").unwrap(), email: "foo@bar".into() }
+        User{ 
+            id: "123".into(),
+            username: "foo".into(), 
+            password: bcrypt::hash("bar").unwrap(), 
+            email: "foo@bar".into(),
+            email_confirmed: true 
+        }
     ];
     let response = client.post("/login")
         .header(ContentType::JSON)
@@ -456,8 +464,20 @@ fn logout() {
 fn get_user() {
     let (client, db) = setup();
     db.get().unwrap().users = vec![
-        User{ id: "a".into(), password: bcrypt::hash("a").unwrap(), email: "a@bar".into() },
-        User{ id: "b".into(), password: bcrypt::hash("b").unwrap(), email: "b@bar".into() }
+        User{ 
+            id: "123".into(),
+            username: "a".into(), 
+            password: bcrypt::hash("a").unwrap(), 
+            email: "a@bar".into(),
+            email_confirmed: true 
+        },
+        User{ 
+            id: "123".into(),
+            username: "b".into(), 
+            password: bcrypt::hash("b").unwrap(), 
+            email: "b@bar".into(),
+            email_confirmed: true 
+        }
     ];
     let response = client.post("/login")
         .header(ContentType::JSON)
@@ -489,6 +509,52 @@ fn get_user() {
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(body_str,r#"{"username":"a","email":"a@bar"}"#);
+}
+
+#[test]
+fn confirm_email_address(){
+    let (client, db) = setup();
+    db.get().unwrap().users = vec![
+        User{ 
+            id: "123".into(),
+            username: "foo".into(), 
+            password: bcrypt::hash("bar").unwrap(), 
+            email: "a@bar.de".into(),
+            email_confirmed: false 
+        }
+    ];
+
+    let response = client.post("/login")
+        .header(ContentType::JSON)
+        .body(r#"{"username": "foo", "password": "bar"}"#)
+        .dispatch();
+
+    assert_eq!(response.status(), Status::Forbidden);
+
+    let response = client.post("/confirm-email-address")
+        .header(ContentType::JSON)
+        .body(r#"{"u_id": "123"}"#)
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(db.get().unwrap().users[0].email_confirmed, true);
+
+    let response = client.post("/login")
+        .header(ContentType::JSON)
+        .body(r#"{"username": "foo", "password": "bar"}"#)
+        .dispatch();
+    let cookie : Cookie = response
+        .headers()
+        .iter()
+        .filter(|h|h.name == "Set-Cookie")
+        .filter(|h|h.value.contains("user_id="))
+        .nth(0)
+        .unwrap()
+        .value
+        .parse()
+        .unwrap();
+
+    assert_eq!(response.status(), Status::Ok);
+    assert!(cookie.value().len() > 25);
 }
 
 #[test]

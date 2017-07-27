@@ -71,8 +71,10 @@ pub enum ObjectId {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct User {
     pub id: String,
+    pub username: String,
     pub password: String,
-    pub email: String
+    pub email: String,
+    pub email_confirmed: bool,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]

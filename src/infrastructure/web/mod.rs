@@ -69,6 +69,11 @@ fn extract_ids(s: &str) -> Vec<String> {
 #[derive(Debug)]
 struct Login(String);
 
+#[derive(Deserialize, Debug, Clone)]
+struct UserId {
+    u_id: String
+}
+
 impl<'a, 'r> FromRequest<'a, 'r> for Login {
     type Error = ();
 
@@ -124,7 +129,7 @@ fn notify_update_entry(email_addresses: Vec<String>, e: &usecase::UpdateEntry, a
 
     let body = user_communication::changed_entry_email(e, categories);
 
-    debug!("sending to: {:?}", email_addresses);
+    debug!("sending emails to: {:?}", email_addresses);
 
     for email_address in email_addresses.clone() {
         let to = vec![email_address];
@@ -345,6 +350,12 @@ fn logout(mut cookies: Cookies) -> Result<()> {
     Ok(JSON(()))
 }
 
+#[post("/confirm-email-address", format = "application/json", data = "<u_id>")]
+fn confirm_email_address(u_id : JSON<UserId>, db: State<DbPool>) -> Result<()>{
+    usecase::confirm_email_address(&u_id.into_inner().u_id, &mut*db.get()?)?;
+    Ok(JSON(()))
+}
+
 #[post("/subscribe-to-bbox", format = "application/json", data = "<coordinates>")]
 fn subscribe_to_bbox(user: Login, coordinates: JSON<Vec<Coordinate>>, db: State<DbPool>) -> Result<()> {
     let coordinates = coordinates.into_inner();
@@ -451,6 +462,7 @@ fn rocket_instance<T: r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Roc
         .mount("/",
                routes![login,
                        logout,
+                       confirm_email_address,
                        subscribe_to_bbox,
                        get_bbox_subscriptions,
                        unsubscribe_all_bboxes,
@@ -500,6 +512,7 @@ impl<'r> Responder<'r> for AppError {
                          match *err {
                             ParameterError::Credentials => Status::Unauthorized,
                             ParameterError::UserExists => <Status>::new(400, "UserExists"),
+                            ParameterError::EmailNotConfirmed => <Status>::new(403, "EmailNotConfirmed"),
                             _ => Status::BadRequest,
                          }
                     }

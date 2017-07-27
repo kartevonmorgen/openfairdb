@@ -35,6 +35,9 @@ quick_error!{
         Credentials {
             description("Invalid credentials")
         }
+        EmailNotConfirmed {
+            description("Email not confirmed")
+        }
         Forbidden{
             description("This is not allowed")
         }
