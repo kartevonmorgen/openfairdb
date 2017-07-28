@@ -332,15 +332,15 @@ fn logout(mut cookies: Cookies) -> Result<()> {
     Ok(JSON(()))
 }
 
-#[post("/send-confirmation-email", format = "application/json", data = "<user>")]
-fn send_confirmation_email(user: JSON<Login>, db: State<DbPool>) -> Result<()>{
-    let Login(username) = user.into_inner();
-    let u = db.get()?.get_user(&username)?;
-    let subject = "Karte von Morgen: bitte bestätige deine Email-Adresse";
-    let body = user_communication::email_confirmation_email(&u.id);
-    send_mails(vec![u.email.clone()], &subject, &body);
-    Ok(JSON(()))
-}
+// #[post("/send-confirmation-email", format = "application/json", data = "<user>")]
+// fn send_confirmation_email(user: JSON<Login>, db: State<DbPool>) -> Result<()>{
+//     let Login(username) = user.into_inner();
+//     let u = db.get()?.get_user(&username)?;
+//     let subject = "Karte von Morgen: bitte bestätige deine Email-Adresse";
+//     let body = user_communication::email_confirmation_email(&u.id);
+//     send_mails(vec![u.email.clone()], &subject, &body);
+//     Ok(JSON(()))
+// }
 
 #[post("/confirm-email-address", format = "application/json", data = "<user>")]
 fn confirm_email_address(user : JSON<UserId>, db: State<DbPool>) -> Result<()>{
@@ -386,13 +386,22 @@ fn get_bbox_subscriptions(db: State<DbPool>, user: Login) -> Result<Vec<json::Bb
 
 #[get("/users/<username>", format = "application/json")]
 fn get_user(db: State<DbPool>, user: Login, username: String) -> result::Result<JSON<json::User>,AppError> {
-    let (username, email) = usecase::get_user(&mut*db.get()?, &user.0, &username)?;
-    Ok(JSON(json::User{ username, email }))
+    let (u_id, email) = usecase::get_user(&mut*db.get()?, &user.0, &username)?;
+    Ok(JSON(json::User{ u_id, email }))
 }
 
 #[post("/users", format = "application/json", data = "<u>")]
 fn post_user(db: State<DbPool>, u: JSON<usecase::NewUser>) -> result::Result<(),AppError> {
-    usecase::create_new_user(&mut*db.get()?, u.into_inner())?;
+    debug!("post user");
+    let new_user = u.into_inner();
+    usecase::create_new_user(&mut*db.get()?, new_user.clone())?;
+    debug!("created user");
+    let user = db.get()?.get_user(&new_user.username)?;
+    debug!("user: {:?}", user);
+    let subject = "Karte von Morgen: bitte bestätige deine Email-Adresse";
+    let body = user_communication::email_confirmation_email(&user.id);
+    debug!("created email");
+    send_mails(vec![user.email.clone()], &subject, &body);
     Ok(())
 }
 
@@ -459,7 +468,7 @@ fn rocket_instance<T: r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Roc
         .mount("/",
                routes![login,
                        logout,
-                       send_confirmation_email,
+                       // send_confirmation_email,
                        confirm_email_address,
                        subscribe_to_bbox,
                        get_bbox_subscriptions,

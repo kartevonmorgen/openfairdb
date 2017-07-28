@@ -114,9 +114,9 @@ pub struct NewEntry {
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct NewUser {
-    username: String,
-    password: String,
-    email: String
+    pub username: String,
+    pub password: String,
+    pub email: String
 }
 
 #[derive(Deserialize, Debug, Clone)]

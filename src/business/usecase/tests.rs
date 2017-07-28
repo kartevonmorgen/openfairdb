@@ -778,21 +778,21 @@ fn receive_different_user() {
     let mut db = MockDb::new();
     db.users = vec![
         User{
-            id: "123".into(),
+            id: "1".into(),
             username: "a".into(),
             password: "a".into(),
             email: "a@foo.bar".into(),
             email_confirmed: true
         },
         User{
-            id: "123".into(),
+            id: "2".into(),
             username: "b".into(),
             password: "b".into(),
             email: "b@foo.bar".into(),
             email_confirmed: true
         }];
-    assert!(get_user(&mut db, "a", "b").is_err());
-    assert!(get_user(&mut db, "a", "a").is_ok());
+    assert!(get_user(&mut db, "1", "b").is_err());
+    assert!(get_user(&mut db, "1", "a").is_ok());
 }
 
 #[test]

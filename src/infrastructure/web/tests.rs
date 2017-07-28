@@ -558,24 +558,24 @@ fn confirm_email_address(){
     assert!(cookie.value().len() > 25);
 }
 
-#[test]
-fn send_confirmation_email() {
-    let (client, db) = setup();
-    db.get().unwrap().users = vec![
-        User{ 
-            id: "123".into(),
-            username: "foo".into(), 
-            password: bcrypt::hash("bar").unwrap(), 
-            email: "a@bar.de".into(),
-            email_confirmed: false 
-        }
-    ];
-    let response = client.post("/send-confirmation-email")
-        .header(ContentType::JSON)
-        .body(r#""foo""#)
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-}
+// #[test]
+// fn send_confirmation_email() {
+//     let (client, db) = setup();
+//     db.get().unwrap().users = vec![
+//         User{ 
+//             id: "123".into(),
+//             username: "foo".into(), 
+//             password: bcrypt::hash("bar").unwrap(), 
+//             email: "a@bar.de".into(),
+//             email_confirmed: false 
+//         }
+//     ];
+//     let response = client.post("/send-confirmation-email")
+//         .header(ContentType::JSON)
+//         .body(r#""foo""#)
+//         .dispatch();
+//     assert_eq!(response.status(), Status::Ok);
+// }
 
 #[test]
 fn to_words(){

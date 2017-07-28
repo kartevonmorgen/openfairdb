@@ -488,7 +488,7 @@ impl Db for GraphClient {
 
     fn delete_bbox_subscription(&mut self, s_id: &str) -> Result<()> {
         let stmt = format!(
-            "MATCH (s)
+            "MATCH (s:BboxSubscription)
             WHERE s.id = \"{s_id}\"
             OPTIONAL MATCH ()-[p]-(s)
             DELETE s, p",
