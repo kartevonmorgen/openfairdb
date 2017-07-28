@@ -367,6 +367,16 @@ fn ratings_with_and_without_source() {
     assert_eq!(ratings[0].comments.len(),1);
 }
 
+fn user_id_cookie(response: &Response) -> Option<Cookie<'static>> {
+    let cookie = response.headers()
+        .get("Set-Cookie")
+        .filter(|v| v.starts_with("user_id"))
+        .nth(0)
+        .and_then(|val| Cookie::parse_encoded(val).ok());
+
+    cookie.map(|c| c.into_owned())
+}
+
 #[test]
 fn login_with_invalid_credentials() {
     let (client, _) = setup();
@@ -393,25 +403,13 @@ fn login_with_valid_credentials() {
         .header(ContentType::JSON)
         .body(r#"{"username": "foo", "password": "bar"}"#)
         .dispatch();
-    let cookie : Cookie = response
-                            .headers()
-                            .iter()
-                            .filter(|h|h.name == "Set-Cookie")
-                            .filter(|h|h.value.contains("user_id="))
-                            .nth(0)
-                            .unwrap()
-                            .value
-                            .parse()
-                            .unwrap();
-
+    let cookie = user_id_cookie(&response).unwrap();
     assert_eq!(response.status(), Status::Ok);
     assert!(cookie.value().len() > 25);
 }
 
-// TODO: make this test pass!
-#[ignore]
 #[test]
-fn logout() {
+fn login_logout_succeeds() {
     let (client, db) = setup();
     db.get().unwrap().users = vec![
         User{ 
@@ -422,40 +420,23 @@ fn logout() {
             email_confirmed: true 
         }
     ];
+
+    // Login
     let response = client.post("/login")
         .header(ContentType::JSON)
         .body(r#"{"username": "foo", "password": "bar"}"#)
         .dispatch();
-    let user_id : String = response
-                            .headers()
-                            .iter()
-                            .filter(|h|h.name == "Set-Cookie")
-                            .filter(|h|h.value.contains("user_id="))
-                            .nth(0)
-                            .unwrap()
-                            .value
-                            .parse::<Cookie>()
-                            .unwrap()
-                            .value()
-                            .into();
+    let cookie = user_id_cookie(&response).expect("login cookie");
+
+    // Logout
     let response = client
                         .post("/logout")
                         .header(ContentType::JSON)
-                        .cookie(Cookie::new("user_id", user_id))
+                        .cookie(cookie)
                         .dispatch();
-
+    let cookie = user_id_cookie(&response).expect("logout cookie");
     assert_eq!(response.status(), Status::Ok);
-    assert_eq!(response
-        .headers()
-        .iter()
-        .filter(|h|h.name == "Set-Cookie")
-        .filter(|h|h.value.contains("user_id="))
-        .nth(0)
-        .unwrap()
-        .value
-        .parse::<Cookie>()
-        .unwrap()
-        .value(), "");
+    assert!(cookie.value().is_empty());
 }
 
 // TODO: make this test pass!
