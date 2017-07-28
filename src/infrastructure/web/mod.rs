@@ -157,9 +157,7 @@ fn get_duplicates(db: State<DbPool>) -> Result<Vec<(String, String, DuplicateTyp
 fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<String, AppError> {
     let e = e.into_inner();
     let id = usecase::create_new_entry(&mut *db.get()?, e.clone())?;
-    debug!("created new entry: {}", id);
     let email_addresses = usecase::email_addresses_to_notify(&e.lat, &e.lng, &mut *db.get()?);
-    debug!("notify: {:?}", email_addresses);
     let all_categories = db.get()?.all_categories()?;
     notify_create_entry(email_addresses, &e, &id, all_categories);
     Ok(id)
@@ -394,15 +392,11 @@ fn get_user(db: State<DbPool>, user: Login, username: String) -> result::Result<
 
 #[post("/users", format = "application/json", data = "<u>")]
 fn post_user(db: State<DbPool>, u: JSON<usecase::NewUser>) -> result::Result<(),AppError> {
-    debug!("post user");
     let new_user = u.into_inner();
     usecase::create_new_user(&mut*db.get()?, new_user.clone())?;
-    debug!("created user");
     let user = db.get()?.get_user(&new_user.username)?;
-    debug!("user: {:?}", user);
     let subject = "Karte von Morgen: bitte bestätige deine Email-Adresse";
     let body = user_communication::email_confirmation_email(&user.id);
-    debug!("created email");
     send_mails(vec![user.email.clone()], &subject, &body);
     Ok(())
 }

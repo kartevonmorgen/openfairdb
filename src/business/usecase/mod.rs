@@ -374,15 +374,12 @@ pub fn get_entries<D:Db>(db : &D, ids : &[String]) -> Result<Vec<Entry>> {
 }
 
 pub fn create_new_user<D: Db>(db: &mut D, u: NewUser) -> Result<()> {
-    debug!("create new user");
     validate::username(&u.username)?;
     validate::password(&u.password)?;
     validate::email(&u.email)?;
-    debug!("validated data");
     if db.get_user(&u.username).is_ok() {
         return Err(Error::Parameter(ParameterError::UserExists));
     }
-    debug!("username is still free");
 
     let pw = bcrypt::hash(&u.password)?;
     db.create_user(&User{
@@ -413,7 +410,6 @@ pub fn get_user<D: Db>(db: &mut D, login_id: &str, username: &str) -> Result<(St
 }
 
 pub fn delete_user(db: &mut Db, login_id: &str, u_id: &str) -> Result<()> {
-    warn!("login: {}, u_id: {}", login_id, u_id);
     if login_id != u_id {
         return Err(Error::Parameter(ParameterError::Forbidden))
     }
@@ -634,7 +630,6 @@ pub fn unsubscribe_all_bboxes(username: &str, db: &mut Db) -> Result<()>{
 }
 
 pub fn email_addresses_to_notify(lat: &f64, lng: &f64, db: &mut Db) -> Vec<String>{
-    debug!("finding notification email addresses");
     let users_and_bboxes : Vec<(String, Bbox)> = db.all_triples()
         .unwrap()
         .into_iter()
