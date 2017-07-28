@@ -139,7 +139,7 @@ impl Db for MockDb {
         update(&mut self.entries, e)
     }
 
-    fn confirm_email_address(&mut self, u_id: &str) -> RepoResult<()> {
+    fn confirm_email_address(&mut self, u_id: &str) -> RepoResult<User> {
         let a : String = self.all_users()?[0].clone().id;
         let b : String = u_id.to_string();
         println!("u.id: {:?}", a);
@@ -155,7 +155,7 @@ impl Db for MockDb {
             println!("user: {:?}", u);
             u.email_confirmed = true;
             update(&mut self.users, &u)?;
-            Ok(())
+            Ok(u)
         } else{
             Err(RepoError::NotFound)
         }
@@ -663,6 +663,18 @@ fn create_user_with_existing_username(){
 }
 
 #[test]
+fn email_unconfirmed_on_default(){
+    let mut db = MockDb::new();
+    let u = NewUser {
+        username: "user".into(),
+        password: "pass".into(),
+        email: "foo@bar.io".into(),
+    };
+    assert!(create_new_user(&mut db, u).is_ok());
+    assert_eq!(db.users[0].email_confirmed, false);
+}
+
+#[test]
 fn encrypt_user_password(){
     let mut db = MockDb::new();
     let u = NewUser {
@@ -673,22 +685,6 @@ fn encrypt_user_password(){
     assert!(create_new_user(&mut db, u).is_ok());
     assert!(db.users[0].password != "pass");
     assert!(bcrypt::verify("pass", &db.users[0].password));
-}
-
-#[test]
-fn test_email_verification() {
-    let mut db = MockDb::new();
-    let u = NewUser {
-        username: "user".into(),
-        password: "pass".into(),
-        email: "foo@bar.io".into(),
-    };
-    assert!(create_new_user(&mut db, u).is_ok());
-    assert_eq!(db.users[0].email_confirmed, false);
-
-    let u_id = db.users[0].id.clone();
-    assert!(confirm_email_address(&u_id, &mut db).is_ok());
-    assert_eq!(db.users[0].email_confirmed, true);
 }
 
 #[test]

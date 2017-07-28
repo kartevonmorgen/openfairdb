@@ -392,12 +392,22 @@ pub fn create_new_user<D: Db>(db: &mut D, u: NewUser) -> Result<()> {
     Ok(())
 }
 
-pub fn get_user<D: Db>(db: &mut D, login: &str, username: &str) -> Result<(String,String)> {
-    if login != username {
-        return Err(Error::Parameter(ParameterError::Forbidden))
+pub fn get_user<D: Db>(db: &mut D, login_id: &str, username: &str) -> Result<(String,String)> {
+    let users : Vec<User> = db.all_users()?
+        .into_iter()
+        .filter(|u| u.id == login_id)
+        .collect();
+    if users.len() > 0 {
+        let login_name = &users[0].username;
+        if login_name != username {
+            return Err(Error::Parameter(ParameterError::Forbidden))
+        }
+        let u = db.get_user(username)?;
+        Ok((u.id, u.email))
+    } else {
+        return Err(Error::Repo(RepoError::NotFound))
     }
-    let u = db.get_user(username)?;
-    Ok((u.id, u.email))
+    
 }
 
 pub fn login<D: Db>(db: &mut D, login: Login) -> Result<String> {
@@ -423,13 +433,6 @@ pub fn login<D: Db>(db: &mut D, login: Login) -> Result<String> {
         }
     }
 }
-
-pub fn confirm_email_address<D: Db>(u_id: &str, db: &mut D) -> Result<()>{
-    db.confirm_email_address(u_id)?;
-    Ok(())
-}
-
-
 
 pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
     let new_entry = Entry{

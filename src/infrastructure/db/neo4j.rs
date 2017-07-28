@@ -223,14 +223,18 @@ impl Db for GraphClient {
         "MERGE (
            u:User {
              id:{id},
+             username:{username},
              password:{password},
-             email:{email}
+             email:{email},
+             email_confirmed:{email_confirmed}
            }
         )",
         {
             "id"       => &u.id,
+            "username" => &u.username,
             "password" => &u.password,
-            "email"    => &u.email
+            "email"    => &u.email,
+            "email_confirmed" => &u.email_confirmed
         })?)?;
         Ok(())
     }
@@ -368,15 +372,18 @@ impl Db for GraphClient {
         Ok(())
     }
 
-    fn confirm_email_address(&mut self, u_id: &str) -> Result<()> {
-        self.exec(cypher_stmt!(
-        "MATCH (u:User) WHERE s.id = {u_id}
-        SET u.email_confirmed = {email_confirmed}",
+    fn confirm_email_address(&mut self, u_id: &str) -> Result<User> {
+        let result = self.exec(cypher_stmt!(
+        "MATCH (u:User) WHERE u.id = {u_id}
+        SET u.email_confirmed = {email_confirmed}
+        RETURN u",
         {
             "u_id" => u_id,
             "email_confirmed" => true
         })?)?;
-        Ok(())
+        let r = result.rows().next().ok_or(RepoError::NotFound)?;
+        let u = r.get::<User>("u")?;
+        Ok(u)
     }
 
     fn all_categories(&self) -> Result<Vec<Category>> {

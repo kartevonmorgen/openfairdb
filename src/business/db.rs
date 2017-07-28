@@ -33,7 +33,7 @@ pub trait Db {
     fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>>;
 
     fn update_entry(&mut self, &Entry) -> Result<()>;
-    fn confirm_email_address(&mut self, &str) -> Result<()>;
+    fn confirm_email_address(&mut self, &str) -> Result<User>;
 
     fn delete_triple(&mut self, &Triple) -> Result<()>;
     fn delete_bbox_subscription(&mut self, &str) -> Result<()>;

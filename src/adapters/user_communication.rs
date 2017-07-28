@@ -1,7 +1,18 @@
 use business::usecase::{NewEntry, UpdateEntry};
 use entities::Entry;
 
-pub fn new_entry_email(e: &NewEntry, id: &str, categories: Vec<String>) -> String{
+pub fn email_confirmation_email(u_id: &str) -> String {
+    format!("Na du Weltverbesserer*,
+wir freuen uns dass du bei der Karte von Morgen mit dabei bist! 
+Bitte bestätige deine Email-Adresse hier:
+https://prototyp.kartevonmorgen.org/#/?confirm_email={}.
+
+euphorische Grüße ;)
+das Karte von Morgen-Team", 
+    u_id)
+}
+
+pub fn new_entry_email(e: &NewEntry, id: &str, categories: Vec<String>) -> String {
     let intro_sentence = "ein neuer Eintrag auf der Karte von Morgen wurde erstellt";
     let entry = Entry {
         id : id.into(),
@@ -24,7 +35,7 @@ pub fn new_entry_email(e: &NewEntry, id: &str, categories: Vec<String>) -> Strin
     entry_email(&entry, categories, &e.tags, intro_sentence)
 }
 
-pub fn changed_entry_email(e: &UpdateEntry, categories: Vec<String>) -> String{
+pub fn changed_entry_email(e: &UpdateEntry, categories: Vec<String>) -> String {
     let intro_sentence = "folgender Eintrag der Karte von Morgen wurde verändert";
     let entry = Entry {
         id : e.id.clone(),
