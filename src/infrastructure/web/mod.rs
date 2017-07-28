@@ -157,7 +157,9 @@ fn get_duplicates(db: State<DbPool>) -> Result<Vec<(String, String, DuplicateTyp
 fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<String, AppError> {
     let e = e.into_inner();
     let id = usecase::create_new_entry(&mut *db.get()?, e.clone())?;
+    debug!("created new entry: {}", id);
     let email_addresses = usecase::email_addresses_to_notify(&e.lat, &e.lng, &mut *db.get()?);
+    debug!("notify: {:?}", email_addresses);
     let all_categories = db.get()?.all_categories()?;
     notify_create_entry(email_addresses, &e, &id, all_categories);
     Ok(id)
@@ -405,6 +407,12 @@ fn post_user(db: State<DbPool>, u: JSON<usecase::NewUser>) -> result::Result<(),
     Ok(())
 }
 
+#[delete("/users/<u_id>")]
+fn delete_user(db: State<DbPool>, user: Login, u_id: String) -> Result<()> {
+    usecase::delete_user(&mut*db.get()?, &user.0, &u_id)?;
+    Ok(JSON(()))
+}
+
 #[post("/ratings", format = "application/json", data = "<u>")]
 fn post_rating(db: State<DbPool>, u: JSON<usecase::RateEntry>) -> result::Result<(),AppError> {
     usecase::rate_entry(&mut*db.get()?, u.into_inner())?;
@@ -469,6 +477,7 @@ fn rocket_instance<T: r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Roc
                routes![login,
                        logout,
                        // send_confirmation_email,
+                       delete_user,
                        confirm_email_address,
                        subscribe_to_bbox,
                        get_bbox_subscriptions,

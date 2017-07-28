@@ -50,7 +50,7 @@ pub struct SearchResult {
 
 #[derive(Serialize)]
 pub struct User {
-    pub username: String,
+    pub u_id: String,
     pub email: String
 }
 

@@ -37,4 +37,5 @@ pub trait Db {
 
     fn delete_triple(&mut self, &Triple) -> Result<()>;
     fn delete_bbox_subscription(&mut self, &str) -> Result<()>;
+    fn delete_user(&mut self, &str) -> Result<()>;
 }

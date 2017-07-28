@@ -219,6 +219,7 @@ impl Db for GraphClient {
     }
 
     fn create_user(&mut self, u: &User) -> Result<()> {
+        debug!("db: creating user...");
         self.exec(cypher_stmt!(
         "MERGE (
            u:User {
@@ -493,6 +494,17 @@ impl Db for GraphClient {
             OPTIONAL MATCH ()-[p]-(s)
             DELETE s, p",
             s_id = s_id);
+        self.exec(stmt)?;
+        Ok(())
+    }
+
+    fn delete_user(&mut self, u_id: &str) -> Result<()> {
+        let stmt = format!(
+            "MATCH (u:User)
+            WHERE u.id = \"{u_id}\"
+            OPTIONAL MATCH (u)-[p]-()
+            DELETE u, p",
+            u_id = u_id);
         self.exec(stmt)?;
         Ok(())
     }

@@ -374,12 +374,15 @@ pub fn get_entries<D:Db>(db : &D, ids : &[String]) -> Result<Vec<Entry>> {
 }
 
 pub fn create_new_user<D: Db>(db: &mut D, u: NewUser) -> Result<()> {
+    debug!("create new user");
     validate::username(&u.username)?;
     validate::password(&u.password)?;
     validate::email(&u.email)?;
+    debug!("validated data");
     if db.get_user(&u.username).is_ok() {
         return Err(Error::Parameter(ParameterError::UserExists));
     }
+    debug!("username is still free");
 
     let pw = bcrypt::hash(&u.password)?;
     db.create_user(&User{
@@ -407,7 +410,23 @@ pub fn get_user<D: Db>(db: &mut D, login_id: &str, username: &str) -> Result<(St
     } else {
         return Err(Error::Repo(RepoError::NotFound))
     }
-    
+}
+
+pub fn delete_user(db: &mut Db, login_id: &str, username: &str) -> Result<()> {
+    let users : Vec<User> = db.all_users()?
+        .into_iter()
+        .filter(|u| u.id == login_id)
+        .collect();
+    if users.len() > 0 {
+        let login_name = &users[0].username;
+        if login_name != username {
+            return Err(Error::Parameter(ParameterError::Forbidden))
+        }
+        db.delete_user(login_id)?;
+        Ok(())
+    } else {
+        return Err(Error::Repo(RepoError::NotFound))
+    }    
 }
 
 pub fn login<D: Db>(db: &mut D, login: Login) -> Result<String> {
@@ -623,6 +642,7 @@ pub fn unsubscribe_all_bboxes(username: &str, db: &mut Db) -> Result<()>{
 }
 
 pub fn email_addresses_to_notify(lat: &f64, lng: &f64, db: &mut Db) -> Vec<String>{
+    debug!("finding notification email addresses");
     let users_and_bboxes : Vec<(String, Bbox)> = db.all_triples()
         .unwrap()
         .into_iter()

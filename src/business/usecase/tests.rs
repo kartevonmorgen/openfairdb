@@ -179,6 +179,15 @@ impl Db for MockDb {
             .collect();
         Ok(())
     }
+
+    fn delete_user(&mut self, u_id: &str) -> RepoResult<()>{
+        self.users = self.users
+            .clone()
+            .into_iter()
+            .filter(|u| u.id != u_id)
+            .collect();
+        Ok(())
+    }
 }
 
 #[test]
@@ -1009,4 +1018,31 @@ fn email_addresses_to_notify(){
 
     let no_email_addresses = business::usecase::email_addresses_to_notify(&20.0, &20.0, &mut db);
     assert_eq!(no_email_addresses.len(), 0);
+}
+
+#[test]
+fn delete_user(){
+    let mut db = MockDb::new();
+    let username = "a".to_string();
+    let u_id = "1".to_string();
+    assert!(db.create_user(&User{
+        id: u_id.clone(),
+        username: username.clone(),
+        password: username,
+        email: "abc@abc.de".into(),
+        email_confirmed: true
+    }).is_ok());
+    let username = "b".to_string();
+    let u_id = "2".to_string();
+    assert!(db.create_user(&User{
+        id: u_id.clone(),
+        username: username.clone(),
+        password: username,
+        email: "abcd@abcd.de".into(),
+        email_confirmed: true
+    }).is_ok());
+    assert_eq!(db.users.len(), 2);
+
+    assert!(business::usecase::delete_user(&mut db, "1", "a").is_ok());
+    assert_eq!(db.users.len(), 1);
 }
