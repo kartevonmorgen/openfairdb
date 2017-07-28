@@ -412,21 +412,13 @@ pub fn get_user<D: Db>(db: &mut D, login_id: &str, username: &str) -> Result<(St
     }
 }
 
-pub fn delete_user(db: &mut Db, login_id: &str, username: &str) -> Result<()> {
-    let users : Vec<User> = db.all_users()?
-        .into_iter()
-        .filter(|u| u.id == login_id)
-        .collect();
-    if users.len() > 0 {
-        let login_name = &users[0].username;
-        if login_name != username {
-            return Err(Error::Parameter(ParameterError::Forbidden))
-        }
-        db.delete_user(login_id)?;
-        Ok(())
-    } else {
-        return Err(Error::Repo(RepoError::NotFound))
-    }    
+pub fn delete_user(db: &mut Db, login_id: &str, u_id: &str) -> Result<()> {
+    warn!("login: {}, u_id: {}", login_id, u_id);
+    if login_id != u_id {
+        return Err(Error::Parameter(ParameterError::Forbidden))
+    }
+    db.delete_user(login_id)?;
+    Ok(())
 }
 
 pub fn login<D: Db>(db: &mut D, login: Login) -> Result<String> {

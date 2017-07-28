@@ -1043,6 +1043,6 @@ fn delete_user(){
     }).is_ok());
     assert_eq!(db.users.len(), 2);
 
-    assert!(business::usecase::delete_user(&mut db, "1", "a").is_ok());
+    assert!(business::usecase::delete_user(&mut db, "1", "1").is_ok());
     assert_eq!(db.users.len(), 1);
 }
