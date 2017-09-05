@@ -1,6 +1,6 @@
 use rocket::{self, Rocket, State };
 use rocket::logger::LoggingLevel;
-use rocket_contrib::JSON;
+use rocket_contrib::Json;
 use rocket::response::{Response, Responder};
 use rocket::request::{self, FromRequest, Request};
 use rocket::Outcome;
@@ -57,7 +57,7 @@ type DbPool = neo4j::ConnectionPool;
 #[cfg(test)]
 type DbPool = mockdb::ConnectionPool;
 
-type Result<T> = result::Result<JSON<T>, AppError>;
+type Result<T> = result::Result<Json<T>, AppError>;
 
 fn extract_ids(s: &str) -> Vec<String> {
     s.split(',')
@@ -136,7 +136,7 @@ fn get_entry(db: State<DbPool>, ids: String) -> Result<Vec<json::Entry>> {
     let entries = usecase::get_entries(&*db.get()?, &ids)?;
     let tags = usecase::get_tags_by_entry_ids(&*db.get()?, &ids)?;
     let ratings = usecase::get_ratings_by_entry_ids(&*db.get()?, &ids)?;
-    Ok(JSON(entries
+    Ok(Json(entries
         .into_iter()
         .map(|e|{
             let t = tags.get(&e.id).cloned().unwrap_or_else(|| vec![]);
@@ -150,11 +150,11 @@ fn get_entry(db: State<DbPool>, ids: String) -> Result<Vec<json::Entry>> {
 fn get_duplicates(db: State<DbPool>) -> Result<Vec<(String, String, DuplicateType)>> {
     let entries = db.get()?.all_entries()?;
     let ids = duplicates::find_duplicates(&entries);
-    Ok(JSON(ids))
+    Ok(Json(ids))
 }
 
 #[post("/entries", format = "application/json", data = "<e>")]
-fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<String, AppError> {
+fn post_entry(db: State<DbPool>, e: Json<usecase::NewEntry>) -> result::Result<String, AppError> {
     let e = e.into_inner();
     let id = usecase::create_new_entry(&mut *db.get()?, e.clone())?;
     let email_addresses = usecase::email_addresses_to_notify(&e.lat, &e.lng, &mut *db.get()?);
@@ -164,25 +164,25 @@ fn post_entry(db: State<DbPool>, e: JSON<usecase::NewEntry>) -> result::Result<S
 }
 
 #[put("/entries/<id>", format = "application/json", data = "<e>")]
-fn put_entry(db: State<DbPool>, id: String, e: JSON<usecase::UpdateEntry>) -> Result<String> {
+fn put_entry(db: State<DbPool>, id: String, e: Json<usecase::UpdateEntry>) -> Result<String> {
     let e = e.into_inner();
     usecase::update_entry(&mut *db.get()?, e.clone())?;
     let email_addresses = usecase::email_addresses_to_notify(&e.lat, &e.lng, &mut *db.get()?);
     let all_categories = db.get()?.all_categories()?;
     notify_update_entry(email_addresses, &e, all_categories);
-    Ok(JSON(id))
+    Ok(Json(id))
 }
 
 #[get("/tags")]
 fn get_tags(db: State<DbPool>) -> Result<Vec<String>> {
     let tags = usecase::get_tag_ids(&*db.get()?)?;
-    Ok(JSON(tags))
+    Ok(Json(tags))
 }
 
 #[get("/categories")]
 fn get_categories(db: State<DbPool>) -> Result<Vec<Category>> {
     let categories = db.get()?.all_categories()?;
-    Ok(JSON(categories))
+    Ok(Json(categories))
 }
 
 #[get("/categories/<id>")]
@@ -206,7 +206,7 @@ fn get_category(db: State<DbPool>, id: String) -> Result<String> {
                 .collect::<Vec<Category>>())
         }
     }?;
-    Ok(JSON(res))
+    Ok(Json(res))
 }
 
 #[derive(FromForm)]
@@ -309,7 +309,7 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResu
         .cloned()
         .collect::<Vec<_>>();
 
-    Ok(JSON(json::SearchResult {
+    Ok(Json(json::SearchResult {
         visible: visible_results,
         invisible: invisible_results,
     }))
@@ -320,52 +320,52 @@ fn to_words(txt: &str) -> Vec<String> {
 }
 
 #[post("/login", format = "application/json", data = "<login>")]
-fn login(db: State<DbPool>, mut cookies: Cookies, login: JSON<usecase::Login>) -> Result<()> {
+fn login(db: State<DbPool>, mut cookies: Cookies, login: Json<usecase::Login>) -> Result<()> {
     let id = usecase::login(&mut*db.get()?, login.into_inner())?;
     cookies.add_private(Cookie::new(COOKIE_USER_KEY, id));
-    Ok(JSON(()))
+    Ok(Json(()))
 }
 
 #[post("/logout", format = "application/json")]
 fn logout(mut cookies: Cookies) -> Result<()> {
     cookies.remove_private(Cookie::named(COOKIE_USER_KEY));
-    Ok(JSON(()))
+    Ok(Json(()))
 }
 
 // #[post("/send-confirmation-email", format = "application/json", data = "<user>")]
-// fn send_confirmation_email(user: JSON<Login>, db: State<DbPool>) -> Result<()>{
+// fn send_confirmation_email(user: Json<Login>, db: State<DbPool>) -> Result<()>{
 //     let Login(username) = user.into_inner();
 //     let u = db.get()?.get_user(&username)?;
 //     let subject = "Karte von Morgen: bitte bestätige deine Email-Adresse";
 //     let body = user_communication::email_confirmation_email(&u.id);
 //     send_mails(vec![u.email.clone()], &subject, &body);
-//     Ok(JSON(()))
+//     Ok(Json(()))
 // }
 
 #[post("/confirm-email-address", format = "application/json", data = "<user>")]
-fn confirm_email_address(user : JSON<UserId>, db: State<DbPool>) -> Result<()>{
+fn confirm_email_address(user : Json<UserId>, db: State<DbPool>) -> Result<()>{
     let u_id = user.into_inner().u_id;
     let u = db.get()?.confirm_email_address(&u_id)?;
     if u.id == u_id {
-        Ok(JSON(()))
+        Ok(Json(()))
     } else {
         Err(AppError::Business(Error::Repo(RepoError::NotFound)))
     }
 }
 
 #[post("/subscribe-to-bbox", format = "application/json", data = "<coordinates>")]
-fn subscribe_to_bbox(user: Login, coordinates: JSON<Vec<Coordinate>>, db: State<DbPool>) -> Result<()> {
+fn subscribe_to_bbox(user: Login, coordinates: Json<Vec<Coordinate>>, db: State<DbPool>) -> Result<()> {
     let coordinates = coordinates.into_inner();
     let Login(username) = user;
     usecase::subscribe_to_bbox(&coordinates, &username, &mut*db.get()?)?;
-    Ok(JSON(()))
+    Ok(Json(()))
 }
 
 #[delete("/unsubscribe-all-bboxes")]
 fn unsubscribe_all_bboxes(user: Login, db: State<DbPool>) -> Result<()> {
     let Login(username) = user;
     usecase::unsubscribe_all_bboxes(&username, &mut*db.get()?)?;
-    Ok(JSON(()))
+    Ok(Json(()))
 }
 
 #[get("/bbox-subscriptions")]
@@ -381,17 +381,17 @@ fn get_bbox_subscriptions(db: State<DbPool>, user: Login) -> Result<Vec<json::Bb
             north_east_lng: s.north_east_lng,
         })
         .collect();
-    Ok(JSON(user_subscriptions))
+    Ok(Json(user_subscriptions))
 }
 
 #[get("/users/<username>", format = "application/json")]
-fn get_user(db: State<DbPool>, user: Login, username: String) -> result::Result<JSON<json::User>,AppError> {
+fn get_user(db: State<DbPool>, user: Login, username: String) -> result::Result<Json<json::User>,AppError> {
     let (u_id, email) = usecase::get_user(&mut*db.get()?, &user.0, &username)?;
-    Ok(JSON(json::User{ u_id, email }))
+    Ok(Json(json::User{ u_id, email }))
 }
 
 #[post("/users", format = "application/json", data = "<u>")]
-fn post_user(db: State<DbPool>, u: JSON<usecase::NewUser>) -> result::Result<(),AppError> {
+fn post_user(db: State<DbPool>, u: Json<usecase::NewUser>) -> result::Result<(),AppError> {
     let new_user = u.into_inner();
     usecase::create_new_user(&mut*db.get()?, new_user.clone())?;
     let user = db.get()?.get_user(&new_user.username)?;
@@ -404,11 +404,11 @@ fn post_user(db: State<DbPool>, u: JSON<usecase::NewUser>) -> result::Result<(),
 #[delete("/users/<u_id>")]
 fn delete_user(db: State<DbPool>, user: Login, u_id: String) -> Result<()> {
     usecase::delete_user(&mut*db.get()?, &user.0, &u_id)?;
-    Ok(JSON(()))
+    Ok(Json(()))
 }
 
 #[post("/ratings", format = "application/json", data = "<u>")]
-fn post_rating(db: State<DbPool>, u: JSON<usecase::RateEntry>) -> result::Result<(),AppError> {
+fn post_rating(db: State<DbPool>, u: Json<usecase::RateEntry>) -> result::Result<(),AppError> {
     usecase::rate_entry(&mut*db.get()?, u.into_inner())?;
     Ok(())
 }
@@ -443,19 +443,19 @@ fn get_ratings(db: State<DbPool>, id: String)-> Result<Vec<json::Rating>>{
                 .collect()
         })
         .collect();
-    Ok(JSON(result))
+    Ok(Json(result))
 }
 
 #[get("/count/entries")]
 fn get_count_entries(db: State<DbPool>) -> Result<usize> {
     let entries = db.get()?.all_entries()?;
-    Ok(JSON(entries.len()))
+    Ok(Json(entries.len()))
 }
 
 #[get("/count/tags")]
 fn get_count_tags(db: State<DbPool>) -> Result<usize> {
     let tags = usecase::get_tag_ids(&*db.get()?)?;
-    Ok(JSON(tags.len()))
+    Ok(Json(tags.len()))
 }
 
 #[get("/server/version")]
