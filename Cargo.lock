@@ -1,6 +1,6 @@
 [root]
 name = "openfairdb"
-version = "0.2.8-dev"
+version = "0.2.8"
 dependencies = [
  "chrono 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.26.0 (registry+https://github.com/rust-lang/crates.io-index)",
