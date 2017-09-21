@@ -5,7 +5,7 @@ use entities::*;
 use regex::Regex;
 
 lazy_static! {
-    static ref USERNAME_REGEX: Regex = Regex::new(r"^[a-z0-9]{1,12}$").unwrap();
+    static ref USERNAME_REGEX: Regex = Regex::new(r"^[a-z0-9]{1,30}$").unwrap();
 }
 
 pub trait Validate {
