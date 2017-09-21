@@ -332,16 +332,6 @@ fn logout(mut cookies: Cookies) -> Result<()> {
     Ok(Json(()))
 }
 
-// #[post("/send-confirmation-email", format = "application/json", data = "<user>")]
-// fn send_confirmation_email(user: Json<Login>, db: State<DbPool>) -> Result<()>{
-//     let Login(username) = user.into_inner();
-//     let u = db.get()?.get_user(&username)?;
-//     let subject = "Karte von Morgen: bitte bestätige deine Email-Adresse";
-//     let body = user_communication::email_confirmation_email(&u.id);
-//     send_mails(vec![u.email.clone()], &subject, &body);
-//     Ok(Json(()))
-// }
-
 #[post("/confirm-email-address", format = "application/json", data = "<user>")]
 fn confirm_email_address(user : Json<UserId>, db: State<DbPool>) -> Result<()>{
     let u_id = user.into_inner().u_id;
