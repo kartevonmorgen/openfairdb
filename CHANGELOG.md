@@ -1,3 +1,8 @@
+## v0.2.8 (2017-09-21)
+
+- new(accounts): add the possibility to register and login
+- new(subscribe): add the possibility to subscribe to a bbox when logged in
+
 ## v0.2.7 (2017-07-03)
 
 - include search results where tags match search words (also when they are not preceded by "#")
