@@ -2,7 +2,6 @@
 
 #![feature(plugin,custom_derive)]
 #![plugin(rocket_codegen)]
-#![allow(unmanaged_state)]
 
 #[macro_use]
 extern crate log;

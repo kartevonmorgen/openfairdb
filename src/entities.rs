@@ -14,7 +14,7 @@ pub struct Entry {
     pub email       : Option<String>,
     pub telephone   : Option<String>,
     pub homepage    : Option<String>,
-    pub categories  : Vec<String>,
+    pub categories  : Vec<String>, // TODO: remove
     pub license     : Option<String>,
 }
 
@@ -70,7 +70,7 @@ pub enum ObjectId {
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct User {
-    pub id: String,
+    pub id: String, // TODO: remove
     pub username: String,
     pub password: String,
     pub email: String,

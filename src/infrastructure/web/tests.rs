@@ -412,12 +412,12 @@ fn login_with_valid_credentials() {
 fn login_logout_succeeds() {
     let (client, db) = setup();
     db.get().unwrap().users = vec![
-        User{ 
+        User{
             id: "123".into(),
-            username: "foo".into(), 
-            password: bcrypt::hash("bar").unwrap(), 
+            username: "foo".into(),
+            password: bcrypt::hash("bar").unwrap(),
             email: "foo@bar".into(),
-            email_confirmed: true 
+            email_confirmed: true
         }
     ];
 
@@ -445,19 +445,19 @@ fn login_logout_succeeds() {
 fn get_user() {
     let (client, db) = setup();
     db.get().unwrap().users = vec![
-        User{ 
+        User{
             id: "123".into(),
-            username: "a".into(), 
-            password: bcrypt::hash("a").unwrap(), 
+            username: "a".into(),
+            password: bcrypt::hash("a").unwrap(),
             email: "a@bar".into(),
-            email_confirmed: true 
+            email_confirmed: true
         },
-        User{ 
+        User{
             id: "123".into(),
-            username: "b".into(), 
-            password: bcrypt::hash("b").unwrap(), 
+            username: "b".into(),
+            password: bcrypt::hash("b").unwrap(),
             email: "b@bar".into(),
-            email_confirmed: true 
+            email_confirmed: true
         }
     ];
     let response = client.post("/login")
@@ -496,12 +496,12 @@ fn get_user() {
 fn confirm_email_address(){
     let (client, db) = setup();
     db.get().unwrap().users = vec![
-        User{ 
+        User{
             id: "123".into(),
-            username: "foo".into(), 
-            password: bcrypt::hash("bar").unwrap(), 
+            username: "foo".into(),
+            password: bcrypt::hash("bar").unwrap(),
             email: "a@bar.de".into(),
-            email_confirmed: false 
+            email_confirmed: false
         }
     ];
 
@@ -539,24 +539,26 @@ fn confirm_email_address(){
     assert!(cookie.value().len() > 25);
 }
 
-// #[test]
-// fn send_confirmation_email() {
-//     let (client, db) = setup();
-//     db.get().unwrap().users = vec![
-//         User{ 
-//             id: "123".into(),
-//             username: "foo".into(), 
-//             password: bcrypt::hash("bar").unwrap(), 
-//             email: "a@bar.de".into(),
-//             email_confirmed: false 
-//         }
-//     ];
-//     let response = client.post("/send-confirmation-email")
-//         .header(ContentType::JSON)
-//         .body(r#""foo""#)
-//         .dispatch();
-//     assert_eq!(response.status(), Status::Ok);
-// }
+//TODO: make it pass
+#[ignore]
+#[test]
+fn send_confirmation_email() {
+    let (client, db) = setup();
+    db.get().unwrap().users = vec![
+        User{
+            id: "123".into(),
+            username: "foo".into(),
+            password: bcrypt::hash("bar").unwrap(),
+            email: "a@bar.de".into(),
+            email_confirmed: false
+        }
+    ];
+    let response = client.post("/send-confirmation-email")
+        .header(ContentType::JSON)
+        .body(r#""foo""#)
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+}
 
 #[test]
 fn to_words(){

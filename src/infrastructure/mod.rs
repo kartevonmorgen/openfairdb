@@ -3,4 +3,3 @@ mod error;
 mod db;
 mod web;
 mod mail;
-mod cfg;

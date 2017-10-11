@@ -25,27 +25,6 @@ use super::mail;
 static MAX_INVISIBLE_RESULTS : usize = 5;
 static COOKIE_USER_KEY       : &str  = "user_id";
 
-// lazy_static! {
-//     static ref CONFIG: cfg::Config = {
-//         match env::current_dir() {
-//             Ok(cwd) => {
-//                 let path = cwd.as_path().join("config.toml");
-//                 match cfg::Config::load(path) {
-//                     Ok(cfg) => cfg,
-//                     Err(e) => {
-//                         warn!("could not read configuration file 'config.toml': {}", e);
-//                         cfg::Config::default()
-//                     }
-//                 }
-//             }
-//             Err(e) => {
-//                 warn!("could not determine current working directory: {}", e);
-//                 cfg::Config::default()
-//             }
-//         }
-//     };
-// }
-
 mod neo4j;
 #[cfg(test)]
 mod mockdb;
