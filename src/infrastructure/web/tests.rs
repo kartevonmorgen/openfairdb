@@ -213,27 +213,27 @@ fn search_with_hash_tags() {
     assert!(body_str.contains(r#""visible":["b"]"#));
 }
 
-// #[test]      // TODO
-// fn search_with_and_without_tags() {
-//     let entries = vec![
-//         Entry::build().id("a").title("foo").finish(),
-//         Entry::build().id("b").title("foo").finish(),    // bla-blubb, foo-bar
-//         Entry::build().id("c").title("foo").finish(),    // foo-bar
-//     ];
-//     let triples = vec![
-//         Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bla-blubb".into())},
-//         Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())},
-//         Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())}
-//     ];
-//     let (client, db) = setup();
-//     db.get().unwrap().entries = entries;
-//     db.get().unwrap().triples = triples;
-//     let req = client.get("/search?bbox=-10,-10,10,10&text=bla-blubb");
-//     let mut response = req.dispatch();
-//     assert_eq!(response.status(), Status::Ok);
-//     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-//     assert!(body_str.contains(r#""visible":["b"]"#));
-// }
+#[test]      // TODO
+fn search_with_and_without_tags() {
+    let entries = vec![
+        Entry::build().id("a").title("foo").finish(),
+        Entry::build().id("b").title("foo").finish(),    // bla-blubb, foo-bar
+        Entry::build().id("c").title("foo").finish(),    // foo-bar
+    ];
+    let triples = vec![
+        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bla-blubb".into())},
+        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())},
+        Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())}
+    ];
+    let (client, db) = setup();
+    db.get().unwrap().entries = entries;
+    db.get().unwrap().triples = triples;
+    let req = client.get("/search?bbox=-10,-10,10,10&text=bla-blubb");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains(r#""visible":["b"]"#));
+}
 
 #[test]
 fn extract_ids_test() {
