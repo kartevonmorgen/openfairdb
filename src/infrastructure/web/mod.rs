@@ -242,15 +242,9 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResu
         tags = extract_hash_tags(txt);
     }
 
+
     if let Some(tags_str) = search.tags {
         for t in extract_ids(&tags_str) {
-            tags.push(t);
-        }
-    }
-
-    // search tags even without preceding #:
-    if let Some(ref txt) = search.text {
-        for t in to_words(txt){
             tags.push(t);
         }
     }

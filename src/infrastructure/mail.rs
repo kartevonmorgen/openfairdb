@@ -27,7 +27,7 @@ pub fn create(to: &[String], subject: &str, body: &str) -> Result<String> {
         To:{to}\r\n\
         Subject:{subject}\r\n\
         MIME-Version: 1.0\r\n\
-        Content-Type: text/plain; charset=utf-8\r\n\
+        Content-Type: text/plain; charset=utf-8\r\n\r\n\
         {body}",
         date    = now.as_str(),
         from    = FROM_ADDRESS,
@@ -65,7 +65,7 @@ mod tests {
                         To:mail@test.org\r\n\
                         Subject:=?UTF-8?Q?My Subject?=\r\n\
                         MIME-Version: 1.0\r\n\
-                        Content-Type: text/plain; charset=utf-8\r\n\
+                        Content-Type: text/plain; charset=utf-8\r\n\r\n\
                         Hello Mail";
         assert!(mail.contains(expected));
     }
