@@ -133,13 +133,13 @@ fn get_duplicates(db: State<DbPool>) -> Result<Vec<(String, String, DuplicateTyp
 }
 
 #[post("/entries", format = "application/json", data = "<e>")]
-fn post_entry(db: State<DbPool>, e: Json<usecase::NewEntry>) -> result::Result<String, AppError> {
+fn post_entry(db: State<DbPool>, e: Json<usecase::NewEntry>) -> Result<String> {
     let e = e.into_inner();
     let id = usecase::create_new_entry(&mut *db.get()?, e.clone())?;
     let email_addresses = usecase::email_addresses_to_notify(&e.lat, &e.lng, &mut *db.get()?);
     let all_categories = db.get()?.all_categories()?;
     notify_create_entry(email_addresses, &e, &id, all_categories);
-    Ok(id)
+    Ok(Json(id))
 }
 
 #[put("/entries/<id>", format = "application/json", data = "<e>")]
@@ -354,20 +354,20 @@ fn get_bbox_subscriptions(db: State<DbPool>, user: Login) -> Result<Vec<json::Bb
 }
 
 #[get("/users/<username>", format = "application/json")]
-fn get_user(db: State<DbPool>, user: Login, username: String) -> result::Result<Json<json::User>,AppError> {
+fn get_user(db: State<DbPool>, user: Login, username: String) -> Result<json::User> {
     let (u_id, email) = usecase::get_user(&mut*db.get()?, &user.0, &username)?;
     Ok(Json(json::User{ u_id, email }))
 }
 
 #[post("/users", format = "application/json", data = "<u>")]
-fn post_user(db: State<DbPool>, u: Json<usecase::NewUser>) -> result::Result<(),AppError> {
+fn post_user(db: State<DbPool>, u: Json<usecase::NewUser>) -> Result<()> {
     let new_user = u.into_inner();
     usecase::create_new_user(&mut*db.get()?, new_user.clone())?;
     let user = db.get()?.get_user(&new_user.username)?;
     let subject = "Karte von Morgen: bitte bestätige deine Email-Adresse";
     let body = user_communication::email_confirmation_email(&user.id);
     send_mails(vec![user.email.clone()], &subject, &body);
-    Ok(())
+    Ok(Json(()))
 }
 
 #[delete("/users/<u_id>")]
@@ -377,9 +377,9 @@ fn delete_user(db: State<DbPool>, user: Login, u_id: String) -> Result<()> {
 }
 
 #[post("/ratings", format = "application/json", data = "<u>")]
-fn post_rating(db: State<DbPool>, u: Json<usecase::RateEntry>) -> result::Result<(),AppError> {
+fn post_rating(db: State<DbPool>, u: Json<usecase::RateEntry>) -> Result<()> {
     usecase::rate_entry(&mut*db.get()?, u.into_inner())?;
-    Ok(())
+    Ok(Json(()))
 }
 
 #[get("/ratings/<id>")]

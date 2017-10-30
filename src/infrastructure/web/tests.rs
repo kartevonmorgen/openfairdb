@@ -21,6 +21,26 @@ fn setup() -> (Client, mockdb::ConnectionPool) {
 }
 
 #[test]
+fn create_entry() {
+    let (client, db) = setup();
+    let req = client.post("/entries")
+                    .header(ContentType::JSON)
+                    .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#);
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
+    for h in response.headers().iter() {
+        match h.name.as_str() {
+            "Content-Type" => assert_eq!(h.value, "application/json"),
+            _ => { /* let these through */ }
+        }
+    }
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let eid = db.get().unwrap().entries[0].id.clone();
+    assert_eq!(body_str,format!("\"{}\"",eid));
+}
+
+#[test]
 fn get_one_entry() {
     let e = Entry{
         id          :  "get_one_entry_test".into(),
@@ -276,6 +296,13 @@ fn create_new_user() {
     let u = db.get().unwrap().get_user("foo").unwrap();
     assert_eq!(u.username, "foo");
     assert!(bcrypt::verify("bar", &u.password));
+    assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
+    for h in response.headers().iter() {
+        match h.name.as_str() {
+            "Content-Type" => assert_eq!(h.value, "application/json"),
+            _ => { /* let these through */ }
+        }
+    }
 }
 
 #[test]
@@ -288,6 +315,13 @@ fn create_rating() {
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(db.get().unwrap().ratings[0].value, 1);
+    assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
+    for h in response.headers().iter() {
+        match h.name.as_str() {
+            "Content-Type" => assert_eq!(h.value, "application/json"),
+            _ => { /* let these through */ }
+        }
+    }
 }
 
 #[test]
@@ -490,6 +524,13 @@ fn get_user() {
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(body_str,r#"{"username":"a","email":"a@bar"}"#);
+    assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
+    for h in response.headers().iter() {
+        match h.name.as_str() {
+            "Content-Type" => assert_eq!(h.value, "application/json"),
+            _ => { /* let these through */ }
+        }
+    }
 }
 
 #[test]
