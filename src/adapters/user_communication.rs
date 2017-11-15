@@ -72,8 +72,8 @@ pub fn entry_email(e: &Entry, categories: Vec<String>, tags: &Vec<String>, intro
     Email-Adresse: {email}
     Telefon: {telephone}\n
 Eintrag anschauen oder bearbeiten:
-https://prototyp.kartevonmorgen.org/#/?entry={id}\n
-Du kannst dein Abonnement des Kartenbereichs abbestellen indem du dich auf https://prototyp.kartevonmorgen.org einloggst.\n
+https://kartevonmorgen.org/#/?entry={id}\n
+Du kannst dein Abonnement des Kartenbereichs abbestellen indem du dich auf https://kartevonmorgen.org einloggst.\n
 euphorische Grüße
 das Karte von Morgen-Team",
         introSentence = intro_sentence,
