@@ -2,7 +2,7 @@ use business::usecase::{NewEntry, UpdateEntry};
 use entities::Entry;
 
 pub fn email_confirmation_email(u_id: &str) -> String {
-    format!("Na du Weltverbesserer*,\nwir freuen uns dass du bei der Karte von Morgen mit dabei bist!\n\nBitte bestätige deine Email-Adresse hier:\nhttps://prototyp.kartevonmorgen.org/#/?confirm_email={}.\n\neuphorische Grüße\ndas Karte von Morgen-Team",
+    format!("Na du Weltverbesserer*,\nwir freuen uns dass du bei der Karte von Morgen mit dabei bist!\n\nBitte bestätige deine Email-Adresse hier:\nhttps://kartevonmorgen.org/#/?confirm_email={}.\n\neuphorische Grüße\ndas Karte von Morgen-Team",
     u_id)
 }
 
