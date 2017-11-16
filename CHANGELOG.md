@@ -1,3 +1,10 @@
+## v0.2.9 (2017-09-16)
+- new(api): always respond with 'application/json'
+- fix(emails): fix encoding of emails
+- new(emails): change links in emails from prototype to main app
+- new(register): change character limit of username to 30
+- new(search): use AND for tags in search
+
 ## v0.2.8 (2017-09-21)
 
 - new(accounts): add the possibility to register and login
