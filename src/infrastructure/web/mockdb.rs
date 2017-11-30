@@ -24,7 +24,7 @@ impl r2d2::ManageConnection for MockDbConnectionManager {
 
 pub type ConnectionPool = Pool<MockDbConnectionManager>;
 
-pub fn create_connection_pool() -> Result<ConnectionPool, InitializationError> {
+pub fn create_connection_pool(_: &str) -> Result<ConnectionPool, InitializationError> {
     let config = r2d2::Config::builder().pool_size(1).build();
     let manager = MockDbConnectionManager{};
     Pool::new(config, manager)

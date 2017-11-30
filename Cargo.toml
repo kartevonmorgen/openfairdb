@@ -9,8 +9,6 @@ clap = "2"
 log = "0.3"
 slog-envlogger = "2"
 uuid = { version = "0.5", features = ["v4"] }
-rusted_cypher = "1"
-r2d2_cypher = "0.3"
 url = "1"
 quick-error = "1"
 rocket = "0.3"
@@ -26,3 +24,15 @@ pwhash = "0.1"
 fast_chemail = "0.9"
 quoted_printable = "0.4"
 toml = "0.4"
+dotenv = "0.10"
+
+r2d2_cypher = { version = "0.3", optional = true }
+r2d2-diesel = { version = "0.99", optional = true }
+rusted_cypher = { version = "1", optional = true }
+diesel = { version = "0.99", features = ["sqlite"], optional = true }
+diesel_infer_schema = { version = "0.99", features = ["sqlite"], optional = true }
+
+[features]
+default = ["sqlite"]
+sqlite = ["diesel", "diesel_infer_schema","r2d2-diesel"]
+neo4j = ["rusted_cypher","r2d2_cypher"]

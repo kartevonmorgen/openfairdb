@@ -11,8 +11,8 @@ written in [Rust](http://rustlang.org/).
 
 Requirements:
 
-- [Rust](http://rustlang.org/) (nightly)
-- [Neo4j](http://neo4j.com/) >= 2.1.8
+- [Rust](https://www.rust-lang.org/) (nightly)
+- [SQLite](https://sqlite.org/) 3.x
 
 ### Installing Rust & Cargo
 
@@ -25,51 +25,21 @@ rustup install nightly
 rustup default nightly
 ```
 
-### Installing Neo4j
+### Installing SQLite & Diesel
 
-This readme describes the process with Neo4j Version 2.1.8.
+On Ubuntu:
 
-According to [debian.neo4j.org](http://debian.neo4j.org/):
-
-    wget -O - https://debian.neo4j.org/neotechnology.gpg.key | sudo apt-key add -
-    echo 'deb http://debian.neo4j.org/repo stable/' >/tmp/neo4j.list
-    sudo mv /tmp/neo4j.list /etc/apt/sources.list.d
-    sudo apt-get update
-    sudo apt-get install neo4j=2.1.8
-    
-or follow these instructions for different operating systems: http://neo4j.com/docs/stable/server-installation.html 
-
-Add the neo4j console command: 
-    sudo ln -s /var/lib/neo4j/bin/neo4j /usr/bin/neo4j
-
-To disable the authentication add the following line to
-`/etc/neo4j/neo4j.properties` (or `~/Documents/Neo4j/default.graphdb/neo4j.properties` on Mac OS X):
-
-    dbms.security.auth_enabled=false
-
-
-After installation, Neo4j should be running. You can check this with the following command
-
-    service neo4j-service status
-
-To start Neo4j, run:
-
-    neo4j start
-
-or
-
-    neo4j start-no-wait
-
-To stop it:
-
-    neo4j stop
-
+```
+sudo apt-get install sqlite3 sqlite3-dev
+cargo install diesel_cli --no-default-features --features sqlite
+```
 
 ### Compile & Run
 
 ```
 git clone https://github.com/flosse/openfairdb
 cd openfairdb/
+diesel migration run
 cargo build
 ./target/debug/openfairdb
 ```

@@ -25,14 +25,30 @@ use super::mail;
 static MAX_INVISIBLE_RESULTS : usize = 5;
 static COOKIE_USER_KEY       : &str  = "user_id";
 
+#[cfg(all(not(test), feature = "neo4j"))]
 mod neo4j;
+#[cfg(all(not(test), feature = "sqlite"))]
+mod sqlite;
 #[cfg(test)]
 mod mockdb;
 #[cfg(test)]
 mod tests;
 
-#[cfg(not(test))]
+#[cfg(all(not(test), feature = "neo4j"))]
+use self::neo4j::create_connection_pool;
+
+#[cfg(all(not(test), feature = "sqlite"))]
+use self::sqlite::create_connection_pool;
+
+#[cfg(test)]
+use self::mockdb::create_connection_pool;
+
+#[cfg(all(not(test), feature = "neo4j"))]
 type DbPool = neo4j::ConnectionPool;
+
+#[cfg(all(not(test), feature = "sqlite"))]
+type DbPool = sqlite::ConnectionPool;
+
 #[cfg(test)]
 type DbPool = mockdb::ConnectionPool;
 
@@ -471,7 +487,7 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
         .finalize()
         .unwrap();
 
-    let pool = neo4j::create_connection_pool(db_url).unwrap();
+    let pool = create_connection_pool(db_url).unwrap();
 
     rocket_instance(cfg, pool).launch();
 }

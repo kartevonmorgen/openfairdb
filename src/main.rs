@@ -2,6 +2,7 @@
 
 #![feature(plugin,custom_derive)]
 #![plugin(rocket_codegen)]
+#![recursion_limit="256"]
 
 #[macro_use]
 extern crate log;
@@ -9,10 +10,7 @@ extern crate slog_envlogger;
 #[macro_use]
 extern crate quick_error;
 extern crate clap;
-#[macro_use]
-extern crate rusted_cypher;
 extern crate r2d2;
-extern crate r2d2_cypher;
 extern crate uuid;
 extern crate fast_chemail;
 extern crate url;
@@ -28,6 +26,25 @@ extern crate regex;
 extern crate pwhash;
 extern crate quoted_printable;
 extern crate toml;
+extern crate dotenv;
+
+#[cfg(feature="neo4j")]
+extern crate r2d2_cypher;
+
+#[cfg(feature="sqlite")]
+extern crate r2d2_diesel;
+
+#[cfg(feature="neo4j")]
+#[macro_use]
+extern crate rusted_cypher;
+
+#[cfg(feature="sqlite")]
+#[macro_use]
+extern crate diesel;
+
+#[cfg(feature="sqlite")]
+#[macro_use]
+extern crate diesel_infer_schema;
 
 mod entities;
 mod business;

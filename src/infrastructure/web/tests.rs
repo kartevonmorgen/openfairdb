@@ -14,7 +14,7 @@ fn setup() -> (Client, mockdb::ConnectionPool) {
         .log_level(LoggingLevel::Debug)
         .finalize()
         .unwrap();
-    let pool = mockdb::create_connection_pool().unwrap();
+    let pool = mockdb::create_connection_pool(":memory:").unwrap();
     let rocket = super::rocket_instance(cfg, pool.clone());
     let client = Client::new(rocket).unwrap();
     (client, pool)
