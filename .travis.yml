@@ -10,15 +10,14 @@ addons:
       - libelf-dev
       - libdw-dev
       - binutils-dev # optional: only required for the --verify flag of coveralls
+      - sqlite3
+      - libsqlite3-dev
 
 rust:
-  - beta
   - nightly
 
 matrix:
   fast_finish: true
-  allow_failures:
-    - rust: beta
 
 # load travis-cargo
 before_script:
@@ -28,6 +27,8 @@ before_script:
 
 script:
   - |
+      travis-cargo install -- diesel_cli --no-default-features --features sqlite &&
+      diesel migration run &&
       travis-cargo build -- $FEATURES &&
       travis-cargo test -- $FEATURES &&
       travis-cargo --only stable doc -- $FEATURES

@@ -30,7 +30,7 @@ rustup default nightly
 On Ubuntu:
 
 ```
-sudo apt-get install sqlite3 sqlite3-dev
+sudo apt-get install sqlite3 libsqlite3-dev
 cargo install diesel_cli --no-default-features --features sqlite
 ```
 
