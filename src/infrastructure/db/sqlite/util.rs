@@ -1,5 +1,6 @@
 use entities as e;
 use super::models::*;
+use std::str::FromStr;
 
 impl From<e::Entry> for Entry {
     fn from(e: e::Entry) -> Entry {
@@ -82,7 +83,7 @@ impl From<Triple> for e::Triple {
         } = t;
         e::Triple {
             subject: get_object_id(&subject_type, subject_id),
-            predicate: get_relation_from_str(&predicate),
+            predicate: predicate.parse().unwrap(),
             object: get_object_id(&object_type, object_id),
         }
     }
@@ -178,7 +179,7 @@ impl From<Rating> for e::Rating {
             created: created as u64,
             title,
             value: value as i8,
-            context: get_rating_context_from_str(&context),
+            context: context.parse().unwrap(),
             source,
         }
     }
@@ -305,29 +306,35 @@ pub fn object_id_to_string(o_id: &e::ObjectId) -> String {
     }.clone()
 }
 
-fn get_relation_from_str(predicate: &str) -> e::Relation {
-    match predicate {
-        "is_tagged_with" => e::Relation::IsTaggedWith,
-        "is_rated_with" => e::Relation::IsRatedWith,
-        "is_commented_with" => e::Relation::IsCommentedWith,
-        "created_by" => e::Relation::CreatedBy,
-        "subscribed_to" => e::Relation::SubscribedTo,
-        _ => {
-            panic!("invalid Relation: '{}'", predicate);
-        }
+impl FromStr for e::Relation {
+    type Err = String;
+    fn from_str(predicate: &str) -> Result<e::Relation,String> {
+        Ok(match predicate {
+            "is_tagged_with" => e::Relation::IsTaggedWith,
+            "is_rated_with" => e::Relation::IsRatedWith,
+            "is_commented_with" => e::Relation::IsCommentedWith,
+            "created_by" => e::Relation::CreatedBy,
+            "subscribed_to" => e::Relation::SubscribedTo,
+            _ => {
+                return Err(format!("invalid Relation: '{}'", predicate));
+            }
+        })
     }
 }
 
-fn get_rating_context_from_str(context: &str) -> e::RatingContext {
-    match context {
-        "diversity" => e::RatingContext::Diversity,
-        "renewable" => e::RatingContext::Renewable,
-        "fairness" => e::RatingContext::Fairness,
-        "humanity" => e::RatingContext::Humanity,
-        "transparency" => e::RatingContext::Transparency,
-        "solidarity" => e::RatingContext::Solidarity,
-        _ => {
-            panic!("invalid RatingContext: '{}'", context);
-        }
+impl FromStr for e::RatingContext {
+    type Err = String;
+    fn from_str(context: &str) -> Result<e::RatingContext,String> {
+        Ok(match context {
+            "diversity" => e::RatingContext::Diversity,
+            "renewable" => e::RatingContext::Renewable,
+            "fairness" => e::RatingContext::Fairness,
+            "humanity" => e::RatingContext::Humanity,
+            "transparency" => e::RatingContext::Transparency,
+            "solidarity" => e::RatingContext::Solidarity,
+            _ => {
+                return Err(format!("invalid RatingContext: '{}'", context));
+            }
+        })
     }
 }
