@@ -23,13 +23,16 @@ impl Db for SqliteConnection {
                 }
             })
             .collect();
-        diesel::insert_into(schema::entries::table)
-            .values(&new_entry)
-            .execute(self)?;
-        diesel::insert_into(schema::entry_category_relations::table)
-            //WHERE NOT EXISTS
-            .values(&cat_rels)
-            .execute(self)?;
+        self.transaction::<_, diesel::result::Error, _>(|| {
+            diesel::insert_into(schema::entries::table)
+                .values(&new_entry)
+                .execute(self)?;
+            diesel::insert_into(schema::entry_category_relations::table)
+                //WHERE NOT EXISTS
+                .values(&cat_rels)
+                .execute(self)?;
+            Ok(())
+        })?;
         Ok(())
     }
     fn create_tag(&mut self, t: &Tag) -> Result<()> {
@@ -97,7 +100,9 @@ impl Db for SqliteConnection {
     }
     fn delete_bbox_subscription(&mut self, id: &str) -> Result<()> {
         use self::schema::bbox_subscriptions::dsl;
-        diesel::delete(dsl::bbox_subscriptions.find(id)).execute(self)?;
+        diesel::delete(dsl::bbox_subscriptions.find(id)).execute(
+            self,
+        )?;
         Ok(())
     }
     fn delete_user(&mut self, user: &str) -> Result<()> {
@@ -259,31 +264,6 @@ impl Db for SqliteConnection {
 
         let e = models::Entry::from(entry.clone());
 
-        diesel::update(e_dsl::entries.find(e.id))
-            .set((
-                e_dsl::created.eq(e.created),
-                e_dsl::version.eq(e.version),
-                e_dsl::title.eq(e.title),
-                e_dsl::description.eq(e.description),
-                e_dsl::lat.eq(e.lat),
-                e_dsl::lng.eq(e.lng),
-                e_dsl::street.eq(e.street),
-                e_dsl::zip.eq(e.zip),
-                e_dsl::city.eq(e.city),
-                e_dsl::country.eq(e.country),
-                e_dsl::email.eq(e.email),
-                e_dsl::telephone.eq(e.telephone),
-                e_dsl::homepage.eq(e.homepage),
-                e_dsl::license.eq(e.license),
-            ))
-            .execute(self)?;
-
-        diesel::delete(e_c_dsl::entry_category_relations.filter(
-            e_c_dsl::entry_id.eq(
-                &entry.id,
-            ),
-        )).execute(self)?;
-
         let cat_rels: Vec<_> = entry
             .categories
             .iter()
@@ -296,11 +276,39 @@ impl Db for SqliteConnection {
             })
             .collect();
 
-        diesel::insert_into(schema::entry_category_relations::table)
-            //WHERE NOT EXISTS
-            .values(&cat_rels)
-            .execute(self)?;
+        self.transaction::<_, diesel::result::Error, _>(|| {
 
+            diesel::update(e_dsl::entries.find(e.id))
+                .set((
+                    e_dsl::created.eq(e.created),
+                    e_dsl::version.eq(e.version),
+                    e_dsl::title.eq(e.title),
+                    e_dsl::description.eq(e.description),
+                    e_dsl::lat.eq(e.lat),
+                    e_dsl::lng.eq(e.lng),
+                    e_dsl::street.eq(e.street),
+                    e_dsl::zip.eq(e.zip),
+                    e_dsl::city.eq(e.city),
+                    e_dsl::country.eq(e.country),
+                    e_dsl::email.eq(e.email),
+                    e_dsl::telephone.eq(e.telephone),
+                    e_dsl::homepage.eq(e.homepage),
+                    e_dsl::license.eq(e.license),
+                ))
+                .execute(self)?;
+
+            diesel::delete(e_c_dsl::entry_category_relations.filter(
+                e_c_dsl::entry_id.eq(
+                    &entry.id,
+                ),
+            )).execute(self)?;
+
+            diesel::insert_into(schema::entry_category_relations::table)
+                //WHERE NOT EXISTS
+                .values(&cat_rels)
+                .execute(self)?;
+            Ok(())
+        })?;
         Ok(())
     }
 
