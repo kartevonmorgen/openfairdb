@@ -10,6 +10,17 @@ use super::schema;
 
 type Result<T> = result::Result<T, RepoError>;
 
+fn unset_current_on_all_entries(
+    con: &&mut SqliteConnection,
+    id: &str,
+) -> result::Result<usize, diesel::result::Error> {
+    use self::schema::entries::dsl;
+    diesel::update(dsl::entries.filter(dsl::id.eq(id)).filter(
+        dsl::current.eq(true),
+    )).set(dsl::current.eq(false))
+        .execute(*con)
+}
+
 impl Db for SqliteConnection {
     fn create_entry(&mut self, e: &Entry) -> Result<()> {
         let new_entry = models::Entry::from(e.clone());
@@ -19,11 +30,13 @@ impl Db for SqliteConnection {
             .map(|category_id| {
                 models::EntryCategoryRelation {
                     entry_id: e.id.clone(),
+                    entry_version: e.version as i32,
                     category_id,
                 }
             })
             .collect();
         self.transaction::<_, diesel::result::Error, _>(|| {
+            unset_current_on_all_entries(&self, &e.id)?;
             diesel::insert_into(schema::entries::table)
                 .values(&new_entry)
                 .execute(self)?;
@@ -131,7 +144,11 @@ impl Db for SqliteConnection {
             telephone,
             homepage,
             license,
-        } = e_dsl::entries.find(e_id).first(self)?;
+            ..
+        } = e_dsl::entries
+            .filter(e_dsl::id.eq(e_id))
+            .filter(e_dsl::current.eq(true))
+            .first(self)?;
 
         let categories = e_c_dsl::entry_category_relations
             .filter(e_c_dsl::entry_id.eq(&id))
@@ -170,7 +187,10 @@ impl Db for SqliteConnection {
         use self::schema::entries::dsl as e_dsl;
         use self::schema::entry_category_relations::dsl as e_c_dsl;
 
-        let entries: Vec<models::Entry> = e_dsl::entries.load(self)?;
+        let entries: Vec<models::Entry> = e_dsl::entries
+            .filter(e_dsl::current.eq(true))
+            .load(self)?;
+
         let cat_rels = e_c_dsl::entry_category_relations
             .load::<models::EntryCategoryRelation>(self)?;
 
@@ -181,6 +201,7 @@ impl Db for SqliteConnection {
                     let cats = cat_rels
                         .iter()
                         .filter(|r| r.entry_id == e.id)
+                        .filter(|r| r.entry_version == e.version)
                         .map(|r| &r.category_id)
                         .cloned()
                         .collect();
@@ -259,9 +280,6 @@ impl Db for SqliteConnection {
 
     fn update_entry(&mut self, entry: &Entry) -> Result<()> {
 
-        use self::schema::entries::dsl as e_dsl;
-        use self::schema::entry_category_relations::dsl as e_c_dsl;
-
         let e = models::Entry::from(entry.clone());
 
         let cat_rels: Vec<_> = entry
@@ -271,38 +289,17 @@ impl Db for SqliteConnection {
             .map(|category_id| {
                 models::EntryCategoryRelation {
                     entry_id: entry.id.clone(),
+                    entry_version: entry.version as i32,
                     category_id,
                 }
             })
             .collect();
 
         self.transaction::<_, diesel::result::Error, _>(|| {
-
-            diesel::update(e_dsl::entries.find(e.id))
-                .set((
-                    e_dsl::created.eq(e.created),
-                    e_dsl::version.eq(e.version),
-                    e_dsl::title.eq(e.title),
-                    e_dsl::description.eq(e.description),
-                    e_dsl::lat.eq(e.lat),
-                    e_dsl::lng.eq(e.lng),
-                    e_dsl::street.eq(e.street),
-                    e_dsl::zip.eq(e.zip),
-                    e_dsl::city.eq(e.city),
-                    e_dsl::country.eq(e.country),
-                    e_dsl::email.eq(e.email),
-                    e_dsl::telephone.eq(e.telephone),
-                    e_dsl::homepage.eq(e.homepage),
-                    e_dsl::license.eq(e.license),
-                ))
+            unset_current_on_all_entries(&self, &e.id)?;
+            diesel::insert_into(schema::entries::table)
+                .values(&e)
                 .execute(self)?;
-
-            diesel::delete(e_c_dsl::entry_category_relations.filter(
-                e_c_dsl::entry_id.eq(
-                    &entry.id,
-                ),
-            )).execute(self)?;
-
             diesel::insert_into(schema::entry_category_relations::table)
                 //WHERE NOT EXISTS
                 .values(&cat_rels)

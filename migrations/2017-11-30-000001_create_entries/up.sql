@@ -1,7 +1,8 @@
 CREATE TABLE entries (
-    id          TEXT PRIMARY KEY NOT NULL,
+    id          TEXT NOT NULL,
     created     INTEGER NOT NULL,
     version     INTEGER NOT NULL,
+    current     BOOLEAN NOT NULL,
     title       TEXT NOT NULL,
     description TEXT NOT NULL,
     lat         FLOAT NOT NULL,
@@ -13,5 +14,6 @@ CREATE TABLE entries (
     email       TEXT,
     telephone   TEXT,
     homepage    TEXT,
-    license     TEXT
+    license     TEXT,
+    PRIMARY KEY (id, version)
 );

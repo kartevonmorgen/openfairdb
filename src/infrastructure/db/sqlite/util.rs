@@ -27,6 +27,7 @@ impl From<e::Entry> for Entry {
             id,
             created: created as i32,
             version: version as i32,
+            current: true,
             title,
             description,
             lat: lat as f32,
@@ -308,7 +309,7 @@ pub fn object_id_to_string(o_id: &e::ObjectId) -> String {
 
 impl FromStr for e::Relation {
     type Err = String;
-    fn from_str(predicate: &str) -> Result<e::Relation,String> {
+    fn from_str(predicate: &str) -> Result<e::Relation, String> {
         Ok(match predicate {
             "is_tagged_with" => e::Relation::IsTaggedWith,
             "is_rated_with" => e::Relation::IsRatedWith,
@@ -324,7 +325,7 @@ impl FromStr for e::Relation {
 
 impl FromStr for e::RatingContext {
     type Err = String;
-    fn from_str(context: &str) -> Result<e::RatingContext,String> {
+    fn from_str(context: &str) -> Result<e::RatingContext, String> {
         Ok(match context {
             "diversity" => e::RatingContext::Diversity,
             "renewable" => e::RatingContext::Renewable,

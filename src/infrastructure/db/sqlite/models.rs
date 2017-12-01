@@ -6,6 +6,7 @@ pub struct Entry {
     pub id: String,
     pub created: i32,
     pub version: i32,
+    pub current: bool,
     pub title: String,
     pub description: String,
     pub lat: f32,
@@ -31,9 +32,10 @@ pub struct Category {
 
 #[derive(Identifiable, Queryable, Insertable, Associations)]
 #[table_name = "entry_category_relations"]
-#[primary_key(entry_id, category_id)]
+#[primary_key(entry_id, entry_version, category_id)]
 pub struct EntryCategoryRelation {
     pub entry_id: String,
+    pub entry_version: i32,
     pub category_id: String,
 }
 
