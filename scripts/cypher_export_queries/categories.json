@@ -1,0 +1,12 @@
+{
+  "statements":[
+    {"statement":
+     "MATCH (n:Category)--(s:CategoryState)
+      RETURN
+       n.id as id,
+       s.created as created,
+       s.name as name,
+       s.version as version"
+    }
+  ]
+}

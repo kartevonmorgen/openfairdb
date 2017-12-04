@@ -1,0 +1,17 @@
+{
+  "statements":[
+    {"statement":
+     "MATCH (e:Entry)--(x:EntryState)
+      WITH distinct e, max(x.created) as max
+      MATCH e<--(s:EntryState)
+      WHERE s.created = max
+      WITH e,s
+      MATCH e--(t:Tag)
+      WITH e,s,t
+      RETURN
+        e.id as entry_id,
+        s.version as entry_version,
+        t.id as tag_id"
+    }
+  ]
+}

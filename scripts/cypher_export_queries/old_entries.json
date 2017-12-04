@@ -1,0 +1,29 @@
+{
+  "statements":[
+    {"statement":
+      "MATCH (e:Entry)--(x:EntryState)
+       WITH distinct e, max(x.created) as max
+       MATCH e<--(s:EntryState)
+       WHERE s.created <> max
+       WITH e,s
+       MATCH e<-[:BELONGS_TO]-s
+       WITH e,s,false as current
+       RETURN
+          e.id            as id,
+          s.created       as created,
+          s.version       as version,
+          s.title         as title,
+          s.description   as description,
+          s.lat           as lat,
+          s.lng           as lng,
+          s.street        as street,
+          s.zip           as zip,
+          s.city          as city,
+          s.email         as email,
+          s.telephone     as telephone,
+          s.homepage      as homepage,
+          current
+       ORDER BY e.id"
+    }
+  ]
+}
