@@ -1,0 +1,9 @@
+DROP TABLE entries;
+DROP TABLE categories;
+DROP TABLE entry_category_relations;
+DROP TABLE tags;
+DROP TABLE comments;
+DROP TABLE ratings;
+DROP TABLE bbox_subscriptions;
+DROP TABLE triples;
+DROP TABLE users;
