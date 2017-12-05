@@ -28,7 +28,7 @@ mkdir -p  $EXPORT_DIR
 FetchData(){
   curl -H $HEADER -H $C_TYPE \
     -d @$QUERY_DIR/$1.json $URL \
-    | jq -r '(.results[0]) | .columns,.data[].row | @csv' \
+    | jq -r '(.results[0]) | .data[].row | @csv' \
     > $EXPORT_DIR/$1.csv
 }
 
