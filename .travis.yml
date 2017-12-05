@@ -27,7 +27,7 @@ before_script:
 
 script:
   - |
-      travis-cargo install -- diesel_cli --no-default-features --features sqlite &&
+      travis-cargo install -- diesel_cli --no-default-features --features sqlite --force &&
       diesel migration run &&
       travis-cargo build -- $FEATURES &&
       travis-cargo test -- $FEATURES &&
