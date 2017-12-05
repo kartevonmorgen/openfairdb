@@ -31,6 +31,16 @@ CREATE TABLE entry_category_relations (
     category_id   TEXT NOT NULL,
     PRIMARY KEY (entry_id, entry_version, category_id),
     FOREIGN KEY (entry_id, entry_version) REFERENCES entries(id,version)
+    -- FOREIGN KEY (category_id) REFERENCES categories(id)
+);
+
+CREATE TABLE entry_tag_relations (
+    entry_id      TEXT NOT NULL,
+    entry_version INTEGER NOT NULL,
+    tag_id        TEXT NOT NULL,
+    PRIMARY KEY (entry_id, entry_version, tag_id),
+    FOREIGN KEY (entry_id, entry_version) REFERENCES entries(id,version)
+    -- FOREIGN KEY (tag_id) REFERENCES tags(id)
 );
 
 CREATE TABLE tags (
@@ -38,9 +48,11 @@ CREATE TABLE tags (
 );
 
 CREATE TABLE comments (
-  id      TEXT PRIMARY KEY NOT NULL,
-  created INTEGER NOT NULL,
-  text    TEXT NOT NULL
+  id        TEXT PRIMARY KEY NOT NULL,
+  created   INTEGER NOT NULL,
+  text      TEXT NOT NULL,
+  rating_id TEXT -- NOT NULL
+  -- FOREIGN KEY (rating_id) REFERENCES ratings(id)
 );
 
 CREATE TABLE ratings (
@@ -49,7 +61,9 @@ CREATE TABLE ratings (
     title   TEXT NOT NULL,
     value   INTEGER NOT NULL,
     context TEXT NOT NULL,
-    source  TEXT
+    source  TEXT,
+    entry_id TEXT -- NOT NULL
+    -- FOREIGN KEY (entry_id) REFERENCES entries(id)
 );
 
 CREATE TABLE bbox_subscriptions (
@@ -57,16 +71,9 @@ CREATE TABLE bbox_subscriptions (
     south_west_lat  FLOAT NOT NULL,
     south_west_lng  FLOAT NOT NULL,
     north_east_lat  FLOAT NOT NULL,
-    north_east_lng  FLOAT NOT NULL
-);
-
-CREATE TABLE triples (
-    subject_id    TEXT NOT NULL,
-    subject_type  TEXT NOT NULL,
-    predicate     TEXT NOT NULL,
-    object_id     TEXT NOT NULL,
-    object_type   TEXT NOT NULL,
-    PRIMARY KEY (subject_id, predicate, object_id)
+    north_east_lng  FLOAT NOT NULL,
+    user_id TEXT -- NOT NULL
+    -- FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
 CREATE TABLE users (

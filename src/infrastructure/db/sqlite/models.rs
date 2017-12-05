@@ -39,21 +39,19 @@ pub struct EntryCategoryRelation {
     pub category_id: String,
 }
 
+#[derive(Identifiable, Queryable, Insertable, Associations)]
+#[table_name = "entry_tag_relations"]
+#[primary_key(entry_id, entry_version, tag_id)]
+pub struct EntryTagRelation {
+    pub entry_id: String,
+    pub entry_version: i32,
+    pub tag_id: String,
+}
+
 #[derive(Queryable, Insertable)]
 #[table_name = "tags"]
 pub struct Tag {
     pub id: String,
-}
-
-#[derive(Identifiable, Queryable, Insertable)]
-#[table_name = "triples"]
-#[primary_key(subject_id, predicate, object_id)]
-pub struct Triple {
-    pub subject_id: String,
-    pub subject_type: String,
-    pub predicate: String,
-    pub object_id: String,
-    pub object_type: String,
 }
 
 #[derive(Identifiable, Queryable, Insertable)]
@@ -72,6 +70,14 @@ pub struct Comment {
     pub id: String,
     pub created: i32,
     pub text: String,
+    pub rating_id: Option<String>, //TODO remove option
+}
+
+#[derive(AsChangeset)]
+#[table_name = "comments"]
+#[changeset_options(treat_none_as_null = "true")]
+pub struct CommentUpdate {
+    pub rating_id: Option<String>, //TODO remove option
 }
 
 #[derive(Queryable, Insertable)]
@@ -83,6 +89,14 @@ pub struct Rating {
     pub value: i32,
     pub context: String,
     pub source: Option<String>,
+    pub entry_id: Option<String>, //TODO remove option
+}
+
+#[derive(AsChangeset)]
+#[table_name = "ratings"]
+#[changeset_options(treat_none_as_null = "true")]
+pub struct RatingUpdate {
+    pub entry_id: Option<String>, //TODO remove option
 }
 
 #[derive(Queryable, Insertable)]
@@ -93,4 +107,12 @@ pub struct BboxSubscription {
     pub south_west_lng: f32,
     pub north_east_lat: f32,
     pub north_east_lng: f32,
+    pub user_id: Option<String>, //TODO remove option
+}
+
+#[derive(AsChangeset)]
+#[table_name = "bbox_subscriptions"]
+#[changeset_options(treat_none_as_null = "true")]
+pub struct BboxSubscriptionUpdate {
+    pub user_id: Option<String>, //TODO remove option
 }

@@ -55,10 +55,92 @@ impl Db for SqliteConnection {
         Ok(())
     }
     fn create_triple(&mut self, t: &Triple) -> Result<()> {
-        diesel::insert_into(schema::triples::table)
-            .values(&models::Triple::from(t.clone()))
-            .execute(self)?;
+        use self::schema::ratings::dsl as r_dsl;
+        use self::schema::comments::dsl as c_dsl;
+        use self::schema::bbox_subscriptions::dsl as b_dsl;
+
+        match t.predicate {
+
+            // (entry)-[is_tagged_with]->(tag)
+            Relation::IsTaggedWith => {
+                match t.subject {
+                    ObjectId::Entry(ref e_id) => {
+                        match t.object {
+                            ObjectId::Tag(ref t_id) => {
+                                let e = self.get_entry(e_id)?;
+                                diesel::insert_into(schema::entry_tag_relations::table)
+                                    .values(&models::EntryTagRelation {
+                                        entry_id: e.id,
+                                        entry_version: e.version as i32,
+                                        tag_id: t_id.clone(),
+                                    })
+                                    .execute(self)?;
+                                return Ok(());
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            // (entry)-[is_rated_with]->(rating)
+            Relation::IsRatedWith => {
+                match t.subject {
+                    ObjectId::Entry(ref e_id) => {
+                        match t.object {
+                            ObjectId::Rating(ref r_id) => {
+                                diesel::update(r_dsl::ratings.find(r_id))
+                                    .set(r_dsl::entry_id.eq(e_id))
+                                    .execute(self)?;
+                                return Ok(());
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            // (rating)-[is_commented_with]->(comment)
+            Relation::IsCommentedWith => {
+                match t.subject {
+                    ObjectId::Rating(ref r_id) => {
+                        match t.object {
+                            ObjectId::Comment(ref c_id) => {
+                                diesel::update(c_dsl::comments.find(c_id))
+                                    .set(c_dsl::rating_id.eq(r_id))
+                                    .execute(self)?;
+                                return Ok(());
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            // (user)-[subscribed_to)->(bbox_subscription)
+            Relation::SubscribedTo => {
+                match t.subject {
+                    ObjectId::User(ref u_id) => {
+                        match t.object {
+                            ObjectId::BboxSubscription(ref s_id) => {
+                                diesel::update(b_dsl::bbox_subscriptions.find(s_id))
+                                    .set(b_dsl::user_id.eq(u_id))
+                                    .execute(self)?;
+                                return Ok(());
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        }
+        warn!("did not save triple '{:?}'", t);
         Ok(())
+
     }
     fn create_user(&mut self, u: &User) -> Result<()> {
         diesel::insert_into(schema::users::table)
@@ -187,9 +269,8 @@ impl Db for SqliteConnection {
         use self::schema::entries::dsl as e_dsl;
         use self::schema::entry_category_relations::dsl as e_c_dsl;
 
-        let entries: Vec<models::Entry> = e_dsl::entries
-            .filter(e_dsl::current.eq(true))
-            .load(self)?;
+        let entries: Vec<models::Entry> =
+            e_dsl::entries.filter(e_dsl::current.eq(true)).load(self)?;
 
         let cat_rels = e_c_dsl::entry_category_relations
             .load::<models::EntryCategoryRelation>(self)?;
@@ -248,14 +329,47 @@ impl Db for SqliteConnection {
 
     }
     fn all_triples(&self) -> Result<Vec<Triple>> {
-        use self::schema::triples::dsl::*;
-        Ok(
-            triples
-                .load::<models::Triple>(self)?
-                .into_iter()
-                .map(Triple::from)
-                .collect(),
-        )
+        use self::schema::entry_tag_relations::dsl as e_t_dsl;
+        use self::schema::ratings::dsl as r_dsl;
+        use self::schema::comments::dsl as c_dsl;
+        use self::schema::bbox_subscriptions::dsl as b_dsl;
+
+        // (entry)-[is_tagged_with]->(tag)
+        let mut e_t_triples: Vec<_> = e_t_dsl::entry_tag_relations
+            .load::<models::EntryTagRelation>(self)?
+            .into_iter()
+            .map(Triple::from)
+            .collect();
+
+        // (entry)-[is_rated_with]->(rating)
+        let mut e_r_triples: Vec<_> = r_dsl::ratings
+            .load::<models::Rating>(self)?
+            .into_iter()
+            .map(Triple::from)
+            .collect();
+
+        // (rating)-[is_commented_with]->(comment)
+        let mut r_c_triples: Vec<_> = c_dsl::comments
+            .load::<models::Comment>(self)?
+            .into_iter()
+            .map(Triple::from)
+            .collect();
+
+        // (user)-[subscribed_to)->(bbox_subscription)
+        let mut u_b_triples: Vec<_> = b_dsl::bbox_subscriptions
+            .load::<models::BboxSubscription>(self)?
+            .into_iter()
+            .map(Triple::from)
+            .collect();
+
+
+        let mut result = vec![];
+        result.append(&mut e_t_triples);
+        result.append(&mut e_r_triples);
+        result.append(&mut r_c_triples);
+        result.append(&mut u_b_triples);
+
+        Ok(result)
     }
     fn all_ratings(&self) -> Result<Vec<Rating>> {
         use self::schema::ratings::dsl::*;
@@ -310,10 +424,87 @@ impl Db for SqliteConnection {
     }
 
     fn delete_triple(&mut self, t: &Triple) -> Result<()> {
-        use self::schema::triples::dsl::*;
-        let t = models::Triple::from(t.clone());
-        diesel::delete(triples.find((t.subject_id, t.predicate, t.object_id)))
-            .execute(self)?;
+        use self::schema::entry_tag_relations::dsl as e_t_dsl;
+        use self::schema::ratings::dsl as r_dsl;
+        use self::schema::comments::dsl as c_dsl;
+        use self::schema::bbox_subscriptions::dsl as b_dsl;
+
+        match t.predicate {
+
+            // (entry)-[is_tagged_with]->(tag)
+            Relation::IsTaggedWith => {
+                match t.subject {
+                    ObjectId::Entry(ref e_id) => {
+                        match t.object {
+                            ObjectId::Tag(ref t_id) => {
+                                let e = self.get_entry(e_id)?;
+                                diesel::delete(e_t_dsl::entry_tag_relations.find(
+                                    (e.id, e.version as i32, t_id),
+                                )).execute(self)?;
+                                return Ok(());
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            // (entry)-[is_rated_with]->(rating)
+            Relation::IsRatedWith => {
+                match t.subject {
+                    ObjectId::Entry(_) => {
+                        match t.object {
+                            ObjectId::Rating(ref r_id) => {
+                                diesel::update(r_dsl::ratings.find(r_id))
+                                    .set(&models::RatingUpdate { entry_id: None })
+                                    .execute(self)?;
+                                return Ok(());
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+
+            // (rating)-[is_commented_with]->(comment)
+            Relation::IsCommentedWith => {
+                match t.subject {
+                    ObjectId::Rating(_) => {
+                        match t.object {
+                            ObjectId::Comment(ref c_id) => {
+                                diesel::update(c_dsl::comments.find(c_id))
+                                    .set(&models::CommentUpdate { rating_id: None })
+                                    .execute(self)?;
+                                return Ok(());
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            // (user)-[subscribed_to)->(bbox_subscription)
+            Relation::SubscribedTo => {
+                match t.subject {
+                    ObjectId::User(_) => {
+                        match t.object {
+                            ObjectId::BboxSubscription(ref s_id) => {
+                                diesel::update(b_dsl::bbox_subscriptions.find(s_id))
+                                    .set(&models::BboxSubscriptionUpdate { user_id: None })
+                                    .execute(self)?;
+                                return Ok(());
+                            }
+                            _ => {}
+                        }
+                    }
+                    _ => {}
+                }
+            }
+            _ => {}
+        }
+        warn!("did not delete triple '{:?}'", t);
         Ok(())
     }
 }

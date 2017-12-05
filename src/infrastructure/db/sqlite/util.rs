@@ -73,36 +73,42 @@ impl From<e::Tag> for Tag {
     }
 }
 
-impl From<Triple> for e::Triple {
-    fn from(t: Triple) -> e::Triple {
-        let Triple {
-            subject_id,
-            subject_type,
-            predicate,
-            object_id,
-            object_type,
-        } = t;
+impl From<EntryTagRelation> for e::Triple {
+    fn from(r: EntryTagRelation) -> e::Triple {
         e::Triple {
-            subject: get_object_id(&subject_type, subject_id),
-            predicate: predicate.parse().unwrap(),
-            object: get_object_id(&object_type, object_id),
+            subject: e::ObjectId::Entry(r.entry_id),
+            predicate: e::Relation::IsTaggedWith,
+            object: e::ObjectId::Tag(r.tag_id),
         }
     }
 }
 
-impl From<e::Triple> for Triple {
-    fn from(t: e::Triple) -> Triple {
-        let e::Triple {
-            subject,
-            predicate,
-            object,
-        } = t;
-        Triple {
-            subject_id: object_id_to_string(&subject),
-            subject_type: object_id_to_type_string(&subject),
-            predicate: predicate.into(),
-            object_id: object_id_to_string(&object),
-            object_type: object_id_to_type_string(&object),
+impl From<Rating> for e::Triple {
+    fn from(r: Rating) -> e::Triple {
+        e::Triple {
+            subject: e::ObjectId::Entry(r.entry_id.unwrap()), //TODO
+            predicate: e::Relation::IsRatedWith,
+            object: e::ObjectId::Rating(r.id),
+        }
+    }
+}
+
+impl From<Comment> for e::Triple {
+    fn from(c: Comment) -> e::Triple {
+        e::Triple {
+            subject: e::ObjectId::Rating(c.rating_id.unwrap()), //TODO
+            predicate: e::Relation::IsCommentedWith,
+            object: e::ObjectId::Comment(c.id),
+        }
+    }
+}
+
+impl From<BboxSubscription> for e::Triple {
+    fn from(s: BboxSubscription) -> e::Triple {
+        e::Triple {
+            subject: e::ObjectId::User(s.user_id.unwrap()), //TODO
+            predicate: e::Relation::SubscribedTo,
+            object: e::ObjectId::BboxSubscription(s.id),
         }
     }
 }
@@ -145,7 +151,7 @@ impl From<e::User> for User {
 
 impl From<Comment> for e::Comment {
     fn from(c: Comment) -> e::Comment {
-        let Comment { id, created, text } = c;
+        let Comment { id, created, text, .. } = c;
         e::Comment {
             id,
             created: created as u64,
@@ -161,6 +167,7 @@ impl From<e::Comment> for Comment {
             id,
             created: created as i32,
             text,
+            rating_id: None,
         }
     }
 }
@@ -174,6 +181,7 @@ impl From<Rating> for e::Rating {
             context,
             value,
             source,
+            ..
         } = r;
         e::Rating {
             id,
@@ -203,6 +211,7 @@ impl From<e::Rating> for Rating {
             value: value as i32,
             context: context.into(),
             source,
+            entry_id: None,
         }
     }
 }
@@ -215,6 +224,7 @@ impl From<BboxSubscription> for e::BboxSubscription {
             south_west_lng,
             north_east_lat,
             north_east_lng,
+            ..
         } = s;
         e::BboxSubscription {
             id,
@@ -241,24 +251,11 @@ impl From<e::BboxSubscription> for BboxSubscription {
             south_west_lng: south_west_lng as f32,
             north_east_lat: north_east_lat as f32,
             north_east_lng: north_east_lng as f32,
+            user_id: None,
         }
     }
 }
 
-
-fn get_object_id(o_type: &str, id: String) -> e::ObjectId {
-    match o_type {
-        "entry" => e::ObjectId::Entry(id),
-        "tag" => e::ObjectId::Tag(id),
-        "user" => e::ObjectId::User(id),
-        "comment" => e::ObjectId::Comment(id),
-        "rating" => e::ObjectId::Rating(id),
-        "bbox_subscription" => e::ObjectId::BboxSubscription(id),
-        _ => {
-            panic!("invalid ObjectId variant: '{}'", o_type);
-        }
-    }
-}
 
 impl From<e::RatingContext> for String {
     fn from(context: e::RatingContext) -> String {
@@ -283,28 +280,6 @@ impl From<e::Relation> for String {
             e::Relation::SubscribedTo => "subscribed_to",
         }.into()
     }
-}
-
-pub fn object_id_to_type_string(o_id: &e::ObjectId) -> String {
-    match *o_id {
-        e::ObjectId::Entry(_) => "entry",
-        e::ObjectId::Tag(_) => "tag",
-        e::ObjectId::User(_) => "user",
-        e::ObjectId::Comment(_) => "comment",
-        e::ObjectId::Rating(_) => "rating",
-        e::ObjectId::BboxSubscription(_) => "bbox_subscription",
-    }.into()
-}
-
-pub fn object_id_to_string(o_id: &e::ObjectId) -> String {
-    match *o_id {
-        e::ObjectId::Entry(ref id) => id,
-        e::ObjectId::Tag(ref id) => id,
-        e::ObjectId::User(ref id) => id,
-        e::ObjectId::Comment(ref id) => id,
-        e::ObjectId::Rating(ref id) => id,
-        e::ObjectId::BboxSubscription(ref id) => id,
-    }.clone()
 }
 
 impl FromStr for e::Relation {
