@@ -1,13 +1,14 @@
 {
   "statements":[
     {"statement":
-     "MATCH (n:`Rating`)-[:IS_RATED_WITH]-(e:Entry)
+     "MATCH (r:`Rating`)-[:IS_RATED_WITH]-(e:Entry)
       RETURN
-       n.id as id,
-       n.created as created,
-       n.title as title,
-       n.context as context,
-       n.value as value,
+       r.id as id,
+       r.created as created,
+       r.title as title,
+       r.value as value,
+       r.context as context,
+       r.source as source,
        e.id as entry_id"
     }
   ]

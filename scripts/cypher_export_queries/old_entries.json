@@ -19,9 +19,11 @@
           s.street        as street,
           s.zip           as zip,
           s.city          as city,
+          s.country       as country,
           s.email         as email,
           s.telephone     as telephone,
           s.homepage      as homepage,
+          s.license       as license,
           current
        ORDER BY e.id"
     }
