@@ -5,8 +5,8 @@
       RETURN
        n.id as id,
        s.created as created,
-       s.name as name,
-       s.version as version"
+       s.version as version,
+       s.name as name"
     }
   ]
 }

@@ -3,9 +3,9 @@
     {"statement":
      "MATCH (n:`User`)
       RETURN
-       n.email as email,
        n.username as username,
        n.password as password,
+       n.email as email,
        n.email_confirmed as email_confirmed"
     }
   ]

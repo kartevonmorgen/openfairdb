@@ -12,6 +12,7 @@
           e.id            as id,
           s.created       as created,
           s.version       as version,
+          current,
           s.title         as title,
           s.description   as description,
           s.lat           as lat,
@@ -23,8 +24,7 @@
           s.email         as email,
           s.telephone     as telephone,
           s.homepage      as homepage,
-          s.license       as license,
-          current"
+          s.license       as license"
     }
   ]
 }
