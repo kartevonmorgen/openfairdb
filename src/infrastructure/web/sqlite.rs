@@ -1,13 +1,14 @@
 use r2d2_diesel::ConnectionManager;
 use diesel::sqlite::SqliteConnection;
-use r2d2::{self, Pool, InitializationError};
+use r2d2::{Pool, Error};
 
 static POOL_SIZE: u32 = 5;
 
 pub type ConnectionPool = Pool<ConnectionManager<SqliteConnection>>;
 
-pub fn create_connection_pool(db_url: &str) -> Result<ConnectionPool, InitializationError> {
-    let config = r2d2::Config::builder().pool_size(POOL_SIZE).build();
+pub fn create_connection_pool(db_url: &str) -> Result<ConnectionPool, Error> {
     let manager = ConnectionManager::<SqliteConnection>::new(db_url);
-    Pool::new(config, manager)
+    Pool::builder()
+        .max_size(POOL_SIZE)
+        .build(manager)
 }

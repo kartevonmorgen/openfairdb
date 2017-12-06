@@ -444,9 +444,9 @@ dependencies = [
  "pwhash 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "quick-error 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "quoted_printable 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "r2d2 0.7.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "r2d2 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "r2d2-diesel 0.99.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "r2d2_cypher 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "r2d2_cypher 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rocket 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rocket_codegen 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -512,12 +512,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "r2d2"
-version = "0.7.4"
+version = "0.8.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "antidote 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
- "scheduled-thread-pool 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "scheduled-thread-pool 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -526,15 +526,15 @@ version = "0.99.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "diesel 0.99.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "r2d2 0.7.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "r2d2 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
 name = "r2d2_cypher"
-version = "0.3.0"
+version = "0.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "r2d2 0.7.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "r2d2 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "rusted_cypher 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -717,7 +717,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "scheduled-thread-pool"
-version = "0.1.0"
+version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "antidote 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1134,9 +1134,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum quick-error 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "eda5fe9b71976e62bc81b781206aaa076401769b2143379d3eb2118388babac4"
 "checksum quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)" = "7a6e920b65c65f10b2ae65c831a81a073a89edd28c7cce89475bff467ab4167a"
 "checksum quoted_printable 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "4126fa98c6d7b166e6a29a24ab96721d618759d803df6a8cb35d6140da475b5a"
-"checksum r2d2 0.7.4 (registry+https://github.com/rust-lang/crates.io-index)" = "2c8284508b38df440f8f3527395e23c4780b22f74226b270daf58fee38e4bcce"
+"checksum r2d2 0.8.1 (registry+https://github.com/rust-lang/crates.io-index)" = "59611202bee496c586ecd84e3ed149b4ec75981b0fc10d7f60e878fa23ae16e9"
 "checksum r2d2-diesel 0.99.0 (registry+https://github.com/rust-lang/crates.io-index)" = "77aaed149a82720f4b664427f359e1b2a34d8787c1bc3fb1d167b104a1ddd866"
-"checksum r2d2_cypher 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "69a25375baeacdd2b5f249a3046bed8ba5905be66b3f92f1a0f017a16cfe321d"
+"checksum r2d2_cypher 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e491d276ef29432192a448572223f56f665974982a8c2a239a50862966549590"
 "checksum rand 0.3.17 (registry+https://github.com/rust-lang/crates.io-index)" = "61efcbcd9fa8d8fbb07c84e34a8af18a1ff177b449689ad38a6e9457ecc7b2ae"
 "checksum rayon 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "a77c51c07654ddd93f6cb543c7a849863b03abc7e82591afda6dc8ad4ac3ac4a"
 "checksum rayon-core 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7febc28567082c345f10cddc3612c6ea020fc3297a1977d472cf9fdb73e6e493"
@@ -1155,7 +1155,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum rustc-serialize 0.3.24 (registry+https://github.com/rust-lang/crates.io-index)" = "dcf128d1287d2ea9d80910b5f1120d0b8eede3fbf1abe91c40d39ea7d51e6fda"
 "checksum rusted_cypher 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "44ab16e196a4d8725e233a1e1a734d8202ce7a85be77592f2ecfe48862e5151d"
 "checksum safemem 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e27a8b19b835f7aea908818e871f5cc3a5a186550c30773be987e155e8163d8f"
-"checksum scheduled-thread-pool 0.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "2d9fbe48ead32343b76f544c85953bf260ed39219a8bbbb62cd85f6a00f9644f"
+"checksum scheduled-thread-pool 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1a2ff3fc5223829be817806c6441279c676e454cc7da608faf03b0ccc09d3889"
 "checksum scopeguard 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "94258f53601af11e6a49f722422f6e3425c52b06245a5cf9bc09908b174f5e27"
 "checksum semver 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "ae2ff60ecdb19c255841c066cbfa5f8c2a4ada1eb3ae47c77ab6667128da71f5"
 "checksum semver-parser 0.6.2 (registry+https://github.com/rust-lang/crates.io-index)" = "d8fff3c9c5a54636ab95acd8c1349926e04cb1eb8cd70b5adced8a1d1f703a67"

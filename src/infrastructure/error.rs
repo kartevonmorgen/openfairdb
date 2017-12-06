@@ -49,7 +49,7 @@ quick_error!{
             description(err.description())
             from(err: io::Error) -> (Box::new(err))
         }
-        R2d2(err: r2d2::GetTimeout){
+        R2d2(err: r2d2::Error){
             from()
         }
         Toml(err: ::toml::de::Error){
