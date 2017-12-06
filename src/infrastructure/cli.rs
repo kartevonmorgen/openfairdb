@@ -6,9 +6,6 @@ use std::{env, process};
 #[cfg(feature = "sqlite")]
 const DEFAULT_DB_URL: &str = "openfair.db";
 
-#[cfg(feature = "neo4j")]
-const DEFAULT_DB_URL: &str = "http://neo4j:neo4j@127.0.0.1:7474/db/data";
-
 pub fn run() {
     dotenv().ok();
     let matches = App::new("openFairDB")

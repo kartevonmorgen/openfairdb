@@ -28,15 +28,8 @@ extern crate quoted_printable;
 extern crate toml;
 extern crate dotenv;
 
-#[cfg(feature="neo4j")]
-extern crate r2d2_cypher;
-
 #[cfg(feature="sqlite")]
 extern crate r2d2_diesel;
-
-#[cfg(feature="neo4j")]
-#[macro_use]
-extern crate rusted_cypher;
 
 #[cfg(feature="sqlite")]
 #[macro_use]

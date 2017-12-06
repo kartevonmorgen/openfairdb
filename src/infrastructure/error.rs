@@ -6,18 +6,8 @@ use std::io;
 use serde_json;
 use r2d2;
 
-#[cfg(feature = "neo4j")]
-use rusted_cypher::error::GraphError;
-
 #[cfg(feature = "sqlite")]
 use diesel::result::Error as DieselError;
-
-#[cfg(feature = "neo4j")]
-impl From<GraphError> for RepoError {
-    fn from(err: GraphError) -> RepoError {
-        RepoError::Other(Box::new(err))
-    }
-}
 
 impl From<RepoError> for AppError {
     fn from(err: RepoError) -> AppError {
