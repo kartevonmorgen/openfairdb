@@ -2,7 +2,7 @@
 # SQLite backup script
 # 2017 by Markus Kohlhase <markus.kohlhase@slowtec.de>
 
-BACKUP_SRC=/var/db/openfairdb/bin/db.sqlite # which file to backup
+BACKUP_SRC=/var/db/openfairdb/bin/openfair.db # which file to backup
 BACKUP_DEST=/var/db/openfairdb/bin/backup   # where to store the backups
 SERVICE_NAME=ofdb
 TIMEOUT=5
@@ -18,7 +18,7 @@ while [ $CNT -lt $TIMEOUT ] && pgrep $SERVICE_NAME; do
 done
 
 TIMESTAMP=`date +%Y-%m-%d-%H%M%S`
-FILENAME=db.sqlite-$TIMESTAMP.tar.gz
+FILENAME=openfair.db-$TIMESTAMP.tar.gz
 
 echo "Creating SQLite DB backup"
 tar -czf $BACKUP_DEST/$FILENAME $BACKUP_SRC

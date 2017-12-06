@@ -3,6 +3,12 @@ use super::web;
 use dotenv::dotenv;
 use std::{env, process};
 
+#[cfg(feature = "sqlite")]
+const DEFAULT_DB_URL: &str = "openfair.db";
+
+#[cfg(feature = "neo4j")]
+const DEFAULT_DB_URL: &str = "http://neo4j:neo4j@127.0.0.1:7474/db/data";
+
 pub fn run() {
     dotenv().ok();
     let matches = App::new("openFairDB")
@@ -32,10 +38,7 @@ pub fn run() {
         None => {
             match env::var("DATABASE_URL") {
                 Ok(url) => url,
-                Err(_) => {
-                    println!("{}", matches.usage());
-                    process::exit(1);
-                }
+                Err(_) => DEFAULT_DB_URL.to_string(),
             }
         }
     };
