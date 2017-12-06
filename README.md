@@ -130,19 +130,10 @@ If you want to get stacktraces on panics use
 
 ## DB Backups
 
-The community edition of Neo4j
-[does not support online backups](https://github.com/flosse/openfairdb/issues/10)
-therefore we use a simple
-[script](https://github.com/flosse/openfairdb/blob/master/scripts/backup.sh)
-that copies the DB to `/var/lib/neo4j/backup/` once a day.
-
-### Restore a backup
-
-    systemctl stop neo
-    tar -czf /var/lib/neo4j/backup/snapshot.tar.gz /var/lib/neo4j/data/graph.db
-    rm -rf /var/lib/neo4j/data/graph.db
-    tar --strip-components=4 -C /var/lib/neo4j/data -xvzf old-backup.tar.gz "var/lib/neo4j/data/"
-    systemctl start neo
+At the moment the OpenFairDB does not support online backups.
+Therefore we use a simple
+[script](https://github.com/flosse/openfairdb/blob/master/scripts/backup-sqlite.sh)
+that copies the DB file once a day.
 
 # License
 

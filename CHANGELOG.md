@@ -1,3 +1,8 @@
+## v0.2.10 (2017-12-06)
+
+- new(db): use [SQLite](https://sqlite.org/) and [diesel](https://diesel.rs)
+  instead of [neo4j](https://neo4j.com/)
+
 ## v0.2.9 (2017-09-16)
 - new(api): always respond with 'application/json'
 - fix(emails): fix encoding of emails
