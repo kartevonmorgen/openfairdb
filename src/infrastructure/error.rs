@@ -1,5 +1,6 @@
 use business::error::Error as BError;
 use business::error::RepoError;
+use diesel_migrations::RunMigrationsError;
 use std::error;
 use std::io;
 use serde_json;
@@ -28,6 +29,13 @@ impl From<RepoError> for AppError {
 impl From<DieselError> for RepoError {
     fn from(err: DieselError) -> RepoError {
         RepoError::Other(Box::new(err))
+    }
+}
+
+#[cfg(feature = "sqlite")]
+impl From<RunMigrationsError> for AppError {
+    fn from(err: RunMigrationsError) -> AppError {
+        AppError::Other(Box::new(err))
     }
 }
 

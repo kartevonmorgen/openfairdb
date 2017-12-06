@@ -31,9 +31,10 @@ r2d2-diesel = { version = "1.0.0-beta1", optional = true }
 rusted_cypher = { version = "1", optional = true }
 diesel = { version = "1.0.0-beta1", features = ["sqlite"], optional = true }
 diesel_infer_schema = { version = "1.0.0-beta1", features = ["sqlite"], optional = true }
+diesel_migrations = { version = "1.0.0-beta1", features = ["sqlite"], optional = true }
 libsqlite3-sys = { version = "0.8", features = ["bundled"], optional = true }
 
 [features]
 default = ["sqlite"]
-sqlite = ["diesel", "diesel_infer_schema","r2d2-diesel", "libsqlite3-sys"]
+sqlite = ["diesel", "diesel_infer_schema","r2d2-diesel", "libsqlite3-sys", "diesel_migrations"]
 neo4j = ["rusted_cypher","r2d2_cypher"]
