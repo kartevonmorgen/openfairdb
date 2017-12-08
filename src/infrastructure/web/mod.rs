@@ -17,9 +17,11 @@ use business::sort::SortByAverageRating;
 use business::{usecase, filter, geo};
 use business::filter::InBBox;
 use business::duplicates::{self, DuplicateType};
-use std::{result,thread};
+use std::result;
 use r2d2::{self, Pool};
 use regex::Regex;
+
+#[cfg(feature="email")]
 use super::mail;
 
 static MAX_INVISIBLE_RESULTS : usize = 5;
@@ -76,13 +78,14 @@ impl<'a, 'r> FromRequest<'a, 'r> for Login {
     }
 }
 
+#[cfg(feature="email")]
 fn send_mails(email_addresses: Vec<String>, subject: &str, body: &str) {
     debug!("sending emails to: {:?}", email_addresses);
     for email_address in email_addresses.clone() {
         let to = vec![email_address];
         match mail::create(&to, &subject, &body) {
             Ok(mail) => {
-                thread::spawn(move ||{
+                ::std::thread::spawn(move ||{
                     if let Err(err) = mail::send(&mail) {
                         warn!("Could not send mail: {}", err);
                     }
@@ -93,6 +96,11 @@ fn send_mails(email_addresses: Vec<String>, subject: &str, body: &str) {
             }
         }
     }
+}
+
+#[cfg(not(feature="email"))]
+fn send_mails(_: Vec<String>, _: &str, _: &str) {
+    // do nothing
 }
 
 fn notify_create_entry(email_addresses: Vec<String>, e: &usecase::NewEntry, id: &str, all_categories: Vec<Category>) {

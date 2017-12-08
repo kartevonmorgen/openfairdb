@@ -32,5 +32,6 @@ diesel_migrations = { version = "1.0.0-beta1", features = ["sqlite"], optional =
 libsqlite3-sys = { version = "0.8", features = ["bundled"], optional = true }
 
 [features]
-default = ["sqlite"]
+default = ["sqlite","email"]
+email = []
 sqlite = ["diesel", "diesel_infer_schema","r2d2-diesel", "libsqlite3-sys", "diesel_migrations"]
