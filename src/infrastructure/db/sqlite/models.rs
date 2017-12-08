@@ -58,6 +58,7 @@ pub struct Tag {
 #[table_name = "users"]
 #[primary_key(username)]
 pub struct User {
+    pub id: String, // TOTO: remove
     pub username: String,
     pub password: String,
     pub email: String,

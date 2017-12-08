@@ -116,13 +116,14 @@ impl From<BboxSubscription> for e::Triple {
 impl From<User> for e::User {
     fn from(u: User) -> e::User {
         let User {
+            id,
             username,
             password,
             email,
             email_confirmed,
         } = u;
         e::User {
-            id: username.clone(),
+            id,
             username,
             password,
             email,
@@ -134,13 +135,14 @@ impl From<User> for e::User {
 impl From<e::User> for User {
     fn from(u: e::User) -> User {
         let e::User {
+            id,
             username,
             password,
             email,
             email_confirmed,
-            ..
         } = u;
         User {
+            id,
             username,
             password,
             email,

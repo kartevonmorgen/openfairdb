@@ -3,6 +3,7 @@
     {"statement":
      "MATCH (n:`User`)
       RETURN
+       n.id       as id,
        n.username as username,
        n.password as password,
        n.email as email,

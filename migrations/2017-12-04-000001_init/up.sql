@@ -77,6 +77,7 @@ CREATE TABLE bbox_subscriptions (
 );
 
 CREATE TABLE users (
+    id              TEXT NOT NULL, -- TODO: remove
     username        TEXT PRIMARY KEY NOT NULL,
     password        TEXT    NOT NULL,
     email           TEXT    NOT NULL,
