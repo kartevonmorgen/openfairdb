@@ -1,6 +1,7 @@
 pub mod cli;
 mod error;
 mod db;
-mod web;
+pub mod web;
 #[cfg(feature="email")]
 mod mail;
+mod osm;

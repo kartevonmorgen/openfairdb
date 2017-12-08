@@ -1,5 +1,6 @@
-use clap::{Arg, App};
+use clap::{Arg, App, SubCommand};
 use super::web;
+use super::osm;
 use dotenv::dotenv;
 use std::{env, process};
 
@@ -28,6 +29,18 @@ pub fn run() {
         .arg(Arg::with_name("enable-cors").long("enable-cors").help(
             "Allow requests from any origin",
         ))
+        .subcommand(
+            SubCommand::with_name("osm")
+                .about("OpenStreetMap functionalities")
+                .subcommand(SubCommand::with_name("import")
+                            .about("import entries from OSM (JSON file)")
+                            .arg(
+                                Arg::with_name("osm-file")
+                                    .value_name("OSM_FILE")
+                                    .help("JSON file with osm nodes"),
+                            )
+                    ),
+        )
         .get_matches();
 
     let db_url = match matches.value_of("db-url") {
@@ -40,14 +53,37 @@ pub fn run() {
         }
     };
 
-    let port = match matches.value_of("port") {
-        Some(port) => port.parse::<u16>().unwrap(),
-        None => {
-            println!("{}", matches.usage());
-            process::exit(1);
+    match matches.subcommand() {
+        ("osm", Some(osm_matches)) => {
+            match osm_matches.subcommand() {
+                ("import", Some(import_matches)) => {
+                    let osm_file = match import_matches.value_of("osm-file") {
+                        Some(osm_file) => osm_file,
+                        None => {
+                            println!("{}", matches.usage());
+                            process::exit(1);
+                        }
+                    };
+                    if let Err(err) = osm::import_from_osm_file(&db_url, osm_file) {
+                        println!("Could not import from '{}': {}", osm_file, err);
+                        process::exit(1);
+                    }
+                }
+                _ => println!("{}", osm_matches.usage()),
+            }
         }
-    };
+        _ => {
 
-    web::run(&db_url, port, matches.is_present("enable-cors"));
+            let port = match matches.value_of("port") {
+                Some(port) => port.parse::<u16>().unwrap(),
+                None => {
+                    println!("{}", matches.usage());
+                    process::exit(1);
+                }
+            };
 
+            web::run(&db_url, port, matches.is_present("enable-cors"));
+
+        }
+    }
 }

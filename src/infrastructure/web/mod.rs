@@ -28,7 +28,7 @@ static MAX_INVISIBLE_RESULTS : usize = 5;
 static COOKIE_USER_KEY       : &str  = "user_id";
 
 #[cfg(all(not(test), feature = "sqlite"))]
-mod sqlite;
+pub mod sqlite;
 #[cfg(test)]
 mod mockdb;
 #[cfg(test)]
