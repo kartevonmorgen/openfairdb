@@ -17,7 +17,7 @@ UPDATE entries SET country   = NULL WHERE country   = '';
 UPDATE entries SET email     = NULL WHERE email     = '';
 UPDATE entries SET telephone = NULL WHERE telephone = '';
 UPDATE entries SET homepage  = NULL WHERE homepage  = '';
-UPDATE entries SET license   = NULL WHERE license   = '';
+UPDATE entries SET license   = 'CC0-1.0' WHERE license = '';
 
 UPDATE ratings SET source = NULL WHERE source = '';
 
