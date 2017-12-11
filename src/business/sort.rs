@@ -67,7 +67,7 @@ impl Rated for Entry {
             self.avg_rating_for_context(ratings, &entry_ratings, Transparency),
             self.avg_rating_for_context(ratings, &entry_ratings, Solidarity),
         ];
-            
+
         let sum = avg_ratings.iter().fold(0.0, |acc, &r| acc + r.unwrap_or(0.0));
         let num_rated_contexts = avg_ratings.iter().fold(0, |acc, &r| acc + if r.is_some() {1} else {0});
 
@@ -91,9 +91,9 @@ impl Rated for Entry {
         let n = applicable_ratings.len();
 
         let avg = sum / n as f64;
-        if avg.is_nan() { 
+        if avg.is_nan() {
             None
-        } else { 
+        } else {
             Some(avg as f64)
         }
     }
@@ -116,8 +116,10 @@ impl SortByAverageRating for Vec<Entry> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use test::Bencher;
+    use uuid::Uuid;
 
-    fn new_entry(id: &str, lat: f64, lng: f64) -> Entry { 
+    fn new_entry(id: &str, lat: f64, lng: f64) -> Entry {
         Entry{
             id          : id.into(),
             osm_node    : None,
@@ -144,7 +146,7 @@ mod tests {
             id         : id.into(),
             created    : 0,
             title      : "blubb".into(),
-            value      : value.into(), 
+            value      : value.into(),
             context    : context,
             source     : Some("blabla".into())
         }
@@ -287,4 +289,70 @@ mod tests {
         assert_eq!(entries[2].id, "c");
     }
 
+    use business::builder::EntryBuilder;
+
+    fn create_entries_with_ratings_and_triples(n: usize) -> (Vec<Entry>, Vec<Rating>, Vec<Triple>) {
+
+        let entries : Vec<Entry> = (0..n).map(|_| Entry::build().finish()).collect();
+
+        let ratings_and_triples : Vec<_> = entries
+            .iter()
+            .map(|e|{
+                let rating = Rating {
+                    id: Uuid::new_v4().simple().to_string(),
+                    created: 0,
+                    title: "".into(),
+                    value: 2,
+                    context: RatingContext::Diversity,
+                    source: None
+                };
+                let triple = Triple {
+                    subject : ObjectId::Entry(e.id.clone()),
+                    predicate : Relation::IsRatedWith,
+                    object : ObjectId::Rating(rating.id.clone()),
+                };
+                (rating,triple)
+            })
+            .collect();
+
+        let (ratings, triples) : (Vec<_>, Vec<_>) = ratings_and_triples.into_iter().unzip();
+
+        (entries, ratings, triples)
+    }
+
+    #[bench]
+    fn bench_for_sorting_10_entries_by_rating(b: &mut Bencher) {
+        let (entries, ratings, triples) = create_entries_with_ratings_and_triples(10);
+        b.iter(|| {
+            let mut entries = entries.clone();
+            entries.sort_by_avg_rating(&ratings, &triples);
+        });
+    }
+
+    #[bench]
+    fn bench_for_sorting_100_entries_by_rating(b: &mut Bencher) {
+        let (entries, ratings, triples) = create_entries_with_ratings_and_triples(100);
+        b.iter(|| {
+            let mut entries = entries.clone();
+            entries.sort_by_avg_rating(&ratings, &triples);
+        });
+    }
+
+    #[bench]
+    fn bench_for_sorting_1000_entries_by_rating(b: &mut Bencher) {
+        let (entries, ratings, triples) = create_entries_with_ratings_and_triples(1000);
+        b.iter(|| {
+            let mut entries = entries.clone();
+            entries.sort_by_avg_rating(&ratings, &triples);
+        });
+    }
+
+    #[bench]
+    fn bench_for_sorting_2000_entries_by_rating(b: &mut Bencher) {
+        let (entries, ratings, triples) = create_entries_with_ratings_and_triples(2000);
+        b.iter(|| {
+            let mut entries = entries.clone();
+            entries.sort_by_avg_rating(&ratings, &triples);
+        });
+    }
 }

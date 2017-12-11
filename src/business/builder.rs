@@ -1,4 +1,5 @@
 use entities::*;
+use uuid::Uuid;
 
 pub trait EntryBuilder {
     fn build() -> EntryBuild;
@@ -52,7 +53,7 @@ impl EntryBuilder for Entry {
 impl Default for Entry {
     fn default() -> Entry {
         Entry{
-            id          : "".into(),
+            id          : Uuid::new_v4().simple().to_string(),
             osm_node    : None,
             created     : 0,
             version     : 0,

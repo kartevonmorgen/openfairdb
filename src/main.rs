@@ -1,6 +1,6 @@
 // Copyright (c) 2015 - 2017 Markus Kohlhase <mail@markus-kohlhase.de>
 
-#![feature(plugin,custom_derive)]
+#![feature(plugin,custom_derive,test)]
 #![plugin(rocket_codegen)]
 #![recursion_limit="256"]
 
@@ -38,6 +38,9 @@ extern crate diesel;
 #[cfg(feature="sqlite")]
 #[macro_use]
 extern crate diesel_migrations;
+
+#[cfg(test)]
+extern crate test;
 
 mod entities;
 mod business;
