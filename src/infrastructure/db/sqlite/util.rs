@@ -6,6 +6,7 @@ impl From<e::Entry> for Entry {
     fn from(e: e::Entry) -> Entry {
         let e::Entry {
             id,
+            osm_node,
             created,
             version,
             title,
@@ -25,13 +26,14 @@ impl From<e::Entry> for Entry {
 
         Entry {
             id,
-            created: created as i32,
+            osm_node: osm_node.map(|x| x as i64),
+            created: created as i64,
             version: version as i32,
             current: true,
             title,
             description,
-            lat: lat as f32,
-            lng: lng as f32,
+            lat,
+            lng,
             street,
             zip,
             city,
@@ -167,7 +169,7 @@ impl From<e::Comment> for Comment {
         let e::Comment { id, created, text } = c;
         Comment {
             id,
-            created: created as i32,
+            created: created as i64,
             text,
             rating_id: None,
         }
@@ -208,7 +210,7 @@ impl From<e::Rating> for Rating {
         } = r;
         Rating {
             id,
-            created: created as i32,
+            created: created as i64,
             title,
             value: value as i32,
             context: context.into(),
@@ -249,10 +251,10 @@ impl From<e::BboxSubscription> for BboxSubscription {
         } = s;
         BboxSubscription {
             id,
-            south_west_lat: south_west_lat as f32,
-            south_west_lng: south_west_lng as f32,
-            north_east_lat: north_east_lat as f32,
-            north_east_lng: north_east_lng as f32,
+            south_west_lat,
+            south_west_lng,
+            north_east_lat,
+            north_east_lng,
             user_id: None,
         }
     }

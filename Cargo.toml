@@ -26,12 +26,11 @@ toml = "0.4"
 dotenv = "0.10"
 r2d2 = "0.8"
 r2d2-diesel = { version = "1.0.0-beta1", optional = true }
-diesel = { version = "1.0.0-beta1", features = ["sqlite"], optional = true }
-diesel_infer_schema = { version = "1.0.0-beta1", features = ["sqlite"], optional = true }
+diesel = { version = "1.0.0-beta1", features = ["sqlite", "large-tables" ], optional = true }
 diesel_migrations = { version = "1.0.0-beta1", features = ["sqlite"], optional = true }
 libsqlite3-sys = { version = "0.8", features = ["bundled"], optional = true }
 
 [features]
 default = ["sqlite","email"]
 email = []
-sqlite = ["diesel", "diesel_infer_schema","r2d2-diesel", "libsqlite3-sys", "diesel_migrations"]
+sqlite = ["diesel", "r2d2-diesel", "libsqlite3-sys", "diesel_migrations"]

@@ -158,6 +158,7 @@ mod tests {
     fn new_entry(title: String, description: String, lat: f64, lng: f64) -> Entry {
             Entry {
                 id: title.clone().into(),
+                osm_node: None,
                 created: 0,
                 version: 0,
                 title: title,

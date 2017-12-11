@@ -212,6 +212,7 @@ impl Db for SqliteConnection {
 
         let models::Entry {
             id,
+            osm_node,
             created,
             version,
             title,
@@ -241,6 +242,7 @@ impl Db for SqliteConnection {
 
         Ok(Entry {
             id,
+            osm_node: osm_node.map(|x| x as u64),
             created: created as u64,
             version: version as u64,
             title,
@@ -288,6 +290,7 @@ impl Db for SqliteConnection {
                         .collect();
                     Entry {
                         id: e.id,
+                        osm_node: e.osm_node.map(|x|x as u64),
                         created: e.created as u64,
                         version: e.version as u64,
                         title: e.title,
@@ -505,6 +508,78 @@ impl Db for SqliteConnection {
             _ => {}
         }
         warn!("did not delete triple '{:?}'", t);
+        Ok(())
+    }
+
+    fn import_multiple_entries(&mut self, new_entries: &[(Entry,Vec<Tag>)]) -> Result<()> {
+        let imports : Vec<_> = new_entries
+            .into_iter()
+            .map(|&(ref e, ref tags)| {
+                let new_entry = models::Entry::from(e.clone());
+                let cat_rels: Vec<_> = e.categories
+                    .iter()
+                    .cloned()
+                    .map(|category_id| {
+                        models::EntryCategoryRelation {
+                            entry_id: e.id.clone(),
+                            entry_version: e.version as i32,
+                            category_id,
+                        }
+                    })
+                    .collect();
+                let tag_rels: Vec<_> = tags
+                    .iter()
+                    .map(|x| models::EntryTagRelation {
+                        entry_id: e.id.clone(),
+                        entry_version: e.version as i32,
+                        tag_id: x.id.clone(),
+                    })
+                    .collect();
+                (new_entry,cat_rels, tag_rels)
+             })
+            .collect();
+        self.transaction::<_, diesel::result::Error, _>(|| {
+
+            use diesel::result::{Error as DieselError, DatabaseErrorKind};
+
+            for (new_entry,cat_rels, tag_rels) in imports.into_iter() {
+                unset_current_on_all_entries(&self, &new_entry.id)?;
+                diesel::insert_into(schema::entries::table)
+                    .values(&new_entry)
+                    .execute(self)?;
+                diesel::insert_into(schema::entry_category_relations::table)
+                    .values(&cat_rels)
+                    .execute(self)?;
+
+
+                for r in tag_rels.iter() {
+                    let res = diesel::insert_into(schema::tags::table)
+                        .values(&models::Tag{id: r.tag_id.clone()})
+                        .execute(self);
+                    if let Err(err) = res {
+                        match err {
+                            DieselError::DatabaseError(db_err,_) => {
+                                match db_err {
+                                    DatabaseErrorKind::UniqueViolation => {
+                                        // that's ok :)
+                                    }
+                                    _ => {
+                                        return Err(err);
+                                    }
+                                }
+                            }
+                            _ => {
+                                return Err(err);
+                            }
+                        }
+                    }
+                }
+                diesel::insert_into(schema::entry_tag_relations::table)
+                    .values(&tag_rels)
+                    .execute(self)?;
+            }
+            Ok(())
+        })?;
         Ok(())
     }
 }

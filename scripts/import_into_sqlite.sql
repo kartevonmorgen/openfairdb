@@ -10,6 +10,7 @@
 .import entry_category_relations.csv entry_category_relations
 .import entry_tag_relations.csv  entry_tag_relations
 
+UPDATE entries SET osm_node  = NULL WHERE osm_node  = '';
 UPDATE entries SET street    = NULL WHERE street    = '';
 UPDATE entries SET zip       = NULL WHERE zip       = '';
 UPDATE entries SET city      = NULL WHERE city      = '';

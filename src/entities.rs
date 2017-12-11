@@ -1,6 +1,7 @@
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Entry {
     pub id          : String,
+    pub osm_node    : Option<u64>,
     pub created     : u64,
     pub version     : u64,
     pub title       : String,

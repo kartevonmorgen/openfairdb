@@ -1,5 +1,6 @@
 CREATE TABLE entries (
     id          TEXT NOT NULL,
+    osm_node    INTEGER,
     created     INTEGER NOT NULL,
     version     INTEGER NOT NULL,
     current     BOOLEAN NOT NULL,

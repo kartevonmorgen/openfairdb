@@ -1,6 +1,4 @@
-mod schema {
-    infer_schema!("dotenv:DATABASE_URL");
-}
+mod schema;
 mod models;
 mod util;
 mod connection;

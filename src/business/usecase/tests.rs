@@ -159,7 +159,7 @@ impl Db for MockDb {
         } else{
             Err(RepoError::NotFound)
         }
-    }    
+    }
 
     fn delete_triple(&mut self, t: &Triple) -> RepoResult<()> {
         self.triples = self.triples
@@ -186,6 +186,21 @@ impl Db for MockDb {
             .into_iter()
             .filter(|u| u.id != u_id)
             .collect();
+        Ok(())
+    }
+    fn import_multiple_entries(&mut self, entries: &[(Entry,Vec<Tag>)]) -> RepoResult<()> {
+        for &(ref e, ref tags) in entries.iter() {
+            self.create_entry(e)?;
+            let subject = ObjectId::Entry(e.id.clone());
+            for t in tags {
+                self.create_tag(t)?;
+                self.create_triple(&Triple{
+                    subject: subject.clone(),
+                    predicate: Relation::IsTaggedWith,
+                    object: ObjectId::Tag(t.id.clone())
+                })?;
+            }
+        }
         Ok(())
     }
 }
@@ -249,6 +264,7 @@ fn update_valid_entry() {
     let id = Uuid::new_v4().simple().to_string();
     let old = Entry {
         id          : id.clone(),
+        osm_node    : None,
         version     : 1,
         created     : 0,
         title       : "foo".into(),
@@ -267,6 +283,7 @@ fn update_valid_entry() {
     };
     let new = UpdateEntry {
         id          : id.clone(),
+        osm_node    :  None,
         version     : 2,
         title       : "foo".into(),
         description : "bar".into(),
@@ -300,6 +317,7 @@ fn update_entry_with_invalid_version() {
     let id = Uuid::new_v4().simple().to_string();
     let old = Entry {
         id          : id.clone(),
+        osm_node    :  None,
         version     : 3,
         created     : 0,
         title       : "foo".into(),
@@ -318,6 +336,7 @@ fn update_entry_with_invalid_version() {
     };
     let new = UpdateEntry {
         id          : id.clone(),
+        osm_node    :  None,
         version     : 3,
         title       : "foo".into(),
         description : "bar".into(),
@@ -358,6 +377,7 @@ fn update_non_existing_entry(){
     let id = Uuid::new_v4().simple().to_string();
     let new = UpdateEntry {
         id          : id.clone(),
+        osm_node    :  None,
         version     : 4,
         title       : "foo".into(),
         description : "bar".into(),
@@ -471,6 +491,7 @@ fn update_valid_entry_with_tags() {
     let id = Uuid::new_v4().simple().to_string();
     let old = Entry {
         id          : id.clone(),
+        osm_node    :  None,
         version     : 1,
         created     : 0,
         title       : "foo".into(),
@@ -489,6 +510,7 @@ fn update_valid_entry_with_tags() {
     };
     let new = UpdateEntry {
         id          : id.clone(),
+        osm_node    :  None,
         version     : 2,
         title       : "foo".into(),
         description : "bar".into(),
@@ -829,7 +851,7 @@ fn create_bbox_subscription(){
     assert!(business::usecase::create_or_modify_subscription(&bbox_new, username.into(), &mut db).is_ok());
 
     let bbox_subscription = db.all_bbox_subscriptions().unwrap()[0].clone();
-    assert_eq!(bbox_subscription.north_east_lat, 10.0);   
+    assert_eq!(bbox_subscription.north_east_lat, 10.0);
 }
 
 #[test]
@@ -884,7 +906,7 @@ fn modify_bbox_subscription(){
     }).is_ok());
 
     assert!(business::usecase::create_or_modify_subscription(&bbox_new, username.into(), &mut db).is_ok());
-    
+
     let user_subscriptions : Vec<String>  = db.triples.clone()
         .into_iter()
         .filter_map(|triple| match triple {
@@ -1011,7 +1033,7 @@ fn email_addresses_to_notify(){
 
     assert!(business::usecase::create_or_modify_subscription(
         &bbox_new, u_id, &mut db).is_ok());
-    
+
     let email_addresses = business::usecase::email_addresses_to_notify(&5.0, &5.0, &mut db);
     assert_eq!(email_addresses.len(), 1);
     assert_eq!(email_addresses[0], "abc@abc.de");

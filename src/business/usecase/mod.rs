@@ -128,6 +128,7 @@ pub struct Login {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateEntry {
     pub id          : String,
+    pub osm_node    : Option<u64>,
     pub version     : u64,
     pub title       : String,
     pub description : String,
@@ -444,6 +445,7 @@ pub fn login<D: Db>(db: &mut D, login: Login) -> Result<String> {
 pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
     let new_entry = Entry{
         id          :  Uuid::new_v4().simple().to_string(),
+        osm_node    :  None,
         created     :  Utc::now().timestamp() as u64,
         version     :  0,
         title       :  e.title,
@@ -473,6 +475,7 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
     }
     let new_entry = Entry{
         id          :  e.id,
+        osm_node    :  None,
         created     :  Utc::now().timestamp() as u64,
         version     :  e.version,
         title       :  e.title,

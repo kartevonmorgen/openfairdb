@@ -10,6 +10,7 @@ pub fn new_entry_email(e: &NewEntry, id: &str, categories: Vec<String>) -> Strin
     let intro_sentence = "ein neuer Eintrag auf der Karte von Morgen wurde erstellt";
     let entry = Entry {
         id : id.into(),
+        osm_node: None,
         title:e.title.clone(),
         description:e.description.clone(),
         street:e.street.clone(),
@@ -33,6 +34,7 @@ pub fn changed_entry_email(e: &UpdateEntry, categories: Vec<String>) -> String {
     let intro_sentence = "folgender Eintrag der Karte von Morgen wurde verändert";
     let entry = Entry {
         id : e.id.clone(),
+        osm_node : e.osm_node,
         title:e.title.clone(),
         description:e.description.clone(),
         street:e.street.clone(),

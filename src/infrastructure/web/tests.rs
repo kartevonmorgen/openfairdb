@@ -44,6 +44,7 @@ fn create_entry() {
 fn get_one_entry() {
     let e = Entry{
         id          :  "get_one_entry_test".into(),
+        osm_node    :  None,
         created     :  0,
         version     :  0,
         title       :  "some".into(),
@@ -93,6 +94,7 @@ fn get_one_entry() {
 fn get_multiple_entries() {
     let one = Entry{
         id          :  "get_multiple_entry_test_one".into(),
+        osm_node    :  None,
         created     :  0,
         version     :  0,
         title       :  "some".into(),
@@ -111,6 +113,7 @@ fn get_multiple_entries() {
     };
     let two = Entry{
         id          :  "get_multiple_entry_test_two".into(),
+        osm_node    :  None,
         created     :  0,
         version     :  0,
         title       :  "some".into(),

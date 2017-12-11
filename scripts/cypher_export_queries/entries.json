@@ -7,9 +7,10 @@
        WHERE s.created = max
        WITH e,s
        MATCH e<-[:BELONGS_TO]-s
-       WITH e,s,1 as current
+       WITH e,s,1 as current, NULL as osm_node
        RETURN
           e.id            as id,
+          osm_node,
           s.created       as created,
           s.version       as version,
           current,

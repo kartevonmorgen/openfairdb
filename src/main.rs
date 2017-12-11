@@ -37,10 +37,6 @@ extern crate diesel;
 
 #[cfg(feature="sqlite")]
 #[macro_use]
-extern crate diesel_infer_schema;
-
-#[cfg(feature="sqlite")]
-#[macro_use]
 extern crate diesel_migrations;
 
 mod entities;

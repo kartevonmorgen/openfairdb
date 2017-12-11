@@ -53,6 +53,7 @@ impl Default for Entry {
     fn default() -> Entry {
         Entry{
             id          : "".into(),
+            osm_node    : None,
             created     : 0,
             version     : 0,
             title       : "".into(),

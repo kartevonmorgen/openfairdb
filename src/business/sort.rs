@@ -120,6 +120,7 @@ mod tests {
     fn new_entry(id: &str, lat: f64, lng: f64) -> Entry { 
         Entry{
             id          : id.into(),
+            osm_node    : None,
             created     : 0,
             version     : 0,
             title       : "foo".into(),
