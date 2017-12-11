@@ -24,8 +24,10 @@ use regex::Regex;
 #[cfg(feature="email")]
 use super::mail;
 
-static MAX_INVISIBLE_RESULTS : usize = 5;
-static COOKIE_USER_KEY       : &str  = "user_id";
+const MAX_INVISIBLE_RESULTS : usize = 5;
+const BBOX_LAT_EXT          : f64 = 0.02;
+const BBOX_LNG_EXT          : f64 = 0.04;
+const COOKIE_USER_KEY       : &str = "user_id";
 
 #[cfg(feature = "sqlite")]
 pub mod sqlite;
@@ -233,6 +235,15 @@ fn remove_hash_tags(text: &str) -> String {
         .into()
 }
 
+fn extend_bbox(bbox: &Vec<Coordinate>) -> Vec<Coordinate> {
+    let mut extended_bbox = bbox.clone();
+    extended_bbox[0].lat -= BBOX_LAT_EXT;
+    extended_bbox[0].lng -= BBOX_LNG_EXT;
+    extended_bbox[1].lat += BBOX_LAT_EXT;
+    extended_bbox[1].lng += BBOX_LNG_EXT;
+    extended_bbox
+}
+
 #[get("/search?<search>")]
 fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResult> {
 
@@ -242,7 +253,12 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResu
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
 
-    let mut entries: Vec<&Entry> = entries.iter().collect();
+    let extended_bbox = extend_bbox(&bbox);
+
+    let mut entries: Vec<&Entry> = entries
+        .iter()
+        .filter(|x| x.in_bbox(&extended_bbox))
+        .collect();
 
     if let Some(cat_str) = search.categories {
         let cat_ids = extract_ids(&cat_str);
