@@ -9,6 +9,8 @@ use uuid::Uuid;
 use std::collections::HashMap;
 use pwhash::bcrypt;
 use super::geo;
+use super::sort::SortByAverageRating;
+use super::filter::InBBox;
 
 #[cfg(test)]
 pub mod tests;
@@ -154,6 +156,14 @@ pub struct RateEntry {
     pub comment: String,
     pub source: Option<String>,
     pub user: Option<String>
+}
+
+#[derive(Debug, Clone)]
+pub struct SearchRequest {
+    pub bbox: Vec<Coordinate>,
+    pub categories: Option<Vec<String>>,
+    pub text: String,
+    pub tags: Vec<String>,
 }
 
 fn create_missing_tags<D: Db>(db: &mut D, tags: &[String]) -> Result<()> {
@@ -591,7 +601,7 @@ pub fn create_or_modify_subscription(bbox: &Bbox, username: String, db: &mut Db)
         .collect();
 
     if user_subscriptions.len() > 0 {
-        db.delete_bbox_subscription(&user_subscriptions[0].clone())?;      
+        db.delete_bbox_subscription(&user_subscriptions[0].clone())?;
     }
 
     let s_id = Uuid::new_v4().simple().to_string();
@@ -675,4 +685,64 @@ pub fn email_addresses_to_notify(lat: &f64, lng: &f64, db: &mut Db) -> Vec<Strin
         .collect();
 
     emails_to_notify
+}
+
+const MAX_INVISIBLE_RESULTS : usize = 5;
+const BBOX_LAT_EXT          : f64 = 0.02;
+const BBOX_LNG_EXT          : f64 = 0.04;
+
+fn extend_bbox(bbox: &Vec<Coordinate>) -> Vec<Coordinate> {
+    let mut extended_bbox = bbox.clone();
+    extended_bbox[0].lat -= BBOX_LAT_EXT;
+    extended_bbox[0].lng -= BBOX_LNG_EXT;
+    extended_bbox[1].lat += BBOX_LAT_EXT;
+    extended_bbox[1].lng += BBOX_LNG_EXT;
+    extended_bbox
+}
+
+pub fn search<D:Db>(db: &D, req: SearchRequest) -> Result<(Vec<String>, Vec<String>)> {
+
+    let entries     = db.all_entries()?;
+    let triples     = db.all_triples()?;
+    let all_ratings = db.all_ratings()?;
+
+    let extended_bbox = extend_bbox(&req.bbox);
+
+    let mut entries: Vec<&Entry> = entries
+        .iter()
+        .filter(|x| x.in_bbox(&extended_bbox))
+        .collect();
+
+    if let Some(ref cat_ids) = req.categories {
+        entries = entries
+            .into_iter()
+            .filter(&*filter::entries_by_category_ids(&cat_ids))
+            .collect();
+    }
+
+    let entries : Vec<&Entry> = entries
+        .into_iter()
+        .filter(&*filter::entries_by_tags_or_search_text(&req.text, &req.tags, &triples))
+        .collect();
+
+    let mut entries : Vec<Entry> = entries.into_iter().cloned().collect();
+
+    entries.sort_by_avg_rating(&all_ratings, &triples);
+
+    let visible_results: Vec<_> = entries
+        .iter()
+        .filter(|x| x.in_bbox(&req.bbox))
+        .map(|x| &x.id)
+        .cloned()
+        .collect();
+
+    let invisible_results = entries
+        .iter()
+        .filter(|e| !visible_results.iter().any(|v| *v == e.id))
+        .take(MAX_INVISIBLE_RESULTS)
+        .map(|x| &x.id)
+        .cloned()
+        .collect::<Vec<_>>();
+
+    Ok((visible_results, invisible_results))
 }

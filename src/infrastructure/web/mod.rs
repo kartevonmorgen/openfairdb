@@ -13,9 +13,7 @@ use business::db::Db;
 use business::error::{Error, RepoError, ParameterError};
 use infrastructure::error::AppError;
 use serde_json::ser::to_string;
-use business::sort::SortByAverageRating;
-use business::{usecase, filter, geo};
-use business::filter::InBBox;
+use business::{usecase, geo};
 use business::duplicates::{self, DuplicateType};
 use std::result;
 use r2d2::{self, Pool};
@@ -24,9 +22,6 @@ use regex::Regex;
 #[cfg(feature="email")]
 use super::mail;
 
-const MAX_INVISIBLE_RESULTS : usize = 5;
-const BBOX_LAT_EXT          : f64 = 0.02;
-const BBOX_LNG_EXT          : f64 = 0.04;
 const COOKIE_USER_KEY       : &str = "user_id";
 
 #[cfg(feature = "sqlite")]
@@ -235,38 +230,17 @@ fn remove_hash_tags(text: &str) -> String {
         .into()
 }
 
-fn extend_bbox(bbox: &Vec<Coordinate>) -> Vec<Coordinate> {
-    let mut extended_bbox = bbox.clone();
-    extended_bbox[0].lat -= BBOX_LAT_EXT;
-    extended_bbox[0].lng -= BBOX_LNG_EXT;
-    extended_bbox[1].lat += BBOX_LAT_EXT;
-    extended_bbox[1].lng += BBOX_LNG_EXT;
-    extended_bbox
-}
-
 #[get("/search?<search>")]
 fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResult> {
-
-    let entries = db.get()?.all_entries()?;
 
     let bbox = geo::extract_bbox(&search.bbox)
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
 
-    let extended_bbox = extend_bbox(&bbox);
-
-    let mut entries: Vec<&Entry> = entries
-        .iter()
-        .filter(|x| x.in_bbox(&extended_bbox))
-        .collect();
-
-    if let Some(cat_str) = search.categories {
-        let cat_ids = extract_ids(&cat_str);
-        entries = entries
-            .into_iter()
-            .filter(&*filter::entries_by_category_ids(&cat_ids))
-            .collect();
-    }
+    let categories = match search.categories {
+        Some(cat_str) => Some(extract_ids(&cat_str)),
+        None => None
+    };
 
     let mut tags = vec![];
 
@@ -274,50 +248,27 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResu
         tags = extract_hash_tags(txt);
     }
 
-
     if let Some(tags_str) = search.tags {
         for t in extract_ids(&tags_str) {
             tags.push(t);
         }
     }
 
-    let triples = db.get()?.all_triples()?;
-
     let text = match search.text {
         Some(txt) => remove_hash_tags(&txt),
         None => "".into()
     };
 
-    let entries : Vec<&Entry> = entries
-        .into_iter()
-        .filter(&*filter::entries_by_tags_or_search_text(&text, &tags, &triples))
-        .collect();
+    let req = usecase::SearchRequest {
+        bbox,
+        categories,
+        text,
+        tags,
+    };
 
-    let mut entries : Vec<Entry> = entries.into_iter().cloned().collect();
+    let (visible, invisible) = usecase::search(&mut*db.get()?,req)?;
 
-    let all_ratings = db.get()?.all_ratings()?;
-
-    entries.sort_by_avg_rating(&all_ratings, &triples);
-
-    let visible_results: Vec<_> = entries
-        .iter()
-        .filter(|x| x.in_bbox(&bbox))
-        .map(|x| &x.id)
-        .cloned()
-        .collect();
-
-    let invisible_results = entries
-        .iter()
-        .filter(|e| !visible_results.iter().any(|v| *v == e.id))
-        .take(MAX_INVISIBLE_RESULTS)
-        .map(|x| &x.id)
-        .cloned()
-        .collect::<Vec<_>>();
-
-    Ok(Json(json::SearchResult {
-        visible: visible_results,
-        invisible: invisible_results,
-    }))
+    Ok(Json(json::SearchResult { visible, invisible }))
 }
 
 fn to_words(txt: &str) -> Vec<String> {
