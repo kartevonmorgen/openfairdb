@@ -1,6 +1,7 @@
 use entities::*;
 use std::cmp::Ordering;
 use super::geo;
+use std::collections::HashMap;
 
 trait DistanceTo {
     fn distance_to(&self, &Coordinate) -> f64;
@@ -108,11 +109,18 @@ pub trait SortByAverageRating {
 }
 
 impl SortByAverageRating for Vec<Entry> {
+
     fn sort_by_avg_rating(&mut self, ratings: &[Rating], triples: &[Triple]){
-        self.sort_by(|a, b| b
-            .avg_rating(ratings, triples)
-            .partial_cmp(&a.avg_rating(ratings, triples))
-            .unwrap_or(Ordering::Equal)
+        let avg_ratings : HashMap<_,f64> = self
+            .iter()
+            .map(|x| (x.id.clone(), x.avg_rating(ratings, triples)))
+            .collect();
+
+        self.sort_by(|a, b|
+            avg_ratings
+                .get(&b.id).unwrap()
+                .partial_cmp(avg_ratings.get(&a.id).unwrap())
+                .unwrap_or(Ordering::Equal)
         )
     }
 }
@@ -374,12 +382,14 @@ mod tests {
         b.iter(|| entry.avg_rating(&ratings, &triples));
     }
 
+    #[ignore]
     #[bench]
     fn bench_calc_avg_of_1000_ratings_for_an_entry(b: &mut Bencher) {
         let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(1000);
         b.iter(|| entry.avg_rating(&ratings, &triples));
     }
 
+    #[ignore]
     #[bench]
     fn bench_calc_avg_of_10_ratings_for_a_rating_context(b: &mut Bencher) {
         let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(10);
@@ -394,6 +404,7 @@ mod tests {
         b.iter(|| avg_rating_for_context(&ratings, &entry_ratings, RatingContext::Diversity));
     }
 
+    #[ignore]
     #[bench]
     fn bench_calc_avg_of_1000_ratings_for_a_rating_context(b: &mut Bencher) {
         let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(1000);
