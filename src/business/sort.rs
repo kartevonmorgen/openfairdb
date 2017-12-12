@@ -42,7 +42,7 @@ pub trait Rated {
     fn avg_rating(&self, &[Rating], &[Triple]) -> f64;
 }
 
-fn create_entry_ratings<'a>(id: &str, triples: &'a [Triple]) -> Vec<(&'a String, &'a String)> {
+fn get_rating_ids_for_entry<'a>(id: &str, triples: &'a [Triple]) -> Vec<&'a String> {
     triples
         .into_iter()
         .filter_map(|x| match *x {
@@ -50,26 +50,27 @@ fn create_entry_ratings<'a>(id: &str, triples: &'a [Triple]) -> Vec<(&'a String,
                 subject   : ObjectId::Entry(ref e_id),
                 predicate : Relation::IsRatedWith,
                 object    : ObjectId::Rating(ref r_id)
-            } => Some((e_id, r_id)),
+            } => {
+                if e_id == id { Some(r_id) } else { None }
+            }
             _ => None
         })
-        .filter(|entry_rating| *entry_rating.0 == id)
         .collect()
 }
 
 impl Rated for Entry {
     fn avg_rating(&self, ratings: &[Rating], triples: &[Triple]) -> f64 {
-        let entry_ratings = create_entry_ratings(&self.id, triples);
+        let rating_ids = get_rating_ids_for_entry(&self.id, triples);
 
         use self::RatingContext::*;
 
         let avg_ratings = vec![
-            avg_rating_for_context(ratings, &entry_ratings, Diversity),
-            avg_rating_for_context(ratings, &entry_ratings, Renewable),
-            avg_rating_for_context(ratings, &entry_ratings, Fairness),
-            avg_rating_for_context(ratings, &entry_ratings, Humanity),
-            avg_rating_for_context(ratings, &entry_ratings, Transparency),
-            avg_rating_for_context(ratings, &entry_ratings, Solidarity),
+            avg_rating_for_context(ratings, &rating_ids, Diversity),
+            avg_rating_for_context(ratings, &rating_ids, Renewable),
+            avg_rating_for_context(ratings, &rating_ids, Fairness),
+            avg_rating_for_context(ratings, &rating_ids, Humanity),
+            avg_rating_for_context(ratings, &rating_ids, Transparency),
+            avg_rating_for_context(ratings, &rating_ids, Solidarity),
         ];
 
         let sum = avg_ratings.iter().fold(0.0, |acc, &r| acc + r.unwrap_or(0.0));
@@ -84,11 +85,11 @@ impl Rated for Entry {
 
 }
 
-fn avg_rating_for_context(ratings: &[Rating], entry_ratings: &[(&String, &String)], context: RatingContext) -> Option<f64> {
+fn avg_rating_for_context(ratings: &[Rating], rating_ids: &[&String], context: RatingContext) -> Option<f64> {
     let applicable_ratings : Vec<&Rating> = ratings.into_iter()
         .filter_map(|rating| if rating.context == context
-            && entry_ratings.iter()
-            .any(|entry_rating| *entry_rating.1 == rating.id) { Some(rating) } else { None })
+            && rating_ids.iter()
+            .any(|r_id| **r_id == rating.id) { Some(rating) } else { None })
         .collect();
 
     let sum = applicable_ratings
@@ -393,14 +394,14 @@ mod tests {
     #[bench]
     fn bench_calc_avg_of_10_ratings_for_a_rating_context(b: &mut Bencher) {
         let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(10);
-        let entry_ratings = create_entry_ratings(&entry.id, &triples);
+        let entry_ratings = get_rating_ids_for_entry(&entry.id, &triples);
         b.iter(|| avg_rating_for_context(&ratings, &entry_ratings, RatingContext::Diversity));
     }
 
     #[bench]
     fn bench_calc_avg_of_100_ratings_for_a_rating_context(b: &mut Bencher) {
         let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(100);
-        let entry_ratings = create_entry_ratings(&entry.id, &triples);
+        let entry_ratings = get_rating_ids_for_entry(&entry.id, &triples);
         b.iter(|| avg_rating_for_context(&ratings, &entry_ratings, RatingContext::Diversity));
     }
 
@@ -408,7 +409,7 @@ mod tests {
     #[bench]
     fn bench_calc_avg_of_1000_ratings_for_a_rating_context(b: &mut Bencher) {
         let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(1000);
-        let entry_ratings = create_entry_ratings(&entry.id, &triples);
+        let entry_ratings = get_rating_ids_for_entry(&entry.id, &triples);
         b.iter(|| avg_rating_for_context(&ratings, &entry_ratings, RatingContext::Diversity));
     }
 }
