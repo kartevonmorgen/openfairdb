@@ -42,20 +42,24 @@ pub trait Rated {
     fn avg_rating_for_context(&self, &[Rating], &[(&String, &String)], RatingContext) -> Option<f64>;
 }
 
+fn create_entry_ratings<'a>(id: &str, triples: &'a [Triple]) -> Vec<(&'a String, &'a String)> {
+    triples
+        .into_iter()
+        .filter_map(|x| match *x {
+            Triple {
+                subject   : ObjectId::Entry(ref e_id),
+                predicate : Relation::IsRatedWith,
+                object    : ObjectId::Rating(ref r_id)
+            } => Some((e_id, r_id)),
+            _ => None
+        })
+        .filter(|entry_rating| *entry_rating.0 == id)
+        .collect()
+}
+
 impl Rated for Entry {
     fn avg_rating(&self, ratings: &[Rating], triples: &[Triple]) -> f64 {
-        let entry_ratings: Vec<(&String, &String)> = triples
-            .into_iter()
-            .filter_map(|x| match *x {
-                Triple {
-                    subject   : ObjectId::Entry(ref e_id),
-                    predicate : Relation::IsRatedWith,
-                    object    : ObjectId::Rating(ref r_id)
-                } => Some((e_id, r_id)),
-                _ => None
-            })
-            .filter(|entry_rating| *entry_rating.0 == self.id)
-            .collect();
+        let entry_ratings = create_entry_ratings(&self.id, triples);
 
         use self::RatingContext::*;
 
@@ -118,27 +122,14 @@ mod tests {
     use super::*;
     use test::Bencher;
     use uuid::Uuid;
+    use business::builder::EntryBuilder;
 
     fn new_entry(id: &str, lat: f64, lng: f64) -> Entry {
-        Entry{
-            id          : id.into(),
-            osm_node    : None,
-            created     : 0,
-            version     : 0,
-            title       : "foo".into(),
-            description : "bar".into(),
-            lat         : lat,
-            lng         : lng,
-            street      : None,
-            zip         : None,
-            city        : None,
-            country     : None,
-            email       : None,
-            telephone   : None,
-            homepage    : None,
-            categories  : vec![],
-            license     : None,
-        }
+        Entry::build()
+            .id(id)
+            .lat(lat)
+            .lng(lng)
+            .finish()
     }
 
     fn new_rating(id: &str, value: i8, context: RatingContext) -> Rating {
@@ -289,7 +280,6 @@ mod tests {
         assert_eq!(entries[2].id, "c");
     }
 
-    use business::builder::EntryBuilder;
 
     fn create_entries_with_ratings_and_triples(n: usize) -> (Vec<Entry>, Vec<Rating>, Vec<Triple>) {
 
@@ -298,26 +288,40 @@ mod tests {
         let ratings_and_triples : Vec<_> = entries
             .iter()
             .map(|e|{
-                let rating = Rating {
-                    id: Uuid::new_v4().simple().to_string(),
-                    created: 0,
-                    title: "".into(),
-                    value: 2,
-                    context: RatingContext::Diversity,
-                    source: None
-                };
-                let triple = Triple {
-                    subject : ObjectId::Entry(e.id.clone()),
-                    predicate : Relation::IsRatedWith,
-                    object : ObjectId::Rating(rating.id.clone()),
-                };
-                (rating,triple)
+                let (ratings, triples) = create_ratings_for_entry(&e.id,1);
+                (ratings[0].clone(),triples[0].clone())
             })
             .collect();
 
         let (ratings, triples) : (Vec<_>, Vec<_>) = ratings_and_triples.into_iter().unzip();
 
         (entries, ratings, triples)
+    }
+
+    fn create_entry_with_multiple_ratings_and_triples(n: usize) -> (Entry, Vec<Rating>, Vec<Triple>) {
+        let entry = Entry::build().finish();
+        let (ratings, triples) = create_ratings_for_entry(&entry.id,n);
+        (entry, ratings, triples)
+    }
+
+    fn create_ratings_for_entry(id: &str, n: usize) -> (Vec<Rating>,Vec<Triple>) {
+        (0..n).map(|_|{
+            let rating = Rating {
+                id: Uuid::new_v4().simple().to_string(),
+                created: 0,
+                title: "".into(),
+                value: 2,
+                context: RatingContext::Diversity,
+                source: None
+            };
+            let triple = Triple {
+                subject : ObjectId::Entry(id.into()),
+                predicate : Relation::IsRatedWith,
+                object : ObjectId::Rating(rating.id.clone()),
+            };
+            (rating,triple)
+        })
+        .unzip()
     }
 
     #[bench]
@@ -338,6 +342,7 @@ mod tests {
         });
     }
 
+    #[ignore]
     #[bench]
     fn bench_for_sorting_1000_entries_by_rating(b: &mut Bencher) {
         let (entries, ratings, triples) = create_entries_with_ratings_and_triples(1000);
@@ -347,6 +352,7 @@ mod tests {
         });
     }
 
+    #[ignore]
     #[bench]
     fn bench_for_sorting_2000_entries_by_rating(b: &mut Bencher) {
         let (entries, ratings, triples) = create_entries_with_ratings_and_triples(2000);
@@ -354,5 +360,44 @@ mod tests {
             let mut entries = entries.clone();
             entries.sort_by_avg_rating(&ratings, &triples);
         });
+    }
+
+    #[bench]
+    fn bench_calc_avg_of_10_ratings_for_an_entry(b: &mut Bencher) {
+        let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(10);
+        b.iter(|| entry.avg_rating(&ratings, &triples));
+    }
+
+    #[bench]
+    fn bench_calc_avg_of_100_ratings_for_an_entry(b: &mut Bencher) {
+        let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(100);
+        b.iter(|| entry.avg_rating(&ratings, &triples));
+    }
+
+    #[bench]
+    fn bench_calc_avg_of_1000_ratings_for_an_entry(b: &mut Bencher) {
+        let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(1000);
+        b.iter(|| entry.avg_rating(&ratings, &triples));
+    }
+
+    #[bench]
+    fn bench_calc_avg_of_10_ratings_for_a_rating_context(b: &mut Bencher) {
+        let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(10);
+        let entry_ratings = create_entry_ratings(&entry.id, &triples);
+        b.iter(|| entry.avg_rating_for_context(&ratings, &entry_ratings, RatingContext::Diversity));
+    }
+
+    #[bench]
+    fn bench_calc_avg_of_100_ratings_for_a_rating_context(b: &mut Bencher) {
+        let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(100);
+        let entry_ratings = create_entry_ratings(&entry.id, &triples);
+        b.iter(|| entry.avg_rating_for_context(&ratings, &entry_ratings, RatingContext::Diversity));
+    }
+
+    #[bench]
+    fn bench_calc_avg_of_1000_ratings_for_a_rating_context(b: &mut Bencher) {
+        let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(1000);
+        let entry_ratings = create_entry_ratings(&entry.id, &triples);
+        b.iter(|| entry.avg_rating_for_context(&ratings, &entry_ratings, RatingContext::Diversity));
     }
 }
