@@ -91,7 +91,7 @@ impl Rated for Entry {
 
         let sum = applicable_ratings
             .iter()
-            .fold(0, |acc, rating| acc + rating.value) as f64;
+            .fold(0_i64, |acc, rating| acc + rating.value as i64) as f64;
         let n = applicable_ratings.len();
 
         let avg = sum / n as f64;
