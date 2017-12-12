@@ -134,7 +134,7 @@ impl SortByAverageRating for Vec<Entry> {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
     use test::Bencher;
     use uuid::Uuid;
@@ -297,7 +297,7 @@ mod tests {
     }
 
 
-    fn create_entries_with_ratings_and_triples(n: usize) -> (Vec<Entry>, Vec<Rating>, Vec<Triple>) {
+    pub fn create_entries_with_ratings_and_triples(n: usize) -> (Vec<Entry>, Vec<Rating>, Vec<Triple>) {
 
         let entries : Vec<Entry> = (0..n).map(|_| Entry::build().finish()).collect();
 
