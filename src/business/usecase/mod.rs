@@ -708,8 +708,8 @@ pub fn search<D:Db>(db: &D, req: SearchRequest) -> Result<(Vec<String>, Vec<Stri
 
     let extended_bbox = extend_bbox(&req.bbox);
 
-    let mut entries: Vec<&Entry> = entries
-        .iter()
+    let mut entries: Vec<_> = entries
+        .into_iter()
         .filter(|x| x.in_bbox(&extended_bbox))
         .collect();
 
@@ -720,12 +720,10 @@ pub fn search<D:Db>(db: &D, req: SearchRequest) -> Result<(Vec<String>, Vec<Stri
             .collect();
     }
 
-    let entries : Vec<&Entry> = entries
+    let mut entries : Vec<_> = entries
         .into_iter()
         .filter(&*filter::entries_by_tags_or_search_text(&req.text, &req.tags, &triples))
         .collect();
-
-    let mut entries : Vec<Entry> = entries.into_iter().cloned().collect();
 
     entries.sort_by_avg_rating(&all_ratings, &triples);
 
@@ -742,7 +740,7 @@ pub fn search<D:Db>(db: &D, req: SearchRequest) -> Result<(Vec<String>, Vec<Stri
         .take(MAX_INVISIBLE_RESULTS)
         .map(|x| &x.id)
         .cloned()
-        .collect::<Vec<_>>();
+        .collect();
 
     Ok((visible_results, invisible_results))
 }

@@ -19,7 +19,7 @@ impl InBBox for Entry {
     }
 }
 
-pub fn entries_by_category_ids<'a>(ids: &'a [String]) -> Box<Fn(&&Entry) -> bool + 'a> {
+pub fn entries_by_category_ids<'a>(ids: &'a [String]) -> Box<Fn(&Entry) -> bool + 'a> {
     Box::new(move |e| ids.iter().any(|c| e.categories.iter().any(|x| x == c)))
 }
 
@@ -27,7 +27,7 @@ pub fn triple_by_subject<'a>(o_id: ObjectId) -> Box<Fn(&&Triple) -> bool + 'a> {
     Box::new(move |triple| o_id == triple.subject)
 }
 
-pub fn entries_by_tags_or_search_text<'a>(text: &'a str, tags: &'a [String], triples: &'a [Triple]) -> Box<Fn(&&Entry) -> bool + 'a> {
+pub fn entries_by_tags_or_search_text<'a>(text: &'a str, tags: &'a [String], triples: &'a [Triple]) -> Box<Fn(&Entry) -> bool + 'a> {
     let tag_triples : Vec<(&String, &String)> = triples
         .into_iter()
         .filter_map(|x| match *x {
@@ -140,13 +140,13 @@ mod tests {
             Entry::build().categories(vec!["b","a"]).finish(),
         ];
         let ab = vec!["a".into(), "b".into()];
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_category_ids(&ab)).collect();
+        let x: Vec<_> = entries.iter().cloned().filter(&*entries_by_category_ids(&ab)).collect();
         assert_eq!(x.len(), 2);
         let b = vec!["b".into()];
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_category_ids(&b)).collect();
+        let x: Vec<_> = entries.iter().cloned().filter(&*entries_by_category_ids(&b)).collect();
         assert_eq!(x.len(), 1);
         let c = vec!["c".into()];
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_category_ids(&c)).collect();
+        let x: Vec<_> = entries.iter().cloned().filter(&*entries_by_category_ids(&c)).collect();
         assert_eq!(x.len(), 1);
     }
 
@@ -176,50 +176,50 @@ mod tests {
             Triple{ subject: ObjectId::Entry("d".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("tag2".into())}
         ];
 
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&no_string, &no_tags, &triples)).collect();
+        let x: Vec<_> = entries.iter().cloned().filter(&*entries_by_tags_or_search_text(&no_string, &no_tags, &triples)).collect();
         assert_eq!(x.len(), 5);
 
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&other, &tags1, &no_triples)).collect();
+        let x: Vec<_> = entries.iter().cloned().filter(&*entries_by_tags_or_search_text(&other, &tags1, &no_triples)).collect();
         assert_eq!(x.len(), 0);
 
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&other, &tags2, &no_triples)).collect();
+        let x: Vec<_> = entries.iter().cloned().filter(&*entries_by_tags_or_search_text(&other, &tags2, &no_triples)).collect();
         assert_eq!(x.len(), 0);
 
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&other, &tags1, &triples)).collect();
+        let x: Vec<_> = entries.iter().cloned().filter(&*entries_by_tags_or_search_text(&other, &tags1, &triples)).collect();
         assert_eq!(x.len(), 2);
         assert_eq!(x[0].id,"b");
         assert_eq!(x[1].id,"d");
 
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&other, &tags2, &triples)).collect();
+        let x: Vec<_> = entries.iter().cloned().filter(&*entries_by_tags_or_search_text(&other, &tags2, &triples)).collect();
         assert_eq!(x.len(), 1);
         assert_eq!(x[0].id,"d");
 
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&other, &tags3, &triples)).collect();
+        let x: Vec<_> = entries.iter().cloned().filter(&*entries_by_tags_or_search_text(&other, &tags3, &triples)).collect();
         assert_eq!(x.len(), 2);
         assert_eq!(x[0].id,"c");
         assert_eq!(x[1].id,"d");
 
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&no_string, &tags1, &triples)).collect();
+        let x: Vec<_> = entries.iter().cloned().filter(&*entries_by_tags_or_search_text(&no_string, &tags1, &triples)).collect();
         assert_eq!(x.len(), 2);
         assert_eq!(x[0].id,"b");
         assert_eq!(x[1].id,"d");
 
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&solawi, &no_tags, &triples)).collect();
+        let x: Vec<_> = entries.iter().cloned().filter(&*entries_by_tags_or_search_text(&solawi, &no_tags, &triples)).collect();
         assert_eq!(x.len(), 1);
         assert_eq!(x[0].id, "a");
 
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&solawi, &tags2, &triples)).collect();
+        let x: Vec<_> = entries.iter().cloned().filter(&*entries_by_tags_or_search_text(&solawi, &tags2, &triples)).collect();
         assert_eq!(x.len(), 2);
         assert_eq!(x[0].id, "a");
         assert_eq!(x[1].id, "d");
 
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&bliblubb, &tags3, &triples)).collect();
+        let x: Vec<_> = entries.iter().cloned().filter(&*entries_by_tags_or_search_text(&bliblubb, &tags3, &triples)).collect();
         assert_eq!(x.len(), 3);
         assert_eq!(x[0].id, "b");
         assert_eq!(x[1].id, "c");
         assert_eq!(x[2].id, "d");
 
-        let x: Vec<&Entry> = entries.iter().filter(&*entries_by_tags_or_search_text(&tag1, &no_tags, &triples)).collect();
+        let x: Vec<_> = entries.iter().cloned().filter(&*entries_by_tags_or_search_text(&tag1, &no_tags, &triples)).collect();
         assert_eq!(x.len(), 1);
         assert_eq!(x[0].id, "e");
     }
