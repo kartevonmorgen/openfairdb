@@ -85,16 +85,6 @@ impl From<EntryTagRelation> for e::Triple {
     }
 }
 
-impl From<Rating> for e::Triple {
-    fn from(r: Rating) -> e::Triple {
-        e::Triple {
-            subject: e::ObjectId::Entry(r.entry_id.unwrap()), //TODO
-            predicate: e::Relation::IsRatedWith,
-            object: e::ObjectId::Rating(r.id),
-        }
-    }
-}
-
 impl From<Comment> for e::Triple {
     fn from(c: Comment) -> e::Triple {
         e::Triple {
@@ -180,15 +170,16 @@ impl From<Rating> for e::Rating {
     fn from(r: Rating) -> e::Rating {
         let Rating {
             id,
+            entry_id,
             created,
             title,
             context,
             value,
-            source,
-            ..
+            source
         } = r;
         e::Rating {
             id,
+            entry_id,
             created: created as u64,
             title,
             value: value as i8,
@@ -207,6 +198,7 @@ impl From<e::Rating> for Rating {
             context,
             value,
             source,
+            entry_id,
         } = r;
         Rating {
             id,
@@ -215,7 +207,7 @@ impl From<e::Rating> for Rating {
             value: value as i32,
             context: context.into(),
             source,
-            entry_id: None,
+            entry_id,
         }
     }
 }
@@ -278,7 +270,6 @@ impl From<e::Relation> for String {
     fn from(r: e::Relation) -> String {
         match r {
             e::Relation::IsTaggedWith => "is_tagged_with",
-            e::Relation::IsRatedWith => "is_rated_with",
             e::Relation::IsCommentedWith => "is_commented_with",
             e::Relation::CreatedBy => "created_by",
             e::Relation::SubscribedTo => "subscribed_to",
@@ -291,7 +282,6 @@ impl FromStr for e::Relation {
     fn from_str(predicate: &str) -> Result<e::Relation, String> {
         Ok(match predicate {
             "is_tagged_with" => e::Relation::IsTaggedWith,
-            "is_rated_with" => e::Relation::IsRatedWith,
             "is_commented_with" => e::Relation::IsCommentedWith,
             "created_by" => e::Relation::CreatedBy,
             "subscribed_to" => e::Relation::SubscribedTo,

@@ -73,7 +73,7 @@ table! {
         value -> Integer,
         context -> Text,
         source -> Nullable<Text>,
-        entry_id -> Nullable<Text>,
+        entry_id -> Text,
     }
 }
 

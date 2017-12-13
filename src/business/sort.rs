@@ -39,37 +39,17 @@ impl SortByDistanceTo for Vec<Entry> {
 }
 
 pub trait Rated {
-    fn avg_rating(&self, &[Rating], &[Triple]) -> f64;
-}
-
-fn get_rating_ids_for_entry<'a>(id: &str, triples: &'a [Triple]) -> Vec<&'a String> {
-    triples
-        .into_iter()
-        .filter_map(|x| match *x {
-            Triple {
-                subject   : ObjectId::Entry(ref e_id),
-                predicate : Relation::IsRatedWith,
-                object    : ObjectId::Rating(ref r_id)
-            } => {
-                if e_id == id { Some(r_id) } else { None }
-            }
-            _ => None
-        })
-        .collect()
+    fn avg_rating(&self, &[Rating]) -> f64;
 }
 
 impl Rated for Entry {
-    fn avg_rating(&self, ratings: &[Rating], triples: &[Triple]) -> f64 {
-        let rating_ids = get_rating_ids_for_entry(&self.id, triples);
+    fn avg_rating(&self, ratings: &[Rating]) -> f64 {
 
         use self::RatingContext::*;
 
         let ratings_for_entry : Vec<&Rating>= ratings
             .iter()
-            .filter(|rating|
-                rating_ids
-                    .iter()
-                    .any(|r_id| **r_id == rating.id))
+            .filter(|r|r.entry_id == self.id)
             .collect();
 
         let avg_ratings = vec![
@@ -113,15 +93,15 @@ fn avg_rating_for_context(ratings: &[&Rating], context: RatingContext) -> Option
 }
 
 pub trait SortByAverageRating {
-    fn sort_by_avg_rating(&mut self, &[Rating], &[Triple]);
+    fn sort_by_avg_rating(&mut self, &[Rating]);
 }
 
 impl SortByAverageRating for Vec<Entry> {
 
-    fn sort_by_avg_rating(&mut self, ratings: &[Rating], triples: &[Triple]){
+    fn sort_by_avg_rating(&mut self, ratings: &[Rating]){
         let avg_ratings : HashMap<_,f64> = self
             .iter()
-            .map(|x| (x.id.clone(), x.avg_rating(ratings, triples)))
+            .map(|x| (x.id.clone(), x.avg_rating(ratings)))
             .collect();
 
         self.sort_by(|a, b|
@@ -148,9 +128,10 @@ pub mod tests {
             .finish()
     }
 
-    fn new_rating(id: &str, value: i8, context: RatingContext) -> Rating {
+    fn new_rating(id: &str, entry_id: &str, value: i8, context: RatingContext) -> Rating {
         Rating{
             id         : id.into(),
+            entry_id   : entry_id.into(),
             created    : 0,
             title      : "blubb".into(),
             value      : value.into(),
@@ -166,26 +147,17 @@ pub mod tests {
         let entry3 = new_entry("c", 0.0, 0.0);
 
         let ratings = vec![
-            new_rating("1", 0, RatingContext::Diversity),
-            new_rating("2", 0, RatingContext::Diversity),
-            new_rating("3", 3, RatingContext::Diversity),
-            new_rating("4", 3, RatingContext::Diversity),
-            new_rating("5", -3, RatingContext::Diversity),
-            new_rating("6", 3, RatingContext::Diversity),
+            new_rating("1", "a", 0, RatingContext::Diversity),
+            new_rating("2", "a", 0, RatingContext::Diversity),
+            new_rating("3", "a", 3, RatingContext::Diversity),
+            new_rating("4", "a", 3, RatingContext::Diversity),
+            new_rating("5", "b", -3, RatingContext::Diversity),
+            new_rating("6", "b", 3, RatingContext::Diversity),
         ];
 
-        let triples = vec![
-            Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("1".into())},
-            Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("2".into())},
-            Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("3".into())},
-            Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("4".into())},
-            Triple{subject: ObjectId::Entry("b".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("5".into())},
-            Triple{subject: ObjectId::Entry("b".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("6".into())},
-        ];
-
-        assert_eq!(entry1.avg_rating(&ratings, &triples), 0.25);
-        assert_eq!(entry2.avg_rating(&ratings, &triples), 0.0);
-        assert_eq!(entry3.avg_rating(&ratings, &triples), 0.0);
+        assert_eq!(entry1.avg_rating(&ratings), 0.25);
+        assert_eq!(entry2.avg_rating(&ratings), 0.0);
+        assert_eq!(entry3.avg_rating(&ratings), 0.0);
     }
 
     #[test]
@@ -194,25 +166,16 @@ pub mod tests {
         let entry2 = new_entry("b", 0.0, 0.0);
 
         let ratings = vec![
-            new_rating("1", 0, RatingContext::Diversity),
-            new_rating("2", 10, RatingContext::Renewable),
-            new_rating("3", 7, RatingContext::Fairness),
-            new_rating("4", 9, RatingContext::Fairness),
-            new_rating("5", -3, RatingContext::Diversity),
-            new_rating("6", 3, RatingContext::Fairness),
+            new_rating("1", "a", 0, RatingContext::Diversity),
+            new_rating("2", "a", 10, RatingContext::Renewable),
+            new_rating("3", "a", 7, RatingContext::Fairness),
+            new_rating("4", "a", 9, RatingContext::Fairness),
+            new_rating("5", "b", -3, RatingContext::Diversity),
+            new_rating("6", "b", 3, RatingContext::Fairness),
         ];
 
-        let triples = vec![
-            Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("1".into())},
-            Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("2".into())},
-            Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("3".into())},
-            Triple{subject: ObjectId::Entry("a".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("4".into())},
-            Triple{subject: ObjectId::Entry("b".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("5".into())},
-            Triple{subject: ObjectId::Entry("b".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("6".into())},
-        ];
-
-        assert_eq!(entry1.avg_rating(&ratings, &triples), 3.0);
-        assert_eq!(entry2.avg_rating(&ratings, &triples), 0.0);
+        assert_eq!(entry1.avg_rating(&ratings), 3.0);
+        assert_eq!(entry2.avg_rating(&ratings), 0.0);
     }
 
     #[test]
@@ -226,23 +189,14 @@ pub mod tests {
         ];
 
         let ratings = vec![
-            new_rating("1", 0, RatingContext::Diversity),
-            new_rating("2", 10, RatingContext::Diversity),
-            new_rating("3", 3, RatingContext::Diversity),
-            new_rating("4", -1, RatingContext::Diversity),
-            new_rating("5", 0, RatingContext::Diversity),
+            new_rating("1","b", 0, RatingContext::Diversity),
+            new_rating("2","b", 10, RatingContext::Diversity),
+            new_rating("3","c", 3, RatingContext::Diversity),
+            new_rating("4","d", -1, RatingContext::Diversity),
+            new_rating("5","e", 0, RatingContext::Diversity),
         ];
 
-        let triples = vec![
-            Triple{subject: ObjectId::Entry("b".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("1".into())},
-            Triple{subject: ObjectId::Entry("b".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("2".into())},
-            Triple{subject: ObjectId::Entry("c".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("3".into())},
-            Triple{subject: ObjectId::Entry("d".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("4".into())},
-            Triple{subject: ObjectId::Entry("e".into()), predicate: Relation::IsRatedWith, object: ObjectId::Rating("5".into())},
-        ];
-
-        entries.sort_by_avg_rating(&ratings, &triples);
-
+        entries.sort_by_avg_rating(&ratings);
 
         assert_eq!(entries[0].id, "b");
         assert_eq!(entries[1].id, "c");
@@ -297,129 +251,117 @@ pub mod tests {
     }
 
 
-    pub fn create_entries_with_ratings_and_triples(n: usize) -> (Vec<Entry>, Vec<Rating>, Vec<Triple>) {
+    pub fn create_entries_with_ratings(n: usize) -> (Vec<Entry>, Vec<Rating>) {
 
         let entries : Vec<Entry> = (0..n).map(|_| Entry::build().finish()).collect();
 
-        let ratings_and_triples : Vec<_> = entries
+        let ratings : Vec<_> = entries
             .iter()
             .map(|e|{
-                let (ratings, triples) = create_ratings_for_entry(&e.id,1);
-                (ratings[0].clone(),triples[0].clone())
+                let ratings = create_ratings_for_entry(&e.id,1);
+                ratings[0].clone()
             })
             .collect();
 
-        let (ratings, triples) : (Vec<_>, Vec<_>) = ratings_and_triples.into_iter().unzip();
-
-        (entries, ratings, triples)
+        (entries, ratings)
     }
 
-    fn create_entry_with_multiple_ratings_and_triples(n: usize) -> (Entry, Vec<Rating>, Vec<Triple>) {
+    fn create_entry_with_multiple_ratings(n: usize) -> (Entry, Vec<Rating>) {
         let entry = Entry::build().finish();
-        let (ratings, triples) = create_ratings_for_entry(&entry.id,n);
-        (entry, ratings, triples)
+        let ratings = create_ratings_for_entry(&entry.id,n);
+        (entry, ratings)
     }
 
-    fn create_ratings_for_entry(id: &str, n: usize) -> (Vec<Rating>,Vec<Triple>) {
-        (0..n).map(|_|{
-            let rating = Rating {
+    fn create_ratings_for_entry(id: &str, n: usize) -> Vec<Rating> {
+        (0..n).map(|_|
+            Rating {
                 id: Uuid::new_v4().simple().to_string(),
+                entry_id: id.into(),
                 created: 0,
                 title: "".into(),
                 value: 2,
                 context: RatingContext::Diversity,
                 source: None
-            };
-            let triple = Triple {
-                subject : ObjectId::Entry(id.into()),
-                predicate : Relation::IsRatedWith,
-                object : ObjectId::Rating(rating.id.clone()),
-            };
-            (rating,triple)
-        })
-        .unzip()
+            }).collect()
     }
 
     #[bench]
     fn bench_for_sorting_10_entries_by_rating(b: &mut Bencher) {
-        let (entries, ratings, triples) = create_entries_with_ratings_and_triples(10);
+        let (entries, ratings) = create_entries_with_ratings(10);
         b.iter(|| {
             let mut entries = entries.clone();
-            entries.sort_by_avg_rating(&ratings, &triples);
+            entries.sort_by_avg_rating(&ratings);
         });
     }
 
     #[bench]
     fn bench_for_sorting_100_entries_by_rating(b: &mut Bencher) {
-        let (entries, ratings, triples) = create_entries_with_ratings_and_triples(100);
+        let (entries, ratings) = create_entries_with_ratings(100);
         b.iter(|| {
             let mut entries = entries.clone();
-            entries.sort_by_avg_rating(&ratings, &triples);
+            entries.sort_by_avg_rating(&ratings);
         });
     }
 
     #[ignore]
     #[bench]
     fn bench_for_sorting_1000_entries_by_rating(b: &mut Bencher) {
-        let (entries, ratings, triples) = create_entries_with_ratings_and_triples(1000);
+        let (entries, ratings) = create_entries_with_ratings(1000);
         b.iter(|| {
             let mut entries = entries.clone();
-            entries.sort_by_avg_rating(&ratings, &triples);
+            entries.sort_by_avg_rating(&ratings);
         });
     }
 
     #[ignore]
     #[bench]
     fn bench_for_sorting_2000_entries_by_rating(b: &mut Bencher) {
-        let (entries, ratings, triples) = create_entries_with_ratings_and_triples(2000);
+        let (entries, ratings) = create_entries_with_ratings(2000);
         b.iter(|| {
             let mut entries = entries.clone();
-            entries.sort_by_avg_rating(&ratings, &triples);
+            entries.sort_by_avg_rating(&ratings);
         });
     }
 
     #[bench]
     fn bench_calc_avg_of_10_ratings_for_an_entry(b: &mut Bencher) {
-        let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(10);
-        b.iter(|| entry.avg_rating(&ratings, &triples));
+        let (entry, ratings) = create_entry_with_multiple_ratings(10);
+        b.iter(|| entry.avg_rating(&ratings));
     }
 
     #[bench]
     fn bench_calc_avg_of_100_ratings_for_an_entry(b: &mut Bencher) {
-        let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(100);
-        b.iter(|| entry.avg_rating(&ratings, &triples));
+        let (entry, ratings) = create_entry_with_multiple_ratings(100);
+        b.iter(|| entry.avg_rating(&ratings));
     }
 
     #[ignore]
     #[bench]
     fn bench_calc_avg_of_1000_ratings_for_an_entry(b: &mut Bencher) {
-        let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(1000);
-        b.iter(|| entry.avg_rating(&ratings, &triples));
+        let (entry, ratings) = create_entry_with_multiple_ratings(1000);
+        b.iter(|| entry.avg_rating(&ratings));
     }
 
     #[ignore]
     #[bench]
     fn bench_calc_avg_of_10_ratings_for_a_rating_context(b: &mut Bencher) {
-        let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(10);
-        let entry_ratings = get_rating_ids_for_entry(&entry.id, &triples);
-        let ratings: Vec<_> = ratings.iter().filter(|r| entry_ratings.iter().any(|id|**id == r.id)).collect();
+        let (_, ratings) = create_entry_with_multiple_ratings(10);
+        let ratings: Vec<_> = ratings.iter().collect();
         b.iter(|| avg_rating_for_context(&ratings, RatingContext::Diversity));
     }
 
     #[bench]
     fn bench_calc_avg_of_100_ratings_for_a_rating_context(b: &mut Bencher) {
-        let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(100);
-        let entry_ratings = get_rating_ids_for_entry(&entry.id, &triples);
-        let ratings: Vec<_> = ratings.iter().filter(|r| entry_ratings.iter().any(|id|**id == r.id)).collect();
+        let (_, ratings) = create_entry_with_multiple_ratings(100);
+        let ratings: Vec<_> = ratings.iter().collect();
         b.iter(|| avg_rating_for_context(&ratings, RatingContext::Diversity));
     }
 
     #[ignore]
     #[bench]
     fn bench_calc_avg_of_1000_ratings_for_a_rating_context(b: &mut Bencher) {
-        let (entry, ratings, triples) = create_entry_with_multiple_ratings_and_triples(1000);
-        let entry_ratings = get_rating_ids_for_entry(&entry.id, &triples);
-        let ratings: Vec<_> = ratings.iter().filter(|r| entry_ratings.iter().any(|id|**id == r.id)).collect();
+        let (_, ratings) = create_entry_with_multiple_ratings(1000);
+        let ratings: Vec<_> = ratings.iter().collect();
         b.iter(|| avg_rating_for_context(&ratings, RatingContext::Diversity));
     }
 }

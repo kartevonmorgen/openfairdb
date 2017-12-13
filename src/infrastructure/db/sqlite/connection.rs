@@ -55,7 +55,6 @@ impl Db for SqliteConnection {
         Ok(())
     }
     fn create_triple(&mut self, t: &Triple) -> Result<()> {
-        use self::schema::ratings::dsl as r_dsl;
         use self::schema::comments::dsl as c_dsl;
         use self::schema::bbox_subscriptions::dsl as b_dsl;
 
@@ -74,24 +73,6 @@ impl Db for SqliteConnection {
                                         entry_version: e.version as i32,
                                         tag_id: t_id.clone(),
                                     })
-                                    .execute(self)?;
-                                return Ok(());
-                            }
-                            _ => {}
-                        }
-                    }
-                    _ => {}
-                }
-            }
-
-            // (entry)-[is_rated_with]->(rating)
-            Relation::IsRatedWith => {
-                match t.subject {
-                    ObjectId::Entry(ref e_id) => {
-                        match t.object {
-                            ObjectId::Rating(ref r_id) => {
-                                diesel::update(r_dsl::ratings.find(r_id))
-                                    .set(r_dsl::entry_id.eq(e_id))
                                     .execute(self)?;
                                 return Ok(());
                             }
@@ -333,20 +314,12 @@ impl Db for SqliteConnection {
     }
     fn all_triples(&self) -> Result<Vec<Triple>> {
         use self::schema::entry_tag_relations::dsl as e_t_dsl;
-        use self::schema::ratings::dsl as r_dsl;
         use self::schema::comments::dsl as c_dsl;
         use self::schema::bbox_subscriptions::dsl as b_dsl;
 
         // (entry)-[is_tagged_with]->(tag)
         let mut e_t_triples: Vec<_> = e_t_dsl::entry_tag_relations
             .load::<models::EntryTagRelation>(self)?
-            .into_iter()
-            .map(Triple::from)
-            .collect();
-
-        // (entry)-[is_rated_with]->(rating)
-        let mut e_r_triples: Vec<_> = r_dsl::ratings
-            .load::<models::Rating>(self)?
             .into_iter()
             .map(Triple::from)
             .collect();
@@ -368,7 +341,6 @@ impl Db for SqliteConnection {
 
         let mut result = vec![];
         result.append(&mut e_t_triples);
-        result.append(&mut e_r_triples);
         result.append(&mut r_c_triples);
         result.append(&mut u_b_triples);
 
@@ -428,7 +400,6 @@ impl Db for SqliteConnection {
 
     fn delete_triple(&mut self, t: &Triple) -> Result<()> {
         use self::schema::entry_tag_relations::dsl as e_t_dsl;
-        use self::schema::ratings::dsl as r_dsl;
         use self::schema::comments::dsl as c_dsl;
         use self::schema::bbox_subscriptions::dsl as b_dsl;
 
@@ -444,24 +415,6 @@ impl Db for SqliteConnection {
                                 diesel::delete(e_t_dsl::entry_tag_relations.find(
                                     (e.id, e.version as i32, t_id),
                                 )).execute(self)?;
-                                return Ok(());
-                            }
-                            _ => {}
-                        }
-                    }
-                    _ => {}
-                }
-            }
-
-            // (entry)-[is_rated_with]->(rating)
-            Relation::IsRatedWith => {
-                match t.subject {
-                    ObjectId::Entry(_) => {
-                        match t.object {
-                            ObjectId::Rating(ref r_id) => {
-                                diesel::update(r_dsl::ratings.find(r_id))
-                                    .set(&models::RatingUpdate { entry_id: None })
-                                    .execute(self)?;
                                 return Ok(());
                             }
                             _ => {}

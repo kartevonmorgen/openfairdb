@@ -36,8 +36,6 @@ pub struct Tag {
 pub enum Relation {
     #[serde(rename="is_tagged_with")]
     IsTaggedWith,
-    #[serde(rename="is_rated_with")]
-    IsRatedWith,
     #[serde(rename="is_commented_with")]
     IsCommentedWith,
     #[serde(rename="created_by")]
@@ -104,6 +102,7 @@ pub enum RatingContext {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Rating {
     pub id: String,
+    pub entry_id: String,
     pub created: u64,
     pub title: String,
     pub value: i8,

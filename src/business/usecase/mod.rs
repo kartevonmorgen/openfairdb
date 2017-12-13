@@ -82,7 +82,6 @@ fn triple_id(t: &Triple) -> String {
     };
     let p_type = match t.predicate {
         Relation::IsTaggedWith => "is_tagged_with",
-        Relation::IsRatedWith => "is_rated_with",
         Relation::IsCommentedWith => "is_commented_with",
         Relation::CreatedBy => "created_by",
         Relation::SubscribedTo => "subscribed_to"
@@ -259,21 +258,6 @@ pub fn get_tag_ids_for_entry_id(triples: &[Triple], entry_id: &str) -> Vec<Strin
         .collect()
 }
 
-pub fn get_rating_ids_for_entry_id(triples: &[Triple], entry_id: &str) -> Vec<String> {
-    triples
-        .iter()
-        .filter(&*filter::triple_by_subject(ObjectId::Entry(entry_id.into())))
-        .filter(|triple| triple.predicate == Relation::IsRatedWith)
-        .map(|triple|&triple.object)
-        .filter_map(|object|
-            match *object {
-                ObjectId::Rating(ref r_id) => Some(r_id),
-                _ => None
-            })
-        .cloned()
-        .collect()
-}
-
 pub fn get_ratings<D:Db>(db: &D, ids : &[String]) -> Result<Vec<Rating>> {
     Ok(db
         .all_ratings()?
@@ -344,15 +328,14 @@ pub fn get_tags_by_entry_ids<D: Db>(db: &D, ids: &[String]) -> Result<HashMap<St
 }
 
 pub fn get_ratings_by_entry_ids<D:Db>(db : &D, ids : &[String]) -> Result<HashMap<String, Vec<Rating>>> {
-    let triples = db.all_triples()?;
     let ratings = db.all_ratings()?;
     Ok(ids
         .iter()
-        .map(|id|(
-            id.clone(),
-            get_rating_ids_for_entry_id(&triples, id)
+        .map(|e_id|(
+            e_id.clone(),
+            ratings
                 .iter()
-                .filter_map(|r_id| ratings.iter().find(|x| x.id == *r_id))
+                .filter(|r|r.entry_id == **e_id)
                 .cloned()
                 .collect()
         ))
@@ -519,22 +502,18 @@ pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
     let rating_id = Uuid::new_v4().simple().to_string();
     let comment_id = Uuid::new_v4().simple().to_string();
     db.create_rating(&Rating{
-        id      : rating_id.clone(),
-        created : now,
-        title   : r.title,
-        value   : r.value,
-        context : r.context,
-        source  : r.source
+        id       : rating_id.clone(),
+        entry_id : e.id,
+        created  : now,
+        title    : r.title,
+        value    : r.value,
+        context  : r.context,
+        source   : r.source
     })?;
     db.create_comment(&Comment{
         id      : comment_id.clone(),
         created : now,
         text    : r.comment,
-    })?;
-    db.create_triple(&Triple{
-        subject: ObjectId::Entry(e.id),
-        predicate: Relation::IsRatedWith,
-        object: ObjectId::Rating(rating_id.clone()),
     })?;
     db.create_triple(&Triple{
         subject: ObjectId::Rating(rating_id),
@@ -725,7 +704,7 @@ pub fn search<D:Db>(db: &D, req: SearchRequest) -> Result<(Vec<String>, Vec<Stri
         .filter(&*filter::entries_by_tags_or_search_text(&req.text, &req.tags, &triples))
         .collect();
 
-    entries.sort_by_avg_rating(&all_ratings, &triples);
+    entries.sort_by_avg_rating(&all_ratings);
 
     let visible_results: Vec<_> = entries
         .iter()

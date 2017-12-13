@@ -188,11 +188,10 @@ fn search_with_categories() {
 
 #[bench]
 fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
-    let (entries, ratings, triples) = ::business::sort::tests::create_entries_with_ratings_and_triples(10_000);
+    let (entries, ratings) = ::business::sort::tests::create_entries_with_ratings(10_000);
     let (client, db) = setup();
     db.get().unwrap().entries = entries;
     db.get().unwrap().ratings = ratings;
-    db.get().unwrap().triples = triples;
     b.iter(|| client.get("/search?bbox=-10,-10,10,10").dispatch() );
 }
 

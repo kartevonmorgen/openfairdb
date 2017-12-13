@@ -82,8 +82,9 @@ pub struct CommentUpdate {
     pub rating_id: Option<String>, //TODO remove option
 }
 
-#[derive(Queryable, Insertable)]
+#[derive(Queryable, Insertable, Associations)]
 #[table_name = "ratings"]
+#[belongs_to(Entry, foreign_key="entry_id")]
 pub struct Rating {
     pub id: String,
     pub created: i64,
@@ -91,14 +92,7 @@ pub struct Rating {
     pub value: i32,  // TODO: us i8 (TinyInt)
     pub context: String,
     pub source: Option<String>,
-    pub entry_id: Option<String>, //TODO remove option
-}
-
-#[derive(AsChangeset)]
-#[table_name = "ratings"]
-#[changeset_options(treat_none_as_null = "true")]
-pub struct RatingUpdate {
-    pub entry_id: Option<String>, //TODO remove option
+    pub entry_id: String,
 }
 
 #[derive(Queryable, Insertable)]

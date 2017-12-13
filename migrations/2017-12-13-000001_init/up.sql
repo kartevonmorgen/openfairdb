@@ -63,8 +63,8 @@ CREATE TABLE ratings (
     value   INTEGER NOT NULL,
     context TEXT NOT NULL,
     source  TEXT,
-    entry_id TEXT -- NOT NULL
-    -- FOREIGN KEY (entry_id) REFERENCES entries(id)
+    entry_id TEXT NOT NULL,
+    FOREIGN KEY (entry_id) REFERENCES entries(id)
 );
 
 CREATE TABLE bbox_subscriptions (

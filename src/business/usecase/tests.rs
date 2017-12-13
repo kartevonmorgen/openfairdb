@@ -571,34 +571,6 @@ fn get_correct_tag_ids_for_entry_id() {
 }
 
 #[test]
-fn get_correct_rating_ids_for_entry_id() {
-    let triples = vec![
-            Triple{
-                subject: ObjectId::Entry("a".into()),
-                predicate: Relation::IsRatedWith,
-                object: ObjectId::Rating("foo".into()),
-            },
-            Triple{
-                subject: ObjectId::Entry("a".into()),
-                predicate: Relation::IsRatedWith,
-                object: ObjectId::Rating("bar".into()),
-            },
-            Triple{
-                subject: ObjectId::Entry("a".into()),
-                predicate: Relation::IsTaggedWith,
-                object: ObjectId::Tag("bio".into()),
-            },
-            Triple{
-                subject: ObjectId::Entry("b".into()),
-                predicate: Relation::IsRatedWith,
-                object: ObjectId::Rating("baz".into()),
-            }
-        ];
-    let res = get_rating_ids_for_entry_id(&triples, "a");
-    assert_eq!(res, vec!["foo".to_string(), "bar".to_string()])
-}
-
-#[test]
 fn create_user_with_invalid_name() {
     let mut db = MockDb::new();
     let u = NewUser {
@@ -787,19 +759,16 @@ fn rate_without_login() {
         value: 2,
         source: Some("source".into())
     }).is_ok());
+
     assert_eq!(db.ratings.len(),1);
     assert_eq!(db.comments.len(),1);
-    assert_eq!(db.triples.len(),2);
-    assert_eq!(db.triples[0].subject,ObjectId::Entry("foo".into()));
-    assert_eq!(db.triples[0].predicate,Relation::IsRatedWith);
+    assert_eq!(db.triples.len(),1);
+    assert_eq!(db.ratings[0].entry_id,"foo");
+    assert!(match db.triples[0].subject {
+        ObjectId::Rating(_) => true, _ => false
+    });
+    assert_eq!(db.triples[0].predicate,Relation::IsCommentedWith);
     assert!(match db.triples[0].object {
-        ObjectId::Rating(_) => true, _ => false
-    });
-    assert!(match db.triples[1].subject {
-        ObjectId::Rating(_) => true, _ => false
-    });
-    assert_eq!(db.triples[1].predicate,Relation::IsCommentedWith);
-    assert!(match db.triples[1].object {
         ObjectId::Comment(_) => true, _ => false
     });
 }
