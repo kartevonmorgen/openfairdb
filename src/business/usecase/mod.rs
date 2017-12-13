@@ -158,11 +158,12 @@ pub struct RateEntry {
 }
 
 #[derive(Debug, Clone)]
-pub struct SearchRequest {
+pub struct SearchRequest<'a> {
     pub bbox: Vec<Coordinate>,
     pub categories: Option<Vec<String>>,
     pub text: String,
     pub tags: Vec<String>,
+    pub entry_ratings: &'a HashMap<String,f64>
 }
 
 fn create_missing_tags<D: Db>(db: &mut D, tags: &[String]) -> Result<()> {
@@ -683,7 +684,6 @@ pub fn search<D:Db>(db: &D, req: SearchRequest) -> Result<(Vec<String>, Vec<Stri
 
     let entries     = db.all_entries()?;
     let triples     = db.all_triples()?;
-    let all_ratings = db.all_ratings()?;
 
     let extended_bbox = extend_bbox(&req.bbox);
 
@@ -704,7 +704,7 @@ pub fn search<D:Db>(db: &D, req: SearchRequest) -> Result<(Vec<String>, Vec<Stri
         .filter(&*filter::entries_by_tags_or_search_text(&req.text, &req.tags, &triples))
         .collect();
 
-    entries.sort_by_avg_rating(&all_ratings);
+    entries.sort_by_avg_rating(&req.entry_ratings);
 
     let visible_results: Vec<_> = entries
         .iter()

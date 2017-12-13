@@ -14,15 +14,22 @@ use business::error::{Error, RepoError, ParameterError};
 use infrastructure::error::AppError;
 use serde_json::ser::to_string;
 use business::{usecase, geo};
+use business::sort::Rated;
 use business::duplicates::{self, DuplicateType};
 use std::result;
 use r2d2::{self, Pool};
 use regex::Regex;
+use std::collections::HashMap;
+use std::sync::Mutex;
 
 #[cfg(feature="email")]
 use super::mail;
 
-const COOKIE_USER_KEY       : &str = "user_id";
+const COOKIE_USER_KEY : &str = "user_id";
+
+lazy_static! {
+    static ref ENTRY_RATINGS: Mutex<HashMap<String, f64>> = Mutex::new(HashMap::new());
+}
 
 #[cfg(feature = "sqlite")]
 pub mod sqlite;
@@ -230,6 +237,30 @@ fn remove_hash_tags(text: &str) -> String {
         .into()
 }
 
+fn calculate_all_ratings<D: Db>(db: &D) -> Result<()> {
+    let entries = db.all_entries()?;
+    let ratings = db.all_ratings()?;
+    let mut avg_ratings = match ENTRY_RATINGS.lock() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    };
+    for e in entries {
+        avg_ratings.insert(e.id.clone(), e.avg_rating(&ratings));
+    }
+    Ok(Json(()))
+}
+
+fn calculate_rating_for_entry<D: Db>(db: &D, e_id: &str) -> Result<()> {
+    let ratings = db.all_ratings()?;
+    let e = db.get_entry(e_id)?;
+    let mut avg_ratings = match ENTRY_RATINGS.lock() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    };
+    avg_ratings.insert(e.id.clone(), e.avg_rating(&ratings));
+    Ok(Json(()))
+}
+
 #[get("/search?<search>")]
 fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResult> {
 
@@ -259,11 +290,17 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResu
         None => "".into()
     };
 
+    let avg_ratings = match ENTRY_RATINGS.lock() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    };
+
     let req = usecase::SearchRequest {
         bbox,
         categories,
         text,
         tags,
+        entry_ratings: &*avg_ratings
     };
 
     let (visible, invisible) = usecase::search(&mut*db.get()?,req)?;
@@ -355,7 +392,10 @@ fn delete_user(db: State<DbPool>, user: Login, u_id: String) -> Result<()> {
 
 #[post("/ratings", format = "application/json", data = "<u>")]
 fn post_rating(db: State<DbPool>, u: Json<usecase::RateEntry>) -> Result<()> {
-    usecase::rate_entry(&mut*db.get()?, u.into_inner())?;
+    let u = u.into_inner();
+    let e_id = u.entry.clone();
+    usecase::rate_entry(&mut*db.get()?, u)?;
+    calculate_rating_for_entry(&mut*db.get()?,&e_id)?; 
     Ok(Json(()))
 }
 
@@ -409,8 +449,11 @@ fn get_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
-fn rocket_instance<T: r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Rocket {
+fn rocket_instance<T: r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Rocket
+where <T as r2d2::ManageConnection>::Connection: Db
+{
 
+    calculate_all_ratings(&*pool.get().unwrap()).unwrap();
     rocket::custom(cfg, true)
         .manage(pool)
         .mount("/",

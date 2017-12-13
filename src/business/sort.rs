@@ -93,21 +93,25 @@ fn avg_rating_for_context(ratings: &[&Rating], context: RatingContext) -> Option
 }
 
 pub trait SortByAverageRating {
-    fn sort_by_avg_rating(&mut self, &[Rating]);
+    fn calc_avg_ratings(&self, &[Rating]) -> HashMap<String,f64>;
+    fn sort_by_avg_rating(&mut self, avg_ratings: &HashMap<String,f64>);
 }
 
 impl SortByAverageRating for Vec<Entry> {
 
-    fn sort_by_avg_rating(&mut self, ratings: &[Rating]){
-        let avg_ratings : HashMap<_,f64> = self
+    fn calc_avg_ratings(&self, ratings: &[Rating]) -> HashMap<String,f64> {
+        self
             .iter()
-            .map(|x| (x.id.clone(), x.avg_rating(ratings)))
-            .collect();
+            .map(|e| (e.id.clone(), e.avg_rating(ratings)))
+            .collect()
+    }
+
+    fn sort_by_avg_rating(&mut self, avg_ratings: &HashMap<String,f64>){
 
         self.sort_by(|a, b|
             avg_ratings
-                .get(&b.id).unwrap()
-                .partial_cmp(avg_ratings.get(&a.id).unwrap())
+                .get(&b.id).unwrap_or_else(||&0.0)
+                .partial_cmp(avg_ratings.get(&a.id).unwrap_or_else(||&0.0))
                 .unwrap_or(Ordering::Equal)
         )
     }
@@ -196,7 +200,8 @@ pub mod tests {
             new_rating("5","e", 0, RatingContext::Diversity),
         ];
 
-        entries.sort_by_avg_rating(&ratings);
+        let avg_ratings = entries.calc_avg_ratings(&ratings);
+        entries.sort_by_avg_rating(&avg_ratings);
 
         assert_eq!(entries[0].id, "b");
         assert_eq!(entries[1].id, "c");
@@ -207,6 +212,26 @@ pub mod tests {
 
         // tests:
         // - negative ratings
+    }
+
+    #[test]
+    fn test_sort_by_avg_rating_with_no_ratings(){
+        let mut entries = vec![
+            new_entry("a", 0.0, 0.0),
+            new_entry("b", 0.0, 0.0),
+            new_entry("c", 0.0, 0.0),
+            new_entry("d", 0.0, 0.0),
+            new_entry("e", 0.0, 0.0),
+        ];
+        let ratings = vec![];
+        let avg_ratings = entries.calc_avg_ratings(&ratings);
+        entries.sort_by_avg_rating(&avg_ratings);
+
+        assert_eq!(entries[0].id, "a");
+        assert_eq!(entries[1].id, "b");
+        assert_eq!(entries[2].id, "c");
+        assert_eq!(entries[3].id, "d");
+        assert_eq!(entries[4].id, "e");
     }
 
     #[test]
@@ -286,47 +311,34 @@ pub mod tests {
     }
 
     #[bench]
-    fn bench_for_sorting_10_entries_by_rating(b: &mut Bencher) {
-        let (entries, ratings) = create_entries_with_ratings(10);
-        b.iter(|| {
-            let mut entries = entries.clone();
-            entries.sort_by_avg_rating(&ratings);
-        });
-    }
-
-    #[bench]
-    fn bench_for_sorting_100_entries_by_rating(b: &mut Bencher) {
-        let (entries, ratings) = create_entries_with_ratings(100);
-        b.iter(|| {
-            let mut entries = entries.clone();
-            entries.sort_by_avg_rating(&ratings);
-        });
-    }
-
-    #[ignore]
-    #[bench]
     fn bench_for_sorting_1000_entries_by_rating(b: &mut Bencher) {
         let (entries, ratings) = create_entries_with_ratings(1000);
+        let avg_ratings = entries.calc_avg_ratings(&ratings);
         b.iter(|| {
             let mut entries = entries.clone();
-            entries.sort_by_avg_rating(&ratings);
+            entries.sort_by_avg_rating(&avg_ratings);
+        });
+    }
+
+    #[bench]
+    fn bench_for_sorting_10_000_entries_by_rating(b: &mut Bencher) {
+        let (entries, ratings) = create_entries_with_ratings(10_000);
+        let avg_ratings = entries.calc_avg_ratings(&ratings);
+        b.iter(|| {
+            let mut entries = entries.clone();
+            entries.sort_by_avg_rating(&avg_ratings);
         });
     }
 
     #[ignore]
     #[bench]
-    fn bench_for_sorting_2000_entries_by_rating(b: &mut Bencher) {
-        let (entries, ratings) = create_entries_with_ratings(2000);
+    fn bench_for_sorting_100_000_entries_by_rating(b: &mut Bencher) {
+        let (entries, ratings) = create_entries_with_ratings(100_000);
+        let avg_ratings = entries.calc_avg_ratings(&ratings);
         b.iter(|| {
             let mut entries = entries.clone();
-            entries.sort_by_avg_rating(&ratings);
+            entries.sort_by_avg_rating(&avg_ratings);
         });
-    }
-
-    #[bench]
-    fn bench_calc_avg_of_10_ratings_for_an_entry(b: &mut Bencher) {
-        let (entry, ratings) = create_entry_with_multiple_ratings(10);
-        b.iter(|| entry.avg_rating(&ratings));
     }
 
     #[bench]
@@ -335,19 +347,10 @@ pub mod tests {
         b.iter(|| entry.avg_rating(&ratings));
     }
 
-    #[ignore]
     #[bench]
     fn bench_calc_avg_of_1000_ratings_for_an_entry(b: &mut Bencher) {
         let (entry, ratings) = create_entry_with_multiple_ratings(1000);
         b.iter(|| entry.avg_rating(&ratings));
-    }
-
-    #[ignore]
-    #[bench]
-    fn bench_calc_avg_of_10_ratings_for_a_rating_context(b: &mut Bencher) {
-        let (_, ratings) = create_entry_with_multiple_ratings(10);
-        let ratings: Vec<_> = ratings.iter().collect();
-        b.iter(|| avg_rating_for_context(&ratings, RatingContext::Diversity));
     }
 
     #[bench]
@@ -357,7 +360,6 @@ pub mod tests {
         b.iter(|| avg_rating_for_context(&ratings, RatingContext::Diversity));
     }
 
-    #[ignore]
     #[bench]
     fn bench_calc_avg_of_1000_ratings_for_a_rating_context(b: &mut Bencher) {
         let (_, ratings) = create_entry_with_multiple_ratings(1000);
