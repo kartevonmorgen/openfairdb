@@ -43,25 +43,12 @@ fn create_entry() {
 
 #[test]
 fn get_one_entry() {
-    let e = Entry{
-        id          :  "get_one_entry_test".into(),
-        osm_node    :  None,
-        created     :  0,
-        version     :  0,
-        title       :  "some".into(),
-        description :  "desc".into(),
-        lat         :  0.0,
-        lng         :  0.0,
-        street      :  None,
-        zip         :  None,
-        city        :  None,
-        country     :  None,
-        email       :  None,
-        telephone   :  None,
-        homepage    :  None,
-        categories  :  vec![],
-        license     :  None,
-    };
+    let e = Entry::build()
+        .id("get_one_entry_test")
+        .title("some")
+        .description("desc")
+        .finish();
+
     let (client, db) = setup();
     db.get().unwrap().create_entry(&e).unwrap();
     usecase::rate_entry(&mut *db.get().unwrap(), usecase::RateEntry{
@@ -93,44 +80,16 @@ fn get_one_entry() {
 
 #[test]
 fn get_multiple_entries() {
-    let one = Entry{
-        id          :  "get_multiple_entry_test_one".into(),
-        osm_node    :  None,
-        created     :  0,
-        version     :  0,
-        title       :  "some".into(),
-        description :  "desc".into(),
-        lat         :  0.0,
-        lng         :  0.0,
-        street      :  None,
-        zip         :  None,
-        city        :  None,
-        country     :  None,
-        email       :  None,
-        telephone   :  None,
-        homepage    :  None,
-        categories  :  vec![],
-        license     :  None,
-    };
-    let two = Entry{
-        id          :  "get_multiple_entry_test_two".into(),
-        osm_node    :  None,
-        created     :  0,
-        version     :  0,
-        title       :  "some".into(),
-        description :  "desc".into(),
-        lat         :  0.0,
-        lng         :  0.0,
-        street      :  None,
-        zip         :  None,
-        city        :  None,
-        country     :  None,
-        email       :  None,
-        telephone   :  None,
-        homepage    :  None,
-        categories  :  vec![],
-        license     :  None,
-    };
+    let one = Entry::build()
+        .id("get_multiple_entry_test_one")
+        .title("some")
+        .description("desc")
+        .finish();
+    let two = Entry::build()
+        .id("get_multiple_entry_test_two")
+        .title("some")
+        .description("desc")
+        .finish();
     let (client, db) = setup();
     db.get().unwrap().create_entry(&one).unwrap();
     db.get().unwrap().create_entry(&two).unwrap();
@@ -199,17 +158,11 @@ fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
 fn search_with_tags() {
     let entries = vec![
         Entry::build().id("a").categories(vec!["foo"]).finish(),
-        Entry::build().id("b").categories(vec!["foo"]).finish(),    // bla-blubb, foo-bar
-        Entry::build().id("c").categories(vec!["foo"]).finish(),    // foo-bar
-    ];
-    let triples = vec![
-        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bla-blubb".into())},
-        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())},
-        Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())}
+        Entry::build().id("b").tags(vec!["bla-blubb", "foo-bar"]).categories(vec!["foo"]).finish(),
+        Entry::build().id("c").tags(vec!["foo-bar"]).categories(vec!["foo"]).finish(),
     ];
     let (client, db) = setup();
     db.get().unwrap().entries = entries;
-    db.get().unwrap().triples = triples;
     let req = client.get("/search?bbox=-10,-10,10,10&tags=bla-blubb");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -228,17 +181,11 @@ fn search_with_tags() {
 fn search_with_hashtag() {
     let entries = vec![
         Entry::build().id("a").finish(),
-        Entry::build().id("b").finish(),    // bla-blubb, foo-bar
-        Entry::build().id("c").finish(),    // foo-bar
-    ];
-    let triples = vec![
-        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bla-blubb".into())},
-        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())},
-        Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())}
+        Entry::build().id("b").tags(vec!["bla-blubb","foo-bar"]).finish(),
+        Entry::build().id("c").tags(vec!["foo-bar"]).finish(),
     ];
     let (client, db) = setup();
     db.get().unwrap().entries = entries;
-    db.get().unwrap().triples = triples;
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23foo-bar");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -250,17 +197,11 @@ fn search_with_hashtag() {
 fn search_with_two_hashtags() {
     let entries = vec![
         Entry::build().id("a").finish(),
-        Entry::build().id("b").finish(),    // bla-blubb, foo-bar
-        Entry::build().id("c").finish(),    // foo-bar
-    ];
-    let triples = vec![
-        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bla-blubb".into())},
-        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())},
-        Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())}
+        Entry::build().tags(vec!["bla-blubb","foo-bar"]).id("b").finish(),
+        Entry::build().tags(vec!["foo-bar"]).id("c").finish(),
     ];
     let (client, db) = setup();
     db.get().unwrap().entries = entries;
-    db.get().unwrap().triples = triples;
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23bla-blubb %23foo-bar");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -273,17 +214,11 @@ fn search_with_two_hashtags() {
 fn search_without_specifying_hashtag_symbol() {
     let entries = vec![
         Entry::build().id("a").title("foo").finish(),
-        Entry::build().id("b").title("foo").finish(),    // bla-blubb, foo-bar
-        Entry::build().id("c").title("foo").finish(),    // foo-bar
-    ];
-    let triples = vec![
-        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("bla-blubb".into())},
-        Triple{ subject: ObjectId::Entry("b".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())},
-        Triple{ subject: ObjectId::Entry("c".into()), predicate: Relation::IsTaggedWith, object: ObjectId::Tag("foo-bar".into())}
+        Entry::build().id("b").tags(vec!["bla-blubb", "foo-bar"]).title("foo").finish(),
+        Entry::build().id("c").tags(vec!["foo-bar"]).title("foo").finish(),
     ];
     let (client, db) = setup();
     db.get().unwrap().entries = entries;
-    db.get().unwrap().triples = triples;
     let req = client.get("/search?bbox=-10,-10,10,10&text=bla-blubb");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);

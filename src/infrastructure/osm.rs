@@ -91,7 +91,7 @@ fn map_osm_tags(osm_tags: &HashMap<String,String>) -> Vec<Tag> {
     tags
 }
 
-fn map_osm_to_ofdb_entry(osm: OsmEntry) -> Result<(Entry, Vec<Tag>)> {
+fn map_osm_to_ofdb_entry(osm: OsmEntry) -> Result<Entry> {
 
     let title =
         osm.tags.get("name")
@@ -128,7 +128,12 @@ fn map_osm_to_ofdb_entry(osm: OsmEntry) -> Result<(Entry, Vec<Tag>)> {
         }
     );
 
-    Ok((Entry {
+    let tags = map_osm_tags(&osm.tags)
+        .into_iter()
+        .map(|t|t.id)
+        .collect();
+
+    Ok(Entry {
         id         ,
         osm_node   ,
         created    ,
@@ -145,8 +150,9 @@ fn map_osm_to_ofdb_entry(osm: OsmEntry) -> Result<(Entry, Vec<Tag>)> {
         telephone  ,
         homepage   ,
         categories ,
+        tags       ,
         license
-    },map_osm_tags(&osm.tags)))
+    })
 }
 
 #[test]
@@ -224,7 +230,7 @@ fn test_from_osm_for_entry() {
         tags,
     };
 
-    let (e, tags) = map_osm_to_ofdb_entry(osm).unwrap();
+    let e = map_osm_to_ofdb_entry(osm).unwrap();
 
     assert_eq!(e.lat, 48.0);
     assert_eq!(e.lng, 10.0);
@@ -240,12 +246,12 @@ fn test_from_osm_for_entry() {
     assert_eq!(e.telephone, Some("+43 316-422677".into()));
     assert_eq!(e.license, Some("ODbL-1.0".into()));
 
-    assert!(tags.iter().any(|&Tag{ ref id }| id == "vegan"));
-    assert!(tags.iter().any(|&Tag{ ref id }| id == "vegetarisch"));
-    assert!(tags.iter().any(|&Tag{ ref id }| id == "bio"));
-    assert!(tags.iter().any(|&Tag{ ref id }| id == "eifrei"));
-    assert!(tags.iter().any(|&Tag{ ref id }| id == "laktosefrei"));
-    assert!(tags.iter().any(|&Tag{ ref id }| id == "soyafrei"));
-    assert!(tags.iter().any(|&Tag{ ref id }| id == "milchfrei"));
-    assert!(tags.iter().any(|&Tag{ ref id }| id == "glutenfrei"));
+    assert!(e.tags.iter().any(|id| id == "vegan"));
+    assert!(e.tags.iter().any(|id| id == "vegetarisch"));
+    assert!(e.tags.iter().any(|id| id == "bio"));
+    assert!(e.tags.iter().any(|id| id == "eifrei"));
+    assert!(e.tags.iter().any(|id| id == "laktosefrei"));
+    assert!(e.tags.iter().any(|id| id == "soyafrei"));
+    assert!(e.tags.iter().any(|id| id == "milchfrei"));
+    assert!(e.tags.iter().any(|id| id == "glutenfrei"));
 }

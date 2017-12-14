@@ -133,14 +133,12 @@ fn notify_update_entry(email_addresses: Vec<String>, e: &usecase::UpdateEntry, a
 fn get_entry(db: State<DbPool>, ids: String) -> Result<Vec<json::Entry>> {
     let ids = extract_ids(&ids);
     let entries = usecase::get_entries(&*db.get()?, &ids)?;
-    let tags = usecase::get_tags_by_entry_ids(&*db.get()?, &ids)?;
     let ratings = usecase::get_ratings_by_entry_ids(&*db.get()?, &ids)?;
     Ok(Json(entries
         .into_iter()
         .map(|e|{
-            let t = tags.get(&e.id).cloned().unwrap_or_else(|| vec![]);
             let r = ratings.get(&e.id).cloned().unwrap_or_else(|| vec![]);
-            json::Entry::from_entry_with_tags_and_ratings(e,t,r)
+            json::Entry::from_entry_with_ratings(e,r)
         })
         .collect::<Vec<json::Entry>>()))
 }
@@ -174,8 +172,11 @@ fn put_entry(db: State<DbPool>, id: String, e: Json<usecase::UpdateEntry>) -> Re
 
 #[get("/tags")]
 fn get_tags(db: State<DbPool>) -> Result<Vec<String>> {
-    let tags = usecase::get_tag_ids(&*db.get()?)?;
-    Ok(Json(tags))
+    Ok(Json(db.get()?
+            .all_tags()?
+            .into_iter()
+            .map(|t|t.id)
+            .collect()))
 }
 
 #[get("/categories")]
@@ -440,8 +441,7 @@ fn get_count_entries(db: State<DbPool>) -> Result<usize> {
 
 #[get("/count/tags")]
 fn get_count_tags(db: State<DbPool>) -> Result<usize> {
-    let tags = usecase::get_tag_ids(&*db.get()?)?;
-    Ok(Json(tags.len()))
+    Ok(Json(db.get()?.all_tags()?.len()))
 }
 
 #[get("/server/version")]

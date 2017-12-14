@@ -14,6 +14,10 @@ impl EntryBuild {
         self.entry.id = id.into();
         self
     }
+    pub fn version(mut self, v: u64) -> Self {
+        self.entry.version = v;
+        self
+    }
     pub fn title(mut self, title: &str) -> Self {
         self.entry.title = title.into();
         self
@@ -32,6 +36,13 @@ impl EntryBuild {
     }
     pub fn categories(mut self, cats: Vec<&str>) -> Self {
         self.entry.categories = cats
+            .into_iter()
+            .map(|x|x.into())
+            .collect();
+        self
+    }
+    pub fn tags(mut self, tags: Vec<&str>) -> Self {
+        self.entry.tags = tags
             .into_iter()
             .map(|x|x.into())
             .collect();
@@ -69,6 +80,7 @@ impl Default for Entry {
             telephone   : None,
             homepage    : None,
             categories  : vec![],
+            tags        : vec![],
             license     : None,
         }
     }

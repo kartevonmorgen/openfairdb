@@ -13,7 +13,7 @@ pub trait Repo<T> {
 
 pub trait Db {
     fn create_entry(&mut self, &Entry) -> Result<()>;
-    fn create_tag(&mut self, &Tag) -> Result<()>;
+    fn create_tag_if_it_does_not_exist(&mut self, &Tag) -> Result<()>;
     fn create_triple(&mut self, &Triple) -> Result<()>;
     fn create_user(&mut self, &User) -> Result<()>;
     fn create_comment(&mut self, &Comment) -> Result<()>;
@@ -39,5 +39,5 @@ pub trait Db {
     fn delete_bbox_subscription(&mut self, &str) -> Result<()>;
     fn delete_user(&mut self, &str) -> Result<()>;
 
-    fn import_multiple_entries(&mut self, &[(Entry, Vec<Tag>)]) -> Result<()>;
+    fn import_multiple_entries(&mut self, &[Entry]) -> Result<()>;
 }

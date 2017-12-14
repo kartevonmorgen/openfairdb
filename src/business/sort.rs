@@ -320,6 +320,7 @@ pub mod tests {
         });
     }
 
+    #[ignore]
     #[bench]
     fn bench_for_sorting_10_000_entries_by_rating(b: &mut Bencher) {
         let (entries, ratings) = create_entries_with_ratings(10_000);

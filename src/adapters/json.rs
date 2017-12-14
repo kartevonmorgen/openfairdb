@@ -66,7 +66,7 @@ pub struct BboxSubscription{
 // Entity -> JSON
 
 impl Entry {
-    pub fn from_entry_with_tags_and_ratings(e: e::Entry, tags: Vec<e::Tag>, ratings: Vec<e::Rating>) -> Entry {
+    pub fn from_entry_with_ratings(e: e::Entry, ratings: Vec<e::Rating>) -> Entry {
         Entry{
             id          : e.id,
             created     : e.created,
@@ -83,7 +83,7 @@ impl Entry {
             telephone   : e.telephone,
             homepage    : e.homepage,
             categories  : e.categories,
-            tags        : tags.into_iter().map(|e|e.id).collect(),
+            tags        : e.tags,
             ratings     : ratings.into_iter().map(|r|r.id).collect(),
             license     : e.license,
         }

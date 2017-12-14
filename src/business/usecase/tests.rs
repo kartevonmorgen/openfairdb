@@ -62,8 +62,16 @@ impl Db for MockDb {
         create(&mut self.entries, e)
     }
 
-    fn create_tag(&mut self, e: &Tag) -> RepoResult<()> {
-        create(&mut self.tags, e)
+    fn create_tag_if_it_does_not_exist(&mut self, e: &Tag) -> RepoResult<()> {
+        if let Err(err) = create(&mut self.tags, e) {
+            match err {
+                RepoError::AlreadyExists => {
+                    // that's ok
+                }
+                _ => return Err(err)
+            }
+        }
+        Ok(())
     }
 
     fn create_triple(&mut self, e: &Triple) -> RepoResult<()> {
@@ -142,14 +150,14 @@ impl Db for MockDb {
     fn confirm_email_address(&mut self, u_id: &str) -> RepoResult<User> {
         let a : String = self.all_users()?[0].clone().id;
         let b : String = u_id.to_string();
-        println!("u.id: {:?}", a);
-        println!("u_id: {:?}", b);
+        debug!("u.id: {:?}", a);
+        debug!("u_id: {:?}", b);
 
         let users : Vec<User> = self.all_users()?
             .into_iter()
             .filter(|u| u.id == u_id.to_string())
             .collect();
-        println!("filtered users: {:?}", users);
+        debug!("filtered users: {:?}", users);
         if users.len() > 0 {
             let mut u = users[0].clone();
             println!("user: {:?}", u);
@@ -188,17 +196,11 @@ impl Db for MockDb {
             .collect();
         Ok(())
     }
-    fn import_multiple_entries(&mut self, entries: &[(Entry,Vec<Tag>)]) -> RepoResult<()> {
-        for &(ref e, ref tags) in entries.iter() {
+    fn import_multiple_entries(&mut self, entries: &[Entry]) -> RepoResult<()> {
+        for e in entries.iter() {
             self.create_entry(e)?;
-            let subject = ObjectId::Entry(e.id.clone());
-            for t in tags {
-                self.create_tag(t)?;
-                self.create_triple(&Triple{
-                    subject: subject.clone(),
-                    predicate: Relation::IsTaggedWith,
-                    object: ObjectId::Tag(t.id.clone())
-                })?;
+            for t in e.tags.iter() {
+                self.create_tag_if_it_does_not_exist(&Tag{id:t.clone()})?;
             }
         }
         Ok(())
@@ -262,25 +264,13 @@ fn create_entry_with_invalid_email() {
 #[test]
 fn update_valid_entry() {
     let id = Uuid::new_v4().simple().to_string();
-    let old = Entry {
-        id          : id.clone(),
-        osm_node    : None,
-        version     : 1,
-        created     : 0,
-        title       : "foo".into(),
-        description : "bar".into(),
-        lat         : 0.0,
-        lng         : 0.0,
-        street      : None,
-        zip         : None,
-        city        : None,
-        country     : None,
-        email       : None,
-        telephone   : None,
-        homepage    : None,
-        categories  : vec![],
-        license     : None
-    };
+    let old = Entry::build()
+        .id(&id)
+        .version(1)
+        .title("foo")
+        .description("bar")
+        .finish();
+
     let new = UpdateEntry {
         id          : id.clone(),
         osm_node    :  None,
@@ -332,6 +322,7 @@ fn update_entry_with_invalid_version() {
         telephone   : None,
         homepage    : None,
         categories  : vec![],
+        tags        : vec![],
         license     : None
     };
     let new = UpdateEntry {
@@ -435,79 +426,17 @@ fn add_new_valid_entry_with_tags() {
     create_new_entry(&mut mock_db, x).unwrap();
     assert_eq!(mock_db.tags.len(), 2);
     assert_eq!(mock_db.entries.len(), 1);
-    assert_eq!(mock_db.triples.len(), 2);
-}
-
-#[test]
-fn calc_triple_diff(){
-    let old = vec![
-        Triple{
-            subject: ObjectId::Entry("foo".into()),
-            predicate: Relation::IsTaggedWith,
-            object: ObjectId::Tag("bio".into())
-        },
-        Triple{
-            subject: ObjectId::Entry("foo".into()),
-            predicate: Relation::IsTaggedWith,
-            object: ObjectId::Tag("fair".into())
-        },
-        Triple{
-            subject: ObjectId::Entry("bar".into()),
-            predicate: Relation::IsTaggedWith,
-            object: ObjectId::Tag("unknown".into())
-        }];
-    let new = vec![
-        Triple{
-            subject: ObjectId::Entry("foo".into()),
-            predicate: Relation::IsTaggedWith,
-            object: ObjectId::Tag("vegan".into())
-        },
-        Triple{
-            subject: ObjectId::Entry("foo".into()),
-            predicate: Relation::IsTaggedWith,
-            object: ObjectId::Tag("bio".into())
-        },
-        Triple{
-            subject: ObjectId::Entry("bar".into()),
-            predicate: Relation::IsTaggedWith,
-            object: ObjectId::Tag("unknown".into())
-        },
-        Triple{
-            subject: ObjectId::Entry("bar".into()),
-            predicate: Relation::IsTaggedWith,
-            object: ObjectId::Tag("new".into())
-        }];
-    let diff = get_triple_diff(&old,&new);
-
-    assert_eq!(diff.new.len(),2);
-    assert_eq!(diff.new[0].object,ObjectId::Tag("vegan".into()));
-    assert_eq!(diff.new[1].object,ObjectId::Tag("new".into()));
-    assert_eq!(diff.deleted.len(),1);
-    assert_eq!(diff.deleted[0].object,ObjectId::Tag("fair".into()));
+    assert_eq!(mock_db.triples.len(), 0);
 }
 
 #[test]
 fn update_valid_entry_with_tags() {
     let id = Uuid::new_v4().simple().to_string();
-    let old = Entry {
-        id          : id.clone(),
-        osm_node    :  None,
-        version     : 1,
-        created     : 0,
-        title       : "foo".into(),
-        description : "bar".into(),
-        lat         : 0.0,
-        lng         : 0.0,
-        street      : None,
-        zip         : None,
-        city        : None,
-        country     : None,
-        email       : None,
-        telephone   : None,
-        homepage    : None,
-        categories  : vec![],
-        license     : None
-    };
+    let old = Entry::build()
+        .id(&id)
+        .version(1)
+        .tags(vec!["bio","fair"])
+        .finish();
     let new = UpdateEntry {
         id          : id.clone(),
         osm_node    :  None,
@@ -528,46 +457,11 @@ fn update_valid_entry_with_tags() {
     };
     let mut mock_db = MockDb::new();
     mock_db.entries = vec![old];
-    mock_db.triples = vec![
-        Triple{
-            subject: ObjectId::Entry(id.clone()),
-            predicate: Relation::IsTaggedWith,
-            object: ObjectId::Tag("bio".into()),
-        },
-        Triple{
-            subject: ObjectId::Entry(id.clone()),
-            predicate: Relation::IsTaggedWith,
-            object: ObjectId::Tag("fair".into()),
-        }
-    ];
-    let res = get_tags_by_entry_ids(&mock_db, &vec![id.clone()]).unwrap();
-    assert_eq!(res.get(&id).cloned().unwrap(), vec![Tag{id: "bio".into()},Tag{id:"fair".into()}]);
+    mock_db.tags = vec![Tag{id:"bio".into()},Tag{id:"fair".into()}];
     assert!(update_entry(&mut mock_db, new).is_ok());
-    let res = get_tags_by_entry_ids(&mock_db, &vec![id.clone()]).unwrap();
-    assert_eq!(res.get(&id).cloned().unwrap(), vec![Tag{id: "vegan".into()}]);
-}
-
-#[test]
-fn get_correct_tag_ids_for_entry_id() {
-    let triples = vec![
-            Triple{
-                subject: ObjectId::Entry("a".into()),
-                predicate: Relation::IsTaggedWith,
-                object: ObjectId::Tag("bio".into()),
-            },
-            Triple{
-                subject: ObjectId::Entry("a".into()),
-                predicate: Relation::IsTaggedWith,
-                object: ObjectId::Tag("fair".into()),
-            },
-            Triple{
-                subject: ObjectId::Entry("b".into()),
-                predicate: Relation::IsTaggedWith,
-                object: ObjectId::Tag("fair".into()),
-            }
-        ];
-    let res = get_tag_ids_for_entry_id(&triples, "a");
-    assert_eq!(res, vec!["bio".to_string(), "fair".to_string()])
+    let e = mock_db.get_entry(&id).unwrap();
+    assert_eq!(e.tags, vec!["vegan"]);
+    assert_eq!(mock_db.tags.len(),3);
 }
 
 #[test]

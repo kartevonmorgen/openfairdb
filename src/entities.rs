@@ -15,7 +15,8 @@ pub struct Entry {
     pub email       : Option<String>,
     pub telephone   : Option<String>,
     pub homepage    : Option<String>,
-    pub categories  : Vec<String>, // TODO: remove
+    pub categories  : Vec<String>,
+    pub tags        : Vec<String>,
     pub license     : Option<String>,
 }
 
@@ -34,8 +35,6 @@ pub struct Tag {
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub enum Relation {
-    #[serde(rename="is_tagged_with")]
-    IsTaggedWith,
     #[serde(rename="is_commented_with")]
     IsCommentedWith,
     #[serde(rename="created_by")]

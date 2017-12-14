@@ -75,16 +75,6 @@ impl From<e::Tag> for Tag {
     }
 }
 
-impl From<EntryTagRelation> for e::Triple {
-    fn from(r: EntryTagRelation) -> e::Triple {
-        e::Triple {
-            subject: e::ObjectId::Entry(r.entry_id),
-            predicate: e::Relation::IsTaggedWith,
-            object: e::ObjectId::Tag(r.tag_id),
-        }
-    }
-}
-
 impl From<Comment> for e::Triple {
     fn from(c: Comment) -> e::Triple {
         e::Triple {
@@ -269,7 +259,6 @@ impl From<e::RatingContext> for String {
 impl From<e::Relation> for String {
     fn from(r: e::Relation) -> String {
         match r {
-            e::Relation::IsTaggedWith => "is_tagged_with",
             e::Relation::IsCommentedWith => "is_commented_with",
             e::Relation::CreatedBy => "created_by",
             e::Relation::SubscribedTo => "subscribed_to",
@@ -281,7 +270,6 @@ impl FromStr for e::Relation {
     type Err = String;
     fn from_str(predicate: &str) -> Result<e::Relation, String> {
         Ok(match predicate {
-            "is_tagged_with" => e::Relation::IsTaggedWith,
             "is_commented_with" => e::Relation::IsCommentedWith,
             "created_by" => e::Relation::CreatedBy,
             "subscribed_to" => e::Relation::SubscribedTo,

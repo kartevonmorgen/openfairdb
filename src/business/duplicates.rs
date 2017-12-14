@@ -154,27 +154,16 @@ fn min3(s: usize, t: usize, u: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use business::builder::EntryBuilder;
 
     fn new_entry(title: String, description: String, lat: f64, lng: f64) -> Entry {
-            Entry {
-                id: title.clone().into(),
-                osm_node: None,
-                created: 0,
-                version: 0,
-                title: title,
-                description: description,
-                lat: lat,
-                lng: lng,
-                street: None,
-                zip: None,
-                city: None,
-                country: None,
-                email: None,
-                telephone: None,
-                homepage: None,
-                categories: vec![],
-                license: None,
-            }
+            Entry::build()
+                .id(&title)
+                .title(&title)
+                .description(&description)
+                .lat(lat)
+                .lng(lng)
+                .finish()
     }
 
     #[test]

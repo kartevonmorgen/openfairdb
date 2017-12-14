@@ -81,7 +81,6 @@ fn triple_id(t: &Triple) -> String {
         ObjectId::BboxSubscription(ref id) => ("bbox_subscription", id)
     };
     let p_type = match t.predicate {
-        Relation::IsTaggedWith => "is_tagged_with",
         Relation::IsCommentedWith => "is_commented_with",
         Relation::CreatedBy => "created_by",
         Relation::SubscribedTo => "subscribed_to"
@@ -166,99 +165,6 @@ pub struct SearchRequest<'a> {
     pub entry_ratings: &'a HashMap<String,f64>
 }
 
-fn create_missing_tags<D: Db>(db: &mut D, tags: &[String]) -> Result<()> {
-    let existing_tags = db.all_tags()?;
-    for new_t in tags {
-        if !existing_tags.iter().any(|t| t.id == *new_t) {
-            db.create_tag(&Tag { id: new_t.clone() })?;
-        }
-    }
-    Ok(())
-}
-
-struct Diff<T> {
-    new: Vec<T>,
-    deleted: Vec<T>
-}
-
-fn get_triple_diff(old: &[Triple], new: &[Triple]) -> Diff<Triple> {
-
-    let to_create = new
-        .iter()
-        .filter(|t|!old.iter().any(|x| x == *t))
-        .cloned()
-        .collect::<Vec<Triple>>();
-
-    let to_delete = old
-        .iter()
-        .filter(|t|!new.iter().any(|x| x == *t))
-        .cloned()
-        .collect::<Vec<Triple>>();
-
-    Diff {
-        new: to_create,
-        deleted: to_delete
-    }
-}
-
-
-fn set_tag_relations<D: Db>(db: &mut D, entry: &str, tags: &[String]) -> Result<()> {
-    create_missing_tags(db, tags)?;
-    let subject = ObjectId::Entry(entry.into());
-    let old_triples = db.all_triples()?
-        .into_iter()
-        .filter(|x| x.subject == subject)
-        .filter(|x| x.predicate == Relation::IsTaggedWith)
-        .collect::<Vec<Triple>>();
-    let new_triples = tags
-        .into_iter()
-        .map(|x| Triple{
-            subject: subject.clone(),
-            predicate: Relation::IsTaggedWith,
-            object: ObjectId::Tag(x.clone())
-        })
-        .collect::<Vec<Triple>>();
-
-    let diff = get_triple_diff(&old_triples, &new_triples);
-
-    for t in diff.new {
-        db.create_triple(&t)?;
-    }
-    for t in diff.deleted {
-        db.delete_triple(&t)?;
-    }
-    Ok(())
-}
-
-pub fn get_tag_ids<D:Db>(db: &D) -> Result<Vec<String>> {
-    let mut tags : Vec<String> = db
-        .all_triples()?
-        .into_iter()
-        .filter(|t| t.predicate == Relation::IsTaggedWith)
-        .filter_map(|t| match t.object {
-           ObjectId::Tag(id) => Some(id),
-            _ => None
-        })
-        .collect();
-    tags.dedup();
-    Ok(tags)
-}
-
-pub fn get_tag_ids_for_entry_id(triples: &[Triple], entry_id: &str) -> Vec<String> {
-    triples
-        .iter()
-        .filter(&*filter::triple_by_subject(ObjectId::Entry(entry_id.into())))
-        .filter(|triple| triple.predicate == Relation::IsTaggedWith)
-        .map(|triple|&triple.object)
-        .filter_map(|object|
-            match *object {
-                ObjectId::Tag(ref tag_id) => Some(tag_id),
-                _ => None
-            })
-        .cloned()
-        .collect()
-}
-
 pub fn get_ratings<D:Db>(db: &D, ids : &[String]) -> Result<Vec<Rating>> {
     Ok(db
         .all_ratings()?
@@ -312,20 +218,6 @@ pub fn get_user_id_for_rating_id(triples: &[Triple], rating_id: &str) -> Option<
             })
         .cloned()
         .last()
-}
-
-pub fn get_tags_by_entry_ids<D: Db>(db: &D, ids: &[String]) -> Result<HashMap<String, Vec<Tag>>> {
-    let triples = db.all_triples()?;
-    Ok(ids
-        .iter()
-        .map(|id|(
-            id.clone(),
-            get_tag_ids_for_entry_id(&triples, id)
-                .into_iter()
-                .map(|tag_id|Tag{id: tag_id})
-                .collect()
-        ))
-        .collect())
 }
 
 pub fn get_ratings_by_entry_ids<D:Db>(db : &D, ids : &[String]) -> Result<HashMap<String, Vec<Rating>>> {
@@ -454,11 +346,14 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
         telephone   :  e.telephone,
         homepage    :  e.homepage,
         categories  :  e.categories,
+        tags        :  e.tags,
         license     :  Some(e.license)
     };
     new_entry.validate()?;
+    for t in new_entry.tags.iter() {
+        db.create_tag_if_it_does_not_exist(&Tag{id: t.clone()})?;
+    }
     db.create_entry(&new_entry)?;
-    set_tag_relations(db, &new_entry.id, &e.tags)?;
     Ok(new_entry.id)
 }
 
@@ -484,10 +379,13 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
         telephone   :  e.telephone,
         homepage    :  e.homepage,
         categories  :  e.categories,
+        tags        :  e.tags,
         license     :  old.license
     };
+    for t in new_entry.tags.iter() {
+        db.create_tag_if_it_does_not_exist(&Tag{id: t.clone()})?;
+    }
     db.update_entry(&new_entry)?;
-    set_tag_relations(db, &new_entry.id, &e.tags)?;
     Ok(())
 }
 
@@ -683,7 +581,6 @@ fn extend_bbox(bbox: &Vec<Coordinate>) -> Vec<Coordinate> {
 pub fn search<D:Db>(db: &D, req: SearchRequest) -> Result<(Vec<String>, Vec<String>)> {
 
     let entries     = db.all_entries()?;
-    let triples     = db.all_triples()?;
 
     let extended_bbox = extend_bbox(&req.bbox);
 
@@ -701,7 +598,7 @@ pub fn search<D:Db>(db: &D, req: SearchRequest) -> Result<(Vec<String>, Vec<Stri
 
     let mut entries : Vec<_> = entries
         .into_iter()
-        .filter(&*filter::entries_by_tags_or_search_text(&req.text, &req.tags, &triples))
+        .filter(&*filter::entries_by_tags_or_search_text(&req.text, &req.tags))
         .collect();
 
     entries.sort_by_avg_rating(&req.entry_ratings);

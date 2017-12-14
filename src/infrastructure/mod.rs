@@ -1,5 +1,5 @@
-pub mod cli;
 mod error;
+pub mod cli;
 mod db;
 pub mod web;
 #[cfg(feature="email")]

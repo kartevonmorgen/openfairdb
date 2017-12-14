@@ -7,6 +7,7 @@ use std::result;
 use business::db::Db;
 use super::models;
 use super::schema;
+use diesel::result::{Error as DieselError, DatabaseErrorKind};
 
 type Result<T> = result::Result<T, RepoError>;
 
@@ -48,10 +49,27 @@ impl Db for SqliteConnection {
         })?;
         Ok(())
     }
-    fn create_tag(&mut self, t: &Tag) -> Result<()> {
-        diesel::insert_into(schema::tags::table)
+    fn create_tag_if_it_does_not_exist(&mut self, t: &Tag) -> Result<()> {
+        let res = diesel::insert_into(schema::tags::table)
             .values(&models::Tag::from(t.clone()))
-            .execute(self)?;
+            .execute(self);
+        if let Err(err) = res {
+            match err {
+                DieselError::DatabaseError(db_err,_) => {
+                    match db_err {
+                        DatabaseErrorKind::UniqueViolation => {
+                            // that's ok :)
+                        }
+                        _ => {
+                            return Err(err.into());
+                        }
+                    }
+                }
+                _ => {
+                    return Err(err.into());
+                }
+            }
+        }
         Ok(())
     }
     fn create_triple(&mut self, t: &Triple) -> Result<()> {
@@ -59,29 +77,6 @@ impl Db for SqliteConnection {
         use self::schema::bbox_subscriptions::dsl as b_dsl;
 
         match t.predicate {
-
-            // (entry)-[is_tagged_with]->(tag)
-            Relation::IsTaggedWith => {
-                match t.subject {
-                    ObjectId::Entry(ref e_id) => {
-                        match t.object {
-                            ObjectId::Tag(ref t_id) => {
-                                let e = self.get_entry(e_id)?;
-                                diesel::insert_into(schema::entry_tag_relations::table)
-                                    .values(&models::EntryTagRelation {
-                                        entry_id: e.id,
-                                        entry_version: e.version as i32,
-                                        tag_id: t_id.clone(),
-                                    })
-                                    .execute(self)?;
-                                return Ok(());
-                            }
-                            _ => {}
-                        }
-                    }
-                    _ => {}
-                }
-            }
 
             // (rating)-[is_commented_with]->(comment)
             Relation::IsCommentedWith => {
@@ -190,6 +185,7 @@ impl Db for SqliteConnection {
     fn get_entry(&self, e_id: &str) -> Result<Entry> {
         use self::schema::entries::dsl as e_dsl;
         use self::schema::entry_category_relations::dsl as e_c_dsl;
+        use self::schema::entry_tag_relations::dsl as e_t_dsl;
 
         let models::Entry {
             id,
@@ -221,6 +217,13 @@ impl Db for SqliteConnection {
             .map(|r| r.category_id)
             .collect();
 
+        let tags = e_t_dsl::entry_tag_relations
+            .filter(e_t_dsl::entry_id.eq(&id))
+            .load::<models::EntryTagRelation>(self)?
+            .into_iter()
+            .map(|r| r.tag_id)
+            .collect();
+
         Ok(Entry {
             id,
             osm_node: osm_node.map(|x| x as u64),
@@ -238,6 +241,7 @@ impl Db for SqliteConnection {
             telephone,
             homepage,
             categories,
+            tags,
             license,
         })
     }
@@ -251,12 +255,16 @@ impl Db for SqliteConnection {
     fn all_entries(&self) -> Result<Vec<Entry>> {
         use self::schema::entries::dsl as e_dsl;
         use self::schema::entry_category_relations::dsl as e_c_dsl;
+        use self::schema::entry_tag_relations::dsl as e_t_dsl;
 
         let entries: Vec<models::Entry> =
             e_dsl::entries.filter(e_dsl::current.eq(true)).load(self)?;
 
         let cat_rels = e_c_dsl::entry_category_relations
             .load::<models::EntryCategoryRelation>(self)?;
+
+        let tag_rels = e_t_dsl::entry_tag_relations
+            .load::<models::EntryTagRelation>(self)?;
 
         Ok(
             entries
@@ -267,6 +275,13 @@ impl Db for SqliteConnection {
                         .filter(|r| r.entry_id == e.id)
                         .filter(|r| r.entry_version == e.version)
                         .map(|r| &r.category_id)
+                        .cloned()
+                        .collect();
+                    let tags = tag_rels
+                        .iter()
+                        .filter(|r| r.entry_id == e.id)
+                        .filter(|r| r.entry_version == e.version)
+                        .map(|r| &r.tag_id)
                         .cloned()
                         .collect();
                     Entry {
@@ -286,6 +301,7 @@ impl Db for SqliteConnection {
                         telephone: e.telephone,
                         homepage: e.homepage,
                         categories: cats,
+                        tags: tags,
                         license: e.license,
                     }
                 })
@@ -313,16 +329,8 @@ impl Db for SqliteConnection {
 
     }
     fn all_triples(&self) -> Result<Vec<Triple>> {
-        use self::schema::entry_tag_relations::dsl as e_t_dsl;
         use self::schema::comments::dsl as c_dsl;
         use self::schema::bbox_subscriptions::dsl as b_dsl;
-
-        // (entry)-[is_tagged_with]->(tag)
-        let mut e_t_triples: Vec<_> = e_t_dsl::entry_tag_relations
-            .load::<models::EntryTagRelation>(self)?
-            .into_iter()
-            .map(Triple::from)
-            .collect();
 
         // (rating)-[is_commented_with]->(comment)
         let mut r_c_triples: Vec<_> = c_dsl::comments
@@ -340,7 +348,6 @@ impl Db for SqliteConnection {
 
 
         let mut result = vec![];
-        result.append(&mut e_t_triples);
         result.append(&mut r_c_triples);
         result.append(&mut u_b_triples);
 
@@ -399,30 +406,10 @@ impl Db for SqliteConnection {
     }
 
     fn delete_triple(&mut self, t: &Triple) -> Result<()> {
-        use self::schema::entry_tag_relations::dsl as e_t_dsl;
         use self::schema::comments::dsl as c_dsl;
         use self::schema::bbox_subscriptions::dsl as b_dsl;
 
         match t.predicate {
-
-            // (entry)-[is_tagged_with]->(tag)
-            Relation::IsTaggedWith => {
-                match t.subject {
-                    ObjectId::Entry(ref e_id) => {
-                        match t.object {
-                            ObjectId::Tag(ref t_id) => {
-                                let e = self.get_entry(e_id)?;
-                                diesel::delete(e_t_dsl::entry_tag_relations.find(
-                                    (e.id, e.version as i32, t_id),
-                                )).execute(self)?;
-                                return Ok(());
-                            }
-                            _ => {}
-                        }
-                    }
-                    _ => {}
-                }
-            }
 
             // (rating)-[is_commented_with]->(comment)
             Relation::IsCommentedWith => {
@@ -464,10 +451,10 @@ impl Db for SqliteConnection {
         Ok(())
     }
 
-    fn import_multiple_entries(&mut self, new_entries: &[(Entry,Vec<Tag>)]) -> Result<()> {
+    fn import_multiple_entries(&mut self, new_entries: &[Entry]) -> Result<()> {
         let imports : Vec<_> = new_entries
             .into_iter()
-            .map(|&(ref e, ref tags)| {
+            .map(|e| {
                 let new_entry = models::Entry::from(e.clone());
                 let cat_rels: Vec<_> = e.categories
                     .iter()
@@ -480,20 +467,18 @@ impl Db for SqliteConnection {
                         }
                     })
                     .collect();
-                let tag_rels: Vec<_> = tags
+                let tag_rels: Vec<_> = e.tags
                     .iter()
-                    .map(|x| models::EntryTagRelation {
+                    .map(|tag_id| models::EntryTagRelation {
                         entry_id: e.id.clone(),
                         entry_version: e.version as i32,
-                        tag_id: x.id.clone(),
+                        tag_id: tag_id.clone(),
                     })
                     .collect();
                 (new_entry,cat_rels, tag_rels)
              })
             .collect();
         self.transaction::<_, diesel::result::Error, _>(|| {
-
-            use diesel::result::{Error as DieselError, DatabaseErrorKind};
 
             for (new_entry,cat_rels, tag_rels) in imports.into_iter() {
                 unset_current_on_all_entries(&self, &new_entry.id)?;

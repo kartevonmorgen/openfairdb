@@ -40,8 +40,8 @@ CREATE TABLE entry_tag_relations (
     entry_version INTEGER NOT NULL,
     tag_id        TEXT NOT NULL,
     PRIMARY KEY (entry_id, entry_version, tag_id),
-    FOREIGN KEY (entry_id, entry_version) REFERENCES entries(id,version)
-    -- FOREIGN KEY (tag_id) REFERENCES tags(id)
+    FOREIGN KEY (entry_id, entry_version) REFERENCES entries(id,version),
+    FOREIGN KEY (tag_id) REFERENCES tags(id)
 );
 
 CREATE TABLE tags (
