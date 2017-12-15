@@ -6,7 +6,7 @@
 
 #[macro_use]
 extern crate log;
-extern crate slog_envlogger;
+extern crate env_logger;
 #[macro_use]
 extern crate quick_error;
 extern crate clap;
@@ -48,8 +48,6 @@ mod adapters;
 mod infrastructure;
 
 fn main() {
-    // TODO: setup proper logging with rocket!
-    // let _guard = slog_envlogger::init().unwrap();
-    debug!("debug logging");
+    env_logger::init().unwrap();
     infrastructure::cli::run();
 }
