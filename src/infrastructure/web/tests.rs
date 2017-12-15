@@ -1,12 +1,16 @@
 use rocket::logger::LoggingLevel;
 use rocket::config::{Environment, Config};
 use rocket::local::Client;
-use rocket::http::{Status, ContentType};
+use rocket::http::{Status, ContentType, Cookie};
 use business::db::Db;
 use business::builder::*;
-use infrastructure;
+use business::usecase;
 use serde_json;
+use entities::*;
+use adapters::json;
+use rocket::response::Response;
 use super::*;
+use super::util::*;
 use pwhash::bcrypt;
 use test::Bencher;
 
@@ -29,7 +33,9 @@ fn create_entry() {
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#);
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
+    assert!(response.headers().iter().any(|h| {
+        h.name.as_str() == "Content-Type"
+    }));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -38,7 +44,7 @@ fn create_entry() {
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     let eid = db.get().unwrap().entries[0].id.clone();
-    assert_eq!(body_str,format!("\"{}\"",eid));
+    assert_eq!(body_str, format!("\"{}\"", eid));
 }
 
 #[test]
@@ -51,19 +57,24 @@ fn get_one_entry() {
 
     let (client, db) = setup();
     db.get().unwrap().create_entry(&e).unwrap();
-    usecase::rate_entry(&mut *db.get().unwrap(), usecase::RateEntry{
-        context : RatingContext::Humanity,
-        value   : 2,
-        title   : "title".into(),
-        user    : None,
-        entry   : "get_one_entry_test".into(),
-        comment : "bla".into(),
-        source  : Some("blabla".into())
-    }).unwrap();
+    usecase::rate_entry(
+        &mut *db.get().unwrap(),
+        usecase::RateEntry {
+            context: RatingContext::Humanity,
+            value: 2,
+            title: "title".into(),
+            user: None,
+            entry: "get_one_entry_test".into(),
+            comment: "bla".into(),
+            source: Some("blabla".into()),
+        },
+    ).unwrap();
     let req = client.get("/entries/get_one_entry_test");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
+    assert!(response.headers().iter().any(|h| {
+        h.name.as_str() == "Content-Type"
+    }));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -74,8 +85,8 @@ fn get_one_entry() {
     assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
     let entries: Vec<Entry> = serde_json::from_str(&body_str).unwrap();
     let rid = db.get().unwrap().ratings[0].id.clone();
-    assert!(body_str.contains(&format!(r#""ratings":["{}"]"#,rid)));
-    assert!(entries[0]==e);
+    assert!(body_str.contains(&format!(r#""ratings":["{}"]"#, rid)));
+    assert!(entries[0] == e);
 }
 
 #[test]
@@ -93,10 +104,14 @@ fn get_multiple_entries() {
     let (client, db) = setup();
     db.get().unwrap().create_entry(&one).unwrap();
     db.get().unwrap().create_entry(&two).unwrap();
-    let req = client.get("/entries/get_multiple_entry_test_one,get_multiple_entry_test_two");
+    let req = client.get(
+        "/entries/get_multiple_entry_test_one,get_multiple_entry_test_two",
+    );
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
+    assert!(response.headers().iter().any(|h| {
+        h.name.as_str() == "Content-Type"
+    }));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -106,9 +121,9 @@ fn get_multiple_entries() {
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
     let entries: Vec<Entry> = serde_json::from_str(&body_str).unwrap();
-    assert_eq!(entries.len(),2);
-    assert!(entries.iter().any(|x|*x==one));
-    assert!(entries.iter().any(|x|*x==two));
+    assert_eq!(entries.len(), 2);
+    assert!(entries.iter().any(|x| *x == one));
+    assert!(entries.iter().any(|x| *x == two));
 }
 
 #[test]
@@ -151,15 +166,23 @@ fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
     let (client, db) = setup();
     db.get().unwrap().entries = entries;
     db.get().unwrap().ratings = ratings;
-    b.iter(|| client.get("/search?bbox=-10,-10,10,10").dispatch() );
+    b.iter(|| client.get("/search?bbox=-10,-10,10,10").dispatch());
 }
 
 #[test]
 fn search_with_tags() {
     let entries = vec![
         Entry::build().id("a").categories(vec!["foo"]).finish(),
-        Entry::build().id("b").tags(vec!["bla-blubb", "foo-bar"]).categories(vec!["foo"]).finish(),
-        Entry::build().id("c").tags(vec!["foo-bar"]).categories(vec!["foo"]).finish(),
+        Entry::build()
+            .id("b")
+            .tags(vec!["bla-blubb", "foo-bar"])
+            .categories(vec!["foo"])
+            .finish(),
+        Entry::build()
+            .id("c")
+            .tags(vec!["foo-bar"])
+            .categories(vec!["foo"])
+            .finish(),
     ];
     let (client, db) = setup();
     db.get().unwrap().entries = entries;
@@ -181,7 +204,10 @@ fn search_with_tags() {
 fn search_with_hashtag() {
     let entries = vec![
         Entry::build().id("a").finish(),
-        Entry::build().id("b").tags(vec!["bla-blubb","foo-bar"]).finish(),
+        Entry::build()
+            .id("b")
+            .tags(vec!["bla-blubb", "foo-bar"])
+            .finish(),
         Entry::build().id("c").tags(vec!["foo-bar"]).finish(),
     ];
     let (client, db) = setup();
@@ -197,7 +223,10 @@ fn search_with_hashtag() {
 fn search_with_two_hashtags() {
     let entries = vec![
         Entry::build().id("a").finish(),
-        Entry::build().tags(vec!["bla-blubb","foo-bar"]).id("b").finish(),
+        Entry::build()
+            .tags(vec!["bla-blubb", "foo-bar"])
+            .id("b")
+            .finish(),
         Entry::build().tags(vec!["foo-bar"]).id("c").finish(),
     ];
     let (client, db) = setup();
@@ -209,13 +238,22 @@ fn search_with_two_hashtags() {
     assert!(body_str.contains(r#""visible":["b"]"#));
 }
 
-#[test]      // TODO
+#[test]
+// TODO
 #[ignore]
 fn search_without_specifying_hashtag_symbol() {
     let entries = vec![
         Entry::build().id("a").title("foo").finish(),
-        Entry::build().id("b").tags(vec!["bla-blubb", "foo-bar"]).title("foo").finish(),
-        Entry::build().id("c").tags(vec!["foo-bar"]).title("foo").finish(),
+        Entry::build()
+            .id("b")
+            .tags(vec!["bla-blubb", "foo-bar"])
+            .title("foo")
+            .finish(),
+        Entry::build()
+            .id("c")
+            .tags(vec!["foo-bar"])
+            .title("foo")
+            .finish(),
     ];
     let (client, db) = setup();
     db.get().unwrap().entries = entries;
@@ -236,16 +274,25 @@ fn extract_ids_test() {
 
 #[test]
 fn extract_single_hash_tag_from_text() {
-    assert_eq!(extract_hash_tags("none").len(),0);
-    assert_eq!(extract_hash_tags("#").len(),0);
-    assert_eq!(extract_hash_tags("foo #bar none"),vec!["bar".to_string()]);
-    assert_eq!(extract_hash_tags("foo #bar,none"),vec!["bar".to_string()]);
-    assert_eq!(extract_hash_tags("foo#bar,none"),vec!["bar".to_string()]);
-    assert_eq!(extract_hash_tags("foo#bar none#baz"),vec!["bar".to_string(),"baz".to_string()]);
-    assert_eq!(extract_hash_tags("#bar#baz"),vec!["bar".to_string(),"baz".to_string()]);
-    assert_eq!(extract_hash_tags("#a-long-tag#baz"),vec!["a-long-tag".to_string(),"baz".to_string()]);
-    assert_eq!(extract_hash_tags("#-").len(),0);
-    assert_eq!(extract_hash_tags("#tag-"),vec!["tag".to_string()]);
+    assert_eq!(extract_hash_tags("none").len(), 0);
+    assert_eq!(extract_hash_tags("#").len(), 0);
+    assert_eq!(extract_hash_tags("foo #bar none"), vec!["bar".to_string()]);
+    assert_eq!(extract_hash_tags("foo #bar,none"), vec!["bar".to_string()]);
+    assert_eq!(extract_hash_tags("foo#bar,none"), vec!["bar".to_string()]);
+    assert_eq!(
+        extract_hash_tags("foo#bar none#baz"),
+        vec!["bar".to_string(), "baz".to_string()]
+    );
+    assert_eq!(
+        extract_hash_tags("#bar#baz"),
+        vec!["bar".to_string(), "baz".to_string()]
+    );
+    assert_eq!(
+        extract_hash_tags("#a-long-tag#baz"),
+        vec!["a-long-tag".to_string(), "baz".to_string()]
+    );
+    assert_eq!(extract_hash_tags("#-").len(), 0);
+    assert_eq!(extract_hash_tags("#tag-"), vec!["tag".to_string()]);
 }
 
 #[test]
@@ -259,15 +306,17 @@ fn remove_hash_tag_from_text() {
 #[test]
 fn create_new_user() {
     let (client, db) = setup();
-    let req = client.post("/users")
-        .header(ContentType::JSON)
-        .body(r#"{"username":"foo","email":"foo@bar.com","password":"bar"}"#);
+    let req = client.post("/users").header(ContentType::JSON).body(
+        r#"{"username":"foo","email":"foo@bar.com","password":"bar"}"#,
+    );
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let u = db.get().unwrap().get_user("foo").unwrap();
     assert_eq!(u.username, "foo");
     assert!(bcrypt::verify("bar", &u.password));
-    assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
+    assert!(response.headers().iter().any(|h| {
+        h.name.as_str() == "Content-Type"
+    }));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -279,14 +328,16 @@ fn create_new_user() {
 #[test]
 fn create_rating() {
     let (client, db) = setup();
-    db.get().unwrap().entries = vec![ Entry::build().id("foo").finish() ];
+    db.get().unwrap().entries = vec![Entry::build().id("foo").finish()];
     let req = client.post("/ratings")
         .header(ContentType::JSON)
         .body(r#"{"value": 1,"context":"fairness","entry":"foo","comment":"test", "title":"idontcare", "source":"source..."}"#);
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(db.get().unwrap().ratings[0].value, 1);
-    assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
+    assert!(response.headers().iter().any(|h| {
+        h.name.as_str() == "Content-Type"
+    }));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -300,20 +351,25 @@ fn get_one_rating() {
     let e = Entry::build().id("foo").finish();
     let (client, db) = setup();
     db.get().unwrap().create_entry(&e).unwrap();
-    usecase::rate_entry(&mut *db.get().unwrap(), usecase::RateEntry{
-        context : RatingContext::Humanity,
-        value   : 2,
-        user    : None,
-        title   : "title".into(),
-        entry   : "foo".into(),
-        comment : "bla".into(),
-        source  : Some("blabla".into())
-    }).unwrap();
+    usecase::rate_entry(
+        &mut *db.get().unwrap(),
+        usecase::RateEntry {
+            context: RatingContext::Humanity,
+            value: 2,
+            user: None,
+            title: "title".into(),
+            entry: "foo".into(),
+            comment: "bla".into(),
+            source: Some("blabla".into()),
+        },
+    ).unwrap();
     let rid = db.get().unwrap().ratings[0].id.clone();
-    let req = client.get(format!("/ratings/{}",rid));
+    let req = client.get(format!("/ratings/{}", rid));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
+    assert!(response.headers().iter().any(|h| {
+        h.name.as_str() == "Content-Type"
+    }));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -323,8 +379,8 @@ fn get_one_rating() {
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
     let ratings: Vec<json::Rating> = serde_json::from_str(&body_str).unwrap();
-    assert_eq!(ratings[0].id,rid);
-    assert_eq!(ratings[0].comments.len(),1);
+    assert_eq!(ratings[0].id, rid);
+    assert_eq!(ratings[0].comments.len(), 1);
 }
 
 
@@ -335,30 +391,38 @@ fn ratings_with_and_without_source() {
     let (client, db) = setup();
     db.get().unwrap().create_entry(&e1).unwrap();
     db.get().unwrap().create_entry(&e2).unwrap();
-    usecase::rate_entry(&mut *db.get().unwrap(), usecase::RateEntry{
-        context : RatingContext::Humanity,
-        value   : 2,
-        user    : None,
-        title   : "title".into(),
-        entry   : "foo".into(),
-        comment : "bla".into(),
-        source  : Some("blabla blabla".into())
-    }).unwrap();
-    usecase::rate_entry(&mut *db.get().unwrap(), usecase::RateEntry{
-        context : RatingContext::Humanity,
-        value   : 2,
-        user    : None,
-        title   : "title".into(),
-        entry   : "bar".into(),
-        comment : "bla".into(),
-        source  : Some("blabla blabla".into())
-    }).unwrap();
+    usecase::rate_entry(
+        &mut *db.get().unwrap(),
+        usecase::RateEntry {
+            context: RatingContext::Humanity,
+            value: 2,
+            user: None,
+            title: "title".into(),
+            entry: "foo".into(),
+            comment: "bla".into(),
+            source: Some("blabla blabla".into()),
+        },
+    ).unwrap();
+    usecase::rate_entry(
+        &mut *db.get().unwrap(),
+        usecase::RateEntry {
+            context: RatingContext::Humanity,
+            value: 2,
+            user: None,
+            title: "title".into(),
+            entry: "bar".into(),
+            comment: "bla".into(),
+            source: Some("blabla blabla".into()),
+        },
+    ).unwrap();
 
     let rid = db.get().unwrap().ratings[0].id.clone();
-    let req = client.get(format!("/ratings/{}",rid));
+    let req = client.get(format!("/ratings/{}", rid));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
+    assert!(response.headers().iter().any(|h| {
+        h.name.as_str() == "Content-Type"
+    }));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -368,12 +432,13 @@ fn ratings_with_and_without_source() {
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
     let ratings: Vec<json::Rating> = serde_json::from_str(&body_str).unwrap();
-    assert_eq!(ratings[0].id,rid);
-    assert_eq!(ratings[0].comments.len(),1);
+    assert_eq!(ratings[0].id, rid);
+    assert_eq!(ratings[0].comments.len(), 1);
 }
 
 fn user_id_cookie(response: &Response) -> Option<Cookie<'static>> {
-    let cookie = response.headers()
+    let cookie = response
+        .headers()
         .get("Set-Cookie")
         .filter(|v| v.starts_with("user_id"))
         .nth(0)
@@ -385,11 +450,13 @@ fn user_id_cookie(response: &Response) -> Option<Cookie<'static>> {
 #[test]
 fn login_with_invalid_credentials() {
     let (client, _) = setup();
-    let req = client.post("/login")
-        .header(ContentType::JSON)
-        .body(r#"{"username": "foo", "password": "bar"}"#);
+    let req = client.post("/login").header(ContentType::JSON).body(
+        r#"{"username": "foo", "password": "bar"}"#,
+    );
     let response = req.dispatch();
-    assert!(!response.headers().iter().any(|h|h.name.as_str() == "Set-Cookie"));
+    assert!(!response.headers().iter().any(|h| {
+        h.name.as_str() == "Set-Cookie"
+    }));
     assert_eq!(response.status(), Status::Unauthorized);
 }
 
@@ -397,14 +464,16 @@ fn login_with_invalid_credentials() {
 fn login_with_valid_credentials() {
     let (client, db) = setup();
     db.get().unwrap().users = vec![
-        User{
+        User {
             id: "123".into(),
             username: "foo".into(),
             password: bcrypt::hash("bar").unwrap(),
             email: "foo@bar".into(),
-            email_confirmed: true
-        }];
-    let response = client.post("/login")
+            email_confirmed: true,
+        },
+    ];
+    let response = client
+        .post("/login")
         .header(ContentType::JSON)
         .body(r#"{"username": "foo", "password": "bar"}"#)
         .dispatch();
@@ -417,17 +486,18 @@ fn login_with_valid_credentials() {
 fn login_logout_succeeds() {
     let (client, db) = setup();
     db.get().unwrap().users = vec![
-        User{
+        User {
             id: "123".into(),
             username: "foo".into(),
             password: bcrypt::hash("bar").unwrap(),
             email: "foo@bar".into(),
-            email_confirmed: true
-        }
+            email_confirmed: true,
+        },
     ];
 
     // Login
-    let response = client.post("/login")
+    let response = client
+        .post("/login")
         .header(ContentType::JSON)
         .body(r#"{"username": "foo", "password": "bar"}"#)
         .dispatch();
@@ -435,10 +505,10 @@ fn login_logout_succeeds() {
 
     // Logout
     let response = client
-                        .post("/logout")
-                        .header(ContentType::JSON)
-                        .cookie(cookie)
-                        .dispatch();
+        .post("/logout")
+        .header(ContentType::JSON)
+        .cookie(cookie)
+        .dispatch();
     let cookie = user_id_cookie(&response).expect("logout cookie");
     assert_eq!(response.status(), Status::Ok);
     assert!(cookie.value().is_empty());
@@ -450,52 +520,59 @@ fn login_logout_succeeds() {
 fn get_user() {
     let (client, db) = setup();
     db.get().unwrap().users = vec![
-        User{
+        User {
             id: "123".into(),
             username: "a".into(),
             password: bcrypt::hash("a").unwrap(),
             email: "a@bar".into(),
-            email_confirmed: true
+            email_confirmed: true,
         },
-        User{
+        User {
             id: "123".into(),
             username: "b".into(),
             password: bcrypt::hash("b").unwrap(),
             email: "b@bar".into(),
-            email_confirmed: true
-        }
+            email_confirmed: true,
+        },
     ];
-    let response = client.post("/login")
+    let response = client
+        .post("/login")
         .header(ContentType::JSON)
         .body(r#"{"username": "a", "password": "a"}"#)
         .dispatch();
 
     let user_id_cookie = response
-                        .headers()
-                        .iter()
-                        .filter(|h|h.name.as_str() == "Set-Cookie")
-                        .map(|h|h.value)
-                        .find(|v|v.contains("user_id=")).unwrap()
-                        .parse::<Cookie>().unwrap()
-                        .value()
-                        .to_string();
+        .headers()
+        .iter()
+        .filter(|h| h.name.as_str() == "Set-Cookie")
+        .map(|h| h.value)
+        .find(|v| v.contains("user_id="))
+        .unwrap()
+        .parse::<Cookie>()
+        .unwrap()
+        .value()
+        .to_string();
 
-    let response = client.get("/users/b")
+    let response = client
+        .get("/users/b")
         .header(ContentType::JSON)
-        .cookie(Cookie::new("user_id",user_id_cookie.clone()))
+        .cookie(Cookie::new("user_id", user_id_cookie.clone()))
         .dispatch();
 
     assert_eq!(response.status(), Status::Forbidden);
 
-    let mut response = client.get("/users/a")
+    let mut response = client
+        .get("/users/a")
         .header(ContentType::JSON)
-        .cookie(Cookie::new("user_id",user_id_cookie))
+        .cookie(Cookie::new("user_id", user_id_cookie))
         .dispatch();
 
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(response.status(), Status::Ok);
-    assert_eq!(body_str,r#"{"username":"a","email":"a@bar"}"#);
-    assert!(response.headers().iter().any(|h|h.name.as_str() == "Content-Type"));
+    assert_eq!(body_str, r#"{"username":"a","email":"a@bar"}"#);
+    assert!(response.headers().iter().any(|h| {
+        h.name.as_str() == "Content-Type"
+    }));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -505,19 +582,20 @@ fn get_user() {
 }
 
 #[test]
-fn confirm_email_address(){
+fn confirm_email_address() {
     let (client, db) = setup();
     db.get().unwrap().users = vec![
-        User{
+        User {
             id: "123".into(),
             username: "foo".into(),
             password: bcrypt::hash("bar").unwrap(),
             email: "a@bar.de".into(),
-            email_confirmed: false
-        }
+            email_confirmed: false,
+        },
     ];
 
-    let response = client.post("/login")
+    let response = client
+        .post("/login")
         .header(ContentType::JSON)
         .body(r#"{"username": "foo", "password": "bar"}"#)
         .dispatch();
@@ -525,22 +603,24 @@ fn confirm_email_address(){
     assert_eq!(response.status(), Status::Forbidden);
     assert_eq!(db.get().unwrap().users[0].email_confirmed, false);
 
-    let response = client.post("/confirm-email-address")
+    let response = client
+        .post("/confirm-email-address")
         .header(ContentType::JSON)
         .body(r#"{"u_id": "123"}"#)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(db.get().unwrap().users[0].email_confirmed, true);
 
-    let response = client.post("/login")
+    let response = client
+        .post("/login")
         .header(ContentType::JSON)
         .body(r#"{"username": "foo", "password": "bar"}"#)
         .dispatch();
-    let cookie : Cookie = response
+    let cookie: Cookie = response
         .headers()
         .iter()
-        .filter(|h|h.name == "Set-Cookie")
-        .filter(|h|h.value.contains("user_id="))
+        .filter(|h| h.name == "Set-Cookie")
+        .filter(|h| h.value.contains("user_id="))
         .nth(0)
         .unwrap()
         .value
@@ -557,27 +637,18 @@ fn confirm_email_address(){
 fn send_confirmation_email() {
     let (client, db) = setup();
     db.get().unwrap().users = vec![
-        User{
+        User {
             id: "123".into(),
             username: "foo".into(),
             password: bcrypt::hash("bar").unwrap(),
             email: "a@bar.de".into(),
-            email_confirmed: false
-        }
+            email_confirmed: false,
+        },
     ];
-    let response = client.post("/send-confirmation-email")
+    let response = client
+        .post("/send-confirmation-email")
         .header(ContentType::JSON)
         .body(r#""foo""#)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-}
-
-#[test]
-fn to_words(){
-    let text = "blabla bla-blubb #foo-bar";
-    let words = infrastructure::web::to_words(&text);
-    assert_eq!(words.len(), 3);
-    assert_eq!(words[0], "blabla");
-    assert_eq!(words[1], "bla-blubb");
-    assert_eq!(words[2], "#foo-bar");
 }
