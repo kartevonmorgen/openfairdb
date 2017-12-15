@@ -453,6 +453,7 @@ fn rocket_instance<T: r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Roc
 where <T as r2d2::ManageConnection>::Connection: Db
 {
 
+    info!("Calculating the average rating of all entries...")
     calculate_all_ratings(&*pool.get().unwrap()).unwrap();
     rocket::custom(cfg, true)
         .manage(pool)
