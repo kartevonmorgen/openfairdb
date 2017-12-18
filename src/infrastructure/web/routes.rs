@@ -55,7 +55,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for Login {
 }
 
 #[get("/search?<search>")]
-fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResult> {
+fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResponse> {
 
     let bbox = geo::extract_bbox(&search.bbox)
         .map_err(Error::Parameter)
@@ -98,7 +98,17 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResu
 
     let (visible, invisible) = usecase::search(&mut *db.get()?, req)?;
 
-    Ok(Json(json::SearchResult { visible, invisible }))
+    let visible = visible
+        .into_iter()
+        .map(|e| json::EntryIdWithCoordinates{id:e.id, lat: e.lat, lng: e.lng })
+        .collect();
+
+    let invisible = invisible
+        .into_iter()
+        .map(|e| json::EntryIdWithCoordinates{id:e.id, lat: e.lat, lng: e.lng })
+        .collect();
+
+    Ok(Json(json::SearchResponse { visible, invisible }))
 }
 
 #[derive(Deserialize, Debug, Clone)]

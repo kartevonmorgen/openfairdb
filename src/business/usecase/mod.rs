@@ -578,7 +578,7 @@ fn extend_bbox(bbox: &Vec<Coordinate>) -> Vec<Coordinate> {
     extended_bbox
 }
 
-pub fn search<D:Db>(db: &D, req: SearchRequest) -> Result<(Vec<String>, Vec<String>)> {
+pub fn search<D:Db>(db: &D, req: SearchRequest) -> Result<(Vec<Entry>, Vec<Entry>)> {
 
     let entries     = db.all_entries()?;
 
@@ -606,16 +606,13 @@ pub fn search<D:Db>(db: &D, req: SearchRequest) -> Result<(Vec<String>, Vec<Stri
     let visible_results: Vec<_> = entries
         .iter()
         .filter(|x| x.in_bbox(&req.bbox))
-        .map(|x| &x.id)
         .cloned()
         .collect();
 
     let invisible_results = entries
-        .iter()
-        .filter(|e| !visible_results.iter().any(|v| *v == e.id))
+        .into_iter()
+        .filter(|e| !visible_results.iter().any(|x| *x.id == e.id))
         .take(MAX_INVISIBLE_RESULTS)
-        .map(|x| &x.id)
-        .cloned()
         .collect();
 
     Ok((visible_results, invisible_results))

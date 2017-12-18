@@ -43,9 +43,16 @@ pub struct Comment {
 }
 
 #[derive(Serialize)]
-pub struct SearchResult {
-    pub visible   : Vec<String>,
-    pub invisible : Vec<String>
+pub struct EntryIdWithCoordinates {
+    pub id : String,
+    pub lat: f64,
+    pub lng: f64,
+}
+
+#[derive(Serialize)]
+pub struct SearchResponse {
+    pub visible   : Vec<EntryIdWithCoordinates>,
+    pub invisible : Vec<EntryIdWithCoordinates>
 }
 
 #[derive(Serialize)]
