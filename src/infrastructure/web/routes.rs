@@ -100,12 +100,24 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResp
 
     let visible = visible
         .into_iter()
-        .map(|e| json::EntryIdWithCoordinates{id:e.id, lat: e.lat, lng: e.lng })
+        .map(|e| {
+            json::EntryIdWithCoordinates {
+                id: e.id,
+                lat: e.lat,
+                lng: e.lng,
+            }
+        })
         .collect();
 
     let invisible = invisible
         .into_iter()
-        .map(|e| json::EntryIdWithCoordinates{id:e.id, lat: e.lat, lng: e.lng })
+        .map(|e| {
+            json::EntryIdWithCoordinates {
+                id: e.id,
+                lat: e.lat,
+                lng: e.lng,
+            }
+        })
         .collect();
 
     Ok(Json(json::SearchResponse { visible, invisible }))
@@ -347,30 +359,28 @@ fn get_category(db: State<DbPool>, id: String) -> Result<String> {
 
 impl<'r> Responder<'r> for AppError {
     fn respond_to(self, _: &rocket::Request) -> result::Result<Response<'r>, Status> {
-        Err(match self {
-            AppError::Business(ref err) => {
-                match *err {
-                    Error::Parameter(ref err) => {
-                        match *err {
-                            ParameterError::Credentials => Status::Unauthorized,
-                            ParameterError::UserExists => <Status>::new(400, "UserExists"),
-                            ParameterError::EmailNotConfirmed => {
-                                <Status>::new(403, "EmailNotConfirmed")
-                            }
-                            _ => Status::BadRequest,
+        if let AppError::Business(ref err) = self {
+            match *err {
+                Error::Parameter(ref err) => {
+                    return Err(match *err {
+                        ParameterError::Credentials => Status::Unauthorized,
+                        ParameterError::UserExists => <Status>::new(400, "UserExists"),
+                        ParameterError::EmailNotConfirmed => {
+                            <Status>::new(403, "EmailNotConfirmed")
                         }
-                    }
-                    Error::Repo(ref err) => {
-                        match *err {
-                            RepoError::NotFound => Status::NotFound,
-                            _ => Status::InternalServerError,
-                        }
-                    }
-                    Error::Pwhash(_) => Status::InternalServerError,
+                        _ => Status::BadRequest,
+                    })
                 }
+                Error::Repo(ref err) => {
+                    match *err {
+                        RepoError::NotFound => return Err(Status::NotFound),
+                        _ => {}
+                    }
+                }
+                _ => {}
             }
-
-            _ => Status::InternalServerError,
-        })
+        }
+        error!("Error: {}", self);
+        Err(Status::InternalServerError)
     }
 }
