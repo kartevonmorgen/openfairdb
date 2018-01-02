@@ -272,7 +272,7 @@ fn subscribe_to_bbox(
 #[delete("/unsubscribe-all-bboxes")]
 fn unsubscribe_all_bboxes(user: Login, db: State<DbPool>) -> Result<()> {
     let Login(username) = user;
-    usecase::unsubscribe_all_bboxes(&username, &mut *db.get()?)?;
+    usecase::unsubscribe_all_bboxes_by_username(&mut *db.get()?,&username)?;
     Ok(Json(()))
 }
 
@@ -284,10 +284,10 @@ fn get_bbox_subscriptions(db: State<DbPool>, user: Login) -> Result<Vec<json::Bb
         .map(|s| {
             json::BboxSubscription {
                 id: s.id,
-                south_west_lat: s.south_west_lat,
-                south_west_lng: s.south_west_lng,
-                north_east_lat: s.north_east_lat,
-                north_east_lng: s.north_east_lng,
+                south_west_lat: s.bbox.south_west.lat,
+                south_west_lng: s.bbox.south_west.lng,
+                north_east_lat: s.bbox.north_east.lat,
+                north_east_lng: s.bbox.north_east.lng,
             }
         })
         .collect();
@@ -304,7 +304,7 @@ fn get_user(db: State<DbPool>, user: Login, username: String) -> Result<json::Us
 fn post_entry(db: State<DbPool>, e: Json<usecase::NewEntry>) -> Result<String> {
     let e = e.into_inner();
     let id = usecase::create_new_entry(&mut *db.get()?, e.clone())?;
-    let email_addresses = usecase::email_addresses_to_notify(&e.lat, &e.lng, &mut *db.get()?);
+    let email_addresses = usecase::email_addresses_by_coordinate(&mut *db.get()?, &e.lat, &e.lng)?;
     let all_categories = db.get()?.all_categories()?;
     util::notify_create_entry(email_addresses, &e, &id, all_categories);
     Ok(Json(id))
@@ -314,7 +314,7 @@ fn post_entry(db: State<DbPool>, e: Json<usecase::NewEntry>) -> Result<String> {
 fn put_entry(db: State<DbPool>, id: String, e: Json<usecase::UpdateEntry>) -> Result<String> {
     let e = e.into_inner();
     usecase::update_entry(&mut *db.get()?, e.clone())?;
-    let email_addresses = usecase::email_addresses_to_notify(&e.lat, &e.lng, &mut *db.get()?);
+    let email_addresses = usecase::email_addresses_by_coordinate(&mut *db.get()?, &e.lat, &e.lng)?;
     let all_categories = db.get()?.all_categories()?;
     util::notify_update_entry(email_addresses, &e, all_categories);
     Ok(Json(id))

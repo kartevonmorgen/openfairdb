@@ -5,7 +5,7 @@ table! {
         south_west_lng -> Double,
         north_east_lat -> Double,
         north_east_lng -> Double,
-        user_id -> Nullable<Text>,
+        username -> Text,
     }
 }
 

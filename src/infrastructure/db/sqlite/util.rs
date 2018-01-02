@@ -85,16 +85,6 @@ impl From<Comment> for e::Triple {
     }
 }
 
-impl From<BboxSubscription> for e::Triple {
-    fn from(s: BboxSubscription) -> e::Triple {
-        e::Triple {
-            subject: e::ObjectId::User(s.user_id.unwrap()), //TODO
-            predicate: e::Relation::SubscribedTo,
-            object: e::ObjectId::BboxSubscription(s.id),
-        }
-    }
-}
-
 impl From<User> for e::User {
     fn from(u: User) -> e::User {
         let User {
@@ -210,14 +200,21 @@ impl From<BboxSubscription> for e::BboxSubscription {
             south_west_lng,
             north_east_lat,
             north_east_lng,
-            ..
+            username
         } = s;
         e::BboxSubscription {
             id,
-            south_west_lat: south_west_lat as f64,
-            south_west_lng: south_west_lng as f64,
-            north_east_lat: north_east_lat as f64,
-            north_east_lng: north_east_lng as f64,
+            bbox: e::Bbox {
+                south_west: e::Coordinate {
+                    lat: south_west_lat as f64,
+                    lng: south_west_lng as f64,
+                },
+                north_east: e::Coordinate {
+                    lat: north_east_lat as f64,
+                    lng: north_east_lng as f64,
+                }
+            },
+            username
         }
     }
 }
@@ -226,18 +223,16 @@ impl From<e::BboxSubscription> for BboxSubscription {
     fn from(s: e::BboxSubscription) -> BboxSubscription {
         let e::BboxSubscription {
             id,
-            south_west_lat,
-            south_west_lng,
-            north_east_lat,
-            north_east_lng,
+            bbox,
+            username
         } = s;
         BboxSubscription {
             id,
-            south_west_lat,
-            south_west_lng,
-            north_east_lat,
-            north_east_lng,
-            user_id: None,
+            south_west_lat: bbox.south_west.lat,
+            south_west_lng: bbox.south_west.lng,
+            north_east_lat: bbox.north_east.lat,
+            north_east_lng: bbox.north_east.lng,
+            username,
         }
     }
 }
@@ -261,7 +256,6 @@ impl From<e::Relation> for String {
         match r {
             e::Relation::IsCommentedWith => "is_commented_with",
             e::Relation::CreatedBy => "created_by",
-            e::Relation::SubscribedTo => "subscribed_to",
         }.into()
     }
 }
@@ -272,7 +266,6 @@ impl FromStr for e::Relation {
         Ok(match predicate {
             "is_commented_with" => e::Relation::IsCommentedWith,
             "created_by" => e::Relation::CreatedBy,
-            "subscribed_to" => e::Relation::SubscribedTo,
             _ => {
                 return Err(format!("invalid Relation: '{}'", predicate));
             }

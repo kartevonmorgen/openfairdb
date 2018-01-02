@@ -74,7 +74,6 @@ impl Db for SqliteConnection {
     }
     fn create_triple(&mut self, t: &Triple) -> Result<()> {
         use self::schema::comments::dsl as c_dsl;
-        use self::schema::bbox_subscriptions::dsl as b_dsl;
 
         match t.predicate {
 
@@ -86,23 +85,6 @@ impl Db for SqliteConnection {
                             ObjectId::Comment(ref c_id) => {
                                 diesel::update(c_dsl::comments.find(c_id))
                                     .set(c_dsl::rating_id.eq(r_id))
-                                    .execute(self)?;
-                                return Ok(());
-                            }
-                            _ => {}
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            // (user)-[subscribed_to)->(bbox_subscription)
-            Relation::SubscribedTo => {
-                match t.subject {
-                    ObjectId::User(ref u_id) => {
-                        match t.object {
-                            ObjectId::BboxSubscription(ref s_id) => {
-                                diesel::update(b_dsl::bbox_subscriptions.find(s_id))
-                                    .set(b_dsl::user_id.eq(u_id))
                                     .execute(self)?;
                                 return Ok(());
                             }
@@ -330,7 +312,6 @@ impl Db for SqliteConnection {
     }
     fn all_triples(&self) -> Result<Vec<Triple>> {
         use self::schema::comments::dsl as c_dsl;
-        use self::schema::bbox_subscriptions::dsl as b_dsl;
 
         // (rating)-[is_commented_with]->(comment)
         let mut r_c_triples: Vec<_> = c_dsl::comments
@@ -339,17 +320,8 @@ impl Db for SqliteConnection {
             .map(Triple::from)
             .collect();
 
-        // (user)-[subscribed_to)->(bbox_subscription)
-        let mut u_b_triples: Vec<_> = b_dsl::bbox_subscriptions
-            .load::<models::BboxSubscription>(self)?
-            .into_iter()
-            .map(Triple::from)
-            .collect();
-
-
         let mut result = vec![];
         result.append(&mut r_c_triples);
-        result.append(&mut u_b_triples);
 
         Ok(result)
     }
@@ -407,7 +379,6 @@ impl Db for SqliteConnection {
 
     fn delete_triple(&mut self, t: &Triple) -> Result<()> {
         use self::schema::comments::dsl as c_dsl;
-        use self::schema::bbox_subscriptions::dsl as b_dsl;
 
         match t.predicate {
 
@@ -419,23 +390,6 @@ impl Db for SqliteConnection {
                             ObjectId::Comment(ref c_id) => {
                                 diesel::update(c_dsl::comments.find(c_id))
                                     .set(&models::CommentUpdate { rating_id: None })
-                                    .execute(self)?;
-                                return Ok(());
-                            }
-                            _ => {}
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            // (user)-[subscribed_to)->(bbox_subscription)
-            Relation::SubscribedTo => {
-                match t.subject {
-                    ObjectId::User(_) => {
-                        match t.object {
-                            ObjectId::BboxSubscription(ref s_id) => {
-                                diesel::update(b_dsl::bbox_subscriptions.find(s_id))
-                                    .set(&models::BboxSubscriptionUpdate { user_id: None })
                                     .execute(self)?;
                                 return Ok(());
                             }

@@ -95,20 +95,14 @@ pub struct Rating {
     pub entry_id: String,
 }
 
-#[derive(Queryable, Insertable)]
+#[derive(Queryable, Insertable, Associations)]
 #[table_name = "bbox_subscriptions"]
+#[belongs_to(User, foreign_key="username")]
 pub struct BboxSubscription {
     pub id: String,
     pub south_west_lat: f64,
     pub south_west_lng: f64,
     pub north_east_lat: f64,
     pub north_east_lng: f64,
-    pub user_id: Option<String>, //TODO remove option
-}
-
-#[derive(AsChangeset)]
-#[table_name = "bbox_subscriptions"]
-#[changeset_options(treat_none_as_null = "true")]
-pub struct BboxSubscriptionUpdate {
-    pub user_id: Option<String>, //TODO remove option
+    pub username: String,
 }

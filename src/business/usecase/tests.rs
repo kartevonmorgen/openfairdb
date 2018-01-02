@@ -711,14 +711,15 @@ fn create_bbox_subscription(){
         email: "abc@abc.de".into(),
         email_confirmed: true
     }).is_ok());
-    assert!(business::usecase::create_or_modify_subscription(&bbox_new, username.into(), &mut db).is_ok());
+    assert!(business::usecase::subscribe_to_bbox(&vec![bbox_new.south_west, bbox_new.north_east], username.into(), &mut db).is_ok());
 
     let bbox_subscription = db.all_bbox_subscriptions().unwrap()[0].clone();
-    assert_eq!(bbox_subscription.north_east_lat, 10.0);
+    assert_eq!(bbox_subscription.bbox.north_east.lat, 10.0);
 }
 
 #[test]
 fn modify_bbox_subscription(){
+
     let mut db = MockDb::new();
 
     let bbox_old = entities::Bbox{
@@ -754,42 +755,21 @@ fn modify_bbox_subscription(){
 
     let bbox_subscription = BboxSubscription {
         id: "123".into(),
-        north_east_lat: bbox_old.north_east.lat,
-        north_east_lng: bbox_old.north_east.lng,
-        south_west_lat: bbox_old.south_west.lat,
-        south_west_lng: bbox_old.south_west.lng
+        bbox: bbox_old,
+        username: "a".into()
     };
-    assert!(db.create_bbox_subscription(&bbox_subscription.clone()).is_ok());
+    db.create_bbox_subscription(&bbox_subscription.clone()).unwrap();
 
-    assert!(db.create_triple(
-        &Triple{
-            subject: ObjectId::User("a".into()),
-            predicate: Relation::SubscribedTo,
-            object: ObjectId::BboxSubscription("123".into()),
-    }).is_ok());
+    business::usecase::subscribe_to_bbox(&vec![bbox_new.south_west, bbox_new.north_east], username.into(), &mut db).unwrap();
 
-    assert!(business::usecase::create_or_modify_subscription(&bbox_new, username.into(), &mut db).is_ok());
-
-    let user_subscriptions : Vec<String>  = db.triples.clone()
+    let bbox_subscriptions : Vec<_>  = db
+        .all_bbox_subscriptions().unwrap()
         .into_iter()
-        .filter_map(|triple| match triple {
-            Triple {
-                subject     : ObjectId::User(ref u_id),
-                predicate   : Relation::SubscribedTo,
-                object      : ObjectId::BboxSubscription(ref s_id)
-            } => Some((u_id.clone(), s_id.clone())),
-            _ => None
-        })
-        .filter(|user_subscription| *user_subscription.0 == *username)
-        .map(|user_and_subscription| user_and_subscription.1)
+        .filter(|s| &*s.username == "a")
         .collect();
 
-    let bbox_subscriptions : Vec<BboxSubscription> = db.bbox_subscriptions
-        .into_iter()
-        .filter(|subscription| subscription.id == user_subscriptions[0])
-        .collect();
     assert_eq!(bbox_subscriptions.len(), 1);
-    assert_eq!(bbox_subscriptions[0].clone().north_east_lat, 10.0);
+    assert_eq!(bbox_subscriptions[0].clone().bbox.north_east.lat, 10.0);
 }
 
 
@@ -829,18 +809,10 @@ fn get_bbox_subscriptions(){
     }).is_ok());
     let bbox_subscription = BboxSubscription {
         id: "1".into(),
-        north_east_lat: bbox1.north_east.lat,
-        north_east_lng: bbox1.north_east.lng,
-        south_west_lat: bbox1.south_west.lat,
-        south_west_lng: bbox1.south_west.lng
+        bbox: bbox1,
+        username: "a".into()
     };
     assert!(db.create_bbox_subscription(&bbox_subscription.clone()).is_ok());
-    assert!(db.create_triple(
-        &Triple{
-            subject: ObjectId::User("a".into()),
-            predicate: Relation::SubscribedTo,
-            object: ObjectId::BboxSubscription("1".into()),
-    }).is_ok());
 
     let user2 = "b";
     assert!(db.create_user(&User{
@@ -852,26 +824,17 @@ fn get_bbox_subscriptions(){
     }).is_ok());
     let bbox_subscription2 = BboxSubscription {
         id: "2".into(),
-        north_east_lat: bbox2.north_east.lat,
-        north_east_lng: bbox2.north_east.lng,
-        south_west_lat: bbox2.south_west.lat,
-        south_west_lng: bbox2.south_west.lng
+        bbox: bbox2,
+        username: "b".into()
     };
     assert!(db.create_bbox_subscription(&bbox_subscription2.clone()).is_ok());
-    assert!(db.create_triple(
-        &Triple{
-            subject: ObjectId::User("b".into()),
-            predicate: Relation::SubscribedTo,
-            object: ObjectId::BboxSubscription("2".into()),
-    }).is_ok());
-
     let bbox_subscriptions = business::usecase::get_bbox_subscriptions(user2.into(), &mut db);
     assert!(bbox_subscriptions.is_ok());
     assert_eq!(bbox_subscriptions.unwrap()[0].id, "2");
 }
 
 #[test]
-fn email_addresses_to_notify(){
+fn email_addresses_by_coordinate(){
     let mut db = MockDb::new();
     let bbox_new = entities::Bbox{
         north_east: Coordinate{
@@ -884,24 +847,23 @@ fn email_addresses_to_notify(){
         }
     };
 
-    let username = "a".to_string();
+    let username = "a";
     let u_id = "123".to_string();
-    assert!(db.create_user(&User{
+    db.create_user(&User{
         id: u_id.clone(),
-        username: username.clone(),
-        password: username,
+        username: username.into(),
+        password: "123".into(),
         email: "abc@abc.de".into(),
         email_confirmed: true
-    }).is_ok());
+    }).unwrap();
 
-    assert!(business::usecase::create_or_modify_subscription(
-        &bbox_new, u_id, &mut db).is_ok());
+    business::usecase::subscribe_to_bbox(&vec![bbox_new.south_west,bbox_new.north_east], username, &mut db).unwrap();
 
-    let email_addresses = business::usecase::email_addresses_to_notify(&5.0, &5.0, &mut db);
+    let email_addresses = business::usecase::email_addresses_by_coordinate(&mut db, &5.0, &5.0).unwrap();
     assert_eq!(email_addresses.len(), 1);
     assert_eq!(email_addresses[0], "abc@abc.de");
 
-    let no_email_addresses = business::usecase::email_addresses_to_notify(&20.0, &20.0, &mut db);
+    let no_email_addresses = business::usecase::email_addresses_by_coordinate(&mut db, &20.0, &20.0).unwrap();
     assert_eq!(no_email_addresses.len(), 0);
 }
 

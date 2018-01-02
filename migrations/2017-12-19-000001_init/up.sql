@@ -72,8 +72,8 @@ CREATE TABLE bbox_subscriptions (
     south_west_lng  FLOAT NOT NULL,
     north_east_lat  FLOAT NOT NULL,
     north_east_lng  FLOAT NOT NULL,
-    user_id TEXT -- NOT NULL
-    -- FOREIGN KEY (user_id) REFERENCES users(id)
+    username        TEXT  NOT NULL,
+    FOREIGN KEY (username) REFERENCES users(username)
 );
 
 CREATE TABLE users (

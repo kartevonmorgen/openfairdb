@@ -39,8 +39,6 @@ pub enum Relation {
     IsCommentedWith,
     #[serde(rename="created_by")]
     CreatedBy,
-    #[serde(rename="subscribed_to")]
-    SubscribedTo
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -124,8 +122,6 @@ pub struct Bbox {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct BboxSubscription {
     pub id: String,
-    pub south_west_lat: f64,
-    pub south_west_lng: f64,
-    pub north_east_lat: f64,
-    pub north_east_lng: f64,
+    pub bbox: Bbox,
+    pub username: String,
 }
