@@ -32,14 +32,13 @@ pub fn run() {
         .subcommand(
             SubCommand::with_name("osm")
                 .about("OpenStreetMap functionalities")
-                .subcommand(SubCommand::with_name("import")
-                            .about("import entries from OSM (JSON file)")
-                            .arg(
-                                Arg::with_name("osm-file")
-                                    .value_name("OSM_FILE")
-                                    .help("JSON file with osm nodes"),
-                            )
-                    ),
+                .subcommand(
+                    SubCommand::with_name("import")
+                        .about("import entries from OSM (JSON file)")
+                        .arg(Arg::with_name("osm-file").value_name("OSM_FILE").help(
+                            "JSON file with osm nodes",
+                        )),
+                ),
         )
         .get_matches();
 

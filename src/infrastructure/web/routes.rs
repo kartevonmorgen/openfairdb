@@ -272,7 +272,7 @@ fn subscribe_to_bbox(
 #[delete("/unsubscribe-all-bboxes")]
 fn unsubscribe_all_bboxes(user: Login, db: State<DbPool>) -> Result<()> {
     let Login(username) = user;
-    usecase::unsubscribe_all_bboxes_by_username(&mut *db.get()?,&username)?;
+    usecase::unsubscribe_all_bboxes_by_username(&mut *db.get()?, &username)?;
     Ok(Json(()))
 }
 

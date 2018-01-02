@@ -14,7 +14,7 @@ pub struct MockDb {
     pub users: Vec<User>,
     pub ratings: Vec<Rating>,
     pub comments: Vec<Comment>,
-    pub bbox_subscriptions: Vec<BboxSubscription>
+    pub bbox_subscriptions: Vec<BboxSubscription>,
 }
 
 impl MockDb {
@@ -27,7 +27,7 @@ impl MockDb {
             users: vec![],
             ratings: vec![],
             comments: vec![],
-            bbox_subscriptions: vec![]
+            bbox_subscriptions: vec![],
         }
     }
 }
@@ -68,7 +68,7 @@ impl Db for MockDb {
                 RepoError::AlreadyExists => {
                     // that's ok
                 }
-                _ => return Err(err)
+                _ => return Err(err),
             }
         }
         Ok(())
@@ -99,14 +99,14 @@ impl Db for MockDb {
     }
 
     fn get_user(&self, username: &str) -> RepoResult<User> {
-        let users : &Vec<User> = &self.users
+        let users: &Vec<User> = &self.users
             .iter()
             .filter(|u| u.username == username)
             .cloned()
             .collect();
         if users.len() > 0 {
             Ok(users[0].clone())
-        } else{
+        } else {
             Err(RepoError::NotFound)
         }
     }
@@ -148,12 +148,12 @@ impl Db for MockDb {
     }
 
     fn confirm_email_address(&mut self, u_id: &str) -> RepoResult<User> {
-        let a : String = self.all_users()?[0].clone().id;
-        let b : String = u_id.to_string();
+        let a: String = self.all_users()?[0].clone().id;
+        let b: String = u_id.to_string();
         debug!("u.id: {:?}", a);
         debug!("u_id: {:?}", b);
 
-        let users : Vec<User> = self.all_users()?
+        let users: Vec<User> = self.all_users()?
             .into_iter()
             .filter(|u| u.id == u_id.to_string())
             .collect();
@@ -164,7 +164,7 @@ impl Db for MockDb {
             u.email_confirmed = true;
             update(&mut self.users, &u)?;
             Ok(u)
-        } else{
+        } else {
             Err(RepoError::NotFound)
         }
     }
@@ -178,7 +178,7 @@ impl Db for MockDb {
         Ok(())
     }
 
-    fn delete_bbox_subscription(&mut self, s_id: &str) -> RepoResult<()>{
+    fn delete_bbox_subscription(&mut self, s_id: &str) -> RepoResult<()> {
         self.bbox_subscriptions = vec![];
         self.triples = self.triples
             .clone()
@@ -188,7 +188,7 @@ impl Db for MockDb {
         Ok(())
     }
 
-    fn delete_user(&mut self, u_id: &str) -> RepoResult<()>{
+    fn delete_user(&mut self, u_id: &str) -> RepoResult<()> {
         self.users = self.users
             .clone()
             .into_iter()
@@ -200,7 +200,7 @@ impl Db for MockDb {
         for e in entries.iter() {
             self.create_entry(e)?;
             for t in e.tags.iter() {
-                self.create_tag_if_it_does_not_exist(&Tag{id:t.clone()})?;
+                self.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
             }
         }
         Ok(())
@@ -435,7 +435,7 @@ fn update_valid_entry_with_tags() {
     let old = Entry::build()
         .id(&id)
         .version(1)
-        .tags(vec!["bio","fair"])
+        .tags(vec!["bio", "fair"])
         .finish();
     let new = UpdateEntry {
         id          : id.clone(),
@@ -457,11 +457,11 @@ fn update_valid_entry_with_tags() {
     };
     let mut mock_db = MockDb::new();
     mock_db.entries = vec![old];
-    mock_db.tags = vec![Tag{id:"bio".into()},Tag{id:"fair".into()}];
+    mock_db.tags = vec![Tag { id: "bio".into() }, Tag { id: "fair".into() }];
     assert!(update_entry(&mut mock_db, new).is_ok());
     let e = mock_db.get_entry(&id).unwrap();
     assert_eq!(e.tags, vec!["vegan"]);
-    assert_eq!(mock_db.tags.len(),3);
+    assert_eq!(mock_db.tags.len(), 3);
 }
 
 #[test]
@@ -534,33 +534,37 @@ fn create_user_with_invalid_email() {
 }
 
 #[test]
-fn create_user_with_existing_username(){
+fn create_user_with_existing_username() {
     let mut db = MockDb::new();
-    db.users = vec![User{
-        id: "123".into(),
-        username: "foo".into(),
-        password: "bar".into(),
-        email: "baz@foo.bar".into(),
-        email_confirmed: true
-    }];
-    let u = NewUser{
+    db.users = vec![
+        User {
+            id: "123".into(),
+            username: "foo".into(),
+            password: "bar".into(),
+            email: "baz@foo.bar".into(),
+            email_confirmed: true,
+        },
+    ];
+    let u = NewUser {
         username: "foo".into(),
         password: "pass".into(),
         email: "user@server.tld".into(),
     };
-    match create_new_user(&mut db,u).err().unwrap() {
-        Error::Parameter(err) => match err {
-            ParameterError::UserExists => {
-                // ok
-            },
-            _ => { panic!("invalid error") }
-        },
-        _ => { panic!("invalid error") }
+    match create_new_user(&mut db, u).err().unwrap() {
+        Error::Parameter(err) => {
+            match err {
+                ParameterError::UserExists => {
+                    // ok
+                }
+                _ => panic!("invalid error"),
+            }
+        }
+        _ => panic!("invalid error"),
     }
 }
 
 #[test]
-fn email_unconfirmed_on_default(){
+fn email_unconfirmed_on_default() {
     let mut db = MockDb::new();
     let u = NewUser {
         username: "user".into(),
@@ -572,7 +576,7 @@ fn email_unconfirmed_on_default(){
 }
 
 #[test]
-fn encrypt_user_password(){
+fn encrypt_user_password() {
     let mut db = MockDb::new();
     let u = NewUser {
         username: "user".into(),
@@ -587,15 +591,20 @@ fn encrypt_user_password(){
 #[test]
 fn rate_non_existing_entry() {
     let mut db = MockDb::new();
-    assert!(rate_entry(&mut db,RateEntry{
-        entry: "does_not_exist".into(),
-        title: "title".into(),
-        comment: "a comment".into(),
-        context: RatingContext::Fairness,
-        user: None,
-        value: 2,
-        source: Some("source".into())
-    }).is_err());
+    assert!(
+        rate_entry(
+            &mut db,
+            RateEntry {
+                entry: "does_not_exist".into(),
+                title: "title".into(),
+                comment: "a comment".into(),
+                context: RatingContext::Fairness,
+                user: None,
+                value: 2,
+                source: Some("source".into()),
+            },
+        ).is_err()
+    );
 }
 
 #[test]
@@ -603,15 +612,20 @@ fn rate_with_empty_comment() {
     let mut db = MockDb::new();
     let e = Entry::build().id("foo").finish();
     db.entries = vec![e];
-    assert!(rate_entry(&mut db,RateEntry{
-        entry: "foo".into(),
-        comment: "".into(),
-        title: "title".into(),
-        context: RatingContext::Fairness,
-        user: None,
-        value: 2,
-        source: Some("source".into())
-    }).is_err());
+    assert!(
+        rate_entry(
+            &mut db,
+            RateEntry {
+                entry: "foo".into(),
+                comment: "".into(),
+                title: "title".into(),
+                context: RatingContext::Fairness,
+                user: None,
+                value: 2,
+                source: Some("source".into()),
+            },
+        ).is_err()
+    );
 }
 
 #[test]
@@ -619,24 +633,34 @@ fn rate_with_invalid_value_comment() {
     let mut db = MockDb::new();
     let e = Entry::build().id("foo").finish();
     db.entries = vec![e];
-    assert!(rate_entry(&mut db,RateEntry{
-        entry: "foo".into(),
-        comment: "comment".into(),
-        title: "title".into(),
-        context: RatingContext::Fairness,
-        user: None,
-        value: 3,
-        source: Some("source".into())
-    }).is_err());
-    assert!(rate_entry(&mut db,RateEntry{
-        entry: "foo".into(),
-        title: "title".into(),
-        comment: "comment".into(),
-        context: RatingContext::Fairness,
-        user: None,
-        value: -2,
-        source: Some("source".into())
-    }).is_err());
+    assert!(
+        rate_entry(
+            &mut db,
+            RateEntry {
+                entry: "foo".into(),
+                comment: "comment".into(),
+                title: "title".into(),
+                context: RatingContext::Fairness,
+                user: None,
+                value: 3,
+                source: Some("source".into()),
+            },
+        ).is_err()
+    );
+    assert!(
+        rate_entry(
+            &mut db,
+            RateEntry {
+                entry: "foo".into(),
+                title: "title".into(),
+                comment: "comment".into(),
+                context: RatingContext::Fairness,
+                user: None,
+                value: -2,
+                source: Some("source".into()),
+            },
+        ).is_err()
+    );
 }
 
 #[test]
@@ -644,26 +668,33 @@ fn rate_without_login() {
     let mut db = MockDb::new();
     let e = Entry::build().id("foo").finish();
     db.entries = vec![e];
-    assert!(rate_entry(&mut db,RateEntry{
-        entry: "foo".into(),
-        comment: "comment".into(),
-        title: "title".into(),
-        context: RatingContext::Fairness,
-        user: None,
-        value: 2,
-        source: Some("source".into())
-    }).is_ok());
+    assert!(
+        rate_entry(
+            &mut db,
+            RateEntry {
+                entry: "foo".into(),
+                comment: "comment".into(),
+                title: "title".into(),
+                context: RatingContext::Fairness,
+                user: None,
+                value: 2,
+                source: Some("source".into()),
+            },
+        ).is_ok()
+    );
 
-    assert_eq!(db.ratings.len(),1);
-    assert_eq!(db.comments.len(),1);
-    assert_eq!(db.triples.len(),1);
-    assert_eq!(db.ratings[0].entry_id,"foo");
+    assert_eq!(db.ratings.len(), 1);
+    assert_eq!(db.comments.len(), 1);
+    assert_eq!(db.triples.len(), 1);
+    assert_eq!(db.ratings[0].entry_id, "foo");
     assert!(match db.triples[0].subject {
-        ObjectId::Rating(_) => true, _ => false
+        ObjectId::Rating(_) => true,
+        _ => false,
     });
-    assert_eq!(db.triples[0].predicate,Relation::IsCommentedWith);
+    assert_eq!(db.triples[0].predicate, Relation::IsCommentedWith);
     assert!(match db.triples[0].object {
-        ObjectId::Comment(_) => true, _ => false
+        ObjectId::Comment(_) => true,
+        _ => false,
     });
 }
 
@@ -671,99 +702,115 @@ fn rate_without_login() {
 fn receive_different_user() {
     let mut db = MockDb::new();
     db.users = vec![
-        User{
+        User {
             id: "1".into(),
             username: "a".into(),
             password: "a".into(),
             email: "a@foo.bar".into(),
-            email_confirmed: true
+            email_confirmed: true,
         },
-        User{
+        User {
             id: "2".into(),
             username: "b".into(),
             password: "b".into(),
             email: "b@foo.bar".into(),
-            email_confirmed: true
-        }];
+            email_confirmed: true,
+        },
+    ];
     assert!(get_user(&mut db, "1", "b").is_err());
     assert!(get_user(&mut db, "1", "a").is_ok());
 }
 
 #[test]
-fn create_bbox_subscription(){
+fn create_bbox_subscription() {
     let mut db = MockDb::new();
-    let bbox_new = entities::Bbox{
-        north_east: Coordinate{
+    let bbox_new = entities::Bbox {
+        north_east: Coordinate {
             lat: 10.0,
-            lng: 10.0
+            lng: 10.0,
         },
-        south_west: Coordinate{
+        south_west: Coordinate {
             lat: 10.0,
-            lng: 5.0
-        }
+            lng: 5.0,
+        },
     };
 
     let username = "a";
-    assert!(db.create_user(&User{
-        id: "123".into(),
-        username: username.into(),
-        password: username.into(),
-        email: "abc@abc.de".into(),
-        email_confirmed: true
-    }).is_ok());
-    assert!(business::usecase::subscribe_to_bbox(&vec![bbox_new.south_west, bbox_new.north_east], username.into(), &mut db).is_ok());
+    assert!(
+        db.create_user(&User {
+            id: "123".into(),
+            username: username.into(),
+            password: username.into(),
+            email: "abc@abc.de".into(),
+            email_confirmed: true,
+        }).is_ok()
+    );
+    assert!(
+        business::usecase::subscribe_to_bbox(
+            &vec![bbox_new.south_west, bbox_new.north_east],
+            username.into(),
+            &mut db,
+        ).is_ok()
+    );
 
     let bbox_subscription = db.all_bbox_subscriptions().unwrap()[0].clone();
     assert_eq!(bbox_subscription.bbox.north_east.lat, 10.0);
 }
 
 #[test]
-fn modify_bbox_subscription(){
+fn modify_bbox_subscription() {
 
     let mut db = MockDb::new();
 
-    let bbox_old = entities::Bbox{
-        north_east: Coordinate{
+    let bbox_old = entities::Bbox {
+        north_east: Coordinate {
             lat: 50.0,
-            lng: 10.0
+            lng: 10.0,
         },
-        south_west: Coordinate{
+        south_west: Coordinate {
             lat: 50.0,
-            lng: 5.0
-        }
+            lng: 5.0,
+        },
     };
 
-    let bbox_new = entities::Bbox{
-        north_east: Coordinate{
+    let bbox_new = entities::Bbox {
+        north_east: Coordinate {
             lat: 10.0,
-            lng: 10.0
+            lng: 10.0,
         },
-        south_west: Coordinate{
+        south_west: Coordinate {
             lat: 10.0,
-            lng: 5.0
-        }
+            lng: 5.0,
+        },
     };
 
     let username = "a";
-    assert!(db.create_user(&User{
-        id: "123".into(),
-        username: username.into(),
-        password: username.into(),
-        email: "abc@abc.de".into(),
-        email_confirmed: true
-    }).is_ok());
+    assert!(
+        db.create_user(&User {
+            id: "123".into(),
+            username: username.into(),
+            password: username.into(),
+            email: "abc@abc.de".into(),
+            email_confirmed: true,
+        }).is_ok()
+    );
 
     let bbox_subscription = BboxSubscription {
         id: "123".into(),
         bbox: bbox_old,
-        username: "a".into()
+        username: "a".into(),
     };
-    db.create_bbox_subscription(&bbox_subscription.clone()).unwrap();
+    db.create_bbox_subscription(&bbox_subscription.clone())
+        .unwrap();
 
-    business::usecase::subscribe_to_bbox(&vec![bbox_new.south_west, bbox_new.north_east], username.into(), &mut db).unwrap();
+    business::usecase::subscribe_to_bbox(
+        &vec![bbox_new.south_west, bbox_new.north_east],
+        username.into(),
+        &mut db,
+    ).unwrap();
 
-    let bbox_subscriptions : Vec<_>  = db
-        .all_bbox_subscriptions().unwrap()
+    let bbox_subscriptions: Vec<_> = db.all_bbox_subscriptions()
+        .unwrap()
         .into_iter()
         .filter(|s| &*s.username == "a")
         .collect();
@@ -774,120 +821,137 @@ fn modify_bbox_subscription(){
 
 
 #[test]
-fn get_bbox_subscriptions(){
+fn get_bbox_subscriptions() {
     let mut db = MockDb::new();
 
-    let bbox1 = entities::Bbox{
-        north_east: Coordinate{
+    let bbox1 = entities::Bbox {
+        north_east: Coordinate {
             lat: 50.0,
-            lng: 10.0
+            lng: 10.0,
         },
-        south_west: Coordinate{
+        south_west: Coordinate {
             lat: 50.0,
-            lng: 5.0
-        }
+            lng: 5.0,
+        },
     };
 
-    let bbox2 = entities::Bbox{
-        north_east: Coordinate{
+    let bbox2 = entities::Bbox {
+        north_east: Coordinate {
             lat: 10.0,
-            lng: 10.0
+            lng: 10.0,
         },
-        south_west: Coordinate{
+        south_west: Coordinate {
             lat: 10.0,
-            lng: 5.0
-        }
+            lng: 5.0,
+        },
     };
 
     let user1 = "a";
-    assert!(db.create_user(&User{
-        id:         user1.into(),
-        username:   user1.into(),
-        password:   user1.into(),
-        email:      "abc@abc.de".into(),
-        email_confirmed: true
-    }).is_ok());
+    assert!(
+        db.create_user(&User {
+            id: user1.into(),
+            username: user1.into(),
+            password: user1.into(),
+            email: "abc@abc.de".into(),
+            email_confirmed: true,
+        }).is_ok()
+    );
     let bbox_subscription = BboxSubscription {
         id: "1".into(),
         bbox: bbox1,
-        username: "a".into()
+        username: "a".into(),
     };
-    assert!(db.create_bbox_subscription(&bbox_subscription.clone()).is_ok());
+    assert!(
+        db.create_bbox_subscription(&bbox_subscription.clone())
+            .is_ok()
+    );
 
     let user2 = "b";
-    assert!(db.create_user(&User{
-        id:         user2.into(),
-        username:   user2.into(),
-        password:   user2.into(),
-        email:      "abc@abc.de".into(),
-        email_confirmed: true
-    }).is_ok());
+    assert!(
+        db.create_user(&User {
+            id: user2.into(),
+            username: user2.into(),
+            password: user2.into(),
+            email: "abc@abc.de".into(),
+            email_confirmed: true,
+        }).is_ok()
+    );
     let bbox_subscription2 = BboxSubscription {
         id: "2".into(),
         bbox: bbox2,
-        username: "b".into()
+        username: "b".into(),
     };
-    assert!(db.create_bbox_subscription(&bbox_subscription2.clone()).is_ok());
+    assert!(
+        db.create_bbox_subscription(&bbox_subscription2.clone())
+            .is_ok()
+    );
     let bbox_subscriptions = business::usecase::get_bbox_subscriptions(user2.into(), &mut db);
     assert!(bbox_subscriptions.is_ok());
     assert_eq!(bbox_subscriptions.unwrap()[0].id, "2");
 }
 
 #[test]
-fn email_addresses_by_coordinate(){
+fn email_addresses_by_coordinate() {
     let mut db = MockDb::new();
-    let bbox_new = entities::Bbox{
-        north_east: Coordinate{
+    let bbox_new = entities::Bbox {
+        north_east: Coordinate {
             lat: 10.0,
-            lng: 10.0
+            lng: 10.0,
         },
-        south_west: Coordinate{
-            lat: 0.0,
-            lng: 0.0
-        }
+        south_west: Coordinate { lat: 0.0, lng: 0.0 },
     };
 
     let username = "a";
     let u_id = "123".to_string();
-    db.create_user(&User{
+    db.create_user(&User {
         id: u_id.clone(),
         username: username.into(),
         password: "123".into(),
         email: "abc@abc.de".into(),
-        email_confirmed: true
+        email_confirmed: true,
     }).unwrap();
 
-    business::usecase::subscribe_to_bbox(&vec![bbox_new.south_west,bbox_new.north_east], username, &mut db).unwrap();
+    business::usecase::subscribe_to_bbox(
+        &vec![bbox_new.south_west, bbox_new.north_east],
+        username,
+        &mut db,
+    ).unwrap();
 
-    let email_addresses = business::usecase::email_addresses_by_coordinate(&mut db, &5.0, &5.0).unwrap();
+    let email_addresses = business::usecase::email_addresses_by_coordinate(&mut db, &5.0, &5.0)
+        .unwrap();
     assert_eq!(email_addresses.len(), 1);
     assert_eq!(email_addresses[0], "abc@abc.de");
 
-    let no_email_addresses = business::usecase::email_addresses_by_coordinate(&mut db, &20.0, &20.0).unwrap();
+    let no_email_addresses =
+        business::usecase::email_addresses_by_coordinate(&mut db, &20.0, &20.0).unwrap();
     assert_eq!(no_email_addresses.len(), 0);
 }
 
 #[test]
-fn delete_user(){
+fn delete_user() {
     let mut db = MockDb::new();
     let username = "a".to_string();
     let u_id = "1".to_string();
-    assert!(db.create_user(&User{
-        id: u_id.clone(),
-        username: username.clone(),
-        password: username,
-        email: "abc@abc.de".into(),
-        email_confirmed: true
-    }).is_ok());
+    assert!(
+        db.create_user(&User {
+            id: u_id.clone(),
+            username: username.clone(),
+            password: username,
+            email: "abc@abc.de".into(),
+            email_confirmed: true,
+        }).is_ok()
+    );
     let username = "b".to_string();
     let u_id = "2".to_string();
-    assert!(db.create_user(&User{
-        id: u_id.clone(),
-        username: username.clone(),
-        password: username,
-        email: "abcd@abcd.de".into(),
-        email_confirmed: true
-    }).is_ok());
+    assert!(
+        db.create_user(&User {
+            id: u_id.clone(),
+            username: username.clone(),
+            password: username,
+            email: "abcd@abcd.de".into(),
+            email_confirmed: true,
+        }).is_ok()
+    );
     assert_eq!(db.users.len(), 2);
 
     assert!(business::usecase::delete_user(&mut db, "1", "1").is_ok());

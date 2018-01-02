@@ -55,7 +55,7 @@ impl Db for SqliteConnection {
             .execute(self);
         if let Err(err) = res {
             match err {
-                DieselError::DatabaseError(db_err,_) => {
+                DieselError::DatabaseError(db_err, _) => {
                     match db_err {
                         DatabaseErrorKind::UniqueViolation => {
                             // that's ok :)
@@ -268,7 +268,7 @@ impl Db for SqliteConnection {
                         .collect();
                     Entry {
                         id: e.id,
-                        osm_node: e.osm_node.map(|x|x as u64),
+                        osm_node: e.osm_node.map(|x| x as u64),
                         created: e.created as u64,
                         version: e.version as u64,
                         title: e.title,
@@ -406,7 +406,7 @@ impl Db for SqliteConnection {
     }
 
     fn import_multiple_entries(&mut self, new_entries: &[Entry]) -> Result<()> {
-        let imports : Vec<_> = new_entries
+        let imports: Vec<_> = new_entries
             .into_iter()
             .map(|e| {
                 let new_entry = models::Entry::from(e.clone());
@@ -423,18 +423,20 @@ impl Db for SqliteConnection {
                     .collect();
                 let tag_rels: Vec<_> = e.tags
                     .iter()
-                    .map(|tag_id| models::EntryTagRelation {
-                        entry_id: e.id.clone(),
-                        entry_version: e.version as i32,
-                        tag_id: tag_id.clone(),
+                    .map(|tag_id| {
+                        models::EntryTagRelation {
+                            entry_id: e.id.clone(),
+                            entry_version: e.version as i32,
+                            tag_id: tag_id.clone(),
+                        }
                     })
                     .collect();
-                (new_entry,cat_rels, tag_rels)
-             })
+                (new_entry, cat_rels, tag_rels)
+            })
             .collect();
         self.transaction::<_, diesel::result::Error, _>(|| {
 
-            for (new_entry,cat_rels, tag_rels) in imports.into_iter() {
+            for (new_entry, cat_rels, tag_rels) in imports.into_iter() {
                 unset_current_on_all_entries(&self, &new_entry.id)?;
                 diesel::insert_into(schema::entries::table)
                     .values(&new_entry)
@@ -446,11 +448,11 @@ impl Db for SqliteConnection {
 
                 for r in tag_rels.iter() {
                     let res = diesel::insert_into(schema::tags::table)
-                        .values(&models::Tag{id: r.tag_id.clone()})
+                        .values(&models::Tag { id: r.tag_id.clone() })
                         .execute(self);
                     if let Err(err) = res {
                         match err {
-                            DieselError::DatabaseError(db_err,_) => {
+                            DieselError::DatabaseError(db_err, _) => {
                                 match db_err {
                                     DatabaseErrorKind::UniqueViolation => {
                                         // that's ok :)

@@ -84,12 +84,12 @@ pub struct CommentUpdate {
 
 #[derive(Queryable, Insertable, Associations)]
 #[table_name = "ratings"]
-#[belongs_to(Entry, foreign_key="entry_id")]
+#[belongs_to(Entry, foreign_key = "entry_id")]
 pub struct Rating {
     pub id: String,
     pub created: i64,
     pub title: String,
-    pub value: i32,  // TODO: us i8 (TinyInt)
+    pub value: i32, // TODO: us i8 (TinyInt)
     pub context: String,
     pub source: Option<String>,
     pub entry_id: String,
@@ -97,7 +97,7 @@ pub struct Rating {
 
 #[derive(Queryable, Insertable, Associations)]
 #[table_name = "bbox_subscriptions"]
-#[belongs_to(User, foreign_key="username")]
+#[belongs_to(User, foreign_key = "username")]
 pub struct BboxSubscription {
     pub id: String,
     pub south_west_lat: f64,

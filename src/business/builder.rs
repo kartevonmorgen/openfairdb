@@ -6,7 +6,7 @@ pub trait EntryBuilder {
 }
 
 pub struct EntryBuild {
-    entry: Entry
+    entry: Entry,
 }
 
 impl EntryBuild {
@@ -35,17 +35,11 @@ impl EntryBuild {
         self
     }
     pub fn categories(mut self, cats: Vec<&str>) -> Self {
-        self.entry.categories = cats
-            .into_iter()
-            .map(|x|x.into())
-            .collect();
+        self.entry.categories = cats.into_iter().map(|x| x.into()).collect();
         self
     }
     pub fn tags(mut self, tags: Vec<&str>) -> Self {
-        self.entry.tags = tags
-            .into_iter()
-            .map(|x|x.into())
-            .collect();
+        self.entry.tags = tags.into_iter().map(|x| x.into()).collect();
         self
     }
     pub fn finish(self) -> Entry {

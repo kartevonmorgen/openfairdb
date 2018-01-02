@@ -12,7 +12,7 @@ pub fn distance(a: &Coordinate, b: &Coordinate) -> f64 {
     let dlng = (b.lng - a.lng).to_radians();
 
     let a = (dlat / 2.0).sin() * (dlat / 2.0).sin() +
-            lat1.cos() * lat2.cos() * (dlng / 2.0).sin() * (dlng / 2.0).sin();
+        lat1.cos() * lat2.cos() * (dlng / 2.0).sin() * (dlng / 2.0).sin();
     let c = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
 
     EARTH_RADIUS * c
@@ -26,14 +26,16 @@ pub fn extract_bbox(s: &str) -> Result<Vec<Coordinate>, ParameterError> {
 
     match c.len() {
         4 => {
-            Ok(vec![Coordinate {
-                        lat: c[0],
-                        lng: c[1],
-                    },
-                    Coordinate {
-                        lat: c[2],
-                        lng: c[3],
-                    }])
+            Ok(vec![
+                Coordinate {
+                    lat: c[0],
+                    lng: c[1],
+                },
+                Coordinate {
+                    lat: c[2],
+                    lng: c[3],
+                },
+            ])
         }
         _ => Err(ParameterError::Bbox),
     }
@@ -143,46 +145,40 @@ mod tests {
     }
 
     #[test]
-    fn test_is_in_bbox(){
-        let bbox1 = Bbox{
-            south_west: Coordinate{
-                lat: 0.0,
-                lng: 0.0
-            },
-            north_east: Coordinate{
+    fn test_is_in_bbox() {
+        let bbox1 = Bbox {
+            south_west: Coordinate { lat: 0.0, lng: 0.0 },
+            north_east: Coordinate {
                 lat: 10.0,
-                lng: 10.0
-            }
+                lng: 10.0,
+            },
         };
-        let bbox2 = Bbox{
-            south_west: Coordinate{
+        let bbox2 = Bbox {
+            south_west: Coordinate {
                 lat: -10.0,
-                lng: 0.0
+                lng: 0.0,
             },
-            north_east: Coordinate{
+            north_east: Coordinate {
                 lat: 0.0,
-                lng: 10.0
-            }
+                lng: 10.0,
+            },
         };
-        let bbox3 = Bbox{
-            south_west: Coordinate{
+        let bbox3 = Bbox {
+            south_west: Coordinate {
                 lat: -10.0,
-                lng: -10.0
+                lng: -10.0,
             },
-            north_east: Coordinate{
-                lat: 0.0,
-                lng: 0.0
-            }
+            north_east: Coordinate { lat: 0.0, lng: 0.0 },
         };
-        let bbox4 = Bbox{
-            south_west: Coordinate{
+        let bbox4 = Bbox {
+            south_west: Coordinate {
                 lat: 0.0,
-                lng: -10.0
+                lng: -10.0,
             },
-            north_east: Coordinate{
+            north_east: Coordinate {
                 lat: 10.0,
-                lng: 0.0
-            }
+                lng: 0.0,
+            },
         };
 
         let lat1 = 5.0;

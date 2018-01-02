@@ -155,7 +155,7 @@ impl From<Rating> for e::Rating {
             title,
             context,
             value,
-            source
+            source,
         } = r;
         e::Rating {
             id,
@@ -200,7 +200,7 @@ impl From<BboxSubscription> for e::BboxSubscription {
             south_west_lng,
             north_east_lat,
             north_east_lng,
-            username
+            username,
         } = s;
         e::BboxSubscription {
             id,
@@ -212,20 +212,16 @@ impl From<BboxSubscription> for e::BboxSubscription {
                 north_east: e::Coordinate {
                     lat: north_east_lat as f64,
                     lng: north_east_lng as f64,
-                }
+                },
             },
-            username
+            username,
         }
     }
 }
 
 impl From<e::BboxSubscription> for BboxSubscription {
     fn from(s: e::BboxSubscription) -> BboxSubscription {
-        let e::BboxSubscription {
-            id,
-            bbox,
-            username
-        } = s;
+        let e::BboxSubscription { id, bbox, username } = s;
         BboxSubscription {
             id,
             south_west_lat: bbox.south_west.lat,

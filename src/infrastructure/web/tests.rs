@@ -190,7 +190,9 @@ fn search_with_tags() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(r#""visible":[{"id":"b","lat":0.0,"lng":0.0}]"#));
+    assert!(body_str.contains(
+        r#""visible":[{"id":"b","lat":0.0,"lng":0.0}]"#,
+    ));
 
     let req = client.get("/search?bbox=-10,-10,10,10&tags=foo-bar");
     let mut response = req.dispatch();
@@ -216,7 +218,9 @@ fn search_with_hashtag() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(r#""visible":[{"id":"b","lat":0.0,"lng":0.0},{"id":"c","lat":0.0,"lng":0.0}]"#));
+    assert!(body_str.contains(
+        r#""visible":[{"id":"b","lat":0.0,"lng":0.0},{"id":"c","lat":0.0,"lng":0.0}]"#,
+    ));
 }
 
 #[test]
@@ -235,7 +239,9 @@ fn search_with_two_hashtags() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(r#""visible":[{"id":"b","lat":0.0,"lng":0.0}]"#));
+    assert!(body_str.contains(
+        r#""visible":[{"id":"b","lat":0.0,"lng":0.0}]"#,
+    ));
 }
 
 #[test]
@@ -258,11 +264,13 @@ fn search_without_specifying_hashtag_symbol() {
     let (client, db) = setup();
     db.get().unwrap().entries = entries;
     let mut response = client
-            .get("/search?bbox=-10,-10,10,10&text=bla-blubb")
-            .dispatch();
+        .get("/search?bbox=-10,-10,10,10&text=bla-blubb")
+        .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(r#""visible":[{"id":"b","lat":0.0,"lng":0.0}]"#));
+    assert!(body_str.contains(
+        r#""visible":[{"id":"b","lat":0.0,"lng":0.0}]"#,
+    ));
 }
 
 #[test]

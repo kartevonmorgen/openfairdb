@@ -20,9 +20,7 @@ pub fn email(email: &str) -> Result<(), ParameterError> {
 }
 
 fn homepage(url: &str) -> Result<(), ParameterError> {
-    Url::parse(url)
-        .map_err(|_| ParameterError::Url)
-        .map(|_| ())
+    Url::parse(url).map_err(|_| ParameterError::Url).map(|_| ())
 }
 
 fn license(s: &str) -> Result<(), ParameterError> {
@@ -108,29 +106,29 @@ fn homepage_test() {
 
 #[test]
 fn bbox_test() {
-    let c1 = Coordinate{
-            lat: 49.123,
-            lng: 10.123
+    let c1 = Coordinate {
+        lat: 49.123,
+        lng: 10.123,
     };
-    let c2 = Coordinate{
-            lat: 48.123,
-            lng: 5.123
-    }; 
-    let c3 = Coordinate{
-            lat: 48.123,
-            lng: 500.123
-    };   
+    let c2 = Coordinate {
+        lat: 48.123,
+        lng: 5.123,
+    };
+    let c3 = Coordinate {
+        lat: 48.123,
+        lng: 500.123,
+    };
     let valid_bbox = Bbox {
-        north_east: c1.clone(), 
-        south_west: c2.clone()  
+        north_east: c1.clone(),
+        south_west: c2.clone(),
     };
     let empty_bbox = Bbox {
-        north_east: c1.clone(), 
-        south_west: c1.clone()  
+        north_east: c1.clone(),
+        south_west: c1.clone(),
     };
     let too_large_bbox = Bbox {
         north_east: c1.clone(),
-        south_west: c3.clone()
+        south_west: c3.clone(),
     };
     assert!(bbox(&valid_bbox).is_ok());
     assert!(bbox(&empty_bbox).is_err());

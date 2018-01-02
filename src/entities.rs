@@ -30,38 +30,38 @@ pub struct Category {
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Tag {
-    pub id : String,
+    pub id: String,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub enum Relation {
-    #[serde(rename="is_commented_with")]
+    #[serde(rename = "is_commented_with")]
     IsCommentedWith,
-    #[serde(rename="created_by")]
+    #[serde(rename = "created_by")]
     CreatedBy,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Triple {
-    pub subject : ObjectId,
-    pub predicate : Relation,
-    pub object : ObjectId,
+    pub subject: ObjectId,
+    pub predicate: Relation,
+    pub object: ObjectId,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub enum ObjectId {
-    #[serde(rename="entry")]
+    #[serde(rename = "entry")]
     Entry(String),
-    #[serde(rename="tag")]
+    #[serde(rename = "tag")]
     Tag(String),
-    #[serde(rename="user")]
+    #[serde(rename = "user")]
     User(String),
-    #[serde(rename="comment")]
+    #[serde(rename = "comment")]
     Comment(String),
-    #[serde(rename="rating")]
+    #[serde(rename = "rating")]
     Rating(String),
-    #[serde(rename="bbox_subscription")]
-    BboxSubscription(String)
+    #[serde(rename = "bbox_subscription")]
+    BboxSubscription(String),
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -77,23 +77,23 @@ pub struct User {
 pub struct Comment {
     pub id: String,
     pub created: u64,
-    pub text: String
+    pub text: String,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub enum RatingContext {
-   #[serde(rename="diversity")]
-   Diversity,
-   #[serde(rename="renewable")]
-   Renewable,
-   #[serde(rename="fairness")]
-   Fairness,
-   #[serde(rename="humanity")]
-   Humanity,
-   #[serde(rename="transparency")]
-   Transparency,
-   #[serde(rename="solidarity")]
-   Solidarity
+    #[serde(rename = "diversity")]
+    Diversity,
+    #[serde(rename = "renewable")]
+    Renewable,
+    #[serde(rename = "fairness")]
+    Fairness,
+    #[serde(rename = "humanity")]
+    Humanity,
+    #[serde(rename = "transparency")]
+    Transparency,
+    #[serde(rename = "solidarity")]
+    Solidarity,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -104,7 +104,7 @@ pub struct Rating {
     pub title: String,
     pub value: i8,
     pub context: RatingContext,
-    pub source: Option<String>
+    pub source: Option<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
@@ -116,7 +116,7 @@ pub struct Coordinate {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Bbox {
     pub south_west: Coordinate,
-    pub north_east: Coordinate
+    pub north_east: Coordinate,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]

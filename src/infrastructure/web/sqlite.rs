@@ -11,9 +11,7 @@ pub type ConnectionPool = Pool<ConnectionManager<SqliteConnection>>;
 
 pub fn create_connection_pool(db_url: &str) -> Result<ConnectionPool, AppError> {
     let manager = ConnectionManager::<SqliteConnection>::new(db_url);
-    let pool = Pool::builder()
-        .max_size(POOL_SIZE)
-        .build(manager)?;
+    let pool = Pool::builder().max_size(POOL_SIZE).build(manager)?;
 
     embedded_migrations::run(&*pool.get()?)?;
 

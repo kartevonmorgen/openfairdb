@@ -11,7 +11,7 @@ use chrono::prelude::*;
 use uuid::Uuid;
 use infrastructure::error::AppError;
 
-type Result<T> = result::Result<T,AppError>;
+type Result<T> = result::Result<T, AppError>;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 struct OsmQueryResult {
@@ -35,27 +35,30 @@ pub fn import_from_osm_file(db_url: &str, file_name: &str) -> Result<()> {
     let pool = create_connection_pool(db_url).unwrap();
     let db = &mut *pool.get().unwrap();
     let ofdb_entries = db.all_entries()?;
-    let old_osm_entries : Vec<_> = ofdb_entries
-            .into_iter()
-            .filter(|e|e.osm_node.is_some())
-            .collect();
-    let new_osm_entries : Vec<_>  = osm_entries
+    let old_osm_entries: Vec<_> = ofdb_entries
         .into_iter()
-        .filter(|e|e.tags.get("name").is_some())
-        .filter(|new| !old_osm_entries.iter().any(|old|old.osm_node == Some(new.id)))
+        .filter(|e| e.osm_node.is_some())
+        .collect();
+    let new_osm_entries: Vec<_> = osm_entries
+        .into_iter()
+        .filter(|e| e.tags.get("name").is_some())
+        .filter(|new| {
+            !old_osm_entries.iter().any(
+                |old| old.osm_node == Some(new.id),
+            )
+        })
         .collect();
     debug!("mapping new osm entries ...");
-    let mapped_entries : Vec<_> = new_osm_entries
+    let mapped_entries: Vec<_> = new_osm_entries
         .into_iter()
-        .filter_map(|osm|{
-            match map_osm_to_ofdb_entry(osm) {
-                Ok(x) => Some(x),
-                Err(err) => {
-                    warn!("Could not map osm entry: {}",err);
-                    None
-                }
+        .filter_map(|osm| match map_osm_to_ofdb_entry(osm) {
+            Ok(x) => Some(x),
+            Err(err) => {
+                warn!("Could not map osm entry: {}", err);
+                None
             }
-        }).collect();
+        })
+        .collect();
 
     debug!("importing nodes ...");
     db.import_multiple_entries(mapped_entries.as_slice())?;
@@ -68,7 +71,7 @@ fn parse_query_result(data: &str) -> result::Result<Vec<OsmEntry>, serde_json::e
     Ok(r.elements)
 }
 
-fn map_osm_tags(osm_tags: &HashMap<String,String>) -> Vec<Tag> {
+fn map_osm_tags(osm_tags: &HashMap<String, String>) -> Vec<Tag> {
 
     let mut tags = vec![];
     let mut tag_map = HashMap::new();
@@ -83,9 +86,9 @@ fn map_osm_tags(osm_tags: &HashMap<String,String>) -> Vec<Tag> {
     tag_map.insert("diet:gluten_free", "glutenfrei");
     tag_map.insert("organic", "bio");
 
-    for (k,v) in tag_map {
+    for (k, v) in tag_map {
         if let Some(_val) = osm_tags.get(k) {
-            tags.push(Tag { id: v.into()});
+            tags.push(Tag { id: v.into() });
         }
     }
     tags
@@ -93,9 +96,9 @@ fn map_osm_tags(osm_tags: &HashMap<String,String>) -> Vec<Tag> {
 
 fn map_osm_to_ofdb_entry(osm: OsmEntry) -> Result<Entry> {
 
-    let title =
-        osm.tags.get("name")
-        .ok_or_else(||Error::new(ErrorKind::Other,"Tag 'name' not found"))?
+    let title = osm.tags
+        .get("name")
+        .ok_or_else(|| Error::new(ErrorKind::Other, "Tag 'name' not found"))?
         .clone();
 
     let description = title.clone();
@@ -120,38 +123,33 @@ fn map_osm_to_ofdb_entry(osm: OsmEntry) -> Result<Entry> {
     let categories = vec![];
     let license    = Some("ODbL-1.0".into());
 
-    let street = street.map(|s|
-        if let Some(nr) = house_nr {
-            format!("{} {}", s,nr)
-        } else {
-            s
-        }
-    );
+    let street = street.map(|s| if let Some(nr) = house_nr {
+        format!("{} {}", s, nr)
+    } else {
+        s
+    });
 
-    let tags = map_osm_tags(&osm.tags)
-        .into_iter()
-        .map(|t|t.id)
-        .collect();
+    let tags = map_osm_tags(&osm.tags).into_iter().map(|t| t.id).collect();
 
     Ok(Entry {
-        id         ,
-        osm_node   ,
-        created    ,
-        version    ,
-        title      ,
+        id,
+        osm_node,
+        created,
+        version,
+        title,
         description,
-        lat        ,
-        lng        ,
-        street     ,
-        zip        ,
-        city       ,
-        country    ,
-        email      ,
-        telephone  ,
-        homepage   ,
-        categories ,
-        tags       ,
-        license
+        lat,
+        lng,
+        street,
+        zip,
+        city,
+        country,
+        email,
+        telephone,
+        homepage,
+        categories,
+        tags,
+        license,
     })
 }
 
@@ -214,7 +212,7 @@ fn test_from_osm_for_entry() {
     tags.insert("phone".into(), "+43 316-422677".into());
     tags.insert("website".into(), "http://www.denns-biomarkt.at/".into());
 
-    tags.insert("diet:dairy_free".into(),"yes".into());
+    tags.insert("diet:dairy_free".into(), "yes".into());
     tags.insert("diet:egg_free".into(), "yes".into());
     tags.insert("diet:gluten_free".into(), "yes".into());
     tags.insert("diet:lactose_free".into(), "yes".into());
