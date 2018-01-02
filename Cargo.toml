@@ -5,7 +5,7 @@ authors = ["Markus Kohlhase <mail@markus-kohlhase.de>"]
 
 [dependencies]
 clap = "2"
-log = "0.3"
+log = "0.4"
 env_logger = "0.4"
 uuid = { version = "0.5", features = ["v4"] }
 url = "1"
@@ -17,7 +17,7 @@ serde = "1"
 serde_json = "1"
 serde_derive = "1"
 chrono = "0.4"
-lazy_static = "0.2"
+lazy_static = "1"
 regex = "0.2"
 pwhash = "0.1"
 fast_chemail = "0.9"
@@ -25,9 +25,9 @@ quoted_printable = "0.4"
 toml = "0.4"
 dotenv = "0.10"
 r2d2 = "0.8"
-r2d2-diesel = { version = "1.0.0-beta1", optional = true }
-diesel = { version = "1.0.0-beta1", features = ["sqlite", "large-tables" ], optional = true }
-diesel_migrations = { version = "1.0.0-beta1", features = ["sqlite"], optional = true }
+r2d2-diesel = { version = "1.0.0-rc1", optional = true }
+diesel = { version = "1.0.0-rc1", features = ["sqlite", "large-tables" ], optional = true }
+diesel_migrations = { version = "1.0.0-rc1", features = ["sqlite"], optional = true }
 libsqlite3-sys = { version = "0.8", features = ["bundled"], optional = true }
 
 [features]
