@@ -25,6 +25,16 @@ rustup install nightly
 rustup default nightly
 ```
 
+On windows you can download the installer from [rustup.rs](https://rustup.rs).
+(But don't forget to install a
+[C++ toolchain](http://landinghub.visualstudio.com/visual-cpp-build-tools) first).
+
+Installing a specific nightly version with `rustup` (e.g. `2018-01-04`) is easy:
+
+```
+rustup default nightly-2018-01-04
+```
+
 ### Installing SQLite & Diesel
 
 On Ubuntu:
