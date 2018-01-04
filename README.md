@@ -147,6 +147,6 @@ that copies the DB file once a day.
 
 # License
 
-Copyright (c) 2015 - 2017 Markus Kohlhase
+Copyright (c) 2015 - 2018 Markus Kohlhase
 
 This project is licensed under the AGPLv3 license.
