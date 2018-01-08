@@ -349,12 +349,6 @@ pub mod tests {
     }
 
     #[bench]
-    fn bench_calc_avg_of_100_ratings_for_an_entry(b: &mut Bencher) {
-        let (entry, ratings) = create_entry_with_multiple_ratings(100);
-        b.iter(|| entry.avg_rating(&ratings));
-    }
-
-    #[bench]
     fn bench_calc_avg_of_1000_ratings_for_an_entry(b: &mut Bencher) {
         let (entry, ratings) = create_entry_with_multiple_ratings(1000);
         b.iter(|| entry.avg_rating(&ratings));

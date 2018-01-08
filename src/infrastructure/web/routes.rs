@@ -30,7 +30,7 @@ type Result<T> = result::Result<Json<T>, AppError>;
 
 const COOKIE_USER_KEY: &str = "user_id";
 
-#[derive(FromForm)]
+#[derive(FromForm,Clone)]
 struct SearchQuery {
     bbox: String,
     categories: Option<String>,
@@ -56,6 +56,10 @@ impl<'a, 'r> FromRequest<'a, 'r> for Login {
 
 #[get("/search?<search>")]
 fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResponse> {
+    get_search_inner(&*db, search)
+}
+
+fn get_search_inner(db: &DbPool, search: SearchQuery) -> Result<json::SearchResponse> {
 
     let bbox = geo::extract_bbox(&search.bbox)
         .map_err(Error::Parameter)
@@ -382,5 +386,33 @@ impl<'r> Responder<'r> for AppError {
         }
         error!("Error: {}", self);
         Err(Status::InternalServerError)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use test::Bencher;
+    use super::super::mockdb;
+    use super::super::{calculate_all_ratings, ENTRY_RATINGS};
+
+    fn setup() -> mockdb::ConnectionPool {
+        mockdb::create_connection_pool(":memory:").unwrap()
+    }
+
+    #[bench]
+    fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
+        let (entries, ratings) = ::business::sort::tests::create_entries_with_ratings(10_000);
+        let pool = setup();
+        pool.get().unwrap().entries = entries;
+        pool.get().unwrap().ratings = ratings;
+        calculate_all_ratings(&*pool.get().unwrap()).unwrap();
+        assert_eq!((*ENTRY_RATINGS.lock().unwrap()).len(),10_000);
+        let query = super::SearchQuery {
+            bbox: "-10,-10,10,10".into(),
+            categories: None,
+            text: None,
+            tags: None,
+        };
+        b.iter(|| super::get_search_inner(&pool, query.clone()).unwrap());
     }
 }

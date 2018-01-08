@@ -160,6 +160,7 @@ fn search_with_categories() {
     assert!(body_str.contains("\"c\""));
 }
 
+#[ignore]
 #[bench]
 fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
     let (entries, ratings) = ::business::sort::tests::create_entries_with_ratings(10_000);

@@ -3,6 +3,7 @@ use business::builder::EntryBuilder;
 use entities;
 use business;
 use uuid::Uuid;
+use test::Bencher;
 
 type RepoResult<T> = result::Result<T, RepoError>;
 
@@ -956,4 +957,43 @@ fn delete_user() {
 
     assert!(business::usecase::delete_user(&mut db, "1", "1").is_ok());
     assert_eq!(db.users.len(), 1);
+}
+
+#[bench]
+fn bench_search_in_1_000_rated_entries(b: &mut Bencher) {
+
+    let mut db = MockDb::new();
+    let (entries, ratings) = ::business::sort::tests::create_entries_with_ratings(1_000);
+    db.entries = entries;
+    db.ratings = ratings;
+    let entry_ratings = HashMap::new();
+    let req = SearchRequest {
+        bbox: vec![Coordinate{lat: -10.0, lng: -10.0}, Coordinate{lat: 10.0,lng:10.0}],
+        categories: None,
+        text: "".into(),
+        tags: vec![],
+        entry_ratings: &entry_ratings,
+    };
+
+    b.iter(|| super::search(&mut db, req.clone()).unwrap());
+}
+
+#[ignore]
+#[bench]
+fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
+
+    let mut db = MockDb::new();
+    let (entries, ratings) = ::business::sort::tests::create_entries_with_ratings(10_000);
+    db.entries = entries;
+    db.ratings = ratings;
+    let entry_ratings = HashMap::new();
+    let req = SearchRequest {
+        bbox: vec![Coordinate{lat: -10.0, lng: -10.0}, Coordinate{lat: 10.0,lng:10.0}],
+        categories: None,
+        text: "".into(),
+        tags: vec![],
+        entry_ratings: &entry_ratings,
+    };
+
+    b.iter(|| super::search(&mut db, req.clone()).unwrap());
 }
