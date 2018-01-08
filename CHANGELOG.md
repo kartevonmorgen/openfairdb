@@ -1,3 +1,9 @@
+## v0.2.11 (2018-01-08)
+
+- new(search): improve performance
+- revert(db): use neo4j by default
+- chore(*): update `rocket` to `v0.3.5`
+
 ## v0.2.10 (2017-12-06)
 
 - new(db): use [SQLite](https://sqlite.org/) and [diesel](https://diesel.rs)

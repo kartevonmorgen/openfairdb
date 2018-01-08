@@ -1,10 +1,12 @@
 use business::error::Error as BError;
 use business::error::RepoError;
-use diesel_migrations::RunMigrationsError;
 use std::error;
 use std::io;
 use serde_json;
 use r2d2;
+
+#[cfg(feature = "sqlite")]
+use diesel_migrations::RunMigrationsError;
 
 #[cfg(feature = "neo4j")]
 use rusted_cypher::error::GraphError;

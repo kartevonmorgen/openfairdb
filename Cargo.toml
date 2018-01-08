@@ -1,6 +1,6 @@
 [package]
 name = "openfairdb"
-version = "0.2.10"
+version = "0.2.11"
 authors = ["Markus Kohlhase <mail@markus-kohlhase.de>"]
 
 [dependencies]
@@ -35,6 +35,6 @@ diesel_migrations = { version = "1.0.0-beta1", features = ["sqlite"], optional =
 libsqlite3-sys = { version = "0.8", features = ["bundled"], optional = true }
 
 [features]
-default = ["sqlite"]
+default = ["neo4j"]
 sqlite = ["diesel", "diesel_infer_schema","r2d2-diesel", "libsqlite3-sys", "diesel_migrations"]
 neo4j = ["rusted_cypher","r2d2_cypher"]
