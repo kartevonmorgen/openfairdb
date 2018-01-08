@@ -292,7 +292,7 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResu
 
     let invisible_results = entries
         .iter()
-        .filter(|e| !visible_results.iter().any(|v| *v == e.id))
+        .filter(|x| !x.in_bbox(&bbox))
         .take(MAX_INVISIBLE_RESULTS)
         .map(|x| &x.id)
         .cloned()
