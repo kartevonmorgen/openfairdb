@@ -566,7 +566,7 @@ pub fn search<D: Db>(db: &D, req: SearchRequest) -> Result<(Vec<Entry>, Vec<Entr
 
     let invisible_results = entries
         .into_iter()
-        .filter(|e| !visible_results.iter().any(|x| *x.id == e.id))
+        .filter(|x| !x.in_bbox(&req.bbox))
         .take(MAX_INVISIBLE_RESULTS)
         .collect();
 
