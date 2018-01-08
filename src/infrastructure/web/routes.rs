@@ -406,7 +406,7 @@ mod tests {
         pool.get().unwrap().entries = entries;
         pool.get().unwrap().ratings = ratings;
         calculate_all_ratings(&*pool.get().unwrap()).unwrap();
-        assert_eq!((*ENTRY_RATINGS.lock().unwrap()).len(),10_000);
+        assert!((*ENTRY_RATINGS.lock().unwrap()).len() > 9_000);
         let query = super::SearchQuery {
             bbox: "-10,-10,10,10".into(),
             categories: None,
