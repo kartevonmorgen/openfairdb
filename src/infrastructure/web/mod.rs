@@ -1,5 +1,4 @@
 use rocket::{self, Rocket};
-use rocket::logger::LoggingLevel;
 use rocket_contrib::Json;
 use rocket::config::{Environment, Config};
 use business::db::Db;
@@ -103,7 +102,6 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
     }
 
     let cfg = Config::build(Environment::Production)
-        .log_level(LoggingLevel::Normal)
         .address("127.0.0.1")
         .port(port)
         .finalize()
