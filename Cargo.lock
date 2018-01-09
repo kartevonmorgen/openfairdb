@@ -460,7 +460,7 @@ dependencies = [
 
 [[package]]
 name = "openfairdb"
-version = "0.2.11"
+version = "0.2.12"
 dependencies = [
  "chrono 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.28.0 (registry+https://github.com/rust-lang/crates.io-index)",

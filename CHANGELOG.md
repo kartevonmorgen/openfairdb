@@ -1,3 +1,7 @@
+## v0.2.12 (2018-01-09)
+
+- fix(*): use logging level from the environment
+
 ## v0.2.11 (2018-01-08)
 
 - new(search): improve performance
