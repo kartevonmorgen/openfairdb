@@ -6,7 +6,6 @@ use std::io;
 use serde_json;
 use r2d2;
 
-#[cfg(feature = "sqlite")]
 use diesel::result::Error as DieselError;
 
 impl From<RepoError> for AppError {
@@ -15,14 +14,12 @@ impl From<RepoError> for AppError {
     }
 }
 
-#[cfg(feature = "sqlite")]
 impl From<DieselError> for RepoError {
     fn from(err: DieselError) -> RepoError {
         RepoError::Other(Box::new(err))
     }
 }
 
-#[cfg(feature = "sqlite")]
 impl From<RunMigrationsError> for AppError {
     fn from(err: RunMigrationsError) -> AppError {
         AppError::Other(Box::new(err))

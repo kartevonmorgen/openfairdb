@@ -1,6 +1,6 @@
-use r2d2_diesel::ConnectionManager;
+use diesel::r2d2::ConnectionManager;
 use diesel::sqlite::SqliteConnection;
-use r2d2::Pool;
+use diesel::r2d2::Pool;
 use super::super::error::AppError;
 
 embed_migrations!();

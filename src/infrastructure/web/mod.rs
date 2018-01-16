@@ -6,7 +6,7 @@ use business::db::Db;
 use infrastructure::error::AppError;
 use business::sort::Rated;
 use std::result;
-use r2d2::{self, Pool};
+use diesel::r2d2::{self, Pool};
 use std::collections::HashMap;
 use std::sync::Mutex;
 
@@ -19,14 +19,13 @@ lazy_static! {
 
 mod routes;
 mod util;
-#[cfg(feature = "sqlite")]
 pub mod sqlite;
 #[cfg(test)]
 mod mockdb;
 #[cfg(test)]
 mod tests;
 
-#[cfg(all(not(test), feature = "sqlite"))]
+#[cfg(not(test))]
 use self::sqlite::create_connection_pool;
 
 #[cfg(test)]

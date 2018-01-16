@@ -16,10 +16,10 @@ use business::duplicates::{self, DuplicateType};
 use std::result;
 use super::util;
 
-#[cfg(all(not(test), feature = "sqlite"))]
+#[cfg(not(test))]
 use super::sqlite;
 
-#[cfg(all(not(test), feature = "sqlite"))]
+#[cfg(not(test))]
 type DbPool = sqlite::ConnectionPool;
 
 #[cfg(test)]

@@ -4,7 +4,6 @@ use super::osm;
 use dotenv::dotenv;
 use std::{env, process};
 
-#[cfg(feature = "sqlite")]
 const DEFAULT_DB_URL: &str = "openfair.db";
 
 pub fn run() {

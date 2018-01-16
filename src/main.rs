@@ -27,18 +27,10 @@ extern crate pwhash;
 extern crate quoted_printable;
 extern crate toml;
 extern crate dotenv;
-
-#[cfg(feature = "sqlite")]
-extern crate r2d2_diesel;
-
-#[cfg(feature = "sqlite")]
 #[macro_use]
 extern crate diesel;
-
-#[cfg(feature = "sqlite")]
 #[macro_use]
 extern crate diesel_migrations;
-
 #[cfg(test)]
 extern crate test;
 
