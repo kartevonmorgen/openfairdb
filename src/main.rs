@@ -10,7 +10,6 @@ extern crate env_logger;
 #[macro_use]
 extern crate quick_error;
 extern crate clap;
-extern crate r2d2;
 extern crate uuid;
 extern crate fast_chemail;
 extern crate url;

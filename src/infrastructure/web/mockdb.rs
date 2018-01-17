@@ -1,11 +1,11 @@
 use business::usecase::tests::MockDb;
 use std::io;
-use r2d2::{self, Pool, Error};
+use diesel::r2d2::{Pool, PoolError, ManageConnection};
 
 #[derive(Debug)]
 pub struct MockDbConnectionManager;
 
-impl r2d2::ManageConnection for MockDbConnectionManager {
+impl ManageConnection for MockDbConnectionManager {
     type Connection = MockDb;
     type Error = io::Error;
 
@@ -24,7 +24,7 @@ impl r2d2::ManageConnection for MockDbConnectionManager {
 
 pub type ConnectionPool = Pool<MockDbConnectionManager>;
 
-pub fn create_connection_pool(_: &str) -> Result<ConnectionPool, Error> {
+pub fn create_connection_pool(_: &str) -> Result<ConnectionPool, PoolError> {
     let manager = MockDbConnectionManager {};
     Pool::builder().max_size(1).build(manager)
 }

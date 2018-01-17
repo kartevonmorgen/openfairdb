@@ -1,10 +1,10 @@
 use business::error::Error as BError;
 use business::error::RepoError;
 use diesel_migrations::RunMigrationsError;
+use diesel::r2d2;
 use std::error;
 use std::io;
 use serde_json;
-use r2d2;
 
 use diesel::result::Error as DieselError;
 
@@ -44,7 +44,7 @@ quick_error!{
             description(err.description())
             from(err: io::Error) -> (Box::new(err))
         }
-        R2d2(err: r2d2::Error){
+        R2d2(err: r2d2::PoolError){
             from()
         }
         Toml(err: ::toml::de::Error){
