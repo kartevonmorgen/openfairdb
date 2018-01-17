@@ -117,7 +117,7 @@ impl Db for SqliteConnection {
         diesel::update(dsl::users.find(username))
             .set(dsl::email_confirmed.eq(true))
             .execute(self)?;
-        Ok(User::from(self.get_user(username)?))
+        Ok(self.get_user(username)?)
     }
     fn delete_bbox_subscription(&mut self, id: &str) -> Result<()> {
         use self::schema::bbox_subscriptions::dsl;
@@ -339,7 +339,7 @@ impl Db for SqliteConnection {
             })
             .collect();
         self.transaction::<_, diesel::result::Error, _>(|| {
-            for (new_entry, cat_rels, tag_rels) in imports.into_iter() {
+            for (new_entry, cat_rels, tag_rels) in imports {
                 unset_current_on_all_entries(&self, &new_entry.id)?;
                 diesel::insert_into(schema::entries::table)
                     .values(&new_entry)
@@ -348,7 +348,7 @@ impl Db for SqliteConnection {
                     .values(&cat_rels)
                     .execute(self)?;
 
-                for r in tag_rels.iter() {
+                for r in &tag_rels {
                     let res = diesel::insert_into(schema::tags::table)
                         .values(&models::Tag {
                             id: r.tag_id.clone(),

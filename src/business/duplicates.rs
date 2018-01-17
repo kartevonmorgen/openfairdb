@@ -121,8 +121,8 @@ pub fn levenshtein_distance(s: &str, t: &str) -> usize {
 
     // source (s) prefixes can be transformed into empty string by
     // dropping all characters
-    for i in 1..max_s {
-        d[i][0] = i;
+    for (i, item) in d.iter_mut().enumerate().take(max_s).skip(1) {
+        item[0] = i;
     }
 
     // target (t) prefixes can be reached from empty source prefix

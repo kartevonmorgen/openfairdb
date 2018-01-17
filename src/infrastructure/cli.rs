@@ -60,12 +60,12 @@ pub fn run() {
                     Some(osm_file) => osm_file,
                     None => {
                         println!("{}", matches.usage());
-                        process::exit(1);
+                        process::exit(1)
                     }
                 };
                 if let Err(err) = osm::import_from_osm_file(&db_url, osm_file) {
                     println!("Could not import from '{}': {}", osm_file, err);
-                    process::exit(1);
+                    process::exit(1)
                 }
             }
             _ => println!("{}", osm_matches.usage()),
@@ -75,7 +75,7 @@ pub fn run() {
                 Some(port) => port.parse::<u16>().unwrap(),
                 None => {
                     println!("{}", matches.usage());
-                    process::exit(1);
+                    process::exit(1)
                 }
             };
 

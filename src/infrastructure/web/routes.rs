@@ -45,7 +45,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for Login {
             .cookies()
             .get_private(COOKIE_USER_KEY)
             .and_then(|cookie| cookie.value().parse().ok())
-            .map(|id| Login(id));
+            .map(Login);
         match user {
             Some(user) => Outcome::Success(user),
             None => Outcome::Failure((Status::Unauthorized, ())),
@@ -98,7 +98,7 @@ fn get_search_inner(db: &DbPool, search: SearchQuery) -> Result<json::SearchResp
         entry_ratings: &*avg_ratings,
     };
 
-    let (visible, invisible) = usecase::search(&mut *db.get()?, req)?;
+    let (visible, invisible) = usecase::search(&*db.get()?, &req)?;
 
     let visible = visible
         .into_iter()
@@ -175,7 +175,7 @@ fn post_user(db: State<DbPool>, u: Json<usecase::NewUser>) -> Result<()> {
     let user = db.get()?.get_user(&new_user.username)?;
     let subject = "Karte von Morgen: bitte bestätige deine Email-Adresse";
     let body = user_communication::email_confirmation_email(&user.id);
-    util::send_mails(vec![user.email.clone()], &subject, &body);
+    util::send_mails(&[user.email], subject, &body);
     Ok(Json(()))
 }
 
@@ -190,7 +190,7 @@ fn post_rating(db: State<DbPool>, u: Json<usecase::RateEntry>) -> Result<()> {
     let u = u.into_inner();
     let e_id = u.entry.clone();
     usecase::rate_entry(&mut *db.get()?, u)?;
-    super::calculate_rating_for_entry(&mut *db.get()?, &e_id)?;
+    super::calculate_rating_for_entry(&*db.get()?, &e_id)?;
     Ok(Json(()))
 }
 
@@ -207,7 +207,7 @@ fn get_ratings(db: State<DbPool>, id: String) -> Result<Vec<json::Rating>> {
             title: x.title,
             value: x.value,
             context: x.context,
-            source: x.source.unwrap_or("".into()),
+            source: x.source.unwrap_or_else(|| "".into()),
             comments: comments
                 .get(&x.id)
                 .cloned()
@@ -226,7 +226,7 @@ fn get_ratings(db: State<DbPool>, id: String) -> Result<Vec<json::Rating>> {
 
 #[post("/login", format = "application/json", data = "<login>")]
 fn login(db: State<DbPool>, mut cookies: Cookies, login: Json<usecase::Login>) -> Result<()> {
-    let id = usecase::login(&mut *db.get()?, login.into_inner())?;
+    let id = usecase::login(&mut *db.get()?, &login.into_inner())?;
     cookies.add_private(Cookie::new(COOKIE_USER_KEY, id));
     Ok(Json(()))
 }
@@ -295,7 +295,7 @@ fn post_entry(db: State<DbPool>, e: Json<usecase::NewEntry>) -> Result<String> {
     let id = usecase::create_new_entry(&mut *db.get()?, e.clone())?;
     let email_addresses = usecase::email_addresses_by_coordinate(&mut *db.get()?, &e.lat, &e.lng)?;
     let all_categories = db.get()?.all_categories()?;
-    util::notify_create_entry(email_addresses, &e, &id, all_categories);
+    util::notify_create_entry(&email_addresses, &e, &id, all_categories);
     Ok(Json(id))
 }
 
@@ -305,7 +305,7 @@ fn put_entry(db: State<DbPool>, id: String, e: Json<usecase::UpdateEntry>) -> Re
     usecase::update_entry(&mut *db.get()?, e.clone())?;
     let email_addresses = usecase::email_addresses_by_coordinate(&mut *db.get()?, &e.lat, &e.lng)?;
     let all_categories = db.get()?.all_categories()?;
-    util::notify_update_entry(email_addresses, &e, all_categories);
+    util::notify_update_entry(&email_addresses, &e, all_categories);
     Ok(Json(id))
 }
 
@@ -359,10 +359,11 @@ impl<'r> Responder<'r> for AppError {
                         _ => Status::BadRequest,
                     })
                 }
-                Error::Repo(ref err) => match *err {
-                    RepoError::NotFound => return Err(Status::NotFound),
-                    _ => {}
-                },
+                Error::Repo(ref err) => {
+                    if let RepoError::NotFound = *err {
+                        return Err(Status::NotFound);
+                    }
+                }
                 _ => {}
             }
         }

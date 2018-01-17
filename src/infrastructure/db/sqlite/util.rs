@@ -185,7 +185,7 @@ impl From<e::Rating> for Rating {
             id,
             created: created as i64,
             title,
-            value: value as i32,
+            value: i32::from(value),
             context: context.into(),
             source,
             entry_id,

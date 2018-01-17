@@ -16,11 +16,11 @@ pub fn extract_ids(s: &str) -> Vec<String> {
 }
 
 #[cfg(feature = "email")]
-pub fn send_mails(email_addresses: Vec<String>, subject: &str, body: &str) {
+pub fn send_mails(email_addresses: &[String], subject: &str, body: &str) {
     debug!("sending emails to: {:?}", email_addresses);
-    for email_address in email_addresses.clone() {
+    for email_address in email_addresses.to_owned() {
         let to = vec![email_address];
-        match mail::create(&to, &subject, &body) {
+        match mail::create(&to, subject, body) {
             Ok(mail) => {
                 ::std::thread::spawn(move || {
                     if let Err(err) = mail::send(&mail) {
@@ -41,7 +41,7 @@ pub fn send_mails(_: Vec<String>, _: &str, _: &str) {
 }
 
 pub fn notify_create_entry(
-    email_addresses: Vec<String>,
+    email_addresses: &[String],
     e: &usecase::NewEntry,
     id: &str,
     all_categories: Vec<Category>,
@@ -52,12 +52,12 @@ pub fn notify_create_entry(
         .filter(|c| e.categories.clone().into_iter().any(|c_id| *c.id == c_id))
         .map(|c| c.name)
         .collect();
-    let body = user_communication::new_entry_email(e, id, categories);
+    let body = user_communication::new_entry_email(e, id, &categories);
     send_mails(email_addresses, &subject, &body);
 }
 
 pub fn notify_update_entry(
-    email_addresses: Vec<String>,
+    email_addresses: &[String],
     e: &usecase::UpdateEntry,
     all_categories: Vec<Category>,
 ) {
@@ -67,7 +67,7 @@ pub fn notify_update_entry(
         .filter(|c| e.categories.clone().into_iter().any(|c_id| *c.id == c_id))
         .map(|c| c.name)
         .collect();
-    let body = user_communication::changed_entry_email(e, categories);
+    let body = user_communication::changed_entry_email(e, &categories);
     send_mails(email_addresses, &subject, &body);
 }
 

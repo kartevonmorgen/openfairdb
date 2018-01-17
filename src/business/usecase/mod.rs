@@ -224,7 +224,7 @@ pub fn get_user<D: Db>(db: &mut D, login_id: &str, username: &str) -> Result<(St
         .into_iter()
         .filter(|u| u.id == login_id)
         .collect();
-    if users.len() > 0 {
+    if !users.is_empty() {
         let login_name = &users[0].username;
         if login_name != username {
             return Err(Error::Parameter(ParameterError::Forbidden));
@@ -232,7 +232,7 @@ pub fn get_user<D: Db>(db: &mut D, login_id: &str, username: &str) -> Result<(St
         let u = db.get_user(username)?;
         Ok((u.id, u.email))
     } else {
-        return Err(Error::Repo(RepoError::NotFound));
+        Err(Error::Repo(RepoError::NotFound))
     }
 }
 
@@ -244,7 +244,7 @@ pub fn delete_user(db: &mut Db, login_id: &str, u_id: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn login<D: Db>(db: &mut D, login: Login) -> Result<String> {
+pub fn login<D: Db>(db: &mut D, login: &Login) -> Result<String> {
     match db.get_user(&login.username) {
         Ok(u) => {
             if bcrypt::verify(&login.password, &u.password) {
@@ -287,7 +287,7 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
         license     :  Some(e.license)
     };
     new_entry.validate()?;
-    for t in new_entry.tags.iter() {
+    for t in &new_entry.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
     db.create_entry(&new_entry)?;
@@ -320,7 +320,7 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
         tags        :  e.tags,
         license     :  old.license
     };
-    for t in new_entry.tags.iter() {
+    for t in &new_entry.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
     db.update_entry(&new_entry)?;
@@ -358,7 +358,7 @@ pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
     Ok(())
 }
 
-pub fn subscribe_to_bbox(coordinates: &Vec<Coordinate>, username: &str, db: &mut Db) -> Result<()> {
+pub fn subscribe_to_bbox(coordinates: &[Coordinate], username: &str, db: &mut Db) -> Result<()> {
     if coordinates.len() != 2 {
         return Err(Error::Parameter(ParameterError::Bbox));
     }
@@ -443,8 +443,8 @@ const MAX_INVISIBLE_RESULTS: usize = 5;
 const BBOX_LAT_EXT: f64 = 0.02;
 const BBOX_LNG_EXT: f64 = 0.04;
 
-fn extend_bbox(bbox: &Vec<Coordinate>) -> Vec<Coordinate> {
-    let mut extended_bbox = bbox.clone();
+fn extend_bbox(bbox: &[Coordinate]) -> Vec<Coordinate> {
+    let mut extended_bbox = bbox.to_owned();
     extended_bbox[0].lat -= BBOX_LAT_EXT;
     extended_bbox[0].lng -= BBOX_LNG_EXT;
     extended_bbox[1].lat += BBOX_LAT_EXT;
@@ -452,7 +452,7 @@ fn extend_bbox(bbox: &Vec<Coordinate>) -> Vec<Coordinate> {
     extended_bbox
 }
 
-pub fn search<D: Db>(db: &D, req: SearchRequest) -> Result<(Vec<Entry>, Vec<Entry>)> {
+pub fn search<D: Db>(db: &D, req: &SearchRequest) -> Result<(Vec<Entry>, Vec<Entry>)> {
     let entries = db.all_entries()?;
 
     let extended_bbox = extend_bbox(&req.bbox);
@@ -465,7 +465,7 @@ pub fn search<D: Db>(db: &D, req: SearchRequest) -> Result<(Vec<Entry>, Vec<Entr
     if let Some(ref cat_ids) = req.categories {
         entries = entries
             .into_iter()
-            .filter(&*filter::entries_by_category_ids(&cat_ids))
+            .filter(&*filter::entries_by_category_ids(cat_ids))
             .collect();
     }
 
@@ -477,7 +477,7 @@ pub fn search<D: Db>(db: &D, req: SearchRequest) -> Result<(Vec<Entry>, Vec<Entr
         ))
         .collect();
 
-    entries.sort_by_avg_rating(&req.entry_ratings);
+    entries.sort_by_avg_rating(req.entry_ratings);
 
     let visible_results: Vec<_> = entries
         .iter()

@@ -8,7 +8,7 @@ pub fn email_confirmation_email(u_id: &str) -> String {
     )
 }
 
-pub fn new_entry_email(e: &NewEntry, id: &str, categories: Vec<String>) -> String {
+pub fn new_entry_email(e: &NewEntry, id: &str, categories: &[String]) -> String {
     let intro_sentence = "ein neuer Eintrag auf der Karte von Morgen wurde erstellt";
     let entry = Entry {
         id: id.into(),
@@ -33,7 +33,7 @@ pub fn new_entry_email(e: &NewEntry, id: &str, categories: Vec<String>) -> Strin
     entry_email(&entry, categories, &e.tags, intro_sentence)
 }
 
-pub fn changed_entry_email(e: &UpdateEntry, categories: Vec<String>) -> String {
+pub fn changed_entry_email(e: &UpdateEntry, categories: &[String]) -> String {
     let intro_sentence = "folgender Eintrag der Karte von Morgen wurde verändert";
     let entry = Entry {
         id: e.id.clone(),
@@ -60,22 +60,22 @@ pub fn changed_entry_email(e: &UpdateEntry, categories: Vec<String>) -> String {
 
 pub fn entry_email(
     e: &Entry,
-    categories: Vec<String>,
-    tags: &Vec<String>,
+    categories: &[String],
+    tags: &[String],
     intro_sentence: &str,
 ) -> String {
-    let category = if categories.len() > 0 {
+    let category = if !categories.is_empty() {
         categories[0].clone()
     } else {
         "".to_string()
     };
     let address = vec![
-        e.street.clone().unwrap_or("".into()),
+        e.street.clone().unwrap_or_else(|| "".into()),
         vec![
-            e.zip.clone().unwrap_or("".into()),
-            e.city.clone().unwrap_or("".into()),
+            e.zip.clone().unwrap_or_else(|| "".into()),
+            e.city.clone().unwrap_or_else(|| "".into()),
         ].join(" "),
-        e.country.clone().unwrap_or("".into()),
+        e.country.clone().unwrap_or_else(|| "".into()),
     ].join(", ");
 
     format!(
@@ -98,9 +98,9 @@ das Karte von Morgen-Team",
         id = &e.id,
         description = &e.description,
         address = address,
-        email = e.email.clone().unwrap_or("".into()),
-        telephone = e.telephone.clone().unwrap_or("".into()),
-        homepage = e.homepage.clone().unwrap_or("".into()),
+        email = e.email.clone().unwrap_or_else(||"".into()),
+        telephone = e.telephone.clone().unwrap_or_else(||"".into()),
+        homepage = e.homepage.clone().unwrap_or_else(||"".into()),
         category = category,
         tags = tags.join(", ")
     )

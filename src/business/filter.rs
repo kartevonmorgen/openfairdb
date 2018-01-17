@@ -29,20 +29,20 @@ pub fn entries_by_tags_or_search_text<'a>(
 ) -> Box<Fn(&Entry) -> bool + 'a> {
     let words = to_words(text);
 
-    if tags.len() > 0 {
+    if !tags.is_empty() {
         Box::new(move |entry| {
             tags.iter().all(|tag| entry.tags.iter().any(|t| t == tag))
-                || ((text.len() > 0 && words.iter().any(|word| {
+                || ((!text.is_empty() && words.iter().any(|word| {
                     entry.title.to_lowercase().contains(word)
                         || entry.description.to_lowercase().contains(word)
-                })) || (text.len() == 0 && tags[0] == ""))
+                })) || (text.is_empty() && tags[0] == ""))
         })
     } else {
         Box::new(move |entry| {
-            ((text.len() > 0 && words.iter().any(|word| {
+            ((!text.is_empty() && words.iter().any(|word| {
                 entry.title.to_lowercase().contains(word)
                     || entry.description.to_lowercase().contains(word)
-            })) || text.len() == 0)
+            })) || text.is_empty())
         })
     }
 }

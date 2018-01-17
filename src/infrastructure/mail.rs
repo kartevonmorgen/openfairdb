@@ -56,7 +56,7 @@ pub fn send(mail: &str) -> Result<()> {
         .stdin
         .as_mut()
         .ok_or_else(|| Error::new(ErrorKind::Other, "Could not get stdin"))?
-        .write_all(&mail.as_bytes())?;
+        .write_all(mail.as_bytes())?;
     child.wait_with_output()?;
     Ok(())
 }

@@ -51,7 +51,7 @@ pub fn import_from_osm_file(db_url: &str, file_name: &str) -> Result<()> {
     debug!("mapping new osm entries ...");
     let mapped_entries: Vec<_> = new_osm_entries
         .into_iter()
-        .filter_map(|osm| match map_osm_to_ofdb_entry(osm) {
+        .filter_map(|osm| match map_osm_to_ofdb_entry(&osm) {
             Ok(x) => Some(x),
             Err(err) => {
                 warn!("Could not map osm entry: {}", err);
@@ -93,7 +93,7 @@ fn map_osm_tags(osm_tags: &HashMap<String, String>) -> Vec<Tag> {
     tags
 }
 
-fn map_osm_to_ofdb_entry(osm: OsmEntry) -> Result<Entry> {
+fn map_osm_to_ofdb_entry(osm: &OsmEntry) -> Result<Entry> {
     let title = osm.tags
         .get("name")
         .ok_or_else(|| Error::new(ErrorKind::Other, "Tag 'name' not found"))?
@@ -228,7 +228,7 @@ fn test_from_osm_for_entry() {
         tags,
     };
 
-    let e = map_osm_to_ofdb_entry(osm).unwrap();
+    let e = map_osm_to_ofdb_entry(&osm).unwrap();
 
     assert_eq!(e.lat, 48.0);
     assert_eq!(e.lng, 10.0);

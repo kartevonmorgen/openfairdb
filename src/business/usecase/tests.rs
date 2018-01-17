@@ -943,7 +943,7 @@ fn bench_search_in_1_000_rated_entries(b: &mut Bencher) {
         entry_ratings: &entry_ratings,
     };
 
-    b.iter(|| super::search(&mut db, req.clone()).unwrap());
+    b.iter(|| super::search(&mut db, &req).unwrap());
 }
 
 #[ignore]
@@ -971,5 +971,5 @@ fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
         entry_ratings: &entry_ratings,
     };
 
-    b.iter(|| super::search(&mut db, req.clone()).unwrap());
+    b.iter(|| super::search(&mut db, &req).unwrap());
 }

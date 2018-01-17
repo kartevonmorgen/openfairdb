@@ -56,12 +56,12 @@ impl Rated for Entry {
             ratings.iter().filter(|r| r.entry_id == self.id).collect();
 
         let avg_ratings = vec![
-            avg_rating_for_context(&ratings_for_entry, Diversity),
-            avg_rating_for_context(&ratings_for_entry, Renewable),
-            avg_rating_for_context(&ratings_for_entry, Fairness),
-            avg_rating_for_context(&ratings_for_entry, Humanity),
-            avg_rating_for_context(&ratings_for_entry, Transparency),
-            avg_rating_for_context(&ratings_for_entry, Solidarity),
+            avg_rating_for_context(&ratings_for_entry, &Diversity),
+            avg_rating_for_context(&ratings_for_entry, &Renewable),
+            avg_rating_for_context(&ratings_for_entry, &Fairness),
+            avg_rating_for_context(&ratings_for_entry, &Humanity),
+            avg_rating_for_context(&ratings_for_entry, &Transparency),
+            avg_rating_for_context(&ratings_for_entry, &Solidarity),
         ];
 
         let sum = avg_ratings
@@ -79,15 +79,15 @@ impl Rated for Entry {
     }
 }
 
-fn avg_rating_for_context(ratings: &[&Rating], context: RatingContext) -> Option<f64> {
+fn avg_rating_for_context(ratings: &[&Rating], context: &RatingContext) -> Option<f64> {
     let applicable_ratings: Vec<&&Rating> = ratings
         .iter()
-        .filter(|rating| rating.context == context)
+        .filter(|rating| rating.context == *context)
         .collect();
 
     let sum = applicable_ratings
         .iter()
-        .fold(0_i64, |acc, rating| acc + rating.value as i64) as f64;
+        .fold(0_i64, |acc, rating| acc + i64::from(rating.value)) as f64;
     let n = applicable_ratings.len();
 
     let avg = sum / n as f64;
@@ -356,13 +356,13 @@ pub mod tests {
     fn bench_calc_avg_of_100_ratings_for_a_rating_context(b: &mut Bencher) {
         let (_, ratings) = create_entry_with_multiple_ratings(100);
         let ratings: Vec<_> = ratings.iter().collect();
-        b.iter(|| avg_rating_for_context(&ratings, RatingContext::Diversity));
+        b.iter(|| avg_rating_for_context(&ratings, &RatingContext::Diversity));
     }
 
     #[bench]
     fn bench_calc_avg_of_1000_ratings_for_a_rating_context(b: &mut Bencher) {
         let (_, ratings) = create_entry_with_multiple_ratings(1000);
         let ratings: Vec<_> = ratings.iter().collect();
-        b.iter(|| avg_rating_for_context(&ratings, RatingContext::Diversity));
+        b.iter(|| avg_rating_for_context(&ratings, &RatingContext::Diversity));
     }
 }
