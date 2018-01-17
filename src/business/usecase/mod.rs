@@ -63,6 +63,7 @@ impl Id for BboxSubscription {
     }
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Deserialize, Debug, Clone)]
 pub struct NewEntry {
     pub title       : String,
@@ -81,6 +82,7 @@ pub struct NewEntry {
     pub license     : String,
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Deserialize, Debug, Clone)]
 pub struct NewUser {
     pub username: String,
@@ -88,12 +90,14 @@ pub struct NewUser {
     pub email: String,
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Deserialize, Debug, Clone)]
 pub struct Login {
     username: String,
     password: String,
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateEntry {
     pub id          : String,
@@ -114,34 +118,34 @@ pub struct UpdateEntry {
     pub tags        : Vec<String>,
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Deserialize, Debug, Clone)]
 pub struct RateEntry {
-    pub entry: String,
-    pub title: String,
-    pub value: i8,
-    pub context: RatingContext,
-    pub comment: String,
-    pub source: Option<String>,
-    pub user: Option<String>,
+    pub entry   : String,
+    pub title   : String,
+    pub value   : i8,
+    pub context : RatingContext,
+    pub comment : String,
+    pub source  : Option<String>,
+    pub user    : Option<String>,
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Debug, Clone)]
 pub struct SearchRequest<'a> {
-    pub bbox: Vec<Coordinate>,
-    pub categories: Option<Vec<String>>,
-    pub text: String,
-    pub tags: Vec<String>,
-    pub entry_ratings: &'a HashMap<String, f64>,
+    pub bbox          : Vec<Coordinate>,
+    pub categories    : Option<Vec<String>>,
+    pub text          : String,
+    pub tags          : Vec<String>,
+    pub entry_ratings : &'a HashMap<String, f64>,
 }
 
 pub fn get_ratings<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Rating>> {
-    Ok(
-        db.all_ratings()?
-            .iter()
-            .filter(|x| ids.iter().any(|id| *id == x.id))
-            .cloned()
-            .collect(),
-    )
+    Ok(db.all_ratings()?
+        .iter()
+        .filter(|x| ids.iter().any(|id| *id == x.id))
+        .cloned()
+        .collect())
 }
 
 pub fn get_ratings_by_entry_ids<D: Db>(
@@ -149,20 +153,18 @@ pub fn get_ratings_by_entry_ids<D: Db>(
     ids: &[String],
 ) -> Result<HashMap<String, Vec<Rating>>> {
     let ratings = db.all_ratings()?;
-    Ok(
-        ids.iter()
-            .map(|e_id| {
-                (
-                    e_id.clone(),
-                    ratings
-                        .iter()
-                        .filter(|r| r.entry_id == **e_id)
-                        .cloned()
-                        .collect(),
-                )
-            })
-            .collect(),
-    )
+    Ok(ids.iter()
+        .map(|e_id| {
+            (
+                e_id.clone(),
+                ratings
+                    .iter()
+                    .filter(|r| r.entry_id == **e_id)
+                    .cloned()
+                    .collect(),
+            )
+        })
+        .collect())
 }
 
 pub fn get_comments_by_rating_ids<D: Db>(
@@ -170,25 +172,24 @@ pub fn get_comments_by_rating_ids<D: Db>(
     ids: &[String],
 ) -> Result<HashMap<String, Vec<Comment>>> {
     let comments = db.all_comments()?;
-    Ok(
-        ids.iter()
-            .map(|r_id| {
-                (
-                    r_id.clone(),
-                    comments
-                        .iter()
-                        .filter_map(|comment|
-                            if comment.rating_id == *r_id {
-                                Some(comment)
-                            } else {
-                                None
-                            })
-                        .cloned()
-                        .collect(),
-                )
-            })
-            .collect(),
-    )
+    Ok(ids.iter()
+        .map(|r_id| {
+            (
+                r_id.clone(),
+                comments
+                    .iter()
+                    .filter_map(|comment| {
+                        if comment.rating_id == *r_id {
+                            Some(comment)
+                        } else {
+                            None
+                        }
+                    })
+                    .cloned()
+                    .collect(),
+            )
+        })
+        .collect())
 }
 
 pub fn get_entries<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Entry>> {
@@ -256,16 +257,15 @@ pub fn login<D: Db>(db: &mut D, login: Login) -> Result<String> {
                 Err(Error::Parameter(ParameterError::Credentials))
             }
         }
-        Err(err) => {
-            match err {
-                RepoError::NotFound => Err(Error::Parameter(ParameterError::Credentials)),
-                _ => Err(Error::Repo(RepoError::Other(Box::new(err)))),
-            }
-        }
+        Err(err) => match err {
+            RepoError::NotFound => Err(Error::Parameter(ParameterError::Credentials)),
+            _ => Err(Error::Repo(RepoError::Other(Box::new(err)))),
+        },
     }
 }
 
 pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     let new_entry = Entry{
         id          :  Uuid::new_v4().simple().to_string(),
         osm_node    :  None,
@@ -299,6 +299,7 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
     if (old.version + 1) != e.version {
         return Err(Error::Repo(RepoError::InvalidVersion));
     }
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     let new_entry = Entry{
         id          :  e.id,
         osm_node    :  None,
@@ -337,6 +338,7 @@ pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
     let now = Utc::now().timestamp() as u64;
     let rating_id = Uuid::new_v4().simple().to_string();
     let comment_id = Uuid::new_v4().simple().to_string();
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     db.create_rating(&Rating{
         id       : rating_id.clone(),
         entry_id : e.id,
@@ -346,6 +348,7 @@ pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
         context  : r.context,
         source   : r.source
     })?;
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     db.create_comment(&Comment {
         id: comment_id.clone(),
         created: now,
@@ -380,12 +383,10 @@ pub fn subscribe_to_bbox(coordinates: &Vec<Coordinate>, username: &str, db: &mut
 }
 
 pub fn get_bbox_subscriptions(username: &str, db: &Db) -> Result<Vec<BboxSubscription>> {
-    Ok(
-        db.all_bbox_subscriptions()?
-            .into_iter()
-            .filter(|s| s.username == username)
-            .collect(),
-    )
+    Ok(db.all_bbox_subscriptions()?
+        .into_iter()
+        .filter(|s| s.username == username)
+        .collect())
 }
 
 pub fn unsubscribe_all_bboxes_by_username(db: &mut Db, username: &str) -> Result<()> {
@@ -404,19 +405,16 @@ pub fn bbox_subscriptions_by_coordinate(
     db: &mut Db,
     x: &Coordinate,
 ) -> Result<Vec<BboxSubscription>> {
-    Ok(
-        db.all_bbox_subscriptions()?
-            .into_iter()
-            .filter(|s| geo::is_in_bbox(&x.lat, &x.lng, &s.bbox))
-            .collect(),
-    )
+    Ok(db.all_bbox_subscriptions()?
+        .into_iter()
+        .filter(|s| geo::is_in_bbox(&x.lat, &x.lng, &s.bbox))
+        .collect())
 }
 
 pub fn email_addresses_from_subscriptions(
     db: &mut Db,
     subs: &[BboxSubscription],
 ) -> Result<Vec<String>> {
-
     let usernames: Vec<_> = subs.iter().map(|s| &s.username).collect();
 
     let mut addresses: Vec<_> = db.all_users()?
@@ -440,9 +438,10 @@ pub fn email_addresses_by_coordinate(db: &mut Db, lat: &f64, lng: &f64) -> Resul
     Ok(addresses)
 }
 
-const MAX_INVISIBLE_RESULTS : usize = 5;
-const BBOX_LAT_EXT          : f64 = 0.02;
-const BBOX_LNG_EXT          : f64 = 0.04;
+const MAX_INVISIBLE_RESULTS: usize = 5;
+
+const BBOX_LAT_EXT: f64 = 0.02;
+const BBOX_LNG_EXT: f64 = 0.04;
 
 fn extend_bbox(bbox: &Vec<Coordinate>) -> Vec<Coordinate> {
     let mut extended_bbox = bbox.clone();
@@ -454,7 +453,6 @@ fn extend_bbox(bbox: &Vec<Coordinate>) -> Vec<Coordinate> {
 }
 
 pub fn search<D: Db>(db: &D, req: SearchRequest) -> Result<(Vec<Entry>, Vec<Entry>)> {
-
     let entries = db.all_entries()?;
 
     let extended_bbox = extend_bbox(&req.bbox);

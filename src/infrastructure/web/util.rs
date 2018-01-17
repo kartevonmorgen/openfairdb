@@ -22,8 +22,10 @@ pub fn send_mails(email_addresses: Vec<String>, subject: &str, body: &str) {
         let to = vec![email_address];
         match mail::create(&to, &subject, &body) {
             Ok(mail) => {
-                ::std::thread::spawn(move || if let Err(err) = mail::send(&mail) {
-                    warn!("Could not send mail: {}", err);
+                ::std::thread::spawn(move || {
+                    if let Err(err) = mail::send(&mail) {
+                        warn!("Could not send mail: {}", err);
+                    }
                 });
             }
             Err(e) => {
@@ -47,9 +49,7 @@ pub fn notify_create_entry(
     let subject = String::from("Karte von Morgen - neuer Eintrag: ") + &e.title;
     let categories: Vec<String> = all_categories
         .into_iter()
-        .filter(|c| {
-            e.categories.clone().into_iter().any(|c_id| *c.id == c_id)
-        })
+        .filter(|c| e.categories.clone().into_iter().any(|c_id| *c.id == c_id))
         .map(|c| c.name)
         .collect();
     let body = user_communication::new_entry_email(e, id, categories);
@@ -64,9 +64,7 @@ pub fn notify_update_entry(
     let subject = String::from("Karte von Morgen - Eintrag verändert: ") + &e.title;
     let categories: Vec<String> = all_categories
         .into_iter()
-        .filter(|c| {
-            e.categories.clone().into_iter().any(|c_id| *c.id == c_id)
-        })
+        .filter(|c| e.categories.clone().into_iter().any(|c_id| *c.id == c_id))
         .map(|c| c.name)
         .collect();
     let body = user_communication::changed_entry_email(e, categories);

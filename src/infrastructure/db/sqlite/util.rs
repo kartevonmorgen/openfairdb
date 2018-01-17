@@ -28,7 +28,7 @@ impl From<e::Entry> for Entry {
             id,
             osm_node: osm_node.map(|x| x as i64),
             created: created as i64,
-            version: version as i32,
+            version: version as i64,
             current: true,
             title,
             description,
@@ -115,24 +115,34 @@ impl From<e::User> for User {
 
 impl From<Comment> for e::Comment {
     fn from(c: Comment) -> e::Comment {
-        let Comment { id, created, text, rating_id } = c;
+        let Comment {
+            id,
+            created,
+            text,
+            rating_id,
+        } = c;
         e::Comment {
             id,
             created: created as u64,
             text,
-            rating_id
+            rating_id,
         }
     }
 }
 
 impl From<e::Comment> for Comment {
     fn from(c: e::Comment) -> Comment {
-        let e::Comment { id, created, text, rating_id } = c;
+        let e::Comment {
+            id,
+            created,
+            text,
+            rating_id,
+        } = c;
         Comment {
             id,
             created: created as i64,
             text,
-            rating_id
+            rating_id,
         }
     }
 }
@@ -223,7 +233,6 @@ impl From<e::BboxSubscription> for BboxSubscription {
         }
     }
 }
-
 
 impl From<e::RatingContext> for String {
     fn from(context: e::RatingContext) -> String {

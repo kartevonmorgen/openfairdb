@@ -50,13 +50,14 @@ impl EntryBuild {
 impl EntryBuilder for Entry {
     fn build() -> EntryBuild {
         EntryBuild {
-            entry: Entry::default()
+            entry: Entry::default(),
         }
     }
 }
 
 impl Default for Entry {
     fn default() -> Entry {
+        #[cfg_attr(rustfmt, rustfmt_skip)]
         Entry{
             id          : Uuid::new_v4().simple().to_string(),
             osm_node    : None,

@@ -1,37 +1,37 @@
 // Copyright (c) 2015 - 2018 Markus Kohlhase <mail@markus-kohlhase.de>
 
-#![feature(plugin,custom_derive,test)]
+#![feature(plugin, custom_derive, test)]
 #![plugin(rocket_codegen)]
-#![recursion_limit="256"]
+#![recursion_limit = "256"]
 
+extern crate chrono;
+extern crate clap;
+#[macro_use]
+extern crate diesel;
+#[macro_use]
+extern crate diesel_migrations;
+extern crate dotenv;
+extern crate env_logger;
+extern crate fast_chemail;
+#[macro_use]
+extern crate lazy_static;
 #[macro_use]
 extern crate log;
-extern crate env_logger;
+extern crate pwhash;
 #[macro_use]
 extern crate quick_error;
-extern crate clap;
-extern crate uuid;
-extern crate fast_chemail;
-extern crate url;
+extern crate quoted_printable;
+extern crate regex;
 extern crate rocket;
 extern crate rocket_contrib;
 #[macro_use]
 extern crate serde_derive;
 extern crate serde_json;
-extern crate chrono;
-#[macro_use]
-extern crate lazy_static;
-extern crate regex;
-extern crate pwhash;
-extern crate quoted_printable;
-extern crate toml;
-extern crate dotenv;
-#[macro_use]
-extern crate diesel;
-#[macro_use]
-extern crate diesel_migrations;
 #[cfg(test)]
 extern crate test;
+extern crate toml;
+extern crate url;
+extern crate uuid;
 
 mod entities;
 mod business;

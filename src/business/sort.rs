@@ -28,16 +28,18 @@ impl SortByDistanceTo for Vec<Entry> {
         if !(c.lat.is_finite() && c.lng.is_finite()) {
             return;
         }
-        self.sort_by(|a, _| if a.lat.is_finite() && a.lng.is_finite() {
-            Ordering::Less
-        } else {
-            warn!("invalid coordinate: {}/{}", a.lat, a.lng);
-            Ordering::Greater
+        self.sort_by(|a, _| {
+            if a.lat.is_finite() && a.lng.is_finite() {
+                Ordering::Less
+            } else {
+                warn!("invalid coordinate: {}/{}", a.lat, a.lng);
+                Ordering::Greater
+            }
         });
         self.sort_by(|a, b| {
-            a.distance_to(c).partial_cmp(&b.distance_to(c)).unwrap_or(
-                Ordering::Equal,
-            )
+            a.distance_to(c)
+                .partial_cmp(&b.distance_to(c))
+                .unwrap_or(Ordering::Equal)
         })
     }
 }
@@ -48,7 +50,6 @@ pub trait Rated {
 
 impl Rated for Entry {
     fn avg_rating(&self, ratings: &[Rating]) -> f64 {
-
         use self::RatingContext::*;
 
         let ratings_for_entry: Vec<&Rating> =
@@ -63,13 +64,12 @@ impl Rated for Entry {
             avg_rating_for_context(&ratings_for_entry, Solidarity),
         ];
 
-        let sum = avg_ratings.iter().fold(
-            0.0,
-            |acc, &r| acc + r.unwrap_or(0.0),
-        );
-        let num_rated_contexts = avg_ratings.iter().fold(0, |acc, &r| {
-            acc + if r.is_some() { 1 } else { 0 }
-        });
+        let sum = avg_ratings
+            .iter()
+            .fold(0.0, |acc, &r| acc + r.unwrap_or(0.0));
+        let num_rated_contexts = avg_ratings
+            .iter()
+            .fold(0, |acc, &r| acc + if r.is_some() { 1 } else { 0 });
 
         if num_rated_contexts > 0 {
             sum / 6.0
@@ -85,13 +85,17 @@ fn avg_rating_for_context(ratings: &[&Rating], context: RatingContext) -> Option
         .filter(|rating| rating.context == context)
         .collect();
 
-    let sum = applicable_ratings.iter().fold(0_i64, |acc, rating| {
-        acc + rating.value as i64
-    }) as f64;
+    let sum = applicable_ratings
+        .iter()
+        .fold(0_i64, |acc, rating| acc + rating.value as i64) as f64;
     let n = applicable_ratings.len();
 
     let avg = sum / n as f64;
-    if avg.is_nan() { None } else { Some(avg as f64) }
+    if avg.is_nan() {
+        None
+    } else {
+        Some(avg as f64)
+    }
 }
 
 pub trait SortByAverageRating {
@@ -107,7 +111,6 @@ impl SortByAverageRating for Vec<Entry> {
     }
 
     fn sort_by_avg_rating(&mut self, avg_ratings: &HashMap<String, f64>) {
-
         self.sort_by(|a, b| {
             avg_ratings
                 .get(&b.id)
@@ -206,7 +209,6 @@ pub mod tests {
         assert!(entries[3].id == "a" || entries[3].id == "e");
         assert_eq!(entries[4].id, "d");
 
-
         // tests:
         // - negative ratings
     }
@@ -249,7 +251,7 @@ pub mod tests {
         assert!(entries[4].id == "c" || entries[4].id == "e");
     }
 
-    use std::f64::{NAN, INFINITY};
+    use std::f64::{INFINITY, NAN};
 
     #[test]
     fn sort_with_invalid_coordinates() {
@@ -278,9 +280,7 @@ pub mod tests {
         assert_eq!(entries[2].id, "c");
     }
 
-
     pub fn create_entries_with_ratings(n: usize) -> (Vec<Entry>, Vec<Rating>) {
-
         let entries: Vec<Entry> = (0..n).map(|_| Entry::build().finish()).collect();
 
         let ratings: Vec<_> = entries
@@ -302,16 +302,14 @@ pub mod tests {
 
     fn create_ratings_for_entry(id: &str, n: usize) -> Vec<Rating> {
         (0..n)
-            .map(|_| {
-                Rating {
-                    id: Uuid::new_v4().simple().to_string(),
-                    entry_id: id.into(),
-                    created: 0,
-                    title: "".into(),
-                    value: 2,
-                    context: RatingContext::Diversity,
-                    source: None,
-                }
+            .map(|_| Rating {
+                id: Uuid::new_v4().simple().to_string(),
+                entry_id: id.into(),
+                created: 0,
+                title: "".into(),
+                value: 2,
+                context: RatingContext::Diversity,
+                source: None,
             })
             .collect()
     }
@@ -358,17 +356,13 @@ pub mod tests {
     fn bench_calc_avg_of_100_ratings_for_a_rating_context(b: &mut Bencher) {
         let (_, ratings) = create_entry_with_multiple_ratings(100);
         let ratings: Vec<_> = ratings.iter().collect();
-        b.iter(|| {
-            avg_rating_for_context(&ratings, RatingContext::Diversity)
-        });
+        b.iter(|| avg_rating_for_context(&ratings, RatingContext::Diversity));
     }
 
     #[bench]
     fn bench_calc_avg_of_1000_ratings_for_a_rating_context(b: &mut Bencher) {
         let (_, ratings) = create_entry_with_multiple_ratings(1000);
         let ratings: Vec<_> = ratings.iter().collect();
-        b.iter(|| {
-            avg_rating_for_context(&ratings, RatingContext::Diversity)
-        });
+        b.iter(|| avg_rating_for_context(&ratings, RatingContext::Diversity));
     }
 }

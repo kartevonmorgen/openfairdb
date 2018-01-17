@@ -7,7 +7,7 @@ use std::result;
 use business::db::Db;
 use super::models;
 use super::schema;
-use diesel::result::{Error as DieselError, DatabaseErrorKind};
+use diesel::result::{DatabaseErrorKind, Error as DieselError};
 
 type Result<T> = result::Result<T, RepoError>;
 
@@ -16,9 +16,11 @@ fn unset_current_on_all_entries(
     id: &str,
 ) -> result::Result<usize, diesel::result::Error> {
     use self::schema::entries::dsl;
-    diesel::update(dsl::entries.filter(dsl::id.eq(id)).filter(
-        dsl::current.eq(true),
-    )).set(dsl::current.eq(false))
+    diesel::update(
+        dsl::entries
+            .filter(dsl::id.eq(id))
+            .filter(dsl::current.eq(true)),
+    ).set(dsl::current.eq(false))
         .execute(*con)
 }
 
@@ -28,12 +30,10 @@ impl Db for SqliteConnection {
         let cat_rels: Vec<_> = e.categories
             .iter()
             .cloned()
-            .map(|category_id| {
-                models::EntryCategoryRelation {
-                    entry_id: e.id.clone(),
-                    entry_version: e.version as i32,
-                    category_id,
-                }
+            .map(|category_id| models::EntryCategoryRelation {
+                entry_id: e.id.clone(),
+                entry_version: e.version as i64,
+                category_id,
             })
             .collect();
         self.transaction::<_, diesel::result::Error, _>(|| {
@@ -98,23 +98,19 @@ impl Db for SqliteConnection {
     }
     fn all_users(&self) -> Result<Vec<User>> {
         use self::schema::users::dsl;
-        Ok(
-            dsl::users
-                .load::<models::User>(self)?
-                .into_iter()
-                .map(User::from)
-                .collect(),
-        )
+        Ok(dsl::users
+            .load::<models::User>(self)?
+            .into_iter()
+            .map(User::from)
+            .collect())
     }
     fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>> {
         use self::schema::bbox_subscriptions::dsl;
-        Ok(
-            dsl::bbox_subscriptions
-                .load::<models::BboxSubscription>(self)?
-                .into_iter()
-                .map(BboxSubscription::from)
-                .collect(),
-        )
+        Ok(dsl::bbox_subscriptions
+            .load::<models::BboxSubscription>(self)?
+            .into_iter()
+            .map(BboxSubscription::from)
+            .collect())
     }
     fn confirm_email_address(&mut self, username: &str) -> Result<User> {
         use self::schema::users::dsl;
@@ -125,9 +121,7 @@ impl Db for SqliteConnection {
     }
     fn delete_bbox_subscription(&mut self, id: &str) -> Result<()> {
         use self::schema::bbox_subscriptions::dsl;
-        diesel::delete(dsl::bbox_subscriptions.find(id)).execute(
-            self,
-        )?;
+        diesel::delete(dsl::bbox_subscriptions.find(id)).execute(self)?;
         Ok(())
     }
     fn delete_user(&mut self, user: &str) -> Result<()> {
@@ -214,109 +208,94 @@ impl Db for SqliteConnection {
         let entries: Vec<models::Entry> =
             e_dsl::entries.filter(e_dsl::current.eq(true)).load(self)?;
 
-        let cat_rels = e_c_dsl::entry_category_relations
-            .load::<models::EntryCategoryRelation>(self)?;
+        let cat_rels =
+            e_c_dsl::entry_category_relations.load::<models::EntryCategoryRelation>(self)?;
 
-        let tag_rels = e_t_dsl::entry_tag_relations
-            .load::<models::EntryTagRelation>(self)?;
+        let tag_rels = e_t_dsl::entry_tag_relations.load::<models::EntryTagRelation>(self)?;
 
-        Ok(
-            entries
-                .into_iter()
-                .map(|e| {
-                    let cats = cat_rels
-                        .iter()
-                        .filter(|r| r.entry_id == e.id)
-                        .filter(|r| r.entry_version == e.version)
-                        .map(|r| &r.category_id)
-                        .cloned()
-                        .collect();
-                    let tags = tag_rels
-                        .iter()
-                        .filter(|r| r.entry_id == e.id)
-                        .filter(|r| r.entry_version == e.version)
-                        .map(|r| &r.tag_id)
-                        .cloned()
-                        .collect();
-                    Entry {
-                        id: e.id,
-                        osm_node: e.osm_node.map(|x| x as u64),
-                        created: e.created as u64,
-                        version: e.version as u64,
-                        title: e.title,
-                        description: e.description,
-                        lat: e.lat as f64,
-                        lng: e.lng as f64,
-                        street: e.street,
-                        zip: e.zip,
-                        city: e.city,
-                        country: e.country,
-                        email: e.email,
-                        telephone: e.telephone,
-                        homepage: e.homepage,
-                        categories: cats,
-                        tags: tags,
-                        license: e.license,
-                    }
-                })
-                .collect(),
-        )
+        Ok(entries
+            .into_iter()
+            .map(|e| {
+                let cats = cat_rels
+                    .iter()
+                    .filter(|r| r.entry_id == e.id)
+                    .filter(|r| r.entry_version == e.version)
+                    .map(|r| &r.category_id)
+                    .cloned()
+                    .collect();
+                let tags = tag_rels
+                    .iter()
+                    .filter(|r| r.entry_id == e.id)
+                    .filter(|r| r.entry_version == e.version)
+                    .map(|r| &r.tag_id)
+                    .cloned()
+                    .collect();
+                Entry {
+                    id: e.id,
+                    osm_node: e.osm_node.map(|x| x as u64),
+                    created: e.created as u64,
+                    version: e.version as u64,
+                    title: e.title,
+                    description: e.description,
+                    lat: e.lat as f64,
+                    lng: e.lng as f64,
+                    street: e.street,
+                    zip: e.zip,
+                    city: e.city,
+                    country: e.country,
+                    email: e.email,
+                    telephone: e.telephone,
+                    homepage: e.homepage,
+                    categories: cats,
+                    tags: tags,
+                    license: e.license,
+                }
+            })
+            .collect())
     }
     fn all_categories(&self) -> Result<Vec<Category>> {
         use self::schema::categories::dsl::*;
-        Ok(
-            categories
-                .load::<models::Category>(self)?
-                .into_iter()
-                .map(Category::from)
-                .collect(),
-        )
+        Ok(categories
+            .load::<models::Category>(self)?
+            .into_iter()
+            .map(Category::from)
+            .collect())
     }
     fn all_tags(&self) -> Result<Vec<Tag>> {
         use self::schema::tags::dsl::*;
-        Ok(
-            tags.load::<models::Tag>(self)?
-                .into_iter()
-                .map(Tag::from)
-                .collect(),
-        )
-
+        Ok(tags.load::<models::Tag>(self)?
+            .into_iter()
+            .map(Tag::from)
+            .collect())
     }
     fn all_ratings(&self) -> Result<Vec<Rating>> {
         use self::schema::ratings::dsl::*;
-        Ok(
-            ratings
-                .load::<models::Rating>(self)?
-                .into_iter()
-                .map(Rating::from)
-                .collect(),
-        )
+        Ok(ratings
+            .load::<models::Rating>(self)?
+            .into_iter()
+            .map(Rating::from)
+            .collect())
     }
     fn all_comments(&self) -> Result<Vec<Comment>> {
         use self::schema::comments::dsl::*;
-        Ok(
-            comments
-                .load::<models::Comment>(self)?
-                .into_iter()
-                .map(Comment::from)
-                .collect(),
-        )
+        Ok(comments
+            .load::<models::Comment>(self)?
+            .into_iter()
+            .map(Comment::from)
+            .collect())
     }
 
     fn update_entry(&mut self, entry: &Entry) -> Result<()> {
-
         let e = models::Entry::from(entry.clone());
 
         let cat_rels: Vec<_> = entry
             .categories
             .iter()
             .cloned()
-            .map(|category_id| {
-                models::EntryCategoryRelation {
-                    entry_id: entry.id.clone(),
-                    entry_version: entry.version as i32,
-                    category_id,
-                }
+            .map(|category_id| models::EntryCategoryRelation {
+                entry_id: entry.id.clone(),
+                entry_version: entry.version as i64,
+                category_id,
             })
             .collect();
 
@@ -342,29 +321,24 @@ impl Db for SqliteConnection {
                 let cat_rels: Vec<_> = e.categories
                     .iter()
                     .cloned()
-                    .map(|category_id| {
-                        models::EntryCategoryRelation {
-                            entry_id: e.id.clone(),
-                            entry_version: e.version as i32,
-                            category_id,
-                        }
+                    .map(|category_id| models::EntryCategoryRelation {
+                        entry_id: e.id.clone(),
+                        entry_version: e.version as i64,
+                        category_id,
                     })
                     .collect();
                 let tag_rels: Vec<_> = e.tags
                     .iter()
-                    .map(|tag_id| {
-                        models::EntryTagRelation {
-                            entry_id: e.id.clone(),
-                            entry_version: e.version as i32,
-                            tag_id: tag_id.clone(),
-                        }
+                    .map(|tag_id| models::EntryTagRelation {
+                        entry_id: e.id.clone(),
+                        entry_version: e.version as i64,
+                        tag_id: tag_id.clone(),
                     })
                     .collect();
                 (new_entry, cat_rels, tag_rels)
             })
             .collect();
         self.transaction::<_, diesel::result::Error, _>(|| {
-
             for (new_entry, cat_rels, tag_rels) in imports.into_iter() {
                 unset_current_on_all_entries(&self, &new_entry.id)?;
                 diesel::insert_into(schema::entries::table)
@@ -374,10 +348,11 @@ impl Db for SqliteConnection {
                     .values(&cat_rels)
                     .execute(self)?;
 
-
                 for r in tag_rels.iter() {
                     let res = diesel::insert_into(schema::tags::table)
-                        .values(&models::Tag { id: r.tag_id.clone() })
+                        .values(&models::Tag {
+                            id: r.tag_id.clone(),
+                        })
                         .execute(self);
                     if let Err(err) = res {
                         match err {

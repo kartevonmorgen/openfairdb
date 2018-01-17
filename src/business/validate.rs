@@ -66,7 +66,6 @@ pub fn password(pw: &str) -> Result<(), ParameterError> {
 
 impl Validate for Entry {
     fn validate(&self) -> Result<(), ParameterError> {
-
         self.license
             .clone()
             .ok_or(ParameterError::License)

@@ -1,5 +1,5 @@
 use business::error::ParameterError;
-use entities::{Coordinate, Bbox};
+use entities::{Bbox, Coordinate};
 
 // The Earth's radius in kilometers.
 static EARTH_RADIUS: f64 = 6371.0;
@@ -11,8 +11,8 @@ pub fn distance(a: &Coordinate, b: &Coordinate) -> f64 {
     let dlat = (b.lat - a.lat).to_radians();
     let dlng = (b.lng - a.lng).to_radians();
 
-    let a = (dlat / 2.0).sin() * (dlat / 2.0).sin() +
-        lat1.cos() * lat2.cos() * (dlng / 2.0).sin() * (dlng / 2.0).sin();
+    let a = (dlat / 2.0).sin() * (dlat / 2.0).sin()
+        + lat1.cos() * lat2.cos() * (dlng / 2.0).sin() * (dlng / 2.0).sin();
     let c = 2.0 * a.sqrt().atan2((1.0 - a).sqrt());
 
     EARTH_RADIUS * c
@@ -25,22 +25,21 @@ pub fn extract_bbox(s: &str) -> Result<Vec<Coordinate>, ParameterError> {
         .collect::<Vec<f64>>();
 
     match c.len() {
-        4 => {
-            Ok(vec![
-                Coordinate {
-                    lat: c[0],
-                    lng: c[1],
-                },
-                Coordinate {
-                    lat: c[2],
-                    lng: c[3],
-                },
-            ])
-        }
+        4 => Ok(vec![
+            Coordinate {
+                lat: c[0],
+                lng: c[1],
+            },
+            Coordinate {
+                lat: c[2],
+                lng: c[3],
+            },
+        ]),
         _ => Err(ParameterError::Bbox),
     }
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 pub fn is_in_bbox(lat: &f64, lng: &f64, bbox: &Bbox) -> bool {
     *lat >= bbox.south_west.lat &&
     *lng >= bbox.south_west.lng &&
@@ -66,7 +65,6 @@ mod tests {
 
     #[test]
     fn real_distance() {
-
         // 48° 47′ N, 9° 11′ O
         let stuttgart = Coordinate {
             lat: 48.7755,
@@ -96,7 +94,7 @@ mod tests {
         assert_eq!(distance(&a, &b), distance(&b, &a));
     }
 
-    use std::f64::{NAN, INFINITY};
+    use std::f64::{INFINITY, NAN};
 
     #[test]
     fn distance_with_invalid_coordinates() {

@@ -4,8 +4,8 @@ pub trait InBBox {
     fn in_bbox(&self, bb: &[Coordinate]) -> bool;
 }
 
-
 impl InBBox for Entry {
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     fn in_bbox(&self, bb: &[Coordinate]) -> bool {
         // TODO: either return a Result or create a bounding box struct
         if bb.len() != 2 {
@@ -20,34 +20,29 @@ impl InBBox for Entry {
 }
 
 pub fn entries_by_category_ids<'a>(ids: &'a [String]) -> Box<Fn(&Entry) -> bool + 'a> {
-    Box::new(move |e| {
-        ids.iter().any(|c| e.categories.iter().any(|x| x == c))
-    })
+    Box::new(move |e| ids.iter().any(|c| e.categories.iter().any(|x| x == c)))
 }
 
 pub fn entries_by_tags_or_search_text<'a>(
     text: &'a str,
     tags: &'a [String],
 ) -> Box<Fn(&Entry) -> bool + 'a> {
-
     let words = to_words(text);
 
     if tags.len() > 0 {
         Box::new(move |entry| {
-            tags.iter().all(|tag| entry.tags.iter().any(|t| t == tag)) ||
-                ((text.len() > 0 &&
-                      words.iter().any(|word| {
-                        entry.title.to_lowercase().contains(word) ||
-                            entry.description.to_lowercase().contains(word)
-                    })) || (text.len() == 0 && tags[0] == ""))
+            tags.iter().all(|tag| entry.tags.iter().any(|t| t == tag))
+                || ((text.len() > 0 && words.iter().any(|word| {
+                    entry.title.to_lowercase().contains(word)
+                        || entry.description.to_lowercase().contains(word)
+                })) || (text.len() == 0 && tags[0] == ""))
         })
     } else {
         Box::new(move |entry| {
-            ((text.len() > 0 &&
-                  words.iter().any(|word| {
-                    entry.title.to_lowercase().contains(word) ||
-                        entry.description.to_lowercase().contains(word)
-                })) || text.len() == 0)
+            ((text.len() > 0 && words.iter().any(|word| {
+                entry.title.to_lowercase().contains(word)
+                    || entry.description.to_lowercase().contains(word)
+            })) || text.len() == 0)
         })
     }
 }

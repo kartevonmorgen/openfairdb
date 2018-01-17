@@ -1,5 +1,6 @@
 use entities as e;
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Serialize)]
 pub struct Entry {
     pub id          : String,
@@ -22,7 +23,8 @@ pub struct Entry {
     pub license     : Option<String>,
 }
 
-#[derive(Serialize,Deserialize)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
+#[derive(Serialize, Deserialize)]
 pub struct Rating {
     pub id          : String,
     pub title       : String,
@@ -33,13 +35,15 @@ pub struct Rating {
     pub source      : String
 }
 
-#[derive(Serialize,Deserialize)]
+#[cfg_attr(rustfmt, rustfmt_skip)]
+#[derive(Serialize, Deserialize)]
 pub struct Comment {
     pub id          : String,
     pub created     : u64,
     pub text        : String,
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Serialize)]
 pub struct EntryIdWithCoordinates {
     pub id : String,
@@ -47,18 +51,21 @@ pub struct EntryIdWithCoordinates {
     pub lng: f64,
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Serialize)]
 pub struct SearchResponse {
     pub visible   : Vec<EntryIdWithCoordinates>,
     pub invisible : Vec<EntryIdWithCoordinates>
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Serialize)]
 pub struct User {
     pub u_id: String,
     pub email: String
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Serialize)]
 pub struct BboxSubscription{
     pub id              : String,
@@ -70,6 +77,7 @@ pub struct BboxSubscription{
 
 // Entity -> JSON
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
 impl Entry {
     pub fn from_entry_with_ratings(e: e::Entry, ratings: Vec<e::Rating>) -> Entry {
         Entry{

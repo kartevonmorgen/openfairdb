@@ -190,6 +190,7 @@ impl Db for MockDb {
 
 #[test]
 fn create_new_valid_entry() {
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     let x = NewEntry {
         title       : "foo".into(),
         description : "bar".into(),
@@ -222,6 +223,7 @@ fn create_new_valid_entry() {
 
 #[test]
 fn create_entry_with_invalid_email() {
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     let x = NewEntry {
         title       : "foo".into(),
         description : "bar".into(),
@@ -252,6 +254,7 @@ fn update_valid_entry() {
         .description("bar")
         .finish();
 
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     let new = UpdateEntry {
         id          : id.clone(),
         osm_node    :  None,
@@ -286,6 +289,7 @@ fn update_valid_entry() {
 #[test]
 fn update_entry_with_invalid_version() {
     let id = Uuid::new_v4().simple().to_string();
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     let old = Entry {
         id          : id.clone(),
         osm_node    :  None,
@@ -306,6 +310,7 @@ fn update_entry_with_invalid_version() {
         tags        : vec![],
         license     : None
     };
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     let new = UpdateEntry {
         id          : id.clone(),
         osm_node    :  None,
@@ -329,24 +334,23 @@ fn update_entry_with_invalid_version() {
     let result = update_entry(&mut mock_db, new);
     assert!(result.is_err());
     match result.err().unwrap() {
-        Error::Repo(err) => {
-            match err {
-                RepoError::InvalidVersion => { },
-                _ => {
-                    panic!("invalid error type");
-                }
+        Error::Repo(err) => match err {
+            RepoError::InvalidVersion => {}
+            _ => {
+                panic!("invalid error type");
             }
         },
         _ => {
             panic!("invalid error type");
         }
     }
-    assert_eq!(mock_db.entries.len(),1);
+    assert_eq!(mock_db.entries.len(), 1);
 }
 
 #[test]
-fn update_non_existing_entry(){
+fn update_non_existing_entry() {
     let id = Uuid::new_v4().simple().to_string();
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     let new = UpdateEntry {
         id          : id.clone(),
         osm_node    :  None,
@@ -370,14 +374,12 @@ fn update_non_existing_entry(){
     let result = update_entry(&mut mock_db, new);
     assert!(result.is_err());
     match result.err().unwrap() {
-        Error::Repo(err) => {
-            match err {
-                RepoError::NotFound => {}
-                _ => {
-                    panic!("invalid error type");
-                }
+        Error::Repo(err) => match err {
+            RepoError::NotFound => {}
+            _ => {
+                panic!("invalid error type");
             }
-        }
+        },
         _ => {
             panic!("invalid error type");
         }
@@ -387,6 +389,7 @@ fn update_non_existing_entry(){
 
 #[test]
 fn add_new_valid_entry_with_tags() {
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     let x = NewEntry {
         title       : "foo".into(),
         description : "bar".into(),
@@ -417,6 +420,7 @@ fn update_valid_entry_with_tags() {
         .version(1)
         .tags(vec!["bio", "fair"])
         .finish();
+    #[cfg_attr(rustfmt, rustfmt_skip)]
     let new = UpdateEntry {
         id          : id.clone(),
         osm_node    :  None,
@@ -707,15 +711,13 @@ fn create_bbox_subscription() {
     };
 
     let username = "a";
-    assert!(
-        db.create_user(&User {
-            id: "123".into(),
-            username: username.into(),
-            password: username.into(),
-            email: "abc@abc.de".into(),
-            email_confirmed: true,
-        }).is_ok()
-    );
+    assert!(db.create_user(&User {
+        id: "123".into(),
+        username: username.into(),
+        password: username.into(),
+        email: "abc@abc.de".into(),
+        email_confirmed: true,
+    }).is_ok());
     assert!(
         business::usecase::subscribe_to_bbox(
             &vec![bbox_new.south_west, bbox_new.north_east],
@@ -730,7 +732,6 @@ fn create_bbox_subscription() {
 
 #[test]
 fn modify_bbox_subscription() {
-
     let mut db = MockDb::new();
 
     let bbox_old = entities::Bbox {
@@ -756,15 +757,13 @@ fn modify_bbox_subscription() {
     };
 
     let username = "a";
-    assert!(
-        db.create_user(&User {
-            id: "123".into(),
-            username: username.into(),
-            password: username.into(),
-            email: "abc@abc.de".into(),
-            email_confirmed: true,
-        }).is_ok()
-    );
+    assert!(db.create_user(&User {
+        id: "123".into(),
+        username: username.into(),
+        password: username.into(),
+        email: "abc@abc.de".into(),
+        email_confirmed: true,
+    }).is_ok());
 
     let bbox_subscription = BboxSubscription {
         id: "123".into(),
@@ -789,7 +788,6 @@ fn modify_bbox_subscription() {
     assert_eq!(bbox_subscriptions.len(), 1);
     assert_eq!(bbox_subscriptions[0].clone().bbox.north_east.lat, 10.0);
 }
-
 
 #[test]
 fn get_bbox_subscriptions() {
@@ -818,15 +816,13 @@ fn get_bbox_subscriptions() {
     };
 
     let user1 = "a";
-    assert!(
-        db.create_user(&User {
-            id: user1.into(),
-            username: user1.into(),
-            password: user1.into(),
-            email: "abc@abc.de".into(),
-            email_confirmed: true,
-        }).is_ok()
-    );
+    assert!(db.create_user(&User {
+        id: user1.into(),
+        username: user1.into(),
+        password: user1.into(),
+        email: "abc@abc.de".into(),
+        email_confirmed: true,
+    }).is_ok());
     let bbox_subscription = BboxSubscription {
         id: "1".into(),
         bbox: bbox1,
@@ -838,15 +834,13 @@ fn get_bbox_subscriptions() {
     );
 
     let user2 = "b";
-    assert!(
-        db.create_user(&User {
-            id: user2.into(),
-            username: user2.into(),
-            password: user2.into(),
-            email: "abc@abc.de".into(),
-            email_confirmed: true,
-        }).is_ok()
-    );
+    assert!(db.create_user(&User {
+        id: user2.into(),
+        username: user2.into(),
+        password: user2.into(),
+        email: "abc@abc.de".into(),
+        email_confirmed: true,
+    }).is_ok());
     let bbox_subscription2 = BboxSubscription {
         id: "2".into(),
         bbox: bbox2,
@@ -888,8 +882,8 @@ fn email_addresses_by_coordinate() {
         &mut db,
     ).unwrap();
 
-    let email_addresses = business::usecase::email_addresses_by_coordinate(&mut db, &5.0, &5.0)
-        .unwrap();
+    let email_addresses =
+        business::usecase::email_addresses_by_coordinate(&mut db, &5.0, &5.0).unwrap();
     assert_eq!(email_addresses.len(), 1);
     assert_eq!(email_addresses[0], "abc@abc.de");
 
@@ -903,26 +897,22 @@ fn delete_user() {
     let mut db = MockDb::new();
     let username = "a".to_string();
     let u_id = "1".to_string();
-    assert!(
-        db.create_user(&User {
-            id: u_id.clone(),
-            username: username.clone(),
-            password: username,
-            email: "abc@abc.de".into(),
-            email_confirmed: true,
-        }).is_ok()
-    );
+    assert!(db.create_user(&User {
+        id: u_id.clone(),
+        username: username.clone(),
+        password: username,
+        email: "abc@abc.de".into(),
+        email_confirmed: true,
+    }).is_ok());
     let username = "b".to_string();
     let u_id = "2".to_string();
-    assert!(
-        db.create_user(&User {
-            id: u_id.clone(),
-            username: username.clone(),
-            password: username,
-            email: "abcd@abcd.de".into(),
-            email_confirmed: true,
-        }).is_ok()
-    );
+    assert!(db.create_user(&User {
+        id: u_id.clone(),
+        username: username.clone(),
+        password: username,
+        email: "abcd@abcd.de".into(),
+        email_confirmed: true,
+    }).is_ok());
     assert_eq!(db.users.len(), 2);
 
     assert!(business::usecase::delete_user(&mut db, "1", "1").is_ok());
@@ -931,14 +921,22 @@ fn delete_user() {
 
 #[bench]
 fn bench_search_in_1_000_rated_entries(b: &mut Bencher) {
-
     let mut db = MockDb::new();
     let (entries, ratings) = ::business::sort::tests::create_entries_with_ratings(1_000);
     db.entries = entries;
     db.ratings = ratings;
     let entry_ratings = HashMap::new();
     let req = SearchRequest {
-        bbox: vec![Coordinate{lat: -10.0, lng: -10.0}, Coordinate{lat: 10.0,lng:10.0}],
+        bbox: vec![
+            Coordinate {
+                lat: -10.0,
+                lng: -10.0,
+            },
+            Coordinate {
+                lat: 10.0,
+                lng: 10.0,
+            },
+        ],
         categories: None,
         text: "".into(),
         tags: vec![],
@@ -951,14 +949,22 @@ fn bench_search_in_1_000_rated_entries(b: &mut Bencher) {
 #[ignore]
 #[bench]
 fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
-
     let mut db = MockDb::new();
     let (entries, ratings) = ::business::sort::tests::create_entries_with_ratings(10_000);
     db.entries = entries;
     db.ratings = ratings;
     let entry_ratings = HashMap::new();
     let req = SearchRequest {
-        bbox: vec![Coordinate{lat: -10.0, lng: -10.0}, Coordinate{lat: 10.0,lng:10.0}],
+        bbox: vec![
+            Coordinate {
+                lat: -10.0,
+                lng: -10.0,
+            },
+            Coordinate {
+                lat: 10.0,
+                lng: 10.0,
+            },
+        ],
         categories: None,
         text: "".into(),
         tags: vec![],

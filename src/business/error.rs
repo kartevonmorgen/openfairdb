@@ -50,6 +50,7 @@ quick_error!{
         NotFound{
             description("The requested object could not be found")
         }
+        #[cfg(test)]
         AlreadyExists{
             description("The object already exists")
         }

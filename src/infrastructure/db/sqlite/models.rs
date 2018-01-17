@@ -6,7 +6,7 @@ pub struct Entry {
     pub id: String,
     pub osm_node: Option<i64>,
     pub created: i64,
-    pub version: i32, // TODO: use i64
+    pub version: i64,
     pub current: bool,
     pub title: String,
     pub description: String,
@@ -27,7 +27,7 @@ pub struct Entry {
 pub struct Category {
     pub id: String,
     pub created: i64,
-    pub version: i32, // TODO: use i64
+    pub version: i64,
     pub name: String,
 }
 
@@ -36,7 +36,7 @@ pub struct Category {
 #[primary_key(entry_id, entry_version, category_id)]
 pub struct EntryCategoryRelation {
     pub entry_id: String,
-    pub entry_version: i32, // TODO: use i64
+    pub entry_version: i64,
     pub category_id: String,
 }
 
@@ -45,7 +45,7 @@ pub struct EntryCategoryRelation {
 #[primary_key(entry_id, entry_version, tag_id)]
 pub struct EntryTagRelation {
     pub entry_id: String,
-    pub entry_version: i32, // TODO: use i64
+    pub entry_version: i64,
     pub tag_id: String,
 }
 
@@ -82,7 +82,7 @@ pub struct Rating {
     pub id: String,
     pub created: i64,
     pub title: String,
-    pub value: i32, // TODO: us i8 (TinyInt)
+    pub value: i32,
     pub context: String,
     pub source: Option<String>,
     pub entry_id: String,

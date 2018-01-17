@@ -43,9 +43,9 @@ pub fn import_from_osm_file(db_url: &str, file_name: &str) -> Result<()> {
         .into_iter()
         .filter(|e| e.tags.get("name").is_some())
         .filter(|new| {
-            !old_osm_entries.iter().any(
-                |old| old.osm_node == Some(new.id),
-            )
+            !old_osm_entries
+                .iter()
+                .any(|old| old.osm_node == Some(new.id))
         })
         .collect();
     debug!("mapping new osm entries ...");
@@ -72,7 +72,6 @@ fn parse_query_result(data: &str) -> result::Result<Vec<OsmEntry>, serde_json::e
 }
 
 fn map_osm_tags(osm_tags: &HashMap<String, String>) -> Vec<Tag> {
-
     let mut tags = vec![];
     let mut tag_map = HashMap::new();
 
@@ -95,7 +94,6 @@ fn map_osm_tags(osm_tags: &HashMap<String, String>) -> Vec<Tag> {
 }
 
 fn map_osm_to_ofdb_entry(osm: OsmEntry) -> Result<Entry> {
-
     let title = osm.tags
         .get("name")
         .ok_or_else(|| Error::new(ErrorKind::Other, "Tag 'name' not found"))?
@@ -112,21 +110,23 @@ fn map_osm_to_ofdb_entry(osm: OsmEntry) -> Result<Entry> {
 
     let version = 0;
     let created = Utc::now().timestamp() as u64;
-    let house_nr   = osm.tags.get("addr:housenumber").cloned();
-    let street     = osm.tags.get("addr:street").cloned();
-    let zip        = osm.tags.get("addr:postcode").cloned();
-    let city       = osm.tags.get("addr:city").cloned();
-    let country    = osm.tags.get("addr:country").cloned();
-    let email      = None;
-    let telephone  = osm.tags.get("phone").cloned();
-    let homepage   = osm.tags.get("website").cloned();
+    let house_nr = osm.tags.get("addr:housenumber").cloned();
+    let street = osm.tags.get("addr:street").cloned();
+    let zip = osm.tags.get("addr:postcode").cloned();
+    let city = osm.tags.get("addr:city").cloned();
+    let country = osm.tags.get("addr:country").cloned();
+    let email = None;
+    let telephone = osm.tags.get("phone").cloned();
+    let homepage = osm.tags.get("website").cloned();
     let categories = vec![];
-    let license    = Some("ODbL-1.0".into());
+    let license = Some("ODbL-1.0".into());
 
-    let street = street.map(|s| if let Some(nr) = house_nr {
-        format!("{} {}", s, nr)
-    } else {
-        s
+    let street = street.map(|s| {
+        if let Some(nr) = house_nr {
+            format!("{} {}", s, nr)
+        } else {
+            s
+        }
     });
 
     let tags = map_osm_tags(&osm.tags).into_iter().map(|t| t.id).collect();

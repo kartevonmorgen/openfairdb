@@ -56,18 +56,17 @@ fn similar_title(
     max_percent_different: f32,
     max_words_different: u32,
 ) -> bool {
-    let max_dist = ((min(e1.title.len(), e2.title.len()) as f32 * max_percent_different) + 1.0) as
-        usize; // +1 is to get the ceil
+    let max_dist =
+        ((min(e1.title.len(), e2.title.len()) as f32 * max_percent_different) + 1.0) as usize; // +1 is to get the ceil
 
-    levenshtein_distance_small(&e1.title, &e2.title, max_dist) ||
-        words_equal_except_k_words(&e1.title, &e2.title, max_words_different)
+    levenshtein_distance_small(&e1.title, &e2.title, max_dist)
+        || words_equal_except_k_words(&e1.title, &e2.title, max_words_different)
 }
 
 // returns true if all but k words are equal in str1 and str2
 // (and one of them has more than one word)
 // (words in str1 and str2 are treated as sets, order & multiplicity of words doesn't matter)
 fn words_equal_except_k_words(str1: &str, str2: &str, k: u32) -> bool {
-
     let len1 = str1.split_whitespace().count();
     let len2 = str2.split_whitespace().count();
 
@@ -139,9 +138,11 @@ pub fn levenshtein_distance(s: &str, t: &str) -> usize {
             } else {
                 1
             };
-            d[i][j] = min3(d[i - 1][j] + 1, // deletion
-                           d[i][j - 1] + 1, // insertion
-                           d[i - 1][j - 1] + substitution_cost) // substitution
+            d[i][j] = min3(
+                d[i - 1][j] + 1,                     // deletion
+                d[i][j - 1] + 1,                     // insertion
+                d[i - 1][j - 1] + substitution_cost, // substitution
+            )
         }
     }
 
@@ -149,7 +150,11 @@ pub fn levenshtein_distance(s: &str, t: &str) -> usize {
 }
 
 fn min3(s: usize, t: usize, u: usize) -> usize {
-    if s <= t { min(s, u) } else { min(t, u) }
+    if s <= t {
+        min(s, u)
+    } else {
+        min(t, u)
+    }
 }
 
 #[cfg(test)]

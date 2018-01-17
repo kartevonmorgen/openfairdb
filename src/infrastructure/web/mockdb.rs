@@ -1,6 +1,6 @@
 use business::usecase::tests::MockDb;
 use std::io;
-use diesel::r2d2::{Pool, PoolError, ManageConnection};
+use diesel::r2d2::{ManageConnection, Pool, PoolError};
 
 #[derive(Debug)]
 pub struct MockDbConnectionManager;

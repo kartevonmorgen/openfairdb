@@ -1,17 +1,17 @@
-use rocket::response::{Response, Responder};
+use rocket::response::{Responder, Response};
 use rocket::{self, State};
 use rocket_contrib::Json;
 use rocket::request::{self, FromRequest, Request};
 use rocket::Outcome;
-use rocket::http::{Status, Cookie, Cookies};
+use rocket::http::{Cookie, Cookies, Status};
 use adapters::json;
 use adapters::user_communication;
 use entities::*;
 use business::db::Db;
-use business::error::{Error, RepoError, ParameterError};
+use business::error::{Error, ParameterError, RepoError};
 use infrastructure::error::AppError;
 use serde_json::ser::to_string;
-use business::{usecase, geo};
+use business::{geo, usecase};
 use business::duplicates::{self, DuplicateType};
 use std::result;
 use super::util;
@@ -27,10 +27,9 @@ type DbPool = super::mockdb::ConnectionPool;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
-
 const COOKIE_USER_KEY: &str = "user_id";
 
-#[derive(FromForm,Clone)]
+#[derive(FromForm, Clone)]
 struct SearchQuery {
     bbox: String,
     categories: Option<String>,
@@ -60,7 +59,6 @@ fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResp
 }
 
 fn get_search_inner(db: &DbPool, search: SearchQuery) -> Result<json::SearchResponse> {
-
     let bbox = geo::extract_bbox(&search.bbox)
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
@@ -104,23 +102,19 @@ fn get_search_inner(db: &DbPool, search: SearchQuery) -> Result<json::SearchResp
 
     let visible = visible
         .into_iter()
-        .map(|e| {
-            json::EntryIdWithCoordinates {
-                id: e.id,
-                lat: e.lat,
-                lng: e.lng,
-            }
+        .map(|e| json::EntryIdWithCoordinates {
+            id: e.id,
+            lat: e.lat,
+            lng: e.lng,
         })
         .collect();
 
     let invisible = invisible
         .into_iter()
-        .map(|e| {
-            json::EntryIdWithCoordinates {
-                id: e.id,
-                lat: e.lat,
-                lng: e.lng,
-            }
+        .map(|e| json::EntryIdWithCoordinates {
+            id: e.id,
+            lat: e.lat,
+            lng: e.lng,
         })
         .collect();
 
@@ -207,28 +201,24 @@ fn get_ratings(db: State<DbPool>, id: String) -> Result<Vec<json::Rating>> {
     let comments = usecase::get_comments_by_rating_ids(&*db.get()?, &r_ids)?;
     let result = ratings
         .into_iter()
-        .map(|x| {
-            json::Rating {
-                id: x.id.clone(),
-                created: x.created,
-                title: x.title,
-                value: x.value,
-                context: x.context,
-                source: x.source.unwrap_or("".into()),
-                comments: comments
-                    .get(&x.id)
-                    .cloned()
-                    .unwrap_or_else(|| vec![])
-                    .into_iter()
-                    .map(|c| {
-                        json::Comment {
-                            id: c.id.clone(),
-                            created: c.created,
-                            text: c.text,
-                        }
-                    })
-                    .collect(),
-            }
+        .map(|x| json::Rating {
+            id: x.id.clone(),
+            created: x.created,
+            title: x.title,
+            value: x.value,
+            context: x.context,
+            source: x.source.unwrap_or("".into()),
+            comments: comments
+                .get(&x.id)
+                .cloned()
+                .unwrap_or_else(|| vec![])
+                .into_iter()
+                .map(|c| json::Comment {
+                    id: c.id.clone(),
+                    created: c.created,
+                    text: c.text,
+                })
+                .collect(),
         })
         .collect();
     Ok(Json(result))
@@ -282,14 +272,12 @@ fn get_bbox_subscriptions(db: State<DbPool>, user: Login) -> Result<Vec<json::Bb
     let Login(username) = user;
     let user_subscriptions = usecase::get_bbox_subscriptions(&username, &*db.get()?)?
         .into_iter()
-        .map(|s| {
-            json::BboxSubscription {
-                id: s.id,
-                south_west_lat: s.bbox.south_west.lat,
-                south_west_lng: s.bbox.south_west.lng,
-                north_east_lat: s.bbox.north_east.lat,
-                north_east_lng: s.bbox.north_east.lng,
-            }
+        .map(|s| json::BboxSubscription {
+            id: s.id,
+            south_west_lat: s.bbox.south_west.lat,
+            south_west_lng: s.bbox.south_west.lng,
+            north_east_lat: s.bbox.north_east.lat,
+            north_east_lng: s.bbox.north_east.lng,
         })
         .collect();
     Ok(Json(user_subscriptions))
@@ -343,17 +331,16 @@ fn get_category(db: State<DbPool>, id: String) -> Result<String> {
 
         1 => {
             let id = ids[0].clone();
-            let e = categories.into_iter().find(|x| x.id == id).ok_or(
-                RepoError::NotFound,
-            )?;
+            let e = categories
+                .into_iter()
+                .find(|x| x.id == id)
+                .ok_or(RepoError::NotFound)?;
             to_string(&e)
         }
-        _ => {
-            to_string(&categories
-                .into_iter()
-                .filter(|e| ids.iter().any(|id| e.id == id.clone()))
-                .collect::<Vec<Category>>())
-        }
+        _ => to_string(&categories
+            .into_iter()
+            .filter(|e| ids.iter().any(|id| e.id == id.clone()))
+            .collect::<Vec<Category>>()),
     }?;
     Ok(Json(res))
 }
@@ -372,12 +359,10 @@ impl<'r> Responder<'r> for AppError {
                         _ => Status::BadRequest,
                     })
                 }
-                Error::Repo(ref err) => {
-                    match *err {
-                        RepoError::NotFound => return Err(Status::NotFound),
-                        _ => {}
-                    }
-                }
+                Error::Repo(ref err) => match *err {
+                    RepoError::NotFound => return Err(Status::NotFound),
+                    _ => {}
+                },
                 _ => {}
             }
         }

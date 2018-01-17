@@ -13,7 +13,7 @@ table! {
     categories (id) {
         id -> Text,
         created -> BigInt,
-        version -> Integer,
+        version -> BigInt,
         name -> Text,
     }
 }
@@ -32,7 +32,7 @@ table! {
         id -> Text,
         osm_node -> Nullable<BigInt>,
         created -> BigInt,
-        version -> Integer,
+        version -> BigInt,
         current -> Bool,
         title -> Text,
         description -> Text,
@@ -52,7 +52,7 @@ table! {
 table! {
     entry_category_relations (entry_id, entry_version, category_id) {
         entry_id -> Text,
-        entry_version -> Integer,
+        entry_version -> BigInt,
         category_id -> Text,
     }
 }
@@ -60,7 +60,7 @@ table! {
 table! {
     entry_tag_relations (entry_id, entry_version, tag_id) {
         entry_id -> Text,
-        entry_version -> Integer,
+        entry_version -> BigInt,
         tag_id -> Text,
     }
 }

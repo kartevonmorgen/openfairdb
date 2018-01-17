@@ -1,6 +1,6 @@
 use rocket::{self, Rocket};
 use rocket_contrib::Json;
-use rocket::config::{Environment, Config};
+use rocket::config::{Config, Environment};
 use business::db::Db;
 use infrastructure::error::AppError;
 use business::sort::Rated;
@@ -93,11 +93,10 @@ where
 }
 
 pub fn run(db_url: &str, port: u16, enable_cors: bool) {
-
     if enable_cors {
         panic!(
             "enable-cors is currently not available until\
-        \nhttps://github.com/SergioBenitez/Rocket/pull/141\nis merged :("
+             \nhttps://github.com/SergioBenitez/Rocket/pull/141\nis merged :("
         );
     }
 

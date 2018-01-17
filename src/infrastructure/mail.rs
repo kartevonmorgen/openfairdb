@@ -8,7 +8,6 @@ use fast_chemail::is_valid_email;
 const FROM_ADDRESS: &str = "\"Karte von morgen\" <no-reply@kartevonmorgen.org>";
 
 pub fn create(to: &[String], subject: &str, body: &str) -> Result<String> {
-
     let to: Vec<_> = to.into_iter()
         .filter(|m| is_valid_email(m))
         .cloned()
@@ -30,12 +29,12 @@ pub fn create(to: &[String], subject: &str, body: &str) -> Result<String> {
 
     let email = format!(
         "Date:{date}\r\n\
-        From:{from}\r\n\
-        To:{to}\r\n\
-        Subject:{subject}\r\n\
-        MIME-Version: 1.0\r\n\
-        Content-Type: text/plain; charset=utf-8\r\n\r\n\
-        {body}",
+         From:{from}\r\n\
+         To:{to}\r\n\
+         Subject:{subject}\r\n\
+         MIME-Version: 1.0\r\n\
+         Content-Type: text/plain; charset=utf-8\r\n\r\n\
+         {body}",
         date = now.as_str(),
         from = FROM_ADDRESS,
         to = to.join(","),
