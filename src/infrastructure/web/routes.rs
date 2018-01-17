@@ -205,7 +205,6 @@ fn get_ratings(db: State<DbPool>, id: String) -> Result<Vec<json::Rating>> {
     let ratings = usecase::get_ratings(&*db.get()?, &util::extract_ids(&id))?;
     let r_ids: Vec<String> = ratings.iter().map(|r| r.id.clone()).collect();
     let comments = usecase::get_comments_by_rating_ids(&*db.get()?, &r_ids)?;
-    let triples = db.get()?.all_triples()?;
     let result = ratings
         .into_iter()
         .map(|x| {
@@ -213,7 +212,6 @@ fn get_ratings(db: State<DbPool>, id: String) -> Result<Vec<json::Rating>> {
                 id: x.id.clone(),
                 created: x.created,
                 title: x.title,
-                user: usecase::get_user_id_for_rating_id(&triples, &x.id),
                 value: x.value,
                 context: x.context,
                 source: x.source.unwrap_or("".into()),
@@ -227,7 +225,6 @@ fn get_ratings(db: State<DbPool>, id: String) -> Result<Vec<json::Rating>> {
                             id: c.id.clone(),
                             created: c.created,
                             text: c.text,
-                            user: usecase::get_user_id_for_comment_id(&triples, &c.id),
                         }
                     })
                     .collect(),

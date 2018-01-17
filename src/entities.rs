@@ -34,19 +34,6 @@ pub struct Tag {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-pub enum Relation {
-    #[serde(rename = "created_by")]
-    CreatedBy,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-pub struct Triple {
-    pub subject: ObjectId,
-    pub predicate: Relation,
-    pub object: ObjectId,
-}
-
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub enum ObjectId {
     #[serde(rename = "entry")]
     Entry(String),

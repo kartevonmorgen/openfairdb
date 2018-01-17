@@ -25,10 +25,6 @@ pub fn entries_by_category_ids<'a>(ids: &'a [String]) -> Box<Fn(&Entry) -> bool 
     })
 }
 
-pub fn triple_by_subject<'a>(o_id: ObjectId) -> Box<Fn(&&Triple) -> bool + 'a> {
-    Box::new(move |triple| o_id == triple.subject)
-}
-
 pub fn entries_by_tags_or_search_text<'a>(
     text: &'a str,
     tags: &'a [String],

@@ -63,35 +63,6 @@ impl Id for BboxSubscription {
     }
 }
 
-fn triple_id(t: &Triple) -> String {
-    let (s_type, s_id) = match t.subject {
-        ObjectId::Entry(ref id) => ("entry", id),
-        ObjectId::Tag(ref id) => ("tag", id),
-        ObjectId::User(ref id) => ("user", id),
-        ObjectId::Comment(ref id) => ("comment", id),
-        ObjectId::Rating(ref id) => ("rating", id),
-        ObjectId::BboxSubscription(ref id) => ("bbox_subscription", id),
-    };
-    let (o_type, o_id) = match t.object {
-        ObjectId::Entry(ref id) => ("entry", id),
-        ObjectId::Tag(ref id) => ("tag", id),
-        ObjectId::User(ref id) => ("user", id),
-        ObjectId::Comment(ref id) => ("comment", id),
-        ObjectId::Rating(ref id) => ("rating", id),
-        ObjectId::BboxSubscription(ref id) => ("bbox_subscription", id),
-    };
-    let p_type = match t.predicate {
-        Relation::CreatedBy => "created_by",
-    };
-    format!("{}-{}-{}-{}-{}", s_type, s_id, p_type, o_type, o_id)
-}
-
-impl Id for Triple {
-    fn id(&self) -> String {
-        triple_id(self)
-    }
-}
-
 #[derive(Deserialize, Debug, Clone)]
 pub struct NewEntry {
     pub title       : String,
@@ -171,37 +142,6 @@ pub fn get_ratings<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Rating>> {
             .cloned()
             .collect(),
     )
-}
-
-pub fn get_user_id_for_comment_id(triples: &[Triple], comment_id: &str) -> Option<String> {
-    triples
-        .iter()
-        .filter(&*filter::triple_by_subject(
-            ObjectId::Comment(comment_id.into()),
-        ))
-        .filter(|triple| triple.predicate == Relation::CreatedBy)
-        .map(|triple| &triple.object)
-        .filter_map(|object| match *object {
-            ObjectId::User(ref r_id) => Some(r_id),
-            _ => None,
-        })
-        .cloned()
-        .last()
-}
-
-pub fn get_user_id_for_rating_id(triples: &[Triple], rating_id: &str) -> Option<String> {
-    let r_id = ObjectId::Rating(rating_id.to_string());
-    triples
-        .iter()
-        .filter(&*filter::triple_by_subject(r_id))
-        .filter(|triple| triple.predicate == Relation::CreatedBy)
-        .map(|triple| &triple.object)
-        .filter_map(|object| match *object {
-            ObjectId::User(ref r_id) => Some(r_id),
-            _ => None,
-        })
-        .cloned()
-        .last()
 }
 
 pub fn get_ratings_by_entry_ids<D: Db>(

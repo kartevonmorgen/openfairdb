@@ -27,7 +27,6 @@ pub struct Rating {
     pub id          : String,
     pub title       : String,
     pub created     : u64,
-    pub user        : Option<String>,
     pub value       : i8,
     pub context     : e::RatingContext,
     pub comments    : Vec<Comment>,
@@ -39,7 +38,6 @@ pub struct Comment {
     pub id          : String,
     pub created     : u64,
     pub text        : String,
-    pub user        : Option<String>
 }
 
 #[derive(Serialize)]

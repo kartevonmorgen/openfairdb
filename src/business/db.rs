@@ -14,7 +14,6 @@ pub trait Repo<T> {
 pub trait Db {
     fn create_entry(&mut self, &Entry) -> Result<()>;
     fn create_tag_if_it_does_not_exist(&mut self, &Tag) -> Result<()>;
-    fn create_triple(&mut self, &Triple) -> Result<()>;
     fn create_user(&mut self, &User) -> Result<()>;
     fn create_comment(&mut self, &Comment) -> Result<()>;
     fn create_rating(&mut self, &Rating) -> Result<()>;
@@ -26,7 +25,6 @@ pub trait Db {
     fn all_entries(&self) -> Result<Vec<Entry>>;
     fn all_categories(&self) -> Result<Vec<Category>>;
     fn all_tags(&self) -> Result<Vec<Tag>>;
-    fn all_triples(&self) -> Result<Vec<Triple>>;
     fn all_ratings(&self) -> Result<Vec<Rating>>;
     fn all_comments(&self) -> Result<Vec<Comment>>;
     fn all_users(&self) -> Result<Vec<User>>;
@@ -35,7 +33,6 @@ pub trait Db {
     fn update_entry(&mut self, &Entry) -> Result<()>;
     fn confirm_email_address(&mut self, &str) -> Result<User>;
 
-    fn delete_triple(&mut self, &Triple) -> Result<()>;
     fn delete_bbox_subscription(&mut self, &str) -> Result<()>;
     fn delete_user(&mut self, &str) -> Result<()>;
 

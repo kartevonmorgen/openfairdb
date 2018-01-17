@@ -72,11 +72,6 @@ impl Db for SqliteConnection {
         }
         Ok(())
     }
-    fn create_triple(&mut self, t: &Triple) -> Result<()> {
-        warn!("did not save triple '{:?}'", t);
-        Ok(())
-
-    }
     fn create_user(&mut self, u: &User) -> Result<()> {
         diesel::insert_into(schema::users::table)
             .values(&models::User::from(u.clone()))
@@ -287,9 +282,6 @@ impl Db for SqliteConnection {
         )
 
     }
-    fn all_triples(&self) -> Result<Vec<Triple>> {
-        Ok(vec![])
-    }
     fn all_ratings(&self) -> Result<Vec<Rating>> {
         use self::schema::ratings::dsl::*;
         Ok(
@@ -339,11 +331,6 @@ impl Db for SqliteConnection {
                 .execute(self)?;
             Ok(())
         })?;
-        Ok(())
-    }
-
-    fn delete_triple(&mut self, t: &Triple) -> Result<()> {
-        warn!("did not delete triple '{:?}'", t);
         Ok(())
     }
 

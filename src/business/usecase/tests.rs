@@ -11,7 +11,6 @@ pub struct MockDb {
     pub entries: Vec<Entry>,
     pub categories: Vec<Category>,
     pub tags: Vec<Tag>,
-    pub triples: Vec<Triple>,
     pub users: Vec<User>,
     pub ratings: Vec<Rating>,
     pub comments: Vec<Comment>,
@@ -24,7 +23,6 @@ impl MockDb {
             entries: vec![],
             categories: vec![],
             tags: vec![],
-            triples: vec![],
             users: vec![],
             ratings: vec![],
             comments: vec![],
@@ -75,10 +73,6 @@ impl Db for MockDb {
         Ok(())
     }
 
-    fn create_triple(&mut self, e: &Triple) -> RepoResult<()> {
-        create(&mut self.triples, e)
-    }
-
     fn create_user(&mut self, u: &User) -> RepoResult<()> {
         create(&mut self.users, u)
     }
@@ -124,10 +118,6 @@ impl Db for MockDb {
         Ok(self.tags.clone())
     }
 
-    fn all_triples(&self) -> RepoResult<Vec<Triple>> {
-        Ok(self.triples.clone())
-    }
-
     fn all_ratings(&self) -> RepoResult<Vec<Rating>> {
         Ok(self.ratings.clone())
     }
@@ -170,21 +160,11 @@ impl Db for MockDb {
         }
     }
 
-    fn delete_triple(&mut self, t: &Triple) -> RepoResult<()> {
-        self.triples = self.triples
-            .clone()
-            .into_iter()
-            .filter(|x| x != t)
-            .collect();
-        Ok(())
-    }
-
     fn delete_bbox_subscription(&mut self, s_id: &str) -> RepoResult<()> {
-        self.bbox_subscriptions = vec![];
-        self.triples = self.triples
-            .clone()
-            .into_iter()
-            .filter(|t| t.object != ObjectId::BboxSubscription(s_id.into()))
+        self.bbox_subscriptions = self.bbox_subscriptions
+            .iter()
+            .filter(|s| s.id != s_id)
+            .cloned()
             .collect();
         Ok(())
     }
@@ -427,7 +407,6 @@ fn add_new_valid_entry_with_tags() {
     create_new_entry(&mut mock_db, x).unwrap();
     assert_eq!(mock_db.tags.len(), 2);
     assert_eq!(mock_db.entries.len(), 1);
-    assert_eq!(mock_db.triples.len(), 0);
 }
 
 #[test]

@@ -238,26 +238,6 @@ impl From<e::RatingContext> for String {
     }
 }
 
-impl From<e::Relation> for String {
-    fn from(r: e::Relation) -> String {
-        match r {
-            e::Relation::CreatedBy => "created_by",
-        }.into()
-    }
-}
-
-impl FromStr for e::Relation {
-    type Err = String;
-    fn from_str(predicate: &str) -> Result<e::Relation, String> {
-        Ok(match predicate {
-            "created_by" => e::Relation::CreatedBy,
-            _ => {
-                return Err(format!("invalid Relation: '{}'", predicate));
-            }
-        })
-    }
-}
-
 impl FromStr for e::RatingContext {
     type Err = String;
     fn from_str(context: &str) -> Result<e::RatingContext, String> {
