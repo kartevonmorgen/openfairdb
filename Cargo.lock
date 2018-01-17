@@ -184,11 +184,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
 name = "env_logger"
-version = "0.4.3"
+version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
- "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "chrono 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.5 (registry+https://github.com/rust-lang/crates.io-index)",
+ "termcolor 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -426,7 +428,7 @@ dependencies = [
  "diesel 1.1.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "diesel_migrations 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "env_logger 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
+ "env_logger 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "fast_chemail 0.9.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "libsqlite3-sys 0.9.1 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -735,6 +737,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "termcolor"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "wincolor 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "termion"
 version = "1.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -906,6 +916,15 @@ version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "wincolor"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "kernel32-sys 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "winapi 0.2.8 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "yansi"
 version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -934,7 +953,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum dotenv 0.10.1 (registry+https://github.com/rust-lang/crates.io-index)" = "d6f0e2bb24d163428d8031d3ebd2d2bd903ad933205a97d0f18c7c1aade380f3"
 "checksum dtoa 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)" = "09c3753c3db574d215cba4ea76018483895d7bff25a31b49ba45db21c48e50ab"
 "checksum either 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "740178ddf48b1a9e878e6d6509a1442a2d42fd2928aae8e7a6f8a36fb01981b3"
-"checksum env_logger 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)" = "3ddf21e73e016298f5cb37d6ef8e8da8e39f91f9ec8b0df44b7deb16a9f8cd5b"
+"checksum env_logger 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)" = "72fe4d3b255c5266b62e5bfdf5982650cdd8c707fb91225f4cc28ff981997057"
 "checksum error-chain 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d9435d864e017c3c6afeac1654189b06cdb491cf2ff73dbf0d73b0f292f42ff8"
 "checksum fast_chemail 0.9.5 (registry+https://github.com/rust-lang/crates.io-index)" = "115e1df89e36c3300a0f88b8b81c41ad24f7bf2b291912e405824d98a553704b"
 "checksum fuchsia-zircon 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "2e9763c69ebaae630ba35f74888db465e49e259ba1bc0eda7d06f4a067615d82"
@@ -1000,6 +1019,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum strsim 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)" = "b4d15c810519a91cf877e7e36e63fe068815c678181439f2f29e2562147c3694"
 "checksum syn 0.11.11 (registry+https://github.com/rust-lang/crates.io-index)" = "d3b891b9015c88c576343b9b3e41c2c11a51c219ef067b264bd9c8aa9b441dad"
 "checksum synom 0.11.3 (registry+https://github.com/rust-lang/crates.io-index)" = "a393066ed9010ebaed60b9eafa373d4b1baac186dd7e008555b0f702b51945b6"
+"checksum termcolor 0.3.3 (registry+https://github.com/rust-lang/crates.io-index)" = "9065bced9c3e43453aa3d56f1e98590b8455b341d2fa191a1090c0dd0b242c75"
 "checksum termion 1.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "689a3bdfaab439fd92bc87df5c4c78417d3cbe537487274e9b0b2dce76e92096"
 "checksum textwrap 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "c0b59b6b4b44d867f1370ef1bd91bfb262bf07bf0ae65c202ea2fbc16153b693"
 "checksum thread_local 0.3.5 (registry+https://github.com/rust-lang/crates.io-index)" = "279ef31c19ededf577bfd12dfae728040a21f635b06a24cd670ff510edd38963"
@@ -1026,4 +1046,5 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum winapi-build 0.1.1 (registry+https://github.com/rust-lang/crates.io-index)" = "2d315eee3b34aca4797b2da6b13ed88266e6d612562a0c46390af8299fc699bc"
 "checksum winapi-i686-pc-windows-gnu 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "ec6667f60c23eca65c561e63a13d81b44234c2e38a6b6c959025ee907ec614cc"
 "checksum winapi-x86_64-pc-windows-gnu 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "98f12c52b2630cd05d2c3ffd8e008f7f48252c042b4871c72aed9dc733b96668"
+"checksum wincolor 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "a39ee4464208f6430992ff20154216ab2357772ac871d994c51628d60e58b8b0"
 "checksum yansi 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "a503e4eea629f145a693c8ed1eddba88b3b9de5171c6ebd0e2820cf82d38f934"

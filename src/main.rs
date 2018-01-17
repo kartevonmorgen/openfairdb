@@ -39,6 +39,6 @@ mod adapters;
 mod infrastructure;
 
 fn main() {
-    env_logger::init().unwrap();
+    env_logger::init();
     infrastructure::cli::run();
 }
