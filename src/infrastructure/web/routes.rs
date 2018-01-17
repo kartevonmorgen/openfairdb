@@ -1,5 +1,5 @@
 use rocket::response::{Responder, Response};
-use rocket::{self, State};
+use rocket;
 use rocket_contrib::Json;
 use rocket::request::{self, FromRequest, Request};
 use rocket::Outcome;
@@ -17,13 +17,10 @@ use std::result;
 use super::util;
 
 #[cfg(not(test))]
-use super::sqlite;
-
-#[cfg(not(test))]
-type DbPool = sqlite::ConnectionPool;
+use super::sqlite::DbConn;
 
 #[cfg(test)]
-type DbPool = super::mockdb::ConnectionPool;
+use super::mockdb::DbConn;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
@@ -54,11 +51,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for Login {
 }
 
 #[get("/search?<search>")]
-fn get_search(db: State<DbPool>, search: SearchQuery) -> Result<json::SearchResponse> {
-    get_search_inner(&*db, search)
-}
-
-fn get_search_inner(db: &DbPool, search: SearchQuery) -> Result<json::SearchResponse> {
+fn get_search(db: DbConn, search: SearchQuery) -> Result<json::SearchResponse> {
     let bbox = geo::extract_bbox(&search.bbox)
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
@@ -98,7 +91,7 @@ fn get_search_inner(db: &DbPool, search: SearchQuery) -> Result<json::SearchResp
         entry_ratings: &*avg_ratings,
     };
 
-    let (visible, invisible) = usecase::search(&*db.get()?, &req)?;
+    let (visible, invisible) = usecase::search(&*db, &req)?;
 
     let visible = visible
         .into_iter()
@@ -130,10 +123,10 @@ struct UserId {
 }
 
 #[get("/entries/<ids>")]
-fn get_entry(db: State<DbPool>, ids: String) -> Result<Vec<json::Entry>> {
+fn get_entry(db: DbConn, ids: String) -> Result<Vec<json::Entry>> {
     let ids = util::extract_ids(&ids);
-    let entries = usecase::get_entries(&*db.get()?, &ids)?;
-    let ratings = usecase::get_ratings_by_entry_ids(&*db.get()?, &ids)?;
+    let entries = usecase::get_entries(&*db, &ids)?;
+    let ratings = usecase::get_ratings_by_entry_ids(&*db, &ids)?;
     Ok(Json(
         entries
             .into_iter()
@@ -146,21 +139,21 @@ fn get_entry(db: State<DbPool>, ids: String) -> Result<Vec<json::Entry>> {
 }
 
 #[get("/duplicates")]
-fn get_duplicates(db: State<DbPool>) -> Result<Vec<(String, String, DuplicateType)>> {
-    let entries = db.get()?.all_entries()?;
+fn get_duplicates(db: DbConn) -> Result<Vec<(String, String, DuplicateType)>> {
+    let entries = db.all_entries()?;
     let ids = duplicates::find_duplicates(&entries);
     Ok(Json(ids))
 }
 
 #[get("/count/entries")]
-fn get_count_entries(db: State<DbPool>) -> Result<usize> {
-    let entries = db.get()?.all_entries()?;
+fn get_count_entries(db: DbConn) -> Result<usize> {
+    let entries = db.all_entries()?;
     Ok(Json(entries.len()))
 }
 
 #[get("/count/tags")]
-fn get_count_tags(db: State<DbPool>) -> Result<usize> {
-    Ok(Json(db.get()?.all_tags()?.len()))
+fn get_count_tags(db: DbConn) -> Result<usize> {
+    Ok(Json(db.all_tags()?.len()))
 }
 
 #[get("/server/version")]
@@ -169,10 +162,10 @@ fn get_version() -> &'static str {
 }
 
 #[post("/users", format = "application/json", data = "<u>")]
-fn post_user(db: State<DbPool>, u: Json<usecase::NewUser>) -> Result<()> {
+fn post_user(mut db: DbConn, u: Json<usecase::NewUser>) -> Result<()> {
     let new_user = u.into_inner();
-    usecase::create_new_user(&mut *db.get()?, new_user.clone())?;
-    let user = db.get()?.get_user(&new_user.username)?;
+    usecase::create_new_user(&mut *db, new_user.clone())?;
+    let user = db.get_user(&new_user.username)?;
     let subject = "Karte von Morgen: bitte bestätige deine Email-Adresse";
     let body = user_communication::email_confirmation_email(&user.id);
     util::send_mails(&[user.email], subject, &body);
@@ -180,25 +173,25 @@ fn post_user(db: State<DbPool>, u: Json<usecase::NewUser>) -> Result<()> {
 }
 
 #[delete("/users/<u_id>")]
-fn delete_user(db: State<DbPool>, user: Login, u_id: String) -> Result<()> {
-    usecase::delete_user(&mut *db.get()?, &user.0, &u_id)?;
+fn delete_user(mut db: DbConn, user: Login, u_id: String) -> Result<()> {
+    usecase::delete_user(&mut *db, &user.0, &u_id)?;
     Ok(Json(()))
 }
 
 #[post("/ratings", format = "application/json", data = "<u>")]
-fn post_rating(db: State<DbPool>, u: Json<usecase::RateEntry>) -> Result<()> {
+fn post_rating(mut db: DbConn, u: Json<usecase::RateEntry>) -> Result<()> {
     let u = u.into_inner();
     let e_id = u.entry.clone();
-    usecase::rate_entry(&mut *db.get()?, u)?;
-    super::calculate_rating_for_entry(&*db.get()?, &e_id)?;
+    usecase::rate_entry(&mut *db, u)?;
+    super::calculate_rating_for_entry(&*db, &e_id)?;
     Ok(Json(()))
 }
 
 #[get("/ratings/<id>")]
-fn get_ratings(db: State<DbPool>, id: String) -> Result<Vec<json::Rating>> {
-    let ratings = usecase::get_ratings(&*db.get()?, &util::extract_ids(&id))?;
+fn get_ratings(db: DbConn, id: String) -> Result<Vec<json::Rating>> {
+    let ratings = usecase::get_ratings(&*db, &util::extract_ids(&id))?;
     let r_ids: Vec<String> = ratings.iter().map(|r| r.id.clone()).collect();
-    let comments = usecase::get_comments_by_rating_ids(&*db.get()?, &r_ids)?;
+    let comments = usecase::get_comments_by_rating_ids(&*db, &r_ids)?;
     let result = ratings
         .into_iter()
         .map(|x| json::Rating {
@@ -225,8 +218,8 @@ fn get_ratings(db: State<DbPool>, id: String) -> Result<Vec<json::Rating>> {
 }
 
 #[post("/login", format = "application/json", data = "<login>")]
-fn login(db: State<DbPool>, mut cookies: Cookies, login: Json<usecase::Login>) -> Result<()> {
-    let id = usecase::login(&mut *db.get()?, &login.into_inner())?;
+fn login(mut db: DbConn, mut cookies: Cookies, login: Json<usecase::Login>) -> Result<()> {
+    let id = usecase::login(&mut *db, &login.into_inner())?;
     cookies.add_private(Cookie::new(COOKIE_USER_KEY, id));
     Ok(Json(()))
 }
@@ -238,9 +231,9 @@ fn logout(mut cookies: Cookies) -> Result<()> {
 }
 
 #[post("/confirm-email-address", format = "application/json", data = "<user>")]
-fn confirm_email_address(user: Json<UserId>, db: State<DbPool>) -> Result<()> {
+fn confirm_email_address(mut db: DbConn, user: Json<UserId>) -> Result<()> {
     let u_id = user.into_inner().u_id;
-    let u = db.get()?.confirm_email_address(&u_id)?;
+    let u = db.confirm_email_address(&u_id)?;
     if u.id == u_id {
         Ok(Json(()))
     } else {
@@ -250,27 +243,27 @@ fn confirm_email_address(user: Json<UserId>, db: State<DbPool>) -> Result<()> {
 
 #[post("/subscribe-to-bbox", format = "application/json", data = "<coordinates>")]
 fn subscribe_to_bbox(
+    mut db: DbConn,
     user: Login,
     coordinates: Json<Vec<Coordinate>>,
-    db: State<DbPool>,
 ) -> Result<()> {
     let coordinates = coordinates.into_inner();
     let Login(username) = user;
-    usecase::subscribe_to_bbox(&coordinates, &username, &mut *db.get()?)?;
+    usecase::subscribe_to_bbox(&coordinates, &username, &mut *db)?;
     Ok(Json(()))
 }
 
 #[delete("/unsubscribe-all-bboxes")]
-fn unsubscribe_all_bboxes(user: Login, db: State<DbPool>) -> Result<()> {
+fn unsubscribe_all_bboxes(mut db: DbConn, user: Login) -> Result<()> {
     let Login(username) = user;
-    usecase::unsubscribe_all_bboxes_by_username(&mut *db.get()?, &username)?;
+    usecase::unsubscribe_all_bboxes_by_username(&mut *db, &username)?;
     Ok(Json(()))
 }
 
 #[get("/bbox-subscriptions")]
-fn get_bbox_subscriptions(db: State<DbPool>, user: Login) -> Result<Vec<json::BboxSubscription>> {
+fn get_bbox_subscriptions(db: DbConn, user: Login) -> Result<Vec<json::BboxSubscription>> {
     let Login(username) = user;
-    let user_subscriptions = usecase::get_bbox_subscriptions(&username, &*db.get()?)?
+    let user_subscriptions = usecase::get_bbox_subscriptions(&username, &*db)?
         .into_iter()
         .map(|s| json::BboxSubscription {
             id: s.id,
@@ -284,48 +277,46 @@ fn get_bbox_subscriptions(db: State<DbPool>, user: Login) -> Result<Vec<json::Bb
 }
 
 #[get("/users/<username>", format = "application/json")]
-fn get_user(db: State<DbPool>, user: Login, username: String) -> Result<json::User> {
-    let (u_id, email) = usecase::get_user(&mut *db.get()?, &user.0, &username)?;
+fn get_user(mut db: DbConn, user: Login, username: String) -> Result<json::User> {
+    let (u_id, email) = usecase::get_user(&mut *db, &user.0, &username)?;
     Ok(Json(json::User { u_id, email }))
 }
 
 #[post("/entries", format = "application/json", data = "<e>")]
-fn post_entry(db: State<DbPool>, e: Json<usecase::NewEntry>) -> Result<String> {
+fn post_entry(mut db: DbConn, e: Json<usecase::NewEntry>) -> Result<String> {
     let e = e.into_inner();
-    let id = usecase::create_new_entry(&mut *db.get()?, e.clone())?;
-    let email_addresses = usecase::email_addresses_by_coordinate(&mut *db.get()?, &e.lat, &e.lng)?;
-    let all_categories = db.get()?.all_categories()?;
+    let id = usecase::create_new_entry(&mut *db, e.clone())?;
+    let email_addresses = usecase::email_addresses_by_coordinate(&mut *db, &e.lat, &e.lng)?;
+    let all_categories = db.all_categories()?;
     util::notify_create_entry(&email_addresses, &e, &id, all_categories);
     Ok(Json(id))
 }
 
 #[put("/entries/<id>", format = "application/json", data = "<e>")]
-fn put_entry(db: State<DbPool>, id: String, e: Json<usecase::UpdateEntry>) -> Result<String> {
+fn put_entry(mut db: DbConn, id: String, e: Json<usecase::UpdateEntry>) -> Result<String> {
     let e = e.into_inner();
-    usecase::update_entry(&mut *db.get()?, e.clone())?;
-    let email_addresses = usecase::email_addresses_by_coordinate(&mut *db.get()?, &e.lat, &e.lng)?;
-    let all_categories = db.get()?.all_categories()?;
+    usecase::update_entry(&mut *db, e.clone())?;
+    let email_addresses = usecase::email_addresses_by_coordinate(&mut *db, &e.lat, &e.lng)?;
+    let all_categories = db.all_categories()?;
     util::notify_update_entry(&email_addresses, &e, all_categories);
     Ok(Json(id))
 }
 
 #[get("/tags")]
-fn get_tags(db: State<DbPool>) -> Result<Vec<String>> {
-    Ok(Json(
-        db.get()?.all_tags()?.into_iter().map(|t| t.id).collect(),
-    ))
+fn get_tags(db: DbConn) -> Result<Vec<String>> {
+    Ok(Json(db.all_tags()?.into_iter().map(|t| t.id).collect()))
 }
 
 #[get("/categories")]
-fn get_categories(db: State<DbPool>) -> Result<Vec<Category>> {
-    let categories = db.get()?.all_categories()?;
+fn get_categories(db: DbConn) -> Result<Vec<Category>> {
+    let categories = db.all_categories()?;
     Ok(Json(categories))
 }
 
 #[get("/categories/<id>")]
-fn get_category(db: State<DbPool>, id: String) -> Result<String> {
+fn get_category(db: DbConn, id: String) -> Result<String> {
     let ids = util::extract_ids(&id);
-    let categories = db.get()?.all_categories()?;
+    let categories = db.all_categories()?;
     let res = match ids.len() {
         0 => to_string(&categories),
 
@@ -376,19 +367,22 @@ impl<'r> Responder<'r> for AppError {
 mod tests {
     use test::Bencher;
     use super::super::mockdb;
+    use super::super::mockdb::DbConn;
     use super::super::{calculate_all_ratings, ENTRY_RATINGS};
 
     fn setup() -> mockdb::ConnectionPool {
         mockdb::create_connection_pool(":memory:").unwrap()
     }
 
+    #[ignore]
     #[bench]
     fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
         let (entries, ratings) = ::business::sort::tests::create_entries_with_ratings(10_000);
         let pool = setup();
-        pool.get().unwrap().entries = entries;
-        pool.get().unwrap().ratings = ratings;
-        calculate_all_ratings(&*pool.get().unwrap()).unwrap();
+        let mut conn = pool.get().unwrap();
+        conn.entries = entries;
+        conn.ratings = ratings;
+        calculate_all_ratings(&*conn).unwrap();
         assert!((*ENTRY_RATINGS.lock().unwrap()).len() > 9_000);
         let query = super::SearchQuery {
             bbox: "-10,-10,10,10".into(),
@@ -396,6 +390,10 @@ mod tests {
             text: None,
             tags: None,
         };
-        b.iter(|| super::get_search_inner(&pool, query.clone()).unwrap());
+        b.iter(move || {
+            let conn = pool.get().unwrap();
+            let db = DbConn(conn);
+            super::get_search(db, query.clone()).unwrap()
+        });
     }
 }
