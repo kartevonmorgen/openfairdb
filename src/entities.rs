@@ -35,8 +35,6 @@ pub struct Tag {
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub enum Relation {
-    #[serde(rename = "is_commented_with")]
-    IsCommentedWith,
     #[serde(rename = "created_by")]
     CreatedBy,
 }
@@ -78,6 +76,7 @@ pub struct Comment {
     pub id: String,
     pub created: u64,
     pub text: String,
+    pub rating_id: String,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]

@@ -686,17 +686,8 @@ fn rate_without_login() {
 
     assert_eq!(db.ratings.len(), 1);
     assert_eq!(db.comments.len(), 1);
-    assert_eq!(db.triples.len(), 1);
     assert_eq!(db.ratings[0].entry_id, "foo");
-    assert!(match db.triples[0].subject {
-        ObjectId::Rating(_) => true,
-        _ => false,
-    });
-    assert_eq!(db.triples[0].predicate, Relation::IsCommentedWith);
-    assert!(match db.triples[0].object {
-        ObjectId::Comment(_) => true,
-        _ => false,
-    });
+    assert_eq!(db.comments[0].rating_id, db.ratings[0].id);
 }
 
 #[test]

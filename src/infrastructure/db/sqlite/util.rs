@@ -75,16 +75,6 @@ impl From<e::Tag> for Tag {
     }
 }
 
-impl From<Comment> for e::Triple {
-    fn from(c: Comment) -> e::Triple {
-        e::Triple {
-            subject: e::ObjectId::Rating(c.rating_id.unwrap()), //TODO
-            predicate: e::Relation::IsCommentedWith,
-            object: e::ObjectId::Comment(c.id),
-        }
-    }
-}
-
 impl From<User> for e::User {
     fn from(u: User) -> e::User {
         let User {
@@ -125,23 +115,24 @@ impl From<e::User> for User {
 
 impl From<Comment> for e::Comment {
     fn from(c: Comment) -> e::Comment {
-        let Comment { id, created, text, .. } = c;
+        let Comment { id, created, text, rating_id } = c;
         e::Comment {
             id,
             created: created as u64,
             text,
+            rating_id
         }
     }
 }
 
 impl From<e::Comment> for Comment {
     fn from(c: e::Comment) -> Comment {
-        let e::Comment { id, created, text } = c;
+        let e::Comment { id, created, text, rating_id } = c;
         Comment {
             id,
             created: created as i64,
             text,
-            rating_id: None,
+            rating_id
         }
     }
 }
@@ -250,7 +241,6 @@ impl From<e::RatingContext> for String {
 impl From<e::Relation> for String {
     fn from(r: e::Relation) -> String {
         match r {
-            e::Relation::IsCommentedWith => "is_commented_with",
             e::Relation::CreatedBy => "created_by",
         }.into()
     }
@@ -260,7 +250,6 @@ impl FromStr for e::Relation {
     type Err = String;
     fn from_str(predicate: &str) -> Result<e::Relation, String> {
         Ok(match predicate {
-            "is_commented_with" => e::Relation::IsCommentedWith,
             "created_by" => e::Relation::CreatedBy,
             _ => {
                 return Err(format!("invalid Relation: '{}'", predicate));

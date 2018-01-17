@@ -72,14 +72,7 @@ pub struct Comment {
     pub id: String,
     pub created: i64,
     pub text: String,
-    pub rating_id: Option<String>, //TODO remove option
-}
-
-#[derive(AsChangeset)]
-#[table_name = "comments"]
-#[changeset_options(treat_none_as_null = "true")]
-pub struct CommentUpdate {
-    pub rating_id: Option<String>, //TODO remove option
+    pub rating_id: String,
 }
 
 #[derive(Queryable, Insertable, Associations)]

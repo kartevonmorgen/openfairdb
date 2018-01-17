@@ -81,7 +81,6 @@ fn triple_id(t: &Triple) -> String {
         ObjectId::BboxSubscription(ref id) => ("bbox_subscription", id),
     };
     let p_type = match t.predicate {
-        Relation::IsCommentedWith => "is_commented_with",
         Relation::CreatedBy => "created_by",
     };
     format!("{}-{}-{}-{}-{}", s_type, s_id, p_type, o_type, o_id)
@@ -174,22 +173,6 @@ pub fn get_ratings<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Rating>> {
     )
 }
 
-pub fn get_comment_ids_for_rating_id(triples: &[Triple], rating_id: &str) -> Vec<String> {
-    triples
-        .iter()
-        .filter(&*filter::triple_by_subject(
-            ObjectId::Rating(rating_id.into()),
-        ))
-        .filter(|triple| triple.predicate == Relation::IsCommentedWith)
-        .map(|triple| &triple.object)
-        .filter_map(|object| match *object {
-            ObjectId::Comment(ref r_id) => Some(r_id),
-            _ => None,
-        })
-        .cloned()
-        .collect()
-}
-
 pub fn get_user_id_for_comment_id(triples: &[Triple], comment_id: &str) -> Option<String> {
     triples
         .iter()
@@ -246,16 +229,20 @@ pub fn get_comments_by_rating_ids<D: Db>(
     db: &D,
     ids: &[String],
 ) -> Result<HashMap<String, Vec<Comment>>> {
-    let triples = db.all_triples()?;
     let comments = db.all_comments()?;
     Ok(
         ids.iter()
-            .map(|id| {
+            .map(|r_id| {
                 (
-                    id.clone(),
-                    get_comment_ids_for_rating_id(&triples, id)
+                    r_id.clone(),
+                    comments
                         .iter()
-                        .filter_map(|c_id| comments.iter().find(|x| x.id == *c_id))
+                        .filter_map(|comment|
+                            if comment.rating_id == *r_id {
+                                Some(comment)
+                            } else {
+                                None
+                            })
                         .cloned()
                         .collect(),
                 )
@@ -423,11 +410,7 @@ pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
         id: comment_id.clone(),
         created: now,
         text: r.comment,
-    })?;
-    db.create_triple(&Triple {
-        subject: ObjectId::Rating(rating_id),
-        predicate: Relation::IsCommentedWith,
-        object: ObjectId::Comment(comment_id),
+        rating_id,
     })?;
     Ok(())
 }

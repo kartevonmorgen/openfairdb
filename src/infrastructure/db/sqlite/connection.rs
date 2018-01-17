@@ -73,29 +73,6 @@ impl Db for SqliteConnection {
         Ok(())
     }
     fn create_triple(&mut self, t: &Triple) -> Result<()> {
-        use self::schema::comments::dsl as c_dsl;
-
-        match t.predicate {
-
-            // (rating)-[is_commented_with]->(comment)
-            Relation::IsCommentedWith => {
-                match t.subject {
-                    ObjectId::Rating(ref r_id) => {
-                        match t.object {
-                            ObjectId::Comment(ref c_id) => {
-                                diesel::update(c_dsl::comments.find(c_id))
-                                    .set(c_dsl::rating_id.eq(r_id))
-                                    .execute(self)?;
-                                return Ok(());
-                            }
-                            _ => {}
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            _ => {}
-        }
         warn!("did not save triple '{:?}'", t);
         Ok(())
 
@@ -311,19 +288,7 @@ impl Db for SqliteConnection {
 
     }
     fn all_triples(&self) -> Result<Vec<Triple>> {
-        use self::schema::comments::dsl as c_dsl;
-
-        // (rating)-[is_commented_with]->(comment)
-        let mut r_c_triples: Vec<_> = c_dsl::comments
-            .load::<models::Comment>(self)?
-            .into_iter()
-            .map(Triple::from)
-            .collect();
-
-        let mut result = vec![];
-        result.append(&mut r_c_triples);
-
-        Ok(result)
+        Ok(vec![])
     }
     fn all_ratings(&self) -> Result<Vec<Rating>> {
         use self::schema::ratings::dsl::*;
@@ -378,29 +343,6 @@ impl Db for SqliteConnection {
     }
 
     fn delete_triple(&mut self, t: &Triple) -> Result<()> {
-        use self::schema::comments::dsl as c_dsl;
-
-        match t.predicate {
-
-            // (rating)-[is_commented_with]->(comment)
-            Relation::IsCommentedWith => {
-                match t.subject {
-                    ObjectId::Rating(_) => {
-                        match t.object {
-                            ObjectId::Comment(ref c_id) => {
-                                diesel::update(c_dsl::comments.find(c_id))
-                                    .set(&models::CommentUpdate { rating_id: None })
-                                    .execute(self)?;
-                                return Ok(());
-                            }
-                            _ => {}
-                        }
-                    }
-                    _ => {}
-                }
-            }
-            _ => {}
-        }
         warn!("did not delete triple '{:?}'", t);
         Ok(())
     }

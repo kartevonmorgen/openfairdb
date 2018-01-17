@@ -23,7 +23,7 @@ table! {
         id -> Text,
         created -> BigInt,
         text -> Text,
-        rating_id -> Nullable<Text>,
+        rating_id -> Text,
     }
 }
 
