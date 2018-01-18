@@ -93,6 +93,11 @@ table! {
     }
 }
 
+joinable!(bbox_subscriptions -> users (username));
+joinable!(comments -> ratings (rating_id));
+joinable!(entry_category_relations -> categories (category_id));
+joinable!(entry_tag_relations -> tags (tag_id));
+
 allow_tables_to_appear_in_same_query!(
     bbox_subscriptions,
     categories,
