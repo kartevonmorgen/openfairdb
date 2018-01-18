@@ -133,7 +133,7 @@ pub struct RateEntry {
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Debug, Clone)]
 pub struct SearchRequest<'a> {
-    pub bbox          : Vec<Coordinate>,
+    pub bbox          : Bbox,
     pub categories    : Option<Vec<String>>,
     pub text          : String,
     pub tags          : Vec<String>,
@@ -443,24 +443,18 @@ const MAX_INVISIBLE_RESULTS: usize = 5;
 const BBOX_LAT_EXT: f64 = 0.02;
 const BBOX_LNG_EXT: f64 = 0.04;
 
-fn extend_bbox(bbox: &[Coordinate]) -> Vec<Coordinate> {
+fn extend_bbox(bbox: &Bbox) -> Bbox {
     let mut extended_bbox = bbox.to_owned();
-    extended_bbox[0].lat -= BBOX_LAT_EXT;
-    extended_bbox[0].lng -= BBOX_LNG_EXT;
-    extended_bbox[1].lat += BBOX_LAT_EXT;
-    extended_bbox[1].lng += BBOX_LNG_EXT;
+    extended_bbox.south_west.lat -= BBOX_LAT_EXT;
+    extended_bbox.south_west.lng -= BBOX_LNG_EXT;
+    extended_bbox.north_east.lat += BBOX_LAT_EXT;
+    extended_bbox.north_east.lng += BBOX_LNG_EXT;
     extended_bbox
 }
 
 pub fn search<D: Db>(db: &D, req: &SearchRequest) -> Result<(Vec<Entry>, Vec<Entry>)> {
-    let entries = db.all_entries()?;
-
     let extended_bbox = extend_bbox(&req.bbox);
-
-    let mut entries: Vec<_> = entries
-        .into_iter()
-        .filter(|x| x.in_bbox(&extended_bbox))
-        .collect();
+    let mut entries = db.get_entries_by_bbox(&extended_bbox)?;
 
     if let Some(ref cat_ids) = req.categories {
         entries = entries

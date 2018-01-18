@@ -22,6 +22,8 @@ pub trait Db {
     fn get_entry(&self, &str) -> Result<Entry>;
     fn get_user(&self, &str) -> Result<User>;
 
+    fn get_entries_by_bbox(&self, &Bbox) -> Result<Vec<Entry>>;
+
     fn all_entries(&self) -> Result<Vec<Entry>>;
     fn all_categories(&self) -> Result<Vec<Category>>;
     fn all_tags(&self) -> Result<Vec<Tag>>;

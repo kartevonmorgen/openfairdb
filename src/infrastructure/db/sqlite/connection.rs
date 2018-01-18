@@ -194,6 +194,63 @@ impl Db for SqliteConnection {
         })
     }
 
+    fn get_entries_by_bbox(&self, bbox: &Bbox) -> Result<Vec<Entry>> {
+        use self::schema::entries::dsl as e_dsl;
+        use self::schema::entry_category_relations::dsl as e_c_dsl;
+        use self::schema::entry_tag_relations::dsl as e_t_dsl;
+
+        let entries: Vec<models::Entry> = e_dsl::entries
+            .filter(e_dsl::current.eq(true))
+            .filter(e_dsl::lat.between(bbox.south_west.lat, bbox.north_east.lat))
+            .filter(e_dsl::lng.between(bbox.south_west.lng, bbox.north_east.lng))
+            .load(self)?;
+
+        let cat_rels =
+            e_c_dsl::entry_category_relations.load::<models::EntryCategoryRelation>(self)?;
+
+        let tag_rels = e_t_dsl::entry_tag_relations.load::<models::EntryTagRelation>(self)?;
+
+        Ok(entries
+            .into_iter()
+            .map(|e| {
+                let cats = cat_rels
+                    .iter()
+                    .filter(|r| r.entry_id == e.id)
+                    .filter(|r| r.entry_version == e.version)
+                    .map(|r| &r.category_id)
+                    .cloned()
+                    .collect();
+                let tags = tag_rels
+                    .iter()
+                    .filter(|r| r.entry_id == e.id)
+                    .filter(|r| r.entry_version == e.version)
+                    .map(|r| &r.tag_id)
+                    .cloned()
+                    .collect();
+                Entry {
+                    id: e.id,
+                    osm_node: e.osm_node.map(|x| x as u64),
+                    created: e.created as u64,
+                    version: e.version as u64,
+                    title: e.title,
+                    description: e.description,
+                    lat: e.lat as f64,
+                    lng: e.lng as f64,
+                    street: e.street,
+                    zip: e.zip,
+                    city: e.city,
+                    country: e.country,
+                    email: e.email,
+                    telephone: e.telephone,
+                    homepage: e.homepage,
+                    categories: cats,
+                    tags: tags,
+                    license: e.license,
+                }
+            })
+            .collect())
+    }
+
     fn get_user(&self, user_id: &str) -> Result<User> {
         use self::schema::users::dsl::*;
         let u: models::User = users.find(user_id).first(self)?;

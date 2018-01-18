@@ -1,21 +1,13 @@
 use entities::*;
+use business::geo::is_in_bbox;
 
 pub trait InBBox {
-    fn in_bbox(&self, bb: &[Coordinate]) -> bool;
+    fn in_bbox(&self, bb: &Bbox) -> bool;
 }
 
 impl InBBox for Entry {
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    fn in_bbox(&self, bb: &[Coordinate]) -> bool {
-        // TODO: either return a Result or create a bounding box struct
-        if bb.len() != 2 {
-            warn!("invalid bounding box: {:?}", bb);
-            return false;
-        }
-        self.lat >= bb[0].lat &&
-        self.lng >= bb[0].lng &&
-        self.lat <= bb[1].lat &&
-        self.lng <= bb[1].lng
+    fn in_bbox(&self, bb: &Bbox) -> bool {
+        is_in_bbox(&self.lat, &self.lng, bb)
     }
 }
 
@@ -62,16 +54,16 @@ mod tests {
 
     #[test]
     fn is_in_bounding_box() {
-        let bb = vec![
-            Coordinate {
+        let bb = Bbox {
+            south_west: Coordinate {
                 lat: -10.0,
                 lng: -10.0,
             },
-            Coordinate {
+            north_east: Coordinate {
                 lat: 10.0,
                 lng: 10.0,
             },
-        ];
+        };
         let e = Entry::build()
             .title("foo")
             .description("bar")
@@ -89,29 +81,17 @@ mod tests {
     }
 
     #[test]
-    fn is_in_invalid_bounding_box() {
-        let bb = vec![
-            Coordinate {
-                lat: 10.0,
-                lng: 10.0,
-            },
-        ];
-        let e = Entry::build().lat(5.0).lng(5.0).finish();
-        assert_eq!(e.in_bbox(&bb), false);
-    }
-
-    #[test]
     fn filter_by_bounding_box() {
-        let bb = vec![
-            Coordinate {
+        let bb = Bbox {
+            south_west: Coordinate {
                 lat: -10.0,
                 lng: -10.0,
             },
-            Coordinate {
+            north_east: Coordinate {
                 lat: 10.0,
                 lng: 10.0,
             },
-        ];
+        };
         let entries = vec![
             Entry::build().lat(5.0).lng(5.0).finish(),
             Entry::build().lat(-5.0).lng(5.0).finish(),

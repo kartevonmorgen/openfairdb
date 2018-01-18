@@ -18,23 +18,23 @@ pub fn distance(a: &Coordinate, b: &Coordinate) -> f64 {
     EARTH_RADIUS * c
 }
 
-pub fn extract_bbox(s: &str) -> Result<Vec<Coordinate>, ParameterError> {
+pub fn extract_bbox(s: &str) -> Result<Bbox, ParameterError> {
     let c = s.split(',')
         .map(|x| x.parse::<f64>())
         .filter_map(|x| x.ok())
         .collect::<Vec<f64>>();
 
     match c.len() {
-        4 => Ok(vec![
-            Coordinate {
+        4 => Ok(Bbox {
+            south_west: Coordinate {
                 lat: c[0],
                 lng: c[1],
             },
-            Coordinate {
+            north_east: Coordinate {
                 lat: c[2],
                 lng: c[3],
             },
-        ]),
+        }),
         _ => Err(ParameterError::Bbox),
     }
 }
@@ -124,11 +124,10 @@ mod tests {
         let bb = extract_bbox("0,10,20,30");
         assert!(bb.is_ok());
         let bb = bb.unwrap();
-        assert_eq!(bb.len(), 2);
-        assert_eq!(bb[0].lat, 0.0);
-        assert_eq!(bb[0].lng, 10.0);
-        assert_eq!(bb[1].lat, 20.0);
-        assert_eq!(bb[1].lng, 30.0);
+        assert_eq!(bb.south_west.lat, 0.0);
+        assert_eq!(bb.south_west.lng, 10.0);
+        assert_eq!(bb.north_east.lat, 20.0);
+        assert_eq!(bb.north_east.lng, 30.0);
     }
 
     #[test]

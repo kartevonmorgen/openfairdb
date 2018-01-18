@@ -110,6 +110,14 @@ impl Db for MockDb {
         Ok(self.entries.clone())
     }
 
+    fn get_entries_by_bbox(&self, bbox: &Bbox) -> RepoResult<Vec<Entry>> {
+        Ok(self.entries
+            .iter()
+            .filter(|e| e.in_bbox(bbox))
+            .cloned()
+            .collect())
+    }
+
     fn all_categories(&self) -> RepoResult<Vec<Category>> {
         Ok(self.categories.clone())
     }
@@ -927,16 +935,16 @@ fn bench_search_in_1_000_rated_entries(b: &mut Bencher) {
     db.ratings = ratings;
     let entry_ratings = HashMap::new();
     let req = SearchRequest {
-        bbox: vec![
-            Coordinate {
+        bbox: Bbox {
+            south_west: Coordinate {
                 lat: -10.0,
                 lng: -10.0,
             },
-            Coordinate {
+            north_east: Coordinate {
                 lat: 10.0,
                 lng: 10.0,
             },
-        ],
+        },
         categories: None,
         text: "".into(),
         tags: vec![],
@@ -955,16 +963,16 @@ fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
     db.ratings = ratings;
     let entry_ratings = HashMap::new();
     let req = SearchRequest {
-        bbox: vec![
-            Coordinate {
+        bbox: Bbox {
+            south_west: Coordinate {
                 lat: -10.0,
                 lng: -10.0,
             },
-            Coordinate {
+            north_east: Coordinate {
                 lat: 10.0,
                 lng: 10.0,
             },
-        ],
+        },
         categories: None,
         text: "".into(),
         tags: vec![],
