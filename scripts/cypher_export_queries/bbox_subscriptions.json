@@ -8,7 +8,7 @@
        n.south_west_lng as south_west_lng,
        n.north_east_lat as north_east_lat,
        n.north_east_lng as north_east_lng,
-       u.id as user_id"
+       u.username as username"
     }
   ]
 }
