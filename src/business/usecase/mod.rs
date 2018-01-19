@@ -453,8 +453,13 @@ fn extend_bbox(bbox: &Bbox) -> Bbox {
 }
 
 pub fn search<D: Db>(db: &D, req: &SearchRequest) -> Result<(Vec<Entry>, Vec<Entry>)> {
-    let extended_bbox = extend_bbox(&req.bbox);
-    let mut entries = db.get_entries_by_bbox(&extended_bbox)?;
+
+    let mut entries = if req.text.is_empty() && req.tags.is_empty() {
+        let extended_bbox = extend_bbox(&req.bbox);
+        db.get_entries_by_bbox(&extended_bbox)?
+    } else {
+        db.all_entries()?
+    };
 
     if let Some(ref cat_ids) = req.categories {
         entries = entries
