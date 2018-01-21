@@ -36,6 +36,15 @@ impl Db for SqliteConnection {
                 category_id,
             })
             .collect();
+        let tag_rels: Vec<_> = e.tags
+            .iter()
+            .cloned()
+            .map(|tag_id| models::EntryTagRelation {
+                entry_id: e.id.clone(),
+                entry_version: e.version as i64,
+                tag_id,
+            })
+            .collect();
         self.transaction::<_, diesel::result::Error, _>(|| {
             unset_current_on_all_entries(&self, &e.id)?;
             diesel::insert_into(schema::entries::table)
@@ -44,6 +53,10 @@ impl Db for SqliteConnection {
             diesel::insert_into(schema::entry_category_relations::table)
                 //WHERE NOT EXISTS
                 .values(&cat_rels)
+                .execute(self)?;
+            diesel::insert_into(schema::entry_tag_relations::table)
+                //WHERE NOT EXISTS
+                .values(&tag_rels)
                 .execute(self)?;
             Ok(())
         })?;
@@ -356,6 +369,17 @@ impl Db for SqliteConnection {
             })
             .collect();
 
+        let tag_rels: Vec<_> = entry
+            .tags
+            .iter()
+            .cloned()
+            .map(|tag_id| models::EntryTagRelation {
+                entry_id: entry.id.clone(),
+                entry_version: entry.version as i64,
+                tag_id,
+            })
+            .collect();
+
         self.transaction::<_, diesel::result::Error, _>(|| {
             unset_current_on_all_entries(&self, &e.id)?;
             diesel::insert_into(schema::entries::table)
@@ -364,6 +388,10 @@ impl Db for SqliteConnection {
             diesel::insert_into(schema::entry_category_relations::table)
                 //WHERE NOT EXISTS
                 .values(&cat_rels)
+                .execute(self)?;
+            diesel::insert_into(schema::entry_tag_relations::table)
+                //WHERE NOT EXISTS
+                .values(&tag_rels)
                 .execute(self)?;
             Ok(())
         })?;
