@@ -1,3 +1,8 @@
+## v0.3.1 (2018-01-21)
+
+- fix(db): add tag relations
+- fix(test): make coveralls on travis work
+
 ## v0.3.0 (2018-01-19)
 
 - new(db): remove neo4j support (SQLite is now required)
