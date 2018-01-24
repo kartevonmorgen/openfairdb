@@ -167,6 +167,24 @@ fn search_with_categories() {
     assert!(body_str.contains("\"c\""));
 }
 
+#[test]
+fn search_with_text() {
+    let entries = vec![
+        Entry::build().title("Foo").description("bla").id("a").finish(),
+        Entry::build().title("bar").description("foo").id("b").finish(),
+        Entry::build().title("baZ").description("blub").id("c").finish(),
+    ];
+    let (client, db) = setup();
+    db.get().unwrap().entries = entries;
+    let req = client.get("/search?bbox=-10,-10,10,10&text=Foo");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains("\"a\""));
+    assert!(body_str.contains("\"b\""));
+    assert!(!body_str.contains("\"c\""));
+}
+
 #[ignore]
 #[bench]
 fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
@@ -207,6 +225,26 @@ fn search_with_tags() {
     assert!(body_str.contains(r#"{"id":"b","#));
     assert!(body_str.contains(r#"{"id":"c","#));
 }
+
+#[ignore]
+#[test]
+fn search_with_uppercase_tags() {
+    let entries = vec![
+        Entry::build().tags(vec!["foo"]).id("a").finish(),
+        Entry::build().tags(vec!["bar"]).id("b").finish(),
+        Entry::build().tags(vec!["baz"]).id("c").finish(),
+    ];
+    let (client, db) = setup();
+    db.get().unwrap().entries = entries;
+    let req = client.get("/search?bbox=-10,-10,10,10&tags=Foo");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains("\"a\""));
+    assert!(!body_str.contains("\"b\""));
+    assert!(!body_str.contains("\"c\""));
+}
+
 
 #[test]
 fn search_with_hashtag() {
