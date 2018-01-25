@@ -2,7 +2,7 @@ use rocket::response::{Responder, Response};
 use rocket;
 use rocket_contrib::Json;
 use rocket::request::{self, FromRequest, Request};
-use rocket::Outcome;
+use rocket::{Outcome, Route};
 use rocket::http::{Cookie, Cookies, Status};
 use adapters::json;
 use adapters::user_communication;
@@ -48,6 +48,33 @@ impl<'a, 'r> FromRequest<'a, 'r> for Login {
             None => Outcome::Failure((Status::Unauthorized, ())),
         }
     }
+}
+
+pub fn routes() -> Vec<Route> {
+    routes![
+        login,
+        logout,
+        delete_user,
+        confirm_email_address,
+        subscribe_to_bbox,
+        get_bbox_subscriptions,
+        unsubscribe_all_bboxes,
+        get_entry,
+        post_entry,
+        post_user,
+        post_rating,
+        put_entry,
+        get_user,
+        get_categories,
+        get_tags,
+        get_ratings,
+        get_category,
+        get_search,
+        get_duplicates,
+        get_count_entries,
+        get_count_tags,
+        get_version,
+    ]
 }
 
 #[get("/search?<search>")]
