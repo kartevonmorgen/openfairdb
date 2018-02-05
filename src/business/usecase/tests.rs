@@ -73,6 +73,18 @@ impl Db for MockDb {
         Ok(())
     }
 
+    fn create_category_if_it_does_not_exist(&mut self, e: &Category) -> RepoResult<()> {
+        if let Err(err) = create(&mut self.categories, e) {
+            match err {
+                RepoError::AlreadyExists => {
+                    // that's ok
+                }
+                _ => return Err(err),
+            }
+        }
+        Ok(())
+    }
+
     fn create_user(&mut self, u: &User) -> RepoResult<()> {
         create(&mut self.users, u)
     }

@@ -63,6 +63,23 @@ impl From<Category> for e::Category {
     }
 }
 
+impl From<e::Category> for Category {
+    fn from(c: e::Category) -> Category {
+        let e::Category {
+            id,
+            name,
+            created,
+            version,
+        } = c;
+        Category {
+            id,
+            name,
+            created: created as i64,
+            version: version as i64,
+        }
+    }
+}
+
 impl From<Tag> for e::Tag {
     fn from(t: Tag) -> e::Tag {
         e::Tag { id: t.id }

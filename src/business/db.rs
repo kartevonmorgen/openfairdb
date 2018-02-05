@@ -14,6 +14,7 @@ pub trait Repo<T> {
 pub trait Db {
     fn create_entry(&mut self, &Entry) -> Result<()>;
     fn create_tag_if_it_does_not_exist(&mut self, &Tag) -> Result<()>;
+    fn create_category_if_it_does_not_exist(&mut self, &Category) -> Result<()>;
     fn create_user(&mut self, &User) -> Result<()>;
     fn create_comment(&mut self, &Comment) -> Result<()>;
     fn create_rating(&mut self, &Rating) -> Result<()>;

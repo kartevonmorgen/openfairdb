@@ -15,12 +15,7 @@ use business::{geo, usecase};
 use business::duplicates::{self, DuplicateType};
 use std::result;
 use super::util;
-
-#[cfg(not(test))]
 use super::sqlite::DbConn;
-
-#[cfg(test)]
-use super::mockdb::DbConn;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
@@ -393,34 +388,33 @@ impl<'r> Responder<'r> for AppError {
 #[cfg(test)]
 mod tests {
     use test::Bencher;
-    use super::super::mockdb;
-    use super::super::mockdb::DbConn;
+    use infrastructure::web::mockdb::{self, DbConn};
     use super::super::{calculate_all_ratings, ENTRY_RATINGS};
 
     fn setup() -> mockdb::ConnectionPool {
         mockdb::create_connection_pool(":memory:").unwrap()
     }
 
-    #[ignore]
-    #[bench]
-    fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
-        let (entries, ratings) = ::business::sort::tests::create_entries_with_ratings(10_000);
-        let pool = setup();
-        let mut conn = pool.get().unwrap();
-        conn.entries = entries;
-        conn.ratings = ratings;
-        calculate_all_ratings(&*conn).unwrap();
-        assert!((*ENTRY_RATINGS.lock().unwrap()).len() > 9_000);
-        let query = super::SearchQuery {
-            bbox: "-10,-10,10,10".into(),
-            categories: None,
-            text: None,
-            tags: None,
-        };
-        b.iter(move || {
-            let conn = pool.get().unwrap();
-            let db = DbConn(conn);
-            super::get_search(db, query.clone()).unwrap()
-        });
-    }
+    //#[ignore]
+    //#[bench]
+    //fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
+    //    let (entries, ratings) = ::business::sort::tests::create_entries_with_ratings(10_000);
+    //    let pool = setup();
+    //    let mut conn = pool.get().unwrap();
+    //    conn.entries = entries;
+    //    conn.ratings = ratings;
+    //    calculate_all_ratings(&*conn).unwrap();
+    //    assert!((*ENTRY_RATINGS.lock().unwrap()).len() > 9_000);
+    //    let query = super::SearchQuery {
+    //        bbox: "-10,-10,10,10".into(),
+    //        categories: None,
+    //        text: None,
+    //        tags: None,
+    //    };
+    //    b.iter(move || {
+    //        let conn = pool.get().unwrap();
+    //        let db = DbConn(conn);
+    //        super::get_search(db, query.clone()).unwrap()
+    //    });
+    //}
 }

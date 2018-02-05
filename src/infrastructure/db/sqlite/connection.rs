@@ -85,6 +85,29 @@ impl Db for SqliteConnection {
         }
         Ok(())
     }
+    fn create_category_if_it_does_not_exist(&mut self, c: &Category) -> Result<()> {
+        let res = diesel::insert_into(schema::categories::table)
+            .values(&models::Category::from(c.clone()))
+            .execute(self);
+        if let Err(err) = res {
+            match err {
+                DieselError::DatabaseError(db_err, _) => {
+                    match db_err {
+                        DatabaseErrorKind::UniqueViolation => {
+                            // that's ok :)
+                        }
+                        _ => {
+                            return Err(err.into());
+                        }
+                    }
+                }
+                _ => {
+                    return Err(err.into());
+                }
+            }
+        }
+        Ok(())
+    }
     fn create_user(&mut self, u: &User) -> Result<()> {
         diesel::insert_into(schema::users::table)
             .values(&models::User::from(u.clone()))

@@ -9,17 +9,21 @@ use serde_json;
 use entities::*;
 use adapters::json;
 use rocket::response::Response;
-use super::*;
 use super::util::*;
 use pwhash::bcrypt;
 use test::Bencher;
+use super::sqlite;
+use uuid::Uuid;
+use std::fs;
 
-fn setup() -> (Client, mockdb::ConnectionPool) {
+fn setup() -> (Client, sqlite::ConnectionPool) {
     let cfg = Config::build(Environment::Development)
         .log_level(LoggingLevel::Debug)
         .finalize()
         .unwrap();
-    let pool = mockdb::create_connection_pool(":memory:").unwrap();
+    let uuid = Uuid::new_v4().simple().to_string();
+    fs::create_dir_all("test-dbs").unwrap();
+    let pool = sqlite::create_connection_pool(&format!("./test-dbs/{}", uuid)).unwrap();
     let rocket = super::rocket_instance(cfg, pool.clone());
     let client = Client::new(rocket).unwrap();
     (client, pool)
@@ -28,6 +32,15 @@ fn setup() -> (Client, mockdb::ConnectionPool) {
 #[test]
 fn create_entry() {
     let (client, db) = setup();
+    db.get()
+        .unwrap()
+        .create_category_if_it_does_not_exist(&Category {
+            id: "x".into(),
+            created: 0,
+            version: 0,
+            name: "x".into(),
+        })
+        .unwrap();
     let req = client.post("/entries")
                     .header(ContentType::JSON)
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#);
@@ -46,8 +59,68 @@ fn create_entry() {
         }
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    let eid = db.get().unwrap().entries[0].id.clone();
+    let eid = db.get().unwrap().all_entries().unwrap()[0].id.clone();
     assert_eq!(body_str, format!("\"{}\"", eid));
+}
+
+#[test]
+fn create_entry_with_tag_duplicates() {
+    let (client, db) = setup();
+    db.get()
+        .unwrap()
+        .create_category_if_it_does_not_exist(&Category {
+            id: "x".into(),
+            created: 0,
+            version: 0,
+            name: "x".into(),
+        })
+        .unwrap();
+    let req = client.post("/entries")
+                    .header(ContentType::JSON)
+                    .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","foo"]}"#);
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert!(
+        response
+            .headers()
+            .iter()
+            .any(|h| h.name.as_str() == "Content-Type")
+    );
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let eid = db.get().unwrap().all_entries().unwrap()[0].id.clone();
+    assert_eq!(body_str, format!("\"{}\"", eid));
+}
+
+#[test]
+fn update_entry_with_tag_duplicates() {
+    let (client, db) = setup();
+    db.get()
+        .unwrap()
+        .create_category_if_it_does_not_exist(&Category {
+            id: "x".into(),
+            created: 0,
+            version: 0,
+            name: "x".into(),
+        })
+        .unwrap();
+    let req = client.post("/entries")
+                    .header(ContentType::JSON)
+                    .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","foo"]}"#);
+    let _res = req.dispatch();
+    let e = db.get().unwrap().all_entries().unwrap()[0].clone();
+    let mut json = String::new();
+    json.push_str(&format!(
+        "{{\"version\":{},\"id\":\"{}\"",
+        e.version + 1,
+        e.id
+    ));
+    json.push_str(r#","title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["bar","bar"]}"#);
+    let url = format!("/entries/{}", e.id);
+    let req = client.put(url).header(ContentType::JSON).body(json);
+    let response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let e = db.get().unwrap().all_entries().unwrap()[0].clone();
+    assert_eq!(e.tags, vec!["bar"]);
 }
 
 #[test]
@@ -90,7 +163,7 @@ fn get_one_entry() {
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
     let entries: Vec<Entry> = serde_json::from_str(&body_str).unwrap();
-    let rid = db.get().unwrap().ratings[0].id.clone();
+    let rid = db.get().unwrap().all_ratings().unwrap()[0].id.clone();
     assert!(body_str.contains(&format!(r#""ratings":["{}"]"#, rid)));
     assert!(entries[0] == e);
 }
@@ -141,7 +214,22 @@ fn search_with_categories() {
         Entry::build().id("c").categories(vec!["bar"]).finish(),
     ];
     let (client, db) = setup();
-    db.get().unwrap().entries = entries;
+    let mut conn = db.get().unwrap();
+    conn.create_category_if_it_does_not_exist(&Category {
+        id: "foo".into(),
+        created: 0,
+        version: 0,
+        name: "foo".into(),
+    }).unwrap();
+    conn.create_category_if_it_does_not_exist(&Category {
+        id: "bar".into(),
+        created: 0,
+        version: 0,
+        name: "bar".into(),
+    }).unwrap();
+    for e in entries {
+        conn.create_entry(&e).unwrap();
+    }
     let req = client.get("/search?bbox=-10,-10,10,10&categories=foo");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -170,12 +258,27 @@ fn search_with_categories() {
 #[test]
 fn search_with_text() {
     let entries = vec![
-        Entry::build().title("Foo").description("bla").id("a").finish(),
-        Entry::build().title("bar").description("foo").id("b").finish(),
-        Entry::build().title("baZ").description("blub").id("c").finish(),
+        Entry::build()
+            .title("Foo")
+            .description("bla")
+            .id("a")
+            .finish(),
+        Entry::build()
+            .title("bar")
+            .description("foo")
+            .id("b")
+            .finish(),
+        Entry::build()
+            .title("baZ")
+            .description("blub")
+            .id("c")
+            .finish(),
     ];
     let (client, db) = setup();
-    db.get().unwrap().entries = entries;
+    let mut conn = db.get().unwrap();
+    for e in entries {
+        conn.create_entry(&e).unwrap();
+    }
     let req = client.get("/search?bbox=-10,-10,10,10&text=Foo");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -190,8 +293,13 @@ fn search_with_text() {
 fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
     let (entries, ratings) = ::business::sort::tests::create_entries_with_ratings(10_000);
     let (client, db) = setup();
-    db.get().unwrap().entries = entries;
-    db.get().unwrap().ratings = ratings;
+    let mut conn = db.get().unwrap();
+    for e in entries {
+        conn.create_entry(&e).unwrap();
+    }
+    for r in ratings {
+        conn.create_rating(&r).unwrap();
+    }
     b.iter(|| client.get("/search?bbox=-10,-10,10,10").dispatch());
 }
 
@@ -211,7 +319,22 @@ fn search_with_tags() {
             .finish(),
     ];
     let (client, db) = setup();
-    db.get().unwrap().entries = entries;
+    let mut conn = db.get().unwrap();
+    conn.create_category_if_it_does_not_exist(&Category {
+        id: "foo".into(),
+        created: 0,
+        version: 0,
+        name: "foo".into(),
+    }).unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag {
+        id: "foo-bar".into(),
+    }).unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag {
+        id: "bla-blubb".into(),
+    }).unwrap();
+    for e in entries {
+        conn.create_entry(&e).unwrap();
+    }
     let req = client.get("/search?bbox=-10,-10,10,10&tags=bla-blubb");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -226,7 +349,6 @@ fn search_with_tags() {
     assert!(body_str.contains(r#"{"id":"c","#));
 }
 
-#[ignore]
 #[test]
 fn search_with_uppercase_tags() {
     let entries = vec![
@@ -235,7 +357,16 @@ fn search_with_uppercase_tags() {
         Entry::build().tags(vec!["baz"]).id("c").finish(),
     ];
     let (client, db) = setup();
-    db.get().unwrap().entries = entries;
+    let mut conn = db.get().unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag { id: "foo".into() })
+        .unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag { id: "bar".into() })
+        .unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag { id: "baz".into() })
+        .unwrap();
+    for e in entries {
+        conn.create_entry(&e).unwrap();
+    }
     let req = client.get("/search?bbox=-10,-10,10,10&tags=Foo");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -244,7 +375,6 @@ fn search_with_uppercase_tags() {
     assert!(!body_str.contains("\"b\""));
     assert!(!body_str.contains("\"c\""));
 }
-
 
 #[test]
 fn search_with_hashtag() {
@@ -257,7 +387,16 @@ fn search_with_hashtag() {
         Entry::build().id("c").tags(vec!["foo-bar"]).finish(),
     ];
     let (client, db) = setup();
-    db.get().unwrap().entries = entries;
+    let mut conn = db.get().unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag {
+        id: "bla-blubb".into(),
+    }).unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag {
+        id: "foo-bar".into(),
+    }).unwrap();
+    for e in entries {
+        conn.create_entry(&e).unwrap();
+    }
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23foo-bar");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -280,7 +419,16 @@ fn search_with_two_hashtags() {
         Entry::build().tags(vec!["foo-bar"]).id("c").finish(),
     ];
     let (client, db) = setup();
-    db.get().unwrap().entries = entries;
+    let mut conn = db.get().unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag {
+        id: "bla-blubb".into(),
+    }).unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag {
+        id: "foo-bar".into(),
+    }).unwrap();
+    for e in entries {
+        conn.create_entry(&e).unwrap();
+    }
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23bla-blubb %23foo-bar");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -306,7 +454,16 @@ fn search_without_specifying_hashtag_symbol() {
             .finish(),
     ];
     let (client, db) = setup();
-    db.get().unwrap().entries = entries;
+    let mut conn = db.get().unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag {
+        id: "bla-blubb".into(),
+    }).unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag {
+        id: "foo-bar".into(),
+    }).unwrap();
+    for e in entries {
+        conn.create_entry(&e).unwrap();
+    }
     let mut response = client
         .get("/search?bbox=-10,-10,10,10&text=bla-blubb")
         .dispatch();
@@ -383,13 +540,17 @@ fn create_new_user() {
 #[test]
 fn create_rating() {
     let (client, db) = setup();
-    db.get().unwrap().entries = vec![Entry::build().id("foo").finish()];
+    let entries = vec![Entry::build().id("foo").finish()];
+    let mut conn = db.get().unwrap();
+    for e in entries {
+        conn.create_entry(&e).unwrap();
+    }
     let req = client.post("/ratings")
         .header(ContentType::JSON)
         .body(r#"{"value": 1,"context":"fairness","entry":"foo","comment":"test", "title":"idontcare", "source":"source..."}"#);
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert_eq!(db.get().unwrap().ratings[0].value, 1);
+    assert_eq!(db.get().unwrap().all_ratings().unwrap()[0].value, 1);
     assert!(
         response
             .headers()
@@ -421,7 +582,7 @@ fn get_one_rating() {
             source: Some("blabla".into()),
         },
     ).unwrap();
-    let rid = db.get().unwrap().ratings[0].id.clone();
+    let rid = db.get().unwrap().all_ratings().unwrap()[0].id.clone();
     let req = client.get(format!("/ratings/{}", rid));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -476,7 +637,7 @@ fn ratings_with_and_without_source() {
         },
     ).unwrap();
 
-    let rid = db.get().unwrap().ratings[0].id.clone();
+    let rid = db.get().unwrap().all_ratings().unwrap()[0].id.clone();
     let req = client.get(format!("/ratings/{}", rid));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -510,6 +671,7 @@ fn user_id_cookie(response: &Response) -> Option<Cookie<'static>> {
     cookie.map(|c| c.into_owned())
 }
 
+#[ignore]
 #[test]
 fn login_with_invalid_credentials() {
     let (client, _) = setup();
@@ -528,7 +690,7 @@ fn login_with_invalid_credentials() {
 #[test]
 fn login_with_valid_credentials() {
     let (client, db) = setup();
-    db.get().unwrap().users = vec![
+    let users = vec![
         User {
             id: "123".into(),
             username: "foo".into(),
@@ -537,6 +699,10 @@ fn login_with_valid_credentials() {
             email_confirmed: true,
         },
     ];
+    let mut conn = db.get().unwrap();
+    for u in users {
+        conn.create_user(&u).unwrap();
+    }
     let response = client
         .post("/login")
         .header(ContentType::JSON)
@@ -550,7 +716,7 @@ fn login_with_valid_credentials() {
 #[test]
 fn login_logout_succeeds() {
     let (client, db) = setup();
-    db.get().unwrap().users = vec![
+    let users = vec![
         User {
             id: "123".into(),
             username: "foo".into(),
@@ -559,6 +725,10 @@ fn login_logout_succeeds() {
             email_confirmed: true,
         },
     ];
+    let mut conn = db.get().unwrap();
+    for u in users {
+        conn.create_user(&u).unwrap();
+    }
 
     // Login
     let response = client
@@ -584,7 +754,7 @@ fn login_logout_succeeds() {
 #[test]
 fn get_user() {
     let (client, db) = setup();
-    db.get().unwrap().users = vec![
+    let users = vec![
         User {
             id: "123".into(),
             username: "a".into(),
@@ -600,6 +770,10 @@ fn get_user() {
             email_confirmed: true,
         },
     ];
+    let mut conn = db.get().unwrap();
+    for u in users {
+        conn.create_user(&u).unwrap();
+    }
     let response = client
         .post("/login")
         .header(ContentType::JSON)
@@ -650,9 +824,10 @@ fn get_user() {
 }
 
 #[test]
+#[ignore]
 fn confirm_email_address() {
     let (client, db) = setup();
-    db.get().unwrap().users = vec![
+    let users = vec![
         User {
             id: "123".into(),
             username: "foo".into(),
@@ -661,6 +836,10 @@ fn confirm_email_address() {
             email_confirmed: false,
         },
     ];
+    let mut conn = db.get().unwrap();
+    for u in users {
+        conn.create_user(&u).unwrap();
+    }
 
     let response = client
         .post("/login")
@@ -669,7 +848,10 @@ fn confirm_email_address() {
         .dispatch();
 
     assert_eq!(response.status(), Status::Forbidden);
-    assert_eq!(db.get().unwrap().users[0].email_confirmed, false);
+    assert_eq!(
+        db.get().unwrap().all_users().unwrap()[0].email_confirmed,
+        false
+    );
 
     let response = client
         .post("/confirm-email-address")
@@ -677,7 +859,10 @@ fn confirm_email_address() {
         .body(r#"{"u_id": "123"}"#)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert_eq!(db.get().unwrap().users[0].email_confirmed, true);
+    assert_eq!(
+        db.get().unwrap().all_users().unwrap()[0].email_confirmed,
+        true
+    );
 
     let response = client
         .post("/login")
@@ -704,7 +889,7 @@ fn confirm_email_address() {
 #[test]
 fn send_confirmation_email() {
     let (client, db) = setup();
-    db.get().unwrap().users = vec![
+    let users = vec![
         User {
             id: "123".into(),
             username: "foo".into(),
@@ -713,6 +898,11 @@ fn send_confirmation_email() {
             email_confirmed: false,
         },
     ];
+    let mut conn = db.get().unwrap();
+    for u in users {
+        conn.create_user(&u).unwrap();
+    }
+
     let response = client
         .post("/send-confirmation-email")
         .header(ContentType::JSON)

@@ -23,7 +23,9 @@ pub fn entries_by_tags_or_search_text<'a>(
 
     if !tags.is_empty() {
         Box::new(move |entry| {
-            tags.iter().map(|t|t.to_lowercase()).all(|tag| entry.tags.iter().any(|t| *t == tag))
+            tags.iter()
+                .map(|t| t.to_lowercase())
+                .all(|tag| entry.tags.iter().any(|t| *t == tag))
                 || ((!text.is_empty() && words.iter().any(|word| {
                     entry.title.to_lowercase().contains(word)
                         || entry.description.to_lowercase().contains(word)

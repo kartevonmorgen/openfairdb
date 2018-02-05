@@ -20,15 +20,11 @@ mod api;
 mod util;
 pub mod sqlite;
 #[cfg(test)]
-mod mockdb;
-#[cfg(test)]
 mod tests;
-
-#[cfg(not(test))]
-use self::sqlite::create_connection_pool;
-
 #[cfg(test)]
-use self::mockdb::create_connection_pool;
+mod mockdb;
+
+use self::sqlite::create_connection_pool;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 

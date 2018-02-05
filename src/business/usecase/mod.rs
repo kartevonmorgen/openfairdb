@@ -265,6 +265,9 @@ pub fn login<D: Db>(db: &mut D, login: &Login) -> Result<String> {
 }
 
 pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
+    let mut tags = e.tags;
+    tags.dedup();
+
     #[cfg_attr(rustfmt, rustfmt_skip)]
     let new_entry = Entry{
         id          :  Uuid::new_v4().simple().to_string(),
@@ -283,7 +286,7 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
         telephone   :  e.telephone,
         homepage    :  e.homepage,
         categories  :  e.categories,
-        tags        :  e.tags,
+        tags,
         license     :  Some(e.license)
     };
     new_entry.validate()?;
@@ -299,6 +302,8 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
     if (old.version + 1) != e.version {
         return Err(Error::Repo(RepoError::InvalidVersion));
     }
+    let mut tags = e.tags;
+    tags.dedup();
     #[cfg_attr(rustfmt, rustfmt_skip)]
     let new_entry = Entry{
         id          :  e.id,
@@ -317,7 +322,7 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
         telephone   :  e.telephone,
         homepage    :  e.homepage,
         categories  :  e.categories,
-        tags        :  e.tags,
+        tags,
         license     :  old.license
     };
     for t in &new_entry.tags {
@@ -453,7 +458,6 @@ fn extend_bbox(bbox: &Bbox) -> Bbox {
 }
 
 pub fn search<D: Db>(db: &D, req: &SearchRequest) -> Result<(Vec<Entry>, Vec<Entry>)> {
-
     let mut entries = if req.text.is_empty() && req.tags.is_empty() {
         let extended_bbox = extend_bbox(&req.bbox);
         db.get_entries_by_bbox(&extended_bbox)?
