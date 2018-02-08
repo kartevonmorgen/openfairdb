@@ -148,12 +148,14 @@ impl Db for SqliteConnection {
             .map(BboxSubscription::from)
             .collect())
     }
-    fn confirm_email_address(&mut self, username: &str) -> Result<User> {
+    fn confirm_email_address(&mut self, user_id: &str) -> Result<User> {
         use self::schema::users::dsl;
-        diesel::update(dsl::users.find(username))
+
+        diesel::update(dsl::users.filter(dsl::id.eq(user_id)))
             .set(dsl::email_confirmed.eq(true))
             .execute(self)?;
-        Ok(self.get_user(username)?)
+        let u: models::User = dsl::users.filter(dsl::id.eq(user_id)).first(self)?;
+        Ok(u.into())
     }
     fn delete_bbox_subscription(&mut self, id: &str) -> Result<()> {
         use self::schema::bbox_subscriptions::dsl;

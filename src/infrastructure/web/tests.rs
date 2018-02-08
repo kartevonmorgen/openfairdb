@@ -824,7 +824,6 @@ fn get_user() {
 }
 
 #[test]
-#[ignore]
 fn confirm_email_address() {
     let (client, db) = setup();
     let users = vec![
