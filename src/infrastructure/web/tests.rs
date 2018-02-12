@@ -909,3 +909,35 @@ fn send_confirmation_email() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 }
+
+#[test]
+fn subscribe_to_bbox() {
+    let (client, db) = setup();
+    let users = vec![
+        User {
+            id: "123".into(),
+            username: "foo".into(),
+            password: bcrypt::hash("bar").unwrap(),
+            email: "foo@bar".into(),
+            email_confirmed: true,
+        },
+    ];
+    let mut conn = db.get().unwrap();
+    for u in users {
+        conn.create_user(&u).unwrap();
+        conn.confirm_email_address("123").unwrap();
+    }
+    let response = client
+        .post("/login")
+        .header(ContentType::JSON)
+        .body(r#"{"username": "foo", "password": "bar"}"#)
+        .dispatch();
+    let cookie = user_id_cookie(&response).unwrap();
+    let response = client
+        .post("/subscribe-to-bbox")
+        .header(ContentType::JSON)
+        .cookie(cookie)
+        .body(r#"[{"lat":-10.0,"lng":-10.0},{"lat":10.0,"lng":10.0}]"#)
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+}

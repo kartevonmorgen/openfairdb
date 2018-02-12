@@ -249,7 +249,7 @@ pub fn login<D: Db>(db: &mut D, login: &Login) -> Result<String> {
         Ok(u) => {
             if bcrypt::verify(&login.password, &u.password) {
                 if u.email_confirmed {
-                    Ok(u.id)
+                    Ok(login.username.clone())
                 } else {
                     Err(Error::Parameter(ParameterError::EmailNotConfirmed))
                 }

@@ -241,8 +241,8 @@ fn get_ratings(db: DbConn, id: String) -> Result<Vec<json::Rating>> {
 
 #[post("/login", format = "application/json", data = "<login>")]
 fn login(mut db: DbConn, mut cookies: Cookies, login: Json<usecase::Login>) -> Result<()> {
-    let id = usecase::login(&mut *db, &login.into_inner())?;
-    cookies.add_private(Cookie::new(COOKIE_USER_KEY, id));
+    let username = usecase::login(&mut *db, &login.into_inner())?;
+    cookies.add_private(Cookie::new(COOKIE_USER_KEY, username));
     Ok(Json(()))
 }
 
