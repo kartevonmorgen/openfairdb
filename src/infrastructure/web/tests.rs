@@ -749,8 +749,6 @@ fn login_logout_succeeds() {
     assert!(cookie.value().is_empty());
 }
 
-// TODO: make this test pass!
-#[ignore]
 #[test]
 fn get_user() {
     let (client, db) = setup();
@@ -780,22 +778,12 @@ fn get_user() {
         .body(r#"{"username": "a", "password": "a"}"#)
         .dispatch();
 
-    let user_id_cookie = response
-        .headers()
-        .iter()
-        .filter(|h| h.name.as_str() == "Set-Cookie")
-        .map(|h| h.value)
-        .find(|v| v.contains("user_id="))
-        .unwrap()
-        .parse::<Cookie>()
-        .unwrap()
-        .value()
-        .to_string();
+    let cookie = user_id_cookie(&response).unwrap();
 
     let response = client
         .get("/users/b")
         .header(ContentType::JSON)
-        .cookie(Cookie::new("user_id", user_id_cookie.clone()))
+        .cookie(cookie.clone())
         .dispatch();
 
     assert_eq!(response.status(), Status::Forbidden);
@@ -803,7 +791,7 @@ fn get_user() {
     let mut response = client
         .get("/users/a")
         .header(ContentType::JSON)
-        .cookie(Cookie::new("user_id", user_id_cookie))
+        .cookie(cookie)
         .dispatch();
 
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();

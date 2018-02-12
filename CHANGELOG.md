@@ -1,3 +1,11 @@
+## v0.3.2 (2018-02-12)
+
+- fix(web): ignore tag duplicates
+- fix(web): subscribe to bbox
+- fix(web): email-confirmation
+- fix(web): transform tags to lowercase
+- refactor(test): use sqlite instead of mock db
+
 ## v0.3.1 (2018-01-21)
 
 - fix(db): add tag relations
