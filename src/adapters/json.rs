@@ -61,7 +61,7 @@ pub struct SearchResponse {
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Serialize)]
 pub struct User {
-    pub u_id: String,
+    pub username: String,
     pub email: String
 }
 

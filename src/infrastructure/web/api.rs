@@ -300,8 +300,8 @@ fn get_bbox_subscriptions(db: DbConn, user: Login) -> Result<Vec<json::BboxSubsc
 
 #[get("/users/<username>", format = "application/json")]
 fn get_user(mut db: DbConn, user: Login, username: String) -> Result<json::User> {
-    let (u_id, email) = usecase::get_user(&mut *db, &user.0, &username)?;
-    Ok(Json(json::User { u_id, email }))
+    let (username, email) = usecase::get_user(&mut *db, &user.0, &username)?;
+    Ok(Json(json::User { username, email }))
 }
 
 #[post("/entries", format = "application/json", data = "<e>")]

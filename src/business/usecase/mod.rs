@@ -230,7 +230,7 @@ pub fn get_user<D: Db>(db: &mut D, logged_in_username: &str, requested_username:
             return Err(Error::Parameter(ParameterError::Forbidden));
         }
         let u = db.get_user(requested_username)?;
-        Ok((u.id, u.email))
+        Ok((u.username, u.email))
     } else {
         Err(Error::Repo(RepoError::NotFound))
     }

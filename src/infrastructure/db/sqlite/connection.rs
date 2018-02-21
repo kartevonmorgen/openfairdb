@@ -289,9 +289,9 @@ impl Db for SqliteConnection {
             .collect())
     }
 
-    fn get_user(&self, user_id: &str) -> Result<User> {
+    fn get_user(&self, username: &str) -> Result<User> {
         use self::schema::users::dsl::*;
-        let u: models::User = users.find(user_id).first(self)?;
+        let u: models::User = users.find(username).first(self)?;
         Ok(User::from(u))
     }
 
