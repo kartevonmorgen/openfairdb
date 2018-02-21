@@ -219,17 +219,17 @@ pub fn create_new_user<D: Db>(db: &mut D, u: NewUser) -> Result<()> {
     Ok(())
 }
 
-pub fn get_user<D: Db>(db: &mut D, login_id: &str, username: &str) -> Result<(String, String)> {
+pub fn get_user<D: Db>(db: &mut D, logged_in_username: &str, requested_username: &str) -> Result<(String, String)> {
     let users: Vec<User> = db.all_users()?
         .into_iter()
-        .filter(|u| u.id == login_id)
+        .filter(|u| u.username == logged_in_username)
         .collect();
     if !users.is_empty() {
         let login_name = &users[0].username;
-        if login_name != username {
+        if login_name != requested_username {
             return Err(Error::Parameter(ParameterError::Forbidden));
         }
-        let u = db.get_user(username)?;
+        let u = db.get_user(requested_username)?;
         Ok((u.id, u.email))
     } else {
         Err(Error::Repo(RepoError::NotFound))

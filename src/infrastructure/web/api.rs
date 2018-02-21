@@ -368,7 +368,8 @@ impl<'r> Responder<'r> for AppError {
                         ParameterError::UserExists => <Status>::new(400, "UserExists"),
                         ParameterError::EmailNotConfirmed => {
                             <Status>::new(403, "EmailNotConfirmed")
-                        }
+                        },
+                        ParameterError::Forbidden => Status::Forbidden,
                         _ => Status::BadRequest,
                     })
                 }

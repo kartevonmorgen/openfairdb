@@ -712,8 +712,8 @@ fn receive_different_user() {
             email_confirmed: true,
         },
     ];
-    assert!(get_user(&mut db, "1", "b").is_err());
-    assert!(get_user(&mut db, "1", "a").is_ok());
+    assert!(get_user(&mut db, "a", "b").is_err());
+    assert!(get_user(&mut db, "a", "a").is_ok());
 }
 
 #[test]
