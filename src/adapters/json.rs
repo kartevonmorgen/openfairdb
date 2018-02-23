@@ -58,11 +58,10 @@ pub struct SearchResponse {
     pub invisible : Vec<EntryIdWithCoordinates>
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Serialize)]
 pub struct User {
     pub username: String,
-    pub email: String
+    pub email: String,
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]

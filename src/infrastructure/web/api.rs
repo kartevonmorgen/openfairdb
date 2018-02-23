@@ -300,7 +300,7 @@ fn get_bbox_subscriptions(db: DbConn, user: Login) -> Result<Vec<json::BboxSubsc
 
 #[get("/users/<username>", format = "application/json")]
 fn get_user(mut db: DbConn, user: Login, username: String) -> Result<json::User> {
-    let (username, email) = usecase::get_user(&mut *db, &user.0, &username)?;
+    let (_, email) = usecase::get_user(&mut *db, &user.0, &username)?;
     Ok(Json(json::User { username, email }))
 }
 
@@ -368,7 +368,7 @@ impl<'r> Responder<'r> for AppError {
                         ParameterError::UserExists => <Status>::new(400, "UserExists"),
                         ParameterError::EmailNotConfirmed => {
                             <Status>::new(403, "EmailNotConfirmed")
-                        },
+                        }
                         ParameterError::Forbidden => Status::Forbidden,
                         _ => Status::BadRequest,
                     })

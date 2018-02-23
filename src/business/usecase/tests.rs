@@ -469,6 +469,28 @@ fn update_valid_entry_with_tags() {
 }
 
 #[test]
+fn create_two_users() {
+    let mut db = MockDb::new();
+    let u = NewUser {
+        username: "foo".into(),
+        password: "bar".into(),
+        email: "foo@bar.de".into(),
+    };
+    assert!(create_new_user(&mut db, u).is_ok());
+    let u = NewUser {
+        username: "baz".into(),
+        password: "bar".into(),
+        email: "baz@bar.de".into(),
+    };
+    assert!(create_new_user(&mut db, u).is_ok());
+
+    let (foo_username, _) = get_user(&mut db, "foo", "foo").unwrap();
+    let (baz_username, _) = get_user(&mut db, "baz", "baz").unwrap();
+    assert_eq!(foo_username, "foo");
+    assert_eq!(baz_username, "baz");
+}
+
+#[test]
 fn create_user_with_invalid_name() {
     let mut db = MockDb::new();
     let u = NewUser {

@@ -671,6 +671,22 @@ fn user_id_cookie(response: &Response) -> Option<Cookie<'static>> {
     cookie.map(|c| c.into_owned())
 }
 
+#[test]
+fn post_user() {
+    let (client, _) = setup();
+    let req1 = client.post("/users").header(ContentType::JSON).body(
+        r#"{"username": "foo12341234", "email": "123412341234foo@bar.de", "password": "bar"}"#,
+    );
+    let response1 = req1.dispatch();
+    assert_eq!(response1.status(), Status::Ok);
+
+    let req2 = client.post("/users").header(ContentType::JSON).body(
+        r#"{"username": "baz14234134", "email": "123412341234baz@bar.de", "password": "bar"}"#,
+    );
+    let response2 = req2.dispatch();
+    assert_eq!(response2.status(), Status::Ok);
+}
+
 #[ignore]
 #[test]
 fn login_with_invalid_credentials() {

@@ -37,12 +37,18 @@ pub struct Tag {
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub enum ObjectId {
-    #[serde(rename = "entry")] Entry(String),
-    #[serde(rename = "tag")] Tag(String),
-    #[serde(rename = "user")] User(String),
-    #[serde(rename = "comment")] Comment(String),
-    #[serde(rename = "rating")] Rating(String),
-    #[serde(rename = "bbox_subscription")] BboxSubscription(String),
+    #[serde(rename = "entry")]
+    Entry(String),
+    #[serde(rename = "tag")]
+    Tag(String),
+    #[serde(rename = "user")]
+    User(String),
+    #[serde(rename = "comment")]
+    Comment(String),
+    #[serde(rename = "rating")]
+    Rating(String),
+    #[serde(rename = "bbox_subscription")]
+    BboxSubscription(String),
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -66,12 +72,18 @@ pub struct Comment {
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub enum RatingContext {
-    #[serde(rename = "diversity")] Diversity,
-    #[serde(rename = "renewable")] Renewable,
-    #[serde(rename = "fairness")] Fairness,
-    #[serde(rename = "humanity")] Humanity,
-    #[serde(rename = "transparency")] Transparency,
-    #[serde(rename = "solidarity")] Solidarity,
+    #[serde(rename = "diversity")]
+    Diversity,
+    #[serde(rename = "renewable")]
+    Renewable,
+    #[serde(rename = "fairness")]
+    Fairness,
+    #[serde(rename = "humanity")]
+    Humanity,
+    #[serde(rename = "transparency")]
+    Transparency,
+    #[serde(rename = "solidarity")]
+    Solidarity,
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]

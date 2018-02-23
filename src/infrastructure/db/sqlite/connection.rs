@@ -290,7 +290,7 @@ impl Db for SqliteConnection {
     }
 
     fn get_user(&self, username: &str) -> Result<User> {
-        use self::schema::users::dsl::*;
+        use self::schema::users::dsl::users;
         let u: models::User = users.find(username).first(self)?;
         Ok(User::from(u))
     }

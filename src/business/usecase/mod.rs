@@ -82,7 +82,6 @@ pub struct NewEntry {
     pub license     : String,
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Deserialize, Debug, Clone)]
 pub struct NewUser {
     pub username: String,
@@ -207,7 +206,6 @@ pub fn create_new_user<D: Db>(db: &mut D, u: NewUser) -> Result<()> {
     if db.get_user(&u.username).is_ok() {
         return Err(Error::Parameter(ParameterError::UserExists));
     }
-
     let pw = bcrypt::hash(&u.password)?;
     db.create_user(&User {
         id: Uuid::new_v4().simple().to_string(),
@@ -219,21 +217,16 @@ pub fn create_new_user<D: Db>(db: &mut D, u: NewUser) -> Result<()> {
     Ok(())
 }
 
-pub fn get_user<D: Db>(db: &mut D, logged_in_username: &str, requested_username: &str) -> Result<(String, String)> {
-    let users: Vec<User> = db.all_users()?
-        .into_iter()
-        .filter(|u| u.username == logged_in_username)
-        .collect();
-    if !users.is_empty() {
-        let login_name = &users[0].username;
-        if login_name != requested_username {
-            return Err(Error::Parameter(ParameterError::Forbidden));
-        }
-        let u = db.get_user(requested_username)?;
-        Ok((u.username, u.email))
-    } else {
-        Err(Error::Repo(RepoError::NotFound))
+pub fn get_user<D: Db>(
+    db: &mut D,
+    logged_in_username: &str,
+    requested_username: &str,
+) -> Result<(String, String)> {
+    let u: User = db.get_user(requested_username)?;
+    if logged_in_username != requested_username {
+        return Err(Error::Parameter(ParameterError::Forbidden));
     }
+    Ok((u.username, u.email))
 }
 
 pub fn delete_user(db: &mut Db, login_id: &str, u_id: &str) -> Result<()> {
