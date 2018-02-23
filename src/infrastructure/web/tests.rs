@@ -687,7 +687,6 @@ fn post_user() {
     assert_eq!(response2.status(), Status::Ok);
 }
 
-#[ignore]
 #[test]
 fn login_with_invalid_credentials() {
     let (client, _) = setup();

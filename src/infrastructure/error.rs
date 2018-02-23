@@ -16,7 +16,10 @@ impl From<RepoError> for AppError {
 
 impl From<DieselError> for RepoError {
     fn from(err: DieselError) -> RepoError {
-        RepoError::Other(Box::new(err))
+        match err {
+            DieselError::NotFound => RepoError::NotFound,
+            _ => RepoError::Other(Box::new(err)),
+        }
     }
 }
 
