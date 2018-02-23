@@ -1,3 +1,8 @@
+## v0.3.3 (2018-02-23)
+
+- fix(web): login with username instead of user id
+- fix(web): create new account
+
 ## v0.3.2 (2018-02-12)
 
 - fix(web): ignore tag duplicates
