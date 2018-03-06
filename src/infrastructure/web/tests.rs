@@ -92,6 +92,29 @@ fn create_entry_with_tag_duplicates() {
 }
 
 #[test]
+fn create_entry_with_sharp_tag() {
+    let (client, db) = setup();
+    db.get()
+        .unwrap()
+        .create_category_if_it_does_not_exist(&Category {
+            id: "x".into(),
+            created: 0,
+            version: 0,
+            name: "x".into(),
+        })
+        .unwrap();
+    let json = r##"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","#bar"]}"##;
+    let response = client
+        .post("/entries")
+        .header(ContentType::JSON)
+        .body(json)
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let tags = db.get().unwrap().all_entries().unwrap()[0].tags.clone();
+    assert_eq!(tags, vec!["foo", "bar"]);
+}
+
+#[test]
 fn update_entry_with_tag_duplicates() {
     let (client, db) = setup();
     db.get()

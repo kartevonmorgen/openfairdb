@@ -258,7 +258,7 @@ pub fn login<D: Db>(db: &mut D, login: &Login) -> Result<String> {
 }
 
 pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
-    let mut tags = e.tags;
+    let mut tags: Vec<_> = e.tags.into_iter().map(|t| t.replace("#", "")).collect();
     tags.dedup();
 
     #[cfg_attr(rustfmt, rustfmt_skip)]
