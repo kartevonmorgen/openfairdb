@@ -1,28 +1,26 @@
-use rocket::{self, Rocket};
-use rocket_contrib::Json;
-use rocket::config::{Config, Environment};
-use business::db::Db;
-use infrastructure::error::AppError;
-use business::sort::Rated;
-use std::result;
+use core::{prelude::*, util::sort::Rated};
 use diesel::r2d2::{self, Pool};
-use std::collections::HashMap;
-use std::sync::Mutex;
+use infrastructure::error::AppError;
+use rocket::{self,
+             config::{Config, Environment},
+             Rocket};
+use rocket_contrib::Json;
+use std::{collections::HashMap, result, sync::Mutex};
 
 #[cfg(feature = "email")]
-use super::mail;
+use infrastructure::mail;
 
 lazy_static! {
     static ref ENTRY_RATINGS: Mutex<HashMap<String, f64>> = Mutex::new(HashMap::new());
 }
 
 mod api;
-mod util;
+#[cfg(test)]
+mod mockdb;
 pub mod sqlite;
 #[cfg(test)]
 mod tests;
-#[cfg(test)]
-mod mockdb;
+mod util;
 
 use self::sqlite::create_connection_pool;
 

@@ -33,12 +33,12 @@ extern crate toml;
 extern crate url;
 extern crate uuid;
 
-mod entities;
-mod business;
 mod adapters;
+mod core;
 mod infrastructure;
+mod ports;
 
 fn main() {
     env_logger::init();
-    infrastructure::cli::run();
+    ports::cli::run();
 }

@@ -1,10 +1,10 @@
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use diesel::sqlite::SqliteConnection;
-use super::super::error::AppError;
-use std::ops::{Deref, DerefMut};
+use infrastructure::error::AppError;
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
 use rocket::{Outcome, Request, State};
+use std::ops::{Deref, DerefMut};
 
 embed_migrations!();
 

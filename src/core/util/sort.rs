@@ -1,6 +1,6 @@
-use entities::*;
-use std::cmp::Ordering;
+use super::super::entities::*;
 use super::geo;
+use std::cmp::Ordering;
 use std::collections::HashMap;
 
 trait DistanceTo {
@@ -126,7 +126,6 @@ pub mod tests {
     use super::*;
     use test::Bencher;
     use uuid::Uuid;
-    use business::builder::EntryBuilder;
 
     fn new_entry(id: &str, lat: f64, lng: f64) -> Entry {
         Entry::build().id(id).lat(lat).lng(lng).finish()

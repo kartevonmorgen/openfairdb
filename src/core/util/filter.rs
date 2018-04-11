@@ -1,5 +1,5 @@
-use entities::*;
-use business::geo::is_in_bbox;
+use super::super::entities::*;
+use super::geo::is_in_bbox;
 
 pub trait InBBox {
     fn in_bbox(&self, bb: &Bbox) -> bool;
@@ -52,7 +52,6 @@ fn to_words(txt: &str) -> Vec<String> {
 mod tests {
 
     use super::*;
-    use business::builder::*;
 
     #[test]
     fn is_in_bounding_box() {

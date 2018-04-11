@@ -1,9 +1,9 @@
-use std::process::{Command, Stdio};
+use chrono::*;
+use fast_chemail::is_valid_email;
+use quoted_printable::encode;
 use std::io::prelude::*;
 use std::io::{Error, ErrorKind, Result};
-use chrono::*;
-use quoted_printable::encode;
-use fast_chemail::is_valid_email;
+use std::process::{Command, Stdio};
 
 const FROM_ADDRESS: &str = "\"Karte von morgen\" <no-reply@kartevonmorgen.org>";
 

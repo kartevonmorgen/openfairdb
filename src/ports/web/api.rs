@@ -1,21 +1,19 @@
-use rocket::response::{Responder, Response};
-use rocket;
-use rocket_contrib::Json;
-use rocket::request::{self, FromRequest, Request};
-use rocket::{Outcome, Route};
-use rocket::http::{Cookie, Cookies, Status};
-use adapters::json;
-use adapters::user_communication;
-use entities::*;
-use business::db::Db;
-use business::error::{Error, ParameterError, RepoError};
-use infrastructure::error::AppError;
-use serde_json::ser::to_string;
-use business::{geo, usecase};
-use business::duplicates::{self, DuplicateType};
-use std::result;
-use super::util;
 use super::sqlite::DbConn;
+use super::util;
+use adapters::{json, user_communication};
+use core::{prelude::*,
+           usecases::{self, DuplicateType},
+           util::geo};
+use infrastructure::error::AppError;
+use rocket::{self,
+             http::{Cookie, Cookies, Status},
+             request::{self, FromRequest, Request},
+             response::{Responder, Response},
+             Outcome,
+             Route};
+use rocket_contrib::Json;
+use serde_json::ser::to_string;
+use std::result;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
@@ -105,7 +103,7 @@ fn get_search(db: DbConn, search: SearchQuery) -> Result<json::SearchResponse> {
         Err(poisoned) => poisoned.into_inner(),
     };
 
-    let req = usecase::SearchRequest {
+    let req = usecases::SearchRequest {
         bbox,
         categories,
         text,
@@ -113,7 +111,7 @@ fn get_search(db: DbConn, search: SearchQuery) -> Result<json::SearchResponse> {
         entry_ratings: &*avg_ratings,
     };
 
-    let (visible, invisible) = usecase::search(&*db, &req)?;
+    let (visible, invisible) = usecases::search(&*db, &req)?;
 
     let visible = visible
         .into_iter()
@@ -147,8 +145,8 @@ struct UserId {
 #[get("/entries/<ids>")]
 fn get_entry(db: DbConn, ids: String) -> Result<Vec<json::Entry>> {
     let ids = util::extract_ids(&ids);
-    let entries = usecase::get_entries(&*db, &ids)?;
-    let ratings = usecase::get_ratings_by_entry_ids(&*db, &ids)?;
+    let entries = usecases::get_entries(&*db, &ids)?;
+    let ratings = usecases::get_ratings_by_entry_ids(&*db, &ids)?;
     Ok(Json(
         entries
             .into_iter()
@@ -163,7 +161,7 @@ fn get_entry(db: DbConn, ids: String) -> Result<Vec<json::Entry>> {
 #[get("/duplicates")]
 fn get_duplicates(db: DbConn) -> Result<Vec<(String, String, DuplicateType)>> {
     let entries = db.all_entries()?;
-    let ids = duplicates::find_duplicates(&entries);
+    let ids = usecases::find_duplicates(&entries);
     Ok(Json(ids))
 }
 
@@ -184,9 +182,9 @@ fn get_version() -> &'static str {
 }
 
 #[post("/users", format = "application/json", data = "<u>")]
-fn post_user(mut db: DbConn, u: Json<usecase::NewUser>) -> Result<()> {
+fn post_user(mut db: DbConn, u: Json<usecases::NewUser>) -> Result<()> {
     let new_user = u.into_inner();
-    usecase::create_new_user(&mut *db, new_user.clone())?;
+    usecases::create_new_user(&mut *db, new_user.clone())?;
     let user = db.get_user(&new_user.username)?;
     let subject = "Karte von Morgen: bitte bestätige deine Email-Adresse";
     let body = user_communication::email_confirmation_email(&user.id);
@@ -196,24 +194,24 @@ fn post_user(mut db: DbConn, u: Json<usecase::NewUser>) -> Result<()> {
 
 #[delete("/users/<u_id>")]
 fn delete_user(mut db: DbConn, user: Login, u_id: String) -> Result<()> {
-    usecase::delete_user(&mut *db, &user.0, &u_id)?;
+    usecases::delete_user(&mut *db, &user.0, &u_id)?;
     Ok(Json(()))
 }
 
 #[post("/ratings", format = "application/json", data = "<u>")]
-fn post_rating(mut db: DbConn, u: Json<usecase::RateEntry>) -> Result<()> {
+fn post_rating(mut db: DbConn, u: Json<usecases::RateEntry>) -> Result<()> {
     let u = u.into_inner();
     let e_id = u.entry.clone();
-    usecase::rate_entry(&mut *db, u)?;
+    usecases::rate_entry(&mut *db, u)?;
     super::calculate_rating_for_entry(&*db, &e_id)?;
     Ok(Json(()))
 }
 
 #[get("/ratings/<id>")]
 fn get_ratings(db: DbConn, id: String) -> Result<Vec<json::Rating>> {
-    let ratings = usecase::get_ratings(&*db, &util::extract_ids(&id))?;
+    let ratings = usecases::get_ratings(&*db, &util::extract_ids(&id))?;
     let r_ids: Vec<String> = ratings.iter().map(|r| r.id.clone()).collect();
-    let comments = usecase::get_comments_by_rating_ids(&*db, &r_ids)?;
+    let comments = usecases::get_comments_by_rating_ids(&*db, &r_ids)?;
     let result = ratings
         .into_iter()
         .map(|x| json::Rating {
@@ -240,8 +238,8 @@ fn get_ratings(db: DbConn, id: String) -> Result<Vec<json::Rating>> {
 }
 
 #[post("/login", format = "application/json", data = "<login>")]
-fn login(mut db: DbConn, mut cookies: Cookies, login: Json<usecase::Login>) -> Result<()> {
-    let username = usecase::login(&mut *db, &login.into_inner())?;
+fn login(mut db: DbConn, mut cookies: Cookies, login: Json<usecases::Login>) -> Result<()> {
+    let username = usecases::login(&mut *db, &login.into_inner())?;
     cookies.add_private(Cookie::new(COOKIE_USER_KEY, username));
     Ok(Json(()))
 }
@@ -271,21 +269,21 @@ fn subscribe_to_bbox(
 ) -> Result<()> {
     let coordinates = coordinates.into_inner();
     let Login(username) = user;
-    usecase::subscribe_to_bbox(&coordinates, &username, &mut *db)?;
+    usecases::subscribe_to_bbox(&coordinates, &username, &mut *db)?;
     Ok(Json(()))
 }
 
 #[delete("/unsubscribe-all-bboxes")]
 fn unsubscribe_all_bboxes(mut db: DbConn, user: Login) -> Result<()> {
     let Login(username) = user;
-    usecase::unsubscribe_all_bboxes_by_username(&mut *db, &username)?;
+    usecases::unsubscribe_all_bboxes_by_username(&mut *db, &username)?;
     Ok(Json(()))
 }
 
 #[get("/bbox-subscriptions")]
 fn get_bbox_subscriptions(db: DbConn, user: Login) -> Result<Vec<json::BboxSubscription>> {
     let Login(username) = user;
-    let user_subscriptions = usecase::get_bbox_subscriptions(&username, &*db)?
+    let user_subscriptions = usecases::get_bbox_subscriptions(&username, &*db)?
         .into_iter()
         .map(|s| json::BboxSubscription {
             id: s.id,
@@ -300,25 +298,25 @@ fn get_bbox_subscriptions(db: DbConn, user: Login) -> Result<Vec<json::BboxSubsc
 
 #[get("/users/<username>", format = "application/json")]
 fn get_user(mut db: DbConn, user: Login, username: String) -> Result<json::User> {
-    let (_, email) = usecase::get_user(&mut *db, &user.0, &username)?;
+    let (_, email) = usecases::get_user(&mut *db, &user.0, &username)?;
     Ok(Json(json::User { username, email }))
 }
 
 #[post("/entries", format = "application/json", data = "<e>")]
-fn post_entry(mut db: DbConn, e: Json<usecase::NewEntry>) -> Result<String> {
+fn post_entry(mut db: DbConn, e: Json<usecases::NewEntry>) -> Result<String> {
     let e = e.into_inner();
-    let id = usecase::create_new_entry(&mut *db, e.clone())?;
-    let email_addresses = usecase::email_addresses_by_coordinate(&mut *db, &e.lat, &e.lng)?;
+    let id = usecases::create_new_entry(&mut *db, e.clone())?;
+    let email_addresses = usecases::email_addresses_by_coordinate(&mut *db, &e.lat, &e.lng)?;
     let all_categories = db.all_categories()?;
     util::notify_create_entry(&email_addresses, &e, &id, all_categories);
     Ok(Json(id))
 }
 
 #[put("/entries/<id>", format = "application/json", data = "<e>")]
-fn put_entry(mut db: DbConn, id: String, e: Json<usecase::UpdateEntry>) -> Result<String> {
+fn put_entry(mut db: DbConn, id: String, e: Json<usecases::UpdateEntry>) -> Result<String> {
     let e = e.into_inner();
-    usecase::update_entry(&mut *db, e.clone())?;
-    let email_addresses = usecase::email_addresses_by_coordinate(&mut *db, &e.lat, &e.lng)?;
+    usecases::update_entry(&mut *db, e.clone())?;
+    let email_addresses = usecases::email_addresses_by_coordinate(&mut *db, &e.lat, &e.lng)?;
     let all_categories = db.all_categories()?;
     util::notify_update_entry(&email_addresses, &e, all_categories);
     Ok(Json(id))
@@ -388,9 +386,10 @@ impl<'r> Responder<'r> for AppError {
 
 #[cfg(test)]
 mod tests {
+    use super::super::{calculate_all_ratings,
+                       mockdb::{self, DbConn},
+                       ENTRY_RATINGS};
     use test::Bencher;
-    use infrastructure::web::mockdb::{self, DbConn};
-    use super::super::{calculate_all_ratings, ENTRY_RATINGS};
 
     fn setup() -> mockdb::ConnectionPool {
         mockdb::create_connection_pool(":memory:").unwrap()
@@ -399,7 +398,7 @@ mod tests {
     //#[ignore]
     //#[bench]
     //fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
-    //    let (entries, ratings) = ::business::sort::tests::create_entries_with_ratings(10_000);
+    //    let (entries, ratings) = ::core::util::sort::tests::create_entries_with_ratings(10_000);
     //    let pool = setup();
     //    let mut conn = pool.get().unwrap();
     //    conn.entries = entries;

@@ -1,8 +1,8 @@
-use regex::Regex;
-use entities::*;
-use adapters::user_communication;
-use business::usecase;
 use super::mail;
+use adapters::user_communication;
+use core::prelude::*;
+use core::usecases;
+use regex::Regex;
 
 lazy_static! {
     static ref HASH_TAG_REGEX: Regex = Regex::new(r"#(?P<tag>\w+((-\w+)*)?)").unwrap();
@@ -42,7 +42,7 @@ pub fn send_mails(_: Vec<String>, _: &str, _: &str) {
 
 pub fn notify_create_entry(
     email_addresses: &[String],
-    e: &usecase::NewEntry,
+    e: &usecases::NewEntry,
     id: &str,
     all_categories: Vec<Category>,
 ) {
@@ -58,7 +58,7 @@ pub fn notify_create_entry(
 
 pub fn notify_update_entry(
     email_addresses: &[String],
-    e: &usecase::UpdateEntry,
+    e: &usecases::UpdateEntry,
     all_categories: Vec<Category>,
 ) {
     let subject = String::from("Karte von Morgen - Eintrag verändert: ") + &e.title;

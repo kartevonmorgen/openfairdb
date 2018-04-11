@@ -1,15 +1,15 @@
-use entities::*;
-use business::db::Db;
-use std::io::{Error, ErrorKind};
-use std::io::prelude::*;
-use std::fs::File;
-use std::result;
-use std::collections::HashMap;
-use serde_json;
-use super::web::sqlite::create_connection_pool;
+use core::prelude::*;
+
+use std::{collections::HashMap,
+          fs::File,
+          io::{prelude::*, Error, ErrorKind},
+          result};
+
 use chrono::prelude::*;
-use uuid::Uuid;
 use infrastructure::error::AppError;
+use ports::web::sqlite::create_connection_pool; //TODO: import from infrastructure
+use serde_json;
+use uuid::Uuid;
 
 type Result<T> = result::Result<T, AppError>;
 

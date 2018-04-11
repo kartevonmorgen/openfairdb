@@ -1,6 +1,5 @@
-use std::io;
-use std::error;
 use pwhash;
+use std::{error, io};
 
 quick_error!{
     #[derive(Debug)]
@@ -46,6 +45,7 @@ quick_error!{
 
 quick_error!{
     #[derive(Debug)]
+    //TODO: rename to GatewayError
     pub enum RepoError {
         NotFound{
             description("The requested object could not be found")

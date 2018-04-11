@@ -1,20 +1,20 @@
-use rocket::logger::LoggingLevel;
-use rocket::config::{Config, Environment};
-use rocket::local::Client;
-use rocket::http::{ContentType, Cookie, Status};
-use business::db::Db;
-use business::builder::*;
-use business::usecase;
-use serde_json;
-use entities::*;
-use adapters::json;
-use rocket::response::Response;
-use super::util::*;
-use pwhash::bcrypt;
-use test::Bencher;
+use rocket::{config::{Config, Environment},
+             http::{ContentType, Cookie, Status},
+             local::Client,
+             logger::LoggingLevel};
+
+use core::prelude::*;
+use core::usecases as usecase;
+
 use super::sqlite;
-use uuid::Uuid;
+use super::util::*;
+use adapters::json;
+use pwhash::bcrypt;
+use rocket::response::Response;
+use serde_json;
 use std::fs;
+use test::Bencher;
+use uuid::Uuid;
 
 fn setup() -> (Client, sqlite::ConnectionPool) {
     let cfg = Config::build(Environment::Development)
@@ -314,7 +314,7 @@ fn search_with_text() {
 #[ignore]
 #[bench]
 fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
-    let (entries, ratings) = ::business::sort::tests::create_entries_with_ratings(10_000);
+    let (entries, ratings) = ::core::util::sort::tests::create_entries_with_ratings(10_000);
     let (client, db) = setup();
     let mut conn = db.get().unwrap();
     for e in entries {
@@ -728,15 +728,13 @@ fn login_with_invalid_credentials() {
 #[test]
 fn login_with_valid_credentials() {
     let (client, db) = setup();
-    let users = vec![
-        User {
-            id: "123".into(),
-            username: "foo".into(),
-            password: bcrypt::hash("bar").unwrap(),
-            email: "foo@bar".into(),
-            email_confirmed: true,
-        },
-    ];
+    let users = vec![User {
+        id: "123".into(),
+        username: "foo".into(),
+        password: bcrypt::hash("bar").unwrap(),
+        email: "foo@bar".into(),
+        email_confirmed: true,
+    }];
     let mut conn = db.get().unwrap();
     for u in users {
         conn.create_user(&u).unwrap();
@@ -754,15 +752,13 @@ fn login_with_valid_credentials() {
 #[test]
 fn login_logout_succeeds() {
     let (client, db) = setup();
-    let users = vec![
-        User {
-            id: "123".into(),
-            username: "foo".into(),
-            password: bcrypt::hash("bar").unwrap(),
-            email: "foo@bar".into(),
-            email_confirmed: true,
-        },
-    ];
+    let users = vec![User {
+        id: "123".into(),
+        username: "foo".into(),
+        password: bcrypt::hash("bar").unwrap(),
+        email: "foo@bar".into(),
+        email_confirmed: true,
+    }];
     let mut conn = db.get().unwrap();
     for u in users {
         conn.create_user(&u).unwrap();
@@ -852,15 +848,13 @@ fn get_user() {
 #[test]
 fn confirm_email_address() {
     let (client, db) = setup();
-    let users = vec![
-        User {
-            id: "123".into(),
-            username: "foo".into(),
-            password: bcrypt::hash("bar").unwrap(),
-            email: "a@bar.de".into(),
-            email_confirmed: false,
-        },
-    ];
+    let users = vec![User {
+        id: "123".into(),
+        username: "foo".into(),
+        password: bcrypt::hash("bar").unwrap(),
+        email: "a@bar.de".into(),
+        email_confirmed: false,
+    }];
     let mut conn = db.get().unwrap();
     for u in users {
         conn.create_user(&u).unwrap();
@@ -914,15 +908,13 @@ fn confirm_email_address() {
 #[test]
 fn send_confirmation_email() {
     let (client, db) = setup();
-    let users = vec![
-        User {
-            id: "123".into(),
-            username: "foo".into(),
-            password: bcrypt::hash("bar").unwrap(),
-            email: "a@bar.de".into(),
-            email_confirmed: false,
-        },
-    ];
+    let users = vec![User {
+        id: "123".into(),
+        username: "foo".into(),
+        password: bcrypt::hash("bar").unwrap(),
+        email: "a@bar.de".into(),
+        email_confirmed: false,
+    }];
     let mut conn = db.get().unwrap();
     for u in users {
         conn.create_user(&u).unwrap();
@@ -939,15 +931,13 @@ fn send_confirmation_email() {
 #[test]
 fn subscribe_to_bbox() {
     let (client, db) = setup();
-    let users = vec![
-        User {
-            id: "123".into(),
-            username: "foo".into(),
-            password: bcrypt::hash("bar").unwrap(),
-            email: "foo@bar".into(),
-            email_confirmed: true,
-        },
-    ];
+    let users = vec![User {
+        id: "123".into(),
+        username: "foo".into(),
+        password: bcrypt::hash("bar").unwrap(),
+        email: "foo@bar".into(),
+        email_confirmed: true,
+    }];
     let mut conn = db.get().unwrap();
     for u in users {
         conn.create_user(&u).unwrap();

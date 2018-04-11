@@ -1,7 +1,6 @@
-use entities::*;
-use super::geo;
-use std::cmp::min;
-use std::collections::HashSet;
+use core::prelude::*;
+use core::util::geo;
+use std::{cmp::min, collections::HashSet};
 
 #[derive(Debug, PartialEq, Serialize)]
 pub enum DuplicateType {
@@ -107,7 +106,7 @@ fn levenshtein_distance_small(s: &str, t: &str, max_dist: usize) -> bool {
 
 // Algorithm from
 // https://en.wikipedia.org/wiki/Levenshtein_distance#Computing_Levenshtein_distance
-pub fn levenshtein_distance(s: &str, t: &str) -> usize {
+fn levenshtein_distance(s: &str, t: &str) -> usize {
     let max_s: usize = s.len() + 1;
     let max_t: usize = t.len() + 1;
 
@@ -160,7 +159,6 @@ fn min3(s: usize, t: usize, u: usize) -> usize {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use business::builder::EntryBuilder;
 
     fn new_entry(title: String, description: String, lat: f64, lng: f64) -> Entry {
         Entry::build()

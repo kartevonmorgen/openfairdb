@@ -1,10 +1,12 @@
-use business::usecase::tests::MockDb;
-use std::io;
+use core::usecases::tests::MockDb;
 use diesel::r2d2::{ManageConnection, Pool, PoolError, PooledConnection};
+use rocket::{http::Status,
+             request::{self, FromRequest},
+             Outcome,
+             Request,
+             State};
+use std::io;
 use std::ops::{Deref, DerefMut};
-use rocket::http::Status;
-use rocket::request::{self, FromRequest};
-use rocket::{Outcome, Request, State};
 
 #[derive(Debug)]
 pub struct MockDbConnectionManager;

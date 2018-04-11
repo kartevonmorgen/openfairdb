@@ -1,10 +1,8 @@
-use business::error::Error as BError;
-use business::error::RepoError;
-use diesel_migrations::RunMigrationsError;
+use core::error::{Error as BError, RepoError};
 use diesel::r2d2;
-use std::error;
-use std::io;
+use diesel_migrations::RunMigrationsError;
 use serde_json;
+use std::{error, io};
 
 use diesel::result::Error as DieselError;
 

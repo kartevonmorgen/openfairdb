@@ -1,4 +1,4 @@
-use entities as e;
+use core::entities as e;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Serialize)]

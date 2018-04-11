@@ -1,13 +1,11 @@
-use entities::*;
-use business::error::RepoError;
-use diesel;
-use diesel::prelude::*;
-use diesel::sqlite::SqliteConnection;
-use std::result;
-use business::db::Db;
 use super::models;
 use super::schema;
+use core::prelude::*;
+use diesel;
+use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
+use diesel::sqlite::SqliteConnection;
+use std::result;
 
 type Result<T> = result::Result<T, RepoError>;
 
@@ -24,7 +22,7 @@ fn unset_current_on_all_entries(
         .execute(*con)
 }
 
-impl Db for SqliteConnection {
+impl EntryGateway for SqliteConnection {
     fn create_entry(&mut self, e: &Entry) -> Result<()> {
         let new_entry = models::Entry::from(e.clone());
         let cat_rels: Vec<_> = e.categories
@@ -60,111 +58,6 @@ impl Db for SqliteConnection {
                 .execute(self)?;
             Ok(())
         })?;
-        Ok(())
-    }
-    fn create_tag_if_it_does_not_exist(&mut self, t: &Tag) -> Result<()> {
-        let res = diesel::insert_into(schema::tags::table)
-            .values(&models::Tag::from(t.clone()))
-            .execute(self);
-        if let Err(err) = res {
-            match err {
-                DieselError::DatabaseError(db_err, _) => {
-                    match db_err {
-                        DatabaseErrorKind::UniqueViolation => {
-                            // that's ok :)
-                        }
-                        _ => {
-                            return Err(err.into());
-                        }
-                    }
-                }
-                _ => {
-                    return Err(err.into());
-                }
-            }
-        }
-        Ok(())
-    }
-    fn create_category_if_it_does_not_exist(&mut self, c: &Category) -> Result<()> {
-        let res = diesel::insert_into(schema::categories::table)
-            .values(&models::Category::from(c.clone()))
-            .execute(self);
-        if let Err(err) = res {
-            match err {
-                DieselError::DatabaseError(db_err, _) => {
-                    match db_err {
-                        DatabaseErrorKind::UniqueViolation => {
-                            // that's ok :)
-                        }
-                        _ => {
-                            return Err(err.into());
-                        }
-                    }
-                }
-                _ => {
-                    return Err(err.into());
-                }
-            }
-        }
-        Ok(())
-    }
-    fn create_user(&mut self, u: &User) -> Result<()> {
-        diesel::insert_into(schema::users::table)
-            .values(&models::User::from(u.clone()))
-            .execute(self)?;
-        Ok(())
-    }
-    fn create_comment(&mut self, c: &Comment) -> Result<()> {
-        diesel::insert_into(schema::comments::table)
-            .values(&models::Comment::from(c.clone()))
-            .execute(self)?;
-        Ok(())
-    }
-    fn create_rating(&mut self, r: &Rating) -> Result<()> {
-        diesel::insert_into(schema::ratings::table)
-            .values(&models::Rating::from(r.clone()))
-            .execute(self)?;
-        Ok(())
-    }
-    fn create_bbox_subscription(&mut self, sub: &BboxSubscription) -> Result<()> {
-        diesel::insert_into(schema::bbox_subscriptions::table)
-            .values(&models::BboxSubscription::from(sub.clone()))
-            .execute(self)?;
-        Ok(())
-    }
-    fn all_users(&self) -> Result<Vec<User>> {
-        use self::schema::users::dsl;
-        Ok(dsl::users
-            .load::<models::User>(self)?
-            .into_iter()
-            .map(User::from)
-            .collect())
-    }
-    fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>> {
-        use self::schema::bbox_subscriptions::dsl;
-        Ok(dsl::bbox_subscriptions
-            .load::<models::BboxSubscription>(self)?
-            .into_iter()
-            .map(BboxSubscription::from)
-            .collect())
-    }
-    fn confirm_email_address(&mut self, user_id: &str) -> Result<User> {
-        use self::schema::users::dsl;
-
-        diesel::update(dsl::users.filter(dsl::id.eq(user_id)))
-            .set(dsl::email_confirmed.eq(true))
-            .execute(self)?;
-        let u: models::User = dsl::users.filter(dsl::id.eq(user_id)).first(self)?;
-        Ok(u.into())
-    }
-    fn delete_bbox_subscription(&mut self, id: &str) -> Result<()> {
-        use self::schema::bbox_subscriptions::dsl;
-        diesel::delete(dsl::bbox_subscriptions.find(id)).execute(self)?;
-        Ok(())
-    }
-    fn delete_user(&mut self, user: &str) -> Result<()> {
-        use self::schema::users::dsl::*;
-        diesel::delete(users.find(user)).execute(self)?;
         Ok(())
     }
 
@@ -289,12 +182,6 @@ impl Db for SqliteConnection {
             .collect())
     }
 
-    fn get_user(&self, username: &str) -> Result<User> {
-        use self::schema::users::dsl::users;
-        let u: models::User = users.find(username).first(self)?;
-        Ok(User::from(u))
-    }
-
     fn all_entries(&self) -> Result<Vec<Entry>> {
         use self::schema::entries::dsl as e_dsl;
         use self::schema::entry_category_relations::dsl as e_c_dsl;
@@ -348,38 +235,6 @@ impl Db for SqliteConnection {
             })
             .collect())
     }
-    fn all_categories(&self) -> Result<Vec<Category>> {
-        use self::schema::categories::dsl::*;
-        Ok(categories
-            .load::<models::Category>(self)?
-            .into_iter()
-            .map(Category::from)
-            .collect())
-    }
-    fn all_tags(&self) -> Result<Vec<Tag>> {
-        use self::schema::tags::dsl::*;
-        Ok(tags.load::<models::Tag>(self)?
-            .into_iter()
-            .map(Tag::from)
-            .collect())
-    }
-    fn all_ratings(&self) -> Result<Vec<Rating>> {
-        use self::schema::ratings::dsl::*;
-        Ok(ratings
-            .load::<models::Rating>(self)?
-            .into_iter()
-            .map(Rating::from)
-            .collect())
-    }
-    fn all_comments(&self) -> Result<Vec<Comment>> {
-        use self::schema::comments::dsl::*;
-        Ok(comments
-            .load::<models::Comment>(self)?
-            .into_iter()
-            .map(Comment::from)
-            .collect())
-    }
-
     fn update_entry(&mut self, entry: &Entry) -> Result<()> {
         let e = models::Entry::from(entry.clone());
 
@@ -489,5 +344,155 @@ impl Db for SqliteConnection {
             Ok(())
         })?;
         Ok(())
+    }
+}
+
+impl UserGateway for SqliteConnection {
+    fn create_user(&mut self, u: &User) -> Result<()> {
+        diesel::insert_into(schema::users::table)
+            .values(&models::User::from(u.clone()))
+            .execute(self)?;
+        Ok(())
+    }
+    fn get_user(&self, username: &str) -> Result<User> {
+        use self::schema::users::dsl::users;
+        let u: models::User = users.find(username).first(self)?;
+        Ok(User::from(u))
+    }
+    fn all_users(&self) -> Result<Vec<User>> {
+        use self::schema::users::dsl;
+        Ok(dsl::users
+            .load::<models::User>(self)?
+            .into_iter()
+            .map(User::from)
+            .collect())
+    }
+    fn delete_user(&mut self, user: &str) -> Result<()> {
+        use self::schema::users::dsl::*;
+        diesel::delete(users.find(user)).execute(self)?;
+        Ok(())
+    }
+}
+
+impl CommentGateway for SqliteConnection {
+    fn create_comment(&mut self, c: &Comment) -> Result<()> {
+        diesel::insert_into(schema::comments::table)
+            .values(&models::Comment::from(c.clone()))
+            .execute(self)?;
+        Ok(())
+    }
+    fn all_comments(&self) -> Result<Vec<Comment>> {
+        use self::schema::comments::dsl::*;
+        Ok(comments
+            .load::<models::Comment>(self)?
+            .into_iter()
+            .map(Comment::from)
+            .collect())
+    }
+}
+
+impl Db for SqliteConnection {
+    fn create_tag_if_it_does_not_exist(&mut self, t: &Tag) -> Result<()> {
+        let res = diesel::insert_into(schema::tags::table)
+            .values(&models::Tag::from(t.clone()))
+            .execute(self);
+        if let Err(err) = res {
+            match err {
+                DieselError::DatabaseError(db_err, _) => {
+                    match db_err {
+                        DatabaseErrorKind::UniqueViolation => {
+                            // that's ok :)
+                        }
+                        _ => {
+                            return Err(err.into());
+                        }
+                    }
+                }
+                _ => {
+                    return Err(err.into());
+                }
+            }
+        }
+        Ok(())
+    }
+    fn create_category_if_it_does_not_exist(&mut self, c: &Category) -> Result<()> {
+        let res = diesel::insert_into(schema::categories::table)
+            .values(&models::Category::from(c.clone()))
+            .execute(self);
+        if let Err(err) = res {
+            match err {
+                DieselError::DatabaseError(db_err, _) => {
+                    match db_err {
+                        DatabaseErrorKind::UniqueViolation => {
+                            // that's ok :)
+                        }
+                        _ => {
+                            return Err(err.into());
+                        }
+                    }
+                }
+                _ => {
+                    return Err(err.into());
+                }
+            }
+        }
+        Ok(())
+    }
+    fn create_rating(&mut self, r: &Rating) -> Result<()> {
+        diesel::insert_into(schema::ratings::table)
+            .values(&models::Rating::from(r.clone()))
+            .execute(self)?;
+        Ok(())
+    }
+    fn create_bbox_subscription(&mut self, sub: &BboxSubscription) -> Result<()> {
+        diesel::insert_into(schema::bbox_subscriptions::table)
+            .values(&models::BboxSubscription::from(sub.clone()))
+            .execute(self)?;
+        Ok(())
+    }
+    fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>> {
+        use self::schema::bbox_subscriptions::dsl;
+        Ok(dsl::bbox_subscriptions
+            .load::<models::BboxSubscription>(self)?
+            .into_iter()
+            .map(BboxSubscription::from)
+            .collect())
+    }
+    fn confirm_email_address(&mut self, user_id: &str) -> Result<User> {
+        use self::schema::users::dsl;
+
+        diesel::update(dsl::users.filter(dsl::id.eq(user_id)))
+            .set(dsl::email_confirmed.eq(true))
+            .execute(self)?;
+        let u: models::User = dsl::users.filter(dsl::id.eq(user_id)).first(self)?;
+        Ok(u.into())
+    }
+    fn delete_bbox_subscription(&mut self, id: &str) -> Result<()> {
+        use self::schema::bbox_subscriptions::dsl;
+        diesel::delete(dsl::bbox_subscriptions.find(id)).execute(self)?;
+        Ok(())
+    }
+    fn all_categories(&self) -> Result<Vec<Category>> {
+        use self::schema::categories::dsl::*;
+        Ok(categories
+            .load::<models::Category>(self)?
+            .into_iter()
+            .map(Category::from)
+            .collect())
+    }
+    fn all_tags(&self) -> Result<Vec<Tag>> {
+        use self::schema::tags::dsl::*;
+        Ok(tags.load::<models::Tag>(self)?
+            .into_iter()
+            .map(Tag::from)
+            .collect())
+    }
+    fn all_ratings(&self) -> Result<Vec<Rating>> {
+        use self::schema::ratings::dsl::*;
+        Ok(ratings
+            .load::<models::Rating>(self)?
+            .into_iter()
+            .map(Rating::from)
+            .collect())
     }
 }

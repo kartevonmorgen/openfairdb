@@ -1,4 +1,4 @@
-mod schema;
-mod models;
-mod util;
 mod connection;
+mod models;
+mod schema;
+mod util;

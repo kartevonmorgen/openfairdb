@@ -1,8 +1,7 @@
-use business::error::ParameterError;
+use super::super::{entities::*, error::ParameterError};
 use fast_chemail::is_valid_email;
-use url::Url;
-use entities::*;
 use regex::Regex;
+use url::Url;
 
 lazy_static! {
     static ref USERNAME_REGEX: Regex = Regex::new(r"^[a-z0-9]{1,30}$").unwrap();
