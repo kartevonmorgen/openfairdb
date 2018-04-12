@@ -1,31 +1,25 @@
 use super::sqlite::DbConn;
 use super::util;
 use adapters::{json, user_communication};
+use adapters;
 use core::{prelude::*,
            usecases::{self, DuplicateType},
            util::geo};
 use infrastructure::error::AppError;
 use rocket::{self,
-             http::{Cookie, Cookies, Status},
+             http::{ContentType, Cookie, Cookies, Status},
              request::{self, FromRequest, Request},
-             response::{Responder, Response},
+             response::{content::Content, Responder, Response},
              Outcome,
              Route};
 use rocket_contrib::Json;
 use serde_json::ser::to_string;
 use std::result;
+use csv;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
 const COOKIE_USER_KEY: &str = "user_id";
-
-#[derive(FromForm, Clone)]
-struct SearchQuery {
-    bbox: String,
-    categories: Option<String>,
-    text: Option<String>,
-    tags: Option<String>,
-}
 
 impl<'a, 'r> FromRequest<'a, 'r> for Login {
     type Error = ();
@@ -67,7 +61,16 @@ pub fn routes() -> Vec<Route> {
         get_count_entries,
         get_count_tags,
         get_version,
+        csv_export
     ]
+}
+
+#[derive(FromForm, Clone)]
+struct SearchQuery {
+    bbox: String,
+    categories: Option<String>,
+    text: Option<String>,
+    tags: Option<String>,
 }
 
 #[get("/search?<search>")]
@@ -354,6 +357,34 @@ fn get_category(db: DbConn, id: String) -> Result<String> {
             .collect::<Vec<Category>>()),
     }?;
     Ok(Json(res))
+}
+
+#[derive(FromForm, Clone, Serialize)]
+struct CsvExport {
+    bbox: String,
+}
+
+#[get("/export/entries.csv?<export>")]
+fn csv_export<'a>(db: DbConn, export: CsvExport) -> result::Result<Content<String>, AppError> {
+
+    let bbox = geo::extract_bbox(&export.bbox)
+        .map_err(Error::Parameter)
+        .map_err(AppError::Business)?;
+
+    let entries : Vec<_> = db.get_entries_by_bbox(&bbox)?;
+
+    let records : Vec<adapters::csv::CsvRecord> = entries.into_iter().map(adapters::csv::CsvRecord::from).collect();
+
+    let buff : Vec<u8> = vec![];
+    let mut wtr = csv::Writer::from_writer(buff);
+
+    for r in records {
+        wtr.serialize(r)?;
+    }
+    wtr.flush()?;
+    let data = String::from_utf8(wtr.into_inner()?)?;
+
+    Ok(Content(ContentType::CSV, data))
 }
 
 impl<'r> Responder<'r> for AppError {

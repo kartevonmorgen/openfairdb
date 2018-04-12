@@ -26,6 +26,7 @@ extern crate rocket;
 extern crate rocket_contrib;
 #[macro_use]
 extern crate serde_derive;
+extern crate csv;
 extern crate serde_json;
 #[cfg(test)]
 extern crate test;

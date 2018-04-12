@@ -27,6 +27,7 @@ dotenv = "0.11"
 diesel = { version = "1", features = ["sqlite", "r2d2"] }
 diesel_migrations = { version = "1", features = ["sqlite"]  }
 libsqlite3-sys = { version = "0.9", features = ["bundled"] }
+csv = "1.0.0-beta.5"
 
 [features]
 default = ["email"]

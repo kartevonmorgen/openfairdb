@@ -51,5 +51,14 @@ quick_error!{
         Toml(err: ::toml::de::Error){
             from()
         }
+        CsvIntoInner(err: ::csv::IntoInnerError<::csv::Writer<::std::vec::Vec<u8>>>){
+            from()
+        }
+        String(err: ::std::string::FromUtf8Error){
+            from()
+        }
+        Csv(err: ::csv::Error){
+            from()
+        }
     }
 }

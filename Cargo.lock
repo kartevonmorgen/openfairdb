@@ -159,6 +159,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "csv"
+version = "1.0.0-beta.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "csv-core 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.37 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "csv-core"
+version = "0.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "memchr 2.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "derive-error-chain"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -457,6 +474,7 @@ version = "0.3.4-dev"
 dependencies = [
  "chrono 0.4.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.31.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "csv 1.0.0-beta.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "diesel 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "diesel_migrations 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "dotenv 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1066,6 +1084,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum crossbeam-deque 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f739f8c5363aca78cfb059edf753d8f0d36908c348f3d8d1503f03d8b75d9cf3"
 "checksum crossbeam-epoch 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "927121f5407de9956180ff5e936fe3cf4324279280001cd56b669d28ee7e9150"
 "checksum crossbeam-utils 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)" = "2760899e32a1d58d5abb31129f8fae5de75220bc2176e77ff7c627ae45c918d9"
+"checksum csv 1.0.0-beta.5 (registry+https://github.com/rust-lang/crates.io-index)" = "e7a9e063dcebdb56c306f23e672bfd31df3da8ec5f6d696b35f2c29c2a9572f0"
+"checksum csv-core 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)" = "4dd8e6d86f7ba48b4276ef1317edc8cc36167546d8972feb4a2b5fec0b374105"
 "checksum derive-error-chain 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)" = "cb4450afbe280461e78299b39182a085b70e3e71be049cf4a588ad72f1e44d33"
 "checksum diesel 1.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "6d84a516e1eca7094d5ed8e618fb8d59748e185d24316ed8663eb46fc2a27dff"
 "checksum diesel_derives 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)" = "6471a2b637b414d3ee1504cf230409a550381c79204282f8fe06c527e4ae56be"
