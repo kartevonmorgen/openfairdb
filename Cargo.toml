@@ -24,7 +24,7 @@ fast_chemail = "0.9"
 quoted_printable = "0.4"
 toml = "0.4"
 dotenv = "0.11"
-diesel = { version = "1", features = ["sqlite", "large-tables", "r2d2"] }
+diesel = { version = "1", features = ["sqlite", "r2d2"] }
 diesel_migrations = { version = "1", features = ["sqlite"]  }
 libsqlite3-sys = { version = "0.9", features = ["bundled"] }
 
