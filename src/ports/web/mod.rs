@@ -56,6 +56,7 @@ where
 {
     info!("Calculating the average rating of all entries...");
     calculate_all_ratings(&*pool.get().unwrap()).unwrap();
+    info!("done.");
     rocket::custom(cfg, true)
         .manage(pool)
         .mount("/", api::routes())
