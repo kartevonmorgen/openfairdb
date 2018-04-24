@@ -1,3 +1,12 @@
+## v0.3.4 (2018-04-24)
+
+- new(csv-export): implement csv-export of entries for a given bbox
+- new(tags): ignore `#` char in tags
+- new(cli): log info message when calculating average ratings is finished
+- refactor(*): reorganize files
+- chore(*): update `rocket` to `v0.3.8`
+- chore(*): update dependencies to compile on latest nightly
+
 ## v0.3.3 (2018-02-23)
 
 - fix(web): login with username instead of user id
