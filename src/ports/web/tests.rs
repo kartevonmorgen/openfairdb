@@ -968,17 +968,17 @@ fn export_csv() {
             .description("desc1")
             .lat(0.1)
             .lng(0.2)
-            .categories(vec!["bla","blubb"])
+            .categories(vec!["2cd00bebec0c48ba9db761da48678134","77b3c33a92554bcf8e8c2c86cedd6f6f"])
             .tags(vec!["bli","bla"])
             .license(Some("license1"))
             .finish(),
         Entry::build().id("entry2")
-            .categories(vec!["blubb"])
+            .categories(vec!["2cd00bebec0c48ba9db761da48678134"])
             .lat(0.0)
             .lng(0.0)
             .finish(),
         Entry::build().id("entry3")
-            .categories(vec!["bla"])
+            .categories(vec!["77b3c33a92554bcf8e8c2c86cedd6f6f"])
             .lat(2.0)
             .lng(2.0)
             .finish(),
@@ -993,16 +993,16 @@ fn export_csv() {
 
     let mut conn = db.get().unwrap();
     conn.create_category_if_it_does_not_exist(&Category {
-        id: "bla".into(),
+        id: "2cd00bebec0c48ba9db761da48678134".into(),
         created: 0,
         version: 0,
-        name: "foo".into(),
+        name: "cat1".into(),
     }).unwrap();
     conn.create_category_if_it_does_not_exist(&Category {
-        id: "blubb".into(),
+        id: "77b3c33a92554bcf8e8c2c86cedd6f6f".into(),
         created: 0,
         version: 0,
-        name: "bar".into(),
+        name: "cat2".into(),
     }).unwrap();
     conn.create_tag_if_it_does_not_exist(&Tag {
         id: "bli".into()
@@ -1024,6 +1024,6 @@ fn export_csv() {
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str, "id,osm_node,created,version,title,description,lat,lng,street,zip,city,country,homepage,categories,tags,license\n\
-        entry1,1,2,3,title1,desc1,0.1,0.2,street1,zip1,city1,country1,homepage1,\"bla,blubb\",\"bli,bla\",license1\n\
-        entry2,,0,0,,,0,0,,,,,,blubb,,\n");
+        entry1,1,2,3,title1,desc1,0.1,0.2,street1,zip1,city1,country1,homepage1,\"cat1,cat2\",\"bli,bla\",license1\n\
+        entry2,,0,0,,,0,0,,,,,,cat1,,\n");
 }

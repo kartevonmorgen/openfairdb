@@ -372,8 +372,17 @@ fn csv_export<'a>(db: DbConn, export: CsvExport) -> result::Result<Content<Strin
         .map_err(AppError::Business)?;
 
     let entries : Vec<_> = db.get_entries_by_bbox(&bbox)?;
+    let all_categories : Vec<_> = db.all_categories()?;
 
-    let records : Vec<adapters::csv::CsvRecord> = entries.into_iter().map(adapters::csv::CsvRecord::from).collect();
+    let entries_and_categories = entries.into_iter().map(|e| {
+            let categories = all_categories.clone().into_iter().filter(
+                |c1| e.clone().categories.into_iter().any(|c2| c2 == c1.id))
+                .collect::<Vec<Category>>();
+            (e, categories)
+        }).collect::<Vec<_>>();
+
+
+    let records : Vec<adapters::csv::CsvRecord> = entries_and_categories.into_iter().map(adapters::csv::CsvRecord::from).collect();
 
     let buff : Vec<u8> = vec![];
     let mut wtr = csv::Writer::from_writer(buff);

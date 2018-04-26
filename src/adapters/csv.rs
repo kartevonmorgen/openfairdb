@@ -1,27 +1,32 @@
 use core::entities::Entry;
+use core::entities::Category;
 
 #[derive(Debug, Serialize)]
 pub struct CsvRecord {
-    id: String,
-    osm_node: Option<u64>,
-    created: u64,
-    version: u64,
-    title: String,
-    description: String,
-    lat: f64,
-    lng: f64,
-    street: Option<String>,
-    zip: Option<String>,
-    city: Option<String>,
-    country: Option<String>,
-    homepage: Option<String>,
-    categories: String,
-    tags: String,
-    license: Option<String>,
+    pub id: String,
+    pub osm_node: Option<u64>,
+    pub created: u64,
+    pub version: u64,
+    pub title: String,
+    pub description: String,
+    pub lat: f64,
+    pub lng: f64,
+    pub street: Option<String>,
+    pub zip: Option<String>,
+    pub city: Option<String>,
+    pub country: Option<String>,
+    pub homepage: Option<String>,
+    pub categories: String,
+    pub tags: String,
+    pub license: Option<String>,
 }
 
-impl From<Entry> for CsvRecord {
-    fn from(e: Entry) -> Self {
+
+
+impl From<(Entry, Vec<Category>)> for CsvRecord {
+    fn from(t: (Entry, Vec<Category>)) -> Self {
+        let (e,categories) = t;
+
         let Entry {
             id,
             osm_node,
@@ -40,7 +45,7 @@ impl From<Entry> for CsvRecord {
             ..
         } = e;
 
-        let categories = e.categories.join(",");
+        let categories = categories.into_iter().map(|c| c.name).collect::<Vec<_>>().join(",");
         let tags = e.tags.join(",");
 
         CsvRecord {
