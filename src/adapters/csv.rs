@@ -1,5 +1,5 @@
-use core::entities::Entry;
 use core::entities::Category;
+use core::entities::Entry;
 
 #[derive(Debug, Serialize)]
 pub struct CsvRecord {
@@ -21,11 +21,9 @@ pub struct CsvRecord {
     pub license: Option<String>,
 }
 
-
-
 impl From<(Entry, Vec<Category>)> for CsvRecord {
     fn from(t: (Entry, Vec<Category>)) -> Self {
-        let (e,categories) = t;
+        let (e, categories) = t;
 
         let Entry {
             id,
@@ -45,7 +43,11 @@ impl From<(Entry, Vec<Category>)> for CsvRecord {
             ..
         } = e;
 
-        let categories = categories.into_iter().map(|c| c.name).collect::<Vec<_>>().join(",");
+        let categories = categories
+            .into_iter()
+            .map(|c| c.name)
+            .collect::<Vec<_>>()
+            .join(",");
         let tags = e.tags.join(",");
 
         CsvRecord {
@@ -64,7 +66,7 @@ impl From<(Entry, Vec<Category>)> for CsvRecord {
             homepage,
             license,
             categories,
-            tags
+            tags,
         }
     }
 }

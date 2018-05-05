@@ -1,10 +1,11 @@
 use super::sqlite::DbConn;
 use super::util;
-use adapters::{json, user_communication};
 use adapters;
+use adapters::{json, user_communication};
 use core::{prelude::*,
            usecases::{self, DuplicateType},
            util::geo};
+use csv;
 use infrastructure::error::AppError;
 use rocket::{self,
              http::{ContentType, Cookie, Cookies, Status},
@@ -15,7 +16,6 @@ use rocket::{self,
 use rocket_contrib::Json;
 use serde_json::ser::to_string;
 use std::result;
-use csv;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
@@ -366,25 +366,31 @@ struct CsvExport {
 
 #[get("/export/entries.csv?<export>")]
 fn csv_export<'a>(db: DbConn, export: CsvExport) -> result::Result<Content<String>, AppError> {
-
     let bbox = geo::extract_bbox(&export.bbox)
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
 
-    let entries : Vec<_> = db.get_entries_by_bbox(&bbox)?;
-    let all_categories : Vec<_> = db.all_categories()?;
+    let entries: Vec<_> = db.get_entries_by_bbox(&bbox)?;
+    let all_categories: Vec<_> = db.all_categories()?;
 
-    let entries_and_categories = entries.into_iter().map(|e| {
-            let categories = all_categories.clone().into_iter().filter(
-                |c1| e.clone().categories.into_iter().any(|c2| c2 == c1.id))
+    let entries_and_categories = entries
+        .into_iter()
+        .map(|e| {
+            let categories = all_categories
+                .iter()
+                .filter(|c1| e.categories.iter().any(|c2| *c2 == c1.id))
+                .cloned()
                 .collect::<Vec<Category>>();
             (e, categories)
-        }).collect::<Vec<_>>();
+        })
+        .collect::<Vec<_>>();
 
+    let records: Vec<adapters::csv::CsvRecord> = entries_and_categories
+        .into_iter()
+        .map(adapters::csv::CsvRecord::from)
+        .collect();
 
-    let records : Vec<adapters::csv::CsvRecord> = entries_and_categories.into_iter().map(adapters::csv::CsvRecord::from).collect();
-
-    let buff : Vec<u8> = vec![];
+    let buff: Vec<u8> = vec![];
     let mut wtr = csv::Writer::from_writer(buff);
 
     for r in records {

@@ -962,22 +962,28 @@ fn subscribe_to_bbox() {
 fn export_csv() {
     let (client, db) = setup();
     let mut entries = vec![
-        Entry::build().id("entry1")
+        Entry::build()
+            .id("entry1")
             .version(3)
             .title("title1")
             .description("desc1")
             .lat(0.1)
             .lng(0.2)
-            .categories(vec!["2cd00bebec0c48ba9db761da48678134","77b3c33a92554bcf8e8c2c86cedd6f6f"])
-            .tags(vec!["bli","bla"])
+            .categories(vec![
+                "2cd00bebec0c48ba9db761da48678134",
+                "77b3c33a92554bcf8e8c2c86cedd6f6f",
+            ])
+            .tags(vec!["bli", "bla"])
             .license(Some("license1"))
             .finish(),
-        Entry::build().id("entry2")
+        Entry::build()
+            .id("entry2")
             .categories(vec!["2cd00bebec0c48ba9db761da48678134"])
             .lat(0.0)
             .lng(0.0)
             .finish(),
-        Entry::build().id("entry3")
+        Entry::build()
+            .id("entry3")
             .categories(vec!["77b3c33a92554bcf8e8c2c86cedd6f6f"])
             .lat(2.0)
             .lng(2.0)
@@ -1004,12 +1010,10 @@ fn export_csv() {
         version: 0,
         name: "cat2".into(),
     }).unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag {
-        id: "bli".into()
-    }).unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag {
-        id: "bla".into()
-    }).unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag { id: "bli".into() })
+        .unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag { id: "bla".into() })
+        .unwrap();
     for e in entries {
         conn.create_entry(&e).unwrap();
     }
