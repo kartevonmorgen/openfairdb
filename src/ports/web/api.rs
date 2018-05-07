@@ -16,6 +16,7 @@ use rocket::{self,
 use rocket_contrib::Json;
 use serde_json::ser::to_string;
 use std::result;
+use core::util::sort::*;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
@@ -372,7 +373,10 @@ fn csv_export<'a>(db: DbConn, export: CsvExport) -> result::Result<Content<Strin
 
     let entries: Vec<_> = db.get_entries_by_bbox(&bbox)?;
     let all_categories: Vec<_> = db.all_categories()?;
-    let all_ratings: Vec<_> = db.all_ratings()?;
+    let avg_ratings = match super::ENTRY_RATINGS.lock() {
+        Ok(guard) => guard,
+        Err(poisoned) => poisoned.into_inner(),
+    };
 
     let entries_categories_and_ratings = entries
         .into_iter()
@@ -382,7 +386,8 @@ fn csv_export<'a>(db: DbConn, export: CsvExport) -> result::Result<Content<Strin
                 .filter(|c1| e.categories.iter().any(|c2| *c2 == c1.id))
                 .cloned()
                 .collect::<Vec<Category>>();
-            (e, categories, all_ratings.clone())
+            let avg_rating = *avg_ratings.get(&e.id).unwrap_or_else(|| &0.0);
+            (e, categories, avg_rating)
         })
         .collect::<Vec<_>>();
 
