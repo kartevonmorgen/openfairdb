@@ -15,6 +15,7 @@ use serde_json;
 use std::fs;
 use test::Bencher;
 use uuid::Uuid;
+use super::*;
 
 fn setup() -> (Client, sqlite::ConnectionPool) {
     let cfg = Config::build(Environment::Development)
@@ -1037,6 +1038,7 @@ fn export_csv() {
         source   : None,
     }).unwrap();
 
+    calculate_all_ratings(&conn);
 
     let req = client.get("/export/entries.csv?bbox=-1,-1,1,1");
     let mut response = req.dispatch();
