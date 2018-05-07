@@ -1,5 +1,4 @@
 use core::entities::*;
-use core::util::sort::*;
 
 #[derive(Debug, Serialize)]
 pub struct CsvRecord {
@@ -22,9 +21,9 @@ pub struct CsvRecord {
     pub avg_rating: f64,
 }
 
-impl From<(Entry, Vec<Category>, Vec<Rating>)> for CsvRecord {
-    fn from(t: (Entry, Vec<Category>, Vec<Rating>)) -> Self {
-        let (e, categories, all_ratings) = t;
+impl From<(Entry, Vec<Category>, f64)> for CsvRecord {
+    fn from(t: (Entry, Vec<Category>, f64)) -> Self {
+        let (e, categories, avg_rating) = t;
 
         let Entry {
             id,
@@ -49,7 +48,6 @@ impl From<(Entry, Vec<Category>, Vec<Rating>)> for CsvRecord {
             .map(|c| c.name)
             .collect::<Vec<_>>()
             .join(",");
-        let avg_rating = e.avg_rating(&all_ratings);
 
         CsvRecord {
             id,
