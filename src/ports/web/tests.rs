@@ -15,6 +15,7 @@ use serde_json;
 use std::fs;
 use test::Bencher;
 use uuid::Uuid;
+use super::*;
 
 fn setup() -> (Client, sqlite::ConnectionPool) {
     let cfg = Config::build(Environment::Development)
@@ -1017,6 +1018,28 @@ fn export_csv() {
     for e in entries {
         conn.create_entry(&e).unwrap();
     }
+    let diversity = RatingContext::Diversity;
+    conn.create_rating(&Rating {
+        id       : "123".into(),
+        entry_id : "entry1".into(),
+        created  : 123,
+        title    : "rating1".into(),
+        value    : 2,
+        context  : diversity.clone(),
+        source   : None,
+    }).unwrap();
+    conn.create_rating(&Rating {
+        id       : "345".into(),
+        entry_id : "entry1".into(),
+        created  : 123,
+        title    : "rating2".into(),
+        value    : 4,
+        context  : diversity,
+        source   : None,
+    }).unwrap();
+
+    calculate_all_ratings(&*conn).unwrap();
+
     let req = client.get("/export/entries.csv?bbox=-1,-1,1,1");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -1027,7 +1050,7 @@ fn export_csv() {
         }
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert_eq!(body_str, "id,osm_node,created,version,title,description,lat,lng,street,zip,city,country,homepage,categories,tags,license\n\
-        entry1,1,2,3,title1,desc1,0.1,0.2,street1,zip1,city1,country1,homepage1,\"cat1,cat2\",\"bli,bla\",license1\n\
-        entry2,,0,0,,,0,0,,,,,,cat1,,\n");
+    assert_eq!(body_str, "id,osm_node,created,version,title,description,lat,lng,street,zip,city,country,homepage,categories,tags,license,avg_rating\n\
+        entry1,1,2,3,title1,desc1,0.1,0.2,street1,zip1,city1,country1,homepage1,\"cat1,cat2\",\"bli,bla\",license1,0.5\n\
+        entry2,,0,0,,,0,0,,,,,,cat1,,,0\n");
 }

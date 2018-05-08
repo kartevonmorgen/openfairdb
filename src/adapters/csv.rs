@@ -1,5 +1,4 @@
-use core::entities::Category;
-use core::entities::Entry;
+use core::entities::*;
 
 #[derive(Debug, Serialize)]
 pub struct CsvRecord {
@@ -19,11 +18,12 @@ pub struct CsvRecord {
     pub categories: String,
     pub tags: String,
     pub license: Option<String>,
+    pub avg_rating: f64,
 }
 
-impl From<(Entry, Vec<Category>)> for CsvRecord {
-    fn from(t: (Entry, Vec<Category>)) -> Self {
-        let (e, categories) = t;
+impl From<(Entry, Vec<Category>, f64)> for CsvRecord {
+    fn from(t: (Entry, Vec<Category>, f64)) -> Self {
+        let (e, categories, avg_rating) = t;
 
         let Entry {
             id,
@@ -41,14 +41,13 @@ impl From<(Entry, Vec<Category>)> for CsvRecord {
             homepage,
             license,
             ..
-        } = e;
+        } = e.clone();
 
         let categories = categories
             .into_iter()
             .map(|c| c.name)
             .collect::<Vec<_>>()
             .join(",");
-        let tags = e.tags.join(",");
 
         CsvRecord {
             id,
@@ -66,7 +65,8 @@ impl From<(Entry, Vec<Category>)> for CsvRecord {
             homepage,
             license,
             categories,
-            tags,
+            tags : e.tags.join(","),
+            avg_rating,
         }
     }
 }
