@@ -1,3 +1,8 @@
+## v0.3.5 (2018-04-27)
+
+- new(csv-export): export category names instead of IDs
+- chore(web): update `rocket` to `v0.3.9`
+
 ## v0.3.4 (2018-04-24)
 
 - new(csv-export): implement csv-export of entries for a given bbox
