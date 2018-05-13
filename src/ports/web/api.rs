@@ -1,8 +1,5 @@
-use super::sqlite::DbConn;
-use super::util;
-use adapters;
-use adapters::{json, user_communication};
-use core::util::sort::*;
+use super::{sqlite::DbConn, util};
+use adapters::{self, json, user_communication};
 use core::{
     prelude::*,
     usecases::{self, DuplicateType},
