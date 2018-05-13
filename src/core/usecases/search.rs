@@ -1,6 +1,8 @@
 use core::prelude::*;
-use core::util::{filter::{self, InBBox},
-                 sort::SortByAverageRating};
+use core::util::{
+    filter::{self, InBBox},
+    sort::SortByAverageRating,
+};
 use std::collections::HashMap;
 
 const MAX_INVISIBLE_RESULTS: usize = 5;

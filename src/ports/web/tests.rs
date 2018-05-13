@@ -1,13 +1,16 @@
-use rocket::{config::{Config, Environment},
-             http::{ContentType, Cookie, Status},
-             local::Client,
-             logger::LoggingLevel};
+use rocket::{
+    config::{Config, Environment},
+    http::{ContentType, Cookie, Status},
+    local::Client,
+    logger::LoggingLevel,
+};
 
 use core::prelude::*;
 use core::usecases as usecase;
 
 use super::sqlite;
 use super::util::*;
+use super::*;
 use adapters::json;
 use pwhash::bcrypt;
 use rocket::response::Response;
@@ -15,7 +18,6 @@ use serde_json;
 use std::fs;
 use test::Bencher;
 use uuid::Uuid;
-use super::*;
 
 fn setup() -> (Client, sqlite::ConnectionPool) {
     let cfg = Config::build(Environment::Development)
@@ -1020,22 +1022,22 @@ fn export_csv() {
     }
     let diversity = RatingContext::Diversity;
     conn.create_rating(&Rating {
-        id       : "123".into(),
-        entry_id : "entry1".into(),
-        created  : 123,
-        title    : "rating1".into(),
-        value    : 2,
-        context  : diversity.clone(),
-        source   : None,
+        id: "123".into(),
+        entry_id: "entry1".into(),
+        created: 123,
+        title: "rating1".into(),
+        value: 2,
+        context: diversity.clone(),
+        source: None,
     }).unwrap();
     conn.create_rating(&Rating {
-        id       : "345".into(),
-        entry_id : "entry1".into(),
-        created  : 123,
-        title    : "rating2".into(),
-        value    : 4,
-        context  : diversity,
-        source   : None,
+        id: "345".into(),
+        entry_id: "entry1".into(),
+        created: 123,
+        title: "rating2".into(),
+        value: 4,
+        context: diversity,
+        source: None,
     }).unwrap();
 
     calculate_all_ratings(&*conn).unwrap();
