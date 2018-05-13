@@ -11,11 +11,11 @@ written in [Rust](http://rustlang.org/).
 ## Quick start
 
 Download the latest build
-[openfairdb-x86_64-linux-v0.3.5.tar.gz](https://github.com/flosse/openfairdb/releases/download/v0.3.5/openfairdb-x86_64-linux-v0.3.5.tar.gz),
+[openfairdb-x86_64-linux-v0.3.6.tar.gz](https://github.com/flosse/openfairdb/releases/download/v0.3.6/openfairdb-x86_64-linux-v0.3.6.tar.gz),
 unpack and start it:
 
-    wget https://github.com/flosse/openfairdb/releases/download/v0.3.5/openfairdb-x86_64-linux-v0.3.5.tar.gz
-    tar xzf openfairdb-x86_64-linux-v0.3.5.tar.gz
+    wget https://github.com/flosse/openfairdb/releases/download/v0.3.6/openfairdb-x86_64-linux-v0.3.6.tar.gz
+    tar xzf openfairdb-x86_64-linux-v0.3.6.tar.gz
     ./openfairdb
 
 The API is now available at `http://127.0.0.1:676`.
