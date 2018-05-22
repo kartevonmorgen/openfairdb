@@ -1,3 +1,8 @@
+## v0.3.7 (2018-05-22)
+
+- chore(web): update `rocket` to `v0.3.11`
+- chore(*): update dependencies
+
 ## v0.3.6 (2018-05-13)
 
 - new(csv-export): export average rating of an entry
