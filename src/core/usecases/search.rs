@@ -1,6 +1,8 @@
 use core::prelude::*;
-use core::util::{filter::{self, InBBox},
-                 sort::SortByAverageRating};
+use core::util::{
+    filter::{self, InBBox},
+    sort::SortByAverageRating,
+};
 use std::collections::HashMap;
 
 const MAX_INVISIBLE_RESULTS: usize = 5;
@@ -26,7 +28,7 @@ pub fn search<D: Db>(db: &D, req: &SearchRequest) -> Result<(Vec<Entry>, Vec<Ent
     if let Some(ref cat_ids) = req.categories {
         entries = entries
             .into_iter()
-            .filter(&*filter::entries_by_category_ids(cat_ids))
+            .filter(filter::entries_by_category_ids(cat_ids))
             .collect();
     }
 

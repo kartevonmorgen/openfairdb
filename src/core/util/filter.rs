@@ -11,33 +11,44 @@ impl InBBox for Entry {
     }
 }
 
-pub fn entries_by_category_ids<'a>(ids: &'a [String]) -> Box<Fn(&Entry) -> bool + 'a> {
-    Box::new(move |e| ids.iter().any(|c| e.categories.iter().any(|x| x == c)))
+pub fn entries_by_category_ids<'a>(ids: &'a [String]) -> impl Fn(&Entry) -> bool + 'a {
+    move |e| ids.iter().any(|c| e.categories.iter().any(|x| x == c))
 }
 
 pub fn entries_by_tags_or_search_text<'a>(
     text: &'a str,
     tags: &'a [String],
 ) -> Box<Fn(&Entry) -> bool + 'a> {
-    let words = to_words(text);
-
     if !tags.is_empty() {
-        Box::new(move |entry| {
-            tags.iter()
-                .map(|t| t.to_lowercase())
-                .all(|tag| entry.tags.iter().any(|t| *t == tag))
-                || ((!text.is_empty() && words.iter().any(|word| {
-                    entry.title.to_lowercase().contains(word)
-                        || entry.description.to_lowercase().contains(word)
-                })) || (text.is_empty() && tags[0] == ""))
-        })
+        Box::new(entries_by_tags_and_search_text(text, tags))
     } else {
-        Box::new(move |entry| {
-            ((!text.is_empty() && words.iter().any(|word| {
+        Box::new(entries_by_search_text(text))
+    }
+}
+
+fn entries_by_search_text<'a>(text: &'a str) -> impl Fn(&Entry) -> bool + 'a {
+    let words = to_words(text);
+    move |entry| {
+        ((!text.is_empty() && words.iter().any(|word| {
+            entry.title.to_lowercase().contains(word)
+                || entry.description.to_lowercase().contains(word)
+        })) || text.is_empty())
+    }
+}
+
+fn entries_by_tags_and_search_text<'a>(
+    text: &'a str,
+    tags: &'a [String],
+) -> impl Fn(&Entry) -> bool + 'a {
+    let words = to_words(text);
+    move |entry| {
+        tags.iter()
+            .map(|t| t.to_lowercase())
+            .all(|tag| entry.tags.iter().any(|t| *t == tag))
+            || ((!text.is_empty() && words.iter().any(|word| {
                 entry.title.to_lowercase().contains(word)
                     || entry.description.to_lowercase().contains(word)
-            })) || text.is_empty())
-        })
+            })) || (text.is_empty() && tags[0] == ""))
     }
 }
 
@@ -119,21 +130,21 @@ mod tests {
         let x: Vec<_> = entries
             .iter()
             .cloned()
-            .filter(&*entries_by_category_ids(&ab))
+            .filter(entries_by_category_ids(&ab))
             .collect();
         assert_eq!(x.len(), 2);
         let b = vec!["b".into()];
         let x: Vec<_> = entries
             .iter()
             .cloned()
-            .filter(&*entries_by_category_ids(&b))
+            .filter(entries_by_category_ids(&b))
             .collect();
         assert_eq!(x.len(), 1);
         let c = vec!["c".into()];
         let x: Vec<_> = entries
             .iter()
             .cloned()
-            .filter(&*entries_by_category_ids(&c))
+            .filter(entries_by_category_ids(&c))
             .collect();
         assert_eq!(x.len(), 1);
     }

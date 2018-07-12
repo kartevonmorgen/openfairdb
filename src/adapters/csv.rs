@@ -65,7 +65,7 @@ impl From<(Entry, Vec<Category>, f64)> for CsvRecord {
             homepage,
             license,
             categories,
-            tags : e.tags.join(","),
+            tags: e.tags.join(","),
             avg_rating,
         }
     }

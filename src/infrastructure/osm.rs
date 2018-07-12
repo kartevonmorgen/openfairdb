@@ -1,9 +1,11 @@
 use core::prelude::*;
 
-use std::{collections::HashMap,
-          fs::File,
-          io::{prelude::*, Error, ErrorKind},
-          result};
+use std::{
+    collections::HashMap,
+    fs::File,
+    io::{prelude::*, Error, ErrorKind},
+    result,
+};
 
 use chrono::prelude::*;
 use infrastructure::error::AppError;

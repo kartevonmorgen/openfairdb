@@ -1,18 +1,20 @@
-use super::sqlite::DbConn;
-use super::util;
-use adapters;
-use adapters::{json, user_communication};
-use core::{prelude::*,
-           usecases::{self, DuplicateType},
-           util::geo};
+use super::{sqlite::DbConn, util};
+use adapters::{self, json, user_communication};
+use core::{
+    prelude::*,
+    usecases::{self, DuplicateType},
+    util::geo,
+};
 use csv;
 use infrastructure::error::AppError;
-use rocket::{self,
-             http::{ContentType, Cookie, Cookies, Status},
-             request::{self, FromRequest, Request},
-             response::{content::Content, Responder, Response},
-             Outcome,
-             Route};
+use rocket::{
+    self,
+    http::{ContentType, Cookie, Cookies, Status},
+    request::{self, FromRequest, Request},
+    response::{content::Content, Responder, Response},
+    Outcome,
+    Route,
+};
 use rocket_contrib::Json;
 use serde_json::ser::to_string;
 use std::result;
@@ -438,9 +440,11 @@ impl<'r> Responder<'r> for AppError {
 
 #[cfg(test)]
 mod tests {
-    use super::super::{calculate_all_ratings,
-                       mockdb::{self, DbConn},
-                       ENTRY_RATINGS};
+    use super::super::{
+        calculate_all_ratings,
+        mockdb::{self, DbConn},
+        ENTRY_RATINGS,
+    };
     use test::Bencher;
 
     fn setup() -> mockdb::ConnectionPool {

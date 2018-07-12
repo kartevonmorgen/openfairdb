@@ -1,13 +1,16 @@
-use rocket::{config::{Config, Environment},
-             http::{ContentType, Cookie, Status},
-             local::Client,
-             logger::LoggingLevel};
+use rocket::{
+    config::{Config, Environment},
+    http::{ContentType, Cookie, Status},
+    local::Client,
+    logger::LoggingLevel,
+};
 
 use core::prelude::*;
 use core::usecases as usecase;
 
 use super::sqlite;
 use super::util::*;
+use super::*;
 use adapters::json;
 use pwhash::bcrypt;
 use rocket::response::Response;

@@ -1,6 +1,6 @@
 [package]
 name = "openfairdb"
-version = "0.3.4"
+version = "0.3.7"
 authors = ["Markus Kohlhase <mail@markus-kohlhase.de>"]
 
 [dependencies]
@@ -18,16 +18,16 @@ serde_json = "1"
 serde_derive = "1"
 chrono = "0.4"
 lazy_static = "1"
-regex = "0.2"
-pwhash = "0.1"
+regex = "1"
+pwhash = "0.2"
 fast_chemail = "0.9"
 quoted_printable = "0.4"
 toml = "0.4"
-dotenv = "0.11"
-diesel = { version = "1", features = ["sqlite", "r2d2"] }
-diesel_migrations = { version = "1", features = ["sqlite"]  }
+dotenv = "0.12"
+diesel = { version = "~1.2", features = ["sqlite", "r2d2"] }
+diesel_migrations = { version = "~1.2", features = ["sqlite"]  }
 libsqlite3-sys = { version = "0.9", features = ["bundled"] }
-csv = "1.0.0-beta.5"
+csv = "1"
 
 [features]
 default = ["email"]

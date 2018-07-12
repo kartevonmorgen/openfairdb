@@ -1,9 +1,11 @@
 use core::{prelude::*, util::sort::Rated};
 use diesel::r2d2::{self, Pool};
 use infrastructure::error::AppError;
-use rocket::{self,
-             config::{Config, Environment},
-             Rocket};
+use rocket::{
+    self,
+    config::{Config, Environment},
+    Rocket,
+};
 use rocket_contrib::Json;
 use std::{collections::HashMap, result, sync::Mutex};
 

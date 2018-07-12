@@ -1,5 +1,7 @@
-use super::super::{entities::{Bbox, Coordinate},
-                   error::ParameterError};
+use super::super::{
+    entities::{Bbox, Coordinate},
+    error::ParameterError,
+};
 
 // The Earth's radius in kilometers.
 static EARTH_RADIUS: f64 = 6371.0;
