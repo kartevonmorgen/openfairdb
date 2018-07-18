@@ -27,11 +27,13 @@ pub fn entries_by_tags_or_search_text<'a>(
 }
 
 fn entries_by_search_text<'a>(text: &'a str) -> impl Fn(&Entry) -> bool + 'a {
+    println!("FILTER BY TEXT");
     let words = to_words(text);
     move |entry| {
         ((!text.is_empty() && words.iter().any(|word| {
             entry.title.to_lowercase().contains(word)
-                || entry.description.to_lowercase().contains(word)
+            || entry.description.to_lowercase().contains(word)
+            || entry.tags.iter().any(|tag| tag == word)
         })) || text.is_empty())
     }
 }
@@ -47,7 +49,8 @@ fn entries_by_tags_and_search_text<'a>(
             .all(|tag| entry.tags.iter().any(|t| *t == tag))
             || ((!text.is_empty() && words.iter().any(|word| {
                 entry.title.to_lowercase().contains(word)
-                    || entry.description.to_lowercase().contains(word)
+                || entry.description.to_lowercase().contains(word)
+                || entry.tags.iter().any(|tag| tag == word)
             })) || (text.is_empty() && tags[0] == ""))
     }
 }
@@ -152,24 +155,15 @@ mod tests {
     #[test]
     fn filter_by_tags_or_text() {
         let entries = vec![
-            Entry::build().id("a").title("solawi").finish(),
-            Entry::build()
-                .id("b")
-                .title("blabla")
-                .description("bli-blubb")
-                .tags(vec!["tag1"])
-                .finish(),
-            Entry::build().id("c").tags(vec!["tag2"]).finish(),
-            Entry::build().id("d").tags(vec!["tag1", "tag2"]).finish(),
-            Entry::build().id("e").description("tag1").finish(),
+            Entry::build().id("a").title("aaa").description("bli bla blubb").finish(),
+            Entry::build().id("b").title("bbb").description("blabla").tags(vec!["tag1"]).finish(),
+            Entry::build().id("c").title("ccc").description("bli").tags(vec!["tag2"]).finish(),
+            Entry::build().id("d").title("ddd").description("blibla").tags(vec!["tag1", "tag2"]).finish(),
+            Entry::build().id("e").title("eee").description("blubb").description("tag1").finish(),
         ];
         let entries_without_tags = vec![
-            Entry::build().id("a").title("solawi").finish(),
-            Entry::build()
-                .id("b")
-                .title("blabla")
-                .description("bli-blubb")
-                .finish(),
+            Entry::build().id("a").title("a").finish(),
+            Entry::build().id("b").title("b").description("blabla").finish(),
             Entry::build().id("c").finish(),
             Entry::build().id("d").finish(),
             Entry::build().id("e").description("tag1").finish(),
@@ -178,8 +172,8 @@ mod tests {
         let tags2 = vec!["tag1".into(), "tag2".into()];
         let tags3 = vec!["tag2".into()];
         let no_tags = vec![];
-        let solawi = "solawi";
-        let bliblubb = "bli-blubb";
+        let aaa = "aaa";
+        let blabla = "blabla";
         let other = "other";
         let tag1 = "tag1";
         let no_string = "";
@@ -204,15 +198,6 @@ mod tests {
             .filter(&*entries_by_tags_or_search_text(&other, &tags2))
             .collect();
         assert_eq!(x.len(), 0);
-
-        let x: Vec<_> = entries
-            .iter()
-            .cloned()
-            .filter(&*entries_by_tags_or_search_text(&other, &tags1))
-            .collect();
-        assert_eq!(x.len(), 2);
-        assert_eq!(x[0].id, "b");
-        assert_eq!(x[1].id, "d");
 
         let x: Vec<_> = entries
             .iter()
@@ -243,7 +228,7 @@ mod tests {
         let x: Vec<_> = entries
             .iter()
             .cloned()
-            .filter(&*entries_by_tags_or_search_text(&solawi, &no_tags))
+            .filter(&*entries_by_tags_or_search_text(&aaa, &no_tags))
             .collect();
         assert_eq!(x.len(), 1);
         assert_eq!(x[0].id, "a");
@@ -251,7 +236,7 @@ mod tests {
         let x: Vec<_> = entries
             .iter()
             .cloned()
-            .filter(&*entries_by_tags_or_search_text(&solawi, &tags2))
+            .filter(&*entries_by_tags_or_search_text(&aaa, &tags2))
             .collect();
         assert_eq!(x.len(), 2);
         assert_eq!(x[0].id, "a");
@@ -260,7 +245,7 @@ mod tests {
         let x: Vec<_> = entries
             .iter()
             .cloned()
-            .filter(&*entries_by_tags_or_search_text(&bliblubb, &tags3))
+            .filter(&*entries_by_tags_or_search_text(&blabla, &tags3))
             .collect();
         assert_eq!(x.len(), 3);
         assert_eq!(x[0].id, "b");
@@ -272,7 +257,19 @@ mod tests {
             .cloned()
             .filter(&*entries_by_tags_or_search_text(&tag1, &no_tags))
             .collect();
-        assert_eq!(x.len(), 1);
-        assert_eq!(x[0].id, "e");
+        println!("FILTER TEST: {:?}", x);
+        assert_eq!(x.len(), 3);
+        assert_eq!(x[0].id, "b");
+        assert_eq!(x[1].id, "d");
+        assert_eq!(x[2].id, "e");
+
+        let x: Vec<_> = entries
+            .iter()
+            .cloned()
+            .filter(&*entries_by_tags_or_search_text(&other, &tags1))
+            .collect();
+        assert_eq!(x.len(), 2);
+        assert_eq!(x[0].id, "b");
+        assert_eq!(x[1].id, "d");
     }
 }
