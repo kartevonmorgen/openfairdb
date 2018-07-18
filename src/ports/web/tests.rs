@@ -473,8 +473,6 @@ fn search_with_two_hashtags() {
 }
 
 #[test]
-// TODO
-#[ignore]
 fn search_without_specifying_hashtag_symbol() {
     let entries = vec![
         Entry::build().id("a").title("foo").finish(),
