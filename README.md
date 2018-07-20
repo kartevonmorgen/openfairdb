@@ -10,7 +10,9 @@ written in [Rust](http://rustlang.org/).
 
 ## REST API
 
-The API is available under `http://api.ofdb.io/v0/`. For examples how to use the API, open "network" in the developer tools in your browser and see the requests that [https://kartevonmorgen.org/](https://kartevonmorgen.org/) sends.
+The API is available under `http://api.ofdb.io/v0/`. For examples how to use the API, open "network" in the developer tools in your browser and see the requests that https://kartevonmorgen.org sends.
+
+When you want to use the API, please contact us at helmut@bildungsagenten.com. The API might still change sometimes. We will try to let you know in that case.
 
 -  `GET /entries/:ID_1,:ID_2,...,:ID_n`
 -  `POST /entries`
