@@ -194,7 +194,10 @@ fn post_user(mut db: DbConn, u: Json<usecases::NewUser>) -> Result<()> {
     let user = db.get_user(&new_user.username)?;
     let subject = "Karte von Morgen: bitte bestätige deine Email-Adresse";
     let body = user_communication::email_confirmation_email(&user.id);
+
+    #[cfg(feature = "email")]
     util::send_mails(&[user.email], subject, &body);
+
     Ok(Json(()))
 }
 

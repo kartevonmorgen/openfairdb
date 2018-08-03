@@ -1,3 +1,4 @@
 *.swp
 *.bk
-target/
+/target
+/test-dbs
