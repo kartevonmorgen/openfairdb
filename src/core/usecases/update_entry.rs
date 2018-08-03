@@ -48,7 +48,7 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
         homepage    :  e.homepage,
         categories  :  e.categories,
         tags,
-        license     :  old.license
+        license     :  old.license, // license is immutable
     };
     for t in &new_entry.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;

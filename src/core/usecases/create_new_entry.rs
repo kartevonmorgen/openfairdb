@@ -45,7 +45,7 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
         homepage    :  e.homepage,
         categories  :  e.categories,
         tags,
-        license     :  Some(e.license)
+        license     :  Some(e.license),
     };
     new_entry.validate()?;
     for t in &new_entry.tags {
