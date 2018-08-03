@@ -96,7 +96,8 @@ fn map_osm_tags(osm_tags: &HashMap<String, String>) -> Vec<Tag> {
 }
 
 fn map_osm_to_ofdb_entry(osm: &OsmEntry) -> Result<Entry> {
-    let title = osm.tags
+    let title = osm
+        .tags
         .get("name")
         .ok_or_else(|| Error::new(ErrorKind::Other, "Tag 'name' not found"))?
         .clone();
@@ -122,6 +123,8 @@ fn map_osm_to_ofdb_entry(osm: &OsmEntry) -> Result<Entry> {
     let homepage = osm.tags.get("website").cloned();
     let categories = vec![];
     let license = Some("ODbL-1.0".into());
+    let image_url = None;
+    let image_link_url = None;
 
     let street = street.map(|s| {
         if let Some(nr) = house_nr {
@@ -152,6 +155,8 @@ fn map_osm_to_ofdb_entry(osm: &OsmEntry) -> Result<Entry> {
         categories,
         tags,
         license,
+        image_url,
+        image_link_url,
     })
 }
 

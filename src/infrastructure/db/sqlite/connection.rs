@@ -25,7 +25,8 @@ fn unset_current_on_all_entries(
 impl EntryGateway for SqliteConnection {
     fn create_entry(&mut self, e: &Entry) -> Result<()> {
         let new_entry = models::Entry::from(e.clone());
-        let cat_rels: Vec<_> = e.categories
+        let cat_rels: Vec<_> = e
+            .categories
             .iter()
             .cloned()
             .map(|category_id| models::EntryCategoryRelation {
@@ -34,7 +35,8 @@ impl EntryGateway for SqliteConnection {
                 category_id,
             })
             .collect();
-        let tag_rels: Vec<_> = e.tags
+        let tag_rels: Vec<_> = e
+            .tags
             .iter()
             .cloned()
             .map(|tag_id| models::EntryTagRelation {
@@ -83,6 +85,8 @@ impl EntryGateway for SqliteConnection {
             telephone,
             homepage,
             license,
+            image_url,
+            image_link_url,
             ..
         } = e_dsl::entries
             .filter(e_dsl::id.eq(e_id))
@@ -122,6 +126,8 @@ impl EntryGateway for SqliteConnection {
             categories,
             tags,
             license,
+            image_url,
+            image_link_url,
         })
     }
 
@@ -177,6 +183,8 @@ impl EntryGateway for SqliteConnection {
                     categories: cats,
                     tags: tags,
                     license: e.license,
+                    image_url: e.image_url,
+                    image_link_url: e.image_link_url,
                 }
             })
             .collect())
@@ -231,6 +239,8 @@ impl EntryGateway for SqliteConnection {
                     categories: cats,
                     tags: tags,
                     license: e.license,
+                    image_url: e.image_url,
+                    image_link_url: e.image_link_url,
                 }
             })
             .collect())
@@ -283,7 +293,8 @@ impl EntryGateway for SqliteConnection {
             .into_iter()
             .map(|e| {
                 let new_entry = models::Entry::from(e.clone());
-                let cat_rels: Vec<_> = e.categories
+                let cat_rels: Vec<_> = e
+                    .categories
                     .iter()
                     .cloned()
                     .map(|category_id| models::EntryCategoryRelation {
@@ -292,7 +303,8 @@ impl EntryGateway for SqliteConnection {
                         category_id,
                     })
                     .collect();
-                let tag_rels: Vec<_> = e.tags
+                let tag_rels: Vec<_> = e
+                    .tags
                     .iter()
                     .map(|tag_id| models::EntryTagRelation {
                         entry_id: e.id.clone(),
@@ -482,7 +494,8 @@ impl Db for SqliteConnection {
     }
     fn all_tags(&self) -> Result<Vec<Tag>> {
         use self::schema::tags::dsl::*;
-        Ok(tags.load::<models::Tag>(self)?
+        Ok(tags
+            .load::<models::Tag>(self)?
             .into_iter()
             .map(Tag::from)
             .collect())

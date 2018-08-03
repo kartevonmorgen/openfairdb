@@ -20,6 +20,8 @@ pub struct Entry {
     pub telephone: Option<String>,
     pub homepage: Option<String>,
     pub license: Option<String>,
+    pub image_url: Option<String>,
+    pub image_link_url: Option<String>,
 }
 
 #[derive(Queryable, Insertable)]

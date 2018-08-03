@@ -21,6 +21,8 @@ pub struct Entry {
     pub tags        : Vec<String>,
     pub ratings     : Vec<String>,
     pub license     : Option<String>,
+    pub image_url     : Option<String>,
+    pub image_link_url: Option<String>,
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -98,6 +100,8 @@ impl Entry {
             tags        : e.tags,
             ratings     : ratings.into_iter().map(|r|r.id).collect(),
             license     : e.license,
+            image_url     : e.image_url,
+            image_link_url: e.image_link_url,
         }
     }
 }
