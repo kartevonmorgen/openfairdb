@@ -20,6 +20,8 @@ pub struct NewEntry {
     pub categories  : Vec<String>,
     pub tags        : Vec<String>,
     pub license     : String,
+    pub image_url     : Option<String>,
+    pub image_link_url: Option<String>,
 }
 
 pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
@@ -46,6 +48,8 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
         categories  :  e.categories,
         tags,
         license     :  Some(e.license),
+        image_url     : e.image_url,
+        image_link_url: e.image_link_url,
     };
     new_entry.validate()?;
     for t in &new_entry.tags {
@@ -79,7 +83,9 @@ mod tests {
             homepage    : None,
             categories  : vec![],
             tags        : vec![],
-            license     : "CC0-1.0".into()
+            license     : "CC0-1.0".into(),
+            image_url     : None,
+            image_link_url: None,
         };
         let mut mock_db = MockDb::new();
         let now = Utc::now();
@@ -112,7 +118,9 @@ mod tests {
             homepage    : None,
             categories  : vec![],
             tags        : vec![],
-            license     : "CC0-1.0".into()
+            license     : "CC0-1.0".into(),
+            image_url     : None,
+            image_link_url: None,
         };
         let mut mock_db: MockDb = MockDb::new();
         assert!(create_new_entry(&mut mock_db, x).is_err());
@@ -135,7 +143,9 @@ mod tests {
             homepage    : None,
             categories  : vec![],
             tags        : vec!["foo".into(),"bar".into()],
-            license     : "CC0-1.0".into()
+            license     : "CC0-1.0".into(),
+            image_url     : None,
+            image_link_url: None,
         };
         let mut mock_db = MockDb::new();
         create_new_entry(&mut mock_db, x).unwrap();

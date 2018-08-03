@@ -20,6 +20,8 @@ pub struct UpdateEntry {
     pub homepage    : Option<String>,
     pub categories  : Vec<String>,
     pub tags        : Vec<String>,
+    pub image_url     : Option<String>,
+    pub image_link_url: Option<String>,
 }
 
 pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
@@ -49,6 +51,8 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
         categories  :  e.categories,
         tags,
         license     :  old.license, // license is immutable
+        image_url     : e.image_url,
+        image_link_url: e.image_link_url,
     };
     for t in &new_entry.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
@@ -72,6 +76,8 @@ mod tests {
             .version(1)
             .title("foo")
             .description("bar")
+            .image_url(Some("img"))
+            .image_link_url(Some("img link"))
             .finish();
 
         #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -92,6 +98,8 @@ mod tests {
             homepage    : None,
             categories  : vec![],
             tags        : vec![],
+            image_url     : Some("img2".into()),
+            image_link_url: old.image_link_url.clone(),
         };
         let mut mock_db = MockDb::new();
         mock_db.entries = vec![old];
@@ -99,11 +107,13 @@ mod tests {
         assert!(update_entry(&mut mock_db, new).is_ok());
         assert_eq!(mock_db.entries.len(), 1);
         let x = &mock_db.entries[0];
-        assert_eq!(x.street, Some("street".into()));
-        assert_eq!(x.description, "bar");
-        assert_eq!(x.version, 2);
+        assert_eq!("street", x.street.as_ref().unwrap());
+        assert_eq!("bar", x.description);
+        assert_eq!(2, x.version);
         assert!(x.created as i64 >= now.timestamp());
         assert!(Uuid::parse_str(&x.id).is_ok());
+        assert_eq!("img2", x.image_url.as_ref().unwrap());
+        assert_eq!("img link", x.image_link_url.as_ref().unwrap());
     }
 
     #[test]
@@ -134,6 +144,8 @@ mod tests {
             homepage    : None,
             categories  : vec![],
             tags        : vec![],
+            image_url     : None,
+            image_link_url: None,
         };
         let mut mock_db = MockDb::new();
         mock_db.entries = vec![old];
@@ -174,6 +186,8 @@ mod tests {
             homepage    : None,
             categories  : vec![],
             tags        : vec![],
+            image_url     : None,
+            image_link_url: None,
         };
         let mut mock_db = MockDb::new();
         mock_db.entries = vec![];
@@ -219,6 +233,8 @@ mod tests {
             homepage    : None,
             categories  : vec![],
             tags        : vec!["vegan".into()],
+            image_url     : None,
+            image_link_url: None,
         };
         let mut mock_db = MockDb::new();
         mock_db.entries = vec![old];

@@ -29,6 +29,8 @@ pub fn new_entry_email(e: &NewEntry, id: &str, categories: &[String]) -> String 
         created: 0,
         version: 0,
         license: None,
+        image_url: None,
+        image_link_url: None,
     };
     entry_email(&entry, categories, &e.tags, intro_sentence)
 }
@@ -54,6 +56,8 @@ pub fn changed_entry_email(e: &UpdateEntry, categories: &[String]) -> String {
         created: 0,
         version: 0,
         license: None,
+        image_url: None,
+        image_link_url: None,
     };
     entry_email(&entry, categories, &e.tags, intro_sentence)
 }

@@ -1,3 +1,7 @@
+## v0.3.8 (2018-MM-DD)
+
+- new(db): add image URL fields to entries
+
 ## v0.3.7 (2018-05-22)
 
 - chore(web): update `rocket` to `v0.3.11`
