@@ -18,7 +18,6 @@ use rocket::{
 use rocket_contrib::Json;
 use serde_json::ser::to_string;
 use std::result;
-use core::util::sort::*;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
@@ -443,16 +442,14 @@ impl<'r> Responder<'r> for AppError {
 
 #[cfg(test)]
 mod tests {
-    use super::super::{
-        calculate_all_ratings,
-        mockdb::{self, DbConn},
-        ENTRY_RATINGS,
-    };
-    use test::Bencher;
+    //use super::super::mockdb;
 
-    fn setup() -> mockdb::ConnectionPool {
-        mockdb::create_connection_pool(":memory:").unwrap()
-    }
+    //fn setup() -> mockdb::ConnectionPool {
+    //    mockdb::create_connection_pool(":memory:").unwrap()
+    //}
+
+    //use super::super::{mockdb::DbConn, ENTRY_RATINGS};
+    //use test::Bencher;
 
     //#[ignore]
     //#[bench]

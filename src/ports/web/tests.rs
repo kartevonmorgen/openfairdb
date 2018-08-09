@@ -18,7 +18,6 @@ use serde_json;
 use std::fs;
 use test::Bencher;
 use uuid::Uuid;
-use super::*;
 
 fn setup() -> (Client, sqlite::ConnectionPool) {
     let cfg = Config::build(Environment::Development)
