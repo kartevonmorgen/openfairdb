@@ -19,6 +19,8 @@ pub struct Entry {
     pub categories  : Vec<String>,
     pub tags        : Vec<String>,
     pub license     : Option<String>,
+    pub image_url     : Option<String>,
+    pub image_link_url: Option<String>,
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -172,6 +174,14 @@ pub mod entry_builder {
             self.entry.license = license.map(|s| s.into());
             self
         }
+        pub fn image_url(mut self, image_url: Option<&str>) -> Self {
+            self.entry.image_url = image_url.map(Into::into);
+            self
+        }
+        pub fn image_link_url(mut self, image_link_url: Option<&str>) -> Self {
+            self.entry.image_link_url = image_link_url.map(Into::into);
+            self
+        }
         pub fn finish(self) -> Entry {
             self.entry
         }
@@ -207,6 +217,8 @@ pub mod entry_builder {
                 categories  : vec![],
                 tags        : vec![],
                 license     : None,
+                image_url     : None,
+                image_link_url: None,
             }
         }
     }

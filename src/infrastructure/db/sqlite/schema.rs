@@ -46,6 +46,8 @@ table! {
         telephone -> Nullable<Text>,
         homepage -> Nullable<Text>,
         license -> Nullable<Text>,
+        image_url -> Nullable<Text>,
+        image_link_url -> Nullable<Text>,
     }
 }
 

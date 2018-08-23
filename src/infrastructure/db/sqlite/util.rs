@@ -21,6 +21,8 @@ impl From<e::Entry> for Entry {
             telephone,
             homepage,
             license,
+            image_url,
+            image_link_url,
             ..
         } = e;
 
@@ -42,6 +44,8 @@ impl From<e::Entry> for Entry {
             telephone,
             homepage,
             license,
+            image_url,
+            image_link_url,
         }
     }
 }

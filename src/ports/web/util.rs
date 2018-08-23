@@ -1,4 +1,6 @@
+#[cfg(feature = "email")]
 use super::mail;
+
 use adapters::user_communication;
 use core::prelude::*;
 use core::usecases;
@@ -15,6 +17,21 @@ pub fn extract_ids(s: &str) -> Vec<String> {
         .collect::<Vec<String>>()
 }
 
+#[cfg(all(not(test), feature = "email"))]
+fn send_mail(mail: String) {
+    ::std::thread::spawn(move || {
+        if let Err(err) = mail::send(&mail) {
+            warn!("Could not send e-mail: {}", err);
+        }
+    });
+}
+
+/// Don't actually send emails while running the tests
+#[cfg(all(test, feature = "email"))]
+fn send_mail(mail: String) {
+    debug!("Would send e-mail: {}", mail);
+}
+
 #[cfg(feature = "email")]
 pub fn send_mails(email_addresses: &[String], subject: &str, body: &str) {
     debug!("sending emails to: {:?}", email_addresses);
@@ -22,22 +39,13 @@ pub fn send_mails(email_addresses: &[String], subject: &str, body: &str) {
         let to = vec![email_address];
         match mail::create(&to, subject, body) {
             Ok(mail) => {
-                ::std::thread::spawn(move || {
-                    if let Err(err) = mail::send(&mail) {
-                        warn!("Could not send mail: {}", err);
-                    }
-                });
+                send_mail(mail);
             }
             Err(e) => {
                 warn!("could not create notification mail: {}", e);
             }
         }
     }
-}
-
-#[cfg(not(feature = "email"))]
-pub fn send_mails(_: Vec<String>, _: &str, _: &str) {
-    // do nothing
 }
 
 pub fn notify_create_entry(
@@ -53,6 +61,8 @@ pub fn notify_create_entry(
         .map(|c| c.name)
         .collect();
     let body = user_communication::new_entry_email(e, id, &categories);
+
+    #[cfg(feature = "email")]
     send_mails(email_addresses, &subject, &body);
 }
 
@@ -68,6 +78,8 @@ pub fn notify_update_entry(
         .map(|c| c.name)
         .collect();
     let body = user_communication::changed_entry_email(e, &categories);
+
+    #[cfg(feature = "email")]
     send_mails(email_addresses, &subject, &body);
 }
 

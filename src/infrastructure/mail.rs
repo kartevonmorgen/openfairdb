@@ -42,7 +42,7 @@ pub fn create(to: &[String], subject: &str, body: &str) -> Result<String> {
         body = body
     );
 
-    debug!("sending email: {}", &email);
+    debug!("composed email: {}", &email);
 
     Ok(email)
 }
