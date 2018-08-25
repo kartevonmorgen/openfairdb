@@ -239,7 +239,6 @@ impl Db for MockDb {
         debug!("filtered users: {:?}", users);
         if users.len() > 0 {
             let mut u = users[0].clone();
-            println!("user: {:?}", u);
             u.email_confirmed = true;
             update(&mut self.users, &u)?;
             Ok(u)

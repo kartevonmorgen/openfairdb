@@ -27,7 +27,6 @@ pub fn entries_by_tags_or_search_text<'a>(
 }
 
 fn entries_by_search_text<'a>(text: &'a str) -> impl Fn(&Entry) -> bool + 'a {
-    println!("FILTER BY TEXT");
     let words = to_words(text);
     move |entry| {
         ((!text.is_empty() && words.iter().any(|word| {
@@ -257,7 +256,6 @@ mod tests {
             .cloned()
             .filter(&*entries_by_tags_or_search_text(&tag1, &no_tags))
             .collect();
-        println!("FILTER TEST: {:?}", x);
         assert_eq!(x.len(), 3);
         assert_eq!(x[0].id, "b");
         assert_eq!(x[1].id, "d");
