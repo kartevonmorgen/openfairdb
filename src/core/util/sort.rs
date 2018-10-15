@@ -287,7 +287,8 @@ pub mod tests {
             .map(|e| {
                 let ratings = create_ratings_for_entry(&e.id, 1);
                 ratings[0].clone()
-            }).collect();
+            })
+            .collect();
 
         (entries, ratings)
     }
@@ -308,7 +309,8 @@ pub mod tests {
                 value: 2,
                 context: RatingContext::Diversity,
                 source: None,
-            }).collect()
+            })
+            .collect()
     }
 
     #[bench]

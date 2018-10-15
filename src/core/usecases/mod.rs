@@ -49,7 +49,8 @@ pub fn get_ratings_by_entry_ids<D: Db>(
                     .cloned()
                     .collect(),
             )
-        }).collect())
+        })
+        .collect())
 }
 
 pub fn get_comments_by_rating_ids<D: Db>(
@@ -70,10 +71,12 @@ pub fn get_comments_by_rating_ids<D: Db>(
                         } else {
                             None
                         }
-                    }).cloned()
+                    })
+                    .cloned()
                     .collect(),
             )
-        }).collect())
+        })
+        .collect())
 }
 
 pub fn get_entries<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Entry>> {

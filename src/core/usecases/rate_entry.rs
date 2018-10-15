@@ -67,7 +67,8 @@ mod tests {
                     value: 2,
                     source: Some("source".into()),
                 },
-            ).is_err()
+            )
+            .is_err()
         );
     }
 
@@ -88,7 +89,8 @@ mod tests {
                     value: 2,
                     source: Some("source".into()),
                 },
-            ).is_err()
+            )
+            .is_err()
         );
     }
 
@@ -109,7 +111,8 @@ mod tests {
                     value: 3,
                     source: Some("source".into()),
                 },
-            ).is_err()
+            )
+            .is_err()
         );
         assert!(
             rate_entry(
@@ -123,7 +126,8 @@ mod tests {
                     value: -2,
                     source: Some("source".into()),
                 },
-            ).is_err()
+            )
+            .is_err()
         );
     }
 
@@ -144,7 +148,8 @@ mod tests {
                     value: 2,
                     source: Some("source".into()),
                 },
-            ).is_ok()
+            )
+            .is_ok()
         );
 
         assert_eq!(db.ratings.len(), 1);

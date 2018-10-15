@@ -48,7 +48,8 @@ pub fn import_from_osm_file(db_url: &str, file_name: &str) -> Result<()> {
             !old_osm_entries
                 .iter()
                 .any(|old| old.osm_node == Some(new.id))
-        }).collect();
+        })
+        .collect();
     debug!("mapping new osm entries ...");
     let mapped_entries: Vec<_> = new_osm_entries
         .into_iter()
@@ -58,7 +59,8 @@ pub fn import_from_osm_file(db_url: &str, file_name: &str) -> Result<()> {
                 warn!("Could not map osm entry: {}", err);
                 None
             }
-        }).collect();
+        })
+        .collect();
 
     debug!("importing nodes ...");
     db.import_multiple_entries(mapped_entries.as_slice())?;
