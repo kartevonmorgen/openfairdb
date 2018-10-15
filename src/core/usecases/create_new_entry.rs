@@ -51,6 +51,7 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
         image_url     : e.image_url,
         image_link_url: e.image_link_url,
     };
+    debug!("Creating new entry: {:?}", new_entry);
     new_entry.validate()?;
     for t in &new_entry.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;

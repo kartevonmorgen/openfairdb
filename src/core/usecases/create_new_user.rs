@@ -17,14 +17,15 @@ pub fn create_new_user<D: UserGateway>(db: &mut D, u: NewUser) -> Result<()> {
     if db.get_user(&u.username).is_ok() {
         return Err(Error::Parameter(ParameterError::UserExists));
     }
-    let pw = bcrypt::hash(&u.password)?;
-    db.create_user(&User {
+    let new_user = User {
         id: Uuid::new_v4().to_simple_ref().to_string(),
         username: u.username,
-        password: pw,
+        password: bcrypt::hash(&u.password)?,
         email: u.email,
         email_confirmed: false,
-    })?;
+    };
+    debug!("Creating new user: {:?}", new_user);
+    db.create_user(&new_user)?;
     Ok(())
 }
 
