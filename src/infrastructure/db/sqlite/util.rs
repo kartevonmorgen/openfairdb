@@ -264,7 +264,8 @@ impl From<e::RatingContext> for String {
             e::RatingContext::Humanity => "humanity",
             e::RatingContext::Transparency => "transparency",
             e::RatingContext::Solidarity => "solidarity",
-        }.into()
+        }
+        .into()
     }
 }
 

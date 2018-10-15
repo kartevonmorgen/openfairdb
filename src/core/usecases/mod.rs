@@ -25,7 +25,8 @@ pub use self::search::*;
 pub use self::update_entry::*;
 
 pub fn get_ratings<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Rating>> {
-    Ok(db.all_ratings()?
+    Ok(db
+        .all_ratings()?
         .iter()
         .filter(|x| ids.iter().any(|id| *id == x.id))
         .cloned()
@@ -37,7 +38,8 @@ pub fn get_ratings_by_entry_ids<D: Db>(
     ids: &[String],
 ) -> Result<HashMap<String, Vec<Rating>>> {
     let ratings = db.all_ratings()?;
-    Ok(ids.iter()
+    Ok(ids
+        .iter()
         .map(|e_id| {
             (
                 e_id.clone(),
@@ -56,7 +58,8 @@ pub fn get_comments_by_rating_ids<D: Db>(
     ids: &[String],
 ) -> Result<HashMap<String, Vec<Comment>>> {
     let comments = db.all_comments()?;
-    Ok(ids.iter()
+    Ok(ids
+        .iter()
         .map(|r_id| {
             (
                 r_id.clone(),
@@ -77,7 +80,8 @@ pub fn get_comments_by_rating_ids<D: Db>(
 }
 
 pub fn get_entries<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Entry>> {
-    let entries = db.all_entries()?
+    let entries = db
+        .all_entries()?
         .into_iter()
         .filter(|e| ids.iter().any(|id| *id == e.id))
         .collect();
@@ -119,7 +123,7 @@ pub fn subscribe_to_bbox(coordinates: &[Coordinate], username: &str, db: &mut Db
     // with a new one.
     unsubscribe_all_bboxes_by_username(db, username)?;
 
-    let id = Uuid::new_v4().simple().to_string();
+    let id = Uuid::new_v4().to_simple_ref().to_string();
     db.create_bbox_subscription(&BboxSubscription {
         id,
         bbox,
@@ -129,14 +133,16 @@ pub fn subscribe_to_bbox(coordinates: &[Coordinate], username: &str, db: &mut Db
 }
 
 pub fn get_bbox_subscriptions(username: &str, db: &Db) -> Result<Vec<BboxSubscription>> {
-    Ok(db.all_bbox_subscriptions()?
+    Ok(db
+        .all_bbox_subscriptions()?
         .into_iter()
         .filter(|s| s.username == username)
         .collect())
 }
 
 pub fn unsubscribe_all_bboxes_by_username(db: &mut Db, username: &str) -> Result<()> {
-    let user_subscriptions: Vec<_> = db.all_bbox_subscriptions()?
+    let user_subscriptions: Vec<_> = db
+        .all_bbox_subscriptions()?
         .into_iter()
         .filter(|s| s.username == username)
         .map(|s| s.id)
@@ -151,7 +157,8 @@ pub fn bbox_subscriptions_by_coordinate(
     db: &mut Db,
     x: &Coordinate,
 ) -> Result<Vec<BboxSubscription>> {
-    Ok(db.all_bbox_subscriptions()?
+    Ok(db
+        .all_bbox_subscriptions()?
         .into_iter()
         .filter(|s| geo::is_in_bbox(&x.lat, &x.lng, &s.bbox))
         .collect())
@@ -163,7 +170,8 @@ pub fn email_addresses_from_subscriptions(
 ) -> Result<Vec<String>> {
     let usernames: Vec<_> = subs.iter().map(|s| &s.username).collect();
 
-    let mut addresses: Vec<_> = db.all_users()?
+    let mut addresses: Vec<_> = db
+        .all_users()?
         .into_iter()
         .filter(|u| usernames.iter().any(|x| **x == u.username))
         .map(|u| u.email)

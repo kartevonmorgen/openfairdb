@@ -18,14 +18,13 @@ use serde_json;
 use std::fs;
 use test::Bencher;
 use uuid::Uuid;
-use super::*;
 
 fn setup() -> (Client, sqlite::ConnectionPool) {
     let cfg = Config::build(Environment::Development)
         .log_level(LoggingLevel::Debug)
         .finalize()
         .unwrap();
-    let uuid = Uuid::new_v4().simple().to_string();
+    let uuid = Uuid::new_v4().to_simple_ref().to_string();
     fs::create_dir_all("test-dbs").unwrap();
     let pool = sqlite::create_connection_pool(&format!("./test-dbs/{}", uuid)).unwrap();
     let rocket = super::rocket_instance(cfg, pool.clone());
@@ -171,7 +170,8 @@ fn get_one_entry() {
             comment: "bla".into(),
             source: Some("blabla".into()),
         },
-    ).unwrap();
+    )
+    .unwrap();
     let req = client.get("/entries/get_one_entry_test");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -247,13 +247,15 @@ fn search_with_categories() {
         created: 0,
         version: 0,
         name: "foo".into(),
-    }).unwrap();
+    })
+    .unwrap();
     conn.create_category_if_it_does_not_exist(&Category {
         id: "bar".into(),
         created: 0,
         version: 0,
         name: "bar".into(),
-    }).unwrap();
+    })
+    .unwrap();
     for e in entries {
         conn.create_entry(&e).unwrap();
     }
@@ -352,13 +354,16 @@ fn search_with_tags() {
         created: 0,
         version: 0,
         name: "foo".into(),
-    }).unwrap();
+    })
+    .unwrap();
     conn.create_tag_if_it_does_not_exist(&Tag {
         id: "foo-bar".into(),
-    }).unwrap();
+    })
+    .unwrap();
     conn.create_tag_if_it_does_not_exist(&Tag {
         id: "bla-blubb".into(),
-    }).unwrap();
+    })
+    .unwrap();
     for e in entries {
         conn.create_entry(&e).unwrap();
     }
@@ -417,10 +422,12 @@ fn search_with_hashtag() {
     let mut conn = db.get().unwrap();
     conn.create_tag_if_it_does_not_exist(&Tag {
         id: "bla-blubb".into(),
-    }).unwrap();
+    })
+    .unwrap();
     conn.create_tag_if_it_does_not_exist(&Tag {
         id: "foo-bar".into(),
-    }).unwrap();
+    })
+    .unwrap();
     for e in entries {
         conn.create_entry(&e).unwrap();
     }
@@ -449,10 +456,12 @@ fn search_with_two_hashtags() {
     let mut conn = db.get().unwrap();
     conn.create_tag_if_it_does_not_exist(&Tag {
         id: "bla-blubb".into(),
-    }).unwrap();
+    })
+    .unwrap();
     conn.create_tag_if_it_does_not_exist(&Tag {
         id: "foo-bar".into(),
-    }).unwrap();
+    })
+    .unwrap();
     for e in entries {
         conn.create_entry(&e).unwrap();
     }
@@ -484,10 +493,12 @@ fn search_without_specifying_hashtag_symbol() {
     let mut conn = db.get().unwrap();
     conn.create_tag_if_it_does_not_exist(&Tag {
         id: "bla-blubb".into(),
-    }).unwrap();
+    })
+    .unwrap();
     conn.create_tag_if_it_does_not_exist(&Tag {
         id: "foo-bar".into(),
-    }).unwrap();
+    })
+    .unwrap();
     for e in entries {
         conn.create_entry(&e).unwrap();
     }
@@ -608,7 +619,8 @@ fn get_one_rating() {
             comment: "bla".into(),
             source: Some("blabla".into()),
         },
-    ).unwrap();
+    )
+    .unwrap();
     let rid = db.get().unwrap().all_ratings().unwrap()[0].id.clone();
     let req = client.get(format!("/ratings/{}", rid));
     let mut response = req.dispatch();
@@ -650,7 +662,8 @@ fn ratings_with_and_without_source() {
             comment: "bla".into(),
             source: Some("blabla blabla".into()),
         },
-    ).unwrap();
+    )
+    .unwrap();
     usecase::rate_entry(
         &mut *db.get().unwrap(),
         usecase::RateEntry {
@@ -662,7 +675,8 @@ fn ratings_with_and_without_source() {
             comment: "bla".into(),
             source: Some("blabla blabla".into()),
         },
-    ).unwrap();
+    )
+    .unwrap();
 
     let rid = db.get().unwrap().all_ratings().unwrap()[0].id.clone();
     let req = client.get(format!("/ratings/{}", rid));
@@ -722,10 +736,12 @@ fn login_with_invalid_credentials() {
         .header(ContentType::JSON)
         .body(r#"{"username": "foo", "password": "bar"}"#);
     let response = req.dispatch();
-    assert!(!response
-        .headers()
-        .iter()
-        .any(|h| h.name.as_str() == "Set-Cookie"));
+    assert!(
+        !response
+            .headers()
+            .iter()
+            .any(|h| h.name.as_str() == "Set-Cookie")
+    );
     assert_eq!(response.status(), Status::Unauthorized);
 }
 
@@ -1007,13 +1023,15 @@ fn export_csv() {
         created: 0,
         version: 0,
         name: "cat1".into(),
-    }).unwrap();
+    })
+    .unwrap();
     conn.create_category_if_it_does_not_exist(&Category {
         id: "77b3c33a92554bcf8e8c2c86cedd6f6f".into(),
         created: 0,
         version: 0,
         name: "cat2".into(),
-    }).unwrap();
+    })
+    .unwrap();
     conn.create_tag_if_it_does_not_exist(&Tag { id: "bli".into() })
         .unwrap();
     conn.create_tag_if_it_does_not_exist(&Tag { id: "bla".into() })
@@ -1023,23 +1041,25 @@ fn export_csv() {
     }
     let diversity = RatingContext::Diversity;
     conn.create_rating(&Rating {
-        id       : "123".into(),
-        entry_id : "entry1".into(),
-        created  : 123,
-        title    : "rating1".into(),
-        value    : 2,
-        context  : diversity.clone(),
-        source   : None,
-    }).unwrap();
+        id: "123".into(),
+        entry_id: "entry1".into(),
+        created: 123,
+        title: "rating1".into(),
+        value: 2,
+        context: diversity.clone(),
+        source: None,
+    })
+    .unwrap();
     conn.create_rating(&Rating {
-        id       : "345".into(),
-        entry_id : "entry1".into(),
-        created  : 123,
-        title    : "rating2".into(),
-        value    : 4,
-        context  : diversity,
-        source   : None,
-    }).unwrap();
+        id: "345".into(),
+        entry_id: "entry1".into(),
+        created: 123,
+        title: "rating2".into(),
+        value: 4,
+        context: diversity,
+        source: None,
+    })
+    .unwrap();
 
     calculate_all_ratings(&*conn).unwrap();
 

@@ -104,7 +104,7 @@ fn map_osm_to_ofdb_entry(osm: &OsmEntry) -> Result<Entry> {
 
     let description = title.clone();
 
-    let id = Uuid::new_v4().simple().to_string();
+    let id = Uuid::new_v4().to_simple_ref().to_string();
 
     let osm_node = Some(osm.id);
 

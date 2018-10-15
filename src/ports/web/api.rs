@@ -12,13 +12,11 @@ use rocket::{
     http::{ContentType, Cookie, Cookies, Status},
     request::{self, FromRequest, Request},
     response::{content::Content, Responder, Response},
-    Outcome,
-    Route,
+    Outcome, Route,
 };
 use rocket_contrib::Json;
 use serde_json::ser::to_string;
 use std::result;
-use core::util::sort::*;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
@@ -259,7 +257,11 @@ fn logout(mut cookies: Cookies) -> Result<()> {
     Ok(Json(()))
 }
 
-#[post("/confirm-email-address", format = "application/json", data = "<user>")]
+#[post(
+    "/confirm-email-address",
+    format = "application/json",
+    data = "<user>"
+)]
 fn confirm_email_address(mut db: DbConn, user: Json<UserId>) -> Result<()> {
     let u_id = user.into_inner().u_id;
     let u = db.confirm_email_address(&u_id)?;
@@ -270,7 +272,11 @@ fn confirm_email_address(mut db: DbConn, user: Json<UserId>) -> Result<()> {
     }
 }
 
-#[post("/subscribe-to-bbox", format = "application/json", data = "<coordinates>")]
+#[post(
+    "/subscribe-to-bbox",
+    format = "application/json",
+    data = "<coordinates>"
+)]
 fn subscribe_to_bbox(
     mut db: DbConn,
     user: Login,
@@ -357,10 +363,12 @@ fn get_category(db: DbConn, id: String) -> Result<String> {
                 .ok_or(RepoError::NotFound)?;
             to_string(&e)
         }
-        _ => to_string(&categories
-            .into_iter()
-            .filter(|e| ids.iter().any(|id| e.id == id.clone()))
-            .collect::<Vec<Category>>()),
+        _ => to_string(
+            &categories
+                .into_iter()
+                .filter(|e| ids.iter().any(|id| e.id == id.clone()))
+                .collect::<Vec<Category>>(),
+        ),
     }?;
     Ok(Json(res))
 }
@@ -443,16 +451,14 @@ impl<'r> Responder<'r> for AppError {
 
 #[cfg(test)]
 mod tests {
-    use super::super::{
-        calculate_all_ratings,
-        mockdb::{self, DbConn},
-        ENTRY_RATINGS,
-    };
-    use test::Bencher;
+    //use super::super::mockdb;
 
-    fn setup() -> mockdb::ConnectionPool {
-        mockdb::create_connection_pool(":memory:").unwrap()
-    }
+    //fn setup() -> mockdb::ConnectionPool {
+    //    mockdb::create_connection_pool(":memory:").unwrap()
+    //}
+
+    //use super::super::{mockdb::DbConn, ENTRY_RATINGS};
+    //use test::Bencher;
 
     //#[ignore]
     //#[bench]

@@ -18,8 +18,9 @@ fn unset_current_on_all_entries(
         dsl::entries
             .filter(dsl::id.eq(id))
             .filter(dsl::current.eq(true)),
-    ).set(dsl::current.eq(false))
-        .execute(*con)
+    )
+    .set(dsl::current.eq(false))
+    .execute(*con)
 }
 
 impl EntryGateway for SqliteConnection {

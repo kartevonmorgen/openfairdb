@@ -21,7 +21,8 @@ pub fn distance(a: &Coordinate, b: &Coordinate) -> f64 {
 }
 
 pub fn extract_bbox(s: &str) -> Result<Bbox, ParameterError> {
-    let c = s.split(',')
+    let c = s
+        .split(',')
         .map(|x| x.parse::<f64>())
         .filter_map(|x| x.ok())
         .collect::<Vec<f64>>();

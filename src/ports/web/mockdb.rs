@@ -3,9 +3,7 @@ use diesel::r2d2::{ManageConnection, Pool, PoolError, PooledConnection};
 use rocket::{
     http::Status,
     request::{self, FromRequest},
-    Outcome,
-    Request,
-    State,
+    Outcome, Request, State,
 };
 use std::io;
 use std::ops::{Deref, DerefMut};

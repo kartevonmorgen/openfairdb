@@ -302,7 +302,7 @@ pub mod tests {
     fn create_ratings_for_entry(id: &str, n: usize) -> Vec<Rating> {
         (0..n)
             .map(|_| Rating {
-                id: Uuid::new_v4().simple().to_string(),
+                id: Uuid::new_v4().to_simple_ref().to_string(),
                 entry_id: id.into(),
                 created: 0,
                 title: "".into(),

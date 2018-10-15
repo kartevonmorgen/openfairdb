@@ -30,7 +30,7 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
 
     #[cfg_attr(rustfmt, rustfmt_skip)]
     let new_entry = Entry{
-        id          :  Uuid::new_v4().simple().to_string(),
+        id          :  Uuid::new_v4().to_simple_ref().to_string(),
         osm_node    :  None,
         created     :  Utc::now().timestamp() as u64,
         version     :  0,
@@ -51,6 +51,7 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
         image_url     : e.image_url,
         image_link_url: e.image_link_url,
     };
+    debug!("Creating new entry: {:?}", new_entry);
     new_entry.validate()?;
     for t in &new_entry.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;

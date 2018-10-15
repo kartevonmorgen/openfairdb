@@ -8,7 +8,8 @@ use std::process::{Command, Stdio};
 const FROM_ADDRESS: &str = "\"Karte von morgen\" <no-reply@kartevonmorgen.org>";
 
 pub fn create(to: &[String], subject: &str, body: &str) -> Result<String> {
-    let to: Vec<_> = to.into_iter()
+    let to: Vec<_> = to
+        .into_iter()
         .filter(|m| is_valid_email(m))
         .cloned()
         .collect();
