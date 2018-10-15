@@ -287,8 +287,7 @@ pub mod tests {
             .map(|e| {
                 let ratings = create_ratings_for_entry(&e.id, 1);
                 ratings[0].clone()
-            })
-            .collect();
+            }).collect();
 
         (entries, ratings)
     }
@@ -302,15 +301,14 @@ pub mod tests {
     fn create_ratings_for_entry(id: &str, n: usize) -> Vec<Rating> {
         (0..n)
             .map(|_| Rating {
-                id: Uuid::new_v4().simple().to_string(),
+                id: Uuid::new_v4().to_simple_ref().to_string(),
                 entry_id: id.into(),
                 created: 0,
                 title: "".into(),
                 value: 2,
                 context: RatingContext::Diversity,
                 source: None,
-            })
-            .collect()
+            }).collect()
     }
 
     #[bench]

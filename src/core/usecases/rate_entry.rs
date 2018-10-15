@@ -23,8 +23,8 @@ pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
         return Err(Error::Parameter(ParameterError::RatingValue));
     }
     let now = Utc::now().timestamp() as u64;
-    let rating_id = Uuid::new_v4().simple().to_string();
-    let comment_id = Uuid::new_v4().simple().to_string();
+    let rating_id = Uuid::new_v4().to_simple_ref().to_string();
+    let comment_id = Uuid::new_v4().to_simple_ref().to_string();
     #[cfg_attr(rustfmt, rustfmt_skip)]
     db.create_rating(&Rating{
         id       : rating_id.clone(),

@@ -70,7 +70,7 @@ mod tests {
 
     #[test]
     fn update_valid_entry() {
-        let id = Uuid::new_v4().simple().to_string();
+        let id = Uuid::new_v4().to_simple_ref().to_string();
         let old = Entry::build()
             .id(&id)
             .version(1)
@@ -118,7 +118,7 @@ mod tests {
 
     #[test]
     fn update_entry_with_invalid_version() {
-        let id = Uuid::new_v4().simple().to_string();
+        let id = Uuid::new_v4().to_simple_ref().to_string();
         let old = Entry::build()
             .id(&id)
             .version(3)
@@ -167,7 +167,7 @@ mod tests {
 
     #[test]
     fn update_non_existing_entry() {
-        let id = Uuid::new_v4().simple().to_string();
+        let id = Uuid::new_v4().to_simple_ref().to_string();
         #[cfg_attr(rustfmt, rustfmt_skip)]
         let new = UpdateEntry {
             id          : id.clone(),
@@ -209,7 +209,7 @@ mod tests {
 
     #[test]
     fn update_valid_entry_with_tags() {
-        let id = Uuid::new_v4().simple().to_string();
+        let id = Uuid::new_v4().to_simple_ref().to_string();
         let old = Entry::build()
             .id(&id)
             .version(1)

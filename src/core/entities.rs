@@ -181,7 +181,7 @@ pub mod entry_builder {
         fn build() -> EntryBuild {
             EntryBuild {
                 entry: Entry {
-                    id: Uuid::new_v4().simple().to_string(),
+                    id: Uuid::new_v4().to_simple_ref().to_string(),
                     osm_node: None,
                     created: 0,
                     version: 0,

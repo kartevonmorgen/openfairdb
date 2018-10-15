@@ -24,7 +24,7 @@ fn setup() -> (Client, sqlite::ConnectionPool) {
         .log_level(LoggingLevel::Debug)
         .finalize()
         .unwrap();
-    let uuid = Uuid::new_v4().simple().to_string();
+    let uuid = Uuid::new_v4().to_simple_ref().to_string();
     fs::create_dir_all("test-dbs").unwrap();
     let pool = sqlite::create_connection_pool(&format!("./test-dbs/{}", uuid)).unwrap();
     let rocket = super::rocket_instance(cfg, pool.clone());

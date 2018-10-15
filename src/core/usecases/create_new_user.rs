@@ -19,7 +19,7 @@ pub fn create_new_user<D: UserGateway>(db: &mut D, u: NewUser) -> Result<()> {
     }
     let pw = bcrypt::hash(&u.password)?;
     db.create_user(&User {
-        id: Uuid::new_v4().simple().to_string(),
+        id: Uuid::new_v4().to_simple_ref().to_string(),
         username: u.username,
         password: pw,
         email: u.email,

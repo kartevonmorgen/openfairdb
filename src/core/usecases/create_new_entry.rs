@@ -30,7 +30,7 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
 
     #[cfg_attr(rustfmt, rustfmt_skip)]
     let new_entry = Entry{
-        id          :  Uuid::new_v4().simple().to_string(),
+        id          :  Uuid::new_v4().to_simple_ref().to_string(),
         osm_node    :  None,
         created     :  Utc::now().timestamp() as u64,
         version     :  0,
