@@ -1,91 +1,80 @@
-use chrono::*;
+use failure::Fallible;
 use fast_chemail::is_valid_email;
-use quoted_printable::encode;
-use std::io::{Error, ErrorKind, Result};
+use lettre::EmailTransport;
+use lettre_email::{Email, EmailBuilder};
+
+#[cfg(all(not(test)))]
+use lettre::sendmail::SendmailTransport;
+
+#[cfg(all(test))]
+use lettre::stub::StubEmailTransport;
 
 const FROM_ADDRESS: &str = "\"Karte von morgen\" <no-reply@kartevonmorgen.org>";
 
-pub fn create(to: &[String], subject: &str, body: &str) -> Result<String> {
-    let to: Vec<_> = to
+const SENDMAIL_COMMAND: &str = "sendmail";
+
+pub fn create_email(addresses: &[String], subject: &str, text: &str) -> Fallible<Email> {
+    let addresses: Vec<_> = addresses
         .into_iter()
         .filter(|m| is_valid_email(m))
         .cloned()
         .collect();
-
-    if to.is_empty() {
-        return Err(Error::new(
-            ErrorKind::Other,
-            "No valid email adresses specified",
-        ));
+    if addresses.is_empty() {
+        bail!("No valid email addresses specified");
     }
 
-    let now = Local::now().format("%d %b %Y %H:%M:%S %z").to_string();
-
-    let subject = format!(
-        "=?UTF-8?Q?{}?=",
-        String::from_utf8_lossy(&encode(subject.as_bytes()))
-    );
-
-    let email = format!(
-        "Date:{date}\r\n\
-         From:{from}\r\n\
-         To:{to}\r\n\
-         Subject:{subject}\r\n\
-         MIME-Version: 1.0\r\n\
-         Content-Type: text/plain; charset=utf-8\r\n\r\n\
-         {body}",
-        date = now.as_str(),
-        from = FROM_ADDRESS,
-        to = to.join(","),
-        subject = subject,
-        body = body
-    );
-
-    debug!("composed email: {}", &email);
+    let email = addresses
+        .into_iter()
+        .fold(EmailBuilder::new(), |mut builder, address| {
+            builder.add_to(address);
+            builder
+        }).from(FROM_ADDRESS)
+        .subject(subject)
+        .text(text)
+        .build()?;
 
     Ok(email)
 }
 
-#[cfg(all(not(test), feature = "email"))]
-pub mod sendmail {
-    use super::*;
-    use std::io::prelude::*;
-    use std::process::{Command, Stdio};
+#[cfg(not(test))]
+pub fn send_email(email: &Email) -> Fallible<()> {
+    SendmailTransport::new_with_command(SENDMAIL_COMMAND)
+        .send(email)
+        .map_err(Into::into)
+}
 
-    pub fn send(mail: &str) -> Result<()> {
-        let mut child = Command::new("sendmail")
-            .arg("-t")
-            .stdin(Stdio::piped())
-            .spawn()?;
-        child
-            .stdin
-            .as_mut()
-            .ok_or_else(|| Error::new(ErrorKind::Other, "Could not get stdin"))?
-            .write_all(mail.as_bytes())?;
-        child.wait_with_output()?;
-        Ok(())
-    }
+#[cfg(test)]
+pub fn send_email(email: &Email) -> Fallible<()> {
+    let _ = StubEmailTransport::new_positive().send(email);
+    Ok(())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use lettre::SendableEmail;
 
     #[test]
     fn create_simple_mail() {
-        let mail = create(&vec!["mail@test.org".into()], "My Subject", "Hello Mail").unwrap();
-        let expected = "From:\"Karte von morgen\" <no-reply@kartevonmorgen.org>\r\n\
-                        To:mail@test.org\r\n\
-                        Subject:=?UTF-8?Q?My Subject?=\r\n\
-                        MIME-Version: 1.0\r\n\
-                        Content-Type: text/plain; charset=utf-8\r\n\r\n\
-                        Hello Mail";
-        assert!(mail.contains(expected));
+        let subject = "My verrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrry loooooooooooooooooooooong Subject containing special characters ÄÖÜäöüßéàí";
+        let email = create_email(&vec!["mail@test.org".into()], subject, "Hello Mail").unwrap();
+        let message = String::from_utf8_lossy(&email.message());
+        assert!(message.contains("From: <\"Karte von morgen\" <no-reply@kartevonmorgen.org>>\r\n"));
+        assert!(message.contains("To: <mail@test.org>\r\n"));
+        assert!(message.contains("Hello Mail\r\n"));
+        // subject, 1st line
+        assert!(
+            message.contains("Subject: My verrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrry\r\n")
+        );
+        // subject, 2nd line
+        assert!(
+            message.contains("loooooooooooooooooooooong Subject containing special characters ÄÖÜäöüßéàí\r\n")
+        );
     }
 
     #[test]
     fn check_addresses() {
-        assert!(create(&vec![], "foo", "bar").is_err());
-        assert!(create(&vec!["not-valid".into()], "foo", "bar").is_err());
+        assert!(create_email(&vec![], "foo", "bar").is_err());
+        assert!(create_email(&vec!["not-valid".into()], "foo", "bar").is_err());
     }
 }

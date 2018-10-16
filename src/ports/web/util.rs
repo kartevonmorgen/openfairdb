@@ -1,5 +1,5 @@
 #[cfg(feature = "email")]
-use super::mail;
+use super::mail::{create_email, send_email};
 
 use adapters::user_communication;
 use core::prelude::*;
@@ -17,32 +17,19 @@ pub fn extract_ids(s: &str) -> Vec<String> {
         .collect::<Vec<String>>()
 }
 
-#[cfg(all(not(test), feature = "email"))]
-fn send_mail(mail: String) {
-    ::std::thread::spawn(move || {
-        if let Err(err) = mail::sendmail::send(&mail) {
-            warn!("Could not send e-mail: {}", err);
-        }
-    });
-}
-
-/// Don't actually send emails while running the tests
-#[cfg(all(test, feature = "email"))]
-fn send_mail(mail: String) {
-    debug!("Would send e-mail: {}", mail);
-}
-
 #[cfg(feature = "email")]
 pub fn send_mails(email_addresses: &[String], subject: &str, body: &str) {
     debug!("sending emails to: {:?}", email_addresses);
     for email_address in email_addresses.to_owned() {
         let to = vec![email_address];
-        match mail::create(&to, subject, body) {
-            Ok(mail) => {
-                send_mail(mail);
+        match create_email(&to, subject, body) {
+            Ok(email) => {
+                if let Err(e) = send_email(&email) {
+                    warn!("Failed to send e-mail: {}", e);
+                }
             }
             Err(e) => {
-                warn!("could not create notification mail: {}", e);
+                warn!("Failed to create e-mail: {}", e);
             }
         }
     }

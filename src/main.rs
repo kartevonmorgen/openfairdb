@@ -12,15 +12,18 @@ extern crate diesel;
 extern crate diesel_migrations;
 extern crate dotenv;
 extern crate env_logger;
+#[macro_use]
+extern crate failure;
 extern crate fast_chemail;
 #[macro_use]
 extern crate lazy_static;
+extern crate lettre;
+extern crate lettre_email;
 #[macro_use]
 extern crate log;
 extern crate pwhash;
 #[macro_use]
 extern crate quick_error;
-extern crate quoted_printable;
 extern crate regex;
 extern crate rocket;
 extern crate rocket_contrib;
