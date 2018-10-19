@@ -20,7 +20,7 @@ pub fn extract_ids(s: &str) -> Vec<String> {
 #[cfg(all(not(test), feature = "email"))]
 fn send_mail(mail: String) {
     ::std::thread::spawn(move || {
-        if let Err(err) = mail::send(&mail) {
+        if let Err(err) = mail::sendmail::send(&mail) {
             warn!("Could not send e-mail: {}", err);
         }
     });

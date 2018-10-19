@@ -32,7 +32,7 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
     let mut tags = e.tags;
     tags.dedup();
     #[cfg_attr(rustfmt, rustfmt_skip)]
-    let new_entry = Entry{
+    let updated_entry = Entry{
         id          :  e.id,
         osm_node    :  None,
         created     :  Utc::now().timestamp() as u64,
@@ -54,10 +54,11 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
         image_url     : e.image_url,
         image_link_url: e.image_link_url,
     };
-    for t in &new_entry.tags {
+    debug!("Updating existing entry: {:?}", updated_entry);
+    for t in &updated_entry.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
-    db.update_entry(&new_entry)?;
+    db.update_entry(&updated_entry)?;
     Ok(())
 }
 
@@ -70,7 +71,7 @@ mod tests {
 
     #[test]
     fn update_valid_entry() {
-        let id = Uuid::new_v4().simple().to_string();
+        let id = Uuid::new_v4().to_simple_ref().to_string();
         let old = Entry::build()
             .id(&id)
             .version(1)
@@ -118,7 +119,7 @@ mod tests {
 
     #[test]
     fn update_entry_with_invalid_version() {
-        let id = Uuid::new_v4().simple().to_string();
+        let id = Uuid::new_v4().to_simple_ref().to_string();
         let old = Entry::build()
             .id(&id)
             .version(3)
@@ -167,7 +168,7 @@ mod tests {
 
     #[test]
     fn update_non_existing_entry() {
-        let id = Uuid::new_v4().simple().to_string();
+        let id = Uuid::new_v4().to_simple_ref().to_string();
         #[cfg_attr(rustfmt, rustfmt_skip)]
         let new = UpdateEntry {
             id          : id.clone(),
@@ -209,7 +210,7 @@ mod tests {
 
     #[test]
     fn update_valid_entry_with_tags() {
-        let id = Uuid::new_v4().simple().to_string();
+        let id = Uuid::new_v4().to_simple_ref().to_string();
         let old = Entry::build()
             .id(&id)
             .version(1)

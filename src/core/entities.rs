@@ -38,18 +38,13 @@ pub struct Tag {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum ObjectId {
-    #[serde(rename = "entry")]
     Entry(String),
-    #[serde(rename = "tag")]
     Tag(String),
-    #[serde(rename = "user")]
     User(String),
-    #[serde(rename = "comment")]
     Comment(String),
-    #[serde(rename = "rating")]
     Rating(String),
-    #[serde(rename = "bbox_subscription")]
     BboxSubscription(String),
 }
 
@@ -73,18 +68,13 @@ pub struct Comment {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum RatingContext {
-    #[serde(rename = "diversity")]
     Diversity,
-    #[serde(rename = "renewable")]
     Renewable,
-    #[serde(rename = "fairness")]
     Fairness,
-    #[serde(rename = "humanity")]
     Humanity,
-    #[serde(rename = "transparency")]
     Transparency,
-    #[serde(rename = "solidarity")]
     Solidarity,
 }
 
@@ -190,35 +180,28 @@ pub mod entry_builder {
     impl EntryBuilder for Entry {
         fn build() -> EntryBuild {
             EntryBuild {
-                entry: Entry::default(),
-            }
-        }
-    }
-
-    impl Default for Entry {
-        fn default() -> Entry {
-            #[cfg_attr(rustfmt, rustfmt_skip)]
-            Entry{
-                id          : Uuid::new_v4().simple().to_string(),
-                osm_node    : None,
-                created     : 0,
-                version     : 0,
-                title       : "".into(),
-                description : "".into(),
-                lat         : 0.0,
-                lng         : 0.0,
-                street      : None,
-                zip         : None,
-                city        : None,
-                country     : None,
-                email       : None,
-                telephone   : None,
-                homepage    : None,
-                categories  : vec![],
-                tags        : vec![],
-                license     : None,
-                image_url     : None,
-                image_link_url: None,
+                entry: Entry {
+                    id: Uuid::new_v4().to_simple_ref().to_string(),
+                    osm_node: None,
+                    created: 0,
+                    version: 0,
+                    title: "".into(),
+                    description: "".into(),
+                    lat: 0.0,
+                    lng: 0.0,
+                    street: None,
+                    zip: None,
+                    city: None,
+                    country: None,
+                    email: None,
+                    telephone: None,
+                    homepage: None,
+                    categories: vec![],
+                    tags: vec![],
+                    license: None,
+                    image_url: None,
+                    image_link_url: None,
+                },
             }
         }
     }

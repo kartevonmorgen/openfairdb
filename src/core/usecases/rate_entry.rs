@@ -23,8 +23,8 @@ pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
         return Err(Error::Parameter(ParameterError::RatingValue));
     }
     let now = Utc::now().timestamp() as u64;
-    let rating_id = Uuid::new_v4().simple().to_string();
-    let comment_id = Uuid::new_v4().simple().to_string();
+    let rating_id = Uuid::new_v4().to_simple_ref().to_string();
+    let comment_id = Uuid::new_v4().to_simple_ref().to_string();
     #[cfg_attr(rustfmt, rustfmt_skip)]
     db.create_rating(&Rating{
         id       : rating_id.clone(),
@@ -67,7 +67,8 @@ mod tests {
                     value: 2,
                     source: Some("source".into()),
                 },
-            ).is_err()
+            )
+            .is_err()
         );
     }
 
@@ -88,7 +89,8 @@ mod tests {
                     value: 2,
                     source: Some("source".into()),
                 },
-            ).is_err()
+            )
+            .is_err()
         );
     }
 
@@ -109,7 +111,8 @@ mod tests {
                     value: 3,
                     source: Some("source".into()),
                 },
-            ).is_err()
+            )
+            .is_err()
         );
         assert!(
             rate_entry(
@@ -123,7 +126,8 @@ mod tests {
                     value: -2,
                     source: Some("source".into()),
                 },
-            ).is_err()
+            )
+            .is_err()
         );
     }
 
@@ -144,7 +148,8 @@ mod tests {
                     value: 2,
                     source: Some("source".into()),
                 },
-            ).is_ok()
+            )
+            .is_ok()
         );
 
         assert_eq!(db.ratings.len(), 1);

@@ -78,9 +78,11 @@ pub fn entry_email(
         vec![
             e.zip.clone().unwrap_or_else(|| "".into()),
             e.city.clone().unwrap_or_else(|| "".into()),
-        ].join(" "),
+        ]
+        .join(" "),
         e.country.clone().unwrap_or_else(|| "".into()),
-    ].join(", ");
+    ]
+    .join(", ");
 
     format!(
         "Hallo,

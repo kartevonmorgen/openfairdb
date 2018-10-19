@@ -1,6 +1,9 @@
-## v0.3.8 (2018-MM-DD)
+## v0.3.8 (2018-08-27)
 
 - new(db): add image URL fields to entries
+- chore(web): update `rocket` to `v0.3.16`
+- chore(db): update `diesel` to `v1.3.x`
+- chore(*): update dependencies
 
 ## v0.3.7 (2018-05-22)
 
