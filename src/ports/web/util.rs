@@ -19,20 +19,26 @@ pub fn extract_ids(s: &str) -> Vec<String> {
 
 #[cfg(feature = "email")]
 pub fn send_mails(email_addresses: &[String], subject: &str, body: &str) {
-    debug!("sending emails to: {:?}", email_addresses);
-    for email_address in email_addresses.to_owned() {
-        let to = vec![email_address];
-        match create_email(&to, subject, body) {
-            Ok(email) => {
-                if let Err(e) = send_email(&email) {
-                    warn!("Failed to send e-mail: {}", e);
+    // TODO: Replace this child thread with an asynchronous solution!
+    let email_addresses = email_addresses.to_owned();
+    let subject = subject.to_string();
+    let body = body.to_string();
+    ::std::thread::spawn(move || {
+        debug!("sending emails to: {:?}", email_addresses);
+        for email_address in email_addresses.to_owned() {
+            let to = vec![email_address];
+            match create_email(&to, &subject, &body) {
+                Ok(email) => {
+                    if let Err(e) = send_email(&email) {
+                        warn!("Failed to send e-mail: {}", e);
+                    }
+                }
+                Err(e) => {
+                    warn!("Failed to create e-mail: {}", e);
                 }
             }
-            Err(e) => {
-                warn!("Failed to create e-mail: {}", e);
-            }
         }
-    }
+    });
 }
 
 pub fn notify_create_entry(
