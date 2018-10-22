@@ -1,21 +1,32 @@
+use core::error::ParameterError;
 use url::{ParseError, Url};
 
 /// Completes incomplete URLs before parsing
-pub fn parse_lazy_url<S>(from: S) -> Result<(String, Url), ParseError>
+pub fn parse_lazy_url<S>(from: S) -> Result<Url, ParseError>
 where
     S: Into<String>,
 {
-    let mut from = from.into();
-    if !from.contains("://") {
+    let from = from.into();
+    let from = from.trim();
+    if from.is_empty() || from.contains("://") {
+        Url::parse(from)
+    } else {
         // Add the missing protocol by assuming https
         if from.starts_with("www.") {
-            from = format!("https://{}", from);
+            Url::parse(&format!("https://{}", from))
         } else {
-            from = format!("https://www.{}", from);
+            Url::parse(&format!("https://www.{}", from))
         }
     }
-    let url = Url::parse(&from)?;
-    Ok((from, url))
+}
+
+pub fn parse_url_param<S>(from: S) -> Result<String, ParameterError>
+where
+    S: Into<String>,
+{
+    parse_lazy_url(from)
+        .map(|url| url.into_string())
+        .map_err(|_| ParameterError::Url)
 }
 
 #[cfg(test)]
@@ -23,24 +34,24 @@ mod tests {
     use super::*;
 
     #[test]
-    fn parse_lazy_url() {
+    fn parse_url_param() {
+        assert!(super::parse_url_param("").is_err());
+        assert!(super::parse_url_param("\t \n").is_err());
         assert_eq!(
-            super::parse_lazy_url("example.com/index.html").unwrap().0,
+            super::parse_url_param("example.com/index.html").unwrap(),
             "https://www.example.com/index.html"
         );
         assert_eq!(
-            super::parse_lazy_url("www.example.com").unwrap().0,
-            "https://www.example.com"
+            super::parse_url_param("www.example.com").unwrap(),
+            "https://www.example.com/"
         );
         assert_eq!(
-            super::parse_lazy_url("http://www.example.com/index.html")
-                .unwrap()
-                .0,
+            super::parse_url_param("http://www.example.com/index.html").unwrap(),
             "http://www.example.com/index.html"
         );
         assert_eq!(
-            super::parse_lazy_url("https://example.com").unwrap().0,
-            "https://example.com"
+            super::parse_url_param("https://example.com").unwrap(),
+            "https://example.com/"
         );
     }
 }

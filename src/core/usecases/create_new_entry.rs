@@ -1,6 +1,6 @@
 use chrono::*;
 use core::prelude::*;
-use core::util::parse::parse_lazy_url;
+use core::util::parse::parse_url_param;
 use core::util::validate::Validate;
 use uuid::Uuid;
 
@@ -45,12 +45,12 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
         country     :  e.country,
         email       :  e.email,
         telephone   :  e.telephone,
-        homepage    :  e.homepage.map(|s| parse_lazy_url(s).map(|(s, _)| s).map_err(|_| ParameterError::Url)).transpose()?,
+        homepage    :  e.homepage.map(parse_url_param).transpose()?,
         categories  :  e.categories,
         tags,
         license     :  Some(e.license),
-        image_url     : e.image_url,
-        image_link_url: e.image_link_url,
+        image_url     : e.image_url.map(parse_url_param).transpose()?,
+        image_link_url: e.image_link_url.map(parse_url_param).transpose()?,
     };
     debug!("Creating new entry: {:?}", new_entry);
     new_entry.validate()?;

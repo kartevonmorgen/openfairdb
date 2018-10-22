@@ -1,6 +1,6 @@
 use chrono::*;
 use core::prelude::*;
-use core::util::parse::parse_lazy_url;
+use core::util::parse::parse_url_param;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -48,12 +48,12 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
         country     :  e.country,
         email       :  e.email,
         telephone   :  e.telephone,
-        homepage    :  e.homepage.map(|s| parse_lazy_url(s).map(|(s, _)| s).map_err(|_| ParameterError::Url)).transpose()?,
+        homepage    :  e.homepage.map(parse_url_param).transpose()?,
         categories  :  e.categories,
         tags,
         license     :  old.license, // license is immutable
-        image_url     : e.image_url,
-        image_link_url: e.image_link_url,
+        image_url     : e.image_url.map(parse_url_param).transpose()?,
+        image_link_url: e.image_link_url.map(parse_url_param).transpose()?,
     };
     debug!("Updating existing entry: {:?}", updated_entry);
     for t in &updated_entry.tags {
@@ -78,8 +78,8 @@ mod tests {
             .version(1)
             .title("foo")
             .description("bar")
-            .image_url(Some("img"))
-            .image_link_url(Some("img link"))
+            .image_url(Some("http://img"))
+            .image_link_url(Some("http://imglink"))
             .finish();
 
         #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -114,8 +114,8 @@ mod tests {
         assert_eq!(2, x.version);
         assert!(x.created as i64 >= now.timestamp());
         assert!(Uuid::parse_str(&x.id).is_ok());
-        assert_eq!("img2", x.image_url.as_ref().unwrap());
-        assert_eq!("img link", x.image_link_url.as_ref().unwrap());
+        assert_eq!("https://www.img2/", x.image_url.as_ref().unwrap());
+        assert_eq!("http://imglink/", x.image_link_url.as_ref().unwrap());
     }
 
     #[test]
