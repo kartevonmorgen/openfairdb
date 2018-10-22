@@ -1,5 +1,6 @@
 use chrono::*;
 use core::prelude::*;
+use core::util::parse::parse_lazy_url;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -47,7 +48,7 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
         country     :  e.country,
         email       :  e.email,
         telephone   :  e.telephone,
-        homepage    :  e.homepage,
+        homepage    :  e.homepage.map(|s| parse_lazy_url(s).map(|(s, _)| s).map_err(|_| ParameterError::Url)).transpose()?,
         categories  :  e.categories,
         tags,
         license     :  old.license, // license is immutable
