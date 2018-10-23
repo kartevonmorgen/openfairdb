@@ -2,29 +2,22 @@ use core::error::ParameterError;
 use url::{ParseError, Url};
 
 /// Completes incomplete URLs before parsing
-pub fn parse_lazy_url<S>(from: S) -> Result<Url, ParseError>
-where
-    S: Into<String>,
-{
-    let from = from.into();
-    let from = from.trim();
-    if from.is_empty() || from.contains("://") {
-        Url::parse(from)
+pub fn parse_lazy_url(url: &str) -> Result<Url, ParseError> {
+    let url = url.trim();
+    if url.is_empty() || url.contains("://") {
+        Url::parse(url)
     } else {
         // Add the missing protocol by assuming https
-        if from.starts_with("www.") {
-            Url::parse(&format!("https://{}", from))
+        if url.starts_with("www.") {
+            Url::parse(&format!("https://{}", url))
         } else {
-            Url::parse(&format!("https://www.{}", from))
+            Url::parse(&format!("https://www.{}", url))
         }
     }
 }
 
-pub fn parse_url_param<S>(from: S) -> Result<String, ParameterError>
-where
-    S: Into<String>,
-{
-    parse_lazy_url(from)
+pub fn parse_url_param(url: &str) -> Result<String, ParameterError> {
+    parse_lazy_url(url)
         .map(|url| url.into_string())
         .map_err(|_| ParameterError::Url)
 }

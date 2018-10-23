@@ -48,12 +48,12 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
         country     :  e.country,
         email       :  e.email,
         telephone   :  e.telephone,
-        homepage    :  e.homepage.map(parse_url_param).transpose()?,
+        homepage    :  e.homepage.map(|ref url| parse_url_param(url)).transpose()?,
         categories  :  e.categories,
         tags,
         license     :  old.license, // license is immutable
-        image_url     : e.image_url.map(parse_url_param).transpose()?,
-        image_link_url: e.image_link_url.map(parse_url_param).transpose()?,
+        image_url     : e.image_url.map(|ref url| parse_url_param(url)).transpose()?,
+        image_link_url: e.image_link_url.map(|ref url| parse_url_param(url)).transpose()?,
     };
     debug!("Updating existing entry: {:?}", updated_entry);
     for t in &updated_entry.tags {
