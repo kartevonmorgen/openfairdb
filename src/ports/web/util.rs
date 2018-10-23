@@ -54,7 +54,7 @@ pub fn notify_create_entry(
     id: &str,
     all_categories: Vec<Category>,
 ) {
-    let subject = String::from("Karte von Morgen - neuer Eintrag: ") + &e.title;
+    let subject = String::from("Karte von morgen - neuer Eintrag: ") + &e.title;
     let categories: Vec<String> = all_categories
         .into_iter()
         .filter(|c| e.categories.clone().into_iter().any(|c_id| *c.id == c_id))
@@ -71,7 +71,7 @@ pub fn notify_update_entry(
     e: &usecases::UpdateEntry,
     all_categories: Vec<Category>,
 ) {
-    let subject = String::from("Karte von Morgen - Eintrag verändert: ") + &e.title;
+    let subject = String::from("Karte von morgen - Eintrag verändert: ") + &e.title;
     let categories: Vec<String> = all_categories
         .into_iter()
         .filter(|c| e.categories.clone().into_iter().any(|c_id| *c.id == c_id))

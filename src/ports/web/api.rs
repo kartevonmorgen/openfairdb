@@ -190,7 +190,7 @@ fn post_user(mut db: DbConn, u: Json<usecases::NewUser>) -> Result<()> {
     let new_user = u.into_inner();
     usecases::create_new_user(&mut *db, new_user.clone())?;
     let user = db.get_user(&new_user.username)?;
-    let subject = "Karte von Morgen: bitte bestätige deine Email-Adresse";
+    let subject = "Karte von morgen: bitte bestätige deine Email-Adresse";
     let body = user_communication::email_confirmation_email(&user.id);
 
     #[cfg(feature = "email")]
