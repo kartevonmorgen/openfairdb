@@ -1,6 +1,6 @@
 use chrono::*;
 use fast_chemail::is_valid_email;
-use quoted_printable::encode;
+use quoted_printable;
 use std::io::{Error, ErrorKind, Result};
 
 const FROM_ADDRESS: &str = "\"Karte von morgen\" <no-reply@kartevonmorgen.org>";
@@ -19,12 +19,13 @@ pub fn create(to: &[String], subject: &str, body: &str) -> Result<String> {
         ));
     }
 
-    let now = Local::now().format("%d %b %Y %H:%M:%S %z").to_string();
-
+    debug_assert!(!subject.is_empty());
     let subject = format!(
         "=?UTF-8?Q?{}?=",
-        String::from_utf8_lossy(&encode(subject.as_bytes()))
+        quoted_printable::encode_to_str(subject.as_bytes())
     );
+
+    let now = Local::now();
 
     let email = format!(
         "Date:{date}\r\n\
@@ -34,7 +35,7 @@ pub fn create(to: &[String], subject: &str, body: &str) -> Result<String> {
          MIME-Version: 1.0\r\n\
          Content-Type: text/plain; charset=utf-8\r\n\r\n\
          {body}",
-        date = now.as_str(),
+        date = now.to_rfc2822(),
         from = FROM_ADDRESS,
         to = to.join(","),
         subject = subject,
