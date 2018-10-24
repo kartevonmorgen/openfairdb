@@ -6,28 +6,28 @@ license = "AGPL-3.0-or-later"
 
 [dependencies]
 # clap 3 is supposed to introduce breaking changes
+chrono = "*"
 clap = "2"
-log = "*"
+csv = "*"
+diesel = { version = "*", features = ["sqlite", "r2d2"] }
+diesel_migrations = { version = "*", features = ["sqlite"]  }
+dotenv = "*"
 env_logger = "*"
-uuid = { version = "*", features = ["v4"] }
-url = "*"
+fast_chemail = "*"
+lazy_static = "*"
+log = "*"
+pwhash = "*"
 quick-error = "*"
+quoted_printable = "*"
+regex = "*"
 rocket = "*"
 rocket_codegen = "*"
 rocket_contrib = "*"
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
-chrono = "*"
-lazy_static = "*"
-regex = "*"
-pwhash = "*"
-fast_chemail = "*"
-quoted_printable = "*"
 toml = "*"
-dotenv = "*"
-diesel = { version = "*", features = ["sqlite", "r2d2"] }
-diesel_migrations = { version = "*", features = ["sqlite"]  }
-csv = "*"
+url = "*"
+uuid = { version = "*", features = ["v4"] }
 
 [features]
 default = ["email"]
