@@ -1,0 +1,34 @@
+BUILD_PROJECT=openfairdb
+
+BUILD_TARGET_BIN=openfairdb
+BUILD_TARGET_ARCH=x86_64-unknown-linux-musl
+
+BUILD_IMAGE=clux/muslrust:$(file < rust-toolchain)
+
+BUILD_ROOT=/tmp/muslrust
+BUILD_CARGO_CACHE=$(BUILD_ROOT)/cargo-cache
+BUILD_PROJECT_ROOT=$(BUILD_ROOT)/$(BUILD_PROJECT)
+
+.PHONY: default
+default: build
+
+# Pull the build image from DockerHub (initially or update)
+pre-build:
+	docker pull docker.io/$(BUILD_IMAGE)
+
+build:
+	mkdir -p "$(BUILD_CARGO_CACHE)"
+	mkdir -p "$(BUILD_PROJECT_ROOT)"
+	rsync -av --chown `id -gn`:`id -un` --progress . "$(BUILD_PROJECT_ROOT)" --exclude target --exclude .git
+	docker run --rm \
+		-it $(BUILD_IMAGE) \
+		rustc --version
+	docker run --rm \
+		-v "$(BUILD_CARGO_CACHE)":/root/.cargo:Z \
+		-v "$(BUILD_PROJECT_ROOT)":/volume:Z \
+		-w /volume \
+		-it $(BUILD_IMAGE) \
+		cargo build --bin=$(BUILD_TARGET_BIN) --release
+	strip "$(BUILD_PROJECT_ROOT)/target/$(BUILD_TARGET_ARCH)/release/$(BUILD_TARGET_BIN)"
+	mkdir -p bin/$(BUILD_TARGET_ARCH)
+	cp "$(BUILD_PROJECT_ROOT)/target/$(BUILD_TARGET_ARCH)/release/$(BUILD_TARGET_BIN)" bin/$(BUILD_TARGET_ARCH)

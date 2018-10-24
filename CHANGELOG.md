@@ -1,3 +1,11 @@
+## v0.3.9 (2018-10-24)
+
+- new(web): auto-complete URL fields
+- fix(email): consistent corporate naming "Karte von morgen"
+- fix(email): write RFC 2047 Subject header
+- chore(db): add indexes for foreign key relations
+- chore(*): update various dependencies
+
 ## v0.3.8 (2018-08-27)
 
 - new(db): add image URL fields to entries

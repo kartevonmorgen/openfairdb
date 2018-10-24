@@ -69,7 +69,7 @@ For the following requests one must be logged in:
 `bbox-subscriptions` are subscriptions to a certain map area (bounding box,`bbox`): whenever a new entry is created or an entry is changed within that area, an email notification is sent to the user.
 
 ### Entry Export
-**Example**: Export all entries in Germany: 
+**Example**: Export all entries in Germany:
 http://api.ofdb.io/v0/export/entries.csv?bbox=47.497972542230855,0.7996758709088782,54.63407558981465,18.307256321725717
 
 If you want to find out the coordinates for other map areas, open "network" in the "developer tools" in your browser and look at the search request under at the value of `bbox`.
@@ -229,6 +229,34 @@ On NixOS you can build the project with:
 ```
 nix-build -E '(import <nixpkgs>{}).callPackage ./default.nix {}'
 ```
+
+### Docker Build
+
+The bundled Makefile can be used to build a static executable without installing any dependencies locally.
+
+Depending on the permissions of your local Docker installation you may need to use `sudo` for the invocation of `make`.
+
+#### Pull Build Image
+
+The build requires the [muslrust](https://hub.docker.com/r/clux/muslrust/tags/) Docker image with the corresponding Rust toolchain:
+
+```sh
+make -f Makefile.x86_64-unknown-linux-musl pre-build
+```
+
+This command has to be executed at least once and can be repeated for updating the `muslrust` build image.
+
+#### Execute Build
+
+Use the following command from the project directory to start the build:
+
+```sh
+make -f Makefile.x86_64-unknown-linux-musl
+```
+
+The source folder is copied into `/tmp` and mounted as a volume into the Docker container. The Cargo cache is also stored in `/tmp` and reused on subsequent invocations.
+
+The resulting executable is copied into the folder `bin/x86_64-unknown-linux-musl` after the build has completed successfully.
 
 ## Logging
 
