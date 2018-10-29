@@ -3,13 +3,13 @@ use core::usecases::{NewEntry, UpdateEntry};
 
 pub fn email_confirmation_email(u_id: &str) -> String {
     format!(
-        "Na du Weltverbesserer*,\nwir freuen uns dass du bei der Karte von Morgen mit dabei bist!\n\nBitte bestätige deine Email-Adresse hier:\nhttps://kartevonmorgen.org/#/?confirm_email={}.\n\neuphorische Grüße\ndas Karte von Morgen-Team",
+        "Na du Weltverbesserer*,\nwir freuen uns dass du bei der Karte von morgen mit dabei bist!\n\nBitte bestätige deine Email-Adresse hier:\nhttps://kartevonmorgen.org/#/?confirm_email={}.\n\neuphorische Grüße\ndas Karte von morgen-Team",
         u_id
     )
 }
 
 pub fn new_entry_email(e: &NewEntry, id: &str, categories: &[String]) -> String {
-    let intro_sentence = "ein neuer Eintrag auf der Karte von Morgen wurde erstellt";
+    let intro_sentence = "ein neuer Eintrag auf der Karte von morgen wurde erstellt";
     let entry = Entry {
         id: id.into(),
         osm_node: None,
@@ -36,7 +36,7 @@ pub fn new_entry_email(e: &NewEntry, id: &str, categories: &[String]) -> String 
 }
 
 pub fn changed_entry_email(e: &UpdateEntry, categories: &[String]) -> String {
-    let intro_sentence = "folgender Eintrag der Karte von Morgen wurde verändert";
+    let intro_sentence = "folgender Eintrag der Karte von morgen wurde verändert";
     let entry = Entry {
         id: e.id.clone(),
         osm_node: e.osm_node,
@@ -98,7 +98,7 @@ Eintrag anschauen oder bearbeiten:
 https://kartevonmorgen.org/#/?entry={id}\n
 Du kannst dein Abonnement des Kartenbereichs abbestellen indem du dich auf https://kartevonmorgen.org einloggst.\n
 euphorische Grüße
-das Karte von Morgen-Team",
+das Karte von morgen-Team",
         introSentence = intro_sentence,
         title = &e.title,
         id = &e.id,

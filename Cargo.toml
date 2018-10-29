@@ -1,34 +1,33 @@
 [package]
 name = "openfairdb"
-version = "0.3.8"
-authors = ["Markus Kohlhase <mail@markus-kohlhase.de>"]
+version = "0.3.9"
+authors = ["Markus Kohlhase <mail@markus-kohlhase.de>", "slowtec GmbH <post@slowtec.de>"]
 license = "AGPL-3.0-or-later"
 
 [dependencies]
+# clap 3 is supposed to introduce breaking changes
+chrono = "*"
 clap = "2"
-log = "0.4"
-env_logger = "0.5"
-uuid = { version = "0.7", features = ["v4"] }
-url = "1"
-quick-error = "1"
+csv = "*"
+diesel = { version = "*", features = ["sqlite", "r2d2"] }
+diesel_migrations = { version = "*", features = ["sqlite"]  }
+dotenv = "*"
+env_logger = "*"
+fast_chemail = "*"
+lazy_static = "*"
+log = "*"
+pwhash = "*"
+quick-error = "*"
+quoted_printable = "*"
+regex = "*"
 rocket = "*"
 rocket_codegen = "*"
 rocket_contrib = "*"
-serde = "1"
-serde_json = "1"
-serde_derive = "1"
-chrono = "0.4"
-lazy_static = "1"
-regex = "1"
-pwhash = "0.2"
-fast_chemail = "0.9"
-quoted_printable = "0.4"
-toml = "0.4"
-dotenv = "0.13"
-diesel = { version = "1.3", features = ["sqlite", "r2d2"] }
-diesel_migrations = { version = "1.3", features = ["sqlite"]  }
-libsqlite3-sys = { version = "*", features = ["bundled"] }
-csv = "1"
+serde = { version = "*", features = ["derive"] }
+serde_json = "*"
+toml = "*"
+url = "*"
+uuid = { version = "*", features = ["v4"] }
 
 [features]
 default = ["email"]
