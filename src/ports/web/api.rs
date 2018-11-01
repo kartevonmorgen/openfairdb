@@ -54,7 +54,7 @@ pub fn routes() -> Vec<Route> {
         get_user,
         get_categories,
         get_tags,
-        get_ratings,
+        get_rating,
         get_category,
         get_search,
         get_duplicates,
@@ -215,11 +215,11 @@ fn post_rating(mut db: DbConn, u: Json<usecases::RateEntry>) -> Result<()> {
     Ok(Json(()))
 }
 
-#[get("/ratings/<id>")]
-fn get_ratings(db: DbConn, id: String) -> Result<Vec<json::Rating>> {
+#[get("/ratings/<ids>")]
+fn get_rating(db: DbConn, ids: String) -> Result<Vec<json::Rating>> {
     // TODO: Only lookup and return a single entity
     // TODO: Add a new method for searching multiple ids
-    let mut ids = util::extract_ids(&id);
+    let mut ids = util::extract_ids(&ids);
     let ratings = usecases::get_ratings(&*db, &ids)?;
     // Retain only those ids that have actually been found
     debug_assert!(ratings.len() <= ids.len());
@@ -355,11 +355,11 @@ fn get_categories(db: DbConn) -> Result<Vec<Category>> {
     Ok(Json(categories))
 }
 
-#[get("/categories/<id>")]
-fn get_category(db: DbConn, id: String) -> Result<Vec<Category>> {
+#[get("/categories/<ids>")]
+fn get_category(db: DbConn, ids: String) -> Result<Vec<Category>> {
     // TODO: Only lookup and return a single entity
     // TODO: Add a new method for searching multiple ids
-    let ids = util::extract_ids(&id);
+    let ids = util::extract_ids(&ids);
     let categories = db
         .all_categories()?
         .into_iter()
