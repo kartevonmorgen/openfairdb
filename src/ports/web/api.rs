@@ -219,9 +219,13 @@ fn post_rating(mut db: DbConn, u: Json<usecases::RateEntry>) -> Result<()> {
 fn get_ratings(db: DbConn, id: String) -> Result<Vec<json::Rating>> {
     // TODO: Only lookup and return a single entity
     // TODO: Add a new method for searching multiple ids
-    let ratings = usecases::get_ratings(&*db, &util::extract_ids(&id))?;
-    let r_ids: Vec<String> = ratings.iter().map(|r| r.id.clone()).collect();
-    let comments = usecases::get_comments_by_rating_ids(&*db, &r_ids)?;
+    let mut ids = util::extract_ids(&id);
+    let ratings = usecases::get_ratings(&*db, &ids)?;
+    // Retain only those ids that have actually been found
+    debug_assert!(ratings.len() <= ids.len());
+    ids.retain(|id| ratings.iter().any(|r| &r.id == id));
+    debug_assert!(ratings.len() == ids.len());
+    let comments = usecases::get_comments_by_rating_ids(&*db, &ids)?;
     let result = ratings
         .into_iter()
         .map(|x| json::Rating {
