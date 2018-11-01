@@ -511,9 +511,9 @@ fn search_without_specifying_hashtag_symbol() {
 #[test]
 fn extract_ids_test() {
     assert_eq!(extract_ids("abc"), vec!["abc"]);
-    assert_eq!(extract_ids("a,b,c"), vec!["a", "b", "c"]);
-    assert_eq!(extract_ids("").len(), 0);
-    assert_eq!(extract_ids("abc,,d"), vec!["abc", "d"]);
+    assert_eq!(extract_ids("a, b,c"), vec!["a", "b", "c"]);
+    assert_eq!(extract_ids("\t").len(), 0);
+    assert_eq!(extract_ids("abc, ,d,"), vec!["abc", "d"]);
 }
 
 #[test]

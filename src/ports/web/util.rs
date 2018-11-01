@@ -10,9 +10,11 @@ lazy_static! {
     static ref HASH_TAG_REGEX: Regex = Regex::new(r"#(?P<tag>\w+((-\w+)*)?)").unwrap();
 }
 
+pub const ID_LIST_SEPARATOR: char = ',';
+
 pub fn extract_ids(s: &str) -> Vec<String> {
-    s.split(',')
-        .map(|x| x.to_owned())
+    s.split(ID_LIST_SEPARATOR)
+        .map(|x| x.trim().to_owned())
         .filter(|id| id != "")
         .collect::<Vec<String>>()
 }
