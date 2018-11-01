@@ -18,12 +18,12 @@ When you want to use the API, please contact us at helmut@bildungsagenten.com. T
 -  `POST /entries`
 -  `PUT /entries/:ID`
 -  `GET /categories/`
--  `GET /categories/:ID`
+-  `GET /categories/:ID_1,:ID_2,...,:ID_n`
 -  `GET /tags`
 -  `GET /search?text=TXT&bbox=LAT_min,LNG_min,LAT_max,LNG_max&categories=C_1,C_2,...,C_n`
 -  `POST /ratings`
 -  `GET /ratings`
--  `GET /ratings/:ID`
+-  `GET /ratings/:ID_1,:ID_2,...,:ID_n`
 -  `POST /login`
 -  `POST /logout`
 -  `GET /users/:USERNAME`

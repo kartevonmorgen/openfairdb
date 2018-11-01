@@ -15,7 +15,6 @@ use rocket::{
     Outcome, Route,
 };
 use rocket_contrib::Json;
-use serde_json::ser::to_string;
 use std::result;
 
 type Result<T> = result::Result<Json<T>, AppError>;
@@ -148,6 +147,8 @@ struct UserId {
 
 #[get("/entries/<ids>")]
 fn get_entry(db: DbConn, ids: String) -> Result<Vec<json::Entry>> {
+    // TODO: Only lookup and return a single entity
+    // TODO: Add a new method for searching multiple ids
     let ids = util::extract_ids(&ids);
     let entries = usecases::get_entries(&*db, &ids)?;
     let ratings = usecases::get_ratings_by_entry_ids(&*db, &ids)?;
@@ -216,6 +217,8 @@ fn post_rating(mut db: DbConn, u: Json<usecases::RateEntry>) -> Result<()> {
 
 #[get("/ratings/<id>")]
 fn get_ratings(db: DbConn, id: String) -> Result<Vec<json::Rating>> {
+    // TODO: Only lookup and return a single entity
+    // TODO: Add a new method for searching multiple ids
     let ratings = usecases::get_ratings(&*db, &util::extract_ids(&id))?;
     let r_ids: Vec<String> = ratings.iter().map(|r| r.id.clone()).collect();
     let comments = usecases::get_comments_by_rating_ids(&*db, &r_ids)?;
@@ -349,28 +352,16 @@ fn get_categories(db: DbConn) -> Result<Vec<Category>> {
 }
 
 #[get("/categories/<id>")]
-fn get_category(db: DbConn, id: String) -> Result<String> {
+fn get_category(db: DbConn, id: String) -> Result<Vec<Category>> {
+    // TODO: Only lookup and return a single entity
+    // TODO: Add a new method for searching multiple ids
     let ids = util::extract_ids(&id);
-    let categories = db.all_categories()?;
-    let res = match ids.len() {
-        0 => to_string(&categories),
-
-        1 => {
-            let id = ids[0].clone();
-            let e = categories
-                .into_iter()
-                .find(|x| x.id == id)
-                .ok_or(RepoError::NotFound)?;
-            to_string(&e)
-        }
-        _ => to_string(
-            &categories
-                .into_iter()
-                .filter(|e| ids.iter().any(|id| e.id == id.clone()))
-                .collect::<Vec<Category>>(),
-        ),
-    }?;
-    Ok(Json(res))
+    let categories = db
+        .all_categories()?
+        .into_iter()
+        .filter(|c| ids.iter().any(|id| &c.id == id))
+        .collect::<Vec<Category>>();
+    Ok(Json(categories))
 }
 
 #[derive(FromForm, Clone, Serialize)]
