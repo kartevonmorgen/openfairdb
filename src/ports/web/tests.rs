@@ -454,7 +454,7 @@ fn search_with_two_hashtags() {
     for e in entries {
         conn.create_entry(&e).unwrap();
     }
-    let req = client.get("/search?bbox=-10,-10,10,10&text=%23bla-blubb %23foo-bar");
+    let req = client.get("/search?bbox=-10,-10,10,10&text=%23bla-blubb%20%23foo-bar");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();

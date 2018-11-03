@@ -10,11 +10,11 @@ use csv;
 use rocket::{
     self,
     http::{ContentType, Cookie, Cookies, Status},
-    request::{self, FromRequest, Request},
+    request::{self, FromRequest, Request, Form},
     response::{content::Content, Responder, Response},
     Outcome, Route,
 };
-use rocket_contrib::Json;
+use rocket_contrib::json::Json;
 use std::result;
 
 type Result<T> = result::Result<Json<T>, AppError>;
@@ -73,14 +73,14 @@ struct SearchQuery {
     tags: Option<String>,
 }
 
-#[get("/search?<search>")]
-fn get_search(db: DbConn, search: SearchQuery) -> Result<json::SearchResponse> {
+#[get("/search?<search..>")]
+fn get_search(db: DbConn, search: Form<SearchQuery>) -> Result<json::SearchResponse> {
     let bbox = geo::extract_bbox(&search.bbox)
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
 
     let categories = match search.categories {
-        Some(cat_str) => Some(util::extract_ids(&cat_str)),
+        Some(ref cat_str) => Some(util::extract_ids(&cat_str)),
         None => None,
     };
 
@@ -90,14 +90,14 @@ fn get_search(db: DbConn, search: SearchQuery) -> Result<json::SearchResponse> {
         tags = util::extract_hash_tags(txt);
     }
 
-    if let Some(tags_str) = search.tags {
-        for t in util::extract_ids(&tags_str) {
+    if let Some(ref tags_str) = search.tags {
+        for t in util::extract_ids(tags_str) {
             tags.push(t);
         }
     }
 
     let text = match search.text {
-        Some(txt) => util::remove_hash_tags(&txt),
+        Some(ref txt) => util::remove_hash_tags(txt),
         None => "".into(),
     };
 
@@ -369,8 +369,8 @@ struct CsvExport {
     bbox: String,
 }
 
-#[get("/export/entries.csv?<export>")]
-fn csv_export<'a>(db: DbConn, export: CsvExport) -> result::Result<Content<String>, AppError> {
+#[get("/export/entries.csv?<export..>")]
+fn csv_export<'a>(db: DbConn, export: Form<CsvExport>) -> result::Result<Content<String>, AppError> {
     let bbox = geo::extract_bbox(&export.bbox)
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
