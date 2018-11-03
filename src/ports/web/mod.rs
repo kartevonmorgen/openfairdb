@@ -6,7 +6,7 @@ use rocket::{
     config::{Config, Environment},
     Rocket,
 };
-use rocket_contrib::Json;
+use rocket_contrib::json::Json;
 use std::{collections::HashMap, result, sync::Mutex};
 
 #[cfg(feature = "email")]
@@ -59,7 +59,7 @@ where
     info!("Calculating the average rating of all entries...");
     calculate_all_ratings(&*pool.get().unwrap()).unwrap();
     info!("done.");
-    rocket::custom(cfg, true)
+    rocket::custom(cfg)
         .manage(pool)
         .mount("/", api::routes())
 }
