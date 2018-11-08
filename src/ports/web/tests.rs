@@ -473,6 +473,37 @@ fn search_with_two_hashtags() {
 }
 
 #[test]
+fn search_with_commata() {
+    let entries = vec![
+        Entry::build().id("a").finish(),
+        Entry::build()
+            .tags(vec!["eins", "zwei"])
+            .id("b")
+            .finish(),
+        Entry::build().tags(vec!["eins"]).id("c").finish(),
+        Entry::build().tags(vec!["eins", "zwei"]).id("d").finish(),
+    ];
+    let (client, db) = setup();
+    let mut conn = db.get().unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag {
+        id: "eins".into(),
+    })
+    .unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag {
+        id: "zwei".into(),
+    })
+    .unwrap();
+    for e in entries {
+        conn.create_entry(&e).unwrap();
+    }
+    let req = client.get("/search?bbox=-10,-10,10,10&text=%23eins%2C%20%23zwei");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains(r#""visible":[{"id":"b","lat":0.0,"lng":0.0},{"id":"d","lat":0.0,"lng":0.0}]"#,));
+}
+
+#[test]
 fn search_without_specifying_hashtag_symbol() {
     let entries = vec![
         Entry::build().id("a").title("foo").finish(),
