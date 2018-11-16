@@ -2,6 +2,7 @@
 
 #![feature(plugin, custom_derive, test, transpose_result)]
 #![plugin(rocket_codegen)]
+#![allow(proc_macro_derive_resolution_fallback)]
 
 extern crate chrono;
 
