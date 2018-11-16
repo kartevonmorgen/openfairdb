@@ -124,7 +124,7 @@ impl SortByAverageRating for Vec<Entry> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use test::Bencher;
+    use crate::test::Bencher;
     use uuid::Uuid;
 
     fn new_entry(id: &str, lat: f64, lng: f64) -> Entry {

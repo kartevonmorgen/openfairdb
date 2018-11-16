@@ -16,7 +16,7 @@ use pwhash::bcrypt;
 use rocket::response::Response;
 use serde_json;
 use std::fs;
-use test::Bencher;
+use crate::test::Bencher;
 use uuid::Uuid;
 
 fn setup() -> (Client, sqlite::ConnectionPool) {

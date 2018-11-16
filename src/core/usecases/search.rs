@@ -74,7 +74,7 @@ mod tests {
     use super::super::tests::MockDb;
     use super::*;
     use crate::core::util::sort;
-    use test::Bencher;
+    use crate::test::Bencher;
 
     #[bench]
     fn bench_search_in_1_000_rated_entries(b: &mut Bencher) {

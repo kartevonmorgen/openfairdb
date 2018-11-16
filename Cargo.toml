@@ -3,6 +3,7 @@ name = "openfairdb"
 version = "0.3.9"
 authors = ["Markus Kohlhase <mail@markus-kohlhase.de>", "slowtec GmbH <post@slowtec.de>"]
 license = "AGPL-3.0-or-later"
+edition = "2018"
 
 [dependencies]
 # clap 3 is supposed to introduce breaking changes
