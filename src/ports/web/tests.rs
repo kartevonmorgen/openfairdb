@@ -12,11 +12,11 @@ use super::sqlite;
 use super::util::*;
 use super::*;
 use crate::adapters::json;
+use crate::test::Bencher;
 use pwhash::bcrypt;
 use rocket::response::Response;
 use serde_json;
 use std::fs;
-use crate::test::Bencher;
 use uuid::Uuid;
 
 fn setup() -> (Client, sqlite::ConnectionPool) {
@@ -49,12 +49,10 @@ fn create_entry() {
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#);
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(
-        response
-            .headers()
-            .iter()
-            .any(|h| h.name.as_str() == "Content-Type")
-    );
+    assert!(response
+        .headers()
+        .iter()
+        .any(|h| h.name.as_str() == "Content-Type"));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -83,12 +81,10 @@ fn create_entry_with_tag_duplicates() {
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","foo"]}"#);
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(
-        response
-            .headers()
-            .iter()
-            .any(|h| h.name.as_str() == "Content-Type")
-    );
+    assert!(response
+        .headers()
+        .iter()
+        .any(|h| h.name.as_str() == "Content-Type"));
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     let eid = db.get().unwrap().all_entries().unwrap()[0].id.clone();
     assert_eq!(body_str, format!("\"{}\"", eid));
@@ -175,12 +171,10 @@ fn get_one_entry() {
     let req = client.get("/entries/get_one_entry_test");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(
-        response
-            .headers()
-            .iter()
-            .any(|h| h.name.as_str() == "Content-Type")
-    );
+    assert!(response
+        .headers()
+        .iter()
+        .any(|h| h.name.as_str() == "Content-Type"));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -213,12 +207,10 @@ fn get_multiple_entries() {
     let req = client.get("/entries/get_multiple_entry_test_one,get_multiple_entry_test_two");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(
-        response
-            .headers()
-            .iter()
-            .any(|h| h.name.as_str() == "Content-Type")
-    );
+    assert!(response
+        .headers()
+        .iter()
+        .any(|h| h.name.as_str() == "Content-Type"));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -435,11 +427,8 @@ fn search_with_hashtag() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(
-        body_str.contains(
-            r#""visible":[{"id":"b","lat":0.0,"lng":0.0},{"id":"c","lat":0.0,"lng":0.0}]"#,
-        )
-    );
+    assert!(body_str
+        .contains(r#""visible":[{"id":"b","lat":0.0,"lng":0.0},{"id":"c","lat":0.0,"lng":0.0}]"#,));
 }
 
 #[test]
@@ -476,23 +465,16 @@ fn search_with_two_hashtags() {
 fn search_with_commata() {
     let entries = vec![
         Entry::build().id("a").finish(),
-        Entry::build()
-            .tags(vec!["eins", "zwei"])
-            .id("b")
-            .finish(),
+        Entry::build().tags(vec!["eins", "zwei"]).id("b").finish(),
         Entry::build().tags(vec!["eins"]).id("c").finish(),
         Entry::build().tags(vec!["eins", "zwei"]).id("d").finish(),
     ];
     let (client, db) = setup();
     let mut conn = db.get().unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag {
-        id: "eins".into(),
-    })
-    .unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag {
-        id: "zwei".into(),
-    })
-    .unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag { id: "eins".into() })
+        .unwrap();
+    conn.create_tag_if_it_does_not_exist(&Tag { id: "zwei".into() })
+        .unwrap();
     for e in entries {
         conn.create_entry(&e).unwrap();
     }
@@ -500,7 +482,8 @@ fn search_with_commata() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(r#""visible":[{"id":"b","lat":0.0,"lng":0.0},{"id":"d","lat":0.0,"lng":0.0}]"#,));
+    assert!(body_str
+        .contains(r#""visible":[{"id":"b","lat":0.0,"lng":0.0},{"id":"d","lat":0.0,"lng":0.0}]"#,));
 }
 
 #[test]
@@ -590,12 +573,10 @@ fn create_new_user() {
     let u = db.get().unwrap().get_user("foo").unwrap();
     assert_eq!(u.username, "foo");
     assert!(bcrypt::verify("bar", &u.password));
-    assert!(
-        response
-            .headers()
-            .iter()
-            .any(|h| h.name.as_str() == "Content-Type")
-    );
+    assert!(response
+        .headers()
+        .iter()
+        .any(|h| h.name.as_str() == "Content-Type"));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -618,12 +599,10 @@ fn create_rating() {
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(db.get().unwrap().all_ratings().unwrap()[0].value, 1);
-    assert!(
-        response
-            .headers()
-            .iter()
-            .any(|h| h.name.as_str() == "Content-Type")
-    );
+    assert!(response
+        .headers()
+        .iter()
+        .any(|h| h.name.as_str() == "Content-Type"));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -654,12 +633,10 @@ fn get_one_rating() {
     let req = client.get(format!("/ratings/{}", rid));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(
-        response
-            .headers()
-            .iter()
-            .any(|h| h.name.as_str() == "Content-Type")
-    );
+    assert!(response
+        .headers()
+        .iter()
+        .any(|h| h.name.as_str() == "Content-Type"));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -711,12 +688,10 @@ fn ratings_with_and_without_source() {
     let req = client.get(format!("/ratings/{}", rid));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(
-        response
-            .headers()
-            .iter()
-            .any(|h| h.name.as_str() == "Content-Type")
-    );
+    assert!(response
+        .headers()
+        .iter()
+        .any(|h| h.name.as_str() == "Content-Type"));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),
@@ -765,12 +740,10 @@ fn login_with_invalid_credentials() {
         .header(ContentType::JSON)
         .body(r#"{"username": "foo", "password": "bar"}"#);
     let response = req.dispatch();
-    assert!(
-        !response
-            .headers()
-            .iter()
-            .any(|h| h.name.as_str() == "Set-Cookie")
-    );
+    assert!(!response
+        .headers()
+        .iter()
+        .any(|h| h.name.as_str() == "Set-Cookie"));
     assert_eq!(response.status(), Status::Unauthorized);
 }
 
@@ -880,12 +853,10 @@ fn get_user() {
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(body_str, r#"{"username":"a","email":"a@bar"}"#);
-    assert!(
-        response
-            .headers()
-            .iter()
-            .any(|h| h.name.as_str() == "Content-Type")
-    );
+    assert!(response
+        .headers()
+        .iter()
+        .any(|h| h.name.as_str() == "Content-Type"));
     for h in response.headers().iter() {
         match h.name.as_str() {
             "Content-Type" => assert_eq!(h.value, "application/json"),

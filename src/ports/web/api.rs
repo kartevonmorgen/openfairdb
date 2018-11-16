@@ -5,8 +5,8 @@ use crate::core::{
     usecases::{self, DuplicateType},
     util::geo,
 };
-use csv;
 use crate::infrastructure::error::AppError;
+use csv;
 use rocket::{
     self,
     http::{ContentType, Cookie, Cookies, Status},
@@ -264,11 +264,7 @@ fn logout(mut cookies: Cookies) -> Result<()> {
     Ok(Json(()))
 }
 
-#[post(
-    "/confirm-email-address",
-    format = "application/json",
-    data = "<user>"
-)]
+#[post("/confirm-email-address", format = "application/json", data = "<user>")]
 fn confirm_email_address(mut db: DbConn, user: Json<UserId>) -> Result<()> {
     let u_id = user.into_inner().u_id;
     let u = db.confirm_email_address(&u_id)?;

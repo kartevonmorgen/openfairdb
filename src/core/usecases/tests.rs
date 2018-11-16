@@ -300,24 +300,21 @@ fn create_bbox_subscription() {
     };
 
     let username = "a";
-    assert!(
-        db.create_user(&User {
+    assert!(db
+        .create_user(&User {
             id: "123".into(),
             username: username.into(),
             password: username.into(),
             email: "abc@abc.de".into(),
             email_confirmed: true,
         })
-        .is_ok()
-    );
-    assert!(
-        usecases::subscribe_to_bbox(
-            &vec![bbox_new.south_west, bbox_new.north_east],
-            username.into(),
-            &mut db,
-        )
-        .is_ok()
-    );
+        .is_ok());
+    assert!(usecases::subscribe_to_bbox(
+        &vec![bbox_new.south_west, bbox_new.north_east],
+        username.into(),
+        &mut db,
+    )
+    .is_ok());
 
     let bbox_subscription = db.all_bbox_subscriptions().unwrap()[0].clone();
     assert_eq!(bbox_subscription.bbox.north_east.lat, 10.0);
@@ -350,16 +347,15 @@ fn modify_bbox_subscription() {
     };
 
     let username = "a";
-    assert!(
-        db.create_user(&User {
+    assert!(db
+        .create_user(&User {
             id: "123".into(),
             username: username.into(),
             password: username.into(),
             email: "abc@abc.de".into(),
             email_confirmed: true,
         })
-        .is_ok()
-    );
+        .is_ok());
 
     let bbox_subscription = BboxSubscription {
         id: "123".into(),
@@ -414,46 +410,42 @@ fn get_bbox_subscriptions() {
     };
 
     let user1 = "a";
-    assert!(
-        db.create_user(&User {
+    assert!(db
+        .create_user(&User {
             id: user1.into(),
             username: user1.into(),
             password: user1.into(),
             email: "abc@abc.de".into(),
             email_confirmed: true,
         })
-        .is_ok()
-    );
+        .is_ok());
     let bbox_subscription = BboxSubscription {
         id: "1".into(),
         bbox: bbox1,
         username: "a".into(),
     };
-    assert!(
-        db.create_bbox_subscription(&bbox_subscription.clone())
-            .is_ok()
-    );
+    assert!(db
+        .create_bbox_subscription(&bbox_subscription.clone())
+        .is_ok());
 
     let user2 = "b";
-    assert!(
-        db.create_user(&User {
+    assert!(db
+        .create_user(&User {
             id: user2.into(),
             username: user2.into(),
             password: user2.into(),
             email: "abc@abc.de".into(),
             email_confirmed: true,
         })
-        .is_ok()
-    );
+        .is_ok());
     let bbox_subscription2 = BboxSubscription {
         id: "2".into(),
         bbox: bbox2,
         username: "b".into(),
     };
-    assert!(
-        db.create_bbox_subscription(&bbox_subscription2.clone())
-            .is_ok()
-    );
+    assert!(db
+        .create_bbox_subscription(&bbox_subscription2.clone())
+        .is_ok());
     let bbox_subscriptions = usecases::get_bbox_subscriptions(user2.into(), &mut db);
     assert!(bbox_subscriptions.is_ok());
     assert_eq!(bbox_subscriptions.unwrap()[0].id, "2");
@@ -502,28 +494,26 @@ fn delete_user() {
     let mut db = MockDb::new();
     let username = "a".to_string();
     let u_id = "1".to_string();
-    assert!(
-        db.create_user(&User {
+    assert!(db
+        .create_user(&User {
             id: u_id.clone(),
             username: username.clone(),
             password: username,
             email: "abc@abc.de".into(),
             email_confirmed: true,
         })
-        .is_ok()
-    );
+        .is_ok());
     let username = "b".to_string();
     let u_id = "2".to_string();
-    assert!(
-        db.create_user(&User {
+    assert!(db
+        .create_user(&User {
             id: u_id.clone(),
             username: username.clone(),
             password: username,
             email: "abcd@abcd.de".into(),
             email_confirmed: true,
         })
-        .is_ok()
-    );
+        .is_ok());
     assert_eq!(db.users.len(), 2);
 
     assert!(usecases::delete_user(&mut db, "1", "1").is_ok());

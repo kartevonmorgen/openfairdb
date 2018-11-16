@@ -1,6 +1,6 @@
+use crate::infrastructure::error::AppError;
 use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
 use diesel::sqlite::SqliteConnection;
-use crate::infrastructure::error::AppError;
 use rocket::http::Status;
 use rocket::request::{self, FromRequest};
 use rocket::{Outcome, Request, State};

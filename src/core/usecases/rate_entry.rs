@@ -55,21 +55,19 @@ mod tests {
     #[test]
     fn rate_non_existing_entry() {
         let mut db = MockDb::new();
-        assert!(
-            rate_entry(
-                &mut db,
-                RateEntry {
-                    entry: "does_not_exist".into(),
-                    title: "title".into(),
-                    comment: "a comment".into(),
-                    context: RatingContext::Fairness,
-                    user: None,
-                    value: 2,
-                    source: Some("source".into()),
-                },
-            )
-            .is_err()
-        );
+        assert!(rate_entry(
+            &mut db,
+            RateEntry {
+                entry: "does_not_exist".into(),
+                title: "title".into(),
+                comment: "a comment".into(),
+                context: RatingContext::Fairness,
+                user: None,
+                value: 2,
+                source: Some("source".into()),
+            },
+        )
+        .is_err());
     }
 
     #[test]
@@ -77,21 +75,19 @@ mod tests {
         let mut db = MockDb::new();
         let e = Entry::build().id("foo").finish();
         db.entries = vec![e];
-        assert!(
-            rate_entry(
-                &mut db,
-                RateEntry {
-                    entry: "foo".into(),
-                    comment: "".into(),
-                    title: "title".into(),
-                    context: RatingContext::Fairness,
-                    user: None,
-                    value: 2,
-                    source: Some("source".into()),
-                },
-            )
-            .is_err()
-        );
+        assert!(rate_entry(
+            &mut db,
+            RateEntry {
+                entry: "foo".into(),
+                comment: "".into(),
+                title: "title".into(),
+                context: RatingContext::Fairness,
+                user: None,
+                value: 2,
+                source: Some("source".into()),
+            },
+        )
+        .is_err());
     }
 
     #[test]
@@ -99,36 +95,32 @@ mod tests {
         let mut db = MockDb::new();
         let e = Entry::build().id("foo").finish();
         db.entries = vec![e];
-        assert!(
-            rate_entry(
-                &mut db,
-                RateEntry {
-                    entry: "foo".into(),
-                    comment: "comment".into(),
-                    title: "title".into(),
-                    context: RatingContext::Fairness,
-                    user: None,
-                    value: 3,
-                    source: Some("source".into()),
-                },
-            )
-            .is_err()
-        );
-        assert!(
-            rate_entry(
-                &mut db,
-                RateEntry {
-                    entry: "foo".into(),
-                    title: "title".into(),
-                    comment: "comment".into(),
-                    context: RatingContext::Fairness,
-                    user: None,
-                    value: -2,
-                    source: Some("source".into()),
-                },
-            )
-            .is_err()
-        );
+        assert!(rate_entry(
+            &mut db,
+            RateEntry {
+                entry: "foo".into(),
+                comment: "comment".into(),
+                title: "title".into(),
+                context: RatingContext::Fairness,
+                user: None,
+                value: 3,
+                source: Some("source".into()),
+            },
+        )
+        .is_err());
+        assert!(rate_entry(
+            &mut db,
+            RateEntry {
+                entry: "foo".into(),
+                title: "title".into(),
+                comment: "comment".into(),
+                context: RatingContext::Fairness,
+                user: None,
+                value: -2,
+                source: Some("source".into()),
+            },
+        )
+        .is_err());
     }
 
     #[test]
@@ -136,21 +128,19 @@ mod tests {
         let mut db = MockDb::new();
         let e = Entry::build().id("foo").finish();
         db.entries = vec![e];
-        assert!(
-            rate_entry(
-                &mut db,
-                RateEntry {
-                    entry: "foo".into(),
-                    comment: "comment".into(),
-                    title: "title".into(),
-                    context: RatingContext::Fairness,
-                    user: None,
-                    value: 2,
-                    source: Some("source".into()),
-                },
-            )
-            .is_ok()
-        );
+        assert!(rate_entry(
+            &mut db,
+            RateEntry {
+                entry: "foo".into(),
+                comment: "comment".into(),
+                title: "title".into(),
+                context: RatingContext::Fairness,
+                user: None,
+                value: 2,
+                source: Some("source".into()),
+            },
+        )
+        .is_ok());
 
         assert_eq!(db.ratings.len(), 1);
         assert_eq!(db.comments.len(), 1);

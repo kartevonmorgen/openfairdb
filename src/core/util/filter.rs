@@ -29,11 +29,13 @@ pub fn entries_by_tags_or_search_text<'a>(
 fn entries_by_search_text<'a>(text: &'a str) -> impl Fn(&Entry) -> bool + 'a {
     let words = to_words(text);
     move |entry| {
-        ((!text.is_empty() && words.iter().any(|word| {
-            entry.title.to_lowercase().contains(word)
-            || entry.description.to_lowercase().contains(word)
-            || entry.tags.iter().any(|tag| tag == word)
-        })) || text.is_empty())
+        ((!text.is_empty()
+            && words.iter().any(|word| {
+                entry.title.to_lowercase().contains(word)
+                    || entry.description.to_lowercase().contains(word)
+                    || entry.tags.iter().any(|tag| tag == word)
+            }))
+            || text.is_empty())
     }
 }
 
@@ -46,11 +48,13 @@ fn entries_by_tags_and_search_text<'a>(
         tags.iter()
             .map(|t| t.to_lowercase())
             .all(|tag| entry.tags.iter().any(|t| *t == tag))
-            || ((!text.is_empty() && words.iter().any(|word| {
-                entry.title.to_lowercase().contains(word)
-                || entry.description.to_lowercase().contains(word)
-                || entry.tags.iter().any(|tag| tag == word)
-            })) || (text.is_empty() && tags[0] == ""))
+            || ((!text.is_empty()
+                && words.iter().any(|word| {
+                    entry.title.to_lowercase().contains(word)
+                        || entry.description.to_lowercase().contains(word)
+                        || entry.tags.iter().any(|tag| tag == word)
+                }))
+                || (text.is_empty() && tags[0] == ""))
     }
 }
 
@@ -154,15 +158,43 @@ mod tests {
     #[test]
     fn filter_by_tags_or_text() {
         let entries = vec![
-            Entry::build().id("a").title("aaa").description("bli bla blubb").finish(),
-            Entry::build().id("b").title("bbb").description("blabla").tags(vec!["tag1"]).finish(),
-            Entry::build().id("c").title("ccc").description("bli").tags(vec!["tag2"]).finish(),
-            Entry::build().id("d").title("ddd").description("blibla").tags(vec!["tag1", "tag2"]).finish(),
-            Entry::build().id("e").title("eee").description("blubb").description("tag1").finish(),
+            Entry::build()
+                .id("a")
+                .title("aaa")
+                .description("bli bla blubb")
+                .finish(),
+            Entry::build()
+                .id("b")
+                .title("bbb")
+                .description("blabla")
+                .tags(vec!["tag1"])
+                .finish(),
+            Entry::build()
+                .id("c")
+                .title("ccc")
+                .description("bli")
+                .tags(vec!["tag2"])
+                .finish(),
+            Entry::build()
+                .id("d")
+                .title("ddd")
+                .description("blibla")
+                .tags(vec!["tag1", "tag2"])
+                .finish(),
+            Entry::build()
+                .id("e")
+                .title("eee")
+                .description("blubb")
+                .description("tag1")
+                .finish(),
         ];
         let entries_without_tags = vec![
             Entry::build().id("a").title("a").finish(),
-            Entry::build().id("b").title("b").description("blabla").finish(),
+            Entry::build()
+                .id("b")
+                .title("b")
+                .description("blabla")
+                .finish(),
             Entry::build().id("c").finish(),
             Entry::build().id("d").finish(),
             Entry::build().id("e").description("tag1").finish(),

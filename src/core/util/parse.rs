@@ -24,7 +24,6 @@ pub fn parse_url_param(url: &str) -> Result<String, ParameterError> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
     #[test]
     fn parse_url_param() {

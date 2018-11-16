@@ -1,6 +1,6 @@
 use crate::core::{prelude::*, util::sort::Rated};
-use diesel::r2d2::{self, Pool};
 use crate::infrastructure::error::AppError;
+use diesel::r2d2::{self, Pool};
 use rocket::{
     self,
     config::{Config, Environment},
