@@ -1,5 +1,5 @@
 use super::super::util::validate;
-use core::prelude::*;
+use crate::core::prelude::*;
 use pwhash::bcrypt;
 use uuid::Uuid;
 

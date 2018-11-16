@@ -1,4 +1,4 @@
-use core::entities::*;
+use crate::core::entities::*;
 
 #[derive(Debug, Serialize)]
 pub struct CsvRecord {

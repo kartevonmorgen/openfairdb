@@ -5,13 +5,13 @@ use rocket::{
     logger::LoggingLevel,
 };
 
-use core::prelude::*;
-use core::usecases as usecase;
+use crate::core::prelude::*;
+use crate::core::usecases as usecase;
 
 use super::sqlite;
 use super::util::*;
 use super::*;
-use adapters::json;
+use crate::adapters::json;
 use pwhash::bcrypt;
 use rocket::response::Response;
 use serde_json;
@@ -320,7 +320,7 @@ fn search_with_text() {
 #[ignore]
 #[bench]
 fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
-    let (entries, ratings) = ::core::util::sort::tests::create_entries_with_ratings(10_000);
+    let (entries, ratings) = crate::core::util::sort::tests::create_entries_with_ratings(10_000);
     let (client, db) = setup();
     let mut conn = db.get().unwrap();
     for e in entries {

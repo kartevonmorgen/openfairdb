@@ -4,7 +4,7 @@ use std::cmp::Ordering;
 use std::collections::HashMap;
 
 trait DistanceTo {
-    fn distance_to(&self, &Coordinate) -> f64;
+    fn distance_to(&self, _: &Coordinate) -> f64;
 }
 
 impl DistanceTo for Entry {
@@ -20,7 +20,7 @@ impl DistanceTo for Entry {
 }
 
 pub trait SortByDistanceTo {
-    fn sort_by_distance_to(&mut self, &Coordinate);
+    fn sort_by_distance_to(&mut self, _: &Coordinate);
 }
 
 impl SortByDistanceTo for Vec<Entry> {
@@ -45,7 +45,7 @@ impl SortByDistanceTo for Vec<Entry> {
 }
 
 pub trait Rated {
-    fn avg_rating(&self, &[Rating]) -> f64;
+    fn avg_rating(&self, _: &[Rating]) -> f64;
 }
 
 impl Rated for Entry {
@@ -99,7 +99,7 @@ fn avg_rating_for_context(ratings: &[&Rating], context: &RatingContext) -> Optio
 }
 
 pub trait SortByAverageRating {
-    fn calc_avg_ratings(&self, &[Rating]) -> HashMap<String, f64>;
+    fn calc_avg_ratings(&self, _: &[Rating]) -> HashMap<String, f64>;
     fn sort_by_avg_rating(&mut self, avg_ratings: &HashMap<String, f64>);
 }
 

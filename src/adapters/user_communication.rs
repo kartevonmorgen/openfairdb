@@ -1,5 +1,5 @@
-use core::entities::Entry;
-use core::usecases::{NewEntry, UpdateEntry};
+use crate::core::entities::Entry;
+use crate::core::usecases::{NewEntry, UpdateEntry};
 
 pub fn email_confirmation_email(u_id: &str) -> String {
     format!(

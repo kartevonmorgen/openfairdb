@@ -1,4 +1,4 @@
-use core::error::ParameterError;
+use crate::core::error::ParameterError;
 use url::{ParseError, Url};
 
 /// Completes incomplete URLs before parsing

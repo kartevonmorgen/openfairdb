@@ -1,4 +1,4 @@
-use core::error::{Error as BError, RepoError};
+use crate::core::error::{Error as BError, RepoError};
 use diesel::r2d2;
 use diesel_migrations::RunMigrationsError;
 use serde_json;

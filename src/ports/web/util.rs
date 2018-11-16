@@ -1,9 +1,9 @@
 #[cfg(feature = "email")]
 use super::mail;
 
-use adapters::user_communication;
-use core::prelude::*;
-use core::usecases;
+use crate::adapters::user_communication;
+use crate::core::prelude::*;
+use crate::core::usecases;
 use regex::Regex;
 
 lazy_static! {

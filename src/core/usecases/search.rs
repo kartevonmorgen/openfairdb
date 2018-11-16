@@ -1,5 +1,5 @@
-use core::prelude::*;
-use core::util::{
+use crate::core::prelude::*;
+use crate::core::util::{
     filter::{self, InBBox},
     sort::SortByAverageRating,
 };
@@ -73,7 +73,7 @@ mod tests {
 
     use super::super::tests::MockDb;
     use super::*;
-    use core::util::sort;
+    use crate::core::util::sort;
     use test::Bencher;
 
     #[bench]

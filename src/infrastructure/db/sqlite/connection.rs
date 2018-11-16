@@ -1,6 +1,6 @@
 use super::models;
 use super::schema;
-use core::prelude::*;
+use crate::core::prelude::*;
 use diesel;
 use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error as DieselError};

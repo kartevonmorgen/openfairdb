@@ -1,7 +1,7 @@
 use super::web;
 use clap::{App, Arg, SubCommand};
 use dotenv::dotenv;
-use infrastructure::osm;
+use crate::infrastructure::osm;
 use std::{env, process};
 
 const DEFAULT_DB_URL: &str = "openfair.db";

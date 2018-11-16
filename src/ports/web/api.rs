@@ -1,12 +1,12 @@
 use super::{sqlite::DbConn, util};
-use adapters::{self, json, user_communication};
-use core::{
+use crate::adapters::{self, json, user_communication};
+use crate::core::{
     prelude::*,
     usecases::{self, DuplicateType},
     util::geo,
 };
 use csv;
-use infrastructure::error::AppError;
+use crate::infrastructure::error::AppError;
 use rocket::{
     self,
     http::{ContentType, Cookie, Cookies, Status},

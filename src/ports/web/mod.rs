@@ -1,6 +1,6 @@
-use core::{prelude::*, util::sort::Rated};
+use crate::core::{prelude::*, util::sort::Rated};
 use diesel::r2d2::{self, Pool};
-use infrastructure::error::AppError;
+use crate::infrastructure::error::AppError;
 use rocket::{
     self,
     config::{Config, Environment},
@@ -10,7 +10,7 @@ use rocket_contrib::Json;
 use std::{collections::HashMap, result, sync::Mutex};
 
 #[cfg(feature = "email")]
-use infrastructure::mail;
+use crate::infrastructure::mail;
 
 lazy_static! {
     static ref ENTRY_RATINGS: Mutex<HashMap<String, f64>> = Mutex::new(HashMap::new());

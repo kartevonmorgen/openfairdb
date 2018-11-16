@@ -1,5 +1,5 @@
 use super::models::*;
-use core::entities as e;
+use crate::core::entities as e;
 use std::str::FromStr;
 
 impl From<e::Entry> for Entry {
