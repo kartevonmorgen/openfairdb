@@ -1,0 +1,10 @@
+main section {
+  padding-top: 80px;
+  width: 90%;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+#login {
+  max-width: 350px;
+}

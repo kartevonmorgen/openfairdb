@@ -16,6 +16,7 @@ lazy_static! {
     static ref ENTRY_RATINGS: Mutex<HashMap<String, f64>> = Mutex::new(HashMap::new());
 }
 
+mod admin;
 mod api;
 #[cfg(test)]
 mod mockdb;
@@ -62,6 +63,7 @@ where
     rocket::custom(cfg)
         .manage(pool)
         .mount("/", api::routes())
+        .mount("/admin", admin::routes())
 }
 
 pub fn run(db_url: &str, port: u16, enable_cors: bool) {

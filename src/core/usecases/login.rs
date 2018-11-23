@@ -3,8 +3,9 @@ use pwhash::bcrypt;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct Login {
-    username: String,
-    password: String,
+    //TODO: use &str
+    pub(crate) username: String,
+    pub(crate) password: String,
 }
 
 pub fn login<D: Db>(db: &mut D, login: &Login) -> Result<String> {

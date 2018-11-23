@@ -1,6 +1,14 @@
 // Copyright (c) 2015 - 2018 Markus Kohlhase <mail@markus-kohlhase.de>
 
-#![feature(plugin, custom_derive, test, transpose_result, proc_macro_hygiene, decl_macro)]
+#![feature(
+    plugin,
+    custom_derive,
+    test,
+    transpose_result,
+    proc_macro_hygiene,
+    decl_macro,
+    never_type
+)]
 #![allow(proc_macro_derive_resolution_fallback)]
 
 #[macro_use]

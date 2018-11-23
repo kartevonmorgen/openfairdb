@@ -10,7 +10,7 @@ use csv;
 use rocket::{
     self,
     http::{ContentType, Cookie, Cookies, Status},
-    request::{self, FromRequest, Request, Form},
+    request::{self, Form, FromRequest, Request},
     response::{content::Content, Responder, Response},
     Outcome, Route,
 };
@@ -19,7 +19,7 @@ use std::result;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
-const COOKIE_USER_KEY: &str = "user_id";
+pub(crate) const COOKIE_USER_KEY: &str = "user_id";
 
 impl<'a, 'r> FromRequest<'a, 'r> for Login {
     type Error = ();
@@ -370,7 +370,10 @@ struct CsvExport {
 }
 
 #[get("/export/entries.csv?<export..>")]
-fn csv_export<'a>(db: DbConn, export: Form<CsvExport>) -> result::Result<Content<String>, AppError> {
+fn csv_export<'a>(
+    db: DbConn,
+    export: Form<CsvExport>,
+) -> result::Result<Content<String>, AppError> {
     let bbox = geo::extract_bbox(&export.bbox)
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
