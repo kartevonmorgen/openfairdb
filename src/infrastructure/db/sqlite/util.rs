@@ -96,6 +96,30 @@ impl From<e::Tag> for Tag {
     }
 }
 
+impl From<String> for e::AccessLevel {
+    fn from(s: String) -> Self {
+        use crate::core::entities::AccessLevel::*;
+        match &*s {
+            "User" => User,
+            "Scout" => Scout,
+            "Admin" => Admin,
+            _ => User,
+        }
+    }
+}
+
+impl ToString for e::AccessLevel {
+    fn to_string(&self) -> String {
+        use crate::core::entities::AccessLevel::*;
+        match self {
+            User => "User",
+            Scout => "Scout",
+            Admin => "Admin",
+        }
+        .to_string()
+    }
+}
+
 impl From<User> for e::User {
     fn from(u: User) -> e::User {
         let User {
@@ -104,6 +128,7 @@ impl From<User> for e::User {
             password,
             email,
             email_confirmed,
+            access,
         } = u;
         e::User {
             id,
@@ -111,6 +136,9 @@ impl From<User> for e::User {
             password,
             email,
             email_confirmed,
+            access: access
+                .map(|x| x.into())
+                .unwrap_or_else(|| e::AccessLevel::User),
         }
     }
 }
@@ -123,6 +151,7 @@ impl From<e::User> for User {
             password,
             email,
             email_confirmed,
+            access,
         } = u;
         User {
             id,
@@ -130,6 +159,7 @@ impl From<e::User> for User {
             password,
             email,
             email_confirmed,
+            access: Some(access.to_string()),
         }
     }
 }

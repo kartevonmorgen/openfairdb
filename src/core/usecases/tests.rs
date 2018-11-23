@@ -272,6 +272,7 @@ fn receive_different_user() {
             password: "a".into(),
             email: "a@foo.bar".into(),
             email_confirmed: true,
+            access: AccessLevel::User,
         },
         User {
             id: "2".into(),
@@ -279,6 +280,7 @@ fn receive_different_user() {
             password: "b".into(),
             email: "b@foo.bar".into(),
             email_confirmed: true,
+            access: AccessLevel::User,
         },
     ];
     assert!(get_user(&mut db, "a", "b").is_err());
@@ -307,6 +309,7 @@ fn create_bbox_subscription() {
             password: username.into(),
             email: "abc@abc.de".into(),
             email_confirmed: true,
+            access: AccessLevel::User
         })
         .is_ok());
     assert!(usecases::subscribe_to_bbox(
@@ -354,6 +357,7 @@ fn modify_bbox_subscription() {
             password: username.into(),
             email: "abc@abc.de".into(),
             email_confirmed: true,
+            access: AccessLevel::User
         })
         .is_ok());
 
@@ -417,6 +421,7 @@ fn get_bbox_subscriptions() {
             password: user1.into(),
             email: "abc@abc.de".into(),
             email_confirmed: true,
+            access: AccessLevel::User
         })
         .is_ok());
     let bbox_subscription = BboxSubscription {
@@ -436,6 +441,7 @@ fn get_bbox_subscriptions() {
             password: user2.into(),
             email: "abc@abc.de".into(),
             email_confirmed: true,
+            access: AccessLevel::User
         })
         .is_ok());
     let bbox_subscription2 = BboxSubscription {
@@ -470,6 +476,7 @@ fn email_addresses_by_coordinate() {
         password: "123".into(),
         email: "abc@abc.de".into(),
         email_confirmed: true,
+        access: AccessLevel::User,
     })
     .unwrap();
 
@@ -501,6 +508,7 @@ fn delete_user() {
             password: username,
             email: "abc@abc.de".into(),
             email_confirmed: true,
+            access: AccessLevel::User
         })
         .is_ok());
     let username = "b".to_string();
@@ -512,6 +520,7 @@ fn delete_user() {
             password: username,
             email: "abcd@abcd.de".into(),
             email_confirmed: true,
+            access: AccessLevel::User
         })
         .is_ok());
     assert_eq!(db.users.len(), 2);

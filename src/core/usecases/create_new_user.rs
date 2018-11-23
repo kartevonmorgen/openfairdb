@@ -23,6 +23,7 @@ pub fn create_new_user<D: UserGateway>(db: &mut D, u: NewUser) -> Result<()> {
         password: bcrypt::hash(&u.password)?,
         email: u.email,
         email_confirmed: false,
+        access: AccessLevel::User,
     };
     debug!("Creating new user: {:?}", new_user);
     db.create_user(&new_user)?;
@@ -136,6 +137,7 @@ mod tests {
             password: "bar".into(),
             email: "baz@foo.bar".into(),
             email_confirmed: true,
+            access: AccessLevel::User,
         }];
         let u = NewUser {
             username: "foo".into(),

@@ -54,12 +54,26 @@ pub fn index(flash: Option<&str>) -> Markup {
     })
 }
 
-pub fn dashboard(username: &str) -> Markup {
+pub fn user_dashboard(username: &str) -> Markup {
+    dashboard(html!(p {
+            "Hi "
+            b {(username)}
+            " your are logged in as user."
+        }))
+}
+
+pub fn admin_dashboard(username: &str) -> Markup {
+    dashboard(html!(p {
+            "Hi "
+            b {(username)}
+            " your are logged in as administrator."
+        }))
+}
+
+fn dashboard(content: Markup) -> Markup {
     page(html!{
         h1 { "OpenFairDB Dashboard" }
-        p {
-            "Your are logged in as " b {(username)} "."
-        }
+        (content)
         form action="/admin/logout" method="post" accept-charset="utf-8" {
             input type="submit" name="logout" id="logout" value="logout";
         }

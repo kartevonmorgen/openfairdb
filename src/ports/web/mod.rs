@@ -1,5 +1,7 @@
-use crate::core::{prelude::*, util::sort::Rated};
-use crate::infrastructure::error::AppError;
+use crate::{
+    core::{prelude::*, util::sort::Rated},
+    infrastructure::error::AppError,
+};
 use diesel::r2d2::{self, Pool};
 use rocket::{
     self,
@@ -18,6 +20,7 @@ lazy_static! {
 
 mod admin;
 mod api;
+mod login;
 #[cfg(test)]
 mod mockdb;
 pub mod sqlite;

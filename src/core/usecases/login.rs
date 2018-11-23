@@ -1,19 +1,18 @@
 use crate::core::prelude::*;
 use pwhash::bcrypt;
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct Login {
-    //TODO: use &str
+#[derive(Deserialize, FromForm)]
+pub struct Credentials {
     pub(crate) username: String,
     pub(crate) password: String,
 }
 
-pub fn login<D: Db>(db: &mut D, login: &Login) -> Result<String> {
+pub fn login<D: Db>(db: &D, login: &Credentials) -> Result<(String, AccessLevel)> {
     match db.get_user(&login.username) {
         Ok(u) => {
             if bcrypt::verify(&login.password, &u.password) {
                 if u.email_confirmed {
-                    Ok(login.username.clone())
+                    Ok((login.username.clone(), u.access))
                 } else {
                     Err(Error::Parameter(ParameterError::EmailNotConfirmed))
                 }

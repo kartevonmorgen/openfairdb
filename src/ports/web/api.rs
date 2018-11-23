@@ -1,3 +1,4 @@
+use super::login::UserLogin as Login;
 use super::{sqlite::DbConn, util};
 use crate::adapters::{self, json, user_communication};
 use crate::core::{
@@ -9,33 +10,15 @@ use crate::infrastructure::error::AppError;
 use csv;
 use rocket::{
     self,
-    http::{ContentType, Cookie, Cookies, Status},
-    request::{self, Form, FromRequest, Request},
+    http::{ContentType, Cookies, Status},
+    request::Form,
     response::{content::Content, Responder, Response},
-    Outcome, Route,
+    Route,
 };
 use rocket_contrib::json::Json;
 use std::result;
 
 type Result<T> = result::Result<Json<T>, AppError>;
-
-pub(crate) const COOKIE_USER_KEY: &str = "user_id";
-
-impl<'a, 'r> FromRequest<'a, 'r> for Login {
-    type Error = ();
-
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Login, ()> {
-        let user = request
-            .cookies()
-            .get_private(COOKIE_USER_KEY)
-            .and_then(|cookie| cookie.value().parse().ok())
-            .map(Login);
-        match user {
-            Some(user) => Outcome::Success(user),
-            None => Outcome::Failure((Status::Unauthorized, ())),
-        }
-    }
-}
 
 pub fn routes() -> Vec<Route> {
     routes![
@@ -136,9 +119,6 @@ fn get_search(db: DbConn, search: Form<SearchQuery>) -> Result<json::SearchRespo
 
     Ok(Json(json::SearchResponse { visible, invisible }))
 }
-
-#[derive(Deserialize, Debug, Clone)]
-struct Login(String);
 
 #[derive(Deserialize, Debug, Clone)]
 struct UserId {
@@ -252,15 +232,14 @@ fn get_rating(db: DbConn, ids: String) -> Result<Vec<json::Rating>> {
 }
 
 #[post("/login", format = "application/json", data = "<login>")]
-fn login(mut db: DbConn, mut cookies: Cookies, login: Json<usecases::Login>) -> Result<()> {
-    let username = usecases::login(&mut *db, &login.into_inner())?;
-    cookies.add_private(Cookie::new(COOKIE_USER_KEY, username));
+fn login(db: DbConn, mut cookies: Cookies, login: Json<usecases::Credentials>) -> Result<()> {
+    super::login::login(&*db, &mut cookies, login.into_inner())?;
     Ok(Json(()))
 }
 
 #[post("/logout", format = "application/json")]
 fn logout(mut cookies: Cookies) -> Result<()> {
-    cookies.remove_private(Cookie::named(COOKIE_USER_KEY));
+    super::login::logout(&mut cookies);
     Ok(Json(()))
 }
 

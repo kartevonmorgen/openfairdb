@@ -19,7 +19,7 @@ use serde_json;
 use std::fs;
 use uuid::Uuid;
 
-fn setup() -> (Client, sqlite::ConnectionPool) {
+pub fn setup() -> (Client, sqlite::ConnectionPool) {
     let cfg = Config::build(Environment::Development)
         .log_level(LoggingLevel::Debug)
         .finalize()
@@ -756,6 +756,7 @@ fn login_with_valid_credentials() {
         password: bcrypt::hash("bar").unwrap(),
         email: "foo@bar".into(),
         email_confirmed: true,
+        access: AccessLevel::User,
     }];
     let mut conn = db.get().unwrap();
     for u in users {
@@ -780,6 +781,7 @@ fn login_logout_succeeds() {
         password: bcrypt::hash("bar").unwrap(),
         email: "foo@bar".into(),
         email_confirmed: true,
+        access: AccessLevel::User,
     }];
     let mut conn = db.get().unwrap();
     for u in users {
@@ -815,6 +817,7 @@ fn get_user() {
             password: bcrypt::hash("a").unwrap(),
             email: "a@bar".into(),
             email_confirmed: true,
+            access: AccessLevel::User,
         },
         User {
             id: "123".into(),
@@ -822,6 +825,7 @@ fn get_user() {
             password: bcrypt::hash("b").unwrap(),
             email: "b@bar".into(),
             email_confirmed: true,
+            access: AccessLevel::User,
         },
     ];
     let mut conn = db.get().unwrap();
@@ -874,6 +878,7 @@ fn confirm_email_address() {
         password: bcrypt::hash("bar").unwrap(),
         email: "a@bar.de".into(),
         email_confirmed: false,
+        access: AccessLevel::User,
     }];
     let mut conn = db.get().unwrap();
     for u in users {
@@ -934,6 +939,7 @@ fn send_confirmation_email() {
         password: bcrypt::hash("bar").unwrap(),
         email: "a@bar.de".into(),
         email_confirmed: false,
+        access: AccessLevel::User,
     }];
     let mut conn = db.get().unwrap();
     for u in users {
@@ -957,6 +963,7 @@ fn subscribe_to_bbox() {
         password: bcrypt::hash("bar").unwrap(),
         email: "foo@bar".into(),
         email_confirmed: true,
+        access: AccessLevel::User,
     }];
     let mut conn = db.get().unwrap();
     for u in users {

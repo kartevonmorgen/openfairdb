@@ -66,6 +66,7 @@ pub struct User {
     pub password: String,
     pub email: String,
     pub email_confirmed: bool,
+    pub access: Option<String>,
 }
 
 #[derive(Queryable, Insertable)]

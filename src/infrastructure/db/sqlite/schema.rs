@@ -92,6 +92,7 @@ table! {
         password -> Text,
         email -> Text,
         email_confirmed -> Bool,
+        access -> Nullable<Text>,
     }
 }
 

@@ -56,6 +56,14 @@ pub struct User {
     pub password        : String,
     pub email           : String,
     pub email_confirmed : bool,
+    pub access          : AccessLevel,
+}
+
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq)]
+pub enum AccessLevel {
+    Admin,
+    Scout,
+    User,
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
