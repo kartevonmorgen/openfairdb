@@ -2,6 +2,7 @@ use super::models;
 use super::schema;
 use crate::core::prelude::*;
 use diesel;
+use diesel::dsl::count_star;
 use diesel::prelude::*;
 use diesel::result::{DatabaseErrorKind, Error as DieselError};
 use diesel::sqlite::SqliteConnection;
@@ -358,6 +359,11 @@ impl EntryGateway for SqliteConnection {
         })?;
         Ok(())
     }
+    fn count_entries(&self) -> Result<u64> {
+        use self::schema::entries::dsl::*;
+        let n: i64 = entries.filter(current.eq(true)).count().get_result(self)?;
+        Ok(n as u64)
+    }
 }
 
 impl UserGateway for SqliteConnection {
@@ -384,6 +390,11 @@ impl UserGateway for SqliteConnection {
         use self::schema::users::dsl::*;
         diesel::delete(users.find(user)).execute(self)?;
         Ok(())
+    }
+    fn count_users(&self) -> Result<u64> {
+        use self::schema::users::dsl::users;
+        let n: i64 = users.select(count_star()).first(self)?;
+        Ok(n as u64)
     }
 }
 
@@ -508,5 +519,10 @@ impl Db for SqliteConnection {
             .into_iter()
             .map(Rating::from)
             .collect())
+    }
+    fn count_tags(&self) -> Result<u64> {
+        use self::schema::tags::dsl::tags;
+        let n: i64 = tags.select(count_star()).first(self)?;
+        Ok(n as u64)
     }
 }

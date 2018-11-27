@@ -93,6 +93,7 @@ fn create<T: Clone + Id>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
     Ok(())
 }
 
+//TODO: support versioning
 fn update<T: Clone + Id>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
     if let Some(pos) = objects.iter().position(|x| x.id() == e.id()) {
         objects[pos] = e.clone();
@@ -134,6 +135,9 @@ impl EntryGateway for MockDb {
         }
         Ok(())
     }
+    fn count_entries(&self) -> RepoResult<u64> {
+        Ok(self.entries.len() as u64)
+    }
 }
 
 impl UserGateway for MockDb {
@@ -167,6 +171,10 @@ impl UserGateway for MockDb {
             .filter(|u| u.id != u_id)
             .collect();
         Ok(())
+    }
+
+    fn count_users(&self) -> RepoResult<u64> {
+        Ok(self.users.len() as u64)
     }
 }
 
@@ -259,6 +267,10 @@ impl Db for MockDb {
             .cloned()
             .collect();
         Ok(())
+    }
+
+    fn count_tags(&self) -> RepoResult<u64> {
+        Ok(self.tags.len() as u64)
     }
 }
 

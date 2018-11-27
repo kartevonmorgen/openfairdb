@@ -152,13 +152,14 @@ fn get_duplicates(db: DbConn) -> Result<Vec<(String, String, DuplicateType)>> {
 
 #[get("/count/entries")]
 fn get_count_entries(db: DbConn) -> Result<usize> {
-    let entries = db.all_entries()?;
-    Ok(Json(entries.len()))
+    let n = db.count_entries()?;
+    Ok(Json(n as usize))
 }
 
 #[get("/count/tags")]
 fn get_count_tags(db: DbConn) -> Result<usize> {
-    Ok(Json(db.all_tags()?.len()))
+    let n = db.count_tags()?;
+    Ok(Json(n as usize))
 }
 
 #[get("/server/version")]

@@ -10,6 +10,7 @@ pub trait EntryGateway {
     fn all_entries(&self) -> Result<Vec<Entry>>;
     fn update_entry(&mut self, _: &Entry) -> Result<()>;
     fn import_multiple_entries(&mut self, _: &[Entry]) -> Result<()>;
+    fn count_entries(&self) -> Result<u64>;
 }
 
 pub trait UserGateway {
@@ -17,6 +18,7 @@ pub trait UserGateway {
     fn get_user(&self, _: &str) -> Result<User>;
     fn all_users(&self) -> Result<Vec<User>>;
     fn delete_user(&mut self, _: &str) -> Result<()>;
+    fn count_users(&self) -> Result<u64>;
 }
 
 pub trait CommentGateway {
@@ -44,4 +46,6 @@ pub trait Db: EntryGateway + UserGateway + CommentGateway {
     fn confirm_email_address(&mut self, _: &str) -> Result<User>; // TODO: move into usecase layer
 
     fn delete_bbox_subscription(&mut self, _: &str) -> Result<()>;
+
+    fn count_tags(&self) -> Result<u64>;
 }

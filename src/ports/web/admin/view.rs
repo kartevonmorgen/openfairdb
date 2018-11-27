@@ -1,6 +1,7 @@
 const PICNIC_CSS: &str = include_str!("./picnic.min.css");
 const MAIN_CSS: &str = include_str!("./main.css");
 
+use crate::core::usecases::Stats;
 use maud::{html, Markup};
 
 fn page(content: Markup) -> Markup {
@@ -70,13 +71,62 @@ pub fn user_dashboard(username: &str) -> Markup {
             " your are logged in as user."
         }))
 }
-
-pub fn admin_dashboard(username: &str) -> Markup {
+pub fn admin_dashboard(username: &str, data: Stats) -> Markup {
     dashboard(html!(p {
             "Hi "
             b {(username)}
             " your are logged in as administrator."
-        }))
+        }
+        (stats(data))
+    ))
+}
+
+pub fn admin_dashboard_error(username: &str, msg: &str) -> Markup {
+    dashboard(html!(
+            p {
+                "Hi "
+                b {(username)}
+                " your are logged in as administrator."
+            }
+            p class="error" {
+                "Unfortunately something bad happend: "
+                br;
+                (msg)
+            }
+    ))
+}
+
+fn stats(stats: Stats) -> Markup {
+    html!(
+        h2 { "Stats" }
+        table class="primary" {
+            thead {
+                tr {
+                    th {
+                        "Number of entries"
+                    }
+                    th {
+                        "Number of tags"
+                    }
+                    th {
+                        "Number of users"
+                    }
+                }
+            }
+            tbody {
+                tr {
+                    td {
+                        (stats.entry_count)
+                    }
+                    td {
+                        (stats.tag_count)
+                    }
+                    td {
+                        (stats.user_count)
+                    }
+                }
+            }
+        })
 }
 
 fn dashboard(content: Markup) -> Markup {

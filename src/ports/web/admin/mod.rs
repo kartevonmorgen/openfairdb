@@ -90,8 +90,12 @@ fn index() -> Redirect {
 }
 
 #[get("/dashboard")]
-fn admin_dashboard(admin: Admin) -> Html {
-    view::admin_dashboard(&admin.0).into()
+fn admin_dashboard(db: DbConn, admin: Admin) -> Html {
+    let stats = usecases::get_stats(&*db);
+    match stats {
+        Ok(stats) => view::admin_dashboard(&admin.0, stats).into(),
+        Err(err) => view::admin_dashboard_error(&admin.0, &format!("{}", err)).into(),
+    }
 }
 
 #[get("/dashboard", rank = 2)]

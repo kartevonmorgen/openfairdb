@@ -12,6 +12,7 @@ mod find_duplicates;
 mod login;
 mod rate_entry;
 mod search;
+mod stats;
 #[cfg(test)]
 pub mod tests;
 mod update_entry;
@@ -22,6 +23,7 @@ pub use self::find_duplicates::*;
 pub use self::login::*;
 pub use self::rate_entry::*;
 pub use self::search::*;
+pub use self::stats::*;
 pub use self::update_entry::*;
 
 pub fn get_ratings<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Rating>> {
