@@ -57,7 +57,7 @@ pub struct Tag {
     pub id: String,
 }
 
-#[derive(Identifiable, Queryable, Insertable)]
+#[derive(Identifiable, Queryable, Insertable, AsChangeset)]
 #[table_name = "users"]
 #[primary_key(username)]
 pub struct User {

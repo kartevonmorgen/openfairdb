@@ -968,7 +968,6 @@ fn subscribe_to_bbox() {
     let mut conn = db.get().unwrap();
     for u in users {
         conn.create_user(&u).unwrap();
-        conn.confirm_email_address("123").unwrap();
     }
     let response = client
         .post("/login")

@@ -367,6 +367,14 @@ impl UserGateway for SqliteConnection {
             .execute(self)?;
         Ok(())
     }
+    fn update_user(&mut self, u: &User) -> Result<()> {
+        use self::schema::users::dsl;
+        let user = models::User::from(u.clone());
+        diesel::update(dsl::users.filter(dsl::id.eq(&u.id)))
+            .set(&user)
+            .execute(self)?;
+        Ok(())
+    }
     fn get_user(&self, username: &str) -> Result<User> {
         use self::schema::users::dsl::users;
         let u: models::User = users.find(username).first(self)?;
@@ -470,15 +478,6 @@ impl Db for SqliteConnection {
             .into_iter()
             .map(BboxSubscription::from)
             .collect())
-    }
-    fn confirm_email_address(&mut self, user_id: &str) -> Result<User> {
-        use self::schema::users::dsl;
-
-        diesel::update(dsl::users.filter(dsl::id.eq(user_id)))
-            .set(dsl::email_confirmed.eq(true))
-            .execute(self)?;
-        let u: models::User = dsl::users.filter(dsl::id.eq(user_id)).first(self)?;
-        Ok(u.into())
     }
     fn delete_bbox_subscription(&mut self, id: &str) -> Result<()> {
         use self::schema::bbox_subscriptions::dsl;

@@ -1,6 +1,5 @@
 use super::*;
-use crate::core::usecases;
-use crate::core::util::filter::InBBox;
+use crate::core::{usecases, util::filter::InBBox};
 use std::result;
 
 //TODO: move tests to corresponding usecase
@@ -168,6 +167,10 @@ impl UserGateway for MockDb {
             .collect();
         Ok(())
     }
+
+    fn update_user(&mut self, u: &User) -> RepoResult<()> {
+        update(&mut self.users, u)
+    }
 }
 
 impl CommentGateway for MockDb {
@@ -227,28 +230,6 @@ impl Db for MockDb {
 
     fn all_bbox_subscriptions(&self) -> RepoResult<Vec<BboxSubscription>> {
         Ok(self.bbox_subscriptions.clone())
-    }
-
-    fn confirm_email_address(&mut self, u_id: &str) -> RepoResult<User> {
-        let a: String = self.all_users()?[0].clone().id;
-        let b: String = u_id.to_string();
-        debug!("u.id: {:?}", a);
-        debug!("u_id: {:?}", b);
-
-        let users: Vec<User> = self
-            .all_users()?
-            .into_iter()
-            .filter(|u| u.id == u_id.to_string())
-            .collect();
-        debug!("filtered users: {:?}", users);
-        if users.len() > 0 {
-            let mut u = users[0].clone();
-            u.email_confirmed = true;
-            update(&mut self.users, &u)?;
-            Ok(u)
-        } else {
-            Err(RepoError::NotFound)
-        }
     }
 
     fn delete_bbox_subscription(&mut self, s_id: &str) -> RepoResult<()> {

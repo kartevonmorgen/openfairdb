@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use crate::core::prelude::*;
 
+mod confirm_email;
 mod create_new_entry;
 mod create_new_user;
 mod find_duplicates;
@@ -16,6 +17,7 @@ mod search;
 pub mod tests;
 mod update_entry;
 
+pub use self::confirm_email::*;
 pub use self::create_new_entry::*;
 pub use self::create_new_user::*;
 pub use self::find_duplicates::*;
