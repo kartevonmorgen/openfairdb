@@ -56,6 +56,16 @@ pub struct User {
     pub password        : String,
     pub email           : String,
     pub email_confirmed : bool,
+    pub role            : Role,
+}
+
+#[cfg_attr(rustfmt, rustfmt_skip)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, FromPrimitive, ToPrimitive)]
+pub enum Role {
+    Guest = 0,
+    User  = 1,
+    Scout = 2,
+    Admin = 3,
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]

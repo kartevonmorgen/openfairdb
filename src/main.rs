@@ -18,6 +18,8 @@ extern crate quick_error;
 extern crate serde;
 #[cfg(test)]
 extern crate test;
+#[macro_use]
+extern crate num_derive;
 
 mod adapters;
 mod core;

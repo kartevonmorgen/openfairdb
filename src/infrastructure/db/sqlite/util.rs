@@ -98,12 +98,14 @@ impl From<e::Tag> for Tag {
 
 impl From<User> for e::User {
     fn from(u: User) -> e::User {
+        use num_traits::FromPrimitive;
         let User {
             id,
             username,
             password,
             email,
             email_confirmed,
+            role,
         } = u;
         e::User {
             id,
@@ -111,18 +113,28 @@ impl From<User> for e::User {
             password,
             email,
             email_confirmed,
+            role: e::Role::from_i16(role).unwrap_or_else(|| {
+                warn!(
+                    "Could not cast role from i16 (value: {}). Use {:?} instead.",
+                    role,
+                    e::Role::Guest
+                );
+                e::Role::Guest
+            }),
         }
     }
 }
 
 impl From<e::User> for User {
     fn from(u: e::User) -> User {
+        use num_traits::ToPrimitive;
         let e::User {
             id,
             username,
             password,
             email,
             email_confirmed,
+            role,
         } = u;
         User {
             id,
@@ -130,6 +142,10 @@ impl From<e::User> for User {
             password,
             email,
             email_confirmed,
+            role: role.to_i16().unwrap_or_else(|| {
+                warn!("Could not convert role {:?} to i16. Use 0 instead.", role);
+                0
+            }),
         }
     }
 }

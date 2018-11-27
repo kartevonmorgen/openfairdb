@@ -131,7 +131,7 @@ mod tests {
         #[cfg_attr(rustfmt, rustfmt_skip)]
         let new = UpdateEntry {
             id          : id.clone(),
-            osm_node    :  None,
+            osm_node    : None,
             version     : 3,
             title       : "foo".into(),
             description : "bar".into(),
