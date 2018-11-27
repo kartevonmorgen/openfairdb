@@ -74,8 +74,11 @@ fn login_user(_user: User) -> Redirect {
 
 #[get("/login", rank = 2)]
 fn login_page(flash: Option<FlashMessage>) -> Html {
-    let flash: Option<&str> = match flash {
-        Some(ref x) => Some(x.msg()),
+    let flash: Option<Result<&str, &str>> = match flash {
+        Some(ref x) => match x.name() {
+            "error" => Some(Err(x.msg())),
+            _ => Some(Ok(x.msg())),
+        },
         None => None,
     };
     view::index(flash).into()

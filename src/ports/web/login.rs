@@ -1,5 +1,4 @@
 use crate::core::{prelude::*, usecases};
-use pwhash::bcrypt;
 use rocket::{
     http::{Cookie, Cookies},
     outcome::IntoOutcome,
@@ -61,6 +60,7 @@ pub fn logout(cookies: &mut Cookies) {
 mod tests {
     use super::super::sqlite;
     use super::*;
+    use pwhash::bcrypt;
     use rocket::local::Client;
 
     fn setup() -> (Client, sqlite::ConnectionPool) {

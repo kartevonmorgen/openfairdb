@@ -27,16 +27,25 @@ fn page(content: Markup) -> Markup {
     }
 }
 
-pub fn index(flash: Option<&str>) -> Markup {
+pub fn index(flash: Option<Result<&str, &str>>) -> Markup {
     page(html!{
         p {
             "Welcome to the admin interface of OpenFairDB." br;
             "Please login to continue."
         }
         @if let Some(msg) = flash {
-            p {
-                (format!("Error: {}", msg))
-            }
+                @match msg {
+                    Ok(msg) => {
+                        p class="success" {
+                            (format!("Info: {}", msg))
+                        }
+                    }
+                    Err(msg) => {
+                        p class="error" {
+                            (format!("Error: {}", msg))
+                        }
+                    }
+                }
         }
         form id="login" action = "login" method="post" accept-charset="utf-8" {
             fieldset {

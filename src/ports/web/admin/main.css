@@ -8,3 +8,11 @@ main section {
 #login {
   max-width: 350px;
 }
+
+p.success {
+  color: #080;
+}
+
+p.error {
+  color: #b00;
+}
