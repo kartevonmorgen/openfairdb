@@ -117,9 +117,9 @@ impl From<User> for e::User {
                 warn!(
                     "Could not cast role from i16 (value: {}). Use {:?} instead.",
                     role,
-                    e::Role::Guest
+                    e::Role::default()
                 );
-                e::Role::Guest
+                e::Role::default()
             }),
         }
     }

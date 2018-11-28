@@ -68,6 +68,12 @@ pub enum Role {
     Admin = 3,
 }
 
+impl Default for Role {
+    fn default() -> Role {
+        Role::Guest
+    }
+}
+
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Comment {
