@@ -6,6 +6,7 @@ pub struct Entry {
     pub id: String,
     pub osm_node: Option<i64>,
     pub created: i64,
+    pub archived: Option<i64>,
     pub version: i64,
     pub current: bool,
     pub title: String,

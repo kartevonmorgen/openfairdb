@@ -32,6 +32,7 @@ table! {
         id -> Text,
         osm_node -> Nullable<BigInt>,
         created -> BigInt,
+        archived -> Nullable<BigInt>,
         version -> BigInt,
         current -> Bool,
         title -> Text,

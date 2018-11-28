@@ -113,6 +113,7 @@ fn map_osm_to_ofdb_entry(osm: &OsmEntry) -> Result<Entry> {
 
     let version = 0;
     let created = Utc::now().timestamp() as u64;
+    let archived = None;
     let house_nr = osm.tags.get("addr:housenumber").cloned();
     let street = osm.tags.get("addr:street").cloned();
     let zip = osm.tags.get("addr:postcode").cloned();
@@ -140,6 +141,7 @@ fn map_osm_to_ofdb_entry(osm: &OsmEntry) -> Result<Entry> {
         id,
         osm_node,
         created,
+        archived,
         version,
         title,
         description,

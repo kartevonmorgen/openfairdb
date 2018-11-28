@@ -34,6 +34,7 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
         id          :  Uuid::new_v4().to_simple_ref().to_string(),
         osm_node    :  None,
         created     :  Utc::now().timestamp() as u64,
+        archived    :  None,
         version     :  0,
         title       :  e.title,
         description :  e.description,
