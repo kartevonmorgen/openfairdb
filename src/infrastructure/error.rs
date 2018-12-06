@@ -27,7 +27,7 @@ impl From<RunMigrationsError> for AppError {
     }
 }
 
-quick_error!{
+quick_error! {
     #[derive(Debug)]
     pub enum AppError {
         Business(err: BError){

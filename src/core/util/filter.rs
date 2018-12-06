@@ -7,7 +7,7 @@ pub trait InBBox {
 
 impl InBBox for Entry {
     fn in_bbox(&self, bb: &Bbox) -> bool {
-        is_in_bbox(&self.lat, &self.lng, bb)
+        is_in_bbox(&self.location.lat, &self.location.lng, bb)
     }
 }
 

@@ -12,6 +12,13 @@ pub trait EntryGateway {
     fn import_multiple_entries(&mut self, _: &[Entry]) -> Result<()>;
 }
 
+pub trait EventGateway {
+    fn create_event(&mut self, _: &Event) -> Result<()>;
+    fn get_event(&self, _: &str) -> Result<Event>;
+    fn all_events(&self) -> Result<Vec<Event>>;
+    fn update_event(&mut self, _: &Event) -> Result<()>;
+}
+
 pub trait UserGateway {
     fn create_user(&mut self, _: &User) -> Result<()>;
     fn update_user(&mut self, _: &User) -> Result<()>;
@@ -31,7 +38,7 @@ pub trait CommentGateway {
 //  - RatingGateway
 //  - SubscriptionGateway
 
-pub trait Db: EntryGateway + UserGateway + CommentGateway {
+pub trait Db: EntryGateway + UserGateway + CommentGateway + EventGateway {
     fn create_tag_if_it_does_not_exist(&mut self, _: &Tag) -> Result<()>;
     fn create_category_if_it_does_not_exist(&mut self, _: &Category) -> Result<()>;
     fn create_rating(&mut self, _: &Rating) -> Result<()>;

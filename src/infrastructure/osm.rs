@@ -1,4 +1,8 @@
-use crate::core::prelude::*;
+use crate::{
+    core::prelude::*,
+    infrastructure::error::AppError,
+    ports::web::sqlite::create_connection_pool, //TODO: import from infrastructure
+};
 
 use std::{
     collections::HashMap,
@@ -8,8 +12,6 @@ use std::{
 };
 
 use chrono::prelude::*;
-use crate::infrastructure::error::AppError;
-use crate::ports::web::sqlite::create_connection_pool; //TODO: import from infrastructure
 use serde_json;
 use uuid::Uuid;
 
@@ -136,6 +138,17 @@ fn map_osm_to_ofdb_entry(osm: &OsmEntry) -> Result<Entry> {
 
     let tags = map_osm_tags(&osm.tags).into_iter().map(|t| t.id).collect();
 
+    let contact = Some(Contact { email, telephone });
+
+    let address = Some(Address {
+        street,
+        zip,
+        city,
+        country,
+    });
+
+    let location = Location { lat, lng, address };
+
     Ok(Entry {
         id,
         osm_node,
@@ -143,14 +156,8 @@ fn map_osm_to_ofdb_entry(osm: &OsmEntry) -> Result<Entry> {
         version,
         title,
         description,
-        lat,
-        lng,
-        street,
-        zip,
-        city,
-        country,
-        email,
-        telephone,
+        location,
+        contact,
         homepage,
         categories,
         tags,
@@ -237,18 +244,29 @@ fn test_from_osm_for_entry() {
 
     let e = map_osm_to_ofdb_entry(&osm).unwrap();
 
-    assert_eq!(e.lat, 48.0);
-    assert_eq!(e.lng, 10.0);
+    assert_eq!(e.location.lat, 48.0);
+    assert_eq!(e.location.lng, 10.0);
     assert_eq!(e.version, 0);
     assert_eq!(e.osm_node, Some(12123));
     assert_eq!(e.title, "denn's Biomarkt");
     assert_eq!(e.description, "denn's Biomarkt");
-    assert_eq!(e.city, Some("Graz".into()));
-    assert_eq!(e.zip, Some("8042".into()));
-    assert_eq!(e.country, Some("AT".into()));
-    assert_eq!(e.street, Some("Plüddemanngasse 107a".into()));
+    assert_eq!(
+        e.location.address.unwrap(),
+        Address::build()
+            .city("Graz")
+            .zip("8042")
+            .country("AT")
+            .street("Plüddemanngasse 107a")
+            .finish()
+    );
     assert_eq!(e.homepage, Some("http://www.denns-biomarkt.at/".into()));
-    assert_eq!(e.telephone, Some("+43 316-422677".into()));
+    assert_eq!(
+        e.contact.unwrap(),
+        Contact {
+            email: None,
+            telephone: Some("+43 316-422677".into())
+        }
+    );
     assert_eq!(e.license, Some("ODbL-1.0".into()));
 
     assert!(e.tags.iter().any(|id| id == "vegan"));

@@ -3,7 +3,7 @@ use crate::core::entities as e;
 use std::str::FromStr;
 
 impl From<e::Entry> for Entry {
-    fn from(e: e::Entry) -> Entry {
+    fn from(e: e::Entry) -> Self {
         let e::Entry {
             id,
             osm_node,
@@ -11,20 +11,33 @@ impl From<e::Entry> for Entry {
             version,
             title,
             description,
-            lat,
-            lng,
-            street,
-            zip,
-            city,
-            country,
-            email,
-            telephone,
+            location,
+            contact,
             homepage,
             license,
             image_url,
             image_link_url,
             ..
         } = e;
+
+        let e::Location { lat, lng, address } = location;
+
+        let e::Address {
+            street,
+            zip,
+            city,
+            country,
+        } = address.unwrap_or_else(|| e::Address {
+            street: None,
+            zip: None,
+            city: None,
+            country: None,
+        });
+
+        let e::Contact { email, telephone } = contact.unwrap_or_else(|| e::Contact {
+            email: None,
+            telephone: None,
+        });
 
         Entry {
             id,
@@ -46,6 +59,202 @@ impl From<e::Entry> for Entry {
             license,
             image_url,
             image_link_url,
+        }
+    }
+}
+
+impl From<e::Event> for Event {
+    fn from(e: e::Event) -> Self {
+        let e::Event {
+            id,
+            title,
+            start,
+            end,
+            description,
+            location,
+            contact,
+            homepage,
+            ..
+        } = e;
+
+        let mut street = None;
+        let mut zip = None;
+        let mut city = None;
+        let mut country = None;
+
+        let (lat, lng) = if let Some(l) = location {
+            if let Some(a) = l.address {
+                street = a.street;
+                zip = a.zip;
+                city = a.city;
+                country = a.country;
+            }
+            (Some(l.lat), Some(l.lng))
+        } else {
+            (None, None)
+        };
+
+        let (email, telephone) = if let Some(c) = contact {
+            (c.email, c.telephone)
+        } else {
+            (None, None)
+        };
+
+        Event {
+            id,
+            title,
+            description,
+            start: start as i64,
+            end: end.map(|x| x as i64),
+            lat,
+            lng,
+            street,
+            zip,
+            city,
+            country,
+            telephone,
+            email,
+            homepage,
+        }
+    }
+}
+
+impl From<(Entry, &Vec<EntryCategoryRelation>, &Vec<EntryTagRelation>)> for e::Entry {
+    fn from(d: (Entry, &Vec<EntryCategoryRelation>, &Vec<EntryTagRelation>)) -> Self {
+        let (e, cat_rels, tag_rels) = d;
+        let Entry {
+            id,
+            version,
+            created,
+            title,
+            description,
+            lat,
+            lng,
+            street,
+            zip,
+            city,
+            country,
+            email,
+            telephone,
+            license,
+            homepage,
+            image_url,
+            image_link_url,
+            ..
+        } = e;
+        let categories = cat_rels
+            .iter()
+            .filter(|r| r.entry_id == id)
+            .filter(|r| r.entry_version == version)
+            .map(|r| &r.category_id)
+            .cloned()
+            .collect();
+        let tags = tag_rels
+            .iter()
+            .filter(|r| r.entry_id == id)
+            .filter(|r| r.entry_version == version)
+            .map(|r| &r.tag_id)
+            .cloned()
+            .collect();
+        let location = e::Location {
+            lat: lat as f64,
+            lng: lng as f64,
+            address: if street.is_some() || zip.is_some() || city.is_some() || country.is_some() {
+                Some(e::Address {
+                    street,
+                    zip,
+                    city,
+                    country,
+                })
+            } else {
+                None
+            },
+        };
+        let contact = if email.is_some() || telephone.is_some() {
+            Some(e::Contact { email, telephone })
+        } else {
+            None
+        };
+        e::Entry {
+            id,
+            osm_node: e.osm_node.map(|x| x as u64),
+            created: created as u64,
+            version: version as u64,
+            title,
+            description,
+            location,
+            contact,
+            homepage,
+            categories,
+            tags,
+            license,
+            image_url,
+            image_link_url,
+        }
+    }
+}
+
+impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
+    fn from(d: (Event, &Vec<EventTagRelation>)) -> Self {
+        let (e, tag_rels) = d;
+        let Event {
+            id,
+            title,
+            description,
+            start,
+            end,
+            lat,
+            lng,
+            street,
+            zip,
+            city,
+            country,
+            email,
+            telephone,
+            homepage,
+            ..
+        } = e;
+        let tags = tag_rels
+            .iter()
+            .filter(|r| r.event_id == id)
+            .map(|r| &r.tag_id)
+            .cloned()
+            .collect();
+        let address = if street.is_some() || zip.is_some() || city.is_some() || country.is_some() {
+            Some(e::Address {
+                street,
+                zip,
+                city,
+                country,
+            })
+        } else {
+            None
+        };
+        let location = if address.is_some() || lat.is_some() || lng.is_some() {
+            Some(e::Location {
+                // TODO: How to handle missing lat/lng?
+                lat: lat.unwrap_or(0.0),
+                lng: lng.unwrap_or(0.0),
+                address,
+            })
+        } else {
+            None
+        };
+        let contact = if email.is_some() || telephone.is_some() {
+            Some(e::Contact { email, telephone })
+        } else {
+            None
+        };
+        e::Event {
+            id,
+            title,
+            description,
+            start: start as u64,
+            end: end.map(|x| x as u64),
+            location,
+            contact,
+            homepage,
+            tags,
         }
     }
 }

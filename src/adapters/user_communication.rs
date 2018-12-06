@@ -1,4 +1,4 @@
-use crate::core::entities::Entry;
+use crate::core::entities::*;
 use crate::core::usecases::{NewEntry, UpdateEntry};
 
 pub fn email_confirmation_email(u_id: &str) -> String {
@@ -10,22 +10,34 @@ pub fn email_confirmation_email(u_id: &str) -> String {
 
 pub fn new_entry_email(e: &NewEntry, id: &str, categories: &[String]) -> String {
     let intro_sentence = "ein neuer Eintrag auf der Karte von morgen wurde erstellt";
+
+    //TODO: check fields
+    let address = Some(Address {
+        street: e.street.clone(),
+        zip: e.zip.clone(),
+        city: e.city.clone(),
+        country: e.country.clone(),
+    });
+
+    let contact = Some(Contact {
+        email: e.email.clone(),
+        telephone: e.telephone.clone(),
+    });
+
     let entry = Entry {
         id: id.into(),
         osm_node: None,
         title: e.title.clone(),
         description: e.description.clone(),
-        street: e.street.clone(),
-        zip: e.zip.clone(),
-        city: e.city.clone(),
-        country: e.country.clone(),
-        email: e.email.clone(),
-        telephone: e.telephone.clone(),
         homepage: e.homepage.clone(),
         tags: e.tags.clone(),
         categories: e.categories.clone(),
-        lat: 0.0,
-        lng: 0.0,
+        location: Location {
+            lat: 0.0,
+            lng: 0.0,
+            address,
+        },
+        contact,
         created: 0,
         version: 0,
         license: None,
@@ -35,24 +47,36 @@ pub fn new_entry_email(e: &NewEntry, id: &str, categories: &[String]) -> String 
     entry_email(&entry, categories, &e.tags, intro_sentence)
 }
 
+//TODO: calc diff
 pub fn changed_entry_email(e: &UpdateEntry, categories: &[String]) -> String {
     let intro_sentence = "folgender Eintrag der Karte von morgen wurde verändert";
+
+    let address = Some(Address {
+        street: e.street.clone(),
+        zip: e.zip.clone(),
+        city: e.city.clone(),
+        country: e.country.clone(),
+    });
+
+    let contact = Some(Contact {
+        email: e.email.clone(),
+        telephone: e.telephone.clone(),
+    });
+
     let entry = Entry {
         id: e.id.clone(),
         osm_node: e.osm_node,
         title: e.title.clone(),
         description: e.description.clone(),
-        street: e.street.clone(),
-        zip: e.zip.clone(),
-        city: e.city.clone(),
-        country: e.country.clone(),
-        email: e.email.clone(),
-        telephone: e.telephone.clone(),
         homepage: e.homepage.clone(),
         tags: e.tags.clone(),
         categories: e.categories.clone(),
-        lat: 0.0,
-        lng: 0.0,
+        location: Location {
+            lat: 0.0,
+            lng: 0.0,
+            address,
+        },
+        contact,
         created: 0,
         version: 0,
         license: None,
@@ -73,16 +97,34 @@ pub fn entry_email(
     } else {
         "".to_string()
     };
+
+    let Address {
+        street,
+        zip,
+        city,
+        country,
+    } = e.location.clone().address.unwrap_or_else(|| Address {
+        street: None,
+        zip: None,
+        city: None,
+        country: None,
+    });
+
     let address = vec![
-        e.street.clone().unwrap_or_else(|| "".into()),
+        street.unwrap_or_else(|| "".into()),
         vec![
-            e.zip.clone().unwrap_or_else(|| "".into()),
-            e.city.clone().unwrap_or_else(|| "".into()),
+            zip.unwrap_or_else(|| "".into()),
+            city.unwrap_or_else(|| "".into()),
         ]
         .join(" "),
-        e.country.clone().unwrap_or_else(|| "".into()),
+        country.unwrap_or_else(|| "".into()),
     ]
     .join(", ");
+
+    let Contact { email, telephone } = e.contact.clone().unwrap_or_else(|| Contact {
+        email: None,
+        telephone: None,
+    });
 
     format!(
         "Hallo,
@@ -104,8 +146,8 @@ das Karte von morgen-Team",
         id = &e.id,
         description = &e.description,
         address = address,
-        email = e.email.clone().unwrap_or_else(||"".into()),
-        telephone = e.telephone.clone().unwrap_or_else(||"".into()),
+        email = email.unwrap_or_else(||"".into()),
+        telephone = telephone.unwrap_or_else(||"".into()),
         homepage = e.homepage.clone().unwrap_or_else(||"".into()),
         category = category,
         tags = tags.join(", ")

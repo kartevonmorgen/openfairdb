@@ -1,5 +1,7 @@
 use crate::core::usecases::tests::MockDb;
-use diesel::r2d2::{ManageConnection, Pool, PoolError, PooledConnection};
+#[cfg(not(test))]
+use diesel::r2d2::PoolError;
+use diesel::r2d2::{ManageConnection, Pool, PooledConnection};
 use rocket::{
     http::Status,
     request::{self, FromRequest},
@@ -32,6 +34,7 @@ pub type ConnectionPool = Pool<MockDbConnectionManager>;
 
 pub struct DbConn(pub PooledConnection<MockDbConnectionManager>);
 
+#[cfg(not(test))]
 pub fn create_connection_pool(_: &str) -> Result<ConnectionPool, PoolError> {
     let manager = MockDbConnectionManager {};
     Pool::builder().max_size(1).build(manager)

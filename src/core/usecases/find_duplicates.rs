@@ -1,5 +1,4 @@
-use crate::core::prelude::*;
-use crate::core::util::geo;
+use crate::core::{prelude::*, util::geo};
 use std::{cmp::min, collections::HashSet};
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -38,14 +37,10 @@ fn in_close_proximity(e1: &Entry, e2: &Entry, max_dist_meters: f64) -> bool {
 }
 
 fn entry_distance_in_meters(e1: &Entry, e2: &Entry) -> f64 {
-    let coord1 = Coordinate {
-        lat: e1.lat,
-        lng: e1.lng,
-    };
-    let coord2 = Coordinate {
-        lat: e2.lat,
-        lng: e2.lng,
-    };
+    let Location { lat, lng, .. } = e1.location;
+    let coord1 = Coordinate { lat, lng };
+    let Location { lat, lng, .. } = e2.location;
+    let coord2 = Coordinate { lat, lng };
     geo::distance(&coord1, &coord2) * 1000.0
 }
 

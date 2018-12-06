@@ -1,57 +1,94 @@
+use crate::core::{
+    prelude::*,
+    util::{parse::parse_url_param, validate::Validate},
+};
 use chrono::*;
-use crate::core::prelude::*;
-use crate::core::util::parse::parse_url_param;
-use crate::core::util::validate::Validate;
 use uuid::Uuid;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Deserialize, Debug, Clone)]
 pub struct NewEntry {
-    pub title       : String,
-    pub description : String,
-    pub lat         : f64,
-    pub lng         : f64,
-    pub street      : Option<String>,
-    pub zip         : Option<String>,
-    pub city        : Option<String>,
-    pub country     : Option<String>,
-    pub email       : Option<String>,
-    pub telephone   : Option<String>,
-    pub homepage    : Option<String>,
-    pub categories  : Vec<String>,
-    pub tags        : Vec<String>,
-    pub license     : String,
-    pub image_url     : Option<String>,
-    pub image_link_url: Option<String>,
+    pub title          : String,
+    pub description    : String,
+    pub lat            : f64,
+    pub lng            : f64,
+    pub street         : Option<String>,
+    pub zip            : Option<String>,
+    pub city           : Option<String>,
+    pub country        : Option<String>,
+    pub email          : Option<String>,
+    pub telephone      : Option<String>,
+    pub homepage       : Option<String>,
+    pub categories     : Vec<String>,
+    pub tags           : Vec<String>,
+    pub license        : String,
+    pub image_url      : Option<String>,
+    pub image_link_url : Option<String>,
 }
 
 pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
-    let mut tags: Vec<_> = e.tags.into_iter().map(|t| t.replace("#", "")).collect();
-    tags.dedup();
-
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    let new_entry = Entry{
-        id          :  Uuid::new_v4().to_simple_ref().to_string(),
-        osm_node    :  None,
-        created     :  Utc::now().timestamp() as u64,
-        version     :  0,
-        title       :  e.title,
-        description :  e.description,
-        lat         :  e.lat,
-        lng         :  e.lng,
-        street      :  e.street,
-        zip         :  e.zip,
-        city        :  e.city,
-        country     :  e.country,
-        email       :  e.email,
-        telephone   :  e.telephone,
-        homepage    :  e.homepage.map(|ref url| parse_url_param(url)).transpose()?,
-        categories  :  e.categories,
+    let NewEntry {
+        title,
+        description,
+        categories,
+        email,
+        telephone,
+        lat,
+        lng,
+        street,
+        zip,
+        city,
+        country,
         tags,
-        license     :  Some(e.license),
-        image_url     : e.image_url.map(|ref url| parse_url_param(url)).transpose()?,
-        image_link_url: e.image_link_url.map(|ref url| parse_url_param(url)).transpose()?,
+        ..
+    } = e;
+    let mut tags: Vec<_> = tags.into_iter().map(|t| t.replace("#", "")).collect();
+    tags.dedup();
+    let address = if street.is_some() || zip.is_some() || city.is_some() || country.is_some() {
+        Some(Address {
+            street,
+            zip,
+            city,
+            country,
+        })
+    } else {
+        None
     };
+    let location = Location { lat, lng, address };
+    let contact = if email.is_some() || telephone.is_some() {
+        Some(Contact { email, telephone })
+    } else {
+        None
+    };
+    let created = Utc::now().timestamp() as u64;
+    let id = Uuid::new_v4().to_simple_ref().to_string();
+    let homepage = e.homepage.map(|ref url| parse_url_param(url)).transpose()?;
+    let image_url = e
+        .image_url
+        .map(|ref url| parse_url_param(url))
+        .transpose()?;
+    let image_link_url = e
+        .image_link_url
+        .map(|ref url| parse_url_param(url))
+        .transpose()?;
+
+    let new_entry = Entry {
+        id,
+        osm_node: None,
+        created,
+        version: 0,
+        title,
+        description,
+        location,
+        contact,
+        homepage,
+        categories,
+        tags,
+        license: Some(e.license),
+        image_url,
+        image_link_url,
+    };
+
     debug!("Creating new entry: {:?}", new_entry);
     new_entry.validate()?;
     for t in &new_entry.tags {

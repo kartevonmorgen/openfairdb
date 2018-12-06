@@ -68,6 +68,32 @@ table! {
 }
 
 table! {
+    event_tag_relations (event_id, tag_id) {
+        event_id -> Text,
+        tag_id -> Text,
+    }
+}
+
+table! {
+    events (id) {
+        id -> Text,
+        title -> Text,
+        description -> Nullable<Text>,
+        start -> BigInt,
+        end -> Nullable<BigInt>,
+        lat -> Nullable<Double>,
+        lng -> Nullable<Double>,
+        street -> Nullable<Text>,
+        zip -> Nullable<Text>,
+        city -> Nullable<Text>,
+        country -> Nullable<Text>,
+        email -> Nullable<Text>,
+        telephone -> Nullable<Text>,
+        homepage -> Nullable<Text>,
+    }
+}
+
+table! {
     ratings (id) {
         id -> Text,
         created -> BigInt,
@@ -100,6 +126,8 @@ joinable!(bbox_subscriptions -> users (username));
 joinable!(comments -> ratings (rating_id));
 joinable!(entry_category_relations -> categories (category_id));
 joinable!(entry_tag_relations -> tags (tag_id));
+joinable!(event_tag_relations -> events (event_id));
+joinable!(event_tag_relations -> tags (tag_id));
 
 allow_tables_to_appear_in_same_query!(
     bbox_subscriptions,
@@ -108,6 +136,8 @@ allow_tables_to_appear_in_same_query!(
     entries,
     entry_category_relations,
     entry_tag_relations,
+    event_tag_relations,
+    events,
     ratings,
     tags,
     users,

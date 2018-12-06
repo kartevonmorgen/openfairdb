@@ -32,16 +32,22 @@ impl From<(Entry, Vec<Category>, f64)> for CsvRecord {
             version,
             title,
             description,
-            lat,
-            lng,
-            street,
-            zip,
-            city,
-            country,
+            location,
             homepage,
             license,
             ..
         } = e.clone();
+
+        let Location { lat, lng, address } = location;
+
+        let address = address.unwrap_or_default();
+
+        let Address {
+            street,
+            zip,
+            city,
+            country,
+        } = address;
 
         let categories = categories
             .into_iter()

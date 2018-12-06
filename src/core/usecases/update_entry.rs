@@ -1,28 +1,27 @@
+use crate::core::{prelude::*, util::parse::parse_url_param};
 use chrono::*;
-use crate::core::prelude::*;
-use crate::core::util::parse::parse_url_param;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateEntry {
-    pub id          : String,
-    pub osm_node    : Option<u64>,
-    pub version     : u64,
-    pub title       : String,
-    pub description : String,
-    pub lat         : f64,
-    pub lng         : f64,
-    pub street      : Option<String>,
-    pub zip         : Option<String>,
-    pub city        : Option<String>,
-    pub country     : Option<String>,
-    pub email       : Option<String>,
-    pub telephone   : Option<String>,
-    pub homepage    : Option<String>,
-    pub categories  : Vec<String>,
-    pub tags        : Vec<String>,
-    pub image_url     : Option<String>,
-    pub image_link_url: Option<String>,
+    pub id             : String,
+    pub osm_node       : Option<u64>,
+    pub version        : u64,
+    pub title          : String,
+    pub description    : String,
+    pub lat            : f64,
+    pub lng            : f64,
+    pub street         : Option<String>,
+    pub zip            : Option<String>,
+    pub city           : Option<String>,
+    pub country        : Option<String>,
+    pub email          : Option<String>,
+    pub telephone      : Option<String>,
+    pub homepage       : Option<String>,
+    pub categories     : Vec<String>,
+    pub tags           : Vec<String>,
+    pub image_url      : Option<String>,
+    pub image_link_url : Option<String>,
 }
 
 pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
@@ -32,28 +31,58 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
     }
     let mut tags = e.tags;
     tags.dedup();
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    let updated_entry = Entry{
-        id          :  e.id,
-        osm_node    :  None,
-        created     :  Utc::now().timestamp() as u64,
-        version     :  e.version,
-        title       :  e.title,
-        description :  e.description,
-        lat         :  e.lat,
-        lng         :  e.lng,
-        street      :  e.street,
-        zip         :  e.zip,
-        city        :  e.city,
-        country     :  e.country,
-        email       :  e.email,
-        telephone   :  e.telephone,
-        homepage    :  e.homepage.map(|ref url| parse_url_param(url)).transpose()?,
-        categories  :  e.categories,
+    let address =
+        if e.street.is_some() || e.zip.is_some() || e.city.is_some() || e.country.is_some() {
+            let UpdateEntry {
+                street,
+                zip,
+                city,
+                country,
+                ..
+            } = e;
+            Some(Address {
+                street,
+                zip,
+                city,
+                country,
+            })
+        } else {
+            None
+        };
+    let UpdateEntry {
+        id,
+        version,
+        title,
+        description,
+        lat,
+        lng,
+        email,
+        telephone,
+        categories,
+        ..
+    } = e;
+
+    let updated_entry = Entry {
+        id,
+        osm_node: None,
+        created: Utc::now().timestamp() as u64,
+        version,
+        title,
+        description,
+        location: Location { lat, lng, address },
+        contact: Some(Contact { email, telephone }),
+        homepage: e.homepage.map(|ref url| parse_url_param(url)).transpose()?,
+        categories,
         tags,
-        license     :  old.license, // license is immutable
-        image_url     : e.image_url.map(|ref url| parse_url_param(url)).transpose()?,
-        image_link_url: e.image_link_url.map(|ref url| parse_url_param(url)).transpose()?,
+        license: old.license, // license is immutable
+        image_url: e
+            .image_url
+            .map(|ref url| parse_url_param(url))
+            .transpose()?,
+        image_link_url: e
+            .image_link_url
+            .map(|ref url| parse_url_param(url))
+            .transpose()?,
     };
     debug!("Updating existing entry: {:?}", updated_entry);
     for t in &updated_entry.tags {
@@ -109,7 +138,16 @@ mod tests {
         assert!(update_entry(&mut mock_db, new).is_ok());
         assert_eq!(mock_db.entries.len(), 1);
         let x = &mock_db.entries[0];
-        assert_eq!("street", x.street.as_ref().unwrap());
+        assert_eq!(
+            "street",
+            x.location
+                .address
+                .as_ref()
+                .unwrap()
+                .street
+                .as_ref()
+                .unwrap()
+        );
         assert_eq!("bar", x.description);
         assert_eq!(2, x.version);
         assert!(x.created as i64 >= now.timestamp());

@@ -9,13 +9,8 @@ trait DistanceTo {
 
 impl DistanceTo for Entry {
     fn distance_to(&self, c: &Coordinate) -> f64 {
-        geo::distance(
-            &Coordinate {
-                lat: self.lat,
-                lng: self.lng,
-            },
-            c,
-        )
+        let Location { lat, lng, .. } = self.location;
+        geo::distance(&Coordinate { lat, lng }, c)
     }
 }
 
@@ -29,10 +24,10 @@ impl SortByDistanceTo for Vec<Entry> {
             return;
         }
         self.sort_by(|a, _| {
-            if a.lat.is_finite() && a.lng.is_finite() {
+            if a.location.lat.is_finite() && a.location.lng.is_finite() {
                 Ordering::Less
             } else {
-                warn!("invalid coordinate: {}/{}", a.lat, a.lng);
+                warn!("invalid coordinate: {}/{}", a.location.lat, a.location.lng);
                 Ordering::Greater
             }
         });

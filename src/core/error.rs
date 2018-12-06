@@ -1,7 +1,7 @@
 use pwhash;
 use std::{error, io};
 
-quick_error!{
+quick_error! {
     #[derive(Debug)]
     pub enum ParameterError {
         Bbox{
@@ -40,10 +40,13 @@ quick_error!{
         Forbidden{
             description("This is not allowed")
         }
+        EndDateBeforeStart{
+            description("The end date is before the start")
+        }
     }
 }
 
-quick_error!{
+quick_error! {
     #[derive(Debug)]
     //TODO: rename to GatewayError
     pub enum RepoError {
@@ -68,7 +71,7 @@ quick_error!{
     }
 }
 
-quick_error!{
+quick_error! {
     #[derive(Debug)]
     pub enum Error {
         Parameter(err: ParameterError){

@@ -21,7 +21,7 @@ mod api;
 mod mockdb;
 pub mod sqlite;
 #[cfg(test)]
-mod tests;
+pub use self::api::tests;
 mod util;
 
 use self::sqlite::create_connection_pool;
@@ -59,9 +59,7 @@ where
     info!("Calculating the average rating of all entries...");
     calculate_all_ratings(&*pool.get().unwrap()).unwrap();
     info!("done.");
-    rocket::custom(cfg)
-        .manage(pool)
-        .mount("/", api::routes())
+    rocket::custom(cfg).manage(pool).mount("/", api::routes())
 }
 
 pub fn run(db_url: &str, port: u16, enable_cors: bool) {
