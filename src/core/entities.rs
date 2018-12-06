@@ -1,26 +1,59 @@
 #[cfg_attr(rustfmt, rustfmt_skip)]
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
+    pub id             : String,
+    pub osm_node       : Option<u64>,
+    pub created        : u64,
+    pub version        : u64,
+    pub title          : String,
+    pub description    : String,
+    pub location       : Location,
+    pub contact        : Option<Contact>,
+    pub homepage       : Option<String>,
+    pub categories     : Vec<String>,
+    pub tags           : Vec<String>,
+    pub license        : Option<String>,
+    pub image_url      : Option<String>,
+    pub image_link_url : Option<String>,
+}
+
+#[cfg_attr(rustfmt, rustfmt_skip)]
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct Location {
+    //TODO: use Coordinate
+    pub lat     : f64,
+    pub lng     : f64,
+    pub address : Option<Address>
+}
+
+#[cfg_attr(rustfmt, rustfmt_skip)]
+#[derive(Debug, Clone, PartialEq,Default)]
+pub struct Address {
+    pub street  : Option<String>,
+    pub zip     : Option<String>,
+    pub city    : Option<String>,
+    pub country : Option<String>,
+}
+
+#[cfg_attr(rustfmt, rustfmt_skip)]
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct Contact {
+    pub email     : Option<String>,
+    pub telephone : Option<String>,
+}
+
+#[cfg_attr(rustfmt, rustfmt_skip)]
+#[derive(Debug, Clone, PartialEq)]
+pub struct Event {
     pub id          : String,
-    pub osm_node    : Option<u64>,
-    pub created     : u64,
-    pub version     : u64,
     pub title       : String,
-    pub description : String,
-    pub lat         : f64,
-    pub lng         : f64,
-    pub street      : Option<String>,
-    pub zip         : Option<String>,
-    pub city        : Option<String>,
-    pub country     : Option<String>,
-    pub email       : Option<String>,
-    pub telephone   : Option<String>,
-    pub homepage    : Option<String>,
-    pub categories  : Vec<String>,
+    pub description : Option<String>,
+    pub start       : u64,
+    pub end         : Option<u64>,
+    pub location    : Option<Location>,
+    pub contact     : Option<Contact>,
     pub tags        : Vec<String>,
-    pub license     : Option<String>,
-    pub image_url     : Option<String>,
-    pub image_link_url: Option<String>,
+    pub homepage    : Option<String>,
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -32,24 +65,13 @@ pub struct Category {
     pub name    : String
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Tag {
     pub id: String,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
-#[serde(rename_all = "snake_case")]
-pub enum ObjectId {
-    Entry(String),
-    Tag(String),
-    User(String),
-    Comment(String),
-    Rating(String),
-    BboxSubscription(String),
-}
-
 #[cfg_attr(rustfmt, rustfmt_skip)]
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct User {
     pub id              : String, // TODO: remove
     pub username        : String,
@@ -60,7 +82,7 @@ pub struct User {
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, FromPrimitive, ToPrimitive)]
+#[derive(Debug, Clone, Copy, PartialEq, FromPrimitive, ToPrimitive)]
 pub enum Role {
     Guest = 0,
     User  = 1,
@@ -75,7 +97,7 @@ impl Default for Role {
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Comment {
     pub id        : String,
     pub created   : u64,
@@ -95,7 +117,7 @@ pub enum RatingContext {
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Rating {
     pub id       : String,
     pub entry_id : String,
@@ -106,24 +128,30 @@ pub struct Rating {
     pub source   : Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Coordinate {
     pub lat: f64,
     pub lng: f64,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Bbox {
     pub south_west: Coordinate,
     pub north_east: Coordinate,
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct BboxSubscription {
     pub id       : String,
     pub bbox     : Bbox,
     pub username : String,
+}
+
+#[cfg(test)]
+pub trait Builder {
+    type Build;
+    fn build() -> Self::Build;
 }
 
 #[cfg(test)]
@@ -134,10 +162,6 @@ pub mod entry_builder {
 
     use super::*;
     use uuid::Uuid;
-
-    pub trait EntryBuilder {
-        fn build() -> EntryBuild;
-    }
 
     pub struct EntryBuild {
         entry: Entry,
@@ -161,11 +185,11 @@ pub mod entry_builder {
             self
         }
         pub fn lat(mut self, lat: f64) -> Self {
-            self.entry.lat = lat;
+            self.entry.location.lat = lat;
             self
         }
         pub fn lng(mut self, lng: f64) -> Self {
-            self.entry.lng = lng;
+            self.entry.location.lng = lng;
             self
         }
         pub fn categories(mut self, cats: Vec<&str>) -> Self {
@@ -193,7 +217,8 @@ pub mod entry_builder {
         }
     }
 
-    impl EntryBuilder for Entry {
+    impl Builder for Entry {
+        type Build = EntryBuild;
         fn build() -> EntryBuild {
             EntryBuild {
                 entry: Entry {
@@ -203,14 +228,12 @@ pub mod entry_builder {
                     version: 0,
                     title: "".into(),
                     description: "".into(),
-                    lat: 0.0,
-                    lng: 0.0,
-                    street: None,
-                    zip: None,
-                    city: None,
-                    country: None,
-                    email: None,
-                    telephone: None,
+                    location: Location {
+                        lat: 0.0,
+                        lng: 0.0,
+                        address: None,
+                    },
+                    contact: None,
                     homepage: None,
                     categories: vec![],
                     tags: vec![],
@@ -222,4 +245,47 @@ pub mod entry_builder {
         }
     }
 
+}
+
+#[cfg(test)]
+pub use self::address_builder::*;
+
+#[cfg(test)]
+pub mod address_builder {
+
+    use super::*;
+    pub struct AddressBuild {
+        addr: Address,
+    }
+
+    impl AddressBuild {
+        pub fn street(mut self, x: &str) -> Self {
+            self.addr.street = Some(x.into());
+            self
+        }
+        pub fn zip(mut self, x: &str) -> Self {
+            self.addr.zip = Some(x.into());
+            self
+        }
+        pub fn city(mut self, x: &str) -> Self {
+            self.addr.city = Some(x.into());
+            self
+        }
+        pub fn country(mut self, x: &str) -> Self {
+            self.addr.country = Some(x.into());
+            self
+        }
+        pub fn finish(self) -> Address {
+            self.addr
+        }
+    }
+
+    impl Builder for Address {
+        type Build = AddressBuild;
+        fn build() -> Self::Build {
+            AddressBuild {
+                addr: Address::default(),
+            }
+        }
+    }
 }

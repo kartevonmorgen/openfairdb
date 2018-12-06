@@ -16,6 +16,12 @@ impl Id for Entry {
     }
 }
 
+impl Id for Event {
+    fn id(&self) -> &str {
+        &self.id
+    }
+}
+
 impl Id for Category {
     fn id(&self) -> &str {
         &self.id
@@ -54,6 +60,7 @@ impl Id for BboxSubscription {
 
 pub struct MockDb {
     pub entries: Vec<Entry>,
+    pub events: Vec<Event>,
     pub categories: Vec<Category>,
     pub tags: Vec<Tag>,
     pub users: Vec<User>,
@@ -66,6 +73,7 @@ impl MockDb {
     pub fn new() -> MockDb {
         MockDb {
             entries: vec![],
+            events: vec![],
             categories: vec![],
             tags: vec![],
             users: vec![],
@@ -132,6 +140,22 @@ impl EntryGateway for MockDb {
             }
         }
         Ok(())
+    }
+}
+
+impl EventGateway for MockDb {
+    fn create_event(&mut self, e: &Event) -> RepoResult<()> {
+        create(&mut self.events, e)
+    }
+
+    fn get_event(&self, id: &str) -> RepoResult<Event> {
+        get(&self.events, id)
+    }
+    fn all_events(&self) -> RepoResult<Vec<Event>> {
+        Ok(self.events.clone())
+    }
+    fn update_event(&mut self, e: &Event) -> RepoResult<()> {
+        update(&mut self.events, e)
     }
 }
 

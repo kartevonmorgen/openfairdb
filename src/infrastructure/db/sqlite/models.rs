@@ -25,6 +25,25 @@ pub struct Entry {
 }
 
 #[derive(Queryable, Insertable)]
+#[table_name = "events"]
+pub struct Event {
+    pub id: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub start: i64,
+    pub end: Option<i64>,
+    pub lat: Option<f64>,
+    pub lng: Option<f64>,
+    pub street: Option<String>,
+    pub zip: Option<String>,
+    pub city: Option<String>,
+    pub country: Option<String>,
+    pub email: Option<String>,
+    pub telephone: Option<String>,
+    pub homepage: Option<String>,
+}
+
+#[derive(Queryable, Insertable)]
 #[table_name = "categories"]
 pub struct Category {
     pub id: String,
@@ -48,6 +67,14 @@ pub struct EntryCategoryRelation {
 pub struct EntryTagRelation {
     pub entry_id: String,
     pub entry_version: i64,
+    pub tag_id: String,
+}
+
+#[derive(Identifiable, Queryable, Insertable, Associations)]
+#[table_name = "event_tag_relations"]
+#[primary_key(event_id, tag_id)]
+pub struct EventTagRelation {
+    pub event_id: String,
     pub tag_id: String,
 }
 

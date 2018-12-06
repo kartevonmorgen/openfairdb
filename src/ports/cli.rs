@@ -1,6 +1,6 @@
 use super::web;
-use clap::{App, Arg, SubCommand};
 use crate::infrastructure::osm;
+use clap::{App, Arg, SubCommand};
 use dotenv::dotenv;
 use std::{env, process};
 

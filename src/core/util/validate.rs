@@ -70,14 +70,43 @@ impl Validate for Entry {
             .ok_or(ParameterError::License)
             .and_then(|ref l| license(l))?;
 
-        if let Some(ref e) = self.email {
-            email(e)?;
+        if let Some(ref c) = self.contact {
+            if let Some(ref e) = c.email {
+                email(e)?;
+            }
         }
 
         if let Some(ref h) = self.homepage {
             homepage(h)?;
         }
 
+        Ok(())
+    }
+}
+
+impl Validate for Contact {
+    fn validate(&self) -> Result<(), ParameterError> {
+        if let Some(ref e) = self.email {
+            email(e)?;
+        }
+        //TODO: check phone
+        Ok(())
+    }
+}
+
+impl Validate for Event {
+    fn validate(&self) -> Result<(), ParameterError> {
+        if let Some(ref c) = self.contact {
+            c.validate()?;
+        }
+        if let Some(ref h) = self.homepage {
+            homepage(h)?;
+        }
+        if let Some(end) = self.end {
+            if end < self.start {
+                return Err(ParameterError::EndDateBeforeStart);
+            }
+        }
         Ok(())
     }
 }
@@ -100,6 +129,70 @@ fn email_test() {
 fn homepage_test() {
     assert!(homepage("https://openfairdb.org").is_ok());
     assert!(homepage("openfairdb.org/foo").is_err());
+}
+
+#[test]
+fn contact_email_test() {
+    assert!(Contact {
+        email: Some("foo".into()),
+        telephone: None
+    }
+    .validate()
+    .is_err());
+    assert!(Contact {
+        email: Some("foo@bar.tld".into()),
+        telephone: None
+    }
+    .validate()
+    .is_ok());
+}
+
+#[test]
+fn event_test() {
+    let e = Event {
+        id: "x".into(),
+        title: "foo".into(),
+        description: None,
+        start: 0,
+        end: None,
+        location: None,
+        contact: None,
+        tags: vec![],
+        homepage: None,
+    };
+    assert!(e.validate().is_ok());
+}
+
+#[test]
+fn event_with_invalid_homepage_test() {
+    let e = Event {
+        id: "x".into(),
+        title: "foo".into(),
+        description: None,
+        start: 0,
+        end: None,
+        location: None,
+        contact: None,
+        tags: vec![],
+        homepage: Some("bla".into()),
+    };
+    assert!(e.validate().is_err());
+}
+
+#[test]
+fn event_with_invalid_end_test() {
+    let e = Event {
+        id: "x".into(),
+        title: "foo".into(),
+        description: None,
+        start: 100,
+        end: Some(99),
+        location: None,
+        contact: None,
+        tags: vec![],
+        homepage: None,
+    };
+    assert!(e.validate().is_err());
 }
 
 #[test]

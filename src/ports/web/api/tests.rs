@@ -1,36 +1,45 @@
-use rocket::{
-    config::{Config, Environment},
-    http::{ContentType, Cookie, Status},
-    local::Client,
-    logger::LoggingLevel,
-};
-
-use crate::core::prelude::*;
-use crate::core::usecases as usecase;
-
-use super::sqlite;
-use super::util::*;
-use super::*;
-use crate::adapters::json;
-use crate::test::Bencher;
+use super::{util::*, *};
+use crate::{adapters::json, core::usecases as usecase, test::Bencher};
 use pwhash::bcrypt;
-use rocket::response::Response;
-use serde_json;
-use std::fs;
-use uuid::Uuid;
 
-fn setup() -> (Client, sqlite::ConnectionPool) {
-    let cfg = Config::build(Environment::Development)
-        .log_level(LoggingLevel::Debug)
-        .finalize()
-        .unwrap();
-    let uuid = Uuid::new_v4().to_simple_ref().to_string();
-    fs::create_dir_all("test-dbs").unwrap();
-    let pool = sqlite::create_connection_pool(&format!("./test-dbs/{}", uuid)).unwrap();
-    let rocket = super::rocket_instance(cfg, pool.clone());
-    let client = Client::new(rocket).unwrap();
-    (client, pool)
+pub mod prelude {
+    use super::super::super::{rocket_instance, sqlite};
+    use rocket::{
+        config::{Config, Environment},
+        logger::LoggingLevel,
+    };
+    use std::fs;
+    use uuid::Uuid;
+
+    pub use crate::core::db::*;
+    pub use rocket::{
+        http::{ContentType, Cookie, Status},
+        local::Client,
+        response::Response,
+    };
+
+    pub fn setup() -> (Client, sqlite::ConnectionPool) {
+        let cfg = Config::build(Environment::Development)
+            .log_level(LoggingLevel::Debug)
+            .finalize()
+            .unwrap();
+        let uuid = Uuid::new_v4().to_simple_ref().to_string();
+        fs::create_dir_all("test-dbs").unwrap();
+        let pool = sqlite::create_connection_pool(&format!("./test-dbs/{}", uuid)).unwrap();
+        let rocket = rocket_instance(cfg, pool.clone());
+        let client = Client::new(rocket).unwrap();
+        (client, pool)
+    }
+
+    pub fn test_json(r: &Response) {
+        assert_eq!(
+            r.headers().get("Content-Type").collect::<Vec<_>>()[0],
+            "application/json"
+        );
+    }
 }
+
+use self::prelude::*;
 
 #[test]
 fn create_entry() {
@@ -49,16 +58,7 @@ fn create_entry() {
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#);
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .headers()
-        .iter()
-        .any(|h| h.name.as_str() == "Content-Type"));
-    for h in response.headers().iter() {
-        match h.name.as_str() {
-            "Content-Type" => assert_eq!(h.value, "application/json"),
-            _ => { /* let these through */ }
-        }
-    }
+    test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     let eid = db.get().unwrap().all_entries().unwrap()[0].id.clone();
     assert_eq!(body_str, format!("\"{}\"", eid));
@@ -81,10 +81,7 @@ fn create_entry_with_tag_duplicates() {
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","foo"]}"#);
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .headers()
-        .iter()
-        .any(|h| h.name.as_str() == "Content-Type"));
+    test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     let eid = db.get().unwrap().all_entries().unwrap()[0].id.clone();
     assert_eq!(body_str, format!("\"{}\"", eid));
@@ -109,6 +106,7 @@ fn create_entry_with_sharp_tag() {
         .body(json)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
+    test_json(&response);
     let tags = db.get().unwrap().all_entries().unwrap()[0].tags.clone();
     assert_eq!(tags, vec!["foo", "bar"]);
 }
@@ -141,6 +139,7 @@ fn update_entry_with_tag_duplicates() {
     let req = client.put(url).header(ContentType::JSON).body(json);
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
+    test_json(&response);
     let e = db.get().unwrap().all_entries().unwrap()[0].clone();
     assert_eq!(e.tags, vec!["bar"]);
 }
@@ -171,22 +170,16 @@ fn get_one_entry() {
     let req = client.get("/entries/get_one_entry_test");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .headers()
-        .iter()
-        .any(|h| h.name.as_str() == "Content-Type"));
-    for h in response.headers().iter() {
-        match h.name.as_str() {
-            "Content-Type" => assert_eq!(h.value, "application/json"),
-            _ => { /* let these through */ }
-        }
-    }
+    test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
-    let entries: Vec<Entry> = serde_json::from_str(&body_str).unwrap();
-    let rid = db.get().unwrap().all_ratings().unwrap()[0].id.clone();
-    assert!(body_str.contains(&format!(r#""ratings":["{}"]"#, rid)));
-    assert!(entries[0] == e);
+    let entries: Vec<json::Entry> = serde_json::from_str(&body_str).unwrap();
+    let rating = db.get().unwrap().all_ratings().unwrap()[0].clone();
+    assert!(body_str.contains(&format!(r#""ratings":["{}"]"#, rating.id)));
+    assert_eq!(
+        entries[0],
+        json::Entry::from_entry_with_ratings(e, vec![rating])
+    );
 }
 
 #[test]
@@ -207,22 +200,17 @@ fn get_multiple_entries() {
     let req = client.get("/entries/get_multiple_entry_test_one,get_multiple_entry_test_two");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .headers()
-        .iter()
-        .any(|h| h.name.as_str() == "Content-Type"));
-    for h in response.headers().iter() {
-        match h.name.as_str() {
-            "Content-Type" => assert_eq!(h.value, "application/json"),
-            _ => { /* let these through */ }
-        }
-    }
+    test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
-    let entries: Vec<Entry> = serde_json::from_str(&body_str).unwrap();
+    let entries: Vec<json::Entry> = serde_json::from_str(&body_str).unwrap();
     assert_eq!(entries.len(), 2);
-    assert!(entries.iter().any(|x| *x == one));
-    assert!(entries.iter().any(|x| *x == two));
+    assert!(entries
+        .iter()
+        .any(|x| *x == json::Entry::from_entry_with_ratings(one.clone(), vec![])));
+    assert!(entries
+        .iter()
+        .any(|x| *x == json::Entry::from_entry_with_ratings(two.clone(), vec![])));
 }
 
 #[test]
@@ -254,6 +242,7 @@ fn search_with_categories() {
     let req = client.get("/search?bbox=-10,-10,10,10&categories=foo");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
+    test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains("\"b\""));
     assert!(body_str.contains("\"a\""));
@@ -303,6 +292,7 @@ fn search_with_text() {
     let req = client.get("/search?bbox=-10,-10,10,10&text=Foo");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
+    test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains("\"a\""));
     assert!(body_str.contains("\"b\""));
@@ -362,6 +352,7 @@ fn search_with_tags() {
     let req = client.get("/search?bbox=-10,-10,10,10&tags=bla-blubb");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
+    test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains(r#""visible":[{"id":"b","lat":0.0,"lng":0.0}]"#,));
 
@@ -573,16 +564,7 @@ fn create_new_user() {
     let u = db.get().unwrap().get_user("foo").unwrap();
     assert_eq!(u.username, "foo");
     assert!(bcrypt::verify("bar", &u.password));
-    assert!(response
-        .headers()
-        .iter()
-        .any(|h| h.name.as_str() == "Content-Type"));
-    for h in response.headers().iter() {
-        match h.name.as_str() {
-            "Content-Type" => assert_eq!(h.value, "application/json"),
-            _ => { /* let these through */ }
-        }
-    }
+    test_json(&response);
 }
 
 #[test]
@@ -599,16 +581,7 @@ fn create_rating() {
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(db.get().unwrap().all_ratings().unwrap()[0].value, 1);
-    assert!(response
-        .headers()
-        .iter()
-        .any(|h| h.name.as_str() == "Content-Type"));
-    for h in response.headers().iter() {
-        match h.name.as_str() {
-            "Content-Type" => assert_eq!(h.value, "application/json"),
-            _ => { /* let these through */ }
-        }
-    }
+    test_json(&response);
 }
 
 #[test]
@@ -633,16 +606,7 @@ fn get_one_rating() {
     let req = client.get(format!("/ratings/{}", rid));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .headers()
-        .iter()
-        .any(|h| h.name.as_str() == "Content-Type"));
-    for h in response.headers().iter() {
-        match h.name.as_str() {
-            "Content-Type" => assert_eq!(h.value, "application/json"),
-            _ => { /* let these through */ }
-        }
-    }
+    test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
     let ratings: Vec<json::Rating> = serde_json::from_str(&body_str).unwrap();
@@ -688,16 +652,7 @@ fn ratings_with_and_without_source() {
     let req = client.get(format!("/ratings/{}", rid));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert!(response
-        .headers()
-        .iter()
-        .any(|h| h.name.as_str() == "Content-Type"));
-    for h in response.headers().iter() {
-        match h.name.as_str() {
-            "Content-Type" => assert_eq!(h.value, "application/json"),
-            _ => { /* let these through */ }
-        }
-    }
+    test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
     let ratings: Vec<json::Rating> = serde_json::from_str(&body_str).unwrap();
@@ -857,16 +812,7 @@ fn get_user() {
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(body_str, r#"{"username":"a","email":"a@bar"}"#);
-    assert!(response
-        .headers()
-        .iter()
-        .any(|h| h.name.as_str() == "Content-Type"));
-    for h in response.headers().iter() {
-        match h.name.as_str() {
-            "Content-Type" => assert_eq!(h.value, "application/json"),
-            _ => { /* let these through */ }
-        }
-    }
+    test_json(&response);
 }
 
 #[test]
@@ -1015,12 +961,17 @@ fn export_csv() {
             .lng(2.0)
             .finish(),
     ];
-    entries[0].street = Some("street1".to_string());
+    entries[0].location.address = Some(Address::build().street("street1").finish());
     entries[0].osm_node = Some(1);
     entries[0].created = 2;
-    entries[0].zip = Some("zip1".to_string());
-    entries[0].city = Some("city1".to_string());
-    entries[0].country = Some("country1".to_string());
+    entries[0].location.address = Some(
+        Address::build()
+            .street("street1")
+            .zip("zip1")
+            .city("city1")
+            .country("country1")
+            .finish(),
+    );
     entries[0].homepage = Some("homepage1".to_string());
 
     let mut conn = db.get().unwrap();
@@ -1067,7 +1018,7 @@ fn export_csv() {
     })
     .unwrap();
 
-    calculate_all_ratings(&*conn).unwrap();
+    super::super::calculate_all_ratings(&*conn).unwrap();
 
     let req = client.get("/export/entries.csv?bbox=-1,-1,1,1");
     let mut response = req.dispatch();

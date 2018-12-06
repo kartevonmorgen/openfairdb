@@ -10,12 +10,19 @@ use csv;
 use rocket::{
     self,
     http::{ContentType, Cookie, Cookies, Status},
-    request::{self, FromRequest, Request, Form},
+    request::{self, Form, FromRequest, Request},
     response::{content::Content, Responder, Response},
     Outcome, Route,
 };
 use rocket_contrib::json::Json;
 use std::result;
+
+mod count;
+mod events;
+mod ratings;
+#[cfg(test)]
+pub mod tests;
+mod users;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
@@ -41,25 +48,27 @@ pub fn routes() -> Vec<Route> {
     routes![
         login,
         logout,
-        delete_user,
         confirm_email_address,
         subscribe_to_bbox,
         get_bbox_subscriptions,
         unsubscribe_all_bboxes,
         get_entry,
         post_entry,
-        post_user,
-        post_rating,
         put_entry,
-        get_user,
+        events::post_event,
+        events::get_event,
+        users::post_user,
+        ratings::post_rating,
+        ratings::get_rating,
+        users::get_user,
+        users::delete_user,
         get_categories,
-        get_tags,
-        get_rating,
         get_category,
+        get_tags,
         get_search,
         get_duplicates,
-        get_count_entries,
-        get_count_tags,
+        count::get_count_entries,
+        count::get_count_tags,
         get_version,
         csv_export
     ]
@@ -118,27 +127,19 @@ fn get_search(db: DbConn, search: Form<SearchQuery>) -> Result<json::SearchRespo
 
     let visible = visible
         .into_iter()
-        .map(|e| json::EntryIdWithCoordinates {
-            id: e.id,
-            lat: e.lat,
-            lng: e.lng,
-        })
+        .map(json::EntryIdWithCoordinates::from)
         .collect();
 
     let invisible = invisible
         .into_iter()
-        .map(|e| json::EntryIdWithCoordinates {
-            id: e.id,
-            lat: e.lat,
-            lng: e.lng,
-        })
+        .map(json::EntryIdWithCoordinates::from)
         .collect();
 
     Ok(Json(json::SearchResponse { visible, invisible }))
 }
 
 #[derive(Deserialize, Debug, Clone)]
-struct Login(String);
+pub struct Login(String);
 
 #[derive(Deserialize, Debug, Clone)]
 struct UserId {
@@ -170,85 +171,9 @@ fn get_duplicates(db: DbConn) -> Result<Vec<(String, String, DuplicateType)>> {
     Ok(Json(ids))
 }
 
-#[get("/count/entries")]
-fn get_count_entries(db: DbConn) -> Result<usize> {
-    let entries = db.all_entries()?;
-    Ok(Json(entries.len()))
-}
-
-#[get("/count/tags")]
-fn get_count_tags(db: DbConn) -> Result<usize> {
-    Ok(Json(db.all_tags()?.len()))
-}
-
 #[get("/server/version")]
 fn get_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
-}
-
-#[post("/users", format = "application/json", data = "<u>")]
-fn post_user(mut db: DbConn, u: Json<usecases::NewUser>) -> Result<()> {
-    let new_user = u.into_inner();
-    usecases::create_new_user(&mut *db, new_user.clone())?;
-    let user = db.get_user(&new_user.username)?;
-    let subject = "Karte von morgen: bitte bestätige deine Email-Adresse";
-    let body = user_communication::email_confirmation_email(&user.id);
-
-    #[cfg(feature = "email")]
-    util::send_mails(&[user.email], subject, &body);
-
-    Ok(Json(()))
-}
-
-#[delete("/users/<u_id>")]
-fn delete_user(mut db: DbConn, user: Login, u_id: String) -> Result<()> {
-    usecases::delete_user(&mut *db, &user.0, &u_id)?;
-    Ok(Json(()))
-}
-
-#[post("/ratings", format = "application/json", data = "<u>")]
-fn post_rating(mut db: DbConn, u: Json<usecases::RateEntry>) -> Result<()> {
-    let u = u.into_inner();
-    let e_id = u.entry.clone();
-    usecases::rate_entry(&mut *db, u)?;
-    super::calculate_rating_for_entry(&*db, &e_id)?;
-    Ok(Json(()))
-}
-
-#[get("/ratings/<ids>")]
-fn get_rating(db: DbConn, ids: String) -> Result<Vec<json::Rating>> {
-    // TODO: Only lookup and return a single entity
-    // TODO: Add a new method for searching multiple ids
-    let mut ids = util::extract_ids(&ids);
-    let ratings = usecases::get_ratings(&*db, &ids)?;
-    // Retain only those ids that have actually been found
-    debug_assert!(ratings.len() <= ids.len());
-    ids.retain(|id| ratings.iter().any(|r| &r.id == id));
-    debug_assert!(ratings.len() == ids.len());
-    let comments = usecases::get_comments_by_rating_ids(&*db, &ids)?;
-    let result = ratings
-        .into_iter()
-        .map(|x| json::Rating {
-            id: x.id.clone(),
-            created: x.created,
-            title: x.title,
-            value: x.value,
-            context: x.context,
-            source: x.source.unwrap_or_else(|| "".into()),
-            comments: comments
-                .get(&x.id)
-                .cloned()
-                .unwrap_or_else(|| vec![])
-                .into_iter()
-                .map(|c| json::Comment {
-                    id: c.id.clone(),
-                    created: c.created,
-                    text: c.text,
-                })
-                .collect(),
-        })
-        .collect();
-    Ok(Json(result))
 }
 
 #[post("/login", format = "application/json", data = "<login>")]
@@ -279,9 +204,13 @@ fn confirm_email_address(mut db: DbConn, user: Json<UserId>) -> Result<()> {
 fn subscribe_to_bbox(
     mut db: DbConn,
     user: Login,
-    coordinates: Json<Vec<Coordinate>>,
+    coordinates: Json<Vec<json::Coordinate>>,
 ) -> Result<()> {
-    let coordinates = coordinates.into_inner();
+    let coordinates: Vec<Coordinate> = coordinates
+        .into_inner()
+        .into_iter()
+        .map(Coordinate::from)
+        .collect();
     let Login(username) = user;
     usecases::subscribe_to_bbox(&coordinates, &username, &mut *db)?;
     Ok(Json(()))
@@ -308,12 +237,6 @@ fn get_bbox_subscriptions(db: DbConn, user: Login) -> Result<Vec<json::BboxSubsc
         })
         .collect();
     Ok(Json(user_subscriptions))
-}
-
-#[get("/users/<username>", format = "application/json")]
-fn get_user(mut db: DbConn, user: Login, username: String) -> Result<json::User> {
-    let (_, email) = usecases::get_user(&mut *db, &user.0, &username)?;
-    Ok(Json(json::User { username, email }))
 }
 
 #[post("/entries", format = "application/json", data = "<e>")]
@@ -366,7 +289,10 @@ struct CsvExport {
 }
 
 #[get("/export/entries.csv?<export..>")]
-fn csv_export<'a>(db: DbConn, export: Form<CsvExport>) -> result::Result<Content<String>, AppError> {
+fn csv_export<'a>(
+    db: DbConn,
+    export: Form<CsvExport>,
+) -> result::Result<Content<String>, AppError> {
     let bbox = geo::extract_bbox(&export.bbox)
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
@@ -421,7 +347,7 @@ impl<'r> Responder<'r> for AppError {
                         }
                         ParameterError::Forbidden => Status::Forbidden,
                         _ => Status::BadRequest,
-                    })
+                    });
                 }
                 Error::Repo(ref err) => {
                     if let RepoError::NotFound = *err {
@@ -434,39 +360,4 @@ impl<'r> Responder<'r> for AppError {
         error!("Error: {}", self);
         Err(Status::InternalServerError)
     }
-}
-
-#[cfg(test)]
-mod tests {
-    //use super::super::mockdb;
-
-    //fn setup() -> mockdb::ConnectionPool {
-    //    mockdb::create_connection_pool(":memory:").unwrap()
-    //}
-
-    //use super::super::{mockdb::DbConn, ENTRY_RATINGS};
-    //use test::Bencher;
-
-    //#[ignore]
-    //#[bench]
-    //fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
-    //    let (entries, ratings) = ::core::util::sort::tests::create_entries_with_ratings(10_000);
-    //    let pool = setup();
-    //    let mut conn = pool.get().unwrap();
-    //    conn.entries = entries;
-    //    conn.ratings = ratings;
-    //    calculate_all_ratings(&*conn).unwrap();
-    //    assert!((*ENTRY_RATINGS.lock().unwrap()).len() > 9_000);
-    //    let query = super::SearchQuery {
-    //        bbox: "-10,-10,10,10".into(),
-    //        categories: None,
-    //        text: None,
-    //        tags: None,
-    //    };
-    //    b.iter(move || {
-    //        let conn = pool.get().unwrap();
-    //        let db = DbConn(conn);
-    //        super::get_search(db, query.clone()).unwrap()
-    //    });
-    //}
 }

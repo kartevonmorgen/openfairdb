@@ -8,6 +8,7 @@ use crate::core::prelude::*;
 
 mod confirm_email;
 mod create_new_entry;
+mod create_new_event;
 mod create_new_user;
 mod find_duplicates;
 mod login;
@@ -19,6 +20,7 @@ mod update_entry;
 
 pub use self::confirm_email::*;
 pub use self::create_new_entry::*;
+pub use self::create_new_event::*;
 pub use self::create_new_user::*;
 pub use self::find_duplicates::*;
 pub use self::login::*;
@@ -100,6 +102,11 @@ pub fn get_user<D: Db>(
         return Err(Error::Parameter(ParameterError::Forbidden));
     }
     Ok((u.username, u.email))
+}
+
+pub fn get_event<D: Db>(db: &mut D, id: &str) -> Result<Event> {
+    let e: Event = db.get_event(id)?;
+    Ok(e)
 }
 
 pub fn delete_user(db: &mut Db, login_id: &str, u_id: &str) -> Result<()> {

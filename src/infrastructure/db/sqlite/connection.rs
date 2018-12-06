@@ -108,6 +108,17 @@ impl EntryGateway for SqliteConnection {
             .map(|r| r.tag_id)
             .collect();
 
+        let location = Location {
+            lat: lat as f64,
+            lng: lng as f64,
+            address: Some(Address {
+                street,
+                zip,
+                city,
+                country,
+            }),
+        };
+
         Ok(Entry {
             id,
             osm_node: osm_node.map(|x| x as u64),
@@ -115,14 +126,8 @@ impl EntryGateway for SqliteConnection {
             version: version as u64,
             title,
             description,
-            lat: lat as f64,
-            lng: lng as f64,
-            street,
-            zip,
-            city,
-            country,
-            email,
-            telephone,
+            location,
+            contact: Some(Contact { email, telephone }),
             homepage,
             categories,
             tags,
@@ -133,119 +138,42 @@ impl EntryGateway for SqliteConnection {
     }
 
     fn get_entries_by_bbox(&self, bbox: &Bbox) -> Result<Vec<Entry>> {
-        use self::schema::entries::dsl as e_dsl;
-        use self::schema::entry_category_relations::dsl as e_c_dsl;
-        use self::schema::entry_tag_relations::dsl as e_t_dsl;
-
+        use self::schema::{
+            entries::dsl as e_dsl, entry_category_relations::dsl as e_c_dsl,
+            entry_tag_relations::dsl as e_t_dsl,
+        };
+        let Bbox {
+            south_west,
+            north_east,
+        } = bbox;
         let entries: Vec<models::Entry> = e_dsl::entries
             .filter(e_dsl::current.eq(true))
-            .filter(e_dsl::lat.between(bbox.south_west.lat, bbox.north_east.lat))
-            .filter(e_dsl::lng.between(bbox.south_west.lng, bbox.north_east.lng))
+            .filter(e_dsl::lat.between(south_west.lat, north_east.lat))
+            .filter(e_dsl::lng.between(south_west.lng, north_east.lng))
             .load(self)?;
-
-        let cat_rels =
-            e_c_dsl::entry_category_relations.load::<models::EntryCategoryRelation>(self)?;
-
-        let tag_rels = e_t_dsl::entry_tag_relations.load::<models::EntryTagRelation>(self)?;
-
+        let cat_rels = e_c_dsl::entry_category_relations.load(self)?;
+        let tag_rels = e_t_dsl::entry_tag_relations.load(self)?;
         Ok(entries
             .into_iter()
-            .map(|e| {
-                let cats = cat_rels
-                    .iter()
-                    .filter(|r| r.entry_id == e.id)
-                    .filter(|r| r.entry_version == e.version)
-                    .map(|r| &r.category_id)
-                    .cloned()
-                    .collect();
-                let tags = tag_rels
-                    .iter()
-                    .filter(|r| r.entry_id == e.id)
-                    .filter(|r| r.entry_version == e.version)
-                    .map(|r| &r.tag_id)
-                    .cloned()
-                    .collect();
-                Entry {
-                    id: e.id,
-                    osm_node: e.osm_node.map(|x| x as u64),
-                    created: e.created as u64,
-                    version: e.version as u64,
-                    title: e.title,
-                    description: e.description,
-                    lat: e.lat as f64,
-                    lng: e.lng as f64,
-                    street: e.street,
-                    zip: e.zip,
-                    city: e.city,
-                    country: e.country,
-                    email: e.email,
-                    telephone: e.telephone,
-                    homepage: e.homepage,
-                    categories: cats,
-                    tags: tags,
-                    license: e.license,
-                    image_url: e.image_url,
-                    image_link_url: e.image_link_url,
-                }
-            })
+            .map(|e| (e, &cat_rels, &tag_rels).into())
             .collect())
     }
 
     fn all_entries(&self) -> Result<Vec<Entry>> {
-        use self::schema::entries::dsl as e_dsl;
-        use self::schema::entry_category_relations::dsl as e_c_dsl;
-        use self::schema::entry_tag_relations::dsl as e_t_dsl;
-
+        use self::schema::{
+            entries::dsl as e_dsl, entry_category_relations::dsl as e_c_dsl,
+            entry_tag_relations::dsl as e_t_dsl,
+        };
         let entries: Vec<models::Entry> =
             e_dsl::entries.filter(e_dsl::current.eq(true)).load(self)?;
-
-        let cat_rels =
-            e_c_dsl::entry_category_relations.load::<models::EntryCategoryRelation>(self)?;
-
-        let tag_rels = e_t_dsl::entry_tag_relations.load::<models::EntryTagRelation>(self)?;
-
+        let cat_rels = e_c_dsl::entry_category_relations.load(self)?;
+        let tag_rels = e_t_dsl::entry_tag_relations.load(self)?;
         Ok(entries
             .into_iter()
-            .map(|e| {
-                let cats = cat_rels
-                    .iter()
-                    .filter(|r| r.entry_id == e.id)
-                    .filter(|r| r.entry_version == e.version)
-                    .map(|r| &r.category_id)
-                    .cloned()
-                    .collect();
-                let tags = tag_rels
-                    .iter()
-                    .filter(|r| r.entry_id == e.id)
-                    .filter(|r| r.entry_version == e.version)
-                    .map(|r| &r.tag_id)
-                    .cloned()
-                    .collect();
-                Entry {
-                    id: e.id,
-                    osm_node: e.osm_node.map(|x| x as u64),
-                    created: e.created as u64,
-                    version: e.version as u64,
-                    title: e.title,
-                    description: e.description,
-                    lat: e.lat as f64,
-                    lng: e.lng as f64,
-                    street: e.street,
-                    zip: e.zip,
-                    city: e.city,
-                    country: e.country,
-                    email: e.email,
-                    telephone: e.telephone,
-                    homepage: e.homepage,
-                    categories: cats,
-                    tags: tags,
-                    license: e.license,
-                    image_url: e.image_url,
-                    image_link_url: e.image_link_url,
-                }
-            })
+            .map(|e| (e, &cat_rels, &tag_rels).into())
             .collect())
     }
+
     fn update_entry(&mut self, entry: &Entry) -> Result<()> {
         let e = models::Entry::from(entry.clone());
 
@@ -354,6 +282,130 @@ impl EntryGateway for SqliteConnection {
                     .values(&tag_rels)
                     .execute(self)?;
             }
+            Ok(())
+        })?;
+        Ok(())
+    }
+}
+
+impl EventGateway for SqliteConnection {
+    fn create_event(&mut self, e: &Event) -> Result<()> {
+        let new_event = models::Event::from(e.clone());
+        let tag_rels: Vec<_> = e
+            .tags
+            .iter()
+            .cloned()
+            .map(|tag_id| models::EventTagRelation {
+                event_id: e.id.clone(),
+                tag_id,
+            })
+            .collect();
+        self.transaction::<_, diesel::result::Error, _>(|| {
+            diesel::insert_into(schema::events::table)
+                .values(&new_event)
+                .execute(self)?;
+            diesel::insert_into(schema::event_tag_relations::table)
+                //WHERE NOT EXISTS
+                .values(&tag_rels)
+                .execute(self)?;
+            Ok(())
+        })?;
+        Ok(())
+    }
+
+    fn get_event(&self, e_id: &str) -> Result<Event> {
+        use self::schema::{event_tag_relations::dsl as e_t_dsl, events::dsl as e_dsl};
+
+        let models::Event {
+            id,
+            title,
+            description,
+            start,
+            end,
+            lat,
+            lng,
+            street,
+            zip,
+            city,
+            country,
+            email,
+            telephone,
+            homepage,
+        } = e_dsl::events.filter(e_dsl::id.eq(e_id)).first(self)?;
+
+        let tags = e_t_dsl::event_tag_relations
+            .filter(e_t_dsl::event_id.eq(&id))
+            .load::<models::EventTagRelation>(self)?
+            .into_iter()
+            .map(|r| r.tag_id)
+            .collect();
+
+        let address = if street.is_some() || zip.is_some() || city.is_some() || country.is_some() {
+            Some(Address {
+                street,
+                zip,
+                city,
+                country,
+            })
+        } else {
+            None
+        };
+
+        let location = if lat.is_some() || lng.is_some() || address.is_some() {
+            Some(Location {
+                // TODO: How to handle missing lat/lng?
+                lat: lat.map(|x| x as f64).unwrap_or(0.0),
+                lng: lng.map(|x| x as f64).unwrap_or(0.0),
+                address,
+            })
+        } else {
+            None
+        };
+        let contact = if email.is_some() || telephone.is_some() {
+            Some(Contact { email, telephone })
+        } else {
+            None
+        };
+
+        Ok(Event {
+            id,
+            title,
+            start: start as u64,
+            end: end.map(|x| x as u64),
+            description,
+            location,
+            contact,
+            homepage,
+            tags,
+        })
+    }
+
+    fn all_events(&self) -> Result<Vec<Event>> {
+        use self::schema::{event_tag_relations::dsl as e_t_dsl, events::dsl as e_dsl};
+        let events: Vec<models::Event> = e_dsl::events.load(self)?;
+        let tag_rels = e_t_dsl::event_tag_relations.load(self)?;
+        Ok(events.into_iter().map(|e| (e, &tag_rels).into()).collect())
+    }
+
+    fn update_event(&mut self, event: &Event) -> Result<()> {
+        let e = models::Event::from(event.clone());
+        let tag_rels: Vec<_> = event
+            .tags
+            .iter()
+            .cloned()
+            .map(|tag_id| models::EventTagRelation {
+                event_id: event.id.clone(),
+                tag_id,
+            })
+            .collect();
+        self.transaction::<_, diesel::result::Error, _>(|| {
+            diesel::insert_into(schema::events::table)
+                .values(&e)
+                .execute(self)?;
+            diesel::insert_into(schema::event_tag_relations::table)
+                //WHERE NOT EXISTS
+                .values(&tag_rels)
+                .execute(self)?;
             Ok(())
         })?;
         Ok(())
