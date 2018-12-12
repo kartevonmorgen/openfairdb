@@ -1,0 +1,306 @@
+openapi: 3.0.2
+info:
+  title: OpenFairDB API
+  version: 0.1.0
+  contact:
+    name: slowtec GmbH
+    url: 'https://slowtec.de'
+  license:
+    name: AGPLv3
+    url: 'https://github.com/flosse/openfairdb/blob/master/LICENSE'
+servers:
+  - url: 'https://api.ofdb.io/v0/'
+    description: Public production server
+paths:
+  '/search':
+    get:
+      summary: Search for entries
+      tags:
+        - Search
+      parameters:
+        - name: text
+          in: query
+          schema:
+            type: string
+        - name: bbox
+          in: query
+          schema:
+            type: string
+        - name: categories
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sucessfull response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResult'
+  '/entries/{id}':
+    get:
+      summary: Get an entry
+      tags:
+        - Entries
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sucessfull response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entry'
+  '/ratings/{id}':
+    get:
+      summary: Get a specific rating
+      tags:
+        - Ratings
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Sucessfull response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Rating'
+  /categories/:
+    get:
+      summary: Get available categories
+      tags:
+        - Categories
+      responses:
+        200:
+          description: Sucessfull response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+  '/categories/{id}':
+    get:
+      summary: Get a specific categories
+      tags:
+        - Categories
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Sucessfull response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+  '/users/{username}':
+    get:
+      summary: Get user data
+      tags:
+        - Users
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sucessfull response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+  /count/entries:
+    get:
+      summary: Get number of entries
+      tags:
+        - Stats
+      responses:
+        '200':
+          description: Sucessfull response
+          content:
+            application/json:
+              schema:
+                type: integer
+  /count/tags:
+    get:
+      summary: Get number of tags
+      tags:
+        - Stats
+      responses:
+        '200':
+          description: Sucessfull response
+          content:
+            application/json:
+              schema:
+                type: integer
+  /server/version:
+    get:
+      summary: Get current server version
+      tags:
+        - Stats
+      responses:
+        '200':
+          description: Sucessfull response
+          content:
+            text/plain:
+              schema:
+                type: string
+  /export/entries.csv:
+    get:
+      summary: Export data as CSV
+      tags:
+        - Export
+      responses:
+        '200':
+          description: Sucessfull response
+          content:
+            text/csv:
+              schema:
+                type: string
+components:
+  schemas:
+    Entry:
+      properties:
+        id:
+          type: string
+          readOnly: true
+        version:
+          type: integer
+        created:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        street:
+          type: string
+        zip:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        email:
+          type: string
+        telephone:
+          type: string
+        homepage:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        ratings:
+          type: array
+          items:
+            type: string
+        image_url:
+          type: string
+        image_link_url:
+          type: string
+        license:
+          type: string
+    Category:
+      properties:
+        id:
+          type: string
+          readOnly: true
+        created:
+          type: integer
+        version:
+          type: integer
+        name:
+          type: string
+    Rating:
+      properties:
+        id:
+          type: string
+          readOnly: true
+        title:
+          type: string
+        created:
+          type: integer
+        value:
+          type: integer
+        context:
+          type: string
+        source:
+          type: string
+        comments:
+          type: array
+          items:
+            $ref: '#/components/schemas/RatingComment'
+    RatingComment:
+      properties:
+        id:
+          type: string
+          readOnly: true
+        created:
+          type: integer
+        text:
+          type: string
+    User:
+      properties:
+        username:
+          type: string
+        email:
+          type: string
+    BboxSubscription:
+      properties:
+        id:
+          type: string
+          readOnly: true
+        south_west_lat:
+          type: number
+        south_west_lng:
+          type: number
+        north_east_lat:
+          type: number
+        north_east_lng:
+          type: number
+    SearchResult:
+      properties:
+        visible:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              lat:
+                type: number
+              lng:
+                type: number
+        invisible:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              lat:
+                type: number
+              lng:
+                type: number

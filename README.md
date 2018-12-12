@@ -10,7 +10,11 @@ written in [Rust](http://rustlang.org/).
 
 ## REST API
 
-The API is available under `http://api.ofdb.io/v0/`. For examples how to use the API, open "network" in the developer tools in your browser and see the requests that https://kartevonmorgen.org sends.
+The API is available under `http://api.ofdb.io/v0/`.
+
+The current API is documented within the [openapi.yaml](https://github.com/flosse/openfairdb/blob/master/openapi.yaml) file.
+
+For examples how to use the API, open "network" in the developer tools in your browser and see the requests that https://kartevonmorgen.org sends.
 
 When you want to use the API, please contact us at helmut@bildungsagenten.com. The API might still change sometimes. We will try to let you know in that case.
 
@@ -75,99 +79,6 @@ For the following requests one must be logged in:
 http://api.ofdb.io/v0/export/entries.csv?bbox=47.497972542230855,0.7996758709088782,54.63407558981465,18.307256321725717
 
 If you want to find out the coordinates for other map areas, open "network" in the "developer tools" in your browser and look at the search request under at the value of `bbox`.
-
-### JSON structures
-
-#### Entry
-```
-{
-  "id"          : String,
-  "version"     : Number,
-  "created"     : Number,
-  "title"       : String,
-  "description" : String,
-  "lat"         : Number,
-  "lng"         : Number,
-  "street"      : String,
-  "zip"         : String,
-  "city"        : String,
-  "country"     : String,
-  "email"       : String,
-  "telephone"   : String,
-  "homepage"    : String,
-  "categories"  : [String],
-  "tags"        : [String],
-  "ratings"     : [String]
-  "license"     : String
-}
-```
-
-#### Rating
-```
-{
-    "id"        : String,
-    "title"     : String,
-    "created"   : Number,
-    "value"     : Number,
-    "context"   : String,
-    "source"    : String,
-    "comments"  : [RatingComment]
-}
-```
-
-#### RatingComment
-```
-{
-    "id"        : String,
-    "created"   : Number,
-    "text"      : String
-}
-```
-
-#### Category
-
-```
-{
-  "id"      : String,
-  "version" : Number,
-  "created" : Number,
-  "name"    : String,
-  "parent"  : String
-}
-```
-
-#### Rating
-
-```
-{
-  "id"          : String,
-  "created"     : Number,
-  "title"       : String,
-  "user"        : String,
-  "value"       : Number,
-  "context"     : String,
-  "comments"    : Array,
-}
-```
-
-#### User
-```
-{
-    "username"  : String,
-    "email"     : String
-}
-```
-
-#### BboxSubscription
-```
-{
-    "id"             : String,
-    "south_west_lat" : Number,
-    "south_west_lng" : Number,
-    "north_east_lat" : Number,
-    "north_east_lat" : Number
-}
-```
 
 ## Quick start
 
