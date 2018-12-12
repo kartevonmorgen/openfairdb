@@ -4,7 +4,7 @@ use std::result;
 type Result<T> = result::Result<T, RepoError>;
 
 pub trait EntryGateway {
-    fn create_entry(&mut self, _: &Entry) -> Result<()>;
+    fn create_entry(&mut self, _: Entry) -> Result<()>;
     fn get_entry(&self, _: &str) -> Result<Entry>;
     fn get_entries_by_bbox(&self, _: &Bbox) -> Result<Vec<Entry>>;
     fn all_entries(&self) -> Result<Vec<Entry>>;
@@ -13,14 +13,14 @@ pub trait EntryGateway {
 }
 
 pub trait EventGateway {
-    fn create_event(&mut self, _: &Event) -> Result<()>;
+    fn create_event(&mut self, _: Event) -> Result<()>;
     fn get_event(&self, _: &str) -> Result<Event>;
     fn all_events(&self) -> Result<Vec<Event>>;
     fn update_event(&mut self, _: &Event) -> Result<()>;
 }
 
 pub trait UserGateway {
-    fn create_user(&mut self, _: &User) -> Result<()>;
+    fn create_user(&mut self, _: User) -> Result<()>;
     fn update_user(&mut self, _: &User) -> Result<()>;
     fn get_user(&self, _: &str) -> Result<User>;
     fn all_users(&self) -> Result<Vec<User>>;
@@ -28,7 +28,7 @@ pub trait UserGateway {
 }
 
 pub trait CommentGateway {
-    fn create_comment(&mut self, _: &Comment) -> Result<()>;
+    fn create_comment(&mut self, _: Comment) -> Result<()>;
     fn all_comments(&self) -> Result<Vec<Comment>>;
 }
 
@@ -41,7 +41,7 @@ pub trait CommentGateway {
 pub trait Db: EntryGateway + UserGateway + CommentGateway + EventGateway {
     fn create_tag_if_it_does_not_exist(&mut self, _: &Tag) -> Result<()>;
     fn create_category_if_it_does_not_exist(&mut self, _: &Category) -> Result<()>;
-    fn create_rating(&mut self, _: &Rating) -> Result<()>;
+    fn create_rating(&mut self, _: Rating) -> Result<()>;
     fn create_bbox_subscription(&mut self, _: &BboxSubscription) -> Result<()>;
 
     fn all_categories(&self) -> Result<Vec<Category>>;

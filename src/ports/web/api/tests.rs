@@ -153,7 +153,7 @@ fn get_one_entry() {
         .finish();
 
     let (client, db) = setup();
-    db.get().unwrap().create_entry(&e).unwrap();
+    db.get().unwrap().create_entry(e.clone()).unwrap();
     usecase::rate_entry(
         &mut *db.get().unwrap(),
         usecase::RateEntry {
@@ -195,8 +195,8 @@ fn get_multiple_entries() {
         .description("desc")
         .finish();
     let (client, db) = setup();
-    db.get().unwrap().create_entry(&one).unwrap();
-    db.get().unwrap().create_entry(&two).unwrap();
+    db.get().unwrap().create_entry(one.clone()).unwrap();
+    db.get().unwrap().create_entry(two.clone()).unwrap();
     let req = client.get("/entries/get_multiple_entry_test_one,get_multiple_entry_test_two");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -237,7 +237,7 @@ fn search_with_categories() {
     })
     .unwrap();
     for e in entries {
-        conn.create_entry(&e).unwrap();
+        conn.create_entry(e).unwrap();
     }
     let req = client.get("/search?bbox=-10,-10,10,10&categories=foo");
     let mut response = req.dispatch();
@@ -287,7 +287,7 @@ fn search_with_text() {
     let (client, db) = setup();
     let mut conn = db.get().unwrap();
     for e in entries {
-        conn.create_entry(&e).unwrap();
+        conn.create_entry(e).unwrap();
     }
     let req = client.get("/search?bbox=-10,-10,10,10&text=Foo");
     let mut response = req.dispatch();
@@ -306,10 +306,10 @@ fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
     let (client, db) = setup();
     let mut conn = db.get().unwrap();
     for e in entries {
-        conn.create_entry(&e).unwrap();
+        conn.create_entry(e).unwrap();
     }
     for r in ratings {
-        conn.create_rating(&r).unwrap();
+        conn.create_rating(r).unwrap();
     }
     b.iter(|| client.get("/search?bbox=-10,-10,10,10").dispatch());
 }
@@ -347,7 +347,7 @@ fn search_with_tags() {
     })
     .unwrap();
     for e in entries {
-        conn.create_entry(&e).unwrap();
+        conn.create_entry(e).unwrap();
     }
     let req = client.get("/search?bbox=-10,-10,10,10&tags=bla-blubb");
     let mut response = req.dispatch();
@@ -380,7 +380,7 @@ fn search_with_uppercase_tags() {
     conn.create_tag_if_it_does_not_exist(&Tag { id: "baz".into() })
         .unwrap();
     for e in entries {
-        conn.create_entry(&e).unwrap();
+        conn.create_entry(e).unwrap();
     }
     let req = client.get("/search?bbox=-10,-10,10,10&tags=Foo");
     let mut response = req.dispatch();
@@ -412,7 +412,7 @@ fn search_with_hashtag() {
     })
     .unwrap();
     for e in entries {
-        conn.create_entry(&e).unwrap();
+        conn.create_entry(e).unwrap();
     }
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23foo-bar");
     let mut response = req.dispatch();
@@ -443,7 +443,7 @@ fn search_with_two_hashtags() {
     })
     .unwrap();
     for e in entries {
-        conn.create_entry(&e).unwrap();
+        conn.create_entry(e).unwrap();
     }
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23bla-blubb%20%23foo-bar");
     let mut response = req.dispatch();
@@ -467,7 +467,7 @@ fn search_with_commata() {
     conn.create_tag_if_it_does_not_exist(&Tag { id: "zwei".into() })
         .unwrap();
     for e in entries {
-        conn.create_entry(&e).unwrap();
+        conn.create_entry(e).unwrap();
     }
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23eins%2C%20%23zwei");
     let mut response = req.dispatch();
@@ -503,7 +503,7 @@ fn search_without_specifying_hashtag_symbol() {
     })
     .unwrap();
     for e in entries {
-        conn.create_entry(&e).unwrap();
+        conn.create_entry(e).unwrap();
     }
     let mut response = client
         .get("/search?bbox=-10,-10,10,10&text=bla-blubb")
@@ -573,7 +573,7 @@ fn create_rating() {
     let entries = vec![Entry::build().id("foo").finish()];
     let mut conn = db.get().unwrap();
     for e in entries {
-        conn.create_entry(&e).unwrap();
+        conn.create_entry(e).unwrap();
     }
     let req = client.post("/ratings")
         .header(ContentType::JSON)
@@ -588,7 +588,7 @@ fn create_rating() {
 fn get_one_rating() {
     let e = Entry::build().id("foo").finish();
     let (client, db) = setup();
-    db.get().unwrap().create_entry(&e).unwrap();
+    db.get().unwrap().create_entry(e).unwrap();
     usecase::rate_entry(
         &mut *db.get().unwrap(),
         usecase::RateEntry {
@@ -619,8 +619,8 @@ fn ratings_with_and_without_source() {
     let e1 = Entry::build().id("foo").finish();
     let e2 = Entry::build().id("bar").finish();
     let (client, db) = setup();
-    db.get().unwrap().create_entry(&e1).unwrap();
-    db.get().unwrap().create_entry(&e2).unwrap();
+    db.get().unwrap().create_entry(e1).unwrap();
+    db.get().unwrap().create_entry(e2).unwrap();
     usecase::rate_entry(
         &mut *db.get().unwrap(),
         usecase::RateEntry {
@@ -715,7 +715,7 @@ fn login_with_valid_credentials() {
     }];
     let mut conn = db.get().unwrap();
     for u in users {
-        conn.create_user(&u).unwrap();
+        conn.create_user(u).unwrap();
     }
     let response = client
         .post("/login")
@@ -740,7 +740,7 @@ fn login_logout_succeeds() {
     }];
     let mut conn = db.get().unwrap();
     for u in users {
-        conn.create_user(&u).unwrap();
+        conn.create_user(u).unwrap();
     }
 
     // Login
@@ -785,7 +785,7 @@ fn get_user() {
     ];
     let mut conn = db.get().unwrap();
     for u in users {
-        conn.create_user(&u).unwrap();
+        conn.create_user(u).unwrap();
     }
     let response = client
         .post("/login")
@@ -828,7 +828,7 @@ fn confirm_email_address() {
     }];
     let mut conn = db.get().unwrap();
     for u in users {
-        conn.create_user(&u).unwrap();
+        conn.create_user(u).unwrap();
     }
 
     let response = client
@@ -889,7 +889,7 @@ fn send_confirmation_email() {
     }];
     let mut conn = db.get().unwrap();
     for u in users {
-        conn.create_user(&u).unwrap();
+        conn.create_user(u).unwrap();
     }
 
     let response = client
@@ -913,7 +913,7 @@ fn subscribe_to_bbox() {
     }];
     let mut conn = db.get().unwrap();
     for u in users {
-        conn.create_user(&u).unwrap();
+        conn.create_user(u).unwrap();
     }
     let response = client
         .post("/login")
@@ -994,10 +994,10 @@ fn export_csv() {
     conn.create_tag_if_it_does_not_exist(&Tag { id: "bla".into() })
         .unwrap();
     for e in entries {
-        conn.create_entry(&e).unwrap();
+        conn.create_entry(e).unwrap();
     }
     let diversity = RatingContext::Diversity;
-    conn.create_rating(&Rating {
+    conn.create_rating(Rating {
         id: "123".into(),
         entry_id: "entry1".into(),
         created: 123,
@@ -1007,7 +1007,7 @@ fn export_csv() {
         source: None,
     })
     .unwrap();
-    conn.create_rating(&Rating {
+    conn.create_rating(Rating {
         id: "345".into(),
         entry_id: "entry1".into(),
         created: 123,

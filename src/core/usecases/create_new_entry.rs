@@ -44,15 +44,16 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
     } = e;
     let mut tags: Vec<_> = tags.into_iter().map(|t| t.replace("#", "")).collect();
     tags.dedup();
-    let address = if street.is_some() || zip.is_some() || city.is_some() || country.is_some() {
-        Some(Address {
-            street,
-            zip,
-            city,
-            country,
-        })
-    } else {
+    let address = Address {
+        street,
+        zip,
+        city,
+        country,
+    };
+    let address = if address.is_empty() {
         None
+    } else {
+        Some(address)
     };
     let location = Location { lat, lng, address };
     let contact = if email.is_some() || telephone.is_some() {
@@ -61,7 +62,8 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
         None
     };
     let created = Utc::now().timestamp() as u64;
-    let id = Uuid::new_v4().to_simple_ref().to_string();
+    let new_id = Uuid::new_v4().to_simple_ref().to_string();
+    let id = new_id.clone();
     let homepage = e.homepage.map(|ref url| parse_url_param(url)).transpose()?;
     let image_url = e
         .image_url
@@ -94,8 +96,8 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
     for t in &new_entry.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
-    db.create_entry(&new_entry)?;
-    Ok(new_entry.id)
+    db.create_entry(new_entry)?;
+    Ok(new_id)
 }
 
 #[cfg(test)]

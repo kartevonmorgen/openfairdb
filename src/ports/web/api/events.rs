@@ -47,7 +47,7 @@ mod tests {
             tags: vec!["bla".into()],
             homepage: None,
         };
-        db.get().unwrap().create_event(&e).unwrap();
+        db.get().unwrap().create_event(e).unwrap();
         let req = client.get("/events/1234").header(ContentType::JSON);
         let mut response = req.dispatch();
         assert_eq!(response.status(), Status::Ok);

@@ -25,19 +25,17 @@ pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
     let now = Utc::now().timestamp() as u64;
     let rating_id = Uuid::new_v4().to_simple_ref().to_string();
     let comment_id = Uuid::new_v4().to_simple_ref().to_string();
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    db.create_rating(&Rating{
-        id       : rating_id.clone(),
-        entry_id : e.id,
-        created  : now,
-        title    : r.title,
-        value    : r.value,
-        context  : r.context,
-        source   : r.source
+    db.create_rating(Rating {
+        id: rating_id.clone(),
+        entry_id: e.id,
+        created: now,
+        title: r.title,
+        value: r.value,
+        context: r.context,
+        source: r.source,
     })?;
-    #[cfg_attr(rustfmt, rustfmt_skip)]
-    db.create_comment(&Comment {
-        id: comment_id.clone(),
+    db.create_comment(Comment {
+        id: comment_id,
         created: now,
         text: r.comment,
         rating_id,

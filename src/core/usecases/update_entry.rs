@@ -31,24 +31,6 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
     }
     let mut tags = e.tags;
     tags.dedup();
-    let address =
-        if e.street.is_some() || e.zip.is_some() || e.city.is_some() || e.country.is_some() {
-            let UpdateEntry {
-                street,
-                zip,
-                city,
-                country,
-                ..
-            } = e;
-            Some(Address {
-                street,
-                zip,
-                city,
-                country,
-            })
-        } else {
-            None
-        };
     let UpdateEntry {
         id,
         version,
@@ -56,12 +38,26 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
         description,
         lat,
         lng,
+        street,
+        zip,
+        city,
+        country,
         email,
         telephone,
         categories,
         ..
     } = e;
-
+    let address = Address {
+        street,
+        zip,
+        city,
+        country,
+    };
+    let address = if address.is_empty() {
+        None
+    } else {
+        Some(address)
+    };
     let updated_entry = Entry {
         id,
         osm_node: None,

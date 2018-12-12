@@ -91,11 +91,11 @@ fn get<T: Clone + Id>(objects: &[T], id: &str) -> RepoResult<T> {
     }
 }
 
-fn create<T: Clone + Id>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
+fn create<T: Clone + Id>(objects: &mut Vec<T>, e: T) -> RepoResult<()> {
     if objects.iter().any(|x| x.id() == e.id()) {
         return Err(RepoError::AlreadyExists);
     } else {
-        objects.push(e.clone());
+        objects.push(e);
     }
     Ok(())
 }
@@ -110,7 +110,7 @@ fn update<T: Clone + Id>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
 }
 
 impl EntryGateway for MockDb {
-    fn create_entry(&mut self, e: &Entry) -> RepoResult<()> {
+    fn create_entry(&mut self, e: Entry) -> RepoResult<()> {
         create(&mut self.entries, e)
     }
     fn get_entry(&self, id: &str) -> RepoResult<Entry> {
@@ -134,7 +134,7 @@ impl EntryGateway for MockDb {
 
     fn import_multiple_entries(&mut self, entries: &[Entry]) -> RepoResult<()> {
         for e in entries.iter() {
-            self.create_entry(e)?;
+            self.create_entry(e.clone())?;
             for t in e.tags.iter() {
                 self.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
             }
@@ -144,7 +144,7 @@ impl EntryGateway for MockDb {
 }
 
 impl EventGateway for MockDb {
-    fn create_event(&mut self, e: &Event) -> RepoResult<()> {
+    fn create_event(&mut self, e: Event) -> RepoResult<()> {
         create(&mut self.events, e)
     }
 
@@ -160,7 +160,7 @@ impl EventGateway for MockDb {
 }
 
 impl UserGateway for MockDb {
-    fn create_user(&mut self, u: &User) -> RepoResult<()> {
+    fn create_user(&mut self, u: User) -> RepoResult<()> {
         create(&mut self.users, u)
     }
 
@@ -198,7 +198,7 @@ impl UserGateway for MockDb {
 }
 
 impl CommentGateway for MockDb {
-    fn create_comment(&mut self, c: &Comment) -> RepoResult<()> {
+    fn create_comment(&mut self, c: Comment) -> RepoResult<()> {
         create(&mut self.comments, c)
     }
 
@@ -209,7 +209,7 @@ impl CommentGateway for MockDb {
 
 impl Db for MockDb {
     fn create_tag_if_it_does_not_exist(&mut self, e: &Tag) -> RepoResult<()> {
-        if let Err(err) = create(&mut self.tags, e) {
+        if let Err(err) = create(&mut self.tags, e.clone()) {
             match err {
                 RepoError::AlreadyExists => {
                     // that's ok
@@ -221,7 +221,7 @@ impl Db for MockDb {
     }
 
     fn create_category_if_it_does_not_exist(&mut self, e: &Category) -> RepoResult<()> {
-        if let Err(err) = create(&mut self.categories, e) {
+        if let Err(err) = create(&mut self.categories, e.clone()) {
             match err {
                 RepoError::AlreadyExists => {
                     // that's ok
@@ -232,12 +232,12 @@ impl Db for MockDb {
         Ok(())
     }
 
-    fn create_rating(&mut self, r: &Rating) -> RepoResult<()> {
+    fn create_rating(&mut self, r: Rating) -> RepoResult<()> {
         create(&mut self.ratings, r)
     }
 
     fn create_bbox_subscription(&mut self, s: &BboxSubscription) -> RepoResult<()> {
-        create(&mut self.bbox_subscriptions, s)
+        create(&mut self.bbox_subscriptions, s.clone())
     }
 
     fn all_categories(&self) -> RepoResult<Vec<Category>> {
@@ -308,7 +308,7 @@ fn create_bbox_subscription() {
 
     let username = "a";
     assert!(db
-        .create_user(&User {
+        .create_user(User {
             id: "123".into(),
             username: username.into(),
             password: username.into(),
@@ -356,7 +356,7 @@ fn modify_bbox_subscription() {
 
     let username = "a";
     assert!(db
-        .create_user(&User {
+        .create_user(User {
             id: "123".into(),
             username: username.into(),
             password: username.into(),
@@ -420,7 +420,7 @@ fn get_bbox_subscriptions() {
 
     let user1 = "a";
     assert!(db
-        .create_user(&User {
+        .create_user(User {
             id: user1.into(),
             username: user1.into(),
             password: user1.into(),
@@ -440,7 +440,7 @@ fn get_bbox_subscriptions() {
 
     let user2 = "b";
     assert!(db
-        .create_user(&User {
+        .create_user(User {
             id: user2.into(),
             username: user2.into(),
             password: user2.into(),
@@ -475,7 +475,7 @@ fn email_addresses_by_coordinate() {
 
     let username = "a";
     let u_id = "123".to_string();
-    db.create_user(&User {
+    db.create_user(User {
         id: u_id.clone(),
         username: username.into(),
         password: "123".into(),
@@ -507,7 +507,7 @@ fn delete_user() {
     let username = "a".to_string();
     let u_id = "1".to_string();
     assert!(db
-        .create_user(&User {
+        .create_user(User {
             id: u_id.clone(),
             username: username.clone(),
             password: username,
@@ -519,7 +519,7 @@ fn delete_user() {
     let username = "b".to_string();
     let u_id = "2".to_string();
     assert!(db
-        .create_user(&User {
+        .create_user(User {
             id: u_id.clone(),
             username: username.clone(),
             password: username,

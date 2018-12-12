@@ -24,8 +24,7 @@ fn unset_current_on_all_entries(
 }
 
 impl EntryGateway for SqliteConnection {
-    fn create_entry(&mut self, e: &Entry) -> Result<()> {
-        let new_entry = models::Entry::from(e.clone());
+    fn create_entry(&mut self, e: Entry) -> Result<()> {
         let cat_rels: Vec<_> = e
             .categories
             .iter()
@@ -46,8 +45,9 @@ impl EntryGateway for SqliteConnection {
                 tag_id,
             })
             .collect();
+        let new_entry = models::Entry::from(e);
         self.transaction::<_, diesel::result::Error, _>(|| {
-            unset_current_on_all_entries(&self, &e.id)?;
+            unset_current_on_all_entries(&self, &new_entry.id)?;
             diesel::insert_into(schema::entries::table)
                 .values(&new_entry)
                 .execute(self)?;
@@ -289,8 +289,7 @@ impl EntryGateway for SqliteConnection {
 }
 
 impl EventGateway for SqliteConnection {
-    fn create_event(&mut self, e: &Event) -> Result<()> {
-        let new_event = models::Event::from(e.clone());
+    fn create_event(&mut self, e: Event) -> Result<()> {
         let tag_rels: Vec<_> = e
             .tags
             .iter()
@@ -300,6 +299,7 @@ impl EventGateway for SqliteConnection {
                 tag_id,
             })
             .collect();
+        let new_event = models::Event::from(e);
         self.transaction::<_, diesel::result::Error, _>(|| {
             diesel::insert_into(schema::events::table)
                 .values(&new_event)
@@ -340,15 +340,17 @@ impl EventGateway for SqliteConnection {
             .map(|r| r.tag_id)
             .collect();
 
-        let address = if street.is_some() || zip.is_some() || city.is_some() || country.is_some() {
-            Some(Address {
-                street,
-                zip,
-                city,
-                country,
-            })
-        } else {
+        let address = Address {
+            street,
+            zip,
+            city,
+            country,
+        };
+
+        let address = if address.is_empty() {
             None
+        } else {
+            Some(address)
         };
 
         let location = if lat.is_some() || lng.is_some() || address.is_some() {
@@ -413,9 +415,9 @@ impl EventGateway for SqliteConnection {
 }
 
 impl UserGateway for SqliteConnection {
-    fn create_user(&mut self, u: &User) -> Result<()> {
+    fn create_user(&mut self, u: User) -> Result<()> {
         diesel::insert_into(schema::users::table)
-            .values(&models::User::from(u.clone()))
+            .values(&models::User::from(u))
             .execute(self)?;
         Ok(())
     }
@@ -448,9 +450,9 @@ impl UserGateway for SqliteConnection {
 }
 
 impl CommentGateway for SqliteConnection {
-    fn create_comment(&mut self, c: &Comment) -> Result<()> {
+    fn create_comment(&mut self, c: Comment) -> Result<()> {
         diesel::insert_into(schema::comments::table)
-            .values(&models::Comment::from(c.clone()))
+            .values(&models::Comment::from(c))
             .execute(self)?;
         Ok(())
     }
@@ -511,9 +513,9 @@ impl Db for SqliteConnection {
         }
         Ok(())
     }
-    fn create_rating(&mut self, r: &Rating) -> Result<()> {
+    fn create_rating(&mut self, r: Rating) -> Result<()> {
         diesel::insert_into(schema::ratings::table)
-            .values(&models::Rating::from(r.clone()))
+            .values(&models::Rating::from(r))
             .execute(self)?;
         Ok(())
     }

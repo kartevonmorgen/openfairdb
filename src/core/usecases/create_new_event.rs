@@ -71,7 +71,8 @@ pub fn create_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<String> {
     } else {
         None
     };
-    let id = Uuid::new_v4().to_simple_ref().to_string();
+    let new_id = Uuid::new_v4().to_simple_ref().to_string();
+    let id = new_id.clone();
     let homepage = e.homepage.map(|ref url| parse_url_param(url)).transpose()?;
 
     let new_event = Event {
@@ -91,8 +92,8 @@ pub fn create_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<String> {
     for t in &new_event.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
-    db.create_event(&new_event)?;
-    Ok(new_event.id)
+    db.create_event(new_event)?;
+    Ok(new_id)
 }
 
 #[cfg(test)]

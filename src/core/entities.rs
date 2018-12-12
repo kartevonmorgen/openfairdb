@@ -35,11 +35,26 @@ pub struct Address {
     pub country : Option<String>,
 }
 
+impl Address {
+    pub fn is_empty(&self) -> bool {
+        !(self.street.is_some()
+            || self.zip.is_some()
+            || self.city.is_some()
+            || self.country.is_some())
+    }
+}
+
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Contact {
     pub email     : Option<String>,
     pub telephone : Option<String>,
+}
+
+impl Contact {
+    pub fn is_empty(&self) -> bool {
+        !(self.email.is_some() || self.telephone.is_some())
+    }
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -287,5 +302,25 @@ pub mod address_builder {
                 addr: Address::default(),
             }
         }
+    }
+
+    #[test]
+    fn empty_address() {
+        assert!(Address::default().is_empty());
+        assert_eq!(Address::build().street("x").finish().is_empty(), false);
+        assert_eq!(Address::build().zip("x").finish().is_empty(), false);
+        assert_eq!(Address::build().city("x").finish().is_empty(), false);
+        assert_eq!(Address::build().country("x").finish().is_empty(), false);
+    }
+
+    #[test]
+    fn empty_contact() {
+        assert!(Contact::default().is_empty());
+        let mut c = Contact::default();
+        c.email = Some("foo@bar".into());
+        assert_eq!(c.is_empty(), false);
+        let mut c = Contact::default();
+        c.telephone = Some("123".into());
+        assert_eq!(c.is_empty(), false);
     }
 }
