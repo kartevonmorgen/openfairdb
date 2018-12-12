@@ -105,6 +105,111 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Category'
+  /events/:
+    get:
+      tags:
+        - Events
+      summary: Receive events
+      parameters:
+        - name: tags
+          in: query
+          description: Filter events by tags
+          schema:
+            type: string
+        - name: bbox
+          in: query
+          description: Bounding box
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfull response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Event'
+    post:
+      tags:
+        - Events
+      summary: Create a new event
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Event'
+      responses:
+        '201':
+          description: Created a new event
+          content:
+            application/json:
+              schema:
+                description: The ID of the created event
+                type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  '/events/{id}':
+    get:
+      summary: Get a single event
+      tags:
+        - Events
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successfull response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Event'
+    put:
+      summary: Update an event
+      tags:
+        - Events
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Event'
+      responses:
+        '200':
+          description: Sucessfully updated the event
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+    delete:
+      summary: Delete an event
+      tags:
+        - Events
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Sucessfully deleted the event
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   '/users/{username}':
     get:
       summary: Get user data
@@ -304,3 +409,52 @@ components:
                 type: number
               lng:
                 type: number
+    Event:
+      properties:
+        id:
+          type: string
+          readOnly: true
+        title:
+          type: string
+        description:
+          type: string
+        start:
+          type: integer
+          format: int64
+          description: Unix Time (number of milliseconds since 1970)
+        end:
+          type: integer
+          format: int64
+          description: Unix Time (number of milliseconds since 1970)
+        lat:
+          type: number
+          format: float
+        lng:
+          type: number
+          format: float
+        street:
+          type: string
+        zip:
+          type: string
+        city:
+          type: string
+        country:
+          type: string
+        email:
+          type: string
+        telephone:
+          type: string
+          nullable: true
+        tags:
+          type: array
+          items:
+            type: string
+        homepage:
+          type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  responses:
+    UnauthorizedError:
+      description: Access token is missing or invalid
