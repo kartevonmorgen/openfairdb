@@ -121,6 +121,11 @@ paths:
           description: Bounding box
           schema:
             type: string
+        - name: created_by
+          in: query
+          description: The email address of the event creator
+          schema:
+            type: string
       responses:
         '200':
           description: Successfull response
@@ -363,7 +368,7 @@ components:
           type: string
           readOnly: true
         created:
-          type: integer
+          $ref: "#/components/schemas/UnixTime"
         text:
           type: string
     User:
@@ -419,13 +424,12 @@ components:
         description:
           type: string
         start:
-          type: integer
-          format: int64
-          description: Unix Time (number of milliseconds since 1970)
+          $ref: "#/components/schemas/UnixTime"
         end:
-          type: integer
-          format: int64
-          description: Unix Time (number of milliseconds since 1970)
+          $ref: "#/components/schemas/UnixTime"
+        created_by:
+          type: string
+          description: The email address of the user who is responsible for the content.
         lat:
           type: number
           format: float
@@ -442,15 +446,19 @@ components:
           type: string
         email:
           type: string
+          description: The public email address
         telephone:
           type: string
-          nullable: true
         tags:
           type: array
           items:
             type: string
         homepage:
           type: string
+    UnixTime:
+      type: integer
+      format: int64
+      description: Unix Time (number of milliseconds since 1970)
   securitySchemes:
     bearerAuth:
       type: http

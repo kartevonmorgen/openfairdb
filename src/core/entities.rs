@@ -69,6 +69,7 @@ pub struct Event {
     pub contact     : Option<Contact>,
     pub tags        : Vec<String>,
     pub homepage    : Option<String>,
+    pub created_by  : Option<String>,
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]

@@ -89,5 +89,8 @@ quick_error! {
             cause(err)
             description(err.description())
         }
+        Internal(msg: String){
+            from()
+        }
     }
 }

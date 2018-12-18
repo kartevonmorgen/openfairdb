@@ -25,7 +25,10 @@ pub fn create_new_user<D: UserGateway>(db: &mut D, u: NewUser) -> Result<()> {
         email_confirmed: false,
         role: Role::Guest,
     };
-    debug!("Creating new user: {:?}", new_user);
+    debug!(
+        "Creating new user: username = {}, email = {}, ",
+        new_user.username, new_user.email
+    );
     db.create_user(new_user)?;
     Ok(())
 }

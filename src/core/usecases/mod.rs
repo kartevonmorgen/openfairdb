@@ -105,7 +105,11 @@ pub fn get_user<D: Db>(
 }
 
 pub fn get_event<D: Db>(db: &mut D, id: &str) -> Result<Event> {
-    let e: Event = db.get_event(id)?;
+    let mut e: Event = db.get_event(id)?;
+    if let Some(ref username) = e.created_by {
+        let u = db.get_user(username)?;
+        e.created_by = Some(u.email);
+    }
     Ok(e)
 }
 

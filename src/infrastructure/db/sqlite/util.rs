@@ -74,6 +74,7 @@ impl From<e::Event> for Event {
             location,
             contact,
             homepage,
+            created_by,
             ..
         } = e;
 
@@ -115,6 +116,7 @@ impl From<e::Event> for Event {
             telephone,
             email,
             homepage,
+            created_by,
         }
     }
 }
@@ -212,6 +214,7 @@ impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
             email,
             telephone,
             homepage,
+            created_by,
             ..
         } = e;
         let tags = tag_rels
@@ -255,6 +258,7 @@ impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
             contact,
             homepage,
             tags,
+            created_by,
         }
     }
 }

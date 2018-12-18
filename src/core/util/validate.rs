@@ -159,6 +159,7 @@ fn event_test() {
         contact: None,
         tags: vec![],
         homepage: None,
+        created_by: None,
     };
     assert!(e.validate().is_ok());
 }
@@ -175,6 +176,7 @@ fn event_with_invalid_homepage_test() {
         contact: None,
         tags: vec![],
         homepage: Some("bla".into()),
+        created_by: None,
     };
     assert!(e.validate().is_err());
 }
@@ -191,6 +193,7 @@ fn event_with_invalid_end_test() {
         contact: None,
         tags: vec![],
         homepage: None,
+        created_by: None,
     };
     assert!(e.validate().is_err());
 }

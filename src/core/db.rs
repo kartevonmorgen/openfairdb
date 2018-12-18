@@ -20,11 +20,12 @@ pub trait EventGateway {
 }
 
 pub trait UserGateway {
-    fn create_user(&mut self, _: User) -> Result<()>;
-    fn update_user(&mut self, _: &User) -> Result<()>;
-    fn get_user(&self, _: &str) -> Result<User>;
+    fn create_user(&mut self, user: User) -> Result<()>;
+    fn update_user(&mut self, user: &User) -> Result<()>;
+    fn get_user(&self, username: &str) -> Result<User>;
+    // TODO: fn get_user_by_email(&self, email: &str) -> Result<User>;
     fn all_users(&self) -> Result<Vec<User>>;
-    fn delete_user(&mut self, _: &str) -> Result<()>;
+    fn delete_user(&mut self, username: &str) -> Result<()>;
 }
 
 pub trait CommentGateway {

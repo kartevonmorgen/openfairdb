@@ -331,6 +331,7 @@ impl EventGateway for SqliteConnection {
             email,
             telephone,
             homepage,
+            created_by,
         } = e_dsl::events.filter(e_dsl::id.eq(e_id)).first(self)?;
 
         let tags = e_t_dsl::event_tag_relations
@@ -379,6 +380,7 @@ impl EventGateway for SqliteConnection {
             contact,
             homepage,
             tags,
+            created_by,
         })
     }
 
@@ -442,9 +444,9 @@ impl UserGateway for SqliteConnection {
             .map(User::from)
             .collect())
     }
-    fn delete_user(&mut self, user: &str) -> Result<()> {
+    fn delete_user(&mut self, user_name: &str) -> Result<()> {
         use self::schema::users::dsl::*;
-        diesel::delete(users.find(user)).execute(self)?;
+        diesel::delete(users.find(user_name)).execute(self)?;
         Ok(())
     }
 }

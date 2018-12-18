@@ -533,3 +533,32 @@ fn delete_user() {
     assert!(usecases::delete_user(&mut db, "1", "1").is_ok());
     assert_eq!(db.users.len(), 1);
 }
+
+#[test]
+fn receive_event_with_creators_email() {
+    let mut db = MockDb::new();
+    db.create_user(User {
+        id: "x".into(),
+        username: "user".into(),
+        password: "pw".into(),
+        email: "abc@abc.de".into(),
+        email_confirmed: true,
+        role: Role::Guest,
+    })
+    .unwrap();
+    db.create_event(Event {
+        id: "x".into(),
+        title: "t".into(),
+        description: None,
+        start: 0,
+        end: None,
+        contact: None,
+        location: None,
+        homepage: None,
+        tags: vec![],
+        created_by: Some("user".into()),
+    })
+    .unwrap();
+    let e = usecases::get_event(&mut db, "x").unwrap();
+    assert_eq!(e.created_by.unwrap(), "abc@abc.de");
+}
