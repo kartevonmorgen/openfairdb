@@ -75,6 +75,13 @@ table! {
 }
 
 table! {
+    org_tag_relations (org_id, tag_id) {
+        org_id -> Text,
+        tag_id -> Text,
+    }
+}
+
+table! {
     events (id) {
         id -> Text,
         title -> Text,
@@ -120,6 +127,14 @@ table! {
         email -> Text,
         email_confirmed -> Bool,
         role -> SmallInt,
+    }
+}
+
+table! {
+    organizations (id) {
+        id -> Text,
+        name -> Text,
+        api_token -> Text,
     }
 }
 

@@ -1,10 +1,11 @@
-use super::models;
-use super::schema;
+use super::{models, schema};
 use crate::core::prelude::*;
-use diesel;
-use diesel::prelude::*;
-use diesel::result::{DatabaseErrorKind, Error as DieselError};
-use diesel::sqlite::SqliteConnection;
+use diesel::{
+    self,
+    prelude::*,
+    result::{DatabaseErrorKind, Error as DieselError},
+    sqlite::SqliteConnection,
+};
 use std::result;
 
 type Result<T> = result::Result<T, RepoError>;
@@ -563,5 +564,67 @@ impl Db for SqliteConnection {
             .into_iter()
             .map(Rating::from)
             .collect())
+    }
+}
+
+impl OrganizationGateway for SqliteConnection {
+    fn create_org(&mut self, o: Organization) -> Result<()> {
+        let tag_rels: Vec<_> = o
+            .owned_tags
+            .iter()
+            .cloned()
+            .map(|tag_id| models::OrgTagRelation {
+                org_id: o.id.clone(),
+                tag_id,
+            })
+            .collect();
+        let new_org = models::Organization::from(o);
+        self.transaction::<_, diesel::result::Error, _>(|| {
+            diesel::insert_into(schema::organizations::table)
+                .values(&new_org)
+                .execute(self)?;
+            diesel::insert_into(schema::org_tag_relations::table)
+                //WHERE NOT EXISTS
+                .values(&tag_rels)
+                .execute(self)?;
+            Ok(())
+        })?;
+        Ok(())
+    }
+    fn get_org_by_api_token(&self, token: &str) -> Result<Organization> {
+        use self::schema::{org_tag_relations::dsl as o_t_dsl, organizations::dsl as o_dsl};
+
+        let models::Organization {
+            id,
+            name,
+            api_token,
+        } = o_dsl::organizations
+            .filter(o_dsl::api_token.eq(token))
+            .first(self)?;
+
+        let owned_tags = o_t_dsl::org_tag_relations
+            .filter(o_t_dsl::org_id.eq(&id))
+            .load::<models::OrgTagRelation>(self)?
+            .into_iter()
+            .map(|r| r.tag_id)
+            .collect();
+
+        Ok(Organization {
+            id,
+            name,
+            api_token,
+            owned_tags,
+        })
+    }
+
+    fn get_all_tags_owned_by_orgs(&self) -> Result<Vec<String>> {
+        use self::schema::org_tag_relations::dsl;
+        let mut tags: Vec<_> = dsl::org_tag_relations
+            .load::<models::OrgTagRelation>(self)?
+            .into_iter()
+            .map(|r| r.tag_id)
+            .collect();
+        tags.dedup();
+        Ok(tags)
     }
 }

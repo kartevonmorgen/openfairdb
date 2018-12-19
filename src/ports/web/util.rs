@@ -1,9 +1,9 @@
 #[cfg(feature = "email")]
 use super::mail;
-
-use crate::adapters::user_communication;
-use crate::core::prelude::*;
-use crate::core::usecases;
+use crate::{
+    adapters::user_communication,
+    core::{prelude::*, usecases},
+};
 use regex::Regex;
 
 lazy_static! {
@@ -16,12 +16,12 @@ pub fn extract_ids(s: &str) -> Vec<String> {
     s.split(ID_LIST_SEPARATOR)
         .map(|x| x.trim().to_owned())
         .filter(|id| id != "")
-        .collect::<Vec<String>>()
+        .collect()
 }
 
 #[cfg(all(not(test), feature = "email"))]
 fn send_mail(mail: String) {
-    ::std::thread::spawn(move || {
+    std::thread::spawn(move || {
         if let Err(err) = mail::sendmail::send(&mail) {
             warn!("Could not send e-mail: {}", err);
         }

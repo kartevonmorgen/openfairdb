@@ -514,3 +514,19 @@ impl FromStr for e::RatingContext {
         })
     }
 }
+
+impl From<e::Organization> for Organization {
+    fn from(o: e::Organization) -> Self {
+        let e::Organization {
+            id,
+            name,
+            api_token,
+            ..
+        } = o;
+        Organization {
+            id,
+            name,
+            api_token,
+        }
+    }
+}

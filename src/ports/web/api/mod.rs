@@ -1,18 +1,21 @@
-use super::{sqlite::DbConn, util};
-use crate::adapters::{self, json, user_communication};
-use crate::core::{
-    prelude::*,
-    usecases::{self, DuplicateType},
-    util::geo,
+use super::{guards::*, sqlite::DbConn, util};
+use crate::{
+    adapters::{self, json, user_communication},
+    core::{
+        prelude::*,
+        usecases::{self, DuplicateType},
+        util::geo,
+    },
+    infrastructure::error::AppError,
 };
-use crate::infrastructure::error::AppError;
+
 use csv;
 use rocket::{
     self,
     http::{ContentType, Cookie, Cookies, Status},
-    request::{self, Form, FromRequest, Request},
+    request::Form,
     response::{content::Content, Responder, Response},
-    Outcome, Route,
+    Route,
 };
 use rocket_contrib::json::Json;
 use std::result;
@@ -20,29 +23,12 @@ use std::result;
 mod count;
 mod events;
 mod ratings;
+mod search;
 #[cfg(test)]
 pub mod tests;
 mod users;
 
 type Result<T> = result::Result<Json<T>, AppError>;
-
-const COOKIE_USER_KEY: &str = "user_id";
-
-impl<'a, 'r> FromRequest<'a, 'r> for Login {
-    type Error = ();
-
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Login, ()> {
-        let user = request
-            .cookies()
-            .get_private(COOKIE_USER_KEY)
-            .and_then(|cookie| cookie.value().parse().ok())
-            .map(Login);
-        match user {
-            Some(user) => Outcome::Success(user),
-            None => Outcome::Failure((Status::Unauthorized, ())),
-        }
-    }
-}
 
 pub fn routes() -> Vec<Route> {
     routes![
@@ -56,7 +42,9 @@ pub fn routes() -> Vec<Route> {
         post_entry,
         put_entry,
         events::post_event,
+        events::post_event_with_token,
         events::get_event,
+        events::get_events,
         users::post_user,
         ratings::post_rating,
         ratings::get_rating,
@@ -65,7 +53,7 @@ pub fn routes() -> Vec<Route> {
         get_categories,
         get_category,
         get_tags,
-        get_search,
+        search::get_search,
         get_duplicates,
         count::get_count_entries,
         count::get_count_tags,
@@ -73,73 +61,6 @@ pub fn routes() -> Vec<Route> {
         csv_export
     ]
 }
-
-#[derive(FromForm, Clone)]
-struct SearchQuery {
-    bbox: String,
-    categories: Option<String>,
-    text: Option<String>,
-    tags: Option<String>,
-}
-
-#[get("/search?<search..>")]
-fn get_search(db: DbConn, search: Form<SearchQuery>) -> Result<json::SearchResponse> {
-    let bbox = geo::extract_bbox(&search.bbox)
-        .map_err(Error::Parameter)
-        .map_err(AppError::Business)?;
-
-    let categories = match search.categories {
-        Some(ref cat_str) => Some(util::extract_ids(&cat_str)),
-        None => None,
-    };
-
-    let mut tags = vec![];
-
-    if let Some(ref txt) = search.text {
-        tags = util::extract_hash_tags(txt);
-    }
-
-    if let Some(ref tags_str) = search.tags {
-        for t in util::extract_ids(tags_str) {
-            tags.push(t);
-        }
-    }
-
-    let text = match search.text {
-        Some(ref txt) => util::remove_hash_tags(txt),
-        None => "".into(),
-    };
-
-    let avg_ratings = match super::ENTRY_RATINGS.lock() {
-        Ok(guard) => guard,
-        Err(poisoned) => poisoned.into_inner(),
-    };
-
-    let req = usecases::SearchRequest {
-        bbox,
-        categories,
-        text,
-        tags,
-        entry_ratings: &*avg_ratings,
-    };
-
-    let (visible, invisible) = usecases::search(&*db, &req)?;
-
-    let visible = visible
-        .into_iter()
-        .map(json::EntryIdWithCoordinates::from)
-        .collect();
-
-    let invisible = invisible
-        .into_iter()
-        .map(json::EntryIdWithCoordinates::from)
-        .collect();
-
-    Ok(Json(json::SearchResponse { visible, invisible }))
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct Login(String);
 
 #[derive(Deserialize, Debug, Clone)]
 struct UserId {
@@ -346,6 +267,7 @@ impl<'r> Responder<'r> for AppError {
                             <Status>::new(403, "EmailNotConfirmed")
                         }
                         ParameterError::Forbidden => Status::Forbidden,
+                        ParameterError::Unauthorized => Status::Unauthorized,
                         _ => Status::BadRequest,
                     });
                 }

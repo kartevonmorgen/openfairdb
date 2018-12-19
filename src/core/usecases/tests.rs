@@ -58,6 +58,12 @@ impl Id for BboxSubscription {
     }
 }
 
+impl Id for Organization {
+    fn id(&self) -> &str {
+        &self.id
+    }
+}
+
 pub struct MockDb {
     pub entries: Vec<Entry>,
     pub events: Vec<Event>,
@@ -67,6 +73,7 @@ pub struct MockDb {
     pub ratings: Vec<Rating>,
     pub comments: Vec<Comment>,
     pub bbox_subscriptions: Vec<BboxSubscription>,
+    pub orgs: Vec<Organization>,
 }
 
 impl MockDb {
@@ -80,6 +87,7 @@ impl MockDb {
             ratings: vec![],
             comments: vec![],
             bbox_subscriptions: vec![],
+            orgs: vec![],
         }
     }
 }
@@ -204,6 +212,27 @@ impl CommentGateway for MockDb {
 
     fn all_comments(&self) -> RepoResult<Vec<Comment>> {
         Ok(self.comments.clone())
+    }
+}
+
+impl OrganizationGateway for MockDb {
+    fn create_org(&mut self, o: Organization) -> RepoResult<()> {
+        create(&mut self.orgs, o)
+    }
+    fn get_org_by_api_token(&self, token: &str) -> RepoResult<Organization> {
+        let o = self
+            .orgs
+            .iter()
+            .find(|o| o.api_token == token)
+            .ok_or(RepoError::NotFound)?;
+        Ok(o.clone())
+    }
+    fn get_all_tags_owned_by_orgs(&self) -> RepoResult<Vec<String>> {
+        Ok(self
+            .orgs
+            .iter()
+            .flat_map(|o| o.owned_tags.clone())
+            .collect())
     }
 }
 

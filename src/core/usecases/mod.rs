@@ -12,21 +12,17 @@ mod create_new_event;
 mod create_new_user;
 mod find_duplicates;
 mod login;
+mod query_events;
 mod rate_entry;
 mod search;
 #[cfg(test)]
 pub mod tests;
 mod update_entry;
 
-pub use self::confirm_email::*;
-pub use self::create_new_entry::*;
-pub use self::create_new_event::*;
-pub use self::create_new_user::*;
-pub use self::find_duplicates::*;
-pub use self::login::*;
-pub use self::rate_entry::*;
-pub use self::search::*;
-pub use self::update_entry::*;
+pub use self::{
+    confirm_email::*, create_new_entry::*, create_new_event::*, create_new_user::*,
+    find_duplicates::*, login::*, query_events::*, rate_entry::*, search::*, update_entry::*,
+};
 
 pub fn get_ratings<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Rating>> {
     Ok(db
@@ -104,7 +100,7 @@ pub fn get_user<D: Db>(
     Ok((u.username, u.email))
 }
 
-pub fn get_event<D: Db>(db: &mut D, id: &str) -> Result<Event> {
+pub fn get_event<D: Db>(db: &D, id: &str) -> Result<Event> {
     let mut e: Event = db.get_event(id)?;
     if let Some(ref username) = e.created_by {
         let u = db.get_user(username)?;

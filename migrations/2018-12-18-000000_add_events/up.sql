@@ -24,3 +24,17 @@ CREATE TABLE event_tag_relations (
     FOREIGN KEY (event_id) REFERENCES events(id),
     FOREIGN KEY (tag_id) REFERENCES tags(id)
 );
+
+CREATE TABLE organizations (
+    id        TEXT PRIMARY KEY NOT NULL,
+    name      TEXT NOT NULL,
+    api_token TEXT NOT NULL
+);
+
+CREATE TABLE org_tag_relations (
+    org_id  TEXT NOT NULL,
+    tag_id  TEXT NOT NULL,
+    PRIMARY KEY (org_id, tag_id),
+    FOREIGN KEY (org_id) REFERENCES organizations(id),
+    FOREIGN KEY (tag_id) REFERENCES tags(id)
+);

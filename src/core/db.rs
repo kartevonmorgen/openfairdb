@@ -33,13 +33,21 @@ pub trait CommentGateway {
     fn all_comments(&self) -> Result<Vec<Comment>>;
 }
 
+pub trait OrganizationGateway {
+    fn create_org(&mut self, _: Organization) -> Result<()>;
+    fn get_org_by_api_token(&self, token: &str) -> Result<Organization>;
+    fn get_all_tags_owned_by_orgs(&self) -> Result<Vec<String>>;
+}
+
 //TODO:
 //  - TagGeatway
 //  - CategoryGateway
 //  - RatingGateway
 //  - SubscriptionGateway
 
-pub trait Db: EntryGateway + UserGateway + CommentGateway + EventGateway {
+pub trait Db:
+    EntryGateway + UserGateway + CommentGateway + EventGateway + OrganizationGateway
+{
     fn create_tag_if_it_does_not_exist(&mut self, _: &Tag) -> Result<()>;
     fn create_category_if_it_does_not_exist(&mut self, _: &Category) -> Result<()>;
     fn create_rating(&mut self, _: Rating) -> Result<()>;

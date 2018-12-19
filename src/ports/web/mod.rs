@@ -22,6 +22,7 @@ mod mockdb;
 pub mod sqlite;
 #[cfg(test)]
 pub use self::api::tests;
+mod guards;
 mod util;
 
 use self::sqlite::create_connection_pool;

@@ -34,6 +34,7 @@ pub struct NewEvent {
     pub homepage    : Option<String>,
     pub tags        : Option<Vec<String>>,
     pub created_by  : Option<String>,
+    pub token       : Option<String>,
 }
 
 pub fn create_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<String> {
@@ -52,14 +53,41 @@ pub fn create_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<String> {
         country,
         tags,
         created_by,
+        token,
         ..
     } = e;
+
+    let org = if let Some(ref token) = token {
+        let org = db.get_org_by_api_token(token).map_err(|e| match e {
+            RepoError::NotFound => Error::Parameter(ParameterError::Unauthorized),
+            _ => Error::Repo(e),
+        })?;
+        Some(org)
+    } else {
+        None
+    };
+
     let mut tags: Vec<_> = tags
         .unwrap_or_else(|| vec![])
         .into_iter()
         .map(|t| t.replace("#", ""))
         .collect();
     tags.dedup();
+    let owned_tags = db.get_all_tags_owned_by_orgs()?;
+    for t in &tags {
+        if owned_tags.iter().any(|id| id == t) {
+            match org {
+                Some(ref o) => {
+                    if !o.owned_tags.iter().any(|x| x == t) {
+                        return Err(ParameterError::OwnedTag.into());
+                    }
+                }
+                None => {
+                    return Err(ParameterError::OwnedTag.into());
+                }
+            }
+        }
+    }
     let address = if street.is_some() || zip.is_some() || city.is_some() || country.is_some() {
         Some(Address {
             street,
@@ -159,6 +187,7 @@ mod tests {
             homepage    : None,
             tags        : Some(vec!["foo".into(),"bar".into()]),
             created_by  : None,
+            token       : None,
         };
         let mut mock_db = MockDb::new();
         let id = create_new_event(&mut mock_db, x).unwrap();
@@ -193,6 +222,7 @@ mod tests {
             homepage    : None,
             tags        : None,
             created_by  : None,
+            token       : None,
         };
         let mut mock_db: MockDb = MockDb::new();
         assert!(create_new_event(&mut mock_db, x).is_err());
@@ -217,6 +247,7 @@ mod tests {
             homepage    : None,
             tags        : None,
             created_by  : Some("fooo@bar.tld".into()),
+            token       : None,
         };
         let mut mock_db: MockDb = MockDb::new();
         assert!(create_new_event(&mut mock_db, x).is_ok());
@@ -258,6 +289,7 @@ mod tests {
             homepage    : None,
             tags        : None,
             created_by  : Some("fooo@bar.tld".into()),
+            token       : None,
         };
         assert!(create_new_event(&mut mock_db, x).is_ok());
         let users = mock_db.all_users().unwrap();

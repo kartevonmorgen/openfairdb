@@ -40,8 +40,14 @@ quick_error! {
         Forbidden{
             description("This is not allowed")
         }
+        Unauthorized{
+            description("This is not allowed without auth")
+        }
         EndDateBeforeStart{
             description("The end date is before the start")
+        }
+        OwnedTag{
+            description("The tag is owned by an organization")
         }
     }
 }
