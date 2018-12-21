@@ -2,6 +2,9 @@
 name = "openfairdb"
 version = "0.3.9"
 authors = ["Markus Kohlhase <mail@markus-kohlhase.de>", "slowtec GmbH <post@slowtec.de>"]
+keywords = ["geo", "fair", "sustainability"]
+homepage = "https://github.com/slowtec/openfairdb"
+repository = "https://github.com/slowtec/openfairdb"
 license = "AGPL-3.0-or-later"
 edition = "2018"
 

@@ -1,3 +1,7 @@
+## v0.4.x (yyy-mm-dd)
+
+- new home: [slowtec/openfairdb](https://github.com/slowtec/openfairdb)
+
 ## v0.3.9 (2018-10-24)
 
 - new(web): auto-complete URL fields

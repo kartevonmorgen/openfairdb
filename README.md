@@ -3,16 +3,16 @@
 The backend for [Karte von morgen](https://github.com/flosse/kartevonmorgen/)
 written in [Rust](http://rustlang.org/).
 
-[![Build Status](https://travis-ci.org/flosse/openfairdb.svg?branch=master)](https://travis-ci.org/flosse/openfairdb)
-[![Coverage Status](https://coveralls.io/repos/github/flosse/openfairdb/badge.svg?branch=master)](https://coveralls.io/github/flosse/openfairdb?branch=master)
-[![dependency status](https://deps.rs/repo/github/flosse/openfairdb/status.svg)](https://deps.rs/repo/github/flosse/openfairdb)
-[![License](https://img.shields.io/badge/license-AGPLv3-blue.svg?style=flat)](https://github.com/flosse/openfairdb/blob/master/LICENSE)
+[![Build Status](https://travis-ci.org/slowtec/openfairdb.svg?branch=master)](https://travis-ci.org/slowtec/openfairdb)
+[![Coverage Status](https://coveralls.io/repos/github/slowtec/openfairdb/badge.svg?branch=master)](https://coveralls.io/github/slowtec/openfairdb?branch=master)
+[![dependency status](https://deps.rs/repo/github/slowtec/openfairdb/status.svg)](https://deps.rs/repo/github/slowtec/openfairdb)
+[![License](https://img.shields.io/badge/license-AGPLv3-blue.svg?style=flat)](https://github.com/slowtec/openfairdb/blob/master/LICENSE)
 
 ## REST API
 
 The API is available under `http://api.ofdb.io/v0/`.
 
-The current API is documented within the [openapi.yaml](https://github.com/flosse/openfairdb/blob/master/openapi.yaml) file.
+The current API is documented within the [openapi.yaml](https://github.com/slowtec/openfairdb/blob/master/openapi.yaml) file.
 
 For examples how to use the API, open "network" in the developer tools in your browser and see the requests that https://kartevonmorgen.org sends.
 
@@ -83,10 +83,10 @@ If you want to find out the coordinates for other map areas, open "network" in t
 ## Quick start
 
 Download the latest build
-[openfairdb-x86_64-linux-v0.3.7.tar.gz](https://github.com/flosse/openfairdb/releases/download/v0.3.7/openfairdb-x86_64-linux-v0.3.7.tar.gz),
+[openfairdb-x86_64-linux-v0.3.7.tar.gz](https://github.com/slowtec/openfairdb/releases/download/v0.3.7/openfairdb-x86_64-linux-v0.3.7.tar.gz),
 unpack and start it:
 
-    wget https://github.com/flosse/openfairdb/releases/download/v0.3.7/openfairdb-x86_64-linux-v0.3.7.tar.gz
+    wget https://github.com/slowtec/openfairdb/releases/download/v0.3.7/openfairdb-x86_64-linux-v0.3.7.tar.gz
     tar xzf openfairdb-x86_64-linux-v0.3.7.tar.gz
     ./openfairdb
 
@@ -130,7 +130,7 @@ cargo install diesel_cli --no-default-features --features sqlite
 ### Compile & Run
 
 ```
-git clone https://github.com/flosse/openfairdb
+git clone https://github.com/slowtec/openfairdb
 cd openfairdb/
 diesel migration run
 cargo build
@@ -183,7 +183,7 @@ If you want to get stacktraces on panics use
 
 At the moment the OpenFairDB does not support online backups.
 Therefore we use a simple
-[script](https://github.com/flosse/openfairdb/blob/master/scripts/backup-sqlite.sh)
+[script](https://github.com/slowtec/openfairdb/blob/master/scripts/backup-sqlite.sh)
 that copies the DB file once a day.
 
 # License
