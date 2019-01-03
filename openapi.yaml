@@ -11,8 +11,10 @@ info:
 servers:
   - url: 'https://api.ofdb.io/v0/'
     description: Public production server
+  - url: 'https://nightly.ofdb.io/v0/'
+    description: Public unstable development server
 paths:
-  '/search':
+  /search:
     get:
       summary: Search for entries
       tags:
@@ -67,7 +69,7 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: Sucessfull response
           content:
             application/json:
@@ -79,7 +81,7 @@ paths:
       tags:
         - Categories
       responses:
-        200:
+        '200':
           description: Sucessfull response
           content:
             application/json:
@@ -99,36 +101,44 @@ paths:
           schema:
             type: string
       responses:
-        200:
+        '200':
           description: Sucessfull response
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Category'
-  /events/:
+  /events:
     get:
       tags:
         - Events
       summary: Receive events
       parameters:
-        - name: tags
+        - name: tag
           in: query
           description: Filter events by tags
           schema:
-            type: string
-        - name: bbox
-          in: query
-          description: Bounding box
-          schema:
-            type: string
+            type: array
+            items:
+              type: string
+        - $ref: '#/components/parameters/BoundingBox'
         - name: created_by
           in: query
-          description: The email address of the event creator
+          description: The email address of the event creator (only available with valid API token)
           schema:
             type: string
+        - name: start
+          in: query
+          description: Filter events by `event.start` >= `start`
+          schema:
+            type: number
+        - name: end
+          in: query
+          description: Filter events by `event.end` <= `end`
+          schema:
+            type: number
       responses:
         '200':
-          description: Successfull response
+          description: Successful response
           content:
             application/json:
               schema:
@@ -170,7 +180,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Successfull response
+          description: Successful response
           content:
             application/json:
               schema:
@@ -368,7 +378,7 @@ components:
           type: string
           readOnly: true
         created:
-          $ref: "#/components/schemas/UnixTime"
+          $ref: '#/components/schemas/UnixTime'
         text:
           type: string
     User:
@@ -424,12 +434,16 @@ components:
         description:
           type: string
         start:
-          $ref: "#/components/schemas/UnixTime"
+          $ref: '#/components/schemas/UnixTime'
         end:
-          $ref: "#/components/schemas/UnixTime"
+          $ref: '#/components/schemas/UnixTime'
+        created_at:
+          $ref: '#/components/schemas/UnixTime'
         created_by:
           type: string
-          description: The email address of the user who is responsible for the content.
+          description: |
+            The email address of the user who is responsible for the content.
+            This information is only available for authorized organizations.
         lat:
           type: number
           format: float
@@ -459,6 +473,13 @@ components:
       type: integer
       format: int64
       description: Unix Time (number of milliseconds since 1970)
+  parameters:
+    BoundingBox:
+      name: bbox
+      in: query
+      description: Bounding Box
+      schema:
+        type: string
   securitySchemes:
     bearerAuth:
       type: http
