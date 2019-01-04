@@ -117,6 +117,15 @@ fn update<T: Clone + Id>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
     Ok(())
 }
 
+fn delete<T: Clone + Id>(objects: &mut Vec<T>, id: &str) -> RepoResult<()> {
+    if let Some(pos) = objects.iter().position(|x| x.id() == id) {
+        objects.remove(pos);
+    } else {
+        return Err(RepoError::NotFound);
+    }
+    Ok(())
+}
+
 impl EntryGateway for MockDb {
     fn create_entry(&mut self, e: Entry) -> RepoResult<()> {
         create(&mut self.entries, e)
@@ -164,6 +173,9 @@ impl EventGateway for MockDb {
     }
     fn update_event(&mut self, e: &Event) -> RepoResult<()> {
         update(&mut self.events, e)
+    }
+    fn delete_event(&mut self, id: &str) -> RepoResult<()> {
+        delete(&mut self.events, id)
     }
 }
 

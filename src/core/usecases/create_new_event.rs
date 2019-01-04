@@ -1,20 +1,9 @@
-use super::{create_new_user, NewUser};
+use super::create_user_from_email;
 use crate::core::{
     prelude::*,
     util::{parse::parse_url_param, validate::Validate},
 };
-use passwords::PasswordGenerator;
-use slug::slugify;
 use uuid::Uuid;
-
-const PW_GEN: PasswordGenerator = PasswordGenerator {
-    length: 8,
-    numbers: true,
-    lowercase_letters: true,
-    uppercase_letters: true,
-    symbols: true,
-    strict: false,
-};
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Deserialize, Debug, Clone)]
@@ -37,7 +26,7 @@ pub struct NewEvent {
     pub token       : Option<String>,
 }
 
-pub fn create_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<String> {
+pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
     let NewEvent {
         title,
         description,
@@ -56,7 +45,6 @@ pub fn create_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<String> {
         token,
         ..
     } = e;
-
     let org = if let Some(ref token) = token {
         let org = db.get_org_by_api_token(token).map_err(|e| match e {
             RepoError::NotFound => Error::Parameter(ParameterError::Unauthorized),
@@ -66,7 +54,6 @@ pub fn create_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<String> {
     } else {
         None
     };
-
     let mut tags: Vec<_> = tags
         .unwrap_or_else(|| vec![])
         .into_iter()
@@ -113,33 +100,19 @@ pub fn create_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<String> {
     } else {
         None
     };
-    let new_id = Uuid::new_v4().to_simple_ref().to_string();
-    let id = new_id.clone();
+    let id = Uuid::new_v4().to_simple_ref().to_string();
     let homepage = e.homepage.map(|ref url| parse_url_param(url)).transpose()?;
 
-    let created_by = if let Some(email) = created_by {
-        let users: Vec<_> = db.all_users()?;
-        let username = match users.iter().find(|u| u.email == email) {
-            Some(u) => u.username.clone(),
-            None => {
-                let generated_username = slugify(&email).replace("-", "");
-                let username = generated_username.clone();
-                let password = PW_GEN.generate_one().map_err(|e| e.to_string())?;
-                let u = NewUser {
-                    username,
-                    password,
-                    email,
-                };
-                create_new_user(db, u)?;
-                generated_username
-            }
-        };
+    let created_by = if let Some(ref email) = created_by {
+        let username = create_user_from_email(db, email)?;
         Some(username)
     } else {
-        None
+        // NOTE: At the moment we require an email address:
+        return Err(ParameterError::CreatorEmail.into());
+        // But in the future we might allow anonymous creators:
+        // None
     };
-
-    let new_event = Event {
+    let event = Event {
         id,
         title,
         start,
@@ -151,12 +124,18 @@ pub fn create_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<String> {
         tags,
         created_by,
     };
-
-    debug!("Creating new event: {:?}", new_event);
-    new_event.validate()?;
-    for t in &new_event.tags {
+    event.validate()?;
+    for t in &event.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
+    Ok(event)
+}
+
+pub fn create_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<String> {
+    let new_event = try_into_new_event(db, e)?;
+    let new_id = new_event.id.clone();
+
+    debug!("Creating new event: {:?}", new_event);
     db.create_event(new_event)?;
     Ok(new_id)
 }
@@ -186,7 +165,7 @@ mod tests {
             telephone   : None,
             homepage    : None,
             tags        : Some(vec!["foo".into(),"bar".into()]),
-            created_by  : None,
+            created_by  : Some("foo@bar.com".into()),
             token       : None,
         };
         let mut mock_db = MockDb::new();

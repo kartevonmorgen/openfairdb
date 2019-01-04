@@ -931,6 +931,20 @@ fn subscribe_to_bbox() {
 }
 
 #[test]
+fn openapi() {
+    let (client, _) = setup();
+    let req = client.get("/server/api.yaml");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    assert_eq!(
+        response.headers().get("Content-Type").collect::<Vec<_>>()[0],
+        "text/yaml"
+    );
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains("openapi:"))
+}
+
+#[test]
 fn export_csv() {
     let (client, db) = setup();
     let mut entries = vec![

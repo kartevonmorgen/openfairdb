@@ -17,6 +17,7 @@ pub trait EventGateway {
     fn get_event(&self, _: &str) -> Result<Event>;
     fn all_events(&self) -> Result<Vec<Event>>;
     fn update_event(&mut self, _: &Event) -> Result<()>;
+    fn delete_event(&mut self, _: &str) -> Result<()>;
 }
 
 pub trait UserGateway {

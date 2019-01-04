@@ -51,8 +51,6 @@ pub struct Event {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub homepage: Option<String>,
     pub tags: Vec<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub created_by: Option<String>,
 }
 
 impl From<e::Event> for Event {
@@ -67,7 +65,7 @@ impl From<e::Event> for Event {
             contact,
             tags,
             homepage,
-            created_by,
+            ..
         } = e;
 
         let e::Location { lat, lng, address } = location.unwrap_or_default();
@@ -98,7 +96,6 @@ impl From<e::Event> for Event {
             telephone,
             homepage,
             tags,
-            created_by,
         }
     }
 }

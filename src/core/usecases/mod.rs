@@ -1,15 +1,17 @@
-use crate::core::util::{geo, validate};
+use crate::core::{
+    prelude::*,
+    util::{geo, validate},
+};
 use std::collections::HashMap;
 use uuid::Uuid;
 
 //TODO: move usecases into separate files
 
-use crate::core::prelude::*;
-
 mod confirm_email;
 mod create_new_entry;
 mod create_new_event;
 mod create_new_user;
+mod delete_event;
 mod find_duplicates;
 mod login;
 mod query_events;
@@ -18,10 +20,12 @@ mod search;
 #[cfg(test)]
 pub mod tests;
 mod update_entry;
+mod update_event;
 
 pub use self::{
     confirm_email::*, create_new_entry::*, create_new_event::*, create_new_user::*,
-    find_duplicates::*, login::*, query_events::*, rate_entry::*, search::*, update_entry::*,
+    delete_event::*, find_duplicates::*, login::*, query_events::*, rate_entry::*, search::*,
+    update_entry::*, update_event::*,
 };
 
 pub fn get_ratings<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Rating>> {

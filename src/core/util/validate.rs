@@ -65,6 +65,7 @@ pub fn password(pw: &str) -> Result<(), ParameterError> {
 
 impl Validate for Entry {
     fn validate(&self) -> Result<(), ParameterError> {
+        //TODO: check title
         self.license
             .clone()
             .ok_or(ParameterError::License)
@@ -96,6 +97,9 @@ impl Validate for Contact {
 
 impl Validate for Event {
     fn validate(&self) -> Result<(), ParameterError> {
+        if self.title.is_empty() {
+            return Err(ParameterError::Title);
+        }
         if let Some(ref c) = self.contact {
             c.validate()?;
         }

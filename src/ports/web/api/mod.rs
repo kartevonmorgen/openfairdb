@@ -45,6 +45,9 @@ pub fn routes() -> Vec<Route> {
         events::post_event_with_token,
         events::get_event,
         events::get_events,
+        events::get_events_with_token,
+        events::put_event_with_token,
+        events::delete_event_with_token,
         users::post_user,
         ratings::post_rating,
         ratings::get_rating,
@@ -58,7 +61,8 @@ pub fn routes() -> Vec<Route> {
         count::get_count_entries,
         count::get_count_tags,
         get_version,
-        csv_export
+        csv_export,
+        get_api
     ]
 }
 
@@ -95,6 +99,13 @@ fn get_duplicates(db: DbConn) -> Result<Vec<(String, String, DuplicateType)>> {
 #[get("/server/version")]
 fn get_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
+}
+
+#[get("/server/api.yaml")]
+fn get_api() -> Content<&'static str> {
+    let data = include_str!("../../../../openapi.yaml");
+    let c_type = ContentType::new("text", "yaml");
+    Content(c_type, data)
 }
 
 #[post("/login", format = "application/json", data = "<login>")]

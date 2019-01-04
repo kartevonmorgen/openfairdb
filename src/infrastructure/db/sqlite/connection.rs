@@ -404,8 +404,9 @@ impl EventGateway for SqliteConnection {
             })
             .collect();
         self.transaction::<_, diesel::result::Error, _>(|| {
-            diesel::insert_into(schema::events::table)
-                .values(&e)
+            use self::schema::events::dsl;
+            diesel::update(dsl::events.filter(dsl::id.eq(&e.id)))
+                .set(&e)
                 .execute(self)?;
             diesel::insert_into(schema::event_tag_relations::table)
                 //WHERE NOT EXISTS
@@ -413,6 +414,12 @@ impl EventGateway for SqliteConnection {
                 .execute(self)?;
             Ok(())
         })?;
+        Ok(())
+    }
+
+    fn delete_event(&mut self, id: &str) -> Result<()> {
+        use self::schema::events::dsl;
+        diesel::delete(dsl::events.filter(dsl::id.eq(id))).execute(self)?;
         Ok(())
     }
 }

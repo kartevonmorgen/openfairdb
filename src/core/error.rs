@@ -4,6 +4,9 @@ use std::{error, io};
 quick_error! {
     #[derive(Debug)]
     pub enum ParameterError {
+        Title{
+            description("The title is invalid")
+        }
         Bbox{
             description("Bounding box is invalid")
         }
@@ -48,6 +51,9 @@ quick_error! {
         }
         OwnedTag{
             description("The tag is owned by an organization")
+        }
+        CreatorEmail{
+            description("Missing the email of the creator")
         }
     }
 }

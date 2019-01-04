@@ -1,6 +1,8 @@
 use super::super::util::validate;
 use crate::core::prelude::*;
+use passwords::PasswordGenerator;
 use pwhash::bcrypt;
+use slug::slugify;
 use uuid::Uuid;
 
 #[derive(Deserialize, Debug, Clone)]
@@ -31,6 +33,35 @@ pub fn create_new_user<D: UserGateway>(db: &mut D, u: NewUser) -> Result<()> {
     );
     db.create_user(new_user)?;
     Ok(())
+}
+
+const PW_GEN: PasswordGenerator = PasswordGenerator {
+    length: 8,
+    numbers: true,
+    lowercase_letters: true,
+    uppercase_letters: true,
+    symbols: true,
+    strict: false,
+};
+
+pub fn create_user_from_email<D: Db>(db: &mut D, email: &str) -> Result<String> {
+    let users: Vec<_> = db.all_users()?;
+    let username = match users.iter().find(|u| u.email == email) {
+        Some(u) => u.username.clone(),
+        None => {
+            let generated_username = slugify(&email).replace("-", "");
+            let username = generated_username.clone();
+            let password = PW_GEN.generate_one().map_err(|e| e.to_string())?;
+            let u = NewUser {
+                username,
+                password,
+                email: email.into(),
+            };
+            create_new_user(db, u)?;
+            generated_username
+        }
+    };
+    Ok(username)
 }
 
 #[cfg(test)]

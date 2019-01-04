@@ -24,7 +24,7 @@ pub struct Entry {
     pub image_link_url: Option<String>,
 }
 
-#[derive(Queryable, Insertable)]
+#[derive(Queryable, Insertable, AsChangeset)]
 #[table_name = "events"]
 pub struct Event {
     pub id: String,
