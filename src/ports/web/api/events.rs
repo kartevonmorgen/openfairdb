@@ -80,7 +80,7 @@ impl<'q> FromQuery<'q> for EventQuery {
 
         q.created_by = query
             .filter(|i| i.key == "created_by")
-            .map(|i| i.value.to_string())
+            .map(|i| i.value.url_decode_lossy())
             .filter(|v| !v.is_empty())
             .nth(0);
 
@@ -367,7 +367,7 @@ mod tests {
         fn filtered_by_creator_without_api_token() {
             let (client, _db) = setup();
             let res = client
-                .get("/events?created_by=foo@bar.com")
+                .get("/events?created_by=foo%40bar.com")
                 .header(ContentType::JSON)
                 .dispatch();
             assert_eq!(res.status(), Status::Unauthorized);
@@ -413,7 +413,7 @@ mod tests {
                 .unwrap();
             }
             let mut res = client
-                .get("/events?created_by=test@test.com")
+                .get("/events?created_by=test%40test.com")
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
                 .dispatch();
