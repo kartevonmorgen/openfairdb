@@ -186,6 +186,12 @@ Therefore we use a simple
 [script](https://github.com/slowtec/openfairdb/blob/master/scripts/backup-sqlite.sh)
 that copies the DB file once a day.
 
+# Domain Model
+
+*![The rendered class diagram should appear here!](http://www.plantuml.com/plantuml/svg/RLJ1Yjim4BtxAqIEWLtQQp1XswM7maAXsvx3n1uKiVQCaSRj9gN_NbLZErQK76BhlQStencDduA0bx7lgghf80JpgMqznkUVoiHVu-IyCw_Y7La5U2JnEHR48qe6NTomhF_Erf-F_5vL___Dzk5XRpQ1HpaTVcCGyt5ZdfbzwmW4rnfY7pK8XMPb-ZeUG-FT88x9r3MInBJt-wegoCrsOv9jzFePq9kT2SeVCHXXKvTxjlC6pL_3FeEWPN_EmaqKztt4CcR6eiqI_pk88nipQ9GCPcL10erCJS0UN9ULzyGz3c0n0mKx74vCM5R-MhR9iWFPcHSG9sEBYf2D29DLQDdwXIGxvMpW6gIG9-1wi7WOVNS7xHozPLGCeDRQalHOYXfheg_kWi7KfV87s2WIi0kxj6aktYtymj7JCIq7-tNRf8H4RN556eyWceXAxYUYR9b83XU9NDVpswJzyFWOvTD0tf831vUMTwVYcxT0xg8RYkR1u0x2RqZhRcHRYXFstA87mTKbrVjRkZTCWk_vzy0dxSvyZPH5dx30es-mk13tPqHZrqjixZ157ljby5AcnJXg3wzmELCQEydc7YN_gdf2QiU--mS0)*
+
+Note: Currently the rendered class diagram must be updated manually by uploading the contents of the file [classes.puml](classes.puml) to the [PlantUML Online Editor](http://www.plantuml.com/plantuml/uml/) and replace the link for the rendered diagram with one of the generated URLs.
+
 # License
 
 Copyright (c) 2015 - 2018 Markus Kohlhase
