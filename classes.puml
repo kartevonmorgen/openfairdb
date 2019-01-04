@@ -1,0 +1,84 @@
+@startuml
+
+class Address {
+    city: String
+    country: String
+    street: String
+    zip: String
+}
+
+class Bbox
+
+Bbox *--> "south_west 1" Coordinate
+Bbox *--> "north_east 1" Coordinate
+
+class BboxSubscription <<entity>>
+
+BboxSubscription "*" --> "1" User : subscribes to <
+BboxSubscription *--> "1" Bbox
+
+class Category <<entity>>
+
+class Comment <<entity>>
+
+Comment "1" --> "1" Rating : comments >
+
+class Contact {
+    email: String
+    homepage: String
+    telephone: String
+}
+
+class Coordinate {
+    lat: Latitude
+    lng: Longitude
+}
+
+class Entry <<entity>> {
+    license: String
+    image_url: String
+    image_link_url: String
+}
+
+Entry "*" -- "*" Category : categorizes <
+Entry "*" -- "*" Tag : tags <
+Entry *--> "1" Contact
+Entry *--> "1" Location
+
+class Event <<entity>>
+
+Event "1" --> "1" User : creates <
+Event "*" -- "*" Tag : tags <
+Event *--> "1" Contact
+Event *--> "1" Location
+
+class Location
+
+Location *--> "0..1" Address
+Location *--> "position 1" Coordinate
+
+class Organization <<entity>> {
+    api_token: String
+}
+
+Organization "*" -- "*" Tag : moderates >
+
+class Rating <<entity>> {
+    context: String
+    rating: Integer
+    source: String
+}
+
+Entry "1" --> "1" Rating : rates <
+
+class Role <<enum>>
+
+class Tag <<entity>>
+
+class User <<entity>> {
+    email: String
+}
+
+User *--> "1" Role
+
+@enduml
