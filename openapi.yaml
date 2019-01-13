@@ -24,14 +24,16 @@ paths:
           in: query
           schema:
             type: string
-        - name: bbox
-          in: query
-          schema:
-            type: string
+        - $ref: '#/components/parameters/BoundingBox'
         - name: categories
           in: query
           schema:
             type: string
+          description: |
+             An optional filter.
+             We currently use the following two:
+             - Initiative (non-commercial): `2cd00bebec0c48ba9db761da48678134`
+             - Company: `77b3c33a92554bcf8e8c2c86cedd6f6f`
       responses:
         '200':
           description: Successful response
@@ -39,6 +41,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SearchResult'
+  '/entries':
+    post:
+      summary: Create an entry
+      tags:
+        - Entries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Entry'
+      responses:
+        '200':
+          description: Successful response
   '/entries/{id}':
     get:
       summary: Get an entry
@@ -57,6 +73,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Entry'
+
   '/ratings/{id}':
     get:
       summary: Get a specific rating
@@ -225,6 +242,34 @@ paths:
           description: Sucessfully deleted the event
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+
+  '/login':
+    post:
+      summary: User login
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Sucessfull response
+  '/logout':
+    post:
+      summary: User logout
+      tags:
+        - Users
+      responses:
+        '200':
+          description: Sucessfull response
   '/users/{username}':
     get:
       summary: Get user data
@@ -243,6 +288,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+  /tags:
+    get:
+      summary: Get tags
+      tags:
+        - Tags
+      responses:
+        '200':
+          description: Sucessfull response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
   /count/entries:
     get:
       summary: Get number of entries
@@ -294,8 +353,19 @@ paths:
   /export/entries.csv:
     get:
       summary: Export data as CSV
+      description: |
+        **Example**:
+
+        Export all entries in Germany:
+        `/export/entries.csv?bbox=47.49,0.79,54.63,18.30`
+
+        If you want to find out the coordinates for other map areas,
+        open "network" in the "developer tools" in your browser
+        and look at the search request under at the value of `bbox`.
       tags:
         - Export
+      parameters:
+        - $ref: '#/components/parameters/BoundingBox'
       responses:
         '200':
           description: Successful response
@@ -415,6 +485,7 @@ components:
     SearchResult:
       properties:
         visible:
+          description: The entries that are in the given bounding box (bbox, area of the map).
           type: array
           items:
             type: object
@@ -426,6 +497,7 @@ components:
               lng:
                 type: number
         invisible:
+          description: Up to 5 entries outside the bbox.
           type: array
           items:
             type: object
@@ -473,22 +545,36 @@ components:
         email:
           type: string
           description: The public email address
+          example: info@example.com
         telephone:
           type: string
         tags:
           type: array
           items:
             type: string
+          example: [organic, csa]
         homepage:
           type: string
         registration:
           type: string
-          enum: [email, telephone, homepage]
+          enum:
+            - email
+            - telephone
+            - homepage
+          example: telephone
           description: Type of registration
+      example:
+        title: A great event
+        start: 1547403505
+        created_by: testuser@example.com
+        telephone: "0123456789"
+        tags: [awesome, organic]
+        registration: "telephone"
     UnixTime:
       type: integer
       format: int64
-      description: Unix Time (number of seconds since 00:00::00 1. January, 1970, UTC)
+      description: 'Unix Time (number of seconds since 00:00::00 1. January, 1970, UTC)'
+      example: 1547403509
   parameters:
     BoundingBox:
       name: bbox
@@ -496,6 +582,7 @@ components:
       description: Bounding Box
       schema:
         type: string
+        example: "42.27,-7.97,52.58,38.25"
   securitySchemes:
     bearerAuth:
       type: http

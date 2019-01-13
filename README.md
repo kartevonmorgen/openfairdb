@@ -19,50 +19,17 @@ For examples how to use the API, open "network" in the developer tools in your b
 When you want to use the API, please contact us at helmut@bildungsagenten.com. The API might still change sometimes. We will try to let you know in that case.
 
 -  `GET /entries/:ID_1,:ID_2,...,:ID_n`
--  `POST /entries`
 -  `PUT /entries/:ID`
 -  `GET /categories/`
 -  `GET /categories/:ID_1,:ID_2,...,:ID_n`
--  `GET /tags`
--  `GET /search?text=TXT&bbox=LAT_min,LNG_min,LAT_max,LNG_max&categories=C_1,C_2,...,C_n`
 -  `POST /ratings`
 -  `GET /ratings`
 -  `GET /ratings/:ID_1,:ID_2,...,:ID_n`
--  `POST /login`
--  `POST /logout`
--  `GET /users/:USERNAME`
 -  `POST /users`
 -  `POST /confirm-email-address`
 -  `GET /bbox-subscriptions`
 -  `POST /subscribe-to-bbox`
 -  `POST /unsubscribe-all-bboxes`
--  `GET /export/entries.csv?bbox=LAT_min,LNG_min,LAT_max,LNG_max`
--  `GET /count/entries`
--  `GET /count/tags`
--  `GET /server/version`
-
-### Search
-**Example:**
-Search for "lebensmittel" with tags #unverpackt, #zerowaste: http://api.ofdb.io/v0/search?text=lebensmittel%20%23unverpackt%20%23zerowaste&bbox=47.29541440362851,2.3431777954101567,53.97012306226697,17.80094146728516
-
-`categories` is an optional filter. We currently use the following two:
-**Initiative (non-commercial):** 2cd00bebec0c48ba9db761da48678134
-**Company:** 77b3c33a92554bcf8e8c2c86cedd6f6f
-
-Search returns an object with the following structure:
-
-```
-{"visible":[
-    {"id": ID1,"lat": LAT,"lng": LNG},
-    {"id": ID1,"lat": LAT,"lng": LNG}
-],
-"invisible":[
-    {"id": ID1,"lat": LAT,"lng": LNG},
-    {"id": ID1,"lat": LAT,"lng": LNG}
-]
-```
-
-Under `visible` are the entries that are in the given bounding box (`bbox`, area of the map). Under `invisible` are up to 5 entries outside the `bbox`.
 
 ### Login & Subscriptions
 
@@ -73,12 +40,6 @@ For the following requests one must be logged in:
 `POST /unsubscribe-all-bboxes`
 
 `bbox-subscriptions` are subscriptions to a certain map area (bounding box,`bbox`): whenever a new entry is created or an entry is changed within that area, an email notification is sent to the user.
-
-### Entry Export
-**Example**: Export all entries in Germany:
-http://api.ofdb.io/v0/export/entries.csv?bbox=47.497972542230855,0.7996758709088782,54.63407558981465,18.307256321725717
-
-If you want to find out the coordinates for other map areas, open "network" in the "developer tools" in your browser and look at the search request under at the value of `bbox`.
 
 ## Quick start
 
