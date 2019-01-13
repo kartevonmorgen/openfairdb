@@ -481,10 +481,14 @@ components:
             type: string
         homepage:
           type: string
+        registration:
+          type: string
+          enum: [email, telephone, homepage]
+          description: Type of registration
     UnixTime:
       type: integer
       format: int64
-      description: Unix Time (number of milliseconds since 1970)
+      description: Unix Time (number of seconds since 00:00::00 1. January, 1970, UTC)
   parameters:
     BoundingBox:
       name: bbox

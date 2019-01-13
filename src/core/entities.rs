@@ -60,16 +60,24 @@ impl Contact {
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Event {
-    pub id          : String,
-    pub title       : String,
-    pub description : Option<String>,
-    pub start       : u64,
-    pub end         : Option<u64>,
-    pub location    : Option<Location>,
-    pub contact     : Option<Contact>,
-    pub tags        : Vec<String>,
-    pub homepage    : Option<String>,
-    pub created_by  : Option<String>,
+    pub id           : String,
+    pub title        : String,
+    pub description  : Option<String>,
+    pub start        : u64,
+    pub end          : Option<u64>,
+    pub location     : Option<Location>,
+    pub contact      : Option<Contact>,
+    pub tags         : Vec<String>,
+    pub homepage     : Option<String>,
+    pub created_by   : Option<String>,
+    pub registration : Option<RegistrationType>,
+}
+
+#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+pub enum RegistrationType {
+    Email,
+    Phone,
+    Homepage,
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]

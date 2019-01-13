@@ -34,8 +34,10 @@ pub struct Event {
     pub start: u64,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub end: Option<u64>,
-    pub lat: f64,
-    pub lng: f64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lat: Option<f64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub lng: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub street: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -51,6 +53,7 @@ pub struct Event {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub homepage: Option<String>,
     pub tags: Vec<String>,
+    pub registration: Option<String>,
 }
 
 impl From<e::Event> for Event {
@@ -65,10 +68,15 @@ impl From<e::Event> for Event {
             contact,
             tags,
             homepage,
+            registration,
             ..
         } = e;
 
         let e::Location { lat, lng, address } = location.unwrap_or_default();
+
+        let lat = if lat == 0.0 { None } else { Some(lat) };
+
+        let lng = if lng == 0.0 { None } else { Some(lng) };
 
         let e::Address {
             street,
@@ -79,9 +87,18 @@ impl From<e::Event> for Event {
 
         let e::Contact { email, telephone } = contact.unwrap_or_default();
 
+        let registration = registration.map(|r| {
+            match r {
+                e::RegistrationType::Email => "email",
+                e::RegistrationType::Phone => "telephone",
+                e::RegistrationType::Homepage => "homepage",
+            }
+            .to_string()
+        });
+
         Event {
             id,
-            //created      ,
+            // created,
             title,
             description,
             start,
@@ -96,6 +113,7 @@ impl From<e::Event> for Event {
             telephone,
             homepage,
             tags,
+            registration,
         }
     }
 }

@@ -16,8 +16,17 @@ quick_error! {
         Email{
             description("Invalid email address")
         }
+        Phone{
+            description("Invalid phone nr")
+        }
         Url{
             description("Invalid URL")
+        }
+        Contact{
+            description("Invalid contact")
+        }
+        RegistrationType{
+            description("Invalid registraion type")
         }
         UserName{
             description("Invalid username")
@@ -33,6 +42,9 @@ quick_error! {
         }
         RatingValue{
             description("Rating value out of range")
+        }
+        RatingContext(context: String){
+            description("Invalid rating context")
         }
         Credentials {
             description("Invalid credentials")

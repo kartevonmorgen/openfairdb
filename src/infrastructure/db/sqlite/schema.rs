@@ -98,6 +98,7 @@ table! {
         telephone -> Nullable<Text>,
         homepage -> Nullable<Text>,
         created_by -> Nullable<Text>,
+        registration -> Nullable<SmallInt>,
     }
 }
 

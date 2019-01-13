@@ -1,5 +1,6 @@
 use super::models::*;
 use crate::core::entities as e;
+use crate::core::prelude::{Error, ParameterError, Result};
 use std::str::FromStr;
 
 impl From<e::Entry> for Entry {
@@ -63,6 +64,58 @@ impl From<e::Entry> for Entry {
     }
 }
 
+impl From<i16> for e::RegistrationType {
+    fn from(i: i16) -> Self {
+        use crate::core::entities::RegistrationType::*;
+        match i {
+            1 => Email,
+            2 => Phone,
+            3 => Homepage,
+            _ => {
+                error!(
+                    "Convertion Error:
+                       Invalid registration type:
+                       {} should be one of 1,2,3;
+                       Use 'Phone' instead.",
+                    i
+                );
+                Phone
+            }
+        }
+    }
+}
+
+#[test]
+fn registration_type_from_i16() {
+    use crate::core::entities::RegistrationType::{self, *};
+    assert_eq!(RegistrationType::from(1), Email);
+    assert_eq!(RegistrationType::from(2), Phone);
+    assert_eq!(RegistrationType::from(3), Homepage);
+    assert_eq!(RegistrationType::from(7), Phone);
+}
+
+impl Into<i16> for e::RegistrationType {
+    fn into(self) -> i16 {
+        use crate::core::entities::RegistrationType::*;
+        match self {
+            Email => 1,
+            Phone => 2,
+            Homepage => 3,
+        }
+    }
+}
+
+#[test]
+fn registration_type_into_i16() {
+    use crate::core::entities::RegistrationType::*;
+    let e: i16 = Email.into();
+    let p: i16 = Phone.into();
+    let u: i16 = Homepage.into();
+    assert_eq!(e, 1);
+    assert_eq!(p, 2);
+    assert_eq!(u, 3);
+}
+
 impl From<e::Event> for Event {
     fn from(e: e::Event) -> Self {
         let e::Event {
@@ -75,6 +128,7 @@ impl From<e::Event> for Event {
             contact,
             homepage,
             created_by,
+            registration,
             ..
         } = e;
 
@@ -101,6 +155,8 @@ impl From<e::Event> for Event {
             (None, None)
         };
 
+        let registration = registration.map(|x| x.into());
+
         Event {
             id,
             title,
@@ -117,6 +173,7 @@ impl From<e::Event> for Event {
             email,
             homepage,
             created_by,
+            registration,
         }
     }
 }
@@ -215,6 +272,7 @@ impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
             telephone,
             homepage,
             created_by,
+            registration,
             ..
         } = e;
         let tags = tag_rels
@@ -248,6 +306,9 @@ impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
         } else {
             None
         };
+
+        let registration = registration.map(|x| x.into());
+
         e::Event {
             id,
             title,
@@ -259,6 +320,7 @@ impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
             homepage,
             tags,
             created_by,
+            registration,
         }
     }
 }
@@ -499,8 +561,8 @@ impl From<e::RatingContext> for String {
 }
 
 impl FromStr for e::RatingContext {
-    type Err = String;
-    fn from_str(context: &str) -> Result<e::RatingContext, String> {
+    type Err = Error;
+    fn from_str(context: &str) -> Result<e::RatingContext> {
         Ok(match context {
             "diversity" => e::RatingContext::Diversity,
             "renewable" => e::RatingContext::Renewable,
@@ -509,7 +571,7 @@ impl FromStr for e::RatingContext {
             "transparency" => e::RatingContext::Transparency,
             "solidarity" => e::RatingContext::Solidarity,
             _ => {
-                return Err(format!("invalid RatingContext: '{}'", context));
+                return Err(ParameterError::RatingContext(context.into()).into());
             }
         })
     }

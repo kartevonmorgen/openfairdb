@@ -39,6 +39,13 @@ pub fn get_event(db: DbConn, id: String) -> Result<json::Event> {
     Ok(Json(ev.into()))
 }
 
+#[put("/events/<_id>", format = "application/json", data = "<_e>", rank = 2)]
+// At the moment we don't want to allow anonymous event creation.
+// So for now we assure that it's blocked:
+pub fn put_event(mut _db: DbConn, _id: &RawStr, _e: Json<usecases::UpdateEvent>) -> Status {
+    Status::Unauthorized
+}
+
 #[put("/events/<id>", format = "application/json", data = "<e>")]
 pub fn put_event_with_token(
     mut db: DbConn,
@@ -108,6 +115,11 @@ pub fn get_events(db: DbConn, query: EventQuery) -> Result<Vec<json::Event>> {
     let events = usecases::query_events(&*db, query.tags, &query.created_by, None)?;
     let events = events.into_iter().map(json::Event::from).collect();
     Ok(Json(events))
+}
+
+#[delete("/events/<_id>", rank = 2)]
+pub fn delete_event(mut _db: DbConn, _id: &RawStr) -> Status {
+    Status::Unauthorized
 }
 
 #[delete("/events/<id>")]
@@ -184,73 +196,169 @@ mod tests {
             // );
         }
 
-        #[test]
-        fn with_api_token_and_creator_email() {
-            let (client, db) = setup();
-            db.get()
-                .unwrap()
-                .create_org(Organization {
-                    id: "foo".into(),
-                    name: "bar".into(),
-                    owned_tags: vec![],
-                    api_token: "foo".into(),
-                })
-                .unwrap();
-            let req = client
-                .post("/events")
-                .header(ContentType::JSON)
-                .header(Header::new("Authorization", "Bearer foo"))
-                .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com"}"#);
-            let mut response = req.dispatch();
-            assert_eq!(response.status(), Status::Ok);
-            test_json(&response);
-            let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-            let ev = db.get().unwrap().all_events().unwrap()[0].clone();
-            let eid = ev.id.clone();
-            assert_eq!(ev.created_by.unwrap(), "foobarcom");
-            assert_eq!(body_str, format!("\"{}\"", eid));
-        }
+        mod with_api_token {
+            use super::*;
 
-        #[test]
-        fn with_api_token_and_without_creator_email() {
-            let (client, db) = setup();
-            db.get()
-                .unwrap()
-                .create_org(Organization {
-                    id: "foo".into(),
-                    name: "bar".into(),
-                    owned_tags: vec![],
-                    api_token: "foo".into(),
-                })
-                .unwrap();
-            let res = client
-                .post("/events")
-                .header(ContentType::JSON)
-                .header(Header::new("Authorization", "Bearer foo"))
-                .body(r#"{"title":"x","start":0}"#)
-                .dispatch();
-            assert_eq!(res.status(), Status::BadRequest);
-        }
+            #[test]
+            fn with_creator_email() {
+                let (client, db) = setup();
+                db.get()
+                    .unwrap()
+                    .create_org(Organization {
+                        id: "foo".into(),
+                        name: "bar".into(),
+                        owned_tags: vec![],
+                        api_token: "foo".into(),
+                    })
+                    .unwrap();
+                let mut res = client
+                    .post("/events")
+                    .header(ContentType::JSON)
+                    .header(Header::new("Authorization", "Bearer foo"))
+                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com"}"#)
+                    .dispatch();
+                assert_eq!(res.status(), Status::Ok);
+                test_json(&res);
+                let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+                let ev = db.get().unwrap().all_events().unwrap()[0].clone();
+                let eid = ev.id.clone();
+                assert_eq!(ev.created_by.unwrap(), "foobarcom");
+                assert_eq!(body_str, format!("\"{}\"", eid));
+            }
 
-        #[test]
-        fn with_api_token_and_with_empty_title() {
-            let (client, db) = setup();
-            db.get()
-                .unwrap()
-                .create_org(Organization {
-                    id: "foo".into(),
-                    name: "bar".into(),
-                    owned_tags: vec![],
-                    api_token: "foo".into(),
-                })
-                .unwrap();
-            let res = client
-                .post("/events")
-                .header(ContentType::JSON)
-                .header(Header::new("Authorization", "Bearer foo"))
-                .body(r#"{"title":"","start":0,"created_by":"foo@bar.com"}"#)
-                .dispatch();
-            assert_eq!(res.status(), Status::BadRequest);
+            #[test]
+            fn with_empty_strings_for_optional_fields() {
+                let (client, db) = setup();
+                db.get()
+                    .unwrap()
+                    .create_org(Organization {
+                        id: "foo".into(),
+                        name: "bar".into(),
+                        owned_tags: vec![],
+                        api_token: "foo".into(),
+                    })
+                    .unwrap();
+                let res = client
+                    .post("/events")
+                    .header(ContentType::JSON)
+                    .header(Header::new("Authorization", "Bearer foo"))
+                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","email":"","homepage":"","description":"","registration":""}"#)
+                    .dispatch();
+                assert_eq!(res.status(), Status::Ok);
+                test_json(&res);
+                let ev = db.get().unwrap().all_events().unwrap()[0].clone();
+                assert!(ev.contact.is_none());
+                assert!(ev.homepage.is_none());
+                assert!(ev.description.is_none());
+            }
+
+            #[test]
+            fn with_registration_type() {
+                let (client, db) = setup();
+                db.get()
+                    .unwrap()
+                    .create_org(Organization {
+                        id: "foo".into(),
+                        name: "bar".into(),
+                        owned_tags: vec![],
+                        api_token: "foo".into(),
+                    })
+                    .unwrap();
+                let res = client
+                    .post("/events")
+                    .header(ContentType::JSON)
+                    .header(Header::new("Authorization", "Bearer foo"))
+                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","registration":"telephone","telephone":"12345"}"#)
+                    .dispatch();
+                assert_eq!(res.status(), Status::Ok);
+                test_json(&res);
+                let ev = db.get().unwrap().all_events().unwrap()[0].clone();
+                assert_eq!(ev.registration.unwrap(), RegistrationType::Phone);
+            }
+
+            #[test]
+            fn with_invalid_registration_type() {
+                let (client, db) = setup();
+                db.get()
+                    .unwrap()
+                    .create_org(Organization {
+                        id: "foo".into(),
+                        name: "bar".into(),
+                        owned_tags: vec![],
+                        api_token: "foo".into(),
+                    })
+                    .unwrap();
+                let res = client
+                    .post("/events")
+                    .header(ContentType::JSON)
+                    .header(Header::new("Authorization", "Bearer foo"))
+                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","registration":"foo"}"#)
+                    .dispatch();
+                assert_eq!(res.status(), Status::BadRequest);
+            }
+
+            #[test]
+            fn without_creator_email() {
+                let (client, db) = setup();
+                db.get()
+                    .unwrap()
+                    .create_org(Organization {
+                        id: "foo".into(),
+                        name: "bar".into(),
+                        owned_tags: vec![],
+                        api_token: "foo".into(),
+                    })
+                    .unwrap();
+                let res = client
+                    .post("/events")
+                    .header(ContentType::JSON)
+                    .header(Header::new("Authorization", "Bearer foo"))
+                    .body(r#"{"title":"x","start":0}"#)
+                    .dispatch();
+                assert_eq!(res.status(), Status::BadRequest);
+            }
+
+            #[test]
+            fn with_empty_title() {
+                let (client, db) = setup();
+                db.get()
+                    .unwrap()
+                    .create_org(Organization {
+                        id: "foo".into(),
+                        name: "bar".into(),
+                        owned_tags: vec![],
+                        api_token: "foo".into(),
+                    })
+                    .unwrap();
+                let res = client
+                    .post("/events")
+                    .header(ContentType::JSON)
+                    .header(Header::new("Authorization", "Bearer foo"))
+                    .body(r#"{"title":"","start":0,"created_by":"foo@bar.com"}"#)
+                    .dispatch();
+                assert_eq!(res.status(), Status::BadRequest);
+            }
+
+            #[test]
+            fn with_phone_registraion_but_without_phone_nr() {
+                let (client, db) = setup();
+                db.get()
+                    .unwrap()
+                    .create_org(Organization {
+                        id: "foo".into(),
+                        name: "bar".into(),
+                        owned_tags: vec![],
+                        api_token: "foo".into(),
+                    })
+                    .unwrap();
+                let res = client
+                    .post("/events")
+                    .header(ContentType::JSON)
+                    .header(Header::new("Authorization", "Bearer foo"))
+                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","registration":"telephone"}"#)
+                    .dispatch();
+                assert_eq!(res.status(), Status::BadRequest);
+            }
         }
 
         #[test]
@@ -284,6 +392,7 @@ mod tests {
                 tags: vec!["bla".into()],
                 homepage: None,
                 created_by: None,
+                registration: Some(RegistrationType::Email),
             };
             db.get().unwrap().create_event(e).unwrap();
             let req = client.get("/events/1234").header(ContentType::JSON);
@@ -293,7 +402,7 @@ mod tests {
             let body_str = response.body().and_then(|b| b.into_string()).unwrap();
             assert_eq!(
                 body_str,
-                r#"{"id":"1234","title":"x","start":0,"lat":0.0,"lng":0.0,"tags":["bla"]}"#
+                r#"{"id":"1234","title":"x","start":0,"tags":["bla"],"registration":"email"}"#
             );
         }
 
@@ -314,6 +423,7 @@ mod tests {
                     tags: vec![],
                     homepage: None,
                     created_by: None,
+                    registration: None,
                 })
                 .unwrap();
             }
@@ -323,6 +433,39 @@ mod tests {
             test_json(&response);
             let body_str = response.body().and_then(|b| b.into_string()).unwrap();
             assert!(body_str.contains("\"id\":\"a\""));
+        }
+
+        #[test]
+        fn sorted_by_start() {
+            let (client, db) = setup();
+            let event_start_times = vec![100, 0, 300, 50, 200];
+            let mut db = db.get().unwrap();
+            for start in event_start_times {
+                db.create_event(Event {
+                    id: start.to_string(),
+                    title: start.to_string(),
+                    description: None,
+                    start,
+                    end: None,
+                    location: None,
+                    contact: None,
+                    tags: vec![],
+                    homepage: None,
+                    created_by: None,
+                    registration: None,
+                })
+                .unwrap();
+            }
+            let mut res = client.get("/events").header(ContentType::JSON).dispatch();
+            assert_eq!(res.status(), Status::Ok);
+            test_json(&res);
+            let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+            let objects: Vec<_> = body_str.split("},{").collect();
+            assert!(objects[0].contains("\"id\":\"0\""));
+            assert!(objects[1].contains("\"id\":\"50\""));
+            assert!(objects[2].contains("\"id\":\"100\""));
+            assert!(objects[3].contains("\"id\":\"200\""));
+            assert!(objects[4].contains("\"id\":\"300\""));
         }
 
         #[test]
@@ -342,6 +485,7 @@ mod tests {
                     tags: vec![id.into()],
                     homepage: None,
                     created_by: None,
+                    registration: None,
                 })
                 .unwrap();
             }
@@ -400,6 +544,7 @@ mod tests {
                     tags: vec![],
                     homepage: None,
                     created_by: Some(username.clone()),
+                    registration: None,
                 })
                 .unwrap();
                 db.create_user(User {
@@ -467,10 +612,15 @@ mod tests {
     mod update {
         use super::*;
 
-        #[ignore]
         #[test]
         fn without_api_token() {
-            //TODO: implement
+            let (client, _) = setup();
+            let res = client
+                .put("/events/foo")
+                .header(ContentType::JSON)
+                .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com"}"#)
+                .dispatch();
+            assert_eq!(res.status(), Status::Unauthorized);
         }
 
         #[test]
@@ -517,6 +667,7 @@ mod tests {
                 tags: vec!["bla".into()],
                 homepage: None,
                 created_by: Some("foo@bar.com".into()),
+                registration: None,
             };
             db.get().unwrap().create_event(e.clone()).unwrap();
             let res = client
@@ -536,10 +687,14 @@ mod tests {
     mod delete {
         use super::*;
 
-        #[ignore]
         #[test]
         fn without_api_token() {
-            //TODO: implement
+            let (client, _) = setup();
+            let res = client
+                .delete("/events/foo")
+                .header(ContentType::JSON)
+                .dispatch();
+            assert_eq!(res.status(), Status::Unauthorized);
         }
 
         #[test]
@@ -585,6 +740,7 @@ mod tests {
                 tags: vec!["bla".into()],
                 homepage: None,
                 created_by: Some("foo@bar.com".into()),
+                registration: None,
             };
             let e1 = Event {
                 id: "9999".into(),
@@ -597,6 +753,7 @@ mod tests {
                 tags: vec!["bla".into()],
                 homepage: None,
                 created_by: Some("foo@bar.com".into()),
+                registration: None,
             };
             db.get().unwrap().create_event(e0.clone()).unwrap();
             db.get().unwrap().create_event(e1.clone()).unwrap();

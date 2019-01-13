@@ -42,6 +42,7 @@ pub struct Event {
     pub telephone: Option<String>,
     pub homepage: Option<String>,
     pub created_by: Option<String>,
+    pub registration: Option<i16>,
 }
 
 #[derive(Queryable, Insertable)]

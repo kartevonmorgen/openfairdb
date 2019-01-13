@@ -36,5 +36,6 @@ pub fn query_events<D: Db>(
             }
         }
     }
+    events.sort_by(|a, b| a.start.cmp(&b.start));
     Ok(events)
 }
