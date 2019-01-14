@@ -1,9 +1,13 @@
 use crate::core::prelude::*;
+use crate::core::util::filter::InBBox;
 
 pub fn query_events<D: Db>(
     db: &D,
     tags: Option<Vec<String>>,
-    created_by: &Option<String>,
+    bbox: Option<Bbox>,
+    start_min: Option<u64>,
+    start_max: Option<u64>,
+    created_by: Option<String>,
     token: Option<String>,
 ) -> Result<Vec<Event>> {
     let _org = if let Some(ref token) = token {
@@ -17,6 +21,17 @@ pub fn query_events<D: Db>(
     };
 
     let mut events = db.all_events()?;
+
+    if let Some(bbox) = bbox {
+        events = events.into_iter().filter(|x| x.in_bbox(&bbox)).collect();
+    }
+
+    if let Some(min) = start_min {
+        events = events.into_iter().filter(|e| e.start >= min).collect();
+    }
+    if let Some(max) = start_max {
+        events = events.into_iter().filter(|e| e.start <= max).collect();
+    }
     if let Some(tags) = tags {
         events = events
             .into_iter()

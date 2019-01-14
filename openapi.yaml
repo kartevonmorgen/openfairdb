@@ -143,14 +143,14 @@ paths:
           description: The email address of the event creator (only available with valid API token)
           schema:
             type: string
-        - name: start
+        - name: start_min
           in: query
-          description: Filter events by `event.start` >= `start`
+          description: Filter events by `event.start` >= `start_min`
           schema:
             type: number
-        - name: end
+        - name: start_max
           in: query
-          description: Filter events by `event.end` <= `end`
+          description: Filter events by `event.start` <= `start_max`
           schema:
             type: number
       responses:

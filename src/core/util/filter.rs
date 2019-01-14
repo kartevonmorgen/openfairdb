@@ -11,6 +11,16 @@ impl InBBox for Entry {
     }
 }
 
+impl InBBox for Event {
+    fn in_bbox(&self, bb: &Bbox) -> bool {
+        if let Some(ref location) = self.location {
+            is_in_bbox(&location.lat, &location.lng, bb)
+        } else {
+            false
+        }
+    }
+}
+
 pub fn entries_by_category_ids<'a>(ids: &'a [String]) -> impl Fn(&Entry) -> bool + 'a {
     move |e| ids.iter().any(|c| e.categories.iter().any(|x| x == c))
 }

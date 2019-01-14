@@ -103,6 +103,11 @@ quick_error! {
             cause(err)
             description(err.description())
         }
+        ParseInt(err: std::num::ParseIntError){
+            from()
+            cause(err)
+            description(err.description())
+        }
         Repo(err: RepoError){
             from()
             cause(err)

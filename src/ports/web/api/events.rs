@@ -64,12 +64,12 @@ pub struct EventQuery {
     tags: Option<Vec<String>>,
     created_by: Option<String>,
     bbox: Option<Bbox>,
-    start: Option<i64>,
-    end: Option<i64>,
+    start_min: Option<u64>,
+    start_max: Option<u64>,
 }
 
 impl<'q> FromQuery<'q> for EventQuery {
-    type Error = Error;
+    type Error = crate::core::prelude::Error;
 
     fn from_query(query: Query<'q>) -> std::result::Result<Self, Self::Error> {
         let mut q = EventQuery::default();
@@ -86,10 +86,43 @@ impl<'q> FromQuery<'q> for EventQuery {
         }
 
         q.created_by = query
+            .clone()
             .filter(|i| i.key == "created_by")
             .map(|i| i.value.url_decode_lossy())
             .filter(|v| !v.is_empty())
             .nth(0);
+
+        let start_min = query
+            .clone()
+            .filter(|i| i.key == "start_min")
+            .map(|i| i.value.url_decode_lossy())
+            .filter(|v| !v.is_empty())
+            .nth(0);
+        if let Some(s) = start_min {
+            let x = s.parse()?;
+            q.start_min = Some(x);
+        }
+
+        let start_max = query
+            .clone()
+            .filter(|i| i.key == "start_max")
+            .map(|i| i.value.url_decode_lossy())
+            .filter(|v| !v.is_empty())
+            .nth(0);
+        if let Some(e) = start_max {
+            let x = e.parse()?;
+            q.start_max = Some(x);
+        }
+
+        let bbox = query
+            .filter(|i| i.key == "bbox")
+            .map(|i| i.value.url_decode_lossy())
+            .filter(|v| !v.is_empty())
+            .nth(0);
+        if let Some(bbox) = bbox {
+            let bbox = geo::extract_bbox(&bbox)?;
+            q.bbox = Some(bbox);
+        }
 
         Ok(q)
     }
@@ -102,7 +135,15 @@ pub fn get_events_with_token(
     query: EventQuery,
 ) -> Result<Vec<json::Event>> {
     //TODO: check token
-    let events = usecases::query_events(&*db, query.tags, &query.created_by, Some(token.0))?;
+    let events = usecases::query_events(
+        &*db,
+        query.tags,
+        query.bbox,
+        query.start_min,
+        query.start_max,
+        query.created_by,
+        Some(token.0),
+    )?;
     let events = events.into_iter().map(json::Event::from).collect();
     Ok(Json(events))
 }
@@ -112,7 +153,15 @@ pub fn get_events(db: DbConn, query: EventQuery) -> Result<Vec<json::Event>> {
     if query.created_by.is_some() {
         return Err(Error::Parameter(ParameterError::Unauthorized).into());
     }
-    let events = usecases::query_events(&*db, query.tags, &query.created_by, None)?;
+    let events = usecases::query_events(
+        &*db,
+        query.tags,
+        query.bbox,
+        query.start_min,
+        query.start_max,
+        query.created_by,
+        None,
+    )?;
     let events = events.into_iter().map(json::Event::from).collect();
     Ok(Json(events))
 }
@@ -590,22 +639,113 @@ mod tests {
             assert_eq!(res.status(), Status::Unauthorized);
         }
 
-        #[ignore]
         #[test]
-        fn filtered_by_start_time() {
-            //TODO: implement
+        fn filtered_by_start_min() {
+            let (client, db) = setup();
+            let event_start_times = vec![100, 0, 300, 50, 200];
+            let mut db = db.get().unwrap();
+            for start in event_start_times {
+                db.create_event(Event {
+                    id: start.to_string(),
+                    title: start.to_string(),
+                    description: None,
+                    start,
+                    end: None,
+                    location: None,
+                    contact: None,
+                    tags: vec![],
+                    homepage: None,
+                    created_by: None,
+                    registration: None,
+                })
+                .unwrap();
+            }
+            let mut res = client
+                .get("/events?start_min=150")
+                .header(ContentType::JSON)
+                .dispatch();
+            assert_eq!(res.status(), Status::Ok);
+            test_json(&res);
+            let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+            let objects: Vec<_> = body_str.split("},{").collect();
+            assert_eq!(objects.len(), 2);
+            assert!(objects[0].contains("\"id\":\"200\""));
+            assert!(objects[1].contains("\"id\":\"300\""));
         }
 
-        #[ignore]
         #[test]
-        fn filtered_by_end_time() {
-            //TODO: implement
+        fn filtered_by_start_max() {
+            let (client, db) = setup();
+            let event_start_times = vec![100, 0, 300, 50, 200];
+            let mut db = db.get().unwrap();
+            for start in event_start_times {
+                db.create_event(Event {
+                    id: start.to_string(),
+                    title: start.to_string(),
+                    description: None,
+                    start,
+                    end: None,
+                    location: None,
+                    contact: None,
+                    tags: vec![],
+                    homepage: None,
+                    created_by: None,
+                    registration: None,
+                })
+                .unwrap();
+            }
+            let mut res = client
+                .get("/events?start_max=250")
+                .header(ContentType::JSON)
+                .dispatch();
+            assert_eq!(res.status(), Status::Ok);
+            test_json(&res);
+            let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+            let objects: Vec<_> = body_str.split("},{").collect();
+            assert_eq!(objects.len(), 4);
+            assert!(objects[0].contains("\"id\":\"0\""));
+            assert!(objects[1].contains("\"id\":\"50\""));
+            assert!(objects[2].contains("\"id\":\"100\""));
+            assert!(objects[3].contains("\"id\":\"200\""));
         }
 
-        #[ignore]
         #[test]
         fn filtered_by_bounding_box() {
-            //TODO: implement
+            let (client, db) = setup();
+            let mut db = db.get().unwrap();
+            let coordinates = &[(-8.0, 0.0), (0.3, 5.0), (7.0, 7.9), (12.0, 0.0)];
+            for &(lat, lng) in coordinates {
+                db.create_event(Event {
+                    id: format!("{}-{}", lat, lng),
+                    title: format!("{}-{}", lat, lng),
+                    description: None,
+                    start: 0,
+                    end: None,
+                    location: Some(Location {
+                        lat,
+                        lng,
+                        address: None,
+                    }),
+                    contact: None,
+                    tags: vec![],
+                    homepage: None,
+                    created_by: None,
+                    registration: None,
+                })
+                .unwrap();
+            }
+            let mut res = client
+                .get("/events?bbox=-8,-5,10,7.9")
+                .header(ContentType::JSON)
+                .dispatch();
+            assert_eq!(res.status(), Status::Ok);
+            test_json(&res);
+            let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+            let objects: Vec<_> = body_str.split("},{").collect();
+            assert_eq!(objects.len(), 3);
+            assert!(objects[0].contains("\"id\":\"-8-0\""));
+            assert!(objects[1].contains("\"id\":\"0.3-5\""));
+            assert!(objects[2].contains("\"id\":\"7-7.9\""));
         }
     }
 
