@@ -822,6 +822,44 @@ mod tests {
             assert_eq!(new.start, 5);
             assert!(new.created_by != e.created_by);
         }
+
+        #[test]
+        fn with_api_token_without_created_by() {
+            let (client, db) = setup();
+            db.get()
+                .unwrap()
+                .create_org(Organization {
+                    id: "foo".into(),
+                    name: "bar".into(),
+                    owned_tags: vec![],
+                    api_token: "foo".into(),
+                })
+                .unwrap();
+            let e = Event {
+                id: "1234".into(),
+                title: "x".into(),
+                description: None,
+                start: 0,
+                end: None,
+                location: None,
+                contact: None,
+                tags: vec!["bla".into()],
+                homepage: None,
+                created_by: Some("foo@bar.com".into()),
+                registration: None,
+            };
+            db.get().unwrap().create_event(e.clone()).unwrap();
+            let res = client
+                .put("/events/1234")
+                .header(ContentType::JSON)
+                .header(Header::new("Authorization", "Bearer foo"))
+                .body("{\"title\":\"Changed\",\"start\":99}")
+                .dispatch();
+            assert_eq!(res.status(), Status::Ok);
+            let new = db.get().unwrap().get_event("1234").unwrap();
+            assert_eq!(&*new.title, "Changed");
+            assert!(new.created_by == e.created_by);
+        }
     }
 
     mod delete {

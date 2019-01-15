@@ -124,6 +124,7 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
             }
         }
     }
+    //TODO: use address.is_empty()
     let address = if street.is_some() || zip.is_some() || city.is_some() || country.is_some() {
         Some(Address {
             street,
@@ -135,6 +136,7 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
         None
     };
 
+    //TODO: use location.is_empty()
     let location = if lat.is_some() || lng.is_some() || address.is_some() {
         Some(Location {
             lat: lat.unwrap_or(0.0),
@@ -144,6 +146,7 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
     } else {
         None
     };
+    //TODO: use contact.is_empty()
     let contact = if email.is_some() || telephone.is_some() {
         Some(Contact { email, telephone })
     } else {
@@ -160,10 +163,7 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
         let username = create_user_from_email(db, email)?;
         Some(username)
     } else {
-        // NOTE: At the moment we require an email address:
-        return Err(ParameterError::CreatorEmail.into());
-        // But in the future we might allow anonymous creators:
-        // None
+        None
     };
 
     let registration = match registration {
@@ -230,7 +230,11 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
 pub fn create_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<String> {
     let new_event = try_into_new_event(db, e)?;
     let new_id = new_event.id.clone();
-
+    if new_event.created_by.is_none() {
+        // NOTE: At the moment we require an email address,
+        // but in the future we might allow anonymous creators
+        return Err(ParameterError::CreatorEmail.into());
+    }
     debug!("Creating new event: {:?}", new_event);
     db.create_event(new_event)?;
     Ok(new_id)
