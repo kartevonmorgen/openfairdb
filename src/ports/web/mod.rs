@@ -1,11 +1,7 @@
 use crate::core::{prelude::*, util::sort::Rated};
 use crate::infrastructure::error::AppError;
 use diesel::r2d2::{self, Pool};
-use rocket::{
-    self,
-    config::{Config, Environment},
-    Rocket,
-};
+use rocket::{self, config::Config, Rocket};
 use rocket_contrib::json::Json;
 use std::{collections::HashMap, result, sync::Mutex};
 
@@ -53,17 +49,21 @@ fn calculate_rating_for_entry<D: Db>(db: &D, e_id: &str) -> Result<()> {
     Ok(Json(()))
 }
 
-fn rocket_instance<T: r2d2::ManageConnection>(cfg: Config, pool: Pool<T>) -> Rocket
+fn rocket_instance<T: r2d2::ManageConnection>(pool: Pool<T>, cfg: Option<Config>) -> Rocket
 where
     <T as r2d2::ManageConnection>::Connection: Db,
 {
     info!("Calculating the average rating of all entries...");
     calculate_all_ratings(&*pool.get().unwrap()).unwrap();
     info!("done.");
-    rocket::custom(cfg).manage(pool).mount("/", api::routes())
+    let r = match cfg {
+        Some(cfg) => rocket::custom(cfg),
+        None => rocket::ignite(),
+    };
+    r.manage(pool).mount("/", api::routes())
 }
 
-pub fn run(db_url: &str, port: u16, enable_cors: bool) {
+pub fn run(db_url: &str, enable_cors: bool) {
     if enable_cors {
         panic!(
             "enable-cors is currently not available until\
@@ -71,13 +71,7 @@ pub fn run(db_url: &str, port: u16, enable_cors: bool) {
         );
     }
 
-    let cfg = Config::build(Environment::Production)
-        .address("127.0.0.1")
-        .port(port)
-        .finalize()
-        .unwrap();
-
     let pool = create_connection_pool(db_url).unwrap();
 
-    rocket_instance(cfg, pool).launch();
+    rocket_instance(pool, None).launch();
 }

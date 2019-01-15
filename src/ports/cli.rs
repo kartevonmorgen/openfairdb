@@ -12,14 +12,6 @@ pub fn run() {
         .version(env!("CARGO_PKG_VERSION"))
         .author("Markus Kohlhase <mail@markus-kohlhase.de>")
         .arg(
-            Arg::with_name("port")
-                .short("p")
-                .long("port")
-                .value_name("PORT")
-                .default_value("6767")
-                .help("Set the port to listen"),
-        )
-        .arg(
             Arg::with_name("db-url")
                 .long("db-url")
                 .value_name("DATABASE_URL")
@@ -71,15 +63,7 @@ pub fn run() {
             _ => println!("{}", osm_matches.usage()),
         },
         _ => {
-            let port = match matches.value_of("port") {
-                Some(port) => port.parse::<u16>().unwrap(),
-                None => {
-                    println!("{}", matches.usage());
-                    process::exit(1)
-                }
-            };
-
-            web::run(&db_url, port, matches.is_present("enable-cors"));
+            web::run(&db_url, matches.is_present("enable-cors"));
         }
     }
 }
