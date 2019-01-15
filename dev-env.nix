@@ -13,6 +13,7 @@ in
       rustChannel.rust
       cmake
       pkgconfig
+      openssl
     ];
     SQLITE3_DIR = "${sqlite.dev}";
     SQLITE3_LIB_DIR = "${sqlite.out}/lib";

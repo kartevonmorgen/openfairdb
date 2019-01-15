@@ -1,7 +1,53 @@
 use super::{super::guards::Bearer, *};
-use rocket::http::RawStr;
-use rocket::http::Status;
-use rocket::request::{FromQuery, Query};
+use geocoding::Opencage;
+use rocket::{
+    http::{RawStr, Status},
+    request::{FromQuery, Query},
+};
+use std::env;
+
+lazy_static! {
+    static ref OC_API_KEY: Option<String> = match env::var("OPENCAGE_API_KEY") {
+        Ok(key) => Some(key),
+        Err(_) => {
+            warn!("No OpenCage API key found");
+            None
+        }
+    };
+}
+
+fn to_addr_string(e: &usecases::NewEvent) -> String {
+    let x = e.clone();
+    format!(
+        "{},{},{},{}",
+        x.country.unwrap_or("".into()),
+        x.city.unwrap_or("".into()),
+        x.zip.unwrap_or("".into()),
+        x.street.unwrap_or("".into())
+    )
+}
+
+fn check_lat_lng(addr: &str) -> Option<(f64, f64)> {
+    if let Some(key) = OC_API_KEY.clone() {
+        let oc = Opencage::new(key);
+        match oc.forward_full(&addr, &None) {
+            Ok(res) => {
+                if !res.results.is_empty() {
+                    let geometry = &res.results[0].geometry;
+                    if let Some(lat) = geometry.get("lat") {
+                        if let Some(lng) = geometry.get("lng") {
+                            return Some((*lat, *lng));
+                        }
+                    }
+                }
+            }
+            Err(err) => {
+                warn!("Could not receive geo information: {}", err);
+            }
+        }
+    }
+    None
+}
 
 #[post("/events", format = "application/json", data = "<e>")]
 pub fn post_event_with_token(
@@ -11,6 +57,13 @@ pub fn post_event_with_token(
 ) -> Result<String> {
     let mut e = e.into_inner();
     e.token = Some(token.0);
+    if e.lat.is_none() || e.lng.is_none() {
+        let addr = to_addr_string(&e);
+        if let Some((lat, lng)) = check_lat_lng(&addr) {
+            e.lat = Some(lat);
+            e.lng = Some(lng);
+        }
+    }
     let id = usecases::create_new_event(&mut *db, e.clone())?;
     Ok(Json(id))
 }

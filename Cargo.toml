@@ -18,6 +18,7 @@ diesel_migrations = { version = "*", features = ["sqlite"]  }
 dotenv = "*"
 env_logger = "*"
 fast_chemail = "*"
+geocoding = "*"
 lazy_static = "*"
 log = "*"
 num-derive = "*"
