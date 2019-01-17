@@ -27,6 +27,7 @@ fn to_addr_string(e: &usecases::NewEvent) -> String {
     )
 }
 
+//TODO: use a trait for the geocoding API and test it with a mock
 fn check_lat_lng(addr: &str) -> Option<(f64, f64)> {
     if let Some(key) = OC_API_KEY.clone() {
         let oc = Opencage::new(key);
@@ -49,6 +50,16 @@ fn check_lat_lng(addr: &str) -> Option<(f64, f64)> {
     None
 }
 
+fn add_lat_lng_if_not_available(e: &mut usecases::NewEvent){
+    if e.lat.is_none() || e.lng.is_none() {
+        let addr = to_addr_string(&e);
+        if let Some((lat, lng)) = check_lat_lng(&addr) {
+            e.lat = Some(lat);
+            e.lng = Some(lng);
+        }
+    }
+}
+
 #[post("/events", format = "application/json", data = "<e>")]
 pub fn post_event_with_token(
     mut db: DbConn,
@@ -57,13 +68,7 @@ pub fn post_event_with_token(
 ) -> Result<String> {
     let mut e = e.into_inner();
     e.token = Some(token.0);
-    if e.lat.is_none() || e.lng.is_none() {
-        let addr = to_addr_string(&e);
-        if let Some((lat, lng)) = check_lat_lng(&addr) {
-            e.lat = Some(lat);
-            e.lng = Some(lng);
-        }
-    }
+    add_lat_lng_if_not_available(&mut e);
     let id = usecases::create_new_event(&mut *db, e.clone())?;
     Ok(Json(id))
 }
@@ -108,6 +113,7 @@ pub fn put_event_with_token(
 ) -> Result<()> {
     let mut e = e.into_inner();
     e.token = Some(token.0);
+    add_lat_lng_if_not_available(&mut e);
     usecases::update_event(&mut *db, &id.to_string(), e.clone())?;
     Ok(Json(()))
 }
