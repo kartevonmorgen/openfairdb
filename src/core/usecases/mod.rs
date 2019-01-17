@@ -204,3 +204,16 @@ pub fn email_addresses_by_coordinate(db: &mut Db, lat: &f64, lng: &f64) -> Resul
     let addresses = email_addresses_from_subscriptions(db, &subs)?;
     Ok(addresses)
 }
+
+pub fn prepare_tag_list(tags: Vec<String>) -> Vec<String> {
+    let mut tags: Vec<_> = tags
+        .into_iter()
+        .map(|t| t.trim().to_owned())
+        .filter(|t| !t.is_empty())
+        .map(|t| t.split(" ").map(|x| x.to_owned()).collect::<Vec<_>>())
+        .flatten()
+        .map(|t| t.replace("#", ""))
+        .collect();
+    tags.dedup();
+    tags
+}

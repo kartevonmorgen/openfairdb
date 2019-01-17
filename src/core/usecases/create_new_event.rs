@@ -103,12 +103,7 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
     } else {
         None
     };
-    let mut tags: Vec<_> = tags
-        .unwrap_or_else(|| vec![])
-        .into_iter()
-        .map(|t| t.replace("#", ""))
-        .collect();
-    tags.dedup();
+    let tags = super::prepare_tag_list(tags.unwrap_or_else(|| vec![]));
     let owned_tags = db.get_all_tags_owned_by_orgs()?;
     for t in &tags {
         if owned_tags.iter().any(|id| id == t) {

@@ -379,6 +379,33 @@ mod tests {
             }
 
             #[test]
+            fn with_spaces_in_tags() {
+                let (client, db) = setup();
+                db.get()
+                    .unwrap()
+                    .create_org(Organization {
+                        id: "foo".into(),
+                        name: "bar".into(),
+                        owned_tags: vec![],
+                        api_token: "foo".into(),
+                    })
+                    .unwrap();
+                let res = client
+                    .post("/events")
+                    .header(ContentType::JSON)
+                    .header(Header::new("Authorization", "Bearer foo"))
+                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","tags":["", " "," tag","tag ","two tags"]}"#)
+                    .dispatch();
+                assert_eq!(res.status(), Status::Ok);
+                test_json(&res);
+                let ev = db.get().unwrap().all_events().unwrap()[0].clone();
+                assert_eq!(
+                    ev.tags,
+                    vec!["tag".to_string(), "two".to_string(), "tags".to_string()]
+                );
+            }
+
+            #[test]
             fn with_invalid_registration_type() {
                 let (client, db) = setup();
                 db.get()

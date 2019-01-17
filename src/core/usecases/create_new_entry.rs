@@ -42,8 +42,7 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
         tags,
         ..
     } = e;
-    let mut tags: Vec<_> = tags.into_iter().map(|t| t.replace("#", "")).collect();
-    tags.dedup();
+    let tags = super::prepare_tag_list(tags);
     let address = Address {
         street,
         zip,
