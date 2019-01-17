@@ -398,24 +398,38 @@ impl EventGateway for SqliteConnection {
 
     fn update_event(&mut self, event: &Event) -> Result<()> {
         let e = models::Event::from(event.clone());
-        let tag_rels: Vec<_> = event
-            .tags
-            .iter()
-            .cloned()
-            .map(|tag_id| models::EventTagRelation {
-                event_id: event.id.clone(),
-                tag_id,
-            })
-            .collect();
         self.transaction::<_, diesel::result::Error, _>(|| {
-            use self::schema::events::dsl;
-            diesel::update(dsl::events.filter(dsl::id.eq(&e.id)))
-                .set(&e)
-                .execute(self)?;
-            diesel::insert_into(schema::event_tag_relations::table)
-                //WHERE NOT EXISTS
+            use self::schema::event_tag_relations::dsl as e_t_dsl;
+            use self::schema::events::dsl as e_dsl;
+
+            let old_tags = self.get_event(&e.id).unwrap().tags;
+            let new_tags = &event.tags;
+            let diff = super::util::tags_diff(&old_tags, new_tags);
+
+            let tag_rels: Vec<_> = diff
+                .added
+                .into_iter()
+                .map(|tag_id| models::EventTagRelation {
+                    event_id: event.id.clone(),
+                    tag_id,
+                })
+                .collect();
+
+            diesel::delete(
+                e_t_dsl::event_tag_relations
+                    .filter(e_t_dsl::event_id.eq(&e.id))
+                    .filter(e_t_dsl::tag_id.eq_any(diff.deleted)),
+            )
+            .execute(self)?;
+
+            diesel::insert_or_ignore_into(schema::event_tag_relations::table)
                 .values(&tag_rels)
                 .execute(self)?;
+
+            diesel::update(e_dsl::events.filter(e_dsl::id.eq(&e.id)))
+                .set(&e)
+                .execute(self)?;
+
             Ok(())
         })?;
         Ok(())

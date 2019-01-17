@@ -1,6 +1,8 @@
 use super::models::*;
-use crate::core::entities as e;
-use crate::core::prelude::{Error, ParameterError, Result};
+use crate::core::{
+    entities as e,
+    prelude::{Error, ParameterError, Result},
+};
 use std::str::FromStr;
 
 impl From<e::Entry> for Entry {
@@ -591,4 +593,47 @@ impl From<e::Organization> for Organization {
             api_token,
         }
     }
+}
+
+pub struct ChangeSet<T> {
+    pub added: Vec<T>,
+    pub deleted: Vec<T>,
+}
+
+pub fn tags_diff(old: &[String], new: &[String]) -> ChangeSet<String> {
+    let mut added = vec![];
+    let mut deleted = vec![];
+
+    for t in new {
+        if !old.iter().any(|x| x == t) {
+            added.push(t.to_owned());
+        }
+    }
+
+    for t in old {
+        if !new.iter().any(|x| x == t) {
+            deleted.push(t.to_owned());
+        }
+    }
+
+    ChangeSet { added, deleted }
+}
+
+#[test]
+fn test_tag_diff() {
+    let x = tags_diff(&[], &["b".into()]);
+    assert_eq!(x.added, vec!["b"]);
+    assert!(x.deleted.is_empty());
+
+    let x = tags_diff(&["a".into()], &[]);
+    assert!(x.added.is_empty());
+    assert_eq!(x.deleted, vec!["a"]);
+
+    let x = tags_diff(&["a".into()], &["b".into()]);
+    assert_eq!(x.added, vec!["b"]);
+    assert_eq!(x.deleted, vec!["a"]);
+
+    let x = tags_diff(&["a".into(), "b".into()], &["b".into()]);
+    assert!(x.added.is_empty());
+    assert_eq!(x.deleted, vec!["a"]);
 }

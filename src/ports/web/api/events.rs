@@ -50,7 +50,7 @@ fn check_lat_lng(addr: &str) -> Option<(f64, f64)> {
     None
 }
 
-fn add_lat_lng_if_not_available(e: &mut usecases::NewEvent){
+fn add_lat_lng_if_not_available(e: &mut usecases::NewEvent) {
     if e.lat.is_none() || e.lng.is_none() {
         let addr = to_addr_string(&e);
         if let Some((lat, lng)) = check_lat_lng(&addr) {
@@ -951,6 +951,78 @@ mod tests {
             assert_eq!(&*new.title, "new");
             assert_eq!(new.start, 5);
             assert!(new.created_by != e.created_by);
+        }
+
+        #[test]
+        fn with_api_token_and_existing_tag() {
+            let (client, db) = setup();
+            db.get()
+                .unwrap()
+                .create_org(Organization {
+                    id: "foo".into(),
+                    name: "bar".into(),
+                    owned_tags: vec![],
+                    api_token: "foo".into(),
+                })
+                .unwrap();
+            let e = Event {
+                id: "1234".into(),
+                title: "x".into(),
+                description: None,
+                start: 0,
+                end: None,
+                location: None,
+                contact: None,
+                tags: vec!["bla".into()],
+                homepage: None,
+                created_by: Some("foo@bar.com".into()),
+                registration: None,
+            };
+            db.get().unwrap().create_event(e.clone()).unwrap();
+            let res = client
+                .put("/events/1234")
+                .header(ContentType::JSON)
+                .header(Header::new("Authorization", "Bearer foo"))
+                .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com","tags":["bla"]}"#)
+                .dispatch();
+            assert_eq!(res.status(), Status::Ok);
+        }
+
+        #[test]
+        fn with_api_token_and_removing_tag() {
+            let (client, db) = setup();
+            db.get()
+                .unwrap()
+                .create_org(Organization {
+                    id: "foo".into(),
+                    name: "bar".into(),
+                    owned_tags: vec![],
+                    api_token: "foo".into(),
+                })
+                .unwrap();
+            let e = Event {
+                id: "1234".into(),
+                title: "x".into(),
+                description: None,
+                start: 0,
+                end: None,
+                location: None,
+                contact: None,
+                tags: vec!["bli".into(), "bla".into(), "blub".into()],
+                homepage: None,
+                created_by: Some("foo@bar.com".into()),
+                registration: None,
+            };
+            db.get().unwrap().create_event(e.clone()).unwrap();
+            let res = client
+                .put("/events/1234")
+                .header(ContentType::JSON)
+                .header(Header::new("Authorization", "Bearer foo"))
+                .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com","tags":["blub","new"]}"#)
+                .dispatch();
+            assert_eq!(res.status(), Status::Ok);
+            let new = db.get().unwrap().get_event("1234").unwrap();
+            assert_eq!(new.tags, vec!["blub", "new"]);
         }
 
         #[test]
