@@ -278,13 +278,14 @@ impl<'r> Responder<'r> for AppError {
             match *err {
                 Error::Parameter(ref err) => {
                     return Err(match *err {
-                        ParameterError::Credentials => Status::Unauthorized,
+                        ParameterError::Credentials | ParameterError::Unauthorized => {
+                            Status::Unauthorized
+                        }
                         ParameterError::UserExists => <Status>::new(400, "UserExists"),
                         ParameterError::EmailNotConfirmed => {
                             <Status>::new(403, "EmailNotConfirmed")
                         }
-                        ParameterError::Forbidden => Status::Forbidden,
-                        ParameterError::Unauthorized => Status::Unauthorized,
+                        ParameterError::Forbidden | ParameterError::OwnedTag => Status::Forbidden,
                         _ => Status::BadRequest,
                     });
                 }

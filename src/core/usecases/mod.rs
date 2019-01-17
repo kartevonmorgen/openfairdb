@@ -217,3 +217,26 @@ pub fn prepare_tag_list(tags: Vec<String>) -> Vec<String> {
     tags.dedup();
     tags
 }
+
+pub fn check_for_owned_tags<D: Db>(
+    db: &D,
+    tags: &[String],
+    org: &Option<Organization>,
+) -> Result<()> {
+    let owned_tags = db.get_all_tags_owned_by_orgs()?;
+    for t in tags {
+        if owned_tags.iter().any(|id| id == t) {
+            match org {
+                Some(ref o) => {
+                    if !o.owned_tags.iter().any(|x| x == t) {
+                        return Err(ParameterError::OwnedTag.into());
+                    }
+                }
+                None => {
+                    return Err(ParameterError::OwnedTag.into());
+                }
+            }
+        }
+    }
+    Ok(())
+}

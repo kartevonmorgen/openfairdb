@@ -104,21 +104,7 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
         None
     };
     let tags = super::prepare_tag_list(tags.unwrap_or_else(|| vec![]));
-    let owned_tags = db.get_all_tags_owned_by_orgs()?;
-    for t in &tags {
-        if owned_tags.iter().any(|id| id == t) {
-            match org {
-                Some(ref o) => {
-                    if !o.owned_tags.iter().any(|x| x == t) {
-                        return Err(ParameterError::OwnedTag.into());
-                    }
-                }
-                None => {
-                    return Err(ParameterError::OwnedTag.into());
-                }
-            }
-        }
-    }
+    super::check_for_owned_tags(db, &tags, &org)?;
     //TODO: use address.is_empty()
     let address = if street.is_some() || zip.is_some() || city.is_some() || country.is_some() {
         Some(Address {

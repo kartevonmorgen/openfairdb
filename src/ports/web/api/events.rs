@@ -379,6 +379,50 @@ mod tests {
             }
 
             #[test]
+            fn with_reseved_tag_from_foreign_org() {
+                let (client, db) = setup();
+                db.get()
+                    .unwrap()
+                    .create_org(Organization {
+                        id: "a".into(),
+                        name: "a".into(),
+                        owned_tags: vec!["a".into()],
+                        api_token: "a".into(),
+                    })
+                    .unwrap();
+                db.get()
+                    .unwrap()
+                    .create_org(Organization {
+                        id: "b".into(),
+                        name: "b".into(),
+                        owned_tags: vec!["b".into()],
+                        api_token: "b".into(),
+                    })
+                    .unwrap();
+                let res = client
+                    .post("/events")
+                    .header(ContentType::JSON)
+                    .header(Header::new("Authorization", "Bearer a"))
+                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","tags":["a"] }"#)
+                    .dispatch();
+                assert_eq!(res.status(), Status::Ok);
+                let res = client
+                    .post("/events")
+                    .header(ContentType::JSON)
+                    .header(Header::new("Authorization", "Bearer a"))
+                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","tags":["b"] }"#)
+                    .dispatch();
+                assert_eq!(res.status(), Status::Forbidden);
+                let res = client
+                    .post("/events")
+                    .header(ContentType::JSON)
+                    .header(Header::new("Authorization", "Bearer b"))
+                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","tags":["b"] }"#)
+                    .dispatch();
+                assert_eq!(res.status(), Status::Ok);
+            }
+
+            #[test]
             fn with_spaces_in_tags() {
                 let (client, db) = setup();
                 db.get()

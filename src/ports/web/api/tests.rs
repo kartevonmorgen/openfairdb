@@ -65,6 +65,34 @@ fn create_entry() {
 }
 
 #[test]
+fn create_entry_with_reserved_tag() {
+    let (client, db) = setup();
+    db.get()
+        .unwrap()
+        .create_category_if_it_does_not_exist(&Category {
+            id: "x".into(),
+            created: 0,
+            version: 0,
+            name: "x".into(),
+        })
+        .unwrap();
+    db.get()
+        .unwrap()
+        .create_org(Organization {
+            id: "a".into(),
+            name: "a".into(),
+            owned_tags: vec!["a".into()],
+            api_token: "a".into(),
+        })
+        .unwrap();
+    let res = client.post("/entries")
+                    .header(ContentType::JSON)
+                    .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["a"]}"#)
+                    .dispatch();
+    assert_eq!(res.status(), Status::Forbidden);
+}
+
+#[test]
 fn create_entry_with_tag_duplicates() {
     let (client, db) = setup();
     db.get()

@@ -43,6 +43,7 @@ pub fn create_new_entry<D: Db>(db: &mut D, e: NewEntry) -> Result<String> {
         ..
     } = e;
     let tags = super::prepare_tag_list(tags);
+    super::check_for_owned_tags(db, &tags, &None)?;
     let address = Address {
         street,
         zip,
