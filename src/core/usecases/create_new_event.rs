@@ -29,6 +29,7 @@ pub struct NewEvent {
     pub created_by   : Option<String>,
     pub token        : Option<String>,
     pub registration : Option<String>,
+    pub organizer    : Option<String>,
 }
 
 // TODO: move this into an adapter
@@ -92,6 +93,7 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
         created_by,
         registration,
         token,
+        organizer,
         ..
     } = e;
     let org = if let Some(ref token) = token {
@@ -187,6 +189,10 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
         None => None,
     };
 
+    let organizer = organizer
+        .map(|x| x.trim().to_owned())
+        .filter(|x| !x.is_empty());
+
     let event = Event {
         id,
         title,
@@ -199,6 +205,7 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
         tags,
         created_by,
         registration,
+        organizer,
     };
     let event = event.auto_correct();
     event.validate()?;

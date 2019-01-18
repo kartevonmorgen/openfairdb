@@ -71,6 +71,7 @@ pub struct Event {
     pub homepage     : Option<String>,
     pub created_by   : Option<String>,
     pub registration : Option<RegistrationType>,
+    pub organizer    : Option<String>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

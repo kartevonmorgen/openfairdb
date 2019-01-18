@@ -99,6 +99,7 @@ table! {
         homepage -> Nullable<Text>,
         created_by -> Nullable<Text>,
         registration -> Nullable<SmallInt>,
+        organizer -> Nullable<Text>,
     }
 }
 
@@ -145,6 +146,9 @@ joinable!(entry_category_relations -> categories (category_id));
 joinable!(entry_tag_relations -> tags (tag_id));
 joinable!(event_tag_relations -> events (event_id));
 joinable!(event_tag_relations -> tags (tag_id));
+joinable!(events -> users (created_by));
+joinable!(org_tag_relations -> organizations (org_id));
+joinable!(org_tag_relations -> tags (tag_id));
 
 allow_tables_to_appear_in_same_query!(
     bbox_subscriptions,
@@ -155,6 +159,8 @@ allow_tables_to_appear_in_same_query!(
     entry_tag_relations,
     event_tag_relations,
     events,
+    org_tag_relations,
+    organizations,
     ratings,
     tags,
     users,

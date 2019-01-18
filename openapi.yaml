@@ -563,6 +563,8 @@ components:
             - homepage
           example: telephone
           description: Type of registration
+        organizer:
+          type: string
       example:
         title: A great event
         start: 1547403505

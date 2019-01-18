@@ -334,6 +334,7 @@ impl EventGateway for SqliteConnection {
             homepage,
             created_by,
             registration,
+            organizer,
         } = e_dsl::events.filter(e_dsl::id.eq(e_id)).first(self)?;
 
         let tags = e_t_dsl::event_tag_relations
@@ -386,6 +387,7 @@ impl EventGateway for SqliteConnection {
             tags,
             created_by,
             registration,
+            organizer,
         })
     }
 

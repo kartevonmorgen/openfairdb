@@ -131,6 +131,7 @@ impl From<e::Event> for Event {
             homepage,
             created_by,
             registration,
+            organizer,
             ..
         } = e;
 
@@ -176,6 +177,7 @@ impl From<e::Event> for Event {
             homepage,
             created_by,
             registration,
+            organizer,
         }
     }
 }
@@ -275,6 +277,7 @@ impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
             homepage,
             created_by,
             registration,
+            organizer,
             ..
         } = e;
         let tags = tag_rels
@@ -323,6 +326,7 @@ impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
             tags,
             created_by,
             registration,
+            organizer,
         }
     }
 }
