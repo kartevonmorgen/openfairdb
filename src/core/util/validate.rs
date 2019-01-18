@@ -222,6 +222,7 @@ fn event_autocorrect() {
         homepage: None,
         created_by: None,
         registration: None,
+        organizer: None,
     };
 
     let mut x = e.clone();
@@ -319,6 +320,7 @@ fn event_test() {
         homepage: None,
         created_by: None,
         registration: None,
+        organizer: None,
     };
     assert!(e.validate().is_ok());
 }
@@ -337,6 +339,7 @@ fn event_with_invalid_homepage_test() {
         homepage: Some("bla".into()),
         created_by: None,
         registration: None,
+        organizer: None,
     };
     assert!(e.validate().is_err());
 }
@@ -355,6 +358,7 @@ fn event_with_invalid_end_test() {
         homepage: None,
         created_by: None,
         registration: None,
+        organizer: None,
     };
     assert!(e.validate().is_err());
 }

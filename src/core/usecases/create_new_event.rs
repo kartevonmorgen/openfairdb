@@ -256,6 +256,7 @@ mod tests {
             created_by   : Some("foo@bar.com".into()),
             token        : None,
             registration : None,
+            organizer    : None,
         };
         let mut mock_db = MockDb::new();
         let id = create_new_event(&mut mock_db, x).unwrap();
@@ -292,6 +293,7 @@ mod tests {
             created_by   : None,
             token        : None,
             registration : None,
+            organizer    : None,
         };
         let mut mock_db: MockDb = MockDb::new();
         assert!(create_new_event(&mut mock_db, x).is_err());
@@ -318,6 +320,7 @@ mod tests {
             created_by   : Some("fooo@bar.tld".into()),
             token        : None,
             registration : None,
+            organizer    : None,
         };
         let mut mock_db: MockDb = MockDb::new();
         assert!(create_new_event(&mut mock_db, x).is_ok());
@@ -361,6 +364,7 @@ mod tests {
             created_by   : Some("fooo@bar.tld".into()),
             token        : None,
             registration : None,
+            organizer    : None,
         };
         assert!(create_new_event(&mut mock_db, x).is_ok());
         let users = mock_db.all_users().unwrap();

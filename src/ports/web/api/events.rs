@@ -572,6 +572,7 @@ mod tests {
                 homepage: None,
                 created_by: None,
                 registration: Some(RegistrationType::Email),
+                organizer: None,
             };
             db.get().unwrap().create_event(e).unwrap();
             let req = client.get("/events/1234").header(ContentType::JSON);
@@ -603,6 +604,7 @@ mod tests {
                     homepage: None,
                     created_by: None,
                     registration: None,
+                    organizer: None,
                 })
                 .unwrap();
             }
@@ -632,6 +634,7 @@ mod tests {
                     homepage: None,
                     created_by: None,
                     registration: None,
+                    organizer: None,
                 })
                 .unwrap();
             }
@@ -665,6 +668,7 @@ mod tests {
                     homepage: None,
                     created_by: None,
                     registration: None,
+                    organizer: None,
                 })
                 .unwrap();
             }
@@ -724,6 +728,7 @@ mod tests {
                     homepage: None,
                     created_by: Some(username.clone()),
                     registration: None,
+                    organizer: None,
                 })
                 .unwrap();
                 db.create_user(User {
@@ -787,6 +792,7 @@ mod tests {
                     homepage: None,
                     created_by: None,
                     registration: None,
+                    organizer: None,
                 })
                 .unwrap();
             }
@@ -821,6 +827,7 @@ mod tests {
                     homepage: None,
                     created_by: None,
                     registration: None,
+                    organizer: None,
                 })
                 .unwrap();
             }
@@ -861,6 +868,7 @@ mod tests {
                     homepage: None,
                     created_by: None,
                     registration: None,
+                    organizer: None,
                 })
                 .unwrap();
             }
@@ -938,6 +946,7 @@ mod tests {
                 homepage: None,
                 created_by: Some("foo@bar.com".into()),
                 registration: None,
+                organizer: None,
             };
             db.get().unwrap().create_event(e.clone()).unwrap();
             let res = client
@@ -977,6 +986,7 @@ mod tests {
                 homepage: None,
                 created_by: Some("foo@bar.com".into()),
                 registration: None,
+                organizer: None,
             };
             db.get().unwrap().create_event(e.clone()).unwrap();
             let res = client
@@ -1012,6 +1022,7 @@ mod tests {
                 homepage: None,
                 created_by: Some("foo@bar.com".into()),
                 registration: None,
+                organizer: None,
             };
             db.get().unwrap().create_event(e.clone()).unwrap();
             let res = client
@@ -1049,6 +1060,7 @@ mod tests {
                 homepage: None,
                 created_by: Some("foo@bar.com".into()),
                 registration: None,
+                organizer: None,
             };
             db.get().unwrap().create_event(e.clone()).unwrap();
             let res = client
@@ -1121,6 +1133,7 @@ mod tests {
                 homepage: None,
                 created_by: Some("foo@bar.com".into()),
                 registration: None,
+                organizer: None,
             };
             let e1 = Event {
                 id: "9999".into(),
@@ -1134,6 +1147,7 @@ mod tests {
                 homepage: None,
                 created_by: Some("foo@bar.com".into()),
                 registration: None,
+                organizer: None,
             };
             db.get().unwrap().create_event(e0.clone()).unwrap();
             db.get().unwrap().create_event(e1.clone()).unwrap();

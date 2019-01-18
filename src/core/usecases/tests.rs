@@ -599,6 +599,7 @@ fn receive_event_with_creators_email() {
         tags: vec![],
         created_by: Some("user".into()),
         registration: None,
+        organizer: None,
     })
     .unwrap();
     let e = usecases::get_event(&mut db, "x").unwrap();

@@ -53,7 +53,10 @@ pub struct Event {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub homepage: Option<String>,
     pub tags: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub registration: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub organizer: Option<String>,
 }
 
 impl From<e::Event> for Event {
@@ -69,6 +72,7 @@ impl From<e::Event> for Event {
             tags,
             homepage,
             registration,
+            organizer,
             ..
         } = e;
 
@@ -114,6 +118,7 @@ impl From<e::Event> for Event {
             homepage,
             tags,
             registration,
+            organizer,
         }
     }
 }
