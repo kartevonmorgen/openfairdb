@@ -1,6 +1,20 @@
-## v0.4.x (yyy-mm-dd)
+## v0.4.1 (2019-01-18)
 
+- new: add `organizer` field to events
+- new: forbid creating entries with owned tags
+- new: check for lat/lng on a PUT request
+- new: check event tags before creation
+- fix: update event-tag relations
+- chore: update dependencies
+
+## v0.4.0 (2019-01-17)
+
+- new: Event API
+- new: OpenAPI documentation
+- new: add PlantUM: class diagram
 - new home: [slowtec/openfairdb](https://github.com/slowtec/openfairdb)
+- chore: update `rocket` to `v0.4.0`
+- fix: login
 
 ## v0.3.9 (2018-10-24)
 
