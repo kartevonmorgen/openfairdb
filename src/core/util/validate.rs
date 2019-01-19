@@ -1,10 +1,13 @@
-use super::super::{entities::*, error::ParameterError};
+use super::super::{
+    entities::*, error::ParameterError, usecases::create_new_user::MAX_USERNAME_LEN,
+};
 use fast_chemail::is_valid_email;
 use regex::Regex;
 use url::Url;
 
 lazy_static! {
-    static ref USERNAME_REGEX: Regex = Regex::new(r"^[a-z0-9]{1,30}$").unwrap();
+    static ref USERNAME_REGEX: Regex =
+        Regex::new(&format!("^[a-z0-9]{{1,{}}}$", MAX_USERNAME_LEN)).unwrap();
 }
 
 pub trait Validate {
@@ -172,224 +175,238 @@ impl AutoCorrect for Address {
     }
 }
 
-#[test]
-fn license_test() {
-    assert!(license("CC0-1.0").is_ok());
-    assert!(license("CC0").is_err());
-    assert!(license("ODbL-1.0").is_ok());
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[test]
-fn email_test() {
-    assert!(email("foo").is_err());
-    assert!(email("foo@bar").is_err());
-    assert!(email("foo@bar.tld").is_ok());
-}
-
-#[test]
-fn homepage_test() {
-    assert!(homepage("https://openfairdb.org").is_ok());
-    assert!(homepage("openfairdb.org/foo").is_err());
-}
-
-#[test]
-fn contact_email_test() {
-    assert!(Contact {
-        email: Some("foo".into()),
-        telephone: None
+    #[test]
+    fn license_test() {
+        assert!(license("CC0-1.0").is_ok());
+        assert!(license("CC0").is_err());
+        assert!(license("ODbL-1.0").is_ok());
     }
-    .validate()
-    .is_err());
-    assert!(Contact {
-        email: Some("foo@bar.tld".into()),
-        telephone: None
+
+    #[test]
+    fn email_test() {
+        assert!(email("foo").is_err());
+        assert!(email("foo@bar").is_err());
+        assert!(email("foo@bar.tld").is_ok());
     }
-    .validate()
-    .is_ok());
-}
 
-#[test]
-fn event_autocorrect() {
-    let e = Event {
-        id: "x".into(),
-        title: "foo".into(),
-        description: None,
-        start: 0,
-        end: None,
-        location: None,
-        contact: None,
-        tags: vec![],
-        homepage: None,
-        created_by: None,
-        registration: None,
-        organizer: None,
-    };
+    #[test]
+    fn username_test() {
+        assert!(username("").is_err());
+        assert!(username("no-dash").is_err());
+        assert!(username("foo").is_ok());
+        assert!(username(&["x"; 40].join("")).is_ok());
+        assert!(username(&["x"; 41].join("")).is_err());
+    }
 
-    let mut x = e.clone();
-    x.description = Some("".to_string());
-    assert!(x.auto_correct().description.is_none());
+    #[test]
+    fn homepage_test() {
+        assert!(homepage("https://openfairdb.org").is_ok());
+        assert!(homepage("openfairdb.org/foo").is_err());
+    }
 
-    let mut x = e.clone();
-    x.homepage = Some("".to_string());
-    assert!(x.auto_correct().homepage.is_none());
+    #[test]
+    fn contact_email_test() {
+        assert!(Contact {
+            email: Some("foo".into()),
+            telephone: None
+        }
+        .validate()
+        .is_err());
+        assert!(Contact {
+            email: Some("foo@bar.tld".into()),
+            telephone: None
+        }
+        .validate()
+        .is_ok());
+    }
 
-    let mut x = e.clone();
-    x.contact = Some(Contact {
-        email: Some("".into()),
-        telephone: None,
-    });
-    assert!(x.auto_correct().contact.is_none());
+    #[test]
+    fn event_autocorrect() {
+        let e = Event {
+            id: "x".into(),
+            title: "foo".into(),
+            description: None,
+            start: 0,
+            end: None,
+            location: None,
+            contact: None,
+            tags: vec![],
+            homepage: None,
+            created_by: None,
+            registration: None,
+            organizer: None,
+        };
 
-    let mut x = e.clone();
-    x.contact = Some(Contact {
-        email: None,
-        telephone: Some("".into()),
-    });
-    assert!(x.auto_correct().contact.is_none());
+        let mut x = e.clone();
+        x.description = Some("".to_string());
+        assert!(x.auto_correct().description.is_none());
 
-    let mut x = e.clone();
-    x.created_by = Some("".to_string());
-    assert!(x.auto_correct().created_by.is_none());
+        let mut x = e.clone();
+        x.homepage = Some("".to_string());
+        assert!(x.auto_correct().homepage.is_none());
 
-    let mut x = e.clone();
-    x.location = Some(Location {
-        lat: 0.0,
-        lng: 0.0,
-        address: Some(Address {
+        let mut x = e.clone();
+        x.contact = Some(Contact {
+            email: Some("".into()),
+            telephone: None,
+        });
+        assert!(x.auto_correct().contact.is_none());
+
+        let mut x = e.clone();
+        x.contact = Some(Contact {
+            email: None,
+            telephone: Some("".into()),
+        });
+        assert!(x.auto_correct().contact.is_none());
+
+        let mut x = e.clone();
+        x.created_by = Some("".to_string());
+        assert!(x.auto_correct().created_by.is_none());
+
+        let mut x = e.clone();
+        x.location = Some(Location {
+            lat: 0.0,
+            lng: 0.0,
+            address: Some(Address {
+                street: None,
+                zip: None,
+                city: Some("".into()),
+                country: None,
+            }),
+        });
+        assert!(x.auto_correct().location.is_none());
+    }
+
+    #[test]
+    fn address_autocorrect() {
+        let a = Address {
             street: None,
             zip: None,
-            city: Some("".into()),
-            country: None,
-        }),
-    });
-    assert!(x.auto_correct().location.is_none());
-}
-
-#[test]
-fn address_autocorrect() {
-    let a = Address {
-        street: None,
-        zip: None,
-        city: None,
-        country: None,
-    };
-
-    let mut x = a.clone();
-    x.street = Some("".to_string());
-    assert!(x.auto_correct().street.is_none());
-
-    let mut x = a.clone();
-    x.zip = Some("".to_string());
-    assert!(x.auto_correct().zip.is_none());
-
-    let mut x = a.clone();
-    x.city = Some("".to_string());
-    assert!(x.auto_correct().city.is_none());
-
-    let mut x = a.clone();
-    x.country = Some("".to_string());
-    assert!(x.auto_correct().country.is_none());
-}
-
-#[test]
-fn location_autocorrect() {
-    let l = Location {
-        lat: 0.0,
-        lng: 0.0,
-        address: Some(Address {
-            street: None,
-            zip: Some("".into()),
             city: None,
             country: None,
-        }),
-    };
-    assert!(l.auto_correct().address.is_none());
-}
+        };
 
-#[test]
-fn event_test() {
-    let e = Event {
-        id: "x".into(),
-        title: "foo".into(),
-        description: None,
-        start: 0,
-        end: None,
-        location: None,
-        contact: None,
-        tags: vec![],
-        homepage: None,
-        created_by: None,
-        registration: None,
-        organizer: None,
-    };
-    assert!(e.validate().is_ok());
-}
+        let mut x = a.clone();
+        x.street = Some("".to_string());
+        assert!(x.auto_correct().street.is_none());
 
-#[test]
-fn event_with_invalid_homepage_test() {
-    let e = Event {
-        id: "x".into(),
-        title: "foo".into(),
-        description: None,
-        start: 0,
-        end: None,
-        location: None,
-        contact: None,
-        tags: vec![],
-        homepage: Some("bla".into()),
-        created_by: None,
-        registration: None,
-        organizer: None,
-    };
-    assert!(e.validate().is_err());
-}
+        let mut x = a.clone();
+        x.zip = Some("".to_string());
+        assert!(x.auto_correct().zip.is_none());
 
-#[test]
-fn event_with_invalid_end_test() {
-    let e = Event {
-        id: "x".into(),
-        title: "foo".into(),
-        description: None,
-        start: 100,
-        end: Some(99),
-        location: None,
-        contact: None,
-        tags: vec![],
-        homepage: None,
-        created_by: None,
-        registration: None,
-        organizer: None,
-    };
-    assert!(e.validate().is_err());
-}
+        let mut x = a.clone();
+        x.city = Some("".to_string());
+        assert!(x.auto_correct().city.is_none());
 
-#[test]
-fn bbox_test() {
-    let c1 = Coordinate {
-        lat: 49.123,
-        lng: 10.123,
-    };
-    let c2 = Coordinate {
-        lat: 48.123,
-        lng: 5.123,
-    };
-    let c3 = Coordinate {
-        lat: 48.123,
-        lng: 500.123,
-    };
-    let valid_bbox = Bbox {
-        north_east: c1.clone(),
-        south_west: c2.clone(),
-    };
-    let empty_bbox = Bbox {
-        north_east: c1.clone(),
-        south_west: c1.clone(),
-    };
-    let too_large_bbox = Bbox {
-        north_east: c1.clone(),
-        south_west: c3.clone(),
-    };
-    assert!(bbox(&valid_bbox).is_ok());
-    assert!(bbox(&empty_bbox).is_err());
-    assert!(bbox(&too_large_bbox).is_err());
+        let mut x = a.clone();
+        x.country = Some("".to_string());
+        assert!(x.auto_correct().country.is_none());
+    }
+
+    #[test]
+    fn location_autocorrect() {
+        let l = Location {
+            lat: 0.0,
+            lng: 0.0,
+            address: Some(Address {
+                street: None,
+                zip: Some("".into()),
+                city: None,
+                country: None,
+            }),
+        };
+        assert!(l.auto_correct().address.is_none());
+    }
+
+    #[test]
+    fn event_test() {
+        let e = Event {
+            id: "x".into(),
+            title: "foo".into(),
+            description: None,
+            start: 0,
+            end: None,
+            location: None,
+            contact: None,
+            tags: vec![],
+            homepage: None,
+            created_by: None,
+            registration: None,
+            organizer: None,
+        };
+        assert!(e.validate().is_ok());
+    }
+
+    #[test]
+    fn event_with_invalid_homepage_test() {
+        let e = Event {
+            id: "x".into(),
+            title: "foo".into(),
+            description: None,
+            start: 0,
+            end: None,
+            location: None,
+            contact: None,
+            tags: vec![],
+            homepage: Some("bla".into()),
+            created_by: None,
+            registration: None,
+            organizer: None,
+        };
+        assert!(e.validate().is_err());
+    }
+
+    #[test]
+    fn event_with_invalid_end_test() {
+        let e = Event {
+            id: "x".into(),
+            title: "foo".into(),
+            description: None,
+            start: 100,
+            end: Some(99),
+            location: None,
+            contact: None,
+            tags: vec![],
+            homepage: None,
+            created_by: None,
+            registration: None,
+            organizer: None,
+        };
+        assert!(e.validate().is_err());
+    }
+
+    #[test]
+    fn bbox_test() {
+        let c1 = Coordinate {
+            lat: 49.123,
+            lng: 10.123,
+        };
+        let c2 = Coordinate {
+            lat: 48.123,
+            lng: 5.123,
+        };
+        let c3 = Coordinate {
+            lat: 48.123,
+            lng: 500.123,
+        };
+        let valid_bbox = Bbox {
+            north_east: c1.clone(),
+            south_west: c2.clone(),
+        };
+        let empty_bbox = Bbox {
+            north_east: c1.clone(),
+            south_west: c1.clone(),
+        };
+        let too_large_bbox = Bbox {
+            north_east: c1.clone(),
+            south_west: c3.clone(),
+        };
+        assert!(bbox(&valid_bbox).is_ok());
+        assert!(bbox(&empty_bbox).is_err());
+        assert!(bbox(&too_large_bbox).is_err());
+    }
 }

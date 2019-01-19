@@ -335,6 +335,29 @@ mod tests {
             }
 
             #[test]
+            fn with_a_very_long_email() {
+                let (client, db) = setup();
+                db.get()
+                    .unwrap()
+                    .create_org(Organization {
+                        id: "foo".into(),
+                        name: "bar".into(),
+                        owned_tags: vec![],
+                        api_token: "foo".into(),
+                    })
+                    .unwrap();
+                let res = client
+                    .post("/events")
+                    .header(ContentType::JSON)
+                    .header(Header::new("Authorization", "Bearer foo"))
+                    .body(r#"{"title":"Reginaltreffen","start":0,"created_by":"a-very-super-long-email-address@a-super-long-domain.com"}"#)
+                    .dispatch();
+                assert_eq!(res.status(), Status::Ok);
+                let u = db.get().unwrap().all_users().unwrap()[0].clone();
+                assert_eq!(u.username, "averysuperlongemailaddressasuperlongdoma");
+            }
+
+            #[test]
             fn with_empty_strings_for_optional_fields() {
                 let (client, db) = setup();
                 db.get()

@@ -44,12 +44,15 @@ const PW_GEN: PasswordGenerator = PasswordGenerator {
     strict: false,
 };
 
+pub const MAX_USERNAME_LEN: usize = 40;
+
 pub fn create_user_from_email<D: Db>(db: &mut D, email: &str) -> Result<String> {
     let users: Vec<_> = db.all_users()?;
     let username = match users.iter().find(|u| u.email == email) {
         Some(u) => u.username.clone(),
         None => {
-            let generated_username = slugify(&email).replace("-", "");
+            let mut generated_username = slugify(&email).replace("-", "");
+            generated_username.truncate(MAX_USERNAME_LEN);
             let username = generated_username.clone();
             let password = PW_GEN.generate_one().map_err(|e| e.to_string())?;
             let u = NewUser {
@@ -216,4 +219,20 @@ mod tests {
         assert!(bcrypt::verify("pass", &db.users[0].password));
     }
 
+    #[test]
+    fn test_create_user_from_email() {
+        let mut db = MockDb::new();
+        assert_eq!(
+            create_user_from_email(&mut db, "mail@tld.com").unwrap(),
+            "mailtldcom"
+        );
+        assert_eq!(
+            create_user_from_email(
+                &mut db,
+                "a-very-very-long-email@with-a-very-very-long-domain.com"
+            )
+            .unwrap(),
+            "averyverylongemailwithaveryverylongdomai"
+        );
+    }
 }

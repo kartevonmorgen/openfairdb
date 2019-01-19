@@ -10,7 +10,7 @@ use uuid::Uuid;
 mod confirm_email;
 mod create_new_entry;
 mod create_new_event;
-mod create_new_user;
+pub mod create_new_user;
 mod delete_event;
 mod find_duplicates;
 mod login;
