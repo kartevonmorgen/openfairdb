@@ -13,10 +13,18 @@ written in [Rust](http://rustlang.org/).
 The API is available under `http://api.ofdb.io/v0/`.
 
 The current API is documented within the [openapi.yaml](https://github.com/slowtec/openfairdb/blob/master/openapi.yaml) file.
+You can render the API documentation e.g. with the swagger editor:
 
-For examples how to use the API, open "network" in the developer tools in your browser and see the requests that https://kartevonmorgen.org sends.
+- go to [https://editor.swagger.io](https://editor.swagger.io/)
+- go to `File` -> `import URL`
+- enter `https://raw.githubusercontent.com/slowtec/openfairdb/master/openapi.yaml`
+- enjoy ;-)
 
-When you want to use the API, please contact us at helmut@bildungsagenten.com. The API might still change sometimes. We will try to let you know in that case.
+An other way to see how the API can be used, you can open the `network` tab in the developer
+tools of your browser and see the requests that are made to `https://kartevonmorgen.org`.
+
+If you want to use the API in your project, please contact us at helmut@bildungsagenten.com.
+The API might still change sometimes. We will try to let you know in that case.
 
 -  `GET /entries/:ID_1,:ID_2,...,:ID_n`
 -  `PUT /entries/:ID`
