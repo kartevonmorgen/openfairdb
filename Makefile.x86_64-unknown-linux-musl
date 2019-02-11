@@ -19,7 +19,7 @@ pre-build:
 build:
 	mkdir -p "$(BUILD_CARGO_CACHE)"
 	mkdir -p "$(BUILD_PROJECT_ROOT)"
-	rsync -av --chown `id -gn`:`id -un` --progress . "$(BUILD_PROJECT_ROOT)" --exclude target --exclude .git
+	rsync -av --delete --chown `id -gn`:`id -un` --progress . "$(BUILD_PROJECT_ROOT)" --exclude target --exclude .git
 	docker run --rm \
 		-it $(BUILD_IMAGE) \
 		rustc --version
