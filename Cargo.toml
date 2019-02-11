@@ -8,6 +8,9 @@ repository = "https://github.com/slowtec/openfairdb"
 license = "AGPL-3.0-or-later"
 edition = "2018"
 
+[patch.crates-io]
+geocoding = { git = "https://github.com/uklotzde/geocoding", branch = "edition_2018" }
+
 [dependencies]
 # clap 3 is supposed to introduce breaking changes
 chrono = "*"
