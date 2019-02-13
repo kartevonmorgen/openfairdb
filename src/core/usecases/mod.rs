@@ -13,6 +13,7 @@ mod create_new_event;
 pub mod create_new_user;
 mod delete_event;
 mod find_duplicates;
+mod index;
 mod login;
 mod query_events;
 mod rate_entry;
@@ -24,7 +25,7 @@ mod update_event;
 
 pub use self::{
     confirm_email::*, create_new_entry::*, create_new_event::*, create_new_user::*,
-    delete_event::*, find_duplicates::*, login::*, query_events::*, rate_entry::*, search::*,
+    delete_event::*, find_duplicates::*, login::*, query_events::*, rate_entry::*, index::*, search::*,
     update_entry::*, update_event::*,
 };
 

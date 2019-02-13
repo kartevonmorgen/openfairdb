@@ -12,6 +12,22 @@ pub trait EntryGateway {
     fn import_multiple_entries(&mut self, _: &[Entry]) -> Result<()>;
 }
 
+#[cfg_attr(rustfmt, rustfmt_skip)]
+#[derive(Debug, Clone)]
+pub struct EntryIndexQuery {
+    pub bbox       : Option<Bbox>,
+    pub text       : Option<String>,
+    pub categories : Vec<String>,
+    pub tags       : Vec<String>,
+}
+
+pub trait EntryIndex {
+    fn add_or_update_entry(&mut self, _: &Entry) -> Result<()>;
+    fn remove_entry_by_id(&mut self, _: &str) -> Result<()>;
+
+    fn query_entries(&self, _: &EntryIndexQuery) -> Result<Vec<Entry>>;
+}
+
 pub trait EventGateway {
     fn create_event(&mut self, _: Event) -> Result<()>;
     fn get_event(&self, _: &str) -> Result<Event>;

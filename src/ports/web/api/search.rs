@@ -25,27 +25,16 @@ pub fn get_search(db: DbConn, search: Form<SearchQuery>) -> Result<json::SearchR
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
 
-    let categories = match search.categories {
-        Some(ref cat_str) => Some(util::extract_ids(&cat_str)),
-        None => None,
-    };
+    let categories = search.categories.as_ref().map(String::as_str).map(util::extract_ids).unwrap_or_else(|| vec![]);
 
-    let mut tags = vec![];
-
-    if let Some(ref txt) = search.text {
-        tags = util::extract_hash_tags(txt);
-    }
-
+    let mut tags = search.text.as_ref().map(String::as_str).map(util::extract_hash_tags).unwrap_or_else(|| vec![]);
     if let Some(ref tags_str) = search.tags {
         for t in util::extract_ids(tags_str) {
             tags.push(t);
         }
     }
 
-    let text = match search.text {
-        Some(ref txt) => util::remove_hash_tags(txt),
-        None => "".into(),
-    };
+    let text = search.text.as_ref().map(String::as_str).map(util::remove_hash_tags).and_then(|text| if text.trim().is_empty() { None } else {Some(text)});
 
     let avg_ratings = match super::super::ENTRY_RATINGS.lock() {
         Ok(guard) => guard,
@@ -60,7 +49,7 @@ pub fn get_search(db: DbConn, search: Form<SearchQuery>) -> Result<json::SearchR
         entry_ratings: &*avg_ratings,
     };
 
-    let (visible, invisible) = usecases::search(&*db, &req)?;
+    let (visible, invisible) = usecases::search(&usecases::DbEntryIndex::new(&*db), req)?;
 
     let visible = visible
         .into_iter()

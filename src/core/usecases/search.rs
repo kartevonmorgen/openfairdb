@@ -3,6 +3,7 @@ use crate::core::util::{
     filter::{self, InBBox},
     sort::SortByAverageRating,
 };
+
 use std::collections::HashMap;
 
 const MAX_INVISIBLE_RESULTS: usize = 5;
@@ -11,45 +12,41 @@ const MAX_INVISIBLE_RESULTS: usize = 5;
 #[derive(Debug, Clone)]
 pub struct SearchRequest<'a> {
     pub bbox          : Bbox,
-    pub categories    : Option<Vec<String>>,
-    pub text          : String,
+    pub categories    : Vec<String>,
+    pub text          : Option<String>,
     pub tags          : Vec<String>,
     pub entry_ratings : &'a HashMap<String, f64>,
 }
 
-pub fn search<D: Db>(db: &D, req: &SearchRequest) -> Result<(Vec<Entry>, Vec<Entry>)> {
-    let mut entries = if req.text.is_empty() && req.tags.is_empty() {
-        let ext_bbox = filter::extend_bbox(&req.bbox);
-        db.get_entries_by_bbox(&ext_bbox)?
+pub fn search(index: &EntryIndex, req: SearchRequest) -> Result<(Vec<Entry>, Vec<Entry>)> {
+    let visible_bbox = req.bbox;
+
+    let index_bbox = if req.text.as_ref().map(String::is_empty).unwrap_or(true) && req.tags.is_empty() {
+        Some(filter::extend_bbox(&visible_bbox))
     } else {
-        db.all_entries()?
+        None
     };
 
-    if let Some(ref cat_ids) = req.categories {
-        entries = entries
-            .into_iter()
-            .filter(filter::entries_by_category_ids(cat_ids))
-            .collect();
-    }
+    let index_query = EntryIndexQuery {
+        bbox: index_bbox,
+        text: req.text,
+        categories: req.categories,
+        tags: req.tags,
+    };
 
-    let mut entries: Vec<_> = entries
-        .into_iter()
-        .filter(&*filter::entries_by_tags_or_search_text(
-            &req.text, &req.tags,
-        ))
-        .collect();
+    let mut entries = index.query_entries(&index_query)?;
 
     entries.sort_by_avg_rating(req.entry_ratings);
 
     let visible_results: Vec<_> = entries
         .iter()
-        .filter(|x| x.in_bbox(&req.bbox))
+        .filter(|x| x.in_bbox(&visible_bbox))
         .cloned()
         .collect();
 
     let invisible_results = entries
         .into_iter()
-        .filter(|x| !x.in_bbox(&req.bbox))
+        .filter(|x| !x.in_bbox(&visible_bbox))
         .take(MAX_INVISIBLE_RESULTS)
         .collect();
 
@@ -61,6 +58,7 @@ mod tests {
 
     use super::super::tests::MockDb;
     use super::*;
+    use crate::core::usecases::index::DbEntryIndex;
     use crate::core::util::sort;
     use crate::test::Bencher;
 
@@ -82,13 +80,13 @@ mod tests {
                     lng: 10.0,
                 },
             },
-            categories: None,
-            text: "".into(),
+            categories: vec![],
+            text: None,
             tags: vec![],
             entry_ratings: &entry_ratings,
         };
 
-        b.iter(|| super::search(&mut db, &req).unwrap());
+        b.iter(|| super::search(&DbEntryIndex::new(&db), req.clone()).unwrap());
     }
 
     #[ignore]
@@ -110,13 +108,13 @@ mod tests {
                     lng: 10.0,
                 },
             },
-            categories: None,
-            text: "".into(),
+            categories: vec![],
+            text: None,
             tags: vec![],
             entry_ratings: &entry_ratings,
         };
 
-        b.iter(|| super::search(&mut db, &req).unwrap());
+        b.iter(|| super::search(&DbEntryIndex::new(&db), req.clone()).unwrap());
     }
 
 }
