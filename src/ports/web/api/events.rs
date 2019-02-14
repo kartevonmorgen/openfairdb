@@ -31,7 +31,7 @@ fn to_addr_string(e: &usecases::NewEvent) -> String {
 fn check_lat_lng(addr: &str) -> Option<(f64, f64)> {
     if let Some(key) = OC_API_KEY.clone() {
         let oc = Opencage::new(key);
-        match oc.forward_full(&addr, &None) {
+        match oc.forward_full(&addr, None) {
             Ok(res) => {
                 if !res.results.is_empty() {
                     let geometry = &res.results[0].geometry;

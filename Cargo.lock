@@ -184,6 +184,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "num-integer 0.1.39 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
  "time 0.1.42 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -563,10 +564,13 @@ dependencies = [
 
 [[package]]
 name = "geocoding"
-version = "0.0.3"
-source = "git+https://github.com/uklotzde/geocoding?branch=edition_2018#73be82f8c9aaf48fc18c32f0175557118f6686c7"
+version = "0.0.4"
+source = "git+https://github.com/georust/geocoding#6282b5d4434271b86f0953161eca25e8aa8b64c5"
 dependencies = [
+ "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
+ "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "geo-types 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "hyper 0.12.24 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "reqwest 0.9.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.87 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1020,7 +1024,7 @@ dependencies = [
  "dotenv 0.13.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "env_logger 0.6.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "fast_chemail 0.9.5 (registry+https://github.com/rust-lang/crates.io-index)",
- "geocoding 0.0.3 (git+https://github.com/uklotzde/geocoding?branch=edition_2018)",
+ "geocoding 0.0.4 (git+https://github.com/georust/geocoding)",
  "lazy_static 1.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-derive 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -2199,7 +2203,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum futures-cpupool 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)" = "ab90cde24b3319636588d0c35fe03b1333857621051837ed769faefb4c2162e4"
 "checksum generic-array 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)" = "3c0f28c2f5bfb5960175af447a2da7c18900693738343dc896ffbcabd9839592"
 "checksum geo-types 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "05350aaba2e842c89fc8e1b2e74eefded6f2abe6ce5e0f5b9037c4b71c9b3598"
-"checksum geocoding 0.0.3 (git+https://github.com/uklotzde/geocoding?branch=edition_2018)" = "<none>"
+"checksum geocoding 0.0.4 (git+https://github.com/georust/geocoding)" = "<none>"
 "checksum h2 0.1.16 (registry+https://github.com/rust-lang/crates.io-index)" = "ddb2b25a33e231484694267af28fec74ac63b5ccf51ee2065a5e313b834d836e"
 "checksum hmac 0.7.0 (registry+https://github.com/rust-lang/crates.io-index)" = "f127a908633569f208325f86f71255d3363c79721d7f9fe31cd5569908819771"
 "checksum http 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)" = "1a10e5b573b9a0146545010f50772b9e8b1dd0a256564cc4307694c68832a2f5"
