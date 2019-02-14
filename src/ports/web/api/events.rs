@@ -44,13 +44,11 @@ fn check_lat_lng(addr: &str) -> Option<(f64, f64)> {
     None
 }
 
-fn add_lat_lng_if_not_available(e: &mut usecases::NewEvent) {
-    if e.lat.is_none() || e.lng.is_none() {
-        let addr = to_addr_string(&e);
-        if let Some((lat, lng)) = check_lat_lng(&addr) {
-            e.lat = Some(lat);
-            e.lng = Some(lng);
-        }
+fn check_and_set_lat_lng(e: &mut usecases::NewEvent) {
+    let addr = to_addr_string(&e);
+    if let Some((lat, lng)) = check_lat_lng(&addr) {
+        e.lat = Some(lat);
+        e.lng = Some(lng);
     }
 }
 
@@ -62,7 +60,7 @@ pub fn post_event_with_token(
 ) -> Result<String> {
     let mut e = e.into_inner();
     e.token = Some(token.0);
-    add_lat_lng_if_not_available(&mut e);
+    check_and_set_lat_lng(&mut e);
     let id = usecases::create_new_event(&mut *db, e.clone())?;
     Ok(Json(id))
 }
@@ -107,7 +105,7 @@ pub fn put_event_with_token(
 ) -> Result<()> {
     let mut e = e.into_inner();
     e.token = Some(token.0);
-    add_lat_lng_if_not_available(&mut e);
+    check_and_set_lat_lng(&mut e);
     usecases::update_event(&mut *db, &id.to_string(), e.clone())?;
     Ok(Json(()))
 }
