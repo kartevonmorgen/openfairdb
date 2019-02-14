@@ -1,3 +1,15 @@
+## v0.4.2 (2019-02-14)
+
+- fix: implicitly check and set lat/lng when creating or updating events
+- fix: patch geocoding crate to fix OpenSSL system dependency issues
+- fix: Makefile for Docker build
+- fix: OpenSSL v1.1.1 build issues
+- fix: truncate username if created from email
+- fix: formatting for geocoding requests
+- chore: update diesel: 1.3.3 -> 1.4.0
+- chore: update dependencies & rustc
+- doc: describe how to render the API docs
+
 ## v0.4.1 (2019-01-18)
 
 - new: add `organizer` field to events

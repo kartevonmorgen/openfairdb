@@ -231,7 +231,6 @@ pub fn delete_event_with_token(mut db: DbConn, token: Bearer, id: &RawStr) -> Re
 #[cfg(test)]
 mod tests {
     use super::super::tests::prelude::*;
-    use crate::core::entities::*;
     use chrono::prelude::*;
     use rocket::http::Header;
 
