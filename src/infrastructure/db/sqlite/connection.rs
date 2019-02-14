@@ -1,5 +1,6 @@
 use super::{models, schema};
 use crate::core::prelude::*;
+use chrono::prelude::*;
 use diesel::{
     self,
     prelude::*,
@@ -378,8 +379,8 @@ impl EventGateway for SqliteConnection {
         Ok(Event {
             id,
             title,
-            start: start as u64,
-            end: end.map(|x| x as u64),
+            start: NaiveDateTime::from_timestamp(start, 0),
+            end: end.map(|x| NaiveDateTime::from_timestamp(x, 0)),
             description,
             location,
             contact,

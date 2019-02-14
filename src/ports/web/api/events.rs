@@ -1,4 +1,5 @@
 use super::{super::guards::Bearer, *};
+use chrono::prelude::*;
 use geocoding::Opencage;
 use rocket::{
     http::{RawStr, Status},
@@ -123,8 +124,8 @@ pub struct EventQuery {
     tags: Option<Vec<String>>,
     created_by: Option<String>,
     bbox: Option<Bbox>,
-    start_min: Option<u64>,
-    start_max: Option<u64>,
+    start_min: Option<i64>,
+    start_max: Option<i64>,
 }
 
 impl<'q> FromQuery<'q> for EventQuery {
@@ -198,8 +199,8 @@ pub fn get_events_with_token(
         &*db,
         query.tags,
         query.bbox,
-        query.start_min,
-        query.start_max,
+        query.start_min.map(|x| NaiveDateTime::from_timestamp(x, 0)),
+        query.start_max.map(|x| NaiveDateTime::from_timestamp(x, 0)),
         query.created_by,
         Some(token.0),
     )?;
@@ -216,8 +217,8 @@ pub fn get_events(db: DbConn, query: EventQuery) -> Result<Vec<json::Event>> {
         &*db,
         query.tags,
         query.bbox,
-        query.start_min,
-        query.start_max,
+        query.start_min.map(|x| NaiveDateTime::from_timestamp(x, 0)),
+        query.start_max.map(|x| NaiveDateTime::from_timestamp(x, 0)),
         query.created_by,
         None,
     )?;
@@ -240,6 +241,7 @@ pub fn delete_event_with_token(mut db: DbConn, token: Bearer, id: &RawStr) -> Re
 mod tests {
     use super::super::tests::prelude::*;
     use crate::core::entities::*;
+    use chrono::prelude::*;
     use rocket::http::Header;
 
     mod create {
@@ -587,7 +589,7 @@ mod tests {
                 id: "1234".into(),
                 title: "x".into(),
                 description: None,
-                start: 0,
+                start: NaiveDateTime::from_timestamp(0, 0),
                 end: None,
                 location: None,
                 contact: None,
@@ -619,7 +621,7 @@ mod tests {
                     id: id.into(),
                     title: id.into(),
                     description: None,
-                    start: 0,
+                    start: NaiveDateTime::from_timestamp(0, 0),
                     end: None,
                     location: None,
                     contact: None,
@@ -644,10 +646,11 @@ mod tests {
             let (client, db) = setup();
             let event_start_times = vec![100, 0, 300, 50, 200];
             let mut db = db.get().unwrap();
-            for start in event_start_times {
+            for s in event_start_times {
+                let start = NaiveDateTime::from_timestamp(s, 0);
                 db.create_event(Event {
-                    id: start.to_string(),
-                    title: start.to_string(),
+                    id: s.to_string(),
+                    title: s.to_string(),
                     description: None,
                     start,
                     end: None,
@@ -683,7 +686,7 @@ mod tests {
                     id: id.into(),
                     title: id.into(),
                     description: None,
-                    start: 0,
+                    start: NaiveDateTime::from_timestamp(0, 0),
                     end: None,
                     location: None,
                     contact: None,
@@ -743,7 +746,7 @@ mod tests {
                     id: i.to_string(),
                     title: m.into(),
                     description: None,
-                    start: 0,
+                    start: NaiveDateTime::from_timestamp(0, 0),
                     end: None,
                     location: None,
                     contact: None,
@@ -802,10 +805,11 @@ mod tests {
             let (client, db) = setup();
             let event_start_times = vec![100, 0, 300, 50, 200];
             let mut db = db.get().unwrap();
-            for start in event_start_times {
+            for s in event_start_times {
+                let start = NaiveDateTime::from_timestamp(s, 0);
                 db.create_event(Event {
-                    id: start.to_string(),
-                    title: start.to_string(),
+                    id: s.to_string(),
+                    title: s.to_string(),
                     description: None,
                     start,
                     end: None,
@@ -837,10 +841,11 @@ mod tests {
             let (client, db) = setup();
             let event_start_times = vec![100, 0, 300, 50, 200];
             let mut db = db.get().unwrap();
-            for start in event_start_times {
+            for s in event_start_times {
+                let start = NaiveDateTime::from_timestamp(s, 0);
                 db.create_event(Event {
-                    id: start.to_string(),
-                    title: start.to_string(),
+                    id: s.to_string(),
+                    title: s.to_string(),
                     description: None,
                     start,
                     end: None,
@@ -879,7 +884,7 @@ mod tests {
                     id: format!("{}-{}", lat, lng),
                     title: format!("{}-{}", lat, lng),
                     description: None,
-                    start: 0,
+                    start: NaiveDateTime::from_timestamp(0, 0),
                     end: None,
                     location: Some(Location {
                         lat,
@@ -961,7 +966,7 @@ mod tests {
                 id: "1234".into(),
                 title: "x".into(),
                 description: None,
-                start: 0,
+                start: NaiveDateTime::from_timestamp(0, 0),
                 end: None,
                 location: None,
                 contact: None,
@@ -981,7 +986,7 @@ mod tests {
             assert_eq!(res.status(), Status::Ok);
             let new = db.get().unwrap().get_event("1234").unwrap();
             assert_eq!(&*new.title, "new");
-            assert_eq!(new.start, 5);
+            assert_eq!(new.start.timestamp(), 5);
             assert!(new.created_by != e.created_by);
         }
 
@@ -1001,7 +1006,7 @@ mod tests {
                 id: "1234".into(),
                 title: "x".into(),
                 description: None,
-                start: 0,
+                start: NaiveDateTime::from_timestamp(0, 0),
                 end: None,
                 location: None,
                 contact: None,
@@ -1037,7 +1042,7 @@ mod tests {
                 id: "1234".into(),
                 title: "x".into(),
                 description: None,
-                start: 0,
+                start: NaiveDateTime::from_timestamp(0, 0),
                 end: None,
                 location: None,
                 contact: None,
@@ -1075,7 +1080,7 @@ mod tests {
                 id: "1234".into(),
                 title: "x".into(),
                 description: None,
-                start: 0,
+                start: NaiveDateTime::from_timestamp(0, 0),
                 end: None,
                 location: None,
                 contact: None,
@@ -1148,7 +1153,7 @@ mod tests {
                 id: "1234".into(),
                 title: "x".into(),
                 description: None,
-                start: 0,
+                start: NaiveDateTime::from_timestamp(0, 0),
                 end: None,
                 location: None,
                 contact: None,
@@ -1162,7 +1167,7 @@ mod tests {
                 id: "9999".into(),
                 title: "x".into(),
                 description: None,
-                start: 0,
+                start: NaiveDateTime::from_timestamp(0, 0),
                 end: None,
                 location: None,
                 contact: None,

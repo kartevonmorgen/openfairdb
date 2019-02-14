@@ -31,9 +31,9 @@ pub struct Event {
     pub title: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    pub start: u64,
+    pub start: i64,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub end: Option<u64>,
+    pub end: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lat: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -99,6 +99,9 @@ impl From<e::Event> for Event {
             }
             .to_string()
         });
+
+        let start = start.timestamp();
+        let end = end.map(|end| end.timestamp());
 
         Event {
             id,

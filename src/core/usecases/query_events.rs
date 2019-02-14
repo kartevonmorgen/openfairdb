@@ -1,12 +1,12 @@
-use crate::core::prelude::*;
-use crate::core::util::filter::InBBox;
+use crate::core::{prelude::*, util::filter::InBBox};
+use chrono::prelude::*;
 
 pub fn query_events<D: Db>(
     db: &D,
     tags: Option<Vec<String>>,
     bbox: Option<Bbox>,
-    start_min: Option<u64>,
-    start_max: Option<u64>,
+    start_min: Option<NaiveDateTime>,
+    start_max: Option<NaiveDateTime>,
     created_by: Option<String>,
     token: Option<String>,
 ) -> Result<Vec<Event>> {

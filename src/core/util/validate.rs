@@ -178,6 +178,7 @@ impl AutoCorrect for Address {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use chrono::prelude::*;
 
     #[test]
     fn license_test() {
@@ -230,7 +231,7 @@ mod tests {
             id: "x".into(),
             title: "foo".into(),
             description: None,
-            start: 0,
+            start: NaiveDateTime::from_timestamp(0, 0),
             end: None,
             location: None,
             contact: None,
@@ -328,7 +329,7 @@ mod tests {
             id: "x".into(),
             title: "foo".into(),
             description: None,
-            start: 0,
+            start: NaiveDateTime::from_timestamp(0, 0),
             end: None,
             location: None,
             contact: None,
@@ -347,7 +348,7 @@ mod tests {
             id: "x".into(),
             title: "foo".into(),
             description: None,
-            start: 0,
+            start: NaiveDateTime::from_timestamp(0, 0),
             end: None,
             location: None,
             contact: None,
@@ -366,8 +367,8 @@ mod tests {
             id: "x".into(),
             title: "foo".into(),
             description: None,
-            start: 100,
-            end: Some(99),
+            start: NaiveDateTime::from_timestamp(100, 0),
+            end: Some(NaiveDateTime::from_timestamp(99, 0)),
             location: None,
             contact: None,
             tags: vec![],

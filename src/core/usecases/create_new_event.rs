@@ -6,6 +6,7 @@ use crate::core::{
         validate::{AutoCorrect, Validate},
     },
 };
+use chrono::prelude::*;
 use std::str::FromStr;
 use uuid::Uuid;
 
@@ -14,8 +15,8 @@ use uuid::Uuid;
 pub struct NewEvent {
     pub title        : String,
     pub description  : Option<String>,
-    pub start        : u64,
-    pub end          : Option<u64>,
+    pub start        : i64,
+    pub end          : Option<i64>,
     pub lat          : Option<f64>,
     pub lng          : Option<f64>,
     pub street       : Option<String>,
@@ -193,6 +194,9 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
         .map(|x| x.trim().to_owned())
         .filter(|x| !x.is_empty());
 
+    let start = NaiveDateTime::from_timestamp(start, 0);
+    let end = end.map(|e| NaiveDateTime::from_timestamp(e, 0));
+
     let event = Event {
         id,
         title,
@@ -265,7 +269,7 @@ mod tests {
         assert_eq!(mock_db.tags.len(), 2);
         let x = &mock_db.events[0];
         assert_eq!(x.title, "foo");
-        assert_eq!(x.start, 9999);
+        assert_eq!(x.start.timestamp(), 9999);
         assert!(x.location.is_none());
         assert_eq!(x.description.as_ref().unwrap(), "bar");
         assert!(Uuid::parse_str(&x.id).is_ok());

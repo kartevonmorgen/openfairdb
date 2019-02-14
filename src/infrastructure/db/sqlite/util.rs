@@ -3,6 +3,7 @@ use crate::core::{
     entities as e,
     prelude::{Error, ParameterError, Result},
 };
+use chrono::prelude::*;
 use std::str::FromStr;
 
 impl From<e::Entry> for Entry {
@@ -164,8 +165,8 @@ impl From<e::Event> for Event {
             id,
             title,
             description,
-            start: start as i64,
-            end: end.map(|x| x as i64),
+            start: start.timestamp(),
+            end: end.map(|x| x.timestamp()),
             lat,
             lng,
             street,
@@ -318,8 +319,8 @@ impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
             id,
             title,
             description,
-            start: start as u64,
-            end: end.map(|x| x as u64),
+            start: NaiveDateTime::from_timestamp(start, 0),
+            end: end.map(|x| NaiveDateTime::from_timestamp(x, 0)),
             location,
             contact,
             homepage,

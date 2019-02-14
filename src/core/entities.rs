@@ -1,3 +1,5 @@
+use chrono::prelude::*;
+
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
@@ -63,8 +65,8 @@ pub struct Event {
     pub id           : String,
     pub title        : String,
     pub description  : Option<String>,
-    pub start        : u64,
-    pub end          : Option<u64>,
+    pub start        : NaiveDateTime,
+    pub end          : Option<NaiveDateTime>,
     pub location     : Option<Location>,
     pub contact      : Option<Contact>,
     pub tags         : Vec<String>,
