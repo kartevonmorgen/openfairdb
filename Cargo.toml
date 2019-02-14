@@ -9,7 +9,7 @@ license = "AGPL-3.0-or-later"
 edition = "2018"
 
 [patch.crates-io]
-geocoding = { git = "https://github.com/uklotzde/geocoding", branch = "edition_2018" }
+geocoding = { git = "https://github.com/georust/geocoding" }
 
 [dependencies]
 # clap 3 is supposed to introduce breaking changes
