@@ -36,10 +36,8 @@ fn check_lat_lng(addr: &str) -> Option<(f64, f64)> {
             Ok(res) => {
                 if !res.results.is_empty() {
                     let geometry = &res.results[0].geometry;
-                    if let Some(lat) = geometry.get("lat") {
-                        if let Some(lng) = geometry.get("lng") {
-                            return Some((*lat, *lng));
-                        }
+                    if let (Some(lat), Some(lng)) = (geometry.get("lat"), geometry.get("lng")) {
+                        return Some((*lat, *lng));
                     }
                 }
             }
