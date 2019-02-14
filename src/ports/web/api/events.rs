@@ -1,6 +1,7 @@
 use super::{super::guards::Bearer, *};
 use chrono::prelude::*;
 use geocoding::Opencage;
+use itertools::Itertools;
 use rocket::{
     http::{RawStr, Status},
     request::{FromQuery, Query},
@@ -18,14 +19,8 @@ lazy_static! {
 }
 
 fn to_addr_string(e: &usecases::NewEvent) -> String {
-    let x = e.clone();
-    format!(
-        "{},{},{},{}",
-        x.country.unwrap_or("".into()),
-        x.city.unwrap_or("".into()),
-        x.zip.unwrap_or("".into()),
-        x.street.unwrap_or("".into())
-    )
+    let addr_parts = [&e.street, &e.zip, &e.city, &e.country];
+    addr_parts.into_iter().filter_map(|x| x.as_ref()).join(",")
 }
 
 //TODO: use a trait for the geocoding API and test it with a mock
@@ -1186,6 +1181,38 @@ mod tests {
             assert_eq!(res.status(), Status::Ok);
             assert_eq!(db.get().unwrap().all_events().unwrap().len(), 1);
         }
+    }
+
+    use super::*;
+
+    #[test]
+    fn new_event_to_addr_string_partial() {
+        let mut e = usecases::NewEvent {
+            title        : "foo".into(),
+            description  : Some("bar".into()),
+            start        : 9999,
+            end          : None,
+            lat          : None,
+            lng          : None,
+            street       : Some("A street".into()),
+            zip          : None,
+            city         : Some("A city".into()),
+            country      : None,
+            email        : None,
+            telephone    : None,
+            homepage     : None,
+            tags         : None,
+            created_by   : Some("fooo@bar.tld".into()),
+            token        : None,
+            registration : None,
+            organizer    : None,
+        };
+        assert_eq!("A street,A city", to_addr_string(&e));
+        e.country = Some("A country".into());
+        assert_eq!("A street,A city,A country", to_addr_string(&e));
+        e.street = None;
+        e.zip = Some("1234".into());
+        assert_eq!("1234,A city,A country", to_addr_string(&e));
     }
 
 }
