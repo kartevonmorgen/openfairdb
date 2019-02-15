@@ -1,6 +1,6 @@
 use super::{super::guards::Bearer, *};
 use chrono::prelude::*;
-use geocoding::Opencage;
+use geocoding::{Forward, Opencage};
 use itertools::Itertools;
 use rocket::{
     http::{RawStr, Status},
@@ -27,13 +27,12 @@ fn to_addr_string(e: &usecases::NewEvent) -> String {
 fn check_lat_lng(addr: &str) -> Option<(f64, f64)> {
     if let Some(key) = OC_API_KEY.clone() {
         let oc = Opencage::new(key);
-        match oc.forward_full(&addr, None) {
+        match oc.forward(&addr) {
             Ok(res) => {
-                if !res.results.is_empty() {
-                    let geometry = &res.results[0].geometry;
-                    if let (Some(lat), Some(lng)) = (geometry.get("lat"), geometry.get("lng")) {
-                        return Some((*lat, *lng));
-                    }
+                if !res.is_empty() {
+                    let point = &res[0];
+                    debug!("Resolved event location: {:?}", point);
+                    return Some((point.lat(), point.lng()))
                 }
             }
             Err(err) => {
