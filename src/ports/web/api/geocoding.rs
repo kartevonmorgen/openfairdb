@@ -59,6 +59,9 @@ mod tests {
         );
         addr.street = None;
         addr.zip = Some("1234".into());
-        assert_eq!("1234,A city,A country", address_to_forward_query_string(&addr));
+        assert_eq!(
+            "1234,A city,A country",
+            address_to_forward_query_string(&addr)
+        );
     }
 }

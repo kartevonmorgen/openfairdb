@@ -1,3 +1,6 @@
+## v0.4.3 (2019-02-15)
+- fix: Resolve event location from address via geocoding/Opencage
+
 ## v0.4.2 (2019-02-14)
 
 - fix: implicitly check and set lat/lng when creating or updating events
