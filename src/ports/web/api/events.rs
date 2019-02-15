@@ -201,7 +201,7 @@ pub fn delete_event_with_token(mut db: DbConn, token: Bearer, id: &RawStr) -> Re
 #[cfg(test)]
 mod tests {
     use super::super::tests::prelude::*;
-    use chrono::prelude::*;
+    use super::*;
     use rocket::http::Header;
 
     mod create {
@@ -1148,38 +1148,6 @@ mod tests {
             assert_eq!(res.status(), Status::Ok);
             assert_eq!(db.get().unwrap().all_events().unwrap().len(), 1);
         }
-    }
-
-    use super::*;
-
-    #[test]
-    fn new_event_to_addr_string_partial() {
-        let mut e = usecases::NewEvent {
-            title        : "foo".into(),
-            description  : Some("bar".into()),
-            start        : 9999,
-            end          : None,
-            lat          : None,
-            lng          : None,
-            street       : Some("A street".into()),
-            zip          : None,
-            city         : Some("A city".into()),
-            country      : None,
-            email        : None,
-            telephone    : None,
-            homepage     : None,
-            tags         : None,
-            created_by   : Some("fooo@bar.tld".into()),
-            token        : None,
-            registration : None,
-            organizer    : None,
-        };
-        assert_eq!("A street,A city", to_addr_string(&e));
-        e.country = Some("A country".into());
-        assert_eq!("A street,A city,A country", to_addr_string(&e));
-        e.street = None;
-        e.zip = Some("1234".into());
-        assert_eq!("1234,A city,A country", to_addr_string(&e));
     }
 
 }

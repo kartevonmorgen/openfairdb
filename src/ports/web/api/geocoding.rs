@@ -39,3 +39,26 @@ pub fn resolve_address_lat_lng(addr: &Address) -> Option<(f64, f64)> {
     }
     None
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn address_to_forward_query_string_partial() {
+        let mut addr = Address {
+            street: Some("A street".into()),
+            city: Some("A city".into()),
+            ..Default::default()
+        };
+        assert_eq!("A street,A city", address_to_forward_query_string(&addr));
+        addr.country = Some("A country".into());
+        assert_eq!(
+            "A street,A city,A country",
+            address_to_forward_query_string(&addr)
+        );
+        addr.street = None;
+        addr.zip = Some("1234".into());
+        assert_eq!("1234,A city,A country", address_to_forward_query_string(&addr));
+    }
+}
