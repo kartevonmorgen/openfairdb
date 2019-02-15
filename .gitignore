@@ -1,4 +1,5 @@
 *.swp
 *.bk
+/bin
 /target
 /test-dbs
