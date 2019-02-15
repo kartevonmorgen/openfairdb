@@ -1,53 +1,24 @@
-use super::{super::guards::Bearer, *};
+use super::{super::guards::Bearer, geocoding::*, *};
+
 use chrono::prelude::*;
-use geocoding::{Forward, Opencage};
-use itertools::Itertools;
 use rocket::{
     http::{RawStr, Status},
     request::{FromQuery, Query},
 };
-use std::env;
 
-lazy_static! {
-    static ref OC_API_KEY: Option<String> = match env::var("OPENCAGE_API_KEY") {
-        Ok(key) => Some(key),
-        Err(_) => {
-            warn!("No OpenCage API key found");
-            None
-        }
+fn check_and_set_address_location(e: &mut usecases::NewEvent) {
+    // TODO: Parse logical parts of NewEvent earlier
+    let addr = Address {
+        street: e.street.clone(),
+        zip: e.zip.clone(),
+        city: e.city.clone(),
+        country: e.country.clone(),
     };
-}
-
-fn to_addr_string(e: &usecases::NewEvent) -> String {
-    let addr_parts = [&e.street, &e.zip, &e.city, &e.country];
-    addr_parts.into_iter().filter_map(|x| x.as_ref()).join(",")
-}
-
-//TODO: use a trait for the geocoding API and test it with a mock
-fn check_lat_lng(addr: &str) -> Option<(f64, f64)> {
-    if let Some(key) = OC_API_KEY.clone() {
-        let oc = Opencage::new(key);
-        match oc.forward(&addr) {
-            Ok(res) => {
-                if !res.is_empty() {
-                    let point = &res[0];
-                    debug!("Resolved event location: {:?}", point);
-                    return Some((point.lat(), point.lng()))
-                }
-            }
-            Err(err) => {
-                warn!("Could not receive geo information: {}", err);
-            }
+    if !addr.is_empty() {
+        if let Some((lat, lng)) = resolve_address_lat_lng(&addr) {
+            e.lat = Some(lat);
+            e.lng = Some(lng);
         }
-    }
-    None
-}
-
-fn check_and_set_lat_lng(e: &mut usecases::NewEvent) {
-    let addr = to_addr_string(&e);
-    if let Some((lat, lng)) = check_lat_lng(&addr) {
-        e.lat = Some(lat);
-        e.lng = Some(lng);
     }
 }
 
@@ -59,7 +30,7 @@ pub fn post_event_with_token(
 ) -> Result<String> {
     let mut e = e.into_inner();
     e.token = Some(token.0);
-    check_and_set_lat_lng(&mut e);
+    check_and_set_address_location(&mut e);
     let id = usecases::create_new_event(&mut *db, e.clone())?;
     Ok(Json(id))
 }
@@ -104,7 +75,7 @@ pub fn put_event_with_token(
 ) -> Result<()> {
     let mut e = e.into_inner();
     e.token = Some(token.0);
-    check_and_set_lat_lng(&mut e);
+    check_and_set_address_location(&mut e);
     usecases::update_event(&mut *db, &id.to_string(), e.clone())?;
     Ok(Json(()))
 }

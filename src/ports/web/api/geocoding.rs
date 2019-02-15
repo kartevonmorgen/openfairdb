@@ -1,0 +1,41 @@
+use crate::core::entities::Address;
+
+use ::geocoding::{Forward, Opencage};
+use itertools::Itertools;
+use std::env;
+
+lazy_static! {
+    static ref OC_API_KEY: Option<String> = match env::var("OPENCAGE_API_KEY") {
+        Ok(key) => Some(key),
+        Err(_) => {
+            warn!("No OpenCage API key found");
+            None
+        }
+    };
+}
+
+fn address_to_forward_query_string(addr: &Address) -> String {
+    let addr_parts = [&addr.street, &addr.zip, &addr.city, &addr.country];
+    addr_parts.into_iter().filter_map(|x| x.as_ref()).join(",")
+}
+
+//TODO: use a trait for the geocoding API and test it with a mock
+pub fn resolve_address_lat_lng(addr: &Address) -> Option<(f64, f64)> {
+    if let Some(key) = OC_API_KEY.clone() {
+        let oc = Opencage::new(key);
+        let addr_str = address_to_forward_query_string(addr);
+        match oc.forward(&addr_str) {
+            Ok(res) => {
+                if !res.is_empty() {
+                    let point = &res[0];
+                    debug!("Resolved address location '{}': {:?}", addr_str, point);
+                    return Some((point.lat(), point.lng()));
+                }
+            }
+            Err(err) => {
+                warn!("Failed to resolve address location '{}': {}", addr_str, err);
+            }
+        }
+    }
+    None
+}

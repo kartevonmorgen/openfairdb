@@ -22,6 +22,7 @@ use std::result;
 
 mod count;
 mod events;
+pub mod geocoding;
 mod ratings;
 mod search;
 #[cfg(test)]
