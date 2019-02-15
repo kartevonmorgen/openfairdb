@@ -570,7 +570,7 @@ dependencies = [
 [[package]]
 name = "geocoding"
 version = "0.0.4"
-source = "git+https://github.com/georust/geocoding#6282b5d4434271b86f0953161eca25e8aa8b64c5"
+source = "git+https://github.com/georust/geocoding#26e486a3fd2e76182366eae28d8692416c84b623"
 dependencies = [
  "chrono 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "failure 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",

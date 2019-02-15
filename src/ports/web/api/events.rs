@@ -1,54 +1,24 @@
-use super::{super::guards::Bearer, *};
+use super::{super::guards::Bearer, geocoding::*, *};
+
 use chrono::prelude::*;
-use geocoding::Opencage;
-use itertools::Itertools;
 use rocket::{
     http::{RawStr, Status},
     request::{FromQuery, Query},
 };
-use std::env;
 
-lazy_static! {
-    static ref OC_API_KEY: Option<String> = match env::var("OPENCAGE_API_KEY") {
-        Ok(key) => Some(key),
-        Err(_) => {
-            warn!("No OpenCage API key found");
-            None
-        }
+fn check_and_set_address_location(e: &mut usecases::NewEvent) {
+    // TODO: Parse logical parts of NewEvent earlier
+    let addr = Address {
+        street: e.street.clone(),
+        zip: e.zip.clone(),
+        city: e.city.clone(),
+        country: e.country.clone(),
     };
-}
-
-fn to_addr_string(e: &usecases::NewEvent) -> String {
-    let addr_parts = [&e.street, &e.zip, &e.city, &e.country];
-    addr_parts.into_iter().filter_map(|x| x.as_ref()).join(",")
-}
-
-//TODO: use a trait for the geocoding API and test it with a mock
-fn check_lat_lng(addr: &str) -> Option<(f64, f64)> {
-    if let Some(key) = OC_API_KEY.clone() {
-        let oc = Opencage::new(key);
-        match oc.forward_full(&addr, None) {
-            Ok(res) => {
-                if !res.results.is_empty() {
-                    let geometry = &res.results[0].geometry;
-                    if let (Some(lat), Some(lng)) = (geometry.get("lat"), geometry.get("lng")) {
-                        return Some((*lat, *lng));
-                    }
-                }
-            }
-            Err(err) => {
-                warn!("Could not receive geo information: {}", err);
-            }
+    if !addr.is_empty() {
+        if let Some((lat, lng)) = resolve_address_lat_lng(&addr) {
+            e.lat = Some(lat);
+            e.lng = Some(lng);
         }
-    }
-    None
-}
-
-fn check_and_set_lat_lng(e: &mut usecases::NewEvent) {
-    let addr = to_addr_string(&e);
-    if let Some((lat, lng)) = check_lat_lng(&addr) {
-        e.lat = Some(lat);
-        e.lng = Some(lng);
     }
 }
 
@@ -60,7 +30,7 @@ pub fn post_event_with_token(
 ) -> Result<String> {
     let mut e = e.into_inner();
     e.token = Some(token.0);
-    check_and_set_lat_lng(&mut e);
+    check_and_set_address_location(&mut e);
     let id = usecases::create_new_event(&mut *db, e.clone())?;
     Ok(Json(id))
 }
@@ -105,7 +75,7 @@ pub fn put_event_with_token(
 ) -> Result<()> {
     let mut e = e.into_inner();
     e.token = Some(token.0);
-    check_and_set_lat_lng(&mut e);
+    check_and_set_address_location(&mut e);
     usecases::update_event(&mut *db, &id.to_string(), e.clone())?;
     Ok(Json(()))
 }
@@ -231,7 +201,7 @@ pub fn delete_event_with_token(mut db: DbConn, token: Bearer, id: &RawStr) -> Re
 #[cfg(test)]
 mod tests {
     use super::super::tests::prelude::*;
-    use chrono::prelude::*;
+    use super::*;
     use rocket::http::Header;
 
     mod create {
@@ -1178,38 +1148,6 @@ mod tests {
             assert_eq!(res.status(), Status::Ok);
             assert_eq!(db.get().unwrap().all_events().unwrap().len(), 1);
         }
-    }
-
-    use super::*;
-
-    #[test]
-    fn new_event_to_addr_string_partial() {
-        let mut e = usecases::NewEvent {
-            title        : "foo".into(),
-            description  : Some("bar".into()),
-            start        : 9999,
-            end          : None,
-            lat          : None,
-            lng          : None,
-            street       : Some("A street".into()),
-            zip          : None,
-            city         : Some("A city".into()),
-            country      : None,
-            email        : None,
-            telephone    : None,
-            homepage     : None,
-            tags         : None,
-            created_by   : Some("fooo@bar.tld".into()),
-            token        : None,
-            registration : None,
-            organizer    : None,
-        };
-        assert_eq!("A street,A city", to_addr_string(&e));
-        e.country = Some("A country".into());
-        assert_eq!("A street,A city,A country", to_addr_string(&e));
-        e.street = None;
-        e.zip = Some("1234".into());
-        assert_eq!("1234,A city,A country", to_addr_string(&e));
     }
 
 }
