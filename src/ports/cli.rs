@@ -1,10 +1,31 @@
-use super::web;
+use super::web::{self, sqlite::create_connection_pool};
+use crate::core::prelude::*;
 use crate::infrastructure::osm;
 use clap::{App, Arg, SubCommand};
 use dotenv::dotenv;
 use std::{env, process};
 
 const DEFAULT_DB_URL: &str = "openfair.db";
+
+fn update_event_locations<D: Db>(db: &mut D) -> Result<()> {
+    let events = db.all_events()?;
+    for mut e in events {
+        if let Some(ref mut loc) = e.location {
+            if let Some(ref addr) = loc.address {
+                if let Some((lat, lng)) = web::api::geocoding::resolve_address_lat_lng(addr) {
+                    loc.lat = lat;
+                    loc.lng = lng;
+                    if let Err(err) = db.update_event(&e) {
+                        warn!("Failed to update location of event {}: {}", e.id, err);
+                    } else {
+                        info!("Updated location of event {}", e.id);
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
 
 pub fn run() {
     dotenv().ok();
@@ -21,6 +42,11 @@ pub fn run() {
             Arg::with_name("enable-cors")
                 .long("enable-cors")
                 .help("Allow requests from any origin"),
+        )
+        .arg(
+            Arg::with_name("fix-event-address-location")
+                .long("fix-event-address-location")
+                .help("Update the location of ALL events by resolving their address"),
         )
         .subcommand(
             SubCommand::with_name("osm")
@@ -44,6 +70,7 @@ pub fn run() {
             Err(_) => DEFAULT_DB_URL.to_string(),
         },
     };
+    let pool = create_connection_pool(&db_url).unwrap();
 
     match matches.subcommand() {
         ("osm", Some(osm_matches)) => match osm_matches.subcommand() {
@@ -63,7 +90,11 @@ pub fn run() {
             _ => println!("{}", osm_matches.usage()),
         },
         _ => {
-            web::run(&db_url, matches.is_present("enable-cors"));
+            if matches.is_present("fix-event-address-location") {
+                info!("Updating all event locations...");
+                update_event_locations(&mut *pool.get().unwrap()).unwrap();
+            }
+            web::run(pool, matches.is_present("enable-cors"));
         }
     }
 }

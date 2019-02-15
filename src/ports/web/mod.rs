@@ -1,7 +1,7 @@
 use crate::core::{prelude::*, util::sort::Rated};
 use crate::infrastructure::error::AppError;
-use diesel::r2d2::{self, Pool};
-use rocket::{self, config::Config, Rocket};
+use diesel::r2d2::{ManageConnection, Pool};
+use rocket::{config::Config, Rocket};
 use rocket_contrib::json::Json;
 use std::{collections::HashMap, result, sync::Mutex};
 
@@ -12,7 +12,7 @@ lazy_static! {
     static ref ENTRY_RATINGS: Mutex<HashMap<String, f64>> = Mutex::new(HashMap::new());
 }
 
-mod api;
+pub mod api;
 #[cfg(test)]
 mod mockdb;
 pub mod sqlite;
@@ -20,8 +20,6 @@ pub mod sqlite;
 pub use self::api::tests;
 mod guards;
 mod util;
-
-use self::sqlite::create_connection_pool;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
@@ -49,13 +47,14 @@ fn calculate_rating_for_entry<D: Db>(db: &D, e_id: &str) -> Result<()> {
     Ok(Json(()))
 }
 
-fn rocket_instance<T: r2d2::ManageConnection>(pool: Pool<T>, cfg: Option<Config>) -> Rocket
+fn rocket_instance<T: ManageConnection>(pool: Pool<T>, cfg: Option<Config>) -> Rocket
 where
-    <T as r2d2::ManageConnection>::Connection: Db,
+    <T as ManageConnection>::Connection: Db,
 {
     info!("Calculating the average rating of all entries...");
     calculate_all_ratings(&*pool.get().unwrap()).unwrap();
-    info!("done.");
+
+    info!("Initialization finished");
     let r = match cfg {
         Some(cfg) => rocket::custom(cfg),
         None => rocket::ignite(),
@@ -63,15 +62,16 @@ where
     r.manage(pool).mount("/", api::routes())
 }
 
-pub fn run(db_url: &str, enable_cors: bool) {
+pub fn run<T: ManageConnection>(pool: Pool<T>, enable_cors: bool)
+where
+    <T as ManageConnection>::Connection: Db,
+{
     if enable_cors {
         panic!(
             "enable-cors is currently not available until\
              \nhttps://github.com/SergioBenitez/Rocket/pull/141\nis merged :("
         );
     }
-
-    let pool = create_connection_pool(db_url).unwrap();
 
     rocket_instance(pool, None).launch();
 }
