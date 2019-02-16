@@ -14,11 +14,9 @@ fn check_and_set_address_location(e: &mut usecases::NewEvent) {
         city: e.city.clone(),
         country: e.country.clone(),
     };
-    if !addr.is_empty() {
-        if let Some((lat, lng)) = resolve_address_lat_lng(&addr) {
-            e.lat = Some(lat);
-            e.lng = Some(lng);
-        }
+    if let Some((lat, lng)) = resolve_address_lat_lng(&addr) {
+        e.lat = Some(lat);
+        e.lng = Some(lng);
     }
 }
 
