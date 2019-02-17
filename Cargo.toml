@@ -12,15 +12,15 @@ edition = "2018"
 geocoding = { git = "https://github.com/georust/geocoding" }
 
 [dependencies]
-# clap 3 is supposed to introduce breaking changes
 chrono = "*"
+# clap 3 is supposed to introduce breaking changes
 clap = "2"
 csv = "*"
 diesel = { version = "*", features = ["sqlite", "r2d2"] }
 diesel_migrations = { version = "*", features = ["sqlite"]  }
 dotenv = "*"
 env_logger = "*"
-fast_chemail = "*"
+fast_chemail = { version = "*", optional = true }
 geocoding = "*"
 itertools = "*"
 lazy_static = "*"
@@ -31,7 +31,7 @@ openssl = { version = "*", features = ["vendored"] }
 passwords = "*"
 pwhash = "*"
 quick-error = "*"
-quoted_printable = "*"
+quoted_printable = { version = "*", optional = true }
 regex = "*"
 rocket = "*"
 rocket_contrib = "*"
@@ -44,4 +44,4 @@ uuid = { version = "*", features = ["v4"] }
 
 [features]
 default = ["email"]
-email = []
+email = ["fast_chemail", "quoted_printable"]
