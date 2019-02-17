@@ -1,3 +1,6 @@
+## v0.4.4 (2019-02-17)
+- fix: Never resolve the location of an event with an empty event address
+
 ## v0.4.3 (2019-02-15)
 - fix: Resolve event location from address via geocoding/Opencage
 
