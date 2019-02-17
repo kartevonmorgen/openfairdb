@@ -20,7 +20,7 @@ fn update_event_locations<D: Db>(db: &mut D) -> Result<()> {
                     // empty. This compensates for a bug in v0.4.3 where the
                     // check for an empty address was missing.
                     if addr.is_empty() {
-                        info!("Resetting location of event {} with empty address: {}", e.id, err);
+                        info!("Resetting location of event {} with empty address", e.id);
                         loc.lat = 0.0;
                         loc.lng = 0.0;
                     }
