@@ -1,39 +1,31 @@
-use super::super::entities::*;
-use super::geo;
+use crate::core::prelude::*;
+
 use std::cmp::Ordering;
 use std::collections::HashMap;
 
 trait DistanceTo {
-    fn distance_to(&self, _: &Coordinate) -> f64;
+    fn distance_to(&self, _there: &MapPoint) -> Distance;
 }
 
 impl DistanceTo for Entry {
-    fn distance_to(&self, c: &Coordinate) -> f64 {
-        let Location { lat, lng, .. } = self.location;
-        geo::distance(&Coordinate { lat, lng }, c)
+    fn distance_to(&self, there: &MapPoint) -> Distance {
+        let here = MapPoint::try_from_lat_lng_deg(self.location.lat, self.location.lng);
+        here.and_then(|ref here| MapPoint::distance(here, there)).unwrap_or(Distance::infinite())
     }
 }
 
 pub trait SortByDistanceTo {
-    fn sort_by_distance_to(&mut self, _: &Coordinate);
+    fn sort_by_distance_to(&mut self, _center: &MapPoint);
 }
 
 impl SortByDistanceTo for Vec<Entry> {
-    fn sort_by_distance_to(&mut self, c: &Coordinate) {
-        if !(c.lat.is_finite() && c.lng.is_finite()) {
+    fn sort_by_distance_to(&mut self, center: &MapPoint) {
+        if !center.is_valid() {
             return;
         }
-        self.sort_by(|a, _| {
-            if a.location.lat.is_finite() && a.location.lng.is_finite() {
-                Ordering::Less
-            } else {
-                warn!("invalid coordinate: {}/{}", a.location.lat, a.location.lng);
-                Ordering::Greater
-            }
-        });
         self.sort_by(|a, b| {
-            a.distance_to(c)
-                .partial_cmp(&b.distance_to(c))
+            a.distance_to(center)
+                .partial_cmp(&b.distance_to(center))
                 .unwrap_or(Ordering::Equal)
         })
     }
@@ -236,7 +228,7 @@ pub mod tests {
             new_entry("d", 0.0, 0.5),
             new_entry("e", -1.0, -1.0),
         ];
-        let x = Coordinate { lat: 0.0, lng: 0.0 };
+        let x = MapPoint::from_lat_lng_deg(0.0, 0.0);
         entries.sort_by_distance_to(&x);
         assert_eq!(entries[0].id, "b");
         assert_eq!(entries[1].id, "d");
@@ -256,7 +248,7 @@ pub mod tests {
             new_entry("d", NAN, NAN),
             new_entry("e", 1.0, 0.0),
         ];
-        let x = Coordinate { lat: 0.0, lng: 0.0 };
+        let x = MapPoint::from_lat_lng_deg(0.0, 0.0);
         entries.sort_by_distance_to(&x);
         assert_eq!(entries[0].id, "e");
         assert_eq!(entries[1].id, "c");
@@ -267,7 +259,7 @@ pub mod tests {
             new_entry("c", 1.0, 0.0),
         ];
 
-        let x = Coordinate { lat: NAN, lng: 0.0 };
+        let x = MapPoint::new(LatCoord::default(), LngCoord::from_deg(0.0));
         entries.sort_by_distance_to(&x);
         assert_eq!(entries[0].id, "a");
         assert_eq!(entries[1].id, "b");

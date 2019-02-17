@@ -20,6 +20,7 @@ diesel = { version = "*", features = ["sqlite", "r2d2"] }
 diesel_migrations = { version = "*", features = ["sqlite"]  }
 dotenv = "*"
 env_logger = "*"
+failure = "*"
 fast_chemail = { version = "*", optional = true }
 geocoding = "*"
 itertools = "*"
@@ -41,6 +42,9 @@ slug = "*"
 toml = "*"
 url = "*"
 uuid = { version = "*", features = ["v4"] }
+
+[dev-dependencies]
+rand = "*"
 
 [features]
 default = ["email"]

@@ -1,4 +1,4 @@
-use crate::core::{prelude::*, util::geo};
+use crate::core::prelude::*;
 use std::{cmp::min, collections::HashSet};
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -21,27 +21,28 @@ pub fn find_duplicates(entries: &[Entry]) -> Vec<(String, String, DuplicateType)
     duplicates
 }
 
+const DUPLICATE_MAX_DISTANCE: Distance = Distance::from_meters(100.0);
+
 // returns a DuplicateType if the two entries have a similar title, returns None otherwise
 fn is_duplicate(e1: &Entry, e2: &Entry) -> Option<DuplicateType> {
-    if similar_title(e1, e2, 0.3, 0) && in_close_proximity(e1, e2, 100.0) {
+    if similar_title(e1, e2, 0.3, 0) && in_close_proximity(e1, e2, DUPLICATE_MAX_DISTANCE) {
         Some(DuplicateType::SimilarChars)
-    } else if similar_title(e1, e2, 0.0, 2) && in_close_proximity(e1, e2, 100.0) {
+    } else if similar_title(e1, e2, 0.0, 2) && in_close_proximity(e1, e2, DUPLICATE_MAX_DISTANCE) {
         Some(DuplicateType::SimilarWords)
     } else {
         None
     }
 }
 
-fn in_close_proximity(e1: &Entry, e2: &Entry, max_dist_meters: f64) -> bool {
-    entry_distance_in_meters(e1, e2) <= max_dist_meters
-}
-
-fn entry_distance_in_meters(e1: &Entry, e2: &Entry) -> f64 {
-    let Location { lat, lng, .. } = e1.location;
-    let coord1 = Coordinate { lat, lng };
-    let Location { lat, lng, .. } = e2.location;
-    let coord2 = Coordinate { lat, lng };
-    geo::distance(&coord1, &coord2) * 1000.0
+fn in_close_proximity(e1: &Entry, e2: &Entry, max_dist: Distance) -> bool {
+    let p1 = MapPoint::try_from_lat_lng_deg(e1.location.lat, e1.location.lng);
+    let p2 = MapPoint::try_from_lat_lng_deg(e2.location.lat, e2.location.lng);
+    if let (Some(p1), Some(p2)) = (p1, p2) {
+        if let Some(dist) = MapPoint::distance(&p1, &p2) {
+            return dist <= max_dist;
+        }
+    }
+    false
 }
 
 fn similar_title(
@@ -180,8 +181,8 @@ mod tests {
             8.003558874130248,
         );
 
-        assert_eq!(in_close_proximity(&e1, &e2, 30.0), true);
-        assert_eq!(in_close_proximity(&e1, &e2, 10.0), false);
+        assert!(in_close_proximity(&e1, &e2, Distance::from_meters(30.0)));
+        assert!(!in_close_proximity(&e1, &e2, Distance::from_meters(10.0)));
     }
 
     #[test]
