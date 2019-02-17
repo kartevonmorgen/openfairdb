@@ -15,20 +15,11 @@ fn update_event_locations<D: Db>(db: &mut D) -> Result<()> {
                 if let Some((lat, lng)) = web::api::geocoding::resolve_address_lat_lng(addr) {
                     loc.lat = lat;
                     loc.lng = lng;
-                } else {
-                    // Reset existing location if an address exists but is
-                    // empty. This compensates for a bug in v0.4.3 where the
-                    // check for an empty address was missing.
-                    if addr.is_empty() {
-                        info!("Resetting location of event {} with empty address", e.id);
-                        loc.lat = 0.0;
-                        loc.lng = 0.0;
+                    if let Err(err) = db.update_event(&e) {
+                        warn!("Failed to update location of event {}: {}", e.id, err);
+                    } else {
+                        info!("Updated location of event {}", e.id);
                     }
-                }
-                if let Err(err) = db.update_event(&e) {
-                    warn!("Failed to update location of event {}: {}", e.id, err);
-                } else {
-                    info!("Updated location of event {}", e.id);
                 }
             }
         }
