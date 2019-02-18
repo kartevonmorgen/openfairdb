@@ -19,8 +19,8 @@ pub struct SearchRequest<'a> {
 
 pub fn search<D: Db>(db: &D, req: &SearchRequest) -> Result<(Vec<Entry>, Vec<Entry>)> {
     let mut entries = if req.text.is_empty() && req.tags.is_empty() {
-        let extended_bbox = extend_bbox(&req.bbox);
-        db.get_entries_by_bbox(&extended_bbox)?
+        let ext_bbox = filter::extend_bbox(&req.bbox);
+        db.get_entries_by_bbox(&ext_bbox)?
     } else {
         db.all_entries()?
     };
@@ -54,18 +54,6 @@ pub fn search<D: Db>(db: &D, req: &SearchRequest) -> Result<(Vec<Entry>, Vec<Ent
         .collect();
 
     Ok((visible_results, invisible_results))
-}
-
-const BBOX_LAT_EXT: f64 = 0.02;
-const BBOX_LNG_EXT: f64 = 0.04;
-
-fn extend_bbox(bbox: &Bbox) -> Bbox {
-    let mut extended_bbox = bbox.to_owned();
-    extended_bbox.south_west.lat -= BBOX_LAT_EXT;
-    extended_bbox.south_west.lng -= BBOX_LNG_EXT;
-    extended_bbox.north_east.lat += BBOX_LAT_EXT;
-    extended_bbox.north_east.lng += BBOX_LNG_EXT;
-    extended_bbox
 }
 
 #[cfg(test)]

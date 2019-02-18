@@ -1,6 +1,18 @@
 use super::super::entities::*;
 use super::geo::is_in_bbox;
 
+const BBOX_LAT_EXT: f64 = 0.02;
+const BBOX_LNG_EXT: f64 = 0.04;
+
+pub fn extend_bbox(bbox: &Bbox) -> Bbox {
+    let mut extended_bbox = bbox.to_owned();
+    extended_bbox.south_west.lat -= BBOX_LAT_EXT;
+    extended_bbox.south_west.lng -= BBOX_LNG_EXT;
+    extended_bbox.north_east.lat += BBOX_LAT_EXT;
+    extended_bbox.north_east.lng += BBOX_LNG_EXT;
+    extended_bbox
+}
+
 pub trait InBBox {
     fn in_bbox(&self, bb: &Bbox) -> bool;
 }
