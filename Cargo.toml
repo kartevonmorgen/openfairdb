@@ -29,11 +29,13 @@ lazy_static = "*"
 log = "*"
 num-derive = "*"
 num-traits = "*"
+maud = { version = "*", optional = true, features = ["rocket"] }
 openssl = { version = "*", features = ["vendored"] }
 passwords = "*"
 pwhash = "*"
 quick-error = "*"
 quoted_printable = { version = "*", optional = true }
+rand = "*"
 regex = "*"
 rocket = "*"
 rocket_contrib = "*"
@@ -41,7 +43,6 @@ serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 slug = "*"
 tantivy = "0.9.0-dev"
-tempdir = "*"
 toml = "*"
 url = "*"
 uuid = { version = "*", features = ["v4"] }
@@ -50,5 +51,6 @@ uuid = { version = "*", features = ["v4"] }
 rand = "*"
 
 [features]
-default = ["email"]
+default = ["email","frontend"]
 email = ["fast_chemail", "quoted_printable"]
+frontend = ["maud"]
