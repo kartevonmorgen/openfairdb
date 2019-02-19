@@ -42,7 +42,9 @@ pub fn resolve_address_lat_lng(addr: &Address) -> Option<(f64, f64)> {
     if addr.is_empty() {
         None
     } else {
-        OC_API_KEY.as_ref().and_then(|key| oc_resolve_address_lat_lng(key.clone(), addr))
+        OC_API_KEY
+            .as_ref()
+            .and_then(|key| oc_resolve_address_lat_lng(key.clone(), addr))
     }
 }
 

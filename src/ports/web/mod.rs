@@ -18,6 +18,8 @@ mod mockdb;
 pub mod sqlite;
 #[cfg(test)]
 pub use self::api::tests;
+#[cfg(feature = "frontend")]
+mod frontend;
 mod guards;
 mod util;
 
@@ -59,7 +61,9 @@ where
         Some(cfg) => rocket::custom(cfg),
         None => rocket::ignite(),
     };
-    r.manage(pool).mount("/", api::routes())
+    r.manage(pool)
+        .mount("/", api::routes())
+        .mount("/frontend", frontend::routes()) // TODO don't mount if feature "frontend" is disabled
 }
 
 pub fn run<T: ManageConnection>(pool: Pool<T>, enable_cors: bool)
