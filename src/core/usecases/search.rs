@@ -1,5 +1,6 @@
 use crate::core::prelude::*;
 use crate::core::util::{
+    geo::{MapBbox, MapPoint},
     filter::{self, InBBox},
     sort::SortByAverageRating,
 };
@@ -18,7 +19,18 @@ pub struct SearchRequest<'a> {
     pub entry_ratings : &'a HashMap<String, f64>,
 }
 
-pub fn search(index: &EntryIndex, req: SearchRequest) -> Result<(Vec<Entry>, Vec<Entry>)> {
+fn map_bbox(bbox: &Bbox) -> Option<MapBbox> {
+    let sw = MapPoint::try_from_lat_lng_deg(bbox.south_west.lat, bbox.south_west.lng);
+    let ne = MapPoint::try_from_lat_lng_deg(bbox.north_east.lat, bbox.north_east.lng);
+    if let (Some(sw), Some(ne)) = (sw, ne) {
+        Some(MapBbox::new(sw, ne))
+    } else {
+        warn!("Invalid Bbox: {:?}", bbox);
+        None
+    }
+}
+
+pub fn search(index: &EntryIndex, entries: &EntryGateway, req: SearchRequest, limit: Option<usize>) -> Result<(Vec<Entry>, Vec<Entry>)> {
     let visible_bbox = req.bbox;
 
     let index_bbox = if req.text.as_ref().map(String::is_empty).unwrap_or(true) && req.tags.is_empty() {
@@ -28,13 +40,13 @@ pub fn search(index: &EntryIndex, req: SearchRequest) -> Result<(Vec<Entry>, Vec
     };
 
     let index_query = EntryIndexQuery {
-        bbox: index_bbox,
+        bbox: index_bbox.as_ref().and_then(map_bbox),
         text: req.text,
         categories: req.categories,
         tags: req.tags,
     };
 
-    let mut entries = index.query_entries(&index_query)?;
+    let mut entries = index.query_entries(entries, &index_query, limit.unwrap_or(std::usize::MAX)).map_err(|err| RepoError::Other(Box::new(err.compat())))?;
 
     entries.sort_by_avg_rating(req.entry_ratings);
 
@@ -58,7 +70,6 @@ mod tests {
 
     use super::super::tests::MockDb;
     use super::*;
-    use crate::core::usecases::index::DbEntryIndex;
     use crate::core::util::sort;
     use crate::test::Bencher;
 
@@ -86,7 +97,7 @@ mod tests {
             entry_ratings: &entry_ratings,
         };
 
-        b.iter(|| super::search(&DbEntryIndex::new(&db), req.clone()).unwrap());
+        b.iter(|| super::search(&db, &db, req.clone(), Some(100)).unwrap());
     }
 
     #[ignore]
@@ -114,7 +125,7 @@ mod tests {
             entry_ratings: &entry_ratings,
         };
 
-        b.iter(|| super::search(&DbEntryIndex::new(&db), req.clone()).unwrap());
+        b.iter(|| super::search(&db, &db, req.clone(), Some(100)).unwrap());
     }
 
 }

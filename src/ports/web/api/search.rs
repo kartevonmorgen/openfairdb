@@ -1,4 +1,4 @@
-use super::super::{sqlite::DbConn, util};
+use super::super::{sqlite::DbConn, tantivy::SearchEngine, util};
 use crate::{
     adapters::json,
     core::{prelude::*, usecases, util::geo},
@@ -15,12 +15,13 @@ pub struct SearchQuery {
     categories: Option<String>,
     text: Option<String>,
     tags: Option<String>,
+    limit: Option<usize>,
 }
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
 #[get("/search?<search..>")]
-pub fn get_search(db: DbConn, search: Form<SearchQuery>) -> Result<json::SearchResponse> {
+pub fn get_search(db: DbConn, search_engine: SearchEngine, search: Form<SearchQuery>) -> Result<json::SearchResponse> {
     let bbox = geo::extract_bbox(&search.bbox)
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
@@ -49,7 +50,7 @@ pub fn get_search(db: DbConn, search: Form<SearchQuery>) -> Result<json::SearchR
         entry_ratings: &*avg_ratings,
     };
 
-    let (visible, invisible) = usecases::search(&usecases::DbEntryIndex::new(&*db), req)?;
+    let (visible, invisible) = usecases::search(&search_engine, &*db, req, search.limit)?;
 
     let visible = visible
         .into_iter()

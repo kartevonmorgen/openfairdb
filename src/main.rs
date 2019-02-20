@@ -25,7 +25,7 @@ extern crate num_derive;
 
 mod adapters;
 mod core;
-mod infrastructure;
+pub(crate) mod infrastructure;
 mod ports;
 
 fn main() {

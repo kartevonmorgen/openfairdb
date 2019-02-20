@@ -15,7 +15,7 @@ pub const ID_LIST_SEPARATOR: char = ',';
 pub fn extract_ids(s: &str) -> Vec<String> {
     s.split(ID_LIST_SEPARATOR)
         .map(|x| x.trim().to_owned())
-        .filter(|id| id != "")
+        .filter(|id| !id.is_empty())
         .collect()
 }
 

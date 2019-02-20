@@ -1,4 +1,6 @@
-use super::{entities::*, error::RepoError};
+use super::{entities::*, error::RepoError, util::geo::MapBbox};
+
+use failure::Fallible;
 use std::result;
 
 type Result<T> = result::Result<T, RepoError>;
@@ -10,22 +12,6 @@ pub trait EntryGateway {
     fn all_entries(&self) -> Result<Vec<Entry>>;
     fn update_entry(&mut self, _: &Entry) -> Result<()>;
     fn import_multiple_entries(&mut self, _: &[Entry]) -> Result<()>;
-}
-
-#[cfg_attr(rustfmt, rustfmt_skip)]
-#[derive(Debug, Clone)]
-pub struct EntryIndexQuery {
-    pub bbox       : Option<Bbox>,
-    pub text       : Option<String>,
-    pub categories : Vec<String>,
-    pub tags       : Vec<String>,
-}
-
-pub trait EntryIndex {
-    fn add_or_update_entry(&mut self, _: &Entry) -> Result<()>;
-    fn remove_entry_by_id(&mut self, _: &str) -> Result<()>;
-
-    fn query_entries(&self, _: &EntryIndexQuery) -> Result<Vec<Entry>>;
 }
 
 pub trait EventGateway {
@@ -76,4 +62,23 @@ pub trait Db:
     fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>>;
 
     fn delete_bbox_subscription(&mut self, _: &str) -> Result<()>;
+}
+
+#[cfg_attr(rustfmt, rustfmt_skip)]
+#[derive(Debug, Clone)]
+pub struct EntryIndexQuery {
+    pub bbox       : Option<MapBbox>,
+    pub text       : Option<String>,
+    pub categories : Vec<String>,
+    pub tags       : Vec<String>,
+}
+
+pub trait EntryIndex {
+    fn query_entries(&self, entries: &EntryGateway, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<Entry>>;
+}
+
+pub trait EntryIndexer: EntryIndex {
+    fn add_or_update_entry(&mut self, entry: &Entry) -> Fallible<()>;
+    fn remove_entry_by_id(&mut self, id: &str) -> Fallible<()>;
+    fn flush(&mut self) -> Fallible<()>;
 }

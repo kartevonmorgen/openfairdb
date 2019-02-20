@@ -1,4 +1,4 @@
-use super::web::{self, sqlite::create_connection_pool};
+use super::web::{self, sqlite::create_connection_pool, tantivy::create_search_engine};
 use crate::core::prelude::*;
 use crate::infrastructure::osm;
 use clap::{App, Arg, SubCommand};
@@ -72,6 +72,8 @@ pub fn run() {
     };
     let pool = create_connection_pool(&db_url).unwrap();
 
+    let search_engine = create_search_engine().unwrap();
+
     match matches.subcommand() {
         ("osm", Some(osm_matches)) => match osm_matches.subcommand() {
             ("import", Some(import_matches)) => {
@@ -94,7 +96,7 @@ pub fn run() {
                 info!("Updating all event locations...");
                 update_event_locations(&mut *pool.get().unwrap()).unwrap();
             }
-            web::run(pool, matches.is_present("enable-cors"));
+            web::run(pool, search_engine, matches.is_present("enable-cors"));
         }
     }
 }

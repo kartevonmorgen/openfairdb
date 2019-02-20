@@ -123,3 +123,9 @@ quick_error! {
         }
     }
 }
+
+impl From<failure::Error> for RepoError {
+    fn from(from: failure::Error) -> Self {
+        RepoError::Other(Box::new(from.compat()))
+    }
+}

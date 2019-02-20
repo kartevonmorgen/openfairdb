@@ -1,4 +1,4 @@
-use crate::core::{prelude::*, util::sort::Rated};
+use crate::core::{prelude::*, util::sort::Rated, db::EntryIndexer};
 use crate::infrastructure::error::AppError;
 use diesel::r2d2::{ManageConnection, Pool};
 use rocket::{config::Config, Rocket};
@@ -16,12 +16,26 @@ pub mod api;
 #[cfg(test)]
 mod mockdb;
 pub mod sqlite;
+pub mod tantivy;
 #[cfg(test)]
 pub use self::api::tests;
 mod guards;
 mod util;
 
 type Result<T> = result::Result<Json<T>, AppError>;
+
+fn index_all_entries<D: Db>(db: &D, entry_indexer: &mut dyn EntryIndexer) -> Result<()> {
+    let entries = db.all_entries()?;
+    for entry in entries {
+        if let Err(err) = entry_indexer.add_or_update_entry(&entry) {
+            error!("Failed to index entry {:?}: {}", entry, err);
+        }
+    }
+    if let Err(err) = entry_indexer.flush() {
+        error!("Failed to build entry index: {}", err);
+    }
+    Ok(Json(()))
+}
 
 fn calculate_all_ratings<D: Db>(db: &D) -> Result<()> {
     let entries = db.all_entries()?;
@@ -47,10 +61,13 @@ fn calculate_rating_for_entry<D: Db>(db: &D, e_id: &str) -> Result<()> {
     Ok(Json(()))
 }
 
-fn rocket_instance<T: ManageConnection>(pool: Pool<T>, cfg: Option<Config>) -> Rocket
+fn rocket_instance<T: ManageConnection>(pool: Pool<T>, mut search_engine: tantivy::SearchEngine, cfg: Option<Config>) -> Rocket
 where
     <T as ManageConnection>::Connection: Db,
 {
+    info!("Indexing all entries...");
+    index_all_entries(&*pool.get().unwrap(), &mut search_engine).unwrap();
+
     info!("Calculating the average rating of all entries...");
     calculate_all_ratings(&*pool.get().unwrap()).unwrap();
 
@@ -59,10 +76,10 @@ where
         Some(cfg) => rocket::custom(cfg),
         None => rocket::ignite(),
     };
-    r.manage(pool).mount("/", api::routes())
+    r.manage(pool).manage(search_engine).mount("/", api::routes())
 }
 
-pub fn run<T: ManageConnection>(pool: Pool<T>, enable_cors: bool)
+pub fn run<T: ManageConnection>(pool: Pool<T>, search_engine: tantivy::SearchEngine, enable_cors: bool)
 where
     <T as ManageConnection>::Connection: Db,
 {
@@ -73,5 +90,5 @@ where
         );
     }
 
-    rocket_instance(pool, None).launch();
+    rocket_instance(pool, search_engine, None).launch();
 }

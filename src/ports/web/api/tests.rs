@@ -3,7 +3,7 @@ use crate::{adapters::json, core::usecases as usecase, test::Bencher};
 use pwhash::bcrypt;
 
 pub mod prelude {
-    use super::super::super::{rocket_instance, sqlite};
+    use super::super::super::{rocket_instance, sqlite, tantivy};
     use rocket::{
         config::{Config, Environment},
         logger::LoggingLevel,
@@ -26,9 +26,24 @@ pub mod prelude {
         let uuid = Uuid::new_v4().to_simple_ref().to_string();
         fs::create_dir_all("test-dbs").unwrap();
         let pool = sqlite::create_connection_pool(&format!("./test-dbs/{}", uuid)).unwrap();
-        let rocket = rocket_instance(pool.clone(), Some(cfg));
+        let search_engine = tantivy::create_search_engine().unwrap();
+        let rocket = rocket_instance(pool.clone(), search_engine, Some(cfg));
         let client = Client::new(rocket).unwrap();
         (client, pool)
+    }
+
+    pub fn setup2() -> (Client, sqlite::DbConn, tantivy::SearchEngine) {
+        let cfg = Config::build(Environment::Development)
+            .log_level(LoggingLevel::Debug)
+            .finalize()
+            .unwrap();
+        let uuid = Uuid::new_v4().to_simple_ref().to_string();
+        fs::create_dir_all("test-dbs").unwrap();
+        let pool = sqlite::create_connection_pool(&format!("./test-dbs/{}", uuid)).unwrap();
+        let search_engine = tantivy::create_search_engine().unwrap();
+        let rocket = rocket_instance(pool.clone(), search_engine.clone(), Some(cfg));
+        let client = Client::new(rocket).unwrap();
+        (client, sqlite::DbConn(pool.get().unwrap()), search_engine)
     }
 
     pub fn test_json(r: &Response) {
@@ -241,90 +256,104 @@ fn get_multiple_entries() {
         .any(|x| *x == json::Entry::from_entry_with_ratings(two.clone(), vec![])));
 }
 
+fn default_new_entry() -> usecases::NewEntry {
+    usecases::NewEntry {
+        title: Default::default(),
+        description: Default::default(),
+        categories: Default::default(),
+        email: None,
+        telephone: None,
+        lat: Default::default(),
+        lng: Default::default(),
+        street: None,
+        zip: None,
+        city: None,
+        country: None,
+        tags: Default::default(),
+        homepage: None,
+        license: "CC0-1.0".into(),
+        image_url: None,
+        image_link_url: None,
+    }
+}
+
+fn new_entry_with_category(category: &str, latlng: f64) -> usecases::NewEntry {
+    usecases::NewEntry {
+        categories: vec![category.into()],
+        lat: latlng,
+        lng: latlng,
+        ..default_new_entry()
+    }
+}
+
 #[test]
 fn search_with_categories() {
     let entries = vec![
-        Entry::build().id("a").categories(vec!["foo"]).finish(),
-        Entry::build().id("b").categories(vec!["foo"]).finish(),
-        Entry::build().id("c").categories(vec!["bar"]).finish(),
+        new_entry_with_category("foo", 1.0),
+        new_entry_with_category("foo", 2.0),
+        new_entry_with_category("bar", 3.0),
     ];
-    let (client, db) = setup();
-    let mut conn = db.get().unwrap();
-    conn.create_category_if_it_does_not_exist(&Category {
+    let (client, mut db, mut search_engine) = setup2();
+    db.create_category_if_it_does_not_exist(&Category {
         id: "foo".into(),
         created: 0,
         version: 0,
         name: "foo".into(),
     })
     .unwrap();
-    conn.create_category_if_it_does_not_exist(&Category {
+    db.create_category_if_it_does_not_exist(&Category {
         id: "bar".into(),
         created: 0,
         version: 0,
         name: "bar".into(),
     })
     .unwrap();
-    for e in entries {
-        conn.create_entry(e).unwrap();
-    }
+    let entry_ids: Vec<_> = entries.into_iter().map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap()).collect();
     let req = client.get("/search?bbox=-10,-10,10,10&categories=foo");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains("\"b\""));
-    assert!(body_str.contains("\"a\""));
-    assert!(!body_str.contains("\"c\""));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
 
     let req = client.get("/search?bbox=-10,-10,10,10&categories=bar");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains("\"b\""));
-    assert!(!body_str.contains("\"a\""));
-    assert!(body_str.contains("\"c\""));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+}
 
-    let req = client.get("/search?bbox=-10,-10,10,10");
-    let mut response = req.dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains("\"b\""));
-    assert!(body_str.contains("\"a\""));
-    assert!(body_str.contains("\"c\""));
+fn new_entry_with_text(title: &str, description: &str, latlng: f64) -> usecases::NewEntry {
+    usecases::NewEntry {
+        title: title.into(),
+        description: description.into(),
+        lat: latlng,
+        lng: latlng,
+        ..default_new_entry()
+    }
 }
 
 #[test]
 fn search_with_text() {
     let entries = vec![
-        Entry::build()
-            .title("Foo")
-            .description("bla")
-            .id("a")
-            .finish(),
-        Entry::build()
-            .title("bar")
-            .description("foo")
-            .id("b")
-            .finish(),
-        Entry::build()
-            .title("baZ")
-            .description("blub")
-            .id("c")
-            .finish(),
+        new_entry_with_text("Foo", "bla", 1.0),
+        new_entry_with_text("bar", "foo", 2.0),
+        new_entry_with_text("baZ", "blub", 3.0),
     ];
-    let (client, db) = setup();
-    let mut conn = db.get().unwrap();
-    for e in entries {
-        conn.create_entry(e).unwrap();
-    }
+    let (client, mut db, mut search_engine) = setup2();
+    let entry_ids: Vec<_> = entries.into_iter().map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap()).collect();
     let req = client.get("/search?bbox=-10,-10,10,10&text=Foo");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains("\"a\""));
-    assert!(body_str.contains("\"b\""));
-    assert!(!body_str.contains("\"c\""));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
 #[ignore]
@@ -345,200 +374,300 @@ fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
 #[test]
 fn search_with_tags() {
     let entries = vec![
-        Entry::build().id("a").categories(vec!["foo"]).finish(),
-        Entry::build()
-            .id("b")
-            .tags(vec!["bla-blubb", "foo-bar"])
-            .categories(vec!["foo"])
-            .finish(),
-        Entry::build()
-            .id("c")
-            .tags(vec!["foo-bar"])
-            .categories(vec!["foo"])
-            .finish(),
+        usecases::NewEntry {
+            categories: vec!["foo".to_string()],
+            ..default_new_entry()
+        },
+        usecases::NewEntry {
+            categories: vec!["foo".to_string()],
+            tags: vec!["bla-blubb".to_string(), "foo-bar".to_string()],
+            ..default_new_entry()
+        },
+        usecases::NewEntry {
+            categories: vec!["foo".to_string()],
+            tags: vec!["foo-bar".to_string()],
+            ..default_new_entry()
+        },
     ];
-    let (client, db) = setup();
-    let mut conn = db.get().unwrap();
-    conn.create_category_if_it_does_not_exist(&Category {
+    let (client, mut db, mut search_engine) = setup2();
+    db.create_category_if_it_does_not_exist(&Category {
         id: "foo".into(),
         created: 0,
         version: 0,
         name: "foo".into(),
     })
     .unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag {
+    db.create_tag_if_it_does_not_exist(&Tag {
         id: "foo-bar".into(),
     })
     .unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag {
+    db.create_tag_if_it_does_not_exist(&Tag {
         id: "bla-blubb".into(),
     })
     .unwrap();
-    for e in entries {
-        conn.create_entry(e).unwrap();
-    }
+    let entry_ids: Vec<_> = entries.into_iter().map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap()).collect();
     let req = client.get("/search?bbox=-10,-10,10,10&tags=bla-blubb");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(r#""visible":[{"id":"b","lat":0.0,"lng":0.0}]"#,));
+    assert!(body_str.contains(&format!("\"visible\":[{{\"id\":\"{}\",\"lat\":0.0,\"lng\":0.0}}]", entry_ids[1])));
 
     let req = client.get("/search?bbox=-10,-10,10,10&tags=foo-bar");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(r#"{"id":"b","#));
-    assert!(body_str.contains(r#"{"id":"c","#));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
 #[test]
 fn search_with_uppercase_tags() {
     let entries = vec![
-        Entry::build().tags(vec!["foo"]).id("a").finish(),
-        Entry::build().tags(vec!["bar"]).id("b").finish(),
-        Entry::build().tags(vec!["baz"]).id("c").finish(),
+        usecases::NewEntry {
+            tags: vec!["fOO".to_string()],
+            ..default_new_entry()
+        },
+        usecases::NewEntry {
+            tags: vec!["fooo".to_string()],
+            ..default_new_entry()
+        },
+        usecases::NewEntry {
+            tags: vec!["Foo".to_string()],
+            ..default_new_entry()
+        },
     ];
-    let (client, db) = setup();
-    let mut conn = db.get().unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag { id: "foo".into() })
+    let (client, mut db, mut search_engine) = setup2();
+    db.create_tag_if_it_does_not_exist(&Tag { id: "foo".into() })
         .unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag { id: "bar".into() })
+    db.create_tag_if_it_does_not_exist(&Tag { id: "bar".into() })
         .unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag { id: "baz".into() })
+    db.create_tag_if_it_does_not_exist(&Tag { id: "baz".into() })
         .unwrap();
-    for e in entries {
-        conn.create_entry(e).unwrap();
-    }
+    let entry_ids: Vec<_> = entries.into_iter().map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap()).collect();
     let req = client.get("/search?bbox=-10,-10,10,10&tags=Foo");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains("\"a\""));
-    assert!(!body_str.contains("\"b\""));
-    assert!(!body_str.contains("\"c\""));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
 #[test]
 fn search_with_hashtag() {
     let entries = vec![
-        Entry::build().id("a").finish(),
-        Entry::build()
-            .id("b")
-            .tags(vec!["bla-blubb", "foo-bar"])
-            .finish(),
-        Entry::build().id("c").tags(vec!["foo-bar"]).finish(),
+        usecases::NewEntry {
+            ..default_new_entry()
+        },
+        usecases::NewEntry {
+            tags: vec!["bla-blubb".to_string(), "foo-bar".to_string()],
+            ..default_new_entry()
+        },
+        usecases::NewEntry {
+            tags: vec!["foo-bar".to_string()],
+            ..default_new_entry()
+        },
     ];
-    let (client, db) = setup();
-    let mut conn = db.get().unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag {
+    let (client, mut db, mut search_engine) = setup2();
+    db.create_tag_if_it_does_not_exist(&Tag {
         id: "bla-blubb".into(),
     })
     .unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag {
+    db.create_tag_if_it_does_not_exist(&Tag {
         id: "foo-bar".into(),
     })
     .unwrap();
-    for e in entries {
-        conn.create_entry(e).unwrap();
-    }
+    let entry_ids: Vec<_> = entries.into_iter().map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap()).collect();
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23foo-bar");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str
-        .contains(r#""visible":[{"id":"b","lat":0.0,"lng":0.0},{"id":"c","lat":0.0,"lng":0.0}]"#,));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
 #[test]
 fn search_with_two_hashtags() {
     let entries = vec![
-        Entry::build().id("a").finish(),
-        Entry::build()
-            .tags(vec!["bla-blubb", "foo-bar"])
-            .id("b")
-            .finish(),
-        Entry::build().tags(vec!["foo-bar"]).id("c").finish(),
+        usecases::NewEntry {
+            ..default_new_entry()
+        },
+        usecases::NewEntry {
+            tags: vec!["bla-blubb".to_string(), "foo-bar".to_string()],
+            ..default_new_entry()
+        },
+        usecases::NewEntry {
+            tags: vec!["foo-bar".to_string()],
+            ..default_new_entry()
+        },
     ];
-    let (client, db) = setup();
-    let mut conn = db.get().unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag {
+    let (client, mut db, mut search_engine) = setup2();
+    db.create_tag_if_it_does_not_exist(&Tag {
         id: "bla-blubb".into(),
     })
     .unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag {
+    db.create_tag_if_it_does_not_exist(&Tag {
         id: "foo-bar".into(),
     })
     .unwrap();
-    for e in entries {
-        conn.create_entry(e).unwrap();
-    }
+    let entry_ids: Vec<_> = entries.into_iter().map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap()).collect();
+
+    // exact match
+    let req = client.get("/search?bbox=-10,-10,10,10&text=%23bla-blubb%20%23foo-bar&limit=1");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+
+    // partial matches
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23bla-blubb%20%23foo-bar");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(r#""visible":[{"id":"b","lat":0.0,"lng":0.0}]"#,));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
 #[test]
 fn search_with_commata() {
     let entries = vec![
-        Entry::build().id("a").finish(),
-        Entry::build().tags(vec!["eins", "zwei"]).id("b").finish(),
-        Entry::build().tags(vec!["eins"]).id("c").finish(),
-        Entry::build().tags(vec!["eins", "zwei"]).id("d").finish(),
+        usecases::NewEntry {
+            ..default_new_entry()
+        },
+        usecases::NewEntry {
+            tags: vec!["eins".to_string(), "zwei".to_string()],
+            ..default_new_entry()
+        },
+        usecases::NewEntry {
+            tags: vec!["eins".to_string()],
+            ..default_new_entry()
+        },
+        usecases::NewEntry {
+            tags: vec!["eins".to_string(), "zwei".to_string()],
+            ..default_new_entry()
+        },
     ];
-    let (client, db) = setup();
-    let mut conn = db.get().unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag { id: "eins".into() })
-        .unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag { id: "zwei".into() })
-        .unwrap();
-    for e in entries {
-        conn.create_entry(e).unwrap();
-    }
+    let (client, mut db, mut search_engine) = setup2();
+    db.create_tag_if_it_does_not_exist(&Tag {
+        id: "eins".into(),
+    })
+    .unwrap();
+    db.create_tag_if_it_does_not_exist(&Tag {
+        id: "zwei".into(),
+    })
+    .unwrap();
+    let entry_ids: Vec<_> = entries.into_iter().map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap()).collect();
+
+    // exact matches
+    let req = client.get("/search?bbox=-10,-10,10,10&text=%23eins%2C%20%23zwei&limit=2");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[3])));
+
+    // partial matches
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23eins%2C%20%23zwei");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str
-        .contains(r#""visible":[{"id":"b","lat":0.0,"lng":0.0},{"id":"d","lat":0.0,"lng":0.0}]"#,));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[3])));
 }
 
 #[test]
 fn search_without_specifying_hashtag_symbol() {
     let entries = vec![
-        Entry::build().id("a").title("foo").finish(),
-        Entry::build()
-            .id("b")
-            .tags(vec!["bla-blubb", "foo-bar"])
-            .title("foo")
-            .finish(),
-        Entry::build()
-            .id("c")
-            .tags(vec!["foo-bar"])
-            .title("foo")
-            .finish(),
+        usecases::NewEntry {
+            title: "foo".into(),
+            ..default_new_entry()
+        },
+        usecases::NewEntry {
+            title: "foo".into(),
+            tags: vec!["bla-blubb".to_string(), "foo-bar".to_string()],
+            ..default_new_entry()
+        },
+        usecases::NewEntry {
+            title: "foo".into(),
+            tags: vec!["foo-bar".to_string()],
+            ..default_new_entry()
+        },
     ];
-    let (client, db) = setup();
-    let mut conn = db.get().unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag {
+    let (client, mut db, mut search_engine) = setup2();
+    db.create_tag_if_it_does_not_exist(&Tag {
         id: "bla-blubb".into(),
     })
     .unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag {
+    db.create_tag_if_it_does_not_exist(&Tag {
         id: "foo-bar".into(),
     })
     .unwrap();
-    for e in entries {
-        conn.create_entry(e).unwrap();
-    }
+    let entry_ids: Vec<_> = entries.into_iter().map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap()).collect();
+
+    let mut response = client
+        .get("/search?bbox=-10,-10,10,10&text=foo")
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+
+    let mut response = client
+        .get("/search?bbox=-10,-10,10,10&text=%23foo")
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+
+    // Text "foo-bar" is tokenized into "foo" and "bar"
+    let mut response = client
+        .get("/search?bbox=-10,-10,10,10&text=foo-bar")
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+
+    let mut response = client
+        .get("/search?bbox=-10,-10,10,10&text=%23foo-bar")
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+
+    let mut response = client
+        .get("/search?bbox=-10,-10,10,10&text=%23bla-blubb")
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+
     let mut response = client
         .get("/search?bbox=-10,-10,10,10&text=bla-blubb")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(r#""visible":[{"id":"b","lat":0.0,"lng":0.0}]"#,));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
 #[test]

@@ -402,11 +402,11 @@ impl MapBbox {
             return false;
         }
         if self.sw.lng() <= self.ne.lng() {
-            // regular
+            // regular (inclusive)
             pt.lng() >= self.sw.lng() && pt.lng() <= self.ne.lng()
         } else {
-            // wrap around longitude boundary +180° -> -180°
-            pt.lng() >= self.sw.lng() || pt.lng() <= self.ne.lng()
+            // inverse (exclusive)
+            !(pt.lng() > self.ne.lng() && pt.lng() < self.sw.lng())
         }
     }
 }
@@ -438,7 +438,6 @@ impl std::str::FromStr for MapBbox {
 // TODO: Replace legacy function
 pub fn extract_bbox(s: &str) -> Result<Bbox, ParameterError> {
     s.parse::<MapBbox>().map(|bbox| {
-        println!("{}", bbox);
         Bbox {
             south_west: Coordinate {
                 lat: bbox.south_west().lat().to_deg(),

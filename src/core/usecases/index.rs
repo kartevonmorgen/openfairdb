@@ -1,41 +1,47 @@
 use crate::core::prelude::*;
 use crate::core::util::filter;
 
-type Result<T> = std::result::Result<T, RepoError>;
+use failure::{format_err, Fallible};
 
-pub struct DbEntryIndex<'a, D: Db> {
-    db: &'a D,
-}
-
-impl<'a, D: Db> DbEntryIndex<'a, D> {
-    pub fn new(db: &'a D) -> Self {
-        Self { db }
-    }
-}
-
-impl<'a, D: Db> EntryIndex for DbEntryIndex<'a, D> {
-    fn add_or_update_entry(&mut self, entry: &Entry) -> Result<()> {
+impl<D> EntryIndexer for D where D: Db {
+    fn add_or_update_entry(&mut self, entry: &Entry) -> Fallible<()> {
         // Nothing to do, the entry has already been stored
         // in the database.
         //debug_assert_eq!(Ok(entry), self.db.get_entry(&entry.id).as_ref());
-        debug_assert!(entry == &self.db.get_entry(&entry.id).unwrap());
+        debug_assert!(entry == &self.get_entry(&entry.id).unwrap());
         Ok(())
     }
 
-    fn remove_entry_by_id(&mut self, id: &str) -> Result<()> {
+    fn remove_entry_by_id(&mut self, id: &str) -> Fallible<()> {
         // Nothing to do, the entry has already been stored
         // in the database.
         //debug_assert_eq!(Err(RepoError::NotFound), self.db.get_entry(&id));
-        debug_assert!(self.db.get_entry(&id).is_err());
+        debug_assert!(self.get_entry(&id).is_err());
         Ok(())
     }
 
-    fn query_entries(&self, query: &EntryIndexQuery) -> Result<Vec<Entry>> {
+    fn flush(&mut self) -> Fallible<()> {
+        Ok(())
+    }
+}
+
+impl<D> EntryIndex for D where D: Db {
+    fn query_entries(&self, _entries: &EntryGateway, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<Entry>> {
         let mut entries = if let Some(ref bbox) = query.bbox {
-            self.db.get_entries_by_bbox(bbox)?
+            let bbox = Bbox {
+                south_west: Coordinate {
+                    lat: bbox.south_west().lat().to_deg(),
+                    lng: bbox.south_west().lng().to_deg(),
+                },
+                north_east: Coordinate {
+                    lat: bbox.north_east().lat().to_deg(),
+                    lng: bbox.north_east().lng().to_deg(),
+                },
+            };
+            self.get_entries_by_bbox(&bbox)
         } else {
-            self.db.all_entries()?
-        };
+            self.all_entries()
+        }.map_err(|err| format_err!("{}", err))?;
 
         if !query.categories.is_empty() {
             entries = entries
@@ -46,6 +52,7 @@ impl<'a, D: Db> EntryIndex for DbEntryIndex<'a, D> {
 
         entries = entries
             .into_iter()
+            .take(limit)
             .filter(&*filter::entries_by_tags_or_search_text(
                 query.text.as_ref().map(String::as_str).unwrap_or(""), &query.tags,
             ))

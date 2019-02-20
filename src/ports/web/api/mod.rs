@@ -1,4 +1,4 @@
-use super::{guards::*, sqlite::DbConn, util};
+use super::{guards::*, sqlite::DbConn, tantivy::SearchEngine, util};
 use crate::{
     adapters::{self, json, user_communication},
     core::{
@@ -179,9 +179,9 @@ fn get_bbox_subscriptions(db: DbConn, user: Login) -> Result<Vec<json::BboxSubsc
 }
 
 #[post("/entries", format = "application/json", data = "<e>")]
-fn post_entry(mut db: DbConn, e: Json<usecases::NewEntry>) -> Result<String> {
+fn post_entry(mut db: DbConn, mut search_engine: SearchEngine, e: Json<usecases::NewEntry>) -> Result<String> {
     let e = e.into_inner();
-    let id = usecases::create_new_entry(&mut *db, e.clone())?;
+    let id = usecases::create_new_entry(&mut *db, Some(&mut search_engine), e.clone())?;
     let email_addresses = usecases::email_addresses_by_coordinate(&mut *db, &e.lat, &e.lng)?;
     let all_categories = db.all_categories()?;
     util::notify_create_entry(&email_addresses, &e, &id, all_categories);
@@ -189,9 +189,9 @@ fn post_entry(mut db: DbConn, e: Json<usecases::NewEntry>) -> Result<String> {
 }
 
 #[put("/entries/<id>", format = "application/json", data = "<e>")]
-fn put_entry(mut db: DbConn, id: String, e: Json<usecases::UpdateEntry>) -> Result<String> {
+fn put_entry(mut db: DbConn, mut search_engine: SearchEngine, id: String, e: Json<usecases::UpdateEntry>) -> Result<String> {
     let e = e.into_inner();
-    usecases::update_entry(&mut *db, e.clone())?;
+    usecases::update_entry(&mut *db, Some(&mut search_engine), e.clone())?;
     let email_addresses = usecases::email_addresses_by_coordinate(&mut *db, &e.lat, &e.lng)?;
     let all_categories = db.all_categories()?;
     util::notify_update_entry(&email_addresses, &e, all_categories);

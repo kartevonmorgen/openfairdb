@@ -24,7 +24,7 @@ pub struct UpdateEntry {
     pub image_link_url : Option<String>,
 }
 
-pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
+pub fn update_entry<D: Db>(db: &mut D, mut indexer: Option<&mut EntryIndexer>, e: UpdateEntry) -> Result<()> {
     let old: Entry = db.get_entry(&e.id)?;
     if (old.version + 1) != e.version {
         return Err(Error::Repo(RepoError::InvalidVersion));
@@ -85,6 +85,10 @@ pub fn update_entry<D: Db>(db: &mut D, e: UpdateEntry) -> Result<()> {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
     db.update_entry(&updated_entry)?;
+    if let Some(ref mut indexer) = indexer {
+        indexer.add_or_update_entry(&updated_entry).map_err(RepoError::from)?;
+        indexer.flush().map_err(RepoError::from)?;
+    }
     Ok(())
 }
 
@@ -131,7 +135,7 @@ mod tests {
         let mut mock_db = MockDb::new();
         mock_db.entries = vec![old];
         let now = Utc::now();
-        assert!(update_entry(&mut mock_db, new).is_ok());
+        assert!(update_entry(&mut mock_db, None, new).is_ok());
         assert_eq!(mock_db.entries.len(), 1);
         let x = &mock_db.entries[0];
         assert_eq!(
@@ -185,7 +189,7 @@ mod tests {
         };
         let mut mock_db = MockDb::new();
         mock_db.entries = vec![old];
-        let result = update_entry(&mut mock_db, new);
+        let result = update_entry(&mut mock_db, None, new);
         assert!(result.is_err());
         match result.err().unwrap() {
             Error::Repo(err) => match err {
@@ -227,7 +231,7 @@ mod tests {
         };
         let mut mock_db = MockDb::new();
         mock_db.entries = vec![];
-        let result = update_entry(&mut mock_db, new);
+        let result = update_entry(&mut mock_db, None, new);
         assert!(result.is_err());
         match result.err().unwrap() {
             Error::Repo(err) => match err {
@@ -275,7 +279,7 @@ mod tests {
         let mut mock_db = MockDb::new();
         mock_db.entries = vec![old];
         mock_db.tags = vec![Tag { id: "bio".into() }, Tag { id: "fair".into() }];
-        assert!(update_entry(&mut mock_db, new).is_ok());
+        assert!(update_entry(&mut mock_db, None, new).is_ok());
         let e = mock_db.get_entry(&id).unwrap();
         assert_eq!(e.tags, vec!["vegan"]);
         assert_eq!(mock_db.tags.len(), 3);
