@@ -4,15 +4,20 @@ use crate::core::db::{EntryIndex, EntryIndexQuery, EntryIndexer, EntryGateway};
 use crate::core::entities::Entry;
 
 use failure::Fallible;
-use std::sync::{Arc, Mutex};
+use std::{sync::{Arc, Mutex}, path::Path};
 use rocket::request::{self, FromRequest};
 use rocket::{Outcome, Request, State};
 
 #[derive(Clone)]
 pub struct SearchEngine(Arc<Mutex<Box<dyn EntryIndexer + Send>>>);
 
-pub fn create_search_engine() -> Result<SearchEngine, AppError> {
-    let entry_index = TantivyEntryIndex::create().map_err(|err| AppError::Other(Box::new(err.compat())))?;
+pub fn create_search_engine_in_ram() -> Result<SearchEngine, AppError> {
+    let entry_index = TantivyEntryIndex::create_in_ram().map_err(|err| AppError::Other(Box::new(err.compat())))?;
+    Ok(SearchEngine(Arc::new(Mutex::new(Box::new(entry_index)))))
+}
+
+pub fn create_search_engine<P: AsRef<Path>>(path: Option<P>) -> Result<SearchEngine, AppError> {
+    let entry_index = TantivyEntryIndex::create(path).map_err(|err| AppError::Other(Box::new(err.compat())))?;
     Ok(SearchEngine(Arc::new(Mutex::new(Box::new(entry_index)))))
 }
 

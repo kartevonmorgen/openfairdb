@@ -1,10 +1,11 @@
 use crate::core::{entities::Entry, db::{EntryGateway, EntryIndexer, EntryIndex, EntryIndexQuery}, util::geo::{LatCoord, LngCoord}};
 
 use failure::Fallible;
-//use std::path::Path;
-//use tempdir::TempDir;
+use std::path::Path;
 use std::ops::Bound;
 use tantivy::{Index, IndexWriter, Document, DocAddress, Score, tokenizer::{Tokenizer, LowerCaser, RawTokenizer}, query::{Occur, Query, TermQuery, RangeQuery, BooleanQuery, QueryParser}, collector::{Count, TopDocs}, schema::*};
+
+const OVERALL_INDEX_HEAP_SIZE_IN_BYTES: usize = 50_000_000;
 
 struct TantivyEntryFields {
     id: Field,
@@ -23,58 +24,90 @@ pub(crate) struct TantivyEntryIndex {
     text_query_parser: QueryParser,
 }
 
-impl TantivyEntryIndex {
-    pub fn create() -> Fallible<Self> {
-        let id_options = TextOptions::default()
-            .set_indexing_options(
-                TextFieldIndexing::default()
-                    .set_tokenizer("id")
-                    .set_index_option(IndexRecordOption::Basic)
-            )
-            .set_stored();
-        let category_options = TextOptions::default()
-            .set_indexing_options(
-                TextFieldIndexing::default()
-                    .set_tokenizer("id")
-                    .set_index_option(IndexRecordOption::WithFreqs)
-            );
-        let tag_options = TextOptions::default()
-            .set_indexing_options(
-                TextFieldIndexing::default()
-                    .set_tokenizer("tag")
-                    .set_index_option(IndexRecordOption::WithFreqs)
-            );
-        let text_options = TextOptions::default()
-            .set_indexing_options(
-                TextFieldIndexing::default()
-                    .set_index_option(IndexRecordOption::WithFreqsAndPositions)
-            );
-        let mut schema_builder = SchemaBuilder::default();
-        let id = schema_builder.add_text_field("id", id_options);
-        let lat = schema_builder.add_i64_field("lat", INT_INDEXED);
-        let lng = schema_builder.add_i64_field("lng", INT_INDEXED);
-        let title = schema_builder.add_text_field("title", text_options.clone());
-        let description = schema_builder.add_text_field("desc", text_options);
-        let category = schema_builder.add_text_field("cat", category_options.clone());
-        let tag = schema_builder.add_text_field("tag", tag_options);
-        let schema = schema_builder.build();
-        // TODO: Create index on file system, either persistent or temporary
-        let index = Index::create_in_ram(schema.clone());
-        index.tokenizers().register("id", RawTokenizer);
-        index.tokenizers().register("tag", RawTokenizer.filter(LowerCaser));
+const ID_TOKENIZER: &str = "raw";
+const TAG_TOKENIZER: &str = "tag";
+const TEXT_TOKENIZER: &str = "default";
 
-        let writer = index.writer(50_000_000)?;
-        let text_query_parser = QueryParser::for_index(&index, vec![title, description]);
+fn build_schema() -> (Schema, TantivyEntryFields) {
+    let id_options = TextOptions::default()
+        .set_indexing_options(
+            TextFieldIndexing::default()
+                .set_tokenizer(ID_TOKENIZER)
+                .set_index_option(IndexRecordOption::Basic)
+        )
+        .set_stored();
+    let category_options = TextOptions::default()
+        .set_indexing_options(
+            TextFieldIndexing::default()
+                .set_tokenizer(ID_TOKENIZER)
+                .set_index_option(IndexRecordOption::WithFreqs)
+        );
+    let tag_options = TextOptions::default()
+        .set_indexing_options(
+            TextFieldIndexing::default()
+                .set_tokenizer(TAG_TOKENIZER)
+                .set_index_option(IndexRecordOption::WithFreqs)
+        );
+    let text_options = TextOptions::default()
+        .set_indexing_options(
+            TextFieldIndexing::default()
+                .set_tokenizer(TEXT_TOKENIZER)
+                .set_index_option(IndexRecordOption::WithFreqsAndPositions)
+        );
+    let mut schema_builder = SchemaBuilder::default();
+    let id = schema_builder.add_text_field("id", id_options);
+    let lat = schema_builder.add_i64_field("lat", INT_INDEXED);
+    let lng = schema_builder.add_i64_field("lng", INT_INDEXED);
+    let title = schema_builder.add_text_field("title", text_options.clone());
+    let description = schema_builder.add_text_field("desc", text_options);
+    let category = schema_builder.add_text_field("cat", category_options.clone());
+    let tag = schema_builder.add_text_field("tag", tag_options);
+    let schema = schema_builder.build();
+    let fields = TantivyEntryFields {
+        id,
+        lat,
+        lng,
+        title,
+        description,
+        category,
+        tag,
+    };
+    (schema, fields)
+}
+
+fn register_tokenizers(index: &Index) {
+    // Predefined tokenizers
+    debug_assert!(index.tokenizers().get(ID_TOKENIZER).is_some());
+    debug_assert!(index.tokenizers().get(TEXT_TOKENIZER).is_some());
+    // Custom tokenizer(s)
+    debug_assert!(index.tokenizers().get(TAG_TOKENIZER).is_none());
+    index.tokenizers().register(TAG_TOKENIZER, RawTokenizer.filter(LowerCaser));
+}
+
+impl TantivyEntryIndex {
+    pub fn create_in_ram() -> Fallible<Self> {
+        let no_path: Option<&Path> = None;
+        Self::create(no_path)
+    }
+
+    pub fn create<P: AsRef<Path>>(path: Option<P>) -> Fallible<Self> {
+        let (schema, fields) = build_schema();
+
+        // TODO: Open index from existing directory
+        let index = if let Some(path) = path {
+            info!("Creating full-text search index in directory: {}", path.as_ref().to_string_lossy());
+            Index::create_in_dir(path, schema)?
+        } else {
+            warn!("Creating full-text search index in RAM");
+            Index::create_in_ram(schema)
+        };
+
+        register_tokenizers(&index);
+
+        let writer = index.writer(OVERALL_INDEX_HEAP_SIZE_IN_BYTES)?;
+        let text_query_parser = QueryParser::for_index(&index, vec![fields.title, fields.description]);
         Ok(Self {
-            fields: TantivyEntryFields {
-                id,
-                lat,
-                lng,
-                title,
-                description,
-                category,
-                tag,
-            },
+            fields,
             index,
             writer,
             text_query_parser,

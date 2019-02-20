@@ -364,7 +364,9 @@ impl MapPoint {
         let nom = (nom1 * nom1 + nom2 * nom2).sqrt();
         let denom = lat1_sin * lat2_sin + lat1_cos * lat2_cos * dlng_cos;
 
-        Some(Distance::from_meters(MEAN_EARTH_RADIUS.to_meters() * (nom.atan2(denom)))
+        Some(Distance::from_meters(
+            MEAN_EARTH_RADIUS.to_meters() * nom.atan2(denom),
+        ))
     }
 }
 

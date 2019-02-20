@@ -26,7 +26,7 @@ pub mod prelude {
         let uuid = Uuid::new_v4().to_simple_ref().to_string();
         fs::create_dir_all("test-dbs").unwrap();
         let pool = sqlite::create_connection_pool(&format!("./test-dbs/{}", uuid)).unwrap();
-        let search_engine = tantivy::create_search_engine().unwrap();
+        let search_engine = tantivy::create_search_engine_in_ram().unwrap();
         let rocket = rocket_instance(pool.clone(), search_engine, Some(cfg));
         let client = Client::new(rocket).unwrap();
         (client, pool)
@@ -40,7 +40,7 @@ pub mod prelude {
         let uuid = Uuid::new_v4().to_simple_ref().to_string();
         fs::create_dir_all("test-dbs").unwrap();
         let pool = sqlite::create_connection_pool(&format!("./test-dbs/{}", uuid)).unwrap();
-        let search_engine = tantivy::create_search_engine().unwrap();
+        let search_engine = tantivy::create_search_engine_in_ram().unwrap();
         let rocket = rocket_instance(pool.clone(), search_engine.clone(), Some(cfg));
         let client = Client::new(rocket).unwrap();
         (client, sqlite::DbConn(pool.get().unwrap()), search_engine)

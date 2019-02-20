@@ -3,7 +3,7 @@ use crate::core::prelude::*;
 use crate::infrastructure::osm;
 use clap::{App, Arg, SubCommand};
 use dotenv::dotenv;
-use std::{env, process};
+use std::{env, process, path::Path};
 
 const DEFAULT_DB_URL: &str = "openfair.db";
 
@@ -39,6 +39,12 @@ pub fn run() {
                 .help("URL to the database"),
         )
         .arg(
+            Arg::with_name("idx-dir")
+                .long("idx-dir")
+                .value_name("INDEX_DIR")
+                .help("File system directory for the full-text search index"),
+        )
+        .arg(
             Arg::with_name("enable-cors")
                 .long("enable-cors")
                 .help("Allow requests from any origin"),
@@ -63,16 +69,14 @@ pub fn run() {
         )
         .get_matches();
 
-    let db_url = match matches.value_of("db-url") {
-        Some(db_url) => db_url.into(),
-        None => match env::var("DATABASE_URL") {
-            Ok(url) => url,
-            Err(_) => DEFAULT_DB_URL.to_string(),
-        },
-    };
+    let db_url = matches.value_of("db-url")
+        .map(ToString::to_string)
+        .unwrap_or_else(|| env::var("DATABASE_URL").unwrap_or_else(|_| DEFAULT_DB_URL.to_string()));
     let pool = create_connection_pool(&db_url).unwrap();
 
-    let search_engine = create_search_engine().unwrap();
+    let idx_dir = matches.value_of("idx-dir").map(ToString::to_string).or_else(|| env::var("INDEX_DIR").map(Option::Some).unwrap_or(None));
+    let idx_path = idx_dir.as_ref().map(|dir| Path::new(dir));
+    let search_engine = create_search_engine(idx_path).unwrap();
 
     match matches.subcommand() {
         ("osm", Some(osm_matches)) => match osm_matches.subcommand() {
