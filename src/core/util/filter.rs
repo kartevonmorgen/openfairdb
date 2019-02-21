@@ -1,25 +1,38 @@
 use super::super::entities::*;
 use super::geo::*;
 
-const BBOX_LAT_EXT: f64 = 0.02;
-const BBOX_LNG_EXT: f64 = 0.04;
+const BBOX_LAT_DEG_EXT: f64 = 0.02;
+const BBOX_LNG_DEG_EXT: f64 = 0.04;
 
 pub fn extend_bbox(bbox: &MapBbox) -> MapBbox {
     let south_west_lat_deg = LatCoord::min()
         .to_deg()
-        .max(bbox.south_west().lat().to_deg() - BBOX_LAT_EXT);
+        .max(bbox.south_west().lat().to_deg() - BBOX_LAT_DEG_EXT);
     let north_east_lat_deg = LatCoord::max()
         .to_deg()
-        .min(bbox.north_east().lat().to_deg() + BBOX_LAT_EXT);
-    let mut south_west_lng_deg = bbox.south_west().lng().to_deg() - BBOX_LNG_EXT;
+        .min(bbox.north_east().lat().to_deg() + BBOX_LAT_DEG_EXT);
+    let mut south_west_lng_deg = bbox.south_west().lng().to_deg() - BBOX_LNG_DEG_EXT;
     if south_west_lng_deg < LngCoord::min().to_deg() {
         // wrap around
         south_west_lng_deg += LngCoord::max().to_deg() - LngCoord::min().to_deg();
     }
-    let mut north_east_lng_deg = bbox.north_east().lng().to_deg() + BBOX_LNG_EXT;
+    let mut north_east_lng_deg = bbox.north_east().lng().to_deg() + BBOX_LNG_DEG_EXT;
     if north_east_lng_deg > LngCoord::max().to_deg() {
         // wrap around
         north_east_lng_deg -= LngCoord::max().to_deg() - LngCoord::min().to_deg();
+    }
+    if bbox.south_west().lng() <= bbox.north_east().lng() {
+        if south_west_lng_deg > north_east_lng_deg {
+            // overflow after wrap around (boundaries switched) -> maximize
+            south_west_lng_deg = LngCoord::min().to_deg();
+            north_east_lng_deg = LngCoord::max().to_deg();
+        }
+    } else {
+        if south_west_lng_deg < north_east_lng_deg {
+            // overflow after wrap around (boundaries switched) -> maximize
+            south_west_lng_deg = LngCoord::min().to_deg();
+            north_east_lng_deg = LngCoord::max().to_deg();
+        }
     }
     let extended_bbox = MapBbox::new(
         MapPoint::from_lat_lng_deg(south_west_lat_deg, south_west_lng_deg),
@@ -27,18 +40,6 @@ pub fn extend_bbox(bbox: &MapBbox) -> MapBbox {
     );
     debug_assert!(extended_bbox.is_valid());
     extended_bbox
-}
-
-// TODO: Remove this function after replacing Bbox with MapBbox
-pub fn map_bbox(bbox: &Bbox) -> Option<MapBbox> {
-    let sw = MapPoint::try_from_lat_lng_deg(bbox.south_west.lat, bbox.south_west.lng);
-    let ne = MapPoint::try_from_lat_lng_deg(bbox.north_east.lat, bbox.north_east.lng);
-    if let (Some(sw), Some(ne)) = (sw, ne) {
-        Some(MapBbox::new(sw, ne))
-    } else {
-        warn!("Invalid Bbox: {:?}", bbox);
-        None
-    }
 }
 
 pub trait InBBox {
@@ -342,5 +343,19 @@ mod tests {
         assert_eq!(x.len(), 2);
         assert_eq!(x[0].id, "b");
         assert_eq!(x[1].id, "d");
+    }
+
+    #[test]
+    fn extend_max_bbox() {
+        let bbox = MapBbox::new(
+            MapPoint::from_lat_lng_deg(-89.99, -179.97),
+            MapPoint::from_lat_lng_deg(89.99, 179.97),
+        );
+        let ext_bbox = extend_bbox(&bbox);
+        assert!(ext_bbox.is_valid());
+        assert_eq!(ext_bbox.south_west().lat(), LatCoord::min());
+        assert_eq!(ext_bbox.north_east().lat(), LatCoord::max());
+        assert_eq!(ext_bbox.south_west().lng(), LngCoord::min());
+        assert_eq!(ext_bbox.north_east().lng(), LngCoord::max());
     }
 }

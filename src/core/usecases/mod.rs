@@ -1,6 +1,6 @@
 use crate::core::{
     prelude::*,
-    util::{filter, geo, validate},
+    util::{geo, validate},
 };
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -28,6 +28,18 @@ pub use self::{
     delete_event::*, find_duplicates::*, index::*, login::*, query_events::*, rate_entry::*,
     search::*, update_entry::*, update_event::*,
 };
+
+// TODO: Remove this function after replacing Bbox with MapBbox
+fn map_bbox(bbox: &Bbox) -> Option<geo::MapBbox> {
+    let sw = MapPoint::try_from_lat_lng_deg(bbox.south_west.lat, bbox.south_west.lng);
+    let ne = MapPoint::try_from_lat_lng_deg(bbox.north_east.lat, bbox.north_east.lng);
+    if let (Some(sw), Some(ne)) = (sw, ne) {
+        Some(geo::MapBbox::new(sw, ne))
+    } else {
+        warn!("Invalid Bbox: {:?}", bbox);
+        None
+    }
+}
 
 pub fn get_ratings<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Rating>> {
     Ok(db
@@ -175,7 +187,7 @@ pub fn bbox_subscriptions_by_coordinate(
         .all_bbox_subscriptions()?
         .into_iter()
         .filter(|s| {
-            if let Some(bbox) = filter::map_bbox(&s.bbox) {
+            if let Some(bbox) = map_bbox(&s.bbox) {
                 let pt = geo::MapPoint::from_lat_lng_deg(x.lat, x.lng);
                 bbox.contains_point(&pt)
             } else {

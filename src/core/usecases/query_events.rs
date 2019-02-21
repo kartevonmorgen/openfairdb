@@ -4,6 +4,8 @@ use crate::core::{
 };
 use chrono::prelude::*;
 
+use super::map_bbox;
+
 pub fn query_events<D: Db>(
     db: &D,
     tags: Option<Vec<String>>,
@@ -27,7 +29,7 @@ pub fn query_events<D: Db>(
 
     if let Some(bbox) = bbox
         .as_ref()
-        .and_then(filter::map_bbox)
+        .and_then(map_bbox)
         .as_ref()
         .map(filter::extend_bbox)
     {
