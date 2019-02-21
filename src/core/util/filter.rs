@@ -65,34 +65,12 @@ impl InBBox for Event {
     }
 }
 
+#[cfg(feature = "test")]
 pub fn entries_by_category_ids<'a>(ids: &'a [String]) -> impl Fn(&Entry) -> bool + 'a {
     move |e| ids.iter().any(|c| e.categories.iter().any(|x| x == c))
 }
 
-pub fn entries_by_tags_or_search_text<'a>(
-    text: &'a str,
-    tags: &'a [String],
-) -> Box<Fn(&Entry) -> bool + 'a> {
-    if !tags.is_empty() {
-        Box::new(entries_by_tags_and_search_text(text, tags))
-    } else {
-        Box::new(entries_by_search_text(text))
-    }
-}
-
-fn entries_by_search_text<'a>(text: &'a str) -> impl Fn(&Entry) -> bool + 'a {
-    let words = to_words(text);
-    move |entry| {
-        ((!text.is_empty()
-            && words.iter().any(|word| {
-                entry.title.to_lowercase().contains(word)
-                    || entry.description.to_lowercase().contains(word)
-                    || entry.tags.iter().any(|tag| tag == word)
-            }))
-            || text.is_empty())
-    }
-}
-
+#[cfg(feature = "test")]
 fn entries_by_tags_and_search_text<'a>(
     text: &'a str,
     tags: &'a [String],
@@ -112,17 +90,43 @@ fn entries_by_tags_and_search_text<'a>(
     }
 }
 
-fn to_words(txt: &str) -> Vec<String> {
-    txt.to_lowercase()
-        .split(',')
-        .map(|x| x.to_string())
-        .collect()
+#[cfg(feature = "test")]
+pub fn entries_by_tags_or_search_text<'a>(
+    text: &'a str,
+    tags: &'a [String],
+) -> Box<Fn(&Entry) -> bool + 'a> {
+    if !tags.is_empty() {
+        Box::new(entries_by_tags_and_search_text(text, tags))
+    } else {
+        Box::new(entries_by_search_text(text))
+    }
+}
+
+#[cfg(feature = "test")]
+fn entries_by_search_text<'a>(text: &'a str) -> impl Fn(&Entry) -> bool + 'a {
+    let words = to_words(text);
+    move |entry| {
+        ((!text.is_empty()
+            && words.iter().any(|word| {
+                entry.title.to_lowercase().contains(word)
+                    || entry.description.to_lowercase().contains(word)
+                    || entry.tags.iter().any(|tag| tag == word)
+            }))
+            || text.is_empty())
+    }
 }
 
 #[cfg(test)]
 mod tests {
 
     use super::*;
+
+    fn to_words(txt: &str) -> Vec<String> {
+        txt.to_lowercase()
+            .split(',')
+            .map(|x| x.to_string())
+            .collect()
+    }
 
     #[test]
     fn is_in_bounding_box() {
