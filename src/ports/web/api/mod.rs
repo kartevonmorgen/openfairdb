@@ -236,6 +236,8 @@ struct CsvExport {
     bbox: String,
 }
 
+// TODO: CSV export should only be permitted with a valid API key!
+// https://github.com/slowtec/openfairdb/issues/147
 #[get("/export/entries.csv?<export..>")]
 fn csv_export<'a>(
     db: DbConn,
