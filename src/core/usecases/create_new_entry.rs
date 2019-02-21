@@ -26,7 +26,11 @@ pub struct NewEntry {
     pub image_link_url : Option<String>,
 }
 
-pub fn create_new_entry<D: Db>(db: &mut D, mut indexer: Option<&mut EntryIndexer>, e: NewEntry) -> Result<String> {
+pub fn create_new_entry<D: Db>(
+    db: &mut D,
+    mut indexer: Option<&mut EntryIndexer>,
+    e: NewEntry,
+) -> Result<String> {
     let NewEntry {
         title,
         description,
@@ -97,7 +101,9 @@ pub fn create_new_entry<D: Db>(db: &mut D, mut indexer: Option<&mut EntryIndexer
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
     if let Some(ref mut indexer) = indexer {
-        indexer.add_or_update_entry(&new_entry).map_err(RepoError::from)?;
+        indexer
+            .add_or_update_entry(&new_entry)
+            .map_err(RepoError::from)?;
     }
     db.create_entry(new_entry).map_err(|err| {
         if let Some(ref mut indexer) = indexer {

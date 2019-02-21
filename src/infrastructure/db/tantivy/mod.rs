@@ -1,9 +1,19 @@
-use crate::core::{entities::Entry, db::{EntryGateway, EntryIndexer, EntryIndex, EntryIndexQuery}, util::geo::{LatCoord, LngCoord}};
+use crate::core::{
+    db::{EntryGateway, EntryIndex, EntryIndexQuery, EntryIndexer},
+    entities::Entry,
+    util::geo::{LatCoord, LngCoord},
+};
 
 use failure::Fallible;
-use std::path::Path;
 use std::ops::Bound;
-use tantivy::{Index, IndexWriter, Document, DocAddress, Score, tokenizer::{Tokenizer, LowerCaser, RawTokenizer}, query::{Occur, Query, TermQuery, RangeQuery, BooleanQuery, QueryParser}, collector::{Count, TopDocs}, schema::*};
+use std::path::Path;
+use tantivy::{
+    collector::{Count, TopDocs},
+    query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
+    schema::*,
+    tokenizer::{LowerCaser, RawTokenizer, Tokenizer},
+    DocAddress, Document, Index, IndexWriter, Score,
+};
 
 const OVERALL_INDEX_HEAP_SIZE_IN_BYTES: usize = 50_000_000;
 
@@ -33,27 +43,24 @@ fn build_schema() -> (Schema, TantivyEntryFields) {
         .set_indexing_options(
             TextFieldIndexing::default()
                 .set_tokenizer(ID_TOKENIZER)
-                .set_index_option(IndexRecordOption::Basic)
+                .set_index_option(IndexRecordOption::Basic),
         )
         .set_stored();
-    let category_options = TextOptions::default()
-        .set_indexing_options(
-            TextFieldIndexing::default()
-                .set_tokenizer(ID_TOKENIZER)
-                .set_index_option(IndexRecordOption::WithFreqs)
-        );
-    let tag_options = TextOptions::default()
-        .set_indexing_options(
-            TextFieldIndexing::default()
-                .set_tokenizer(TAG_TOKENIZER)
-                .set_index_option(IndexRecordOption::WithFreqs)
-        );
-    let text_options = TextOptions::default()
-        .set_indexing_options(
-            TextFieldIndexing::default()
-                .set_tokenizer(TEXT_TOKENIZER)
-                .set_index_option(IndexRecordOption::WithFreqsAndPositions)
-        );
+    let category_options = TextOptions::default().set_indexing_options(
+        TextFieldIndexing::default()
+            .set_tokenizer(ID_TOKENIZER)
+            .set_index_option(IndexRecordOption::WithFreqs),
+    );
+    let tag_options = TextOptions::default().set_indexing_options(
+        TextFieldIndexing::default()
+            .set_tokenizer(TAG_TOKENIZER)
+            .set_index_option(IndexRecordOption::WithFreqs),
+    );
+    let text_options = TextOptions::default().set_indexing_options(
+        TextFieldIndexing::default()
+            .set_tokenizer(TEXT_TOKENIZER)
+            .set_index_option(IndexRecordOption::WithFreqsAndPositions),
+    );
     let mut schema_builder = SchemaBuilder::default();
     let id = schema_builder.add_text_field("id", id_options);
     let lat = schema_builder.add_i64_field("lat", INT_INDEXED);
@@ -81,7 +88,9 @@ fn register_tokenizers(index: &Index) {
     debug_assert!(index.tokenizers().get(TEXT_TOKENIZER).is_some());
     // Custom tokenizer(s)
     debug_assert!(index.tokenizers().get(TAG_TOKENIZER).is_none());
-    index.tokenizers().register(TAG_TOKENIZER, RawTokenizer.filter(LowerCaser));
+    index
+        .tokenizers()
+        .register(TAG_TOKENIZER, RawTokenizer.filter(LowerCaser));
 }
 
 impl TantivyEntryIndex {
@@ -95,7 +104,10 @@ impl TantivyEntryIndex {
 
         // TODO: Open index from existing directory
         let index = if let Some(path) = path {
-            info!("Creating full-text search index in directory: {}", path.as_ref().to_string_lossy());
+            info!(
+                "Creating full-text search index in directory: {}",
+                path.as_ref().to_string_lossy()
+            );
             Index::create_in_dir(path, schema)?
         } else {
             warn!("Creating full-text search index in RAM");
@@ -105,7 +117,8 @@ impl TantivyEntryIndex {
         register_tokenizers(&index);
 
         let writer = index.writer(OVERALL_INDEX_HEAP_SIZE_IN_BYTES)?;
-        let text_query_parser = QueryParser::for_index(&index, vec![fields.title, fields.description]);
+        let text_query_parser =
+            QueryParser::for_index(&index, vec![fields.title, fields.description]);
         Ok(Self {
             fields,
             index,
@@ -121,8 +134,14 @@ impl EntryIndexer for TantivyEntryIndex {
         self.writer.delete_term(id_term);
         let mut doc = Document::default();
         doc.add_text(self.fields.id, &entry.id);
-        doc.add_i64(self.fields.lat, i64::from(LatCoord::from_deg(entry.location.lat).to_raw()));
-        doc.add_i64(self.fields.lng, i64::from(LngCoord::from_deg(entry.location.lng).to_raw()));
+        doc.add_i64(
+            self.fields.lat,
+            i64::from(LatCoord::from_deg(entry.location.lat).to_raw()),
+        );
+        doc.add_i64(
+            self.fields.lng,
+            i64::from(LngCoord::from_deg(entry.location.lng).to_raw()),
+        );
         doc.add_text(self.fields.title, &entry.title);
         doc.add_text(self.fields.description, &entry.description);
         for category in &entry.categories {
@@ -153,29 +172,38 @@ impl EntryIndexer for TantivyEntryIndex {
 const MAX_LIMIT: usize = 100;
 
 impl EntryIndex for TantivyEntryIndex {
-    fn query_entries(&self, entries: &EntryGateway, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<Entry>> {
-        let mut sub_queries: Vec<(Occur, Box<Query>)> = Vec::with_capacity(2 + 2 + query.categories.len() + query.tags.len());
+    fn query_entries(
+        &self,
+        entries: &EntryGateway,
+        query: &EntryIndexQuery,
+        limit: usize,
+    ) -> Fallible<Vec<Entry>> {
+        let mut sub_queries: Vec<(Occur, Box<Query>)> =
+            Vec::with_capacity(2 + 2 + query.categories.len() + query.tags.len());
         if let Some(ref bbox) = query.bbox {
             debug_assert!(bbox.is_valid());
             debug_assert!(!bbox.is_empty());
             let lat_query = RangeQuery::new_i64_bounds(
                 self.fields.lat,
                 Bound::Included(i64::from(bbox.south_west().lat().to_raw())),
-                Bound::Included(i64::from(bbox.north_east().lat().to_raw())));
+                Bound::Included(i64::from(bbox.north_east().lat().to_raw())),
+            );
             sub_queries.push((Occur::Must, Box::new(lat_query)));
             if bbox.south_west().lng() <= bbox.north_east().lng() {
                 // regular (inclusive)
                 let lng_query = RangeQuery::new_i64_bounds(
                     self.fields.lng,
                     Bound::Included(i64::from(bbox.south_west().lng().to_raw())),
-                    Bound::Included(i64::from(bbox.north_east().lng().to_raw())));
+                    Bound::Included(i64::from(bbox.north_east().lng().to_raw())),
+                );
                 sub_queries.push((Occur::Must, Box::new(lng_query)));
             } else {
                 // inverse (exclusive)
                 let lng_query = RangeQuery::new_i64_bounds(
                     self.fields.lng,
                     Bound::Excluded(i64::from(bbox.north_east().lng().to_raw())),
-                    Bound::Excluded(i64::from(bbox.south_west().lng().to_raw())));
+                    Bound::Excluded(i64::from(bbox.south_west().lng().to_raw())),
+                );
                 sub_queries.push((Occur::MustNot, Box::new(lng_query)));
             }
         }
@@ -192,7 +220,8 @@ impl EntryIndex for TantivyEntryIndex {
         }
         for category in &query.categories {
             debug_assert!(!category.trim().is_empty());
-            let category_term = Term::from_field_text(self.fields.category, &category.to_lowercase());
+            let category_term =
+                Term::from_field_text(self.fields.category, &category.to_lowercase());
             let category_query = TermQuery::new(category_term, IndexRecordOption::Basic);
             sub_queries.push((Occur::Must, Box::new(category_query)));
         }

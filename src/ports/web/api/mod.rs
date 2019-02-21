@@ -179,7 +179,11 @@ fn get_bbox_subscriptions(db: DbConn, user: Login) -> Result<Vec<json::BboxSubsc
 }
 
 #[post("/entries", format = "application/json", data = "<e>")]
-fn post_entry(mut db: DbConn, mut search_engine: SearchEngine, e: Json<usecases::NewEntry>) -> Result<String> {
+fn post_entry(
+    mut db: DbConn,
+    mut search_engine: SearchEngine,
+    e: Json<usecases::NewEntry>,
+) -> Result<String> {
     let e = e.into_inner();
     let id = usecases::create_new_entry(&mut *db, Some(&mut search_engine), e.clone())?;
     let email_addresses = usecases::email_addresses_by_coordinate(&mut *db, &e.lat, &e.lng)?;
@@ -189,7 +193,12 @@ fn post_entry(mut db: DbConn, mut search_engine: SearchEngine, e: Json<usecases:
 }
 
 #[put("/entries/<id>", format = "application/json", data = "<e>")]
-fn put_entry(mut db: DbConn, mut search_engine: SearchEngine, id: String, e: Json<usecases::UpdateEntry>) -> Result<String> {
+fn put_entry(
+    mut db: DbConn,
+    mut search_engine: SearchEngine,
+    id: String,
+    e: Json<usecases::UpdateEntry>,
+) -> Result<String> {
     let e = e.into_inner();
     usecases::update_entry(&mut *db, Some(&mut search_engine), e.clone())?;
     let email_addresses = usecases::email_addresses_by_coordinate(&mut *db, &e.lat, &e.lng)?;

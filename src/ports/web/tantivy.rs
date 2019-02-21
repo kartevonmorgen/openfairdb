@@ -1,23 +1,28 @@
-use crate::infrastructure::error::AppError;
-use crate::infrastructure::db::tantivy::TantivyEntryIndex;
-use crate::core::db::{EntryIndex, EntryIndexQuery, EntryIndexer, EntryGateway};
+use crate::core::db::{EntryGateway, EntryIndex, EntryIndexQuery, EntryIndexer};
 use crate::core::entities::Entry;
+use crate::infrastructure::db::tantivy::TantivyEntryIndex;
+use crate::infrastructure::error::AppError;
 
 use failure::Fallible;
-use std::{sync::{Arc, Mutex}, path::Path};
 use rocket::request::{self, FromRequest};
 use rocket::{Outcome, Request, State};
+use std::{
+    path::Path,
+    sync::{Arc, Mutex},
+};
 
 #[derive(Clone)]
 pub struct SearchEngine(Arc<Mutex<Box<dyn EntryIndexer + Send>>>);
 
 pub fn create_search_engine_in_ram() -> Result<SearchEngine, AppError> {
-    let entry_index = TantivyEntryIndex::create_in_ram().map_err(|err| AppError::Other(Box::new(err.compat())))?;
+    let entry_index = TantivyEntryIndex::create_in_ram()
+        .map_err(|err| AppError::Other(Box::new(err.compat())))?;
     Ok(SearchEngine(Arc::new(Mutex::new(Box::new(entry_index)))))
 }
 
 pub fn create_search_engine<P: AsRef<Path>>(path: Option<P>) -> Result<SearchEngine, AppError> {
-    let entry_index = TantivyEntryIndex::create(path).map_err(|err| AppError::Other(Box::new(err.compat())))?;
+    let entry_index =
+        TantivyEntryIndex::create(path).map_err(|err| AppError::Other(Box::new(err.compat())))?;
     Ok(SearchEngine(Arc::new(Mutex::new(Box::new(entry_index)))))
 }
 
@@ -31,7 +36,12 @@ impl<'a, 'r> FromRequest<'a, 'r> for SearchEngine {
 }
 
 impl EntryIndex for SearchEngine {
-    fn query_entries(&self, entries: &EntryGateway, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<Entry>> {
+    fn query_entries(
+        &self,
+        entries: &EntryGateway,
+        query: &EntryIndexQuery,
+        limit: usize,
+    ) -> Fallible<Vec<Entry>> {
         let entry_index = match self.0.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),

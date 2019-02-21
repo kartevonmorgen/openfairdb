@@ -25,8 +25,8 @@ mod update_event;
 
 pub use self::{
     confirm_email::*, create_new_entry::*, create_new_event::*, create_new_user::*,
-    delete_event::*, find_duplicates::*, login::*, query_events::*, rate_entry::*, index::*, search::*,
-    update_entry::*, update_event::*,
+    delete_event::*, find_duplicates::*, index::*, login::*, query_events::*, rate_entry::*,
+    search::*, update_entry::*, update_event::*,
 };
 
 pub fn get_ratings<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Rating>> {

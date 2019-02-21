@@ -74,7 +74,12 @@ pub struct EntryIndexQuery {
 }
 
 pub trait EntryIndex {
-    fn query_entries(&self, entries: &EntryGateway, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<Entry>>;
+    fn query_entries(
+        &self,
+        entries: &EntryGateway,
+        query: &EntryIndexQuery,
+        limit: usize,
+    ) -> Fallible<Vec<Entry>>;
 }
 
 pub trait EntryIndexer: EntryIndex {

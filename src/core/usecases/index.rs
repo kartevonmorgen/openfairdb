@@ -3,7 +3,10 @@ use crate::core::util::filter;
 
 use failure::{format_err, Fallible};
 
-impl<D> EntryIndexer for D where D: Db {
+impl<D> EntryIndexer for D
+where
+    D: Db,
+{
     fn add_or_update_entry(&mut self, entry: &Entry) -> Fallible<()> {
         // Nothing to do, the entry has already been stored
         // in the database.
@@ -25,8 +28,16 @@ impl<D> EntryIndexer for D where D: Db {
     }
 }
 
-impl<D> EntryIndex for D where D: Db {
-    fn query_entries(&self, _entries: &EntryGateway, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<Entry>> {
+impl<D> EntryIndex for D
+where
+    D: Db,
+{
+    fn query_entries(
+        &self,
+        _entries: &EntryGateway,
+        query: &EntryIndexQuery,
+        limit: usize,
+    ) -> Fallible<Vec<Entry>> {
         let mut entries = if let Some(ref bbox) = query.bbox {
             let bbox = Bbox {
                 south_west: Coordinate {
@@ -41,7 +52,8 @@ impl<D> EntryIndex for D where D: Db {
             self.get_entries_by_bbox(&bbox)
         } else {
             self.all_entries()
-        }.map_err(|err| format_err!("{}", err))?;
+        }
+        .map_err(|err| format_err!("{}", err))?;
 
         if !query.categories.is_empty() {
             entries = entries
@@ -54,7 +66,8 @@ impl<D> EntryIndex for D where D: Db {
             .into_iter()
             .take(limit)
             .filter(&*filter::entries_by_tags_or_search_text(
-                query.text.as_ref().map(String::as_str).unwrap_or(""), &query.tags,
+                query.text.as_ref().map(String::as_str).unwrap_or(""),
+                &query.tags,
             ))
             .collect();
 

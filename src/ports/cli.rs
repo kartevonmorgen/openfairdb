@@ -3,7 +3,7 @@ use crate::core::prelude::*;
 use crate::infrastructure::osm;
 use clap::{App, Arg, SubCommand};
 use dotenv::dotenv;
-use std::{env, process, path::Path};
+use std::{env, path::Path, process};
 
 const DEFAULT_DB_URL: &str = "openfair.db";
 
@@ -69,12 +69,16 @@ pub fn run() {
         )
         .get_matches();
 
-    let db_url = matches.value_of("db-url")
+    let db_url = matches
+        .value_of("db-url")
         .map(ToString::to_string)
         .unwrap_or_else(|| env::var("DATABASE_URL").unwrap_or_else(|_| DEFAULT_DB_URL.to_string()));
     let pool = create_connection_pool(&db_url).unwrap();
 
-    let idx_dir = matches.value_of("idx-dir").map(ToString::to_string).or_else(|| env::var("INDEX_DIR").map(Option::Some).unwrap_or(None));
+    let idx_dir = matches
+        .value_of("idx-dir")
+        .map(ToString::to_string)
+        .or_else(|| env::var("INDEX_DIR").map(Option::Some).unwrap_or(None));
     let idx_path = idx_dir.as_ref().map(|dir| Path::new(dir));
     let search_engine = create_search_engine(idx_path).unwrap();
 

@@ -68,12 +68,15 @@ pub struct LatCoord(GeoCoord);
 impl LatCoord {
     const RAD_MAX: f64 = std::f64::consts::FRAC_PI_2;
     const RAD_MIN: f64 = -std::f64::consts::FRAC_PI_2;
-    const TO_RAD: f64 = (Self::RAD_MAX - Self::RAD_MIN) / (RAW_COORD_MAX as f64 - RAW_COORD_MIN as f64);
+    const TO_RAD: f64 =
+        (Self::RAD_MAX - Self::RAD_MIN) / (RAW_COORD_MAX as f64 - RAW_COORD_MIN as f64);
 
     const DEG_MAX: f64 = 90.0;
     const DEG_MIN: f64 = -90.0;
-    const TO_DEG: f64 = (Self::DEG_MAX - Self::DEG_MIN) / (RAW_COORD_MAX as f64 - RAW_COORD_MIN as f64);
-    const FROM_DEG: f64 = (RAW_COORD_MAX as f64 - RAW_COORD_MIN as f64) / (Self::DEG_MAX - Self::DEG_MIN);
+    const TO_DEG: f64 =
+        (Self::DEG_MAX - Self::DEG_MIN) / (RAW_COORD_MAX as f64 - RAW_COORD_MIN as f64);
+    const FROM_DEG: f64 =
+        (RAW_COORD_MAX as f64 - RAW_COORD_MIN as f64) / (Self::DEG_MAX - Self::DEG_MIN);
 
     pub const fn max() -> Self {
         Self(GeoCoord::max())
@@ -153,12 +156,15 @@ pub struct LngCoord(GeoCoord);
 impl LngCoord {
     const RAD_MAX: f64 = std::f64::consts::PI;
     const RAD_MIN: f64 = -std::f64::consts::PI;
-    const TO_RAD: f64 = (Self::RAD_MAX - Self::RAD_MIN) / (RAW_COORD_MAX as f64 - RAW_COORD_MIN as f64);
+    const TO_RAD: f64 =
+        (Self::RAD_MAX - Self::RAD_MIN) / (RAW_COORD_MAX as f64 - RAW_COORD_MIN as f64);
 
     const DEG_MAX: f64 = 180.0;
     const DEG_MIN: f64 = -180.0;
-    const TO_DEG: f64 = (Self::DEG_MAX - Self::DEG_MIN) / (RAW_COORD_MAX as f64 - RAW_COORD_MIN as f64);
-    const FROM_DEG: f64 = (RAW_COORD_MAX as f64 - RAW_COORD_MIN as f64) / (Self::DEG_MAX - Self::DEG_MIN);
+    const TO_DEG: f64 =
+        (Self::DEG_MAX - Self::DEG_MIN) / (RAW_COORD_MAX as f64 - RAW_COORD_MIN as f64);
+    const FROM_DEG: f64 =
+        (RAW_COORD_MAX as f64 - RAW_COORD_MIN as f64) / (Self::DEG_MAX - Self::DEG_MIN);
 
     pub const fn max() -> Self {
         Self(GeoCoord::max())
@@ -268,7 +274,10 @@ impl MapPoint {
         Self::new(LatCoord::from_deg(lat), LngCoord::from_deg(lng))
     }
 
-    pub fn try_from_lat_lng_deg<LAT: Into<f64>, LNG: Into<f64>>(lat: LAT, lng: LNG) -> Option<Self> {
+    pub fn try_from_lat_lng_deg<LAT: Into<f64>, LNG: Into<f64>>(
+        lat: LAT,
+        lng: LNG,
+    ) -> Option<Self> {
         match (LatCoord::try_from_deg(lat), LngCoord::try_from_deg(lng)) {
             (Some(lat), Some(lng)) => Some(Self::new(lat, lng)),
             _ => None,
@@ -287,7 +296,7 @@ impl MapPoint {
                         return Ok(MapPoint::new(lat, lng));
                     } else {
                         failure::bail!("Invalid longitude degrees: {}", lng_deg);
-                }
+                    }
                 } else {
                     failure::bail!("Invalid latitude degrees: {}", lat_deg);
                 }
@@ -346,14 +355,14 @@ impl MapPoint {
     /// Reference: https://en.wikipedia.org/wiki/Great-circle_distance
     pub fn distance(p1: &MapPoint, p2: &MapPoint) -> Option<Distance> {
         if !p1.is_valid() || !p2.is_valid() {
-            return None
+            return None;
         }
 
         let (lat1_rad, lng1_rad) = p1.to_lat_lng_rad();
         let (lat2_rad, lng2_rad) = p2.to_lat_lng_rad();
 
-        let (lat1_sin, lat1_cos)  = (lat1_rad.sin(), lat1_rad.cos());
-        let (lat2_sin, lat2_cos)  = (lat2_rad.sin(), lat2_rad.cos());
+        let (lat1_sin, lat1_cos) = (lat1_rad.sin(), lat1_rad.cos());
+        let (lat2_sin, lat2_cos) = (lat2_rad.sin(), lat2_rad.cos());
 
         let dlng = (lng1_rad - lng2_rad).abs();
         let (dlng_sin, dlng_cos) = (dlng.sin(), dlng.cos());
@@ -378,7 +387,7 @@ pub struct MapBbox {
 
 impl MapBbox {
     pub const fn new(sw: MapPoint, ne: MapPoint) -> Self {
-        Self {sw, ne}
+        Self { sw, ne }
     }
 
     pub const fn south_west(&self) -> MapPoint {
@@ -423,7 +432,9 @@ impl std::str::FromStr for MapBbox {
     type Err = failure::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if let Some((sw_lat_deg_str, sw_lng_deg_str, ne_lat_deg_str, ne_lng_deg_str)) = s.split(',').collect_tuple() {
+        if let Some((sw_lat_deg_str, sw_lng_deg_str, ne_lat_deg_str, ne_lng_deg_str)) =
+            s.split(',').collect_tuple()
+        {
             let sw = MapPoint::parse_lat_lng_deg(sw_lat_deg_str, sw_lng_deg_str);
             let ne = MapPoint::parse_lat_lng_deg(ne_lat_deg_str, ne_lng_deg_str);
             match (sw, ne) {
@@ -439,8 +450,8 @@ impl std::str::FromStr for MapBbox {
 
 // TODO: Replace legacy function
 pub fn extract_bbox(s: &str) -> Result<Bbox, ParameterError> {
-    s.parse::<MapBbox>().map(|bbox| {
-        Bbox {
+    s.parse::<MapBbox>()
+        .map(|bbox| Bbox {
             south_west: Coordinate {
                 lat: bbox.south_west().lat().to_deg(),
                 lng: bbox.south_west().lng().to_deg(),
@@ -449,11 +460,11 @@ pub fn extract_bbox(s: &str) -> Result<Bbox, ParameterError> {
                 lat: bbox.north_east().lat().to_deg(),
                 lng: bbox.north_east().lng().to_deg(),
             },
-        }
-    }).map_err(|err| {
-        warn!("Failed to parse bounding box: {}", err);
-        ParameterError::Bbox
-    })
+        })
+        .map_err(|err| {
+            warn!("Failed to parse bounding box: {}", err);
+            ParameterError::Bbox
+        })
 }
 
 // TODO: Replace legacy function
@@ -477,10 +488,22 @@ mod tests {
         assert_eq!(0.0, LatCoord::from_raw(0).to_deg());
         assert_eq!(RAW_COORD_MIN, LatCoord::min().to_raw());
         assert_eq!(RAW_COORD_MAX, LatCoord::max().to_raw());
-        assert_eq!(LatCoord::min(), LatCoord::from_raw(LatCoord::min().to_raw()));
-        assert_eq!(LatCoord::max(), LatCoord::from_raw(LatCoord::max().to_raw()));
-        assert_eq!(LatCoord::min(), LatCoord::from_deg(LatCoord::min().to_deg()));
-        assert_eq!(LatCoord::max(), LatCoord::from_deg(LatCoord::max().to_deg()));
+        assert_eq!(
+            LatCoord::min(),
+            LatCoord::from_raw(LatCoord::min().to_raw())
+        );
+        assert_eq!(
+            LatCoord::max(),
+            LatCoord::from_raw(LatCoord::max().to_raw())
+        );
+        assert_eq!(
+            LatCoord::min(),
+            LatCoord::from_deg(LatCoord::min().to_deg())
+        );
+        assert_eq!(
+            LatCoord::max(),
+            LatCoord::from_deg(LatCoord::max().to_deg())
+        );
         assert_eq!(LatCoord::min(), LatCoord::from_deg(-90));
         assert_eq!(LatCoord::max(), LatCoord::from_deg(90));
         assert_eq!(None, LatCoord::try_from_deg(-90.000001));
@@ -496,10 +519,22 @@ mod tests {
         assert_eq!(RAW_COORD_MAX, LngCoord::max().to_raw());
         assert!(LngCoord::min().is_valid());
         assert!(LngCoord::max().is_valid());
-        assert_eq!(LngCoord::min(), LngCoord::from_raw(LngCoord::min().to_raw()));
-        assert_eq!(LngCoord::max(), LngCoord::from_raw(LngCoord::max().to_raw()));
-        assert_eq!(LngCoord::min(), LngCoord::from_deg(LngCoord::min().to_deg()));
-        assert_eq!(LngCoord::max(), LngCoord::from_deg(LngCoord::max().to_deg()));
+        assert_eq!(
+            LngCoord::min(),
+            LngCoord::from_raw(LngCoord::min().to_raw())
+        );
+        assert_eq!(
+            LngCoord::max(),
+            LngCoord::from_raw(LngCoord::max().to_raw())
+        );
+        assert_eq!(
+            LngCoord::min(),
+            LngCoord::from_deg(LngCoord::min().to_deg())
+        );
+        assert_eq!(
+            LngCoord::max(),
+            LngCoord::from_deg(LngCoord::max().to_deg())
+        );
         assert_eq!(LngCoord::min(), LngCoord::from_deg(-180));
         assert_eq!(LngCoord::max(), LngCoord::from_deg(180));
         assert_eq!(None, LngCoord::try_from_deg(-180.000001));
@@ -523,20 +558,31 @@ mod tests {
     fn real_distance() {
         let stuttgart = MapPoint::from_lat_lng_deg(48.7755, 9.1827);
         let mannheim = MapPoint::from_lat_lng_deg(49.4836, 8.4630);
-        assert!(MapPoint::distance(&stuttgart, &mannheim).unwrap() > Distance::from_meters(94_000.0));
-        assert!(MapPoint::distance(&stuttgart, &mannheim).unwrap() < Distance::from_meters(95_000.0));
+        assert!(
+            MapPoint::distance(&stuttgart, &mannheim).unwrap() > Distance::from_meters(94_000.0)
+        );
+        assert!(
+            MapPoint::distance(&stuttgart, &mannheim).unwrap() < Distance::from_meters(95_000.0)
+        );
 
         let new_york = MapPoint::from_lat_lng_deg(40.714268, -74.005974);
         let sidney = MapPoint::from_lat_lng_deg(-33.867138, 151.207108);
-        assert!(MapPoint::distance(&new_york, &sidney).unwrap() > Distance::from_meters(15_985_000.0));
-        assert!(MapPoint::distance(&new_york, &sidney).unwrap() < Distance::from_meters(15_995_000.0));
+        assert!(
+            MapPoint::distance(&new_york, &sidney).unwrap() > Distance::from_meters(15_985_000.0)
+        );
+        assert!(
+            MapPoint::distance(&new_york, &sidney).unwrap() < Distance::from_meters(15_995_000.0)
+        );
     }
 
     #[test]
     fn symetric_distance() {
         let a = MapPoint::from_lat_lng_deg(80.0, 0.0);
         let b = MapPoint::from_lat_lng_deg(90.0, 20.0);
-        assert_eq!(MapPoint::distance(&a, &b).unwrap(), MapPoint::distance(&b, &a).unwrap());
+        assert_eq!(
+            MapPoint::distance(&a, &b).unwrap(),
+            MapPoint::distance(&b, &a).unwrap()
+        );
     }
 
     #[test]
@@ -552,12 +598,12 @@ mod tests {
         let p2 = MapPoint::from_lat_lng_deg(40.92116510538438, -93.33303223984923);
         assert!(MapPoint::distance(&p1, &p2).unwrap().to_meters() >= 0.0);
 
-        let p1 = MapPoint::from_lat_lng_deg(67.01568147028595,122.10276824520099);
-        let p2 = MapPoint::from_lat_lng_deg(-87.84709362678561,132.71691422570353);
+        let p1 = MapPoint::from_lat_lng_deg(67.01568147028595, 122.10276824520099);
+        let p2 = MapPoint::from_lat_lng_deg(-87.84709362678561, 132.71691422570353);
         assert!(MapPoint::distance(&p1, &p2).unwrap().to_meters() >= 0.0);
 
-        let p1 = MapPoint::from_lat_lng_deg(-37.44489137895633,-124.46758920534867);
-        let p2 = MapPoint::from_lat_lng_deg(29.29724492099939,0.03218860366949281);
+        let p1 = MapPoint::from_lat_lng_deg(-37.44489137895633, -124.46758920534867);
+        let p2 = MapPoint::from_lat_lng_deg(29.29724492099939, 0.03218860366949281);
         assert!(MapPoint::distance(&p1, &p2).unwrap().to_meters() >= 0.0);
     }
 
@@ -687,8 +733,8 @@ mod tests {
         assert!(is_in_bbox(&lat4, &lng4, &bbox4));
     }
 
-    use rand::prelude::*;
     use crate::test::Bencher;
+    use rand::prelude::*;
 
     fn random_map_point<T: Rng>(rng: &mut T) -> MapPoint {
         let lat = rng.gen_range(LatCoord::min().to_deg(), LatCoord::max().to_deg());

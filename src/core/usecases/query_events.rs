@@ -1,4 +1,7 @@
-use crate::core::{prelude::*, util::filter::{self, InBBox}};
+use crate::core::{
+    prelude::*,
+    util::filter::{self, InBBox},
+};
 use chrono::prelude::*;
 
 pub fn query_events<D: Db>(
@@ -24,7 +27,10 @@ pub fn query_events<D: Db>(
 
     if let Some(bbox) = bbox {
         let ext_bbox = filter::extend_bbox(&bbox);
-        events = events.into_iter().filter(|x| x.in_bbox(&ext_bbox)).collect();
+        events = events
+            .into_iter()
+            .filter(|x| x.in_bbox(&ext_bbox))
+            .collect();
     }
 
     if let Some(min) = start_min {

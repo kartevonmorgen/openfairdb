@@ -1,4 +1,4 @@
-use crate::core::{prelude::*, util::sort::Rated, db::EntryIndexer};
+use crate::core::{db::EntryIndexer, prelude::*, util::sort::Rated};
 use crate::infrastructure::error::AppError;
 use diesel::r2d2::{ManageConnection, Pool};
 use rocket::{config::Config, Rocket};
@@ -61,7 +61,11 @@ fn calculate_rating_for_entry<D: Db>(db: &D, e_id: &str) -> Result<()> {
     Ok(Json(()))
 }
 
-fn rocket_instance<T: ManageConnection>(pool: Pool<T>, mut search_engine: tantivy::SearchEngine, cfg: Option<Config>) -> Rocket
+fn rocket_instance<T: ManageConnection>(
+    pool: Pool<T>,
+    mut search_engine: tantivy::SearchEngine,
+    cfg: Option<Config>,
+) -> Rocket
 where
     <T as ManageConnection>::Connection: Db,
 {
@@ -76,11 +80,16 @@ where
         Some(cfg) => rocket::custom(cfg),
         None => rocket::ignite(),
     };
-    r.manage(pool).manage(search_engine).mount("/", api::routes())
+    r.manage(pool)
+        .manage(search_engine)
+        .mount("/", api::routes())
 }
 
-pub fn run<T: ManageConnection>(pool: Pool<T>, search_engine: tantivy::SearchEngine, enable_cors: bool)
-where
+pub fn run<T: ManageConnection>(
+    pool: Pool<T>,
+    search_engine: tantivy::SearchEngine,
+    enable_cors: bool,
+) where
     <T as ManageConnection>::Connection: Db,
 {
     if enable_cors {

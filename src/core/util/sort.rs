@@ -10,7 +10,8 @@ trait DistanceTo {
 impl DistanceTo for Entry {
     fn distance_to(&self, there: &MapPoint) -> Distance {
         let here = MapPoint::try_from_lat_lng_deg(self.location.lat, self.location.lng);
-        here.and_then(|ref here| MapPoint::distance(here, there)).unwrap_or(Distance::infinite())
+        here.and_then(|ref here| MapPoint::distance(here, there))
+            .unwrap_or(Distance::infinite())
     }
 }
 

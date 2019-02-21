@@ -308,7 +308,10 @@ fn search_with_categories() {
         name: "bar".into(),
     })
     .unwrap();
-    let entry_ids: Vec<_> = entries.into_iter().map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap()).collect();
+    let entry_ids: Vec<_> = entries
+        .into_iter()
+        .map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap())
+        .collect();
     let req = client.get("/search?bbox=-10,-10,10,10&categories=foo");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -345,7 +348,10 @@ fn search_with_text() {
         new_entry_with_text("baZ", "blub", 3.0),
     ];
     let (client, mut db, mut search_engine) = setup2();
-    let entry_ids: Vec<_> = entries.into_iter().map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap()).collect();
+    let entry_ids: Vec<_> = entries
+        .into_iter()
+        .map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap())
+        .collect();
     let req = client.get("/search?bbox=-10,-10,10,10&text=Foo");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -405,13 +411,19 @@ fn search_with_tags() {
         id: "bla-blubb".into(),
     })
     .unwrap();
-    let entry_ids: Vec<_> = entries.into_iter().map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap()).collect();
+    let entry_ids: Vec<_> = entries
+        .into_iter()
+        .map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap())
+        .collect();
     let req = client.get("/search?bbox=-10,-10,10,10&tags=bla-blubb");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"visible\":[{{\"id\":\"{}\",\"lat\":0.0,\"lng\":0.0}}]", entry_ids[1])));
+    assert!(body_str.contains(&format!(
+        "\"visible\":[{{\"id\":\"{}\",\"lat\":0.0,\"lng\":0.0}}]",
+        entry_ids[1]
+    )));
 
     let req = client.get("/search?bbox=-10,-10,10,10&tags=foo-bar");
     let mut response = req.dispatch();
@@ -445,7 +457,10 @@ fn search_with_uppercase_tags() {
         .unwrap();
     db.create_tag_if_it_does_not_exist(&Tag { id: "baz".into() })
         .unwrap();
-    let entry_ids: Vec<_> = entries.into_iter().map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap()).collect();
+    let entry_ids: Vec<_> = entries
+        .into_iter()
+        .map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap())
+        .collect();
     let req = client.get("/search?bbox=-10,-10,10,10&tags=Foo");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -479,7 +494,10 @@ fn search_with_hashtag() {
         id: "foo-bar".into(),
     })
     .unwrap();
-    let entry_ids: Vec<_> = entries.into_iter().map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap()).collect();
+    let entry_ids: Vec<_> = entries
+        .into_iter()
+        .map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap())
+        .collect();
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23foo-bar");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -513,7 +531,10 @@ fn search_with_two_hashtags() {
         id: "foo-bar".into(),
     })
     .unwrap();
-    let entry_ids: Vec<_> = entries.into_iter().map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap()).collect();
+    let entry_ids: Vec<_> = entries
+        .into_iter()
+        .map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap())
+        .collect();
 
     // exact match
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23bla-blubb%20%23foo-bar&limit=1");
@@ -554,15 +575,14 @@ fn search_with_commata() {
         },
     ];
     let (client, mut db, mut search_engine) = setup2();
-    db.create_tag_if_it_does_not_exist(&Tag {
-        id: "eins".into(),
-    })
-    .unwrap();
-    db.create_tag_if_it_does_not_exist(&Tag {
-        id: "zwei".into(),
-    })
-    .unwrap();
-    let entry_ids: Vec<_> = entries.into_iter().map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap()).collect();
+    db.create_tag_if_it_does_not_exist(&Tag { id: "eins".into() })
+        .unwrap();
+    db.create_tag_if_it_does_not_exist(&Tag { id: "zwei".into() })
+        .unwrap();
+    let entry_ids: Vec<_> = entries
+        .into_iter()
+        .map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap())
+        .collect();
 
     // exact matches
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23eins%2C%20%23zwei&limit=2");
@@ -612,11 +632,12 @@ fn search_without_specifying_hashtag_symbol() {
         id: "foo-bar".into(),
     })
     .unwrap();
-    let entry_ids: Vec<_> = entries.into_iter().map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap()).collect();
+    let entry_ids: Vec<_> = entries
+        .into_iter()
+        .map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap())
+        .collect();
 
-    let mut response = client
-        .get("/search?bbox=-10,-10,10,10&text=foo")
-        .dispatch();
+    let mut response = client.get("/search?bbox=-10,-10,10,10&text=foo").dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));

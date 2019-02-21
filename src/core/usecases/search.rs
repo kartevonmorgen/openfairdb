@@ -1,7 +1,7 @@
 use crate::core::prelude::*;
 use crate::core::util::{
-    geo::{MapBbox, MapPoint},
     filter::{self, InBBox},
+    geo::{MapBbox, MapPoint},
     sort::SortByAverageRating,
 };
 
@@ -30,14 +30,20 @@ fn map_bbox(bbox: &Bbox) -> Option<MapBbox> {
     }
 }
 
-pub fn search(index: &EntryIndex, entries: &EntryGateway, req: SearchRequest, limit: Option<usize>) -> Result<(Vec<Entry>, Vec<Entry>)> {
+pub fn search(
+    index: &EntryIndex,
+    entries: &EntryGateway,
+    req: SearchRequest,
+    limit: Option<usize>,
+) -> Result<(Vec<Entry>, Vec<Entry>)> {
     let visible_bbox = req.bbox;
 
-    let index_bbox = if req.text.as_ref().map(String::is_empty).unwrap_or(true) && req.tags.is_empty() {
-        Some(filter::extend_bbox(&visible_bbox))
-    } else {
-        None
-    };
+    let index_bbox =
+        if req.text.as_ref().map(String::is_empty).unwrap_or(true) && req.tags.is_empty() {
+            Some(filter::extend_bbox(&visible_bbox))
+        } else {
+            None
+        };
 
     let index_query = EntryIndexQuery {
         bbox: index_bbox.as_ref().and_then(map_bbox),
@@ -46,7 +52,9 @@ pub fn search(index: &EntryIndex, entries: &EntryGateway, req: SearchRequest, li
         tags: req.tags,
     };
 
-    let mut entries = index.query_entries(entries, &index_query, limit.unwrap_or(std::usize::MAX)).map_err(|err| RepoError::Other(Box::new(err.compat())))?;
+    let mut entries = index
+        .query_entries(entries, &index_query, limit.unwrap_or(std::usize::MAX))
+        .map_err(|err| RepoError::Other(Box::new(err.compat())))?;
 
     entries.sort_by_avg_rating(req.entry_ratings);
 

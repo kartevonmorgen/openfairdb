@@ -21,21 +21,46 @@ pub struct SearchQuery {
 type Result<T> = result::Result<Json<T>, AppError>;
 
 #[get("/search?<search..>")]
-pub fn get_search(db: DbConn, search_engine: SearchEngine, search: Form<SearchQuery>) -> Result<json::SearchResponse> {
+pub fn get_search(
+    db: DbConn,
+    search_engine: SearchEngine,
+    search: Form<SearchQuery>,
+) -> Result<json::SearchResponse> {
     let bbox = geo::extract_bbox(&search.bbox)
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
 
-    let categories = search.categories.as_ref().map(String::as_str).map(util::extract_ids).unwrap_or_else(|| vec![]);
+    let categories = search
+        .categories
+        .as_ref()
+        .map(String::as_str)
+        .map(util::extract_ids)
+        .unwrap_or_else(|| vec![]);
 
-    let mut tags = search.text.as_ref().map(String::as_str).map(util::extract_hash_tags).unwrap_or_else(|| vec![]);
+    let mut tags = search
+        .text
+        .as_ref()
+        .map(String::as_str)
+        .map(util::extract_hash_tags)
+        .unwrap_or_else(|| vec![]);
     if let Some(ref tags_str) = search.tags {
         for t in util::extract_ids(tags_str) {
             tags.push(t);
         }
     }
 
-    let text = search.text.as_ref().map(String::as_str).map(util::remove_hash_tags).and_then(|text| if text.trim().is_empty() { None } else {Some(text)});
+    let text = search
+        .text
+        .as_ref()
+        .map(String::as_str)
+        .map(util::remove_hash_tags)
+        .and_then(|text| {
+            if text.trim().is_empty() {
+                None
+            } else {
+                Some(text)
+            }
+        });
 
     let avg_ratings = match super::super::ENTRY_RATINGS.lock() {
         Ok(guard) => guard,
