@@ -73,6 +73,7 @@ impl Id for Organization {
     }
 }
 
+#[cfg(test)]
 pub struct MockDb {
     pub entries: Vec<Entry>,
     pub events: Vec<Event>,
@@ -85,6 +86,7 @@ pub struct MockDb {
     pub orgs: Vec<Organization>,
 }
 
+#[cfg(test)]
 impl MockDb {
     pub fn new() -> MockDb {
         MockDb {
@@ -110,6 +112,7 @@ impl MockDb {
     }
 }
 
+#[cfg(test)]
 impl EntryIndexer for MockDb {
     fn add_or_update_entry(&mut self, entry: &Entry) -> Fallible<()> {
         // Nothing to do, the entry has already been stored
@@ -132,6 +135,7 @@ impl EntryIndexer for MockDb {
     }
 }
 
+#[cfg(test)]
 impl EntryIndex for MockDb {
     fn query_entries(
         &self,
@@ -200,6 +204,7 @@ fn delete<T: Clone + Id>(objects: &mut Vec<T>, id: &str) -> RepoResult<()> {
     Ok(())
 }
 
+#[cfg(test)]
 impl EntryGateway for MockDb {
     fn create_entry(&mut self, e: Entry) -> RepoResult<()> {
         create(&mut self.entries, e)
@@ -226,6 +231,7 @@ impl EntryGateway for MockDb {
     }
 }
 
+#[cfg(test)]
 impl EventGateway for MockDb {
     fn create_event(&mut self, e: Event) -> RepoResult<()> {
         create(&mut self.events, e)
@@ -245,6 +251,7 @@ impl EventGateway for MockDb {
     }
 }
 
+#[cfg(test)]
 impl UserGateway for MockDb {
     fn create_user(&mut self, u: User) -> RepoResult<()> {
         create(&mut self.users, u)
@@ -283,6 +290,7 @@ impl UserGateway for MockDb {
     }
 }
 
+#[cfg(test)]
 impl CommentGateway for MockDb {
     fn create_comment(&mut self, c: Comment) -> RepoResult<()> {
         create(&mut self.comments, c)
@@ -293,6 +301,7 @@ impl CommentGateway for MockDb {
     }
 }
 
+#[cfg(test)]
 impl OrganizationGateway for MockDb {
     fn create_org(&mut self, o: Organization) -> RepoResult<()> {
         create(&mut self.orgs, o)
@@ -314,6 +323,7 @@ impl OrganizationGateway for MockDb {
     }
 }
 
+#[cfg(test)]
 impl Db for MockDb {
     fn create_tag_if_it_does_not_exist(&mut self, e: &Tag) -> RepoResult<()> {
         if let Err(err) = create(&mut self.tags, e.clone()) {

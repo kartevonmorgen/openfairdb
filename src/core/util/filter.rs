@@ -65,12 +65,20 @@ impl InBBox for Event {
     }
 }
 
-#[cfg(feature = "test")]
+#[cfg(test)]
 pub fn entries_by_category_ids<'a>(ids: &'a [String]) -> impl Fn(&Entry) -> bool + 'a {
     move |e| ids.iter().any(|c| e.categories.iter().any(|x| x == c))
 }
 
-#[cfg(feature = "test")]
+#[cfg(test)]
+fn to_words(txt: &str) -> Vec<String> {
+    txt.to_lowercase()
+        .split(',')
+        .map(|x| x.to_string())
+        .collect()
+}
+
+#[cfg(test)]
 fn entries_by_tags_and_search_text<'a>(
     text: &'a str,
     tags: &'a [String],
@@ -90,7 +98,7 @@ fn entries_by_tags_and_search_text<'a>(
     }
 }
 
-#[cfg(feature = "test")]
+#[cfg(test)]
 pub fn entries_by_tags_or_search_text<'a>(
     text: &'a str,
     tags: &'a [String],
@@ -102,7 +110,7 @@ pub fn entries_by_tags_or_search_text<'a>(
     }
 }
 
-#[cfg(feature = "test")]
+#[cfg(test)]
 fn entries_by_search_text<'a>(text: &'a str) -> impl Fn(&Entry) -> bool + 'a {
     let words = to_words(text);
     move |entry| {
@@ -120,13 +128,6 @@ fn entries_by_search_text<'a>(text: &'a str) -> impl Fn(&Entry) -> bool + 'a {
 mod tests {
 
     use super::*;
-
-    fn to_words(txt: &str) -> Vec<String> {
-        txt.to_lowercase()
-            .split(',')
-            .map(|x| x.to_string())
-            .collect()
-    }
 
     #[test]
     fn is_in_bounding_box() {
