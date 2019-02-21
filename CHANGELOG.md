@@ -1,3 +1,7 @@
+## v0.5.0 (2019-02-dd)
+- new(web): Bundle a basic frontend with a minimum of JavaScript
+- chore(db): Add Tantivy full-text search engine to improve performance
+
 ## v0.4.4 (2019-02-17)
 - fix: Never resolve the location of an event with an empty event address
 
