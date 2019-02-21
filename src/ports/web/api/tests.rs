@@ -1124,7 +1124,6 @@ fn openapi() {
 
 #[test]
 fn export_csv() {
-    let (client, db) = setup();
     let mut entries = vec![
         Entry::build()
             .id("entry1")
@@ -1166,30 +1165,33 @@ fn export_csv() {
     );
     entries[0].homepage = Some("homepage1".to_string());
 
-    let mut conn = db.get().unwrap();
-    conn.create_category_if_it_does_not_exist(&Category {
+    let (client, mut db, mut search_engine) = setup2();
+
+    db.create_category_if_it_does_not_exist(&Category {
         id: "2cd00bebec0c48ba9db761da48678134".into(),
         created: 0,
         version: 0,
         name: "cat1".into(),
     })
     .unwrap();
-    conn.create_category_if_it_does_not_exist(&Category {
+    db.create_category_if_it_does_not_exist(&Category {
         id: "77b3c33a92554bcf8e8c2c86cedd6f6f".into(),
         created: 0,
         version: 0,
         name: "cat2".into(),
     })
     .unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag { id: "bli".into() })
+    db.create_tag_if_it_does_not_exist(&Tag { id: "bli".into() })
         .unwrap();
-    conn.create_tag_if_it_does_not_exist(&Tag { id: "bla".into() })
+    db.create_tag_if_it_does_not_exist(&Tag { id: "bla".into() })
         .unwrap();
     for e in entries {
-        conn.create_entry(e).unwrap();
+        search_engine.add_or_update_entry(&e).unwrap();
+        db.create_entry(e).unwrap();
     }
+    search_engine.flush().unwrap();
     let diversity = RatingContext::Diversity;
-    conn.create_rating(Rating {
+    db.create_rating(Rating {
         id: "123".into(),
         entry_id: "entry1".into(),
         created: 123,
@@ -1199,7 +1201,7 @@ fn export_csv() {
         source: None,
     })
     .unwrap();
-    conn.create_rating(Rating {
+    db.create_rating(Rating {
         id: "345".into(),
         entry_id: "entry1".into(),
         created: 123,
@@ -1210,7 +1212,7 @@ fn export_csv() {
     })
     .unwrap();
 
-    super::super::calculate_all_ratings(&*conn).unwrap();
+    super::super::calculate_all_ratings(&*db).unwrap();
 
     let req = client.get("/export/entries.csv?bbox=-1,-1,1,1");
     let mut response = req.dispatch();
@@ -1223,6 +1225,6 @@ fn export_csv() {
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str, "id,osm_node,created,version,title,description,lat,lng,street,zip,city,country,homepage,categories,tags,license,avg_rating\n\
-        entry1,1,2,3,title1,desc1,0.1,0.2,street1,zip1,city1,country1,homepage1,\"cat1,cat2\",\"bli,bla\",license1,0.5\n\
+        entry1,1,2,3,title1,desc1,0.1,0.2,street1,zip1,city1,country1,homepage1,\"cat1,cat2\",\"bla,bli\",license1,0.5\n\
         entry2,,0,0,,,0,0,,,,,,cat1,,,0\n");
 }

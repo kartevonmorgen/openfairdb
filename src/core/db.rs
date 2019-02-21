@@ -8,7 +8,6 @@ type Result<T> = result::Result<T, RepoError>;
 pub trait EntryGateway {
     fn create_entry(&mut self, _: Entry) -> Result<()>;
     fn get_entry(&self, _: &str) -> Result<Entry>;
-    fn get_entries_by_bbox(&self, _: &MapBbox) -> Result<Vec<Entry>>;
     fn all_entries(&self) -> Result<Vec<Entry>>;
     fn update_entry(&mut self, _: &Entry) -> Result<()>;
     fn import_multiple_entries(&mut self, _: &[Entry]) -> Result<()>;

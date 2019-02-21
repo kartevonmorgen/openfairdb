@@ -241,6 +241,7 @@ struct CsvExport {
 #[get("/export/entries.csv?<export..>")]
 fn csv_export<'a>(
     db: DbConn,
+    search_engine: SearchEngine,
     export: Form<CsvExport>,
 ) -> result::Result<Content<String>, AppError> {
     let bbox = export
@@ -250,12 +251,22 @@ fn csv_export<'a>(
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
 
-    let entries: Vec<_> = db.get_entries_by_bbox(&bbox)?;
-    let all_categories: Vec<_> = db.all_categories()?;
     let avg_ratings = match super::ENTRY_RATINGS.lock() {
         Ok(guard) => guard,
         Err(poisoned) => poisoned.into_inner(),
     };
+
+    let req = usecases::SearchRequest {
+        bbox,
+        categories: Default::default(),
+        text: Default::default(),
+        tags: Default::default(),
+        entry_ratings: &avg_ratings,
+    };
+
+    let (entries, _) = usecases::search(&search_engine, &*db, req, None)?;
+
+    let all_categories: Vec<_> = db.all_categories()?;
 
     let entries_categories_and_ratings = entries
         .into_iter()
