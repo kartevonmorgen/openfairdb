@@ -39,16 +39,6 @@ where
         limit: usize,
     ) -> Fallible<Vec<Entry>> {
         let mut entries = if let Some(ref bbox) = query.bbox {
-            let bbox = Bbox {
-                south_west: Coordinate {
-                    lat: bbox.south_west().lat().to_deg(),
-                    lng: bbox.south_west().lng().to_deg(),
-                },
-                north_east: Coordinate {
-                    lat: bbox.north_east().lat().to_deg(),
-                    lng: bbox.north_east().lng().to_deg(),
-                },
-            };
             self.get_entries_by_bbox(&bbox)
         } else {
             self.all_entries()

@@ -1,6 +1,6 @@
 use crate::core::{
     prelude::*,
-    util::{geo, validate},
+    util::{filter, geo, validate},
 };
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -174,7 +174,14 @@ pub fn bbox_subscriptions_by_coordinate(
     Ok(db
         .all_bbox_subscriptions()?
         .into_iter()
-        .filter(|s| geo::is_in_bbox(&x.lat, &x.lng, &s.bbox))
+        .filter(|s| {
+            if let Some(bbox) = filter::map_bbox(&s.bbox) {
+                let pt = geo::MapPoint::from_lat_lng_deg(x.lat, x.lng);
+                bbox.contains_point(&pt)
+            } else {
+                false
+            }
+        })
         .collect())
 }
 

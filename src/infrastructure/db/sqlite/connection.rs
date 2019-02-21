@@ -1,5 +1,5 @@
 use super::{models, schema};
-use crate::core::prelude::*;
+use crate::core::{prelude::*, util::geo::MapBbox};
 use chrono::prelude::*;
 use diesel::{
     self,
@@ -139,19 +139,23 @@ impl EntryGateway for SqliteConnection {
         })
     }
 
-    fn get_entries_by_bbox(&self, bbox: &Bbox) -> Result<Vec<Entry>> {
+    // TODO: Use search index for Bbox filtering
+    fn get_entries_by_bbox(&self, bbox: &MapBbox) -> Result<Vec<Entry>> {
         use self::schema::{
             entries::dsl as e_dsl, entry_category_relations::dsl as e_c_dsl,
             entry_tag_relations::dsl as e_t_dsl,
         };
-        let Bbox {
-            south_west,
-            north_east,
-        } = bbox;
         let entries: Vec<models::Entry> = e_dsl::entries
             .filter(e_dsl::current.eq(true))
-            .filter(e_dsl::lat.between(south_west.lat, north_east.lat))
-            .filter(e_dsl::lng.between(south_west.lng, north_east.lng))
+            // TODO: Fix Bbox filtering
+            .filter(e_dsl::lat.between(
+                bbox.south_west().lat().to_deg(),
+                bbox.north_east().lat().to_deg(),
+            ))
+            .filter(e_dsl::lng.between(
+                bbox.south_west().lng().to_deg(),
+                bbox.north_east().lng().to_deg(),
+            ))
             .load(self)?;
         let cat_rels = e_c_dsl::entry_category_relations.load(self)?;
         let tag_rels = e_t_dsl::entry_tag_relations.load(self)?;

@@ -26,7 +26,10 @@ pub fn get_search(
     search_engine: SearchEngine,
     search: Form<SearchQuery>,
 ) -> Result<json::SearchResponse> {
-    let bbox = geo::extract_bbox(&search.bbox)
+    let bbox = search
+        .bbox
+        .parse::<geo::MapBbox>()
+        .map_err(|_| ParameterError::Bbox)
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
 

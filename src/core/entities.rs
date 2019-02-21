@@ -1,5 +1,7 @@
 use chrono::prelude::*;
 
+use crate::core::util::geo::{MapBbox, MapPoint};
+
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
@@ -155,16 +157,36 @@ pub struct Rating {
     pub source   : Option<String>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+// TODO: Replace by geo::MapPoint
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Coordinate {
     pub lat: f64,
     pub lng: f64,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+impl From<MapPoint> for Coordinate {
+    fn from(from: MapPoint) -> Self {
+        Self {
+            lat: from.lat().to_deg(),
+            lng: from.lng().to_deg(),
+        }
+    }
+}
+
+// TODO: Replace by geo::MapBbox
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Bbox {
     pub south_west: Coordinate,
     pub north_east: Coordinate,
+}
+
+impl From<MapBbox> for Bbox {
+    fn from(from: MapBbox) -> Bbox {
+        Self {
+            south_west: from.south_west().into(),
+            north_east: from.north_east().into(),
+        }
+    }
 }
 
 #[cfg_attr(rustfmt, rustfmt_skip)]

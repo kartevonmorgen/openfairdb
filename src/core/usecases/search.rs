@@ -1,7 +1,7 @@
 use crate::core::prelude::*;
 use crate::core::util::{
     filter::{self, InBBox},
-    geo::{MapBbox, MapPoint},
+    geo::MapBbox,
     sort::SortByAverageRating,
 };
 
@@ -12,22 +12,11 @@ const MAX_INVISIBLE_RESULTS: usize = 5;
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Debug, Clone)]
 pub struct SearchRequest<'a> {
-    pub bbox          : Bbox,
+    pub bbox          : MapBbox,
     pub categories    : Vec<String>,
     pub text          : Option<String>,
     pub tags          : Vec<String>,
     pub entry_ratings : &'a HashMap<String, f64>,
-}
-
-fn map_bbox(bbox: &Bbox) -> Option<MapBbox> {
-    let sw = MapPoint::try_from_lat_lng_deg(bbox.south_west.lat, bbox.south_west.lng);
-    let ne = MapPoint::try_from_lat_lng_deg(bbox.north_east.lat, bbox.north_east.lng);
-    if let (Some(sw), Some(ne)) = (sw, ne) {
-        Some(MapBbox::new(sw, ne))
-    } else {
-        warn!("Invalid Bbox: {:?}", bbox);
-        None
-    }
 }
 
 pub fn search(
@@ -36,7 +25,7 @@ pub fn search(
     req: SearchRequest,
     limit: Option<usize>,
 ) -> Result<(Vec<Entry>, Vec<Entry>)> {
-    let visible_bbox = req.bbox;
+    let visible_bbox: MapBbox = req.bbox;
 
     let index_bbox =
         if req.text.as_ref().map(String::is_empty).unwrap_or(true) && req.tags.is_empty() {
@@ -46,7 +35,7 @@ pub fn search(
         };
 
     let index_query = EntryIndexQuery {
-        bbox: index_bbox.as_ref().and_then(map_bbox),
+        bbox: index_bbox.map(Into::into),
         text: req.text,
         categories: req.categories,
         tags: req.tags,
@@ -89,16 +78,10 @@ mod tests {
         db.ratings = ratings;
         let entry_ratings = HashMap::new();
         let req = SearchRequest {
-            bbox: Bbox {
-                south_west: Coordinate {
-                    lat: -10.0,
-                    lng: -10.0,
-                },
-                north_east: Coordinate {
-                    lat: 10.0,
-                    lng: 10.0,
-                },
-            },
+            bbox: MapBbox::new(
+                MapPoint::from_lat_lng_deg(-10.0, -10.0),
+                MapPoint::from_lat_lng_deg(10.0, 10.0),
+            ),
             categories: vec![],
             text: None,
             tags: vec![],
@@ -117,16 +100,10 @@ mod tests {
         db.ratings = ratings;
         let entry_ratings = HashMap::new();
         let req = SearchRequest {
-            bbox: Bbox {
-                south_west: Coordinate {
-                    lat: -10.0,
-                    lng: -10.0,
-                },
-                north_east: Coordinate {
-                    lat: 10.0,
-                    lng: 10.0,
-                },
-            },
+            bbox: MapBbox::new(
+                MapPoint::from_lat_lng_deg(-10.0, -10.0),
+                MapPoint::from_lat_lng_deg(10.0, 10.0),
+            ),
             categories: vec![],
             text: None,
             tags: vec![],

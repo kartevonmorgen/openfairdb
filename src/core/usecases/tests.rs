@@ -1,5 +1,8 @@
 use super::*;
-use crate::core::{usecases, util::filter::InBBox};
+use crate::core::{
+    usecases,
+    util::{filter::InBBox, geo::MapBbox},
+};
 use std::result;
 
 //TODO: move tests to corresponding usecase
@@ -137,7 +140,7 @@ impl EntryGateway for MockDb {
         Ok(self.entries.clone())
     }
 
-    fn get_entries_by_bbox(&self, bbox: &Bbox) -> RepoResult<Vec<Entry>> {
+    fn get_entries_by_bbox(&self, bbox: &MapBbox) -> RepoResult<Vec<Entry>> {
         Ok(self
             .entries
             .iter()

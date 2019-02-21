@@ -25,12 +25,13 @@ pub fn query_events<D: Db>(
 
     let mut events = db.all_events()?;
 
-    if let Some(bbox) = bbox {
-        let ext_bbox = filter::extend_bbox(&bbox);
-        events = events
-            .into_iter()
-            .filter(|x| x.in_bbox(&ext_bbox))
-            .collect();
+    if let Some(bbox) = bbox
+        .as_ref()
+        .and_then(filter::map_bbox)
+        .as_ref()
+        .map(filter::extend_bbox)
+    {
+        events = events.into_iter().filter(|x| x.in_bbox(&bbox)).collect();
     }
 
     if let Some(min) = start_min {

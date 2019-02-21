@@ -467,15 +467,6 @@ pub fn extract_bbox(s: &str) -> Result<Bbox, ParameterError> {
         })
 }
 
-// TODO: Replace legacy function
-#[cfg_attr(rustfmt, rustfmt_skip)]
-pub fn is_in_bbox(lat: &f64, lng: &f64, bbox: &Bbox) -> bool {
-    *lat >= bbox.south_west.lat &&
-    *lng >= bbox.south_west.lng &&
-    *lat <= bbox.north_east.lat &&
-    *lng <= bbox.north_east.lng
-}
-
 #[cfg(test)]
 mod tests {
 
@@ -671,40 +662,22 @@ mod tests {
 
     #[test]
     fn test_is_in_bbox() {
-        let bbox1 = Bbox {
-            south_west: Coordinate { lat: 0.0, lng: 0.0 },
-            north_east: Coordinate {
-                lat: 10.0,
-                lng: 10.0,
-            },
-        };
-        let bbox2 = Bbox {
-            south_west: Coordinate {
-                lat: -10.0,
-                lng: 0.0,
-            },
-            north_east: Coordinate {
-                lat: 0.0,
-                lng: 10.0,
-            },
-        };
-        let bbox3 = Bbox {
-            south_west: Coordinate {
-                lat: -10.0,
-                lng: -10.0,
-            },
-            north_east: Coordinate { lat: 0.0, lng: 0.0 },
-        };
-        let bbox4 = Bbox {
-            south_west: Coordinate {
-                lat: 0.0,
-                lng: -10.0,
-            },
-            north_east: Coordinate {
-                lat: 10.0,
-                lng: 0.0,
-            },
-        };
+        let bbox1 = MapBbox::new(
+            MapPoint::from_lat_lng_deg(0.0, 0.0),
+            MapPoint::from_lat_lng_deg(10.0, 10.0),
+        );
+        let bbox2 = MapBbox::new(
+            MapPoint::from_lat_lng_deg(-10.0, 0.0),
+            MapPoint::from_lat_lng_deg(0.0, 10.0),
+        );
+        let bbox3 = MapBbox::new(
+            MapPoint::from_lat_lng_deg(-10.0, -10.0),
+            MapPoint::from_lat_lng_deg(0.0, 0.0),
+        );
+        let bbox4 = MapBbox::new(
+            MapPoint::from_lat_lng_deg(0.0, -10.0),
+            MapPoint::from_lat_lng_deg(10.0, 0.0),
+        );
 
         let lat1 = 5.0;
         let lng1 = 5.0;
@@ -715,22 +688,25 @@ mod tests {
         let lat4 = 5.0;
         let lng4 = -5.0;
 
-        assert!(is_in_bbox(&lat1, &lng1, &bbox1));
-        assert!(!is_in_bbox(&lat1, &lng1, &bbox2));
-        assert!(!is_in_bbox(&lat1, &lng1, &bbox3));
-        assert!(!is_in_bbox(&lat1, &lng1, &bbox4));
-        assert!(!is_in_bbox(&lat2, &lng2, &bbox1));
-        assert!(is_in_bbox(&lat2, &lng2, &bbox2));
-        assert!(!is_in_bbox(&lat2, &lng2, &bbox3));
-        assert!(!is_in_bbox(&lat2, &lng2, &bbox4));
-        assert!(!is_in_bbox(&lat3, &lng3, &bbox1));
-        assert!(!is_in_bbox(&lat3, &lng3, &bbox2));
-        assert!(is_in_bbox(&lat3, &lng3, &bbox3));
-        assert!(!is_in_bbox(&lat3, &lng3, &bbox4));
-        assert!(!is_in_bbox(&lat4, &lng4, &bbox1));
-        assert!(!is_in_bbox(&lat4, &lng4, &bbox2));
-        assert!(!is_in_bbox(&lat4, &lng4, &bbox3));
-        assert!(is_in_bbox(&lat4, &lng4, &bbox4));
+        assert!(bbox1.contains_point(&MapPoint::from_lat_lng_deg(lat1, lng1)));
+        assert!(!bbox2.contains_point(&MapPoint::from_lat_lng_deg(lat1, lng1)));
+        assert!(!bbox3.contains_point(&MapPoint::from_lat_lng_deg(lat1, lng1)));
+        assert!(!bbox4.contains_point(&MapPoint::from_lat_lng_deg(lat1, lng1)));
+
+        assert!(!bbox1.contains_point(&MapPoint::from_lat_lng_deg(lat2, lng2)));
+        assert!(bbox2.contains_point(&MapPoint::from_lat_lng_deg(lat2, lng2)));
+        assert!(!bbox3.contains_point(&MapPoint::from_lat_lng_deg(lat2, lng2)));
+        assert!(!bbox4.contains_point(&MapPoint::from_lat_lng_deg(lat2, lng2)));
+
+        assert!(!bbox1.contains_point(&MapPoint::from_lat_lng_deg(lat3, lng3)));
+        assert!(!bbox2.contains_point(&MapPoint::from_lat_lng_deg(lat3, lng3)));
+        assert!(bbox3.contains_point(&MapPoint::from_lat_lng_deg(lat3, lng3)));
+        assert!(!bbox4.contains_point(&MapPoint::from_lat_lng_deg(lat3, lng3)));
+
+        assert!(!bbox1.contains_point(&MapPoint::from_lat_lng_deg(lat4, lng4)));
+        assert!(!bbox2.contains_point(&MapPoint::from_lat_lng_deg(lat4, lng4)));
+        assert!(!bbox3.contains_point(&MapPoint::from_lat_lng_deg(lat4, lng4)));
+        assert!(bbox4.contains_point(&MapPoint::from_lat_lng_deg(lat4, lng4)));
     }
 
     use crate::test::Bencher;

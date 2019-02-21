@@ -241,7 +241,10 @@ fn csv_export<'a>(
     db: DbConn,
     export: Form<CsvExport>,
 ) -> result::Result<Content<String>, AppError> {
-    let bbox = geo::extract_bbox(&export.bbox)
+    let bbox = export
+        .bbox
+        .parse::<geo::MapBbox>()
+        .map_err(|_| ParameterError::Bbox)
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
 

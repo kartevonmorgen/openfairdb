@@ -1,32 +1,63 @@
 use super::super::entities::*;
-use super::geo::is_in_bbox;
+use super::geo::*;
 
 const BBOX_LAT_EXT: f64 = 0.02;
 const BBOX_LNG_EXT: f64 = 0.04;
 
-pub fn extend_bbox(bbox: &Bbox) -> Bbox {
-    let mut extended_bbox = bbox.to_owned();
-    extended_bbox.south_west.lat -= BBOX_LAT_EXT;
-    extended_bbox.south_west.lng -= BBOX_LNG_EXT;
-    extended_bbox.north_east.lat += BBOX_LAT_EXT;
-    extended_bbox.north_east.lng += BBOX_LNG_EXT;
+pub fn extend_bbox(bbox: &MapBbox) -> MapBbox {
+    let south_west_lat_deg = LatCoord::min()
+        .to_deg()
+        .max(bbox.south_west().lat().to_deg() - BBOX_LAT_EXT);
+    let north_east_lat_deg = LatCoord::max()
+        .to_deg()
+        .min(bbox.north_east().lat().to_deg() + BBOX_LAT_EXT);
+    let mut south_west_lng_deg = bbox.south_west().lng().to_deg() - BBOX_LNG_EXT;
+    if south_west_lng_deg < LngCoord::min().to_deg() {
+        // wrap around
+        south_west_lng_deg += LngCoord::max().to_deg() - LngCoord::min().to_deg();
+    }
+    let mut north_east_lng_deg = bbox.north_east().lng().to_deg() + BBOX_LNG_EXT;
+    if north_east_lng_deg > LngCoord::max().to_deg() {
+        // wrap around
+        north_east_lng_deg -= LngCoord::max().to_deg() - LngCoord::min().to_deg();
+    }
+    let extended_bbox = MapBbox::new(
+        MapPoint::from_lat_lng_deg(south_west_lat_deg, south_west_lng_deg),
+        MapPoint::from_lat_lng_deg(north_east_lat_deg, north_east_lng_deg),
+    );
+    debug_assert!(extended_bbox.is_valid());
     extended_bbox
 }
 
+// TODO: Remove this function after replacing Bbox with MapBbox
+pub fn map_bbox(bbox: &Bbox) -> Option<MapBbox> {
+    let sw = MapPoint::try_from_lat_lng_deg(bbox.south_west.lat, bbox.south_west.lng);
+    let ne = MapPoint::try_from_lat_lng_deg(bbox.north_east.lat, bbox.north_east.lng);
+    if let (Some(sw), Some(ne)) = (sw, ne) {
+        Some(MapBbox::new(sw, ne))
+    } else {
+        warn!("Invalid Bbox: {:?}", bbox);
+        None
+    }
+}
+
 pub trait InBBox {
-    fn in_bbox(&self, bb: &Bbox) -> bool;
+    fn in_bbox(&self, bbox: &MapBbox) -> bool;
 }
 
 impl InBBox for Entry {
-    fn in_bbox(&self, bb: &Bbox) -> bool {
-        is_in_bbox(&self.location.lat, &self.location.lng, bb)
+    fn in_bbox(&self, bbox: &MapBbox) -> bool {
+        bbox.contains_point(&MapPoint::from_lat_lng_deg(
+            self.location.lat,
+            self.location.lng,
+        ))
     }
 }
 
 impl InBBox for Event {
-    fn in_bbox(&self, bb: &Bbox) -> bool {
+    fn in_bbox(&self, bbox: &MapBbox) -> bool {
         if let Some(ref location) = self.location {
-            is_in_bbox(&location.lat, &location.lng, bb)
+            bbox.contains_point(&MapPoint::from_lat_lng_deg(location.lat, location.lng))
         } else {
             false
         }
@@ -94,16 +125,10 @@ mod tests {
 
     #[test]
     fn is_in_bounding_box() {
-        let bb = Bbox {
-            south_west: Coordinate {
-                lat: -10.0,
-                lng: -10.0,
-            },
-            north_east: Coordinate {
-                lat: 10.0,
-                lng: 10.0,
-            },
-        };
+        let bb = MapBbox::new(
+            MapPoint::from_lat_lng_deg(-10.0, -10.0),
+            MapPoint::from_lat_lng_deg(10.0, 10.0),
+        );
         let e = Entry::build()
             .title("foo")
             .description("bar")
@@ -122,16 +147,10 @@ mod tests {
 
     #[test]
     fn filter_by_bounding_box() {
-        let bb = Bbox {
-            south_west: Coordinate {
-                lat: -10.0,
-                lng: -10.0,
-            },
-            north_east: Coordinate {
-                lat: 10.0,
-                lng: 10.0,
-            },
-        };
+        let bb = MapBbox::new(
+            MapPoint::from_lat_lng_deg(-10.0, -10.0),
+            MapPoint::from_lat_lng_deg(10.0, 10.0),
+        );
         let entries = vec![
             Entry::build().lat(5.0).lng(5.0).finish(),
             Entry::build().lat(-5.0).lng(5.0).finish(),
