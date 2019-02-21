@@ -633,35 +633,7 @@ mod tests {
         assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(26.0, -180.0)));
         assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(-10.0, 11.0)));
         assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(10.0, 29.0)));
-    }
 
-    const BBOX_COORD_PRECISION: f64 = 1e-6;
-
-    #[test]
-    fn extract_bbox_from_str() {
-        assert!(extract_bbox("0,-10.0870,90,180.0").is_ok());
-        let bb = extract_bbox("0,-10.9876,20,30");
-        assert!(bb.is_ok());
-        let bb = bb.unwrap();
-        assert!((bb.south_west.lat - 0.0).abs() < BBOX_COORD_PRECISION);
-        assert!((bb.south_west.lng - -10.9876).abs() < BBOX_COORD_PRECISION);
-        assert!((bb.north_east.lat - 20.0).abs() < BBOX_COORD_PRECISION);
-        assert!((bb.north_east.lng - 30.0).abs() < BBOX_COORD_PRECISION);
-    }
-
-    #[test]
-    fn extract_bbox_from_str_with_missing_lng() {
-        assert!(extract_bbox("5,4,3").is_err());
-    }
-
-    #[test]
-    fn extract_bbox_from_str_with_invalid_chars() {
-        assert!(extract_bbox("5,4,3,o").is_err());
-        assert!(extract_bbox("5;4;3,0").is_err());
-    }
-
-    #[test]
-    fn test_is_in_bbox() {
         let bbox1 = MapBbox::new(
             MapPoint::from_lat_lng_deg(0.0, 0.0),
             MapPoint::from_lat_lng_deg(10.0, 10.0),
@@ -707,6 +679,31 @@ mod tests {
         assert!(!bbox2.contains_point(&MapPoint::from_lat_lng_deg(lat4, lng4)));
         assert!(!bbox3.contains_point(&MapPoint::from_lat_lng_deg(lat4, lng4)));
         assert!(bbox4.contains_point(&MapPoint::from_lat_lng_deg(lat4, lng4)));
+    }
+
+    const BBOX_COORD_PRECISION: f64 = 1e-6;
+
+    #[test]
+    fn extract_bbox_from_str() {
+        assert!(extract_bbox("0,-10.0870,90,180.0").is_ok());
+        let bb = extract_bbox("0,-10.9876,20,30");
+        assert!(bb.is_ok());
+        let bb = bb.unwrap();
+        assert!((bb.south_west.lat - 0.0).abs() < BBOX_COORD_PRECISION);
+        assert!((bb.south_west.lng - -10.9876).abs() < BBOX_COORD_PRECISION);
+        assert!((bb.north_east.lat - 20.0).abs() < BBOX_COORD_PRECISION);
+        assert!((bb.north_east.lng - 30.0).abs() < BBOX_COORD_PRECISION);
+    }
+
+    #[test]
+    fn extract_bbox_from_str_with_missing_lng() {
+        assert!(extract_bbox("5,4,3").is_err());
+    }
+
+    #[test]
+    fn extract_bbox_from_str_with_invalid_chars() {
+        assert!(extract_bbox("5,4,3,o").is_err());
+        assert!(extract_bbox("5;4;3,0").is_err());
     }
 
     use crate::test::Bencher;
