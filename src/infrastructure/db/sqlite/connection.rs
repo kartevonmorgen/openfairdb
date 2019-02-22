@@ -225,7 +225,10 @@ impl EntryGateway for SqliteConnection {
 
     fn count_entries(&self) -> Result<usize> {
         use self::schema::entries::dsl as e_dsl;
-        let count: i64 = e_dsl::entries.select(diesel::dsl::count(e_dsl::id)).filter(e_dsl::current.eq(true)).first(self)?;
+        let count: i64 = e_dsl::entries
+            .select(diesel::dsl::count(e_dsl::id))
+            .filter(e_dsl::current.eq(true))
+            .first(self)?;
         Ok(count as usize)
     }
 

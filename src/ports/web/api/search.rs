@@ -83,7 +83,10 @@ pub fn get_search(
 
         let search_limit = if let Some(limit) = search.limit {
             if limit > MAX_RESULTS {
-                warn!("Reducing limit for search results from {} to {}", limit, MAX_RESULTS);
+                warn!(
+                    "Reducing limit for search results from {} to {}",
+                    limit, MAX_RESULTS
+                );
                 MAX_RESULTS
             } else {
                 limit

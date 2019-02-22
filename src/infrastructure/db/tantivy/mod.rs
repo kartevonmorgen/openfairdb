@@ -178,8 +178,7 @@ impl EntryIndex for TantivyEntryIndex {
         query: &EntryIndexQuery,
         limit: usize,
     ) -> Fallible<Vec<Entry>> {
-        let mut sub_queries: Vec<(Occur, Box<Query>)> =
-            Vec::with_capacity(2 + 1 + 1 + 1);
+        let mut sub_queries: Vec<(Occur, Box<Query>)> = Vec::with_capacity(2 + 1 + 1 + 1);
 
         // Bbox
         if let Some(ref bbox) = query.bbox {
@@ -256,8 +255,7 @@ impl EntryIndex for TantivyEntryIndex {
                     Vec::with_capacity(query.categories.len());
                 for tag in &query.tags {
                     debug_assert!(!tag.trim().is_empty());
-                    let tag_term =
-                        Term::from_field_text(self.fields.tag, &tag.to_lowercase());
+                    let tag_term = Term::from_field_text(self.fields.tag, &tag.to_lowercase());
                     let tag_query = TermQuery::new(tag_term, IndexRecordOption::Basic);
                     tag_queries.push((Occur::Should, Box::new(tag_query)));
                 }
@@ -266,8 +264,7 @@ impl EntryIndex for TantivyEntryIndex {
                 // Single tag
                 let tag = &query.tags[0];
                 debug_assert!(!tag.trim().is_empty());
-                let tag_term =
-                    Term::from_field_text(self.fields.tag, &tag.to_lowercase());
+                let tag_term = Term::from_field_text(self.fields.tag, &tag.to_lowercase());
                 Box::new(TermQuery::new(tag_term, IndexRecordOption::Basic))
             };
             sub_queries.push((Occur::Must, tags_query));

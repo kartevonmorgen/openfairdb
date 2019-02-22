@@ -70,6 +70,31 @@ pub fn search(
     Ok((visible_results, invisible_results))
 }
 
+/// The global search usecase is like the one
+/// of usual internet search engines that exists
+/// of only one single search input.
+/// So here we don't care about tags, categories etc.
+/// We also ignore the rating of an entry for now.
+pub fn global_search(
+    index: &EntryIndex,
+    entries: &EntryGateway,
+    txt: &str,
+    limit: usize,
+) -> Result<Vec<Entry>> {
+    let index_query = EntryIndexQuery {
+        bbox: None,
+        text: Some(txt.into()),
+        categories: vec![],
+        tags: vec![],
+    };
+
+    let entries = index
+        .query_entries(entries, &index_query, limit)
+        .map_err(|err| RepoError::Other(Box::new(err.compat())))?;
+
+    Ok(entries)
+}
+
 #[cfg(test)]
 mod tests {
 
