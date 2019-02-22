@@ -95,16 +95,39 @@ pub fn get_comments_by_rating_ids<D: Db>(
         .collect())
 }
 
+// TODO: all_entries() currently is very inefficient
+// and should be used seldom!!! This constant should
+// disappear once multiple entries can be loaded in
+// batches.
+// TODO: Tune this constant based on performance tests.
+const MAX_COUNT_FOR_SINGLE_ENTRY_LOOKUP: usize = 50;
+
 pub fn get_entries<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Entry>> {
-    let entries = match ids.len() {
-        0 => vec![],
-        1 => vec![db.get_entry(&ids[0])?],
-        // TODO: Retrieve multiple entries in batches!!!
-        _ => db
-            .all_entries()?
+    // TODO: Retrieve multiple entries in batches instead of either all or one-by-one!
+    let entries = if ids.len() > MAX_COUNT_FOR_SINGLE_ENTRY_LOOKUP {
+        db.all_entries()?
             .into_iter()
             .filter(|e| ids.iter().any(|id| *id == e.id))
-            .collect(),
+            .collect()
+    } else {
+        let mut entries = Vec::with_capacity(ids.len());
+        for id in ids {
+            match db.get_entry(id) {
+                Ok(entry) => {
+                    // Success
+                    entries.push(entry);
+                }
+                Err(RepoError::NotFound) => {
+                    // Some of the requested entries might not exist
+                    info!("One of multiple entries not found: {}", id);
+                }
+                Err(err) => {
+                    // Abort on any unexpected error
+                    Err(err)?;
+                }
+            }
+        }
+        entries
     };
     Ok(entries)
 }
