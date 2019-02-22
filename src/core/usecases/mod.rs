@@ -96,11 +96,16 @@ pub fn get_comments_by_rating_ids<D: Db>(
 }
 
 pub fn get_entries<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Entry>> {
-    let entries = db
-        .all_entries()?
-        .into_iter()
-        .filter(|e| ids.iter().any(|id| *id == e.id))
-        .collect();
+    let entries = match ids.len() {
+        0 => vec![],
+        1 => vec![db.get_entry(&ids[0])?],
+        // TODO: Retrieve multiple entries in batches!!!
+        _ => db
+            .all_entries()?
+            .into_iter()
+            .filter(|e| ids.iter().any(|id| *id == e.id))
+            .collect(),
+    };
     Ok(entries)
 }
 
