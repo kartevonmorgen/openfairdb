@@ -86,7 +86,7 @@ pub struct IndexedEntry {
     pub ratings: AvgRatings,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct EntryIndexQuery {
     pub bbox: Option<MapBbox>,
     pub text: Option<String>,

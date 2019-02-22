@@ -1,0 +1,32 @@
+html, body {
+  margin: 0;
+  font-family: sans-serif;
+}
+
+.search h1 {
+  text-align: center;
+}
+
+.search-form {
+  margin-top: 2em;
+  margin: auto;
+  text-align: center;
+}
+
+.search-form form input {
+  margin: 0.2em;
+}
+
+.search-form form .btn {
+  font-size: 1.1em;
+  margin: 1em;
+}
+
+.results {
+  margin: auto;
+  max-width: 960px;
+}
+
+ul.result-list {
+  list-style: none;
+}
