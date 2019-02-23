@@ -151,7 +151,7 @@ fn create_entry_with_sharp_tag() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let tags = db.get().unwrap().all_entries().unwrap()[0].tags.clone();
-    assert_eq!(tags, vec!["foo", "bar"]);
+    assert_eq!(tags, vec!["bar", "foo"]);
 }
 
 #[test]
