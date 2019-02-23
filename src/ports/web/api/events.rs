@@ -22,14 +22,14 @@ fn check_and_set_address_location(e: &mut usecases::NewEvent) {
 
 #[post("/events", format = "application/json", data = "<e>")]
 pub fn post_event_with_token(
-    mut db: DbConn,
+    db: DbConn,
     token: Bearer,
     e: Json<usecases::NewEvent>,
 ) -> Result<String> {
     let mut e = e.into_inner();
     e.token = Some(token.0);
     check_and_set_address_location(&mut e);
-    let id = usecases::create_new_event(&mut *db, e.clone())?;
+    let id = usecases::create_new_event(&mut *db.pooled()?, e.clone())?;
     Ok(Json(id))
 }
 
@@ -52,7 +52,7 @@ pub fn post_event(mut _db: DbConn, _e: Json<usecases::NewEvent>) -> Status {
 
 #[get("/events/<id>")]
 pub fn get_event(db: DbConn, id: String) -> Result<json::Event> {
-    let mut ev = usecases::get_event(&*db, &id)?;
+    let mut ev = usecases::get_event(&*db.pooled()?, &id)?;
     ev.created_by = None; // don't show creators email to unregistered users
     Ok(Json(ev.into()))
 }
@@ -66,7 +66,7 @@ pub fn put_event(mut _db: DbConn, _id: &RawStr, _e: Json<usecases::UpdateEvent>)
 
 #[put("/events/<id>", format = "application/json", data = "<e>")]
 pub fn put_event_with_token(
-    mut db: DbConn,
+    db: DbConn,
     token: Bearer,
     id: &RawStr,
     e: Json<usecases::UpdateEvent>,
@@ -74,7 +74,7 @@ pub fn put_event_with_token(
     let mut e = e.into_inner();
     e.token = Some(token.0);
     check_and_set_address_location(&mut e);
-    usecases::update_event(&mut *db, &id.to_string(), e.clone())?;
+    usecases::update_event(&mut *db.pooled()?, &id.to_string(), e.clone())?;
     Ok(Json(()))
 }
 
@@ -155,7 +155,7 @@ pub fn get_events_with_token(
 ) -> Result<Vec<json::Event>> {
     //TODO: check token
     let events = usecases::query_events(
-        &*db,
+        &*db.pooled()?,
         query.tags,
         query.bbox,
         query.start_min.map(|x| NaiveDateTime::from_timestamp(x, 0)),
@@ -173,7 +173,7 @@ pub fn get_events(db: DbConn, query: EventQuery) -> Result<Vec<json::Event>> {
         return Err(Error::Parameter(ParameterError::Unauthorized).into());
     }
     let events = usecases::query_events(
-        &*db,
+        &*db.pooled()?,
         query.tags,
         query.bbox,
         query.start_min.map(|x| NaiveDateTime::from_timestamp(x, 0)),
@@ -191,8 +191,8 @@ pub fn delete_event(mut _db: DbConn, _id: &RawStr) -> Status {
 }
 
 #[delete("/events/<id>")]
-pub fn delete_event_with_token(mut db: DbConn, token: Bearer, id: &RawStr) -> Result<()> {
-    usecases::delete_event(&mut *db, &id.to_string(), &token.0)?;
+pub fn delete_event_with_token(db: DbConn, token: Bearer, id: &RawStr) -> Result<()> {
+    usecases::delete_event(&mut *db.pooled()?, &id.to_string(), &token.0)?;
     Ok(Json(()))
 }
 

@@ -1,18 +1,34 @@
 use crate::infrastructure::error::AppError;
-use diesel::r2d2::{ConnectionManager, Pool, PooledConnection};
+use crate::core::error::{RepoError, Error};
+use diesel::r2d2::{ConnectionManager, Pool, self};
 use diesel::sqlite::SqliteConnection;
-use rocket::http::Status;
 use rocket::request::{self, FromRequest};
 use rocket::{Outcome, Request, State};
-use std::ops::{Deref, DerefMut};
 
 embed_migrations!();
 
 static POOL_SIZE: u32 = 5;
 
 pub type ConnectionPool = Pool<ConnectionManager<SqliteConnection>>;
+pub type PooledConnection = r2d2::PooledConnection<ConnectionManager<SqliteConnection>>;
 
-pub struct DbConn(pub PooledConnection<ConnectionManager<SqliteConnection>>);
+#[derive(Clone)]
+pub struct DbConn {
+    pool: ConnectionPool,
+}
+
+impl DbConn {
+    pub fn new(pool: ConnectionPool) -> Self {
+        Self { pool }
+    }
+
+    pub fn pooled(&self) -> Result<PooledConnection, Error> {
+        self.pool.get().map_err(|err| {
+            error!("Failed to obtain pooled database connection");
+            Error::Repo(RepoError::Other(Box::new(err)))
+        }
+    }
+}
 
 pub fn create_connection_pool(db_url: &str) -> Result<ConnectionPool, AppError> {
     let manager = ConnectionManager::<SqliteConnection>::new(db_url);
@@ -28,23 +44,6 @@ impl<'a, 'r> FromRequest<'a, 'r> for DbConn {
 
     fn from_request(request: &'a Request<'r>) -> request::Outcome<DbConn, ()> {
         let pool = request.guard::<State<ConnectionPool>>()?;
-        match pool.get() {
-            Ok(conn) => Outcome::Success(DbConn(conn)),
-            Err(_) => Outcome::Failure((Status::ServiceUnavailable, ())),
-        }
-    }
-}
-
-impl Deref for DbConn {
-    type Target = SqliteConnection;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
-impl DerefMut for DbConn {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+        Outcome::Success(DbConn::new(pool.inner().clone()))
     }
 }

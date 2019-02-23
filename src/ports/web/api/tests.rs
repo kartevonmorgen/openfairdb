@@ -43,7 +43,7 @@ pub mod prelude {
         let search_engine = tantivy::create_search_engine_in_ram().unwrap();
         let rocket = rocket_instance(pool.clone(), search_engine.clone(), Some(cfg));
         let client = Client::new(rocket).unwrap();
-        (client, sqlite::DbConn(pool.get().unwrap()), search_engine)
+        (client, sqlite::DbConn::new(pool), search_engine)
     }
 
     pub fn test_json(r: &Response) {
@@ -293,7 +293,8 @@ fn search_with_categories() {
         new_entry_with_category("foo", 2.0),
         new_entry_with_category("bar", 3.0),
     ];
-    let (client, mut db, mut search_engine) = setup2();
+    let (client, db, mut search_engine) = setup2();
+    let mut db = db.pooled().unwrap();
     db.create_category_if_it_does_not_exist(&Category {
         id: "foo".into(),
         created: 0,
@@ -356,7 +357,8 @@ fn search_with_text() {
         new_entry_with_text("bar", "foo", 2.0),
         new_entry_with_text("baZ", "blub", 3.0),
     ];
-    let (client, mut db, mut search_engine) = setup2();
+    let (client, db, mut search_engine) = setup2();
+    let mut db = db.pooled().unwrap();
     let entry_ids: Vec<_> = entries
         .into_iter()
         .map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap())
@@ -404,7 +406,8 @@ fn search_with_tags() {
             ..default_new_entry()
         },
     ];
-    let (client, mut db, mut search_engine) = setup2();
+    let (client, db, mut search_engine) = setup2();
+    let mut db = db.pooled().unwrap();
     db.create_category_if_it_does_not_exist(&Category {
         id: "foo".into(),
         created: 0,
@@ -459,7 +462,8 @@ fn search_with_uppercase_tags() {
             ..default_new_entry()
         },
     ];
-    let (client, mut db, mut search_engine) = setup2();
+    let (client, db, mut search_engine) = setup2();
+    let mut db = db.pooled().unwrap();
     db.create_tag_if_it_does_not_exist(&Tag { id: "foo".into() })
         .unwrap();
     db.create_tag_if_it_does_not_exist(&Tag { id: "bar".into() })
@@ -494,7 +498,8 @@ fn search_with_hashtag() {
             ..default_new_entry()
         },
     ];
-    let (client, mut db, mut search_engine) = setup2();
+    let (client, db, mut search_engine) = setup2();
+    let mut db = db.pooled().unwrap();
     db.create_tag_if_it_does_not_exist(&Tag {
         id: "bla-blubb".into(),
     })
@@ -531,7 +536,8 @@ fn search_with_two_hashtags() {
             ..default_new_entry()
         },
     ];
-    let (client, mut db, mut search_engine) = setup2();
+    let (client, db, mut search_engine) = setup2();
+    let mut db = db.pooled().unwrap();
     db.create_tag_if_it_does_not_exist(&Tag {
         id: "bla-blubb".into(),
     })
@@ -583,7 +589,8 @@ fn search_with_commata() {
             ..default_new_entry()
         },
     ];
-    let (client, mut db, mut search_engine) = setup2();
+    let (client, db, mut search_engine) = setup2();
+    let mut db = db.pooled().unwrap();
     db.create_tag_if_it_does_not_exist(&Tag { id: "eins".into() })
         .unwrap();
     db.create_tag_if_it_does_not_exist(&Tag { id: "zwei".into() })
@@ -632,7 +639,8 @@ fn search_without_specifying_hashtag_symbol() {
             ..default_new_entry()
         },
     ];
-    let (client, mut db, mut search_engine) = setup2();
+    let (client, db, mut search_engine) = setup2();
+    let mut db = db.pooled().unwrap();
     db.create_tag_if_it_does_not_exist(&Tag {
         id: "bla-blubb".into(),
     })
@@ -1174,7 +1182,8 @@ fn export_csv() {
     );
     entries[0].homepage = Some("homepage1".to_string());
 
-    let (client, mut db, mut search_engine) = setup2();
+    let (client, db, mut search_engine) = setup2();
+    let mut db = db.pooled().unwrap();
 
     db.create_category_if_it_does_not_exist(&Category {
         id: "2cd00bebec0c48ba9db761da48678134".into(),
