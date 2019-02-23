@@ -223,7 +223,7 @@ impl EntryIndex for TantivyEntryIndex {
             let category_term =
                 Term::from_field_text(self.fields.category, &category.to_lowercase());
             let category_query = TermQuery::new(category_term, IndexRecordOption::Basic);
-            sub_queries.push((Occur::Must, Box::new(category_query)));
+            sub_queries.push((Occur::Should, Box::new(category_query)));
         }
         for tag in &query.tags {
             debug_assert!(!tag.trim().is_empty());

@@ -312,7 +312,8 @@ fn search_with_categories() {
         .into_iter()
         .map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap())
         .collect();
-    let req = client.get("/search?bbox=-10,-10,10,10&categories=foo");
+
+    let req = client.get("/search?bbox=-10,-10,10,10&categories=foo&limit=2");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
@@ -321,12 +322,20 @@ fn search_with_categories() {
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
 
-    let req = client.get("/search?bbox=-10,-10,10,10&categories=bar");
+    let req = client.get("/search?bbox=-10,-10,10,10&categories=bar&limit=1");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+
+    let req = client.get("/search?bbox=-10,-10,10,10&categories=foo,bar");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
