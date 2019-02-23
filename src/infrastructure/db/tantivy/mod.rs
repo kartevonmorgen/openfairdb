@@ -211,7 +211,7 @@ impl EntryIndex for TantivyEntryIndex {
             debug_assert!(!text.trim().is_empty());
             match self.text_query_parser.parse_query(&text.to_lowercase()) {
                 Ok(query) => {
-                    sub_queries.push((Occur::Should, Box::new(query)));
+                    sub_queries.push((Occur::Must, Box::new(query)));
                 }
                 Err(err) => {
                     warn!("Failed to parse query text '{}': {:?}", text, err);
