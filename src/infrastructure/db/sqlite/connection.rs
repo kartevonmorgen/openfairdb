@@ -147,10 +147,20 @@ impl EntryGateway for SqliteConnection {
         // TODO: Don't load all table contents into memory at once!
         // We only need to iterator over the sorted rows of the results.
         // Unfortunately Diesel does not over a Cursor API for result sets.
-        let entries: Vec<models::Entry> =
-            e_dsl::entries.filter(e_dsl::current.eq(true)).order_by(e_dsl::id).load(self)?;
-        let mut cat_rels = e_c_dsl::entry_category_relations.order_by(e_c_dsl::entry_id).load(self)?.into_iter().peekable();
-        let mut tag_rels = e_t_dsl::entry_tag_relations.order_by(e_t_dsl::entry_id).load(self)?.into_iter().peekable();
+        let entries: Vec<models::Entry> = e_dsl::entries
+            .filter(e_dsl::current.eq(true))
+            .order_by(e_dsl::id)
+            .load(self)?;
+        let mut cat_rels = e_c_dsl::entry_category_relations
+            .order_by(e_c_dsl::entry_id)
+            .load(self)?
+            .into_iter()
+            .peekable();
+        let mut tag_rels = e_t_dsl::entry_tag_relations
+            .order_by(e_t_dsl::entry_id)
+            .load(self)?
+            .into_iter()
+            .peekable();
         let mut res_entries = Vec::with_capacity(entries.len());
         // All results are sorted by entry id and we only need to iterate
         // once through the results to pick up the categories and tags of
@@ -158,10 +168,16 @@ impl EntryGateway for SqliteConnection {
         let mut e_cat_rels = Vec::with_capacity(10);
         let mut e_cat_tags = Vec::with_capacity(20);
         for e in entries.into_iter() {
-            while let Some(true) = cat_rels.peek().map(|ec: &models::EntryCategoryRelation| ec.entry_id == e.id) {
+            while let Some(true) = cat_rels
+                .peek()
+                .map(|ec: &models::EntryCategoryRelation| ec.entry_id == e.id)
+            {
                 e_cat_rels.push(cat_rels.next().unwrap());
             }
-            while let Some(true) = tag_rels.peek().map(|et: &models::EntryTagRelation| et.entry_id == e.id) {
+            while let Some(true) = tag_rels
+                .peek()
+                .map(|et: &models::EntryTagRelation| et.entry_id == e.id)
+            {
                 e_cat_tags.push(tag_rels.next().unwrap());
             }
             res_entries.push((e, &e_cat_rels, &e_cat_tags).into());
