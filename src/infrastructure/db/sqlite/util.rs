@@ -183,9 +183,9 @@ impl From<e::Event> for Event {
     }
 }
 
-impl From<(Entry, &Vec<EntryCategoryRelation>, &Vec<EntryTagRelation>)> for e::Entry {
-    fn from(d: (Entry, &Vec<EntryCategoryRelation>, &Vec<EntryTagRelation>)) -> Self {
-        let (e, cat_rels, tag_rels) = d;
+impl From<(Entry, Vec<String>, Vec<String>)> for e::Entry {
+    fn from(d: (Entry, Vec<String>, Vec<String>)) -> Self {
+        let (e, categories, tags) = d;
         let Entry {
             id,
             version,
@@ -206,20 +206,6 @@ impl From<(Entry, &Vec<EntryCategoryRelation>, &Vec<EntryTagRelation>)> for e::E
             image_link_url,
             ..
         } = e;
-        let categories = cat_rels
-            .iter()
-            .filter(|r| r.entry_id == id)
-            .filter(|r| r.entry_version == version)
-            .map(|r| &r.category_id)
-            .cloned()
-            .collect();
-        let tags = tag_rels
-            .iter()
-            .filter(|r| r.entry_id == id)
-            .filter(|r| r.entry_version == version)
-            .map(|r| &r.tag_id)
-            .cloned()
-            .collect();
         let location = e::Location {
             lat: lat as f64,
             lng: lng as f64,
