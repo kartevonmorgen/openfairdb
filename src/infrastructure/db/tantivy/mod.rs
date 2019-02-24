@@ -218,18 +218,38 @@ impl EntryIndex for TantivyEntryIndex {
                 }
             }
         }
+        // At least one out of multiple categories should match. But this
+        // kine of (sub-)query is not supported so we use the following
+        // workaround.
+        let category_occur = if query.categories.len() == 1 {
+            // A single category must match
+            Occur::Must
+        } else {
+            // Some out of multiple categories should match
+            Occur::Should
+        };
         for category in &query.categories {
             debug_assert!(!category.trim().is_empty());
             let category_term =
                 Term::from_field_text(self.fields.category, &category.to_lowercase());
             let category_query = TermQuery::new(category_term, IndexRecordOption::Basic);
-            sub_queries.push((Occur::Should, Box::new(category_query)));
+            sub_queries.push((category_occur, Box::new(category_query)));
         }
+        // At least one out of multiple tags should match. But this
+        // kind of (sub-)query is not supported so we use the following
+        // workaround.
+        let tag_occur = if query.tags.len() == 1 {
+            // A single tag must match
+            Occur::Must
+        } else {
+            // Some out of multiple tags should match
+            Occur::Should
+        };
         for tag in &query.tags {
             debug_assert!(!tag.trim().is_empty());
             let tag_term = Term::from_field_text(self.fields.tag, &tag.to_lowercase());
             let tag_query = TermQuery::new(tag_term, IndexRecordOption::Basic);
-            sub_queries.push((Occur::Should, Box::new(tag_query)));
+            sub_queries.push((tag_occur, Box::new(tag_query)));
         }
         let query = BooleanQuery::from(sub_queries);
         let searcher = self.index.searcher();
