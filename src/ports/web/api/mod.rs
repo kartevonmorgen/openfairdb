@@ -80,7 +80,7 @@ fn get_entry(db: DbConn, ids: String) -> Result<Vec<json::Entry>> {
     // TODO: Add a new method for searching multiple ids
     let ids = util::extract_ids(&ids);
     let (entries, ratings) = {
-        let db = db.pooled()?;
+        let db = db.read_only()?;
         let entries = usecases::get_entries(&*db, &ids)?;
         let ratings = usecases::get_ratings_by_entry_ids(&*db, &ids)?;
         (entries, ratings)
@@ -98,7 +98,7 @@ fn get_entry(db: DbConn, ids: String) -> Result<Vec<json::Entry>> {
 
 #[get("/duplicates")]
 fn get_duplicates(db: DbConn) -> Result<Vec<(String, String, DuplicateType)>> {
-    let entries = db.pooled()?.all_entries()?;
+    let entries = db.read_only()?.all_entries()?;
     let ids = usecases::find_duplicates(&entries);
     Ok(Json(ids))
 }
@@ -117,7 +117,7 @@ fn get_api() -> Content<&'static str> {
 
 #[post("/login", format = "application/json", data = "<login>")]
 fn login(db: DbConn, mut cookies: Cookies, login: Json<usecases::Login>) -> Result<()> {
-    let username = usecases::login(&mut *db.pooled()?, &login.into_inner())?;
+    let username = usecases::login(&mut *db.read_write()?, &login.into_inner())?;
     cookies.add_private(
         Cookie::build(COOKIE_USER_KEY, username)
             .same_site(rocket::http::SameSite::None)
@@ -135,7 +135,7 @@ fn logout(mut cookies: Cookies) -> Result<()> {
 #[post("/confirm-email-address", format = "application/json", data = "<user>")]
 fn confirm_email_address(db: DbConn, user: Json<UserId>) -> Result<()> {
     let u_id = user.into_inner().u_id;
-    usecases::confirm_email_address(&mut *db.pooled()?, &u_id)?;
+    usecases::confirm_email_address(&mut *db.read_write()?, &u_id)?;
     Ok(Json(()))
 }
 
@@ -155,21 +155,21 @@ fn subscribe_to_bbox(
         .map(Coordinate::from)
         .collect();
     let Login(username) = user;
-    usecases::subscribe_to_bbox(&coordinates, &username, &mut *db.pooled()?)?;
+    usecases::subscribe_to_bbox(&coordinates, &username, &mut *db.read_write()?)?;
     Ok(Json(()))
 }
 
 #[delete("/unsubscribe-all-bboxes")]
 fn unsubscribe_all_bboxes(db: DbConn, user: Login) -> Result<()> {
     let Login(username) = user;
-    usecases::unsubscribe_all_bboxes_by_username(&mut *db.pooled()?, &username)?;
+    usecases::unsubscribe_all_bboxes_by_username(&mut *db.read_write()?, &username)?;
     Ok(Json(()))
 }
 
 #[get("/bbox-subscriptions")]
 fn get_bbox_subscriptions(db: DbConn, user: Login) -> Result<Vec<json::BboxSubscription>> {
     let Login(username) = user;
-    let user_subscriptions = usecases::get_bbox_subscriptions(&username, &*db.pooled()?)?
+    let user_subscriptions = usecases::get_bbox_subscriptions(&username, &*db.read_only()?)?
         .into_iter()
         .map(|s| json::BboxSubscription {
             id: s.id,
@@ -190,7 +190,7 @@ fn post_entry(
 ) -> Result<String> {
     let e = e.into_inner();
     let (id, email_addresses, all_categories) = {
-        let mut db = db.pooled()?;
+        let mut db = db.read_write()?;
         let id = usecases::create_new_entry(&mut *db, Some(&mut search_engine), e.clone())?;
         let email_addresses = usecases::email_addresses_by_coordinate(&mut *db, &e.lat, &e.lng)?;
         let all_categories = db.all_categories()?;
@@ -209,7 +209,7 @@ fn put_entry(
 ) -> Result<String> {
     let e = e.into_inner();
     let (email_addresses, all_categories) = {
-        let mut db = db.pooled()?;
+        let mut db = db.read_write()?;
         usecases::update_entry(&mut *db, Some(&mut search_engine), e.clone())?;
         let email_addresses = usecases::email_addresses_by_coordinate(&mut *db, &e.lat, &e.lng)?;
         let all_categories = db.all_categories()?;
@@ -221,13 +221,13 @@ fn put_entry(
 
 #[get("/tags")]
 fn get_tags(db: DbConn) -> Result<Vec<String>> {
-    let tags = db.pooled()?.all_tags()?;
+    let tags = db.read_only()?.all_tags()?;
     Ok(Json(tags.into_iter().map(|t| t.id).collect()))
 }
 
 #[get("/categories")]
 fn get_categories(db: DbConn) -> Result<Vec<Category>> {
-    let categories = db.pooled()?.all_categories()?;
+    let categories = db.read_only()?.all_categories()?;
     Ok(Json(categories))
 }
 
@@ -236,7 +236,8 @@ fn get_category(db: DbConn, ids: String) -> Result<Vec<Category>> {
     // TODO: Only lookup and return a single entity
     // TODO: Add a new method for searching multiple ids
     let ids = util::extract_ids(&ids);
-    let categories = db.pooled()?
+    let categories = db
+        .read_only()?
         .all_categories()?
         .into_iter()
         .filter(|c| ids.iter().any(|id| &c.id == id))
@@ -278,7 +279,7 @@ fn csv_export<'a>(
     };
 
     let (entries, all_categories) = {
-        let db = db.pooled()?;
+        let db = db.read_only()?;
         let (entries, _) = usecases::search(&search_engine, &*db, req, None)?;
         let all_categories: Vec<_> = db.all_categories()?;
         (entries, all_categories)

@@ -4,7 +4,7 @@ use super::*;
 pub fn post_rating(db: DbConn, u: Json<usecases::RateEntry>) -> Result<()> {
     let u = u.into_inner();
     let e_id = u.entry.clone();
-    let mut db = db.pooled()?;
+    let mut db = db.read_write()?;
     usecases::rate_entry(&mut *db, u)?;
     super::super::calculate_rating_for_entry(&*db, &e_id)?;
     Ok(Json(()))
@@ -16,7 +16,7 @@ pub fn get_rating(db: DbConn, ids: String) -> Result<Vec<json::Rating>> {
     // TODO: Add a new method for searching multiple ids
     let mut ids = util::extract_ids(&ids);
     let (ratings, comments) = {
-        let db = db.pooled()?;
+        let db = db.read_only()?;
         let ratings = usecases::get_ratings(&*db, &ids)?;
         // Retain only those ids that have actually been found
         debug_assert!(ratings.len() <= ids.len());

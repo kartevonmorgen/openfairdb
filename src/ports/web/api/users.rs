@@ -4,7 +4,7 @@ use super::*;
 pub fn post_user(db: DbConn, u: Json<usecases::NewUser>) -> Result<()> {
     let new_user = u.into_inner();
     let user = {
-        let mut db = db.pooled()?;
+        let mut db = db.read_write()?;
         usecases::create_new_user(&mut *db, new_user.clone())?;
         db.get_user(&new_user.username)?
     };
@@ -19,12 +19,12 @@ pub fn post_user(db: DbConn, u: Json<usecases::NewUser>) -> Result<()> {
 
 #[delete("/users/<u_id>")]
 pub fn delete_user(db: DbConn, user: Login, u_id: String) -> Result<()> {
-    usecases::delete_user(&mut *db.pooled()?, &user.0, &u_id)?;
+    usecases::delete_user(&mut *db.read_write()?, &user.0, &u_id)?;
     Ok(Json(()))
 }
 
 #[get("/users/<username>", format = "application/json")]
 pub fn get_user(db: DbConn, user: Login, username: String) -> Result<json::User> {
-    let (_, email) = usecases::get_user(&mut *db.pooled()?, &user.0, &username)?;
+    let (_, email) = usecases::get_user(&mut *db.read_write()?, &user.0, &username)?;
     Ok(Json(json::User { username, email }))
 }

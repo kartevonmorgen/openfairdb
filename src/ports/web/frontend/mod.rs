@@ -14,14 +14,14 @@ pub fn get_event_js() -> JavaScript<&'static str> {
 
 #[get("/events/<id>")]
 pub fn get_event(db: DbConn, id: String) -> Result<Markup> {
-    let mut ev = usecases::get_event(&*db.pooled()?, &id)?;
+    let mut ev = usecases::get_event(&*db.read_only()?, &id)?;
     ev.created_by = None; // don't show creators email to unregistered users
     Ok(view::event(ev))
 }
 
 #[get("/events")]
 pub fn get_events(db: DbConn) -> Result<Markup> {
-    let events = db.pooled()?.all_events()?;
+    let events = db.read_only()?.all_events()?;
     Ok(view::events(&events))
 }
 

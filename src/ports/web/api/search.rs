@@ -78,7 +78,8 @@ pub fn get_search(
         entry_ratings: &*avg_ratings,
     };
 
-    let (visible, invisible) = usecases::search(&search_engine, &*db.pooled()?, req, search.limit)?;
+    let (visible, invisible) =
+        usecases::search(&search_engine, &*db.read_only()?, req, search.limit)?;
 
     let visible = visible
         .into_iter()

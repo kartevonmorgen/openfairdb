@@ -1266,6 +1266,7 @@ dependencies = [
  "num-derive 0.2.4 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "openssl 0.10.18 (registry+https://github.com/rust-lang/crates.io-index)",
+ "owning_ref 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "passwords 1.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "pwhash 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "quick-error 1.2.2 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -294,7 +294,7 @@ fn search_with_categories() {
         new_entry_with_category("bar", 3.0),
     ];
     let (client, db, mut search_engine) = setup2();
-    let mut db = db.pooled().unwrap();
+    let mut db = db.read_write().unwrap();
     db.create_category_if_it_does_not_exist(&Category {
         id: "foo".into(),
         created: 0,
@@ -358,7 +358,7 @@ fn search_with_text() {
         new_entry_with_text("baZ", "blub", 3.0),
     ];
     let (client, db, mut search_engine) = setup2();
-    let mut db = db.pooled().unwrap();
+    let mut db = db.read_write().unwrap();
     let entry_ids: Vec<_> = entries
         .into_iter()
         .map(|e| usecases::create_new_entry(&mut *db, Some(&mut search_engine), e).unwrap())
@@ -407,7 +407,7 @@ fn search_with_tags() {
         },
     ];
     let (client, db, mut search_engine) = setup2();
-    let mut db = db.pooled().unwrap();
+    let mut db = db.read_write().unwrap();
     db.create_category_if_it_does_not_exist(&Category {
         id: "foo".into(),
         created: 0,
@@ -463,7 +463,7 @@ fn search_with_uppercase_tags() {
         },
     ];
     let (client, db, mut search_engine) = setup2();
-    let mut db = db.pooled().unwrap();
+    let mut db = db.read_write().unwrap();
     db.create_tag_if_it_does_not_exist(&Tag { id: "foo".into() })
         .unwrap();
     db.create_tag_if_it_does_not_exist(&Tag { id: "bar".into() })
@@ -499,7 +499,7 @@ fn search_with_hashtag() {
         },
     ];
     let (client, db, mut search_engine) = setup2();
-    let mut db = db.pooled().unwrap();
+    let mut db = db.read_write().unwrap();
     db.create_tag_if_it_does_not_exist(&Tag {
         id: "bla-blubb".into(),
     })
@@ -537,7 +537,7 @@ fn search_with_two_hashtags() {
         },
     ];
     let (client, db, mut search_engine) = setup2();
-    let mut db = db.pooled().unwrap();
+    let mut db = db.read_write().unwrap();
     db.create_tag_if_it_does_not_exist(&Tag {
         id: "bla-blubb".into(),
     })
@@ -590,7 +590,7 @@ fn search_with_commata() {
         },
     ];
     let (client, db, mut search_engine) = setup2();
-    let mut db = db.pooled().unwrap();
+    let mut db = db.read_write().unwrap();
     db.create_tag_if_it_does_not_exist(&Tag { id: "eins".into() })
         .unwrap();
     db.create_tag_if_it_does_not_exist(&Tag { id: "zwei".into() })
@@ -640,7 +640,7 @@ fn search_without_specifying_hashtag_symbol() {
         },
     ];
     let (client, db, mut search_engine) = setup2();
-    let mut db = db.pooled().unwrap();
+    let mut db = db.read_write().unwrap();
     db.create_tag_if_it_does_not_exist(&Tag {
         id: "bla-blubb".into(),
     })
@@ -1183,7 +1183,7 @@ fn export_csv() {
     entries[0].homepage = Some("homepage1".to_string());
 
     let (client, db, mut search_engine) = setup2();
-    let mut db = db.pooled().unwrap();
+    let mut db = db.read_write().unwrap();
 
     db.create_category_if_it_does_not_exist(&Category {
         id: "2cd00bebec0c48ba9db761da48678134".into(),
