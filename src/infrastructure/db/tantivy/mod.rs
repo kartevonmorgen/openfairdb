@@ -46,16 +46,20 @@ fn build_schema() -> (Schema, TantivyEntryFields) {
                 .set_index_option(IndexRecordOption::Basic),
         )
         .set_stored();
-    let category_options = TextOptions::default().set_indexing_options(
-        TextFieldIndexing::default()
-            .set_tokenizer(ID_TOKENIZER)
-            .set_index_option(IndexRecordOption::WithFreqs),
-    );
-    let tag_options = TextOptions::default().set_indexing_options(
-        TextFieldIndexing::default()
-            .set_tokenizer(TAG_TOKENIZER)
-            .set_index_option(IndexRecordOption::WithFreqs),
-    );
+    let category_options = TextOptions::default()
+        .set_indexing_options(
+            TextFieldIndexing::default()
+                .set_tokenizer(ID_TOKENIZER)
+                .set_index_option(IndexRecordOption::WithFreqs),
+        )
+        .set_stored();
+    let tag_options = TextOptions::default()
+        .set_indexing_options(
+            TextFieldIndexing::default()
+                .set_tokenizer(TAG_TOKENIZER)
+                .set_index_option(IndexRecordOption::WithFreqs),
+        )
+        .set_stored();
     let text_options = TextOptions::default().set_indexing_options(
         TextFieldIndexing::default()
             .set_tokenizer(TEXT_TOKENIZER)
@@ -260,7 +264,17 @@ impl EntryIndex for TantivyEntryIndex {
             match searcher.doc(doc_addr) {
                 Ok(doc) => {
                     if let Some(id) = doc.get_first(self.fields.id).and_then(Value::text) {
-                        match entries.get_entry(id) {
+                        let categories = doc
+                            .get_all(self.fields.category)
+                            .into_iter()
+                            .filter_map(|val| val.text().map(ToString::to_string))
+                            .collect();
+                        let tags = doc
+                            .get_all(self.fields.tag)
+                            .into_iter()
+                            .filter_map(|val| val.text().map(ToString::to_string))
+                            .collect();
+                        match entries.get_entry_with_relations(id, categories, tags) {
                             Ok(entry) => {
                                 top_entries.push(entry);
                             }

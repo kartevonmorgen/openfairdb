@@ -66,10 +66,34 @@ impl EntryGateway for SqliteConnection {
         Ok(())
     }
 
-    fn get_entry(&self, e_id: &str) -> Result<Entry> {
-        use self::schema::entries::dsl as e_dsl;
+    fn get_entry(&self, id: &str) -> Result<Entry> {
         use self::schema::entry_category_relations::dsl as e_c_dsl;
         use self::schema::entry_tag_relations::dsl as e_t_dsl;
+
+        let categories = e_c_dsl::entry_category_relations
+            .filter(e_c_dsl::entry_id.eq(&id))
+            .load::<models::EntryCategoryRelation>(self)?
+            .into_iter()
+            .map(|r| r.category_id)
+            .collect();
+
+        let tags = e_t_dsl::entry_tag_relations
+            .filter(e_t_dsl::entry_id.eq(&id))
+            .load::<models::EntryTagRelation>(self)?
+            .into_iter()
+            .map(|r| r.tag_id)
+            .collect();
+
+        self.get_entry_with_relations(id, categories, tags)
+    }
+
+    fn get_entry_with_relations(
+        &self,
+        id: &str,
+        categories: Vec<String>,
+        tags: Vec<String>,
+    ) -> Result<Entry> {
+        use self::schema::entries::dsl as e_dsl;
 
         let models::Entry {
             id,
@@ -92,23 +116,9 @@ impl EntryGateway for SqliteConnection {
             image_link_url,
             ..
         } = e_dsl::entries
-            .filter(e_dsl::id.eq(e_id))
+            .filter(e_dsl::id.eq(id))
             .filter(e_dsl::current.eq(true))
             .first(self)?;
-
-        let categories = e_c_dsl::entry_category_relations
-            .filter(e_c_dsl::entry_id.eq(&id))
-            .load::<models::EntryCategoryRelation>(self)?
-            .into_iter()
-            .map(|r| r.category_id)
-            .collect();
-
-        let tags = e_t_dsl::entry_tag_relations
-            .filter(e_t_dsl::entry_id.eq(&id))
-            .load::<models::EntryTagRelation>(self)?
-            .into_iter()
-            .map(|r| r.tag_id)
-            .collect();
 
         let location = Location {
             lat: lat as f64,
