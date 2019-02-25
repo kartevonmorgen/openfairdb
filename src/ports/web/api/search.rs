@@ -20,6 +20,8 @@ pub struct SearchQuery {
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
+const MAX_RESULTS: usize = 200;
+
 #[get("/search?<search..>")]
 pub fn get_search(
     db: DbConn,
@@ -65,31 +67,60 @@ pub fn get_search(
             }
         });
 
-    let avg_ratings = match super::super::ENTRY_RATINGS.lock() {
-        Ok(guard) => guard,
-        Err(poisoned) => poisoned.into_inner(),
+    let (visible, invisible) = {
+        let avg_ratings = match super::super::ENTRY_RATINGS.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+
+        let req = usecases::SearchRequest {
+            bbox,
+            categories,
+            text,
+            tags,
+            entry_ratings: &*avg_ratings,
+        };
+
+        let search_limit = if let Some(limit) = search.limit {
+            if limit > MAX_RESULTS {
+                warn!("Reducing limit for search results from {} to {}", limit, MAX_RESULTS);
+                MAX_RESULTS
+            } else {
+                limit
+            }
+        } else {
+            info!("Limiting search results to {}", MAX_RESULTS);
+            MAX_RESULTS
+        };
+
+        let (visible, invisible) =
+            usecases::search(&search_engine, &*db.read_only()?, req, Some(search_limit))?;
+
+        let visible_len = visible.len();
+        let visible: Vec<json::EntrySearchResult> = visible
+            .into_iter()
+            .take(visible_len.min(search_limit))
+            .map(|e| {
+                let avg_rating = avg_ratings.get(&e.id).cloned().unwrap_or(0.0);
+                (e, avg_rating)
+            })
+            .map(Into::into)
+            .collect();
+
+        let invisible_len = invisible.len();
+        let invisible: Vec<json::EntrySearchResult> = invisible
+            .into_iter()
+            .take(invisible_len.min(search_limit - search_limit.min(visible.len())))
+            .map(|e| {
+                let avg_rating = avg_ratings.get(&e.id).cloned().unwrap_or(0.0);
+                (e, avg_rating)
+            })
+            .map(Into::into)
+            .collect();
+
+        (visible, invisible)
+        // Implicitly release mutex on ENTRY_RATINGS before serializing response
     };
-
-    let req = usecases::SearchRequest {
-        bbox,
-        categories,
-        text,
-        tags,
-        entry_ratings: &*avg_ratings,
-    };
-
-    let (visible, invisible) =
-        usecases::search(&search_engine, &*db.read_only()?, req, search.limit)?;
-
-    let visible = visible
-        .into_iter()
-        .map(json::EntryIdWithCoordinates::from)
-        .collect();
-
-    let invisible = invisible
-        .into_iter()
-        .map(json::EntryIdWithCoordinates::from)
-        .collect();
 
     Ok(Json(json::SearchResponse { visible, invisible }))
 }

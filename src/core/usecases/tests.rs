@@ -227,6 +227,9 @@ impl EntryGateway for MockDb {
     fn all_entries(&self) -> RepoResult<Vec<Entry>> {
         Ok(self.entries.clone())
     }
+    fn count_entries(&self) -> RepoResult<usize> {
+        Ok(self.entries.len())
+    }
 
     fn update_entry(&mut self, e: &Entry) -> RepoResult<()> {
         update(&mut self.entries, e)
@@ -375,6 +378,9 @@ impl Db for MockDb {
 
     fn all_tags(&self) -> RepoResult<Vec<Tag>> {
         Ok(self.tags.clone())
+    }
+    fn count_tags(&self) -> RepoResult<usize> {
+        Ok(self.tags.len())
     }
 
     fn all_ratings(&self) -> RepoResult<Vec<Rating>> {

@@ -171,10 +171,6 @@ impl EntryIndexer for TantivyEntryIndex {
     }
 }
 
-// Upper bound for the expected number of results for which
-// memory is pre-allocated.
-const MAX_LIMIT: usize = 100;
-
 impl EntryIndex for TantivyEntryIndex {
     fn query_entries(
         &self,
@@ -183,7 +179,9 @@ impl EntryIndex for TantivyEntryIndex {
         limit: usize,
     ) -> Fallible<Vec<Entry>> {
         let mut sub_queries: Vec<(Occur, Box<Query>)> =
-            Vec::with_capacity(2 + 2 + query.categories.len() + query.tags.len());
+            Vec::with_capacity(2 + 1 + 1 + 1);
+
+        // Bbox
         if let Some(ref bbox) = query.bbox {
             debug_assert!(bbox.is_valid());
             debug_assert!(!bbox.is_empty());
@@ -211,6 +209,8 @@ impl EntryIndex for TantivyEntryIndex {
                 sub_queries.push((Occur::MustNot, Box::new(lng_query)));
             }
         }
+
+        // Text
         if let Some(ref text) = query.text {
             debug_assert!(!text.trim().is_empty());
             match self.text_query_parser.parse_query(&text.to_lowercase()) {
@@ -222,43 +222,61 @@ impl EntryIndex for TantivyEntryIndex {
                 }
             }
         }
-        // At least one out of multiple categories should match. But this
-        // kine of (sub-)query is not supported so we use the following
-        // workaround.
-        let category_occur = if query.categories.len() == 1 {
-            // A single category must match
-            Occur::Must
-        } else {
-            // Some out of multiple categories should match
-            Occur::Should
-        };
-        for category in &query.categories {
-            debug_assert!(!category.trim().is_empty());
-            let category_term =
-                Term::from_field_text(self.fields.category, &category.to_lowercase());
-            let category_query = TermQuery::new(category_term, IndexRecordOption::Basic);
-            sub_queries.push((category_occur, Box::new(category_query)));
+
+        // Categories
+        if !query.categories.is_empty() {
+            let categories_query: Box<Query> = if query.categories.len() > 1 {
+                // Multiple categories
+                let mut category_queries: Vec<(Occur, Box<Query>)> =
+                    Vec::with_capacity(query.categories.len());
+                for category in &query.categories {
+                    debug_assert!(!category.trim().is_empty());
+                    let category_term =
+                        Term::from_field_text(self.fields.category, &category.to_lowercase());
+                    let category_query = TermQuery::new(category_term, IndexRecordOption::Basic);
+                    category_queries.push((Occur::Should, Box::new(category_query)));
+                }
+                Box::new(BooleanQuery::from(category_queries))
+            } else {
+                // Single category
+                let category = &query.categories[0];
+                debug_assert!(!category.trim().is_empty());
+                let category_term =
+                    Term::from_field_text(self.fields.category, &category.to_lowercase());
+                Box::new(TermQuery::new(category_term, IndexRecordOption::Basic))
+            };
+            sub_queries.push((Occur::Must, categories_query));
         }
-        // At least one out of multiple tags should match. But this
-        // kind of (sub-)query is not supported so we use the following
-        // workaround.
-        let tag_occur = if query.tags.len() == 1 {
-            // A single tag must match
-            Occur::Must
-        } else {
-            // Some out of multiple tags should match
-            Occur::Should
-        };
-        for tag in &query.tags {
-            debug_assert!(!tag.trim().is_empty());
-            let tag_term = Term::from_field_text(self.fields.tag, &tag.to_lowercase());
-            let tag_query = TermQuery::new(tag_term, IndexRecordOption::Basic);
-            sub_queries.push((tag_occur, Box::new(tag_query)));
+
+        // Tags
+        if !query.tags.is_empty() {
+            let tags_query: Box<Query> = if query.tags.len() > 1 {
+                // Multiple tags
+                let mut tag_queries: Vec<(Occur, Box<Query>)> =
+                    Vec::with_capacity(query.categories.len());
+                for tag in &query.tags {
+                    debug_assert!(!tag.trim().is_empty());
+                    let tag_term =
+                        Term::from_field_text(self.fields.tag, &tag.to_lowercase());
+                    let tag_query = TermQuery::new(tag_term, IndexRecordOption::Basic);
+                    tag_queries.push((Occur::Should, Box::new(tag_query)));
+                }
+                Box::new(BooleanQuery::from(tag_queries))
+            } else {
+                // Single tag
+                let tag = &query.tags[0];
+                debug_assert!(!tag.trim().is_empty());
+                let tag_term =
+                    Term::from_field_text(self.fields.tag, &tag.to_lowercase());
+                Box::new(TermQuery::new(tag_term, IndexRecordOption::Basic))
+            };
+            sub_queries.push((Occur::Must, tags_query));
         }
+
         let query = BooleanQuery::from(sub_queries);
         let searcher = self.index.searcher();
         let (_doc_count, top_docs): (usize, Vec<(Score, DocAddress)>) =
-            searcher.search(&query, &(Count, TopDocs::with_limit(limit.min(MAX_LIMIT))))?;
+            searcher.search(&query, &(Count, TopDocs::with_limit(limit)))?;
         let mut top_entries = Vec::with_capacity(top_docs.len());
         for (_score, doc_addr) in top_docs {
             match searcher.doc(doc_addr) {
@@ -283,7 +301,7 @@ impl EntryIndex for TantivyEntryIndex {
                             }
                         }
                     } else {
-                        warn!("Mising entry id in document {:?}", doc_addr);
+                        warn!("Missing entry id in document {:?}", doc_addr);
                     }
                 }
                 Err(err) => {

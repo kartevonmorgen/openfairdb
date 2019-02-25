@@ -160,26 +160,37 @@ pub struct Comment {
 }
 
 #[derive(Serialize)]
-pub struct EntryIdWithCoordinates {
+pub struct EntrySearchResult {
     pub id: String,
     pub lat: f64,
     pub lng: f64,
+    pub title: String,
+    pub description: String,
+    pub categories: Vec<String>,
+    pub tags: Vec<String>,
+    pub avg_rating: f64,
 }
 
-impl From<e::Entry> for EntryIdWithCoordinates {
-    fn from(e: e::Entry) -> Self {
-        EntryIdWithCoordinates {
-            id: e.id,
-            lat: e.location.lat,
-            lng: e.location.lng,
+impl From<(e::Entry, f64)> for EntrySearchResult {
+    fn from(from: (e::Entry, f64)) -> Self {
+        let (entry, avg_rating) = from;
+        Self {
+            id: entry.id,
+            lat: entry.location.lat,
+            lng: entry.location.lng,
+            title: entry.title,
+            description: entry.description,
+            categories: entry.categories,
+            tags: entry.tags,
+            avg_rating,
         }
     }
 }
 
 #[derive(Serialize)]
 pub struct SearchResponse {
-    pub visible: Vec<EntryIdWithCoordinates>,
-    pub invisible: Vec<EntryIdWithCoordinates>,
+    pub visible: Vec<EntrySearchResult>,
+    pub invisible: Vec<EntrySearchResult>,
 }
 
 #[derive(Serialize)]

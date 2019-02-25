@@ -15,6 +15,7 @@ pub trait EntryGateway {
     ) -> Result<Entry>;
     fn get_entry(&self, _: &str) -> Result<Entry>;
     fn all_entries(&self) -> Result<Vec<Entry>>;
+    fn count_entries(&self) -> Result<usize>;
     fn update_entry(&mut self, _: &Entry) -> Result<()>;
     fn import_multiple_entries(&mut self, _: &[Entry]) -> Result<()>;
 }
@@ -63,6 +64,7 @@ pub trait Db:
 
     fn all_categories(&self) -> Result<Vec<Category>>;
     fn all_tags(&self) -> Result<Vec<Tag>>;
+    fn count_tags(&self) -> Result<usize>;
     fn all_ratings(&self) -> Result<Vec<Rating>>;
     fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>>;
 

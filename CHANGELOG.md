@@ -1,4 +1,5 @@
 ## v0.5.0 (2019-02-dd)
+- new(web): Return additional properties of entries in search results
 - new(web): Bundle a basic frontend with a minimum of JavaScript
 - chore(db): Add Tantivy full-text search engine to improve performance
 

@@ -433,8 +433,8 @@ fn search_with_tags() {
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains(&format!(
-        "\"visible\":[{{\"id\":\"{}\",\"lat\":0.0,\"lng\":0.0}}]",
-        entry_ids[1]
+        "\"visible\":[{{\"id\":\"{}\",\"lat\":0.0,\"lng\":0.0,\"title\":\"\",\"description\":\"\",\"categories\":[\"foo\"],\"tags\":[\"bla-blubb\",\"foo-bar\"],\"avg_rating\":0.0}}]",
+        entry_ids[1],
     )));
 
     let req = client.get("/search?bbox=-10,-10,10,10&tags=foo-bar");

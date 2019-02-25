@@ -40,7 +40,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SearchResult'
+                $ref: '#/components/schemas/SearchResponse'
   '/entries':
     post:
       summary: Create an entry
@@ -482,7 +482,7 @@ components:
           type: number
         north_east_lng:
           type: number
-    SearchResult:
+    SearchResponse:
       properties:
         visible:
           description: The entries that are in the given bounding box (bbox, area of the map).
@@ -495,6 +495,20 @@ components:
               lat:
                 type: number
               lng:
+                type: number
+              title:
+                type: string
+              description:
+                type: string
+              categories:
+                type: array
+                items:
+                  type: string
+              tags:
+                type: array
+                items:
+                  type: string
+              avg_rating:
                 type: number
         invisible:
           description: Up to 5 entries outside the bbox.

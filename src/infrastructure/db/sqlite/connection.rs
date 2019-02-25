@@ -223,6 +223,12 @@ impl EntryGateway for SqliteConnection {
         Ok(res_entries)
     }
 
+    fn count_entries(&self) -> Result<usize> {
+        use self::schema::entries::dsl as e_dsl;
+        let count: i64 = e_dsl::entries.select(diesel::dsl::count(e_dsl::id)).filter(e_dsl::current.eq(true)).first(self)?;
+        Ok(count as usize)
+    }
+
     fn update_entry(&mut self, entry: &Entry) -> Result<()> {
         let e = models::Entry::from(entry.clone());
 
@@ -631,6 +637,11 @@ impl Db for SqliteConnection {
             .into_iter()
             .map(Tag::from)
             .collect())
+    }
+    fn count_tags(&self) -> Result<usize> {
+        use self::schema::tags::dsl::*;
+        let count: i64 = tags.select(diesel::dsl::count(id)).first(self)?;
+        Ok(count as usize)
     }
     fn all_ratings(&self) -> Result<Vec<Rating>> {
         use self::schema::ratings::dsl::*;

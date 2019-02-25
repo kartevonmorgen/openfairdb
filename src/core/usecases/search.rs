@@ -41,11 +41,19 @@ pub fn search(
         tags: req.tags,
     };
 
+    // TODO: Avoid to query for more entries than requested once
+    // the index sorts results by their avg. rating. Until then
+    // we need to request more results than needed, sort them by,
+    // their avg. rating and cut off the tail.
+    let query_limit = entries.count_entries()? + 100;
     let mut entries = index
-        .query_entries(entries, &index_query, limit.unwrap_or(std::usize::MAX))
+        .query_entries(entries, &index_query, query_limit)
         .map_err(|err| RepoError::Other(Box::new(err.compat())))?;
-
     entries.sort_by_avg_rating(req.entry_ratings);
+    // TODO: Truncation becomes obsolete if query_limit == limit
+    if let Some(limit) = limit {
+        entries.truncate(limit);
+    }
 
     let visible_results: Vec<_> = entries
         .iter()
