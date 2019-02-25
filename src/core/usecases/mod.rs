@@ -133,7 +133,7 @@ pub fn get_entries<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Entry>> {
 }
 
 pub fn get_user<D: Db>(
-    db: &mut D,
+    db: &D,
     logged_in_username: &str,
     requested_username: &str,
 ) -> Result<(String, String)> {

@@ -90,8 +90,8 @@ mod tests {
         };
         assert!(create_new_user(&mut db, u).is_ok());
 
-        let (foo_username, _) = get_user(&mut db, "foo", "foo").unwrap();
-        let (baz_username, _) = get_user(&mut db, "baz", "baz").unwrap();
+        let (foo_username, _) = get_user(&db, "foo", "foo").unwrap();
+        let (baz_username, _) = get_user(&db, "baz", "baz").unwrap();
         assert_eq!(foo_username, "foo");
         assert_eq!(baz_username, "baz");
     }

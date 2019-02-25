@@ -117,7 +117,7 @@ fn get_api() -> Content<&'static str> {
 
 #[post("/login", format = "application/json", data = "<login>")]
 fn login(db: DbConn, mut cookies: Cookies, login: Json<usecases::Login>) -> Result<()> {
-    let username = usecases::login(&mut *db.read_write()?, &login.into_inner())?;
+    let username = usecases::login(&*db.read_only()?, &login.into_inner())?;
     cookies.add_private(
         Cookie::build(COOKIE_USER_KEY, username)
             .same_site(rocket::http::SameSite::None)

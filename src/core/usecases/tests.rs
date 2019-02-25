@@ -409,8 +409,8 @@ mod tests {
                 role: Role::Guest,
             },
         ];
-        assert!(get_user(&mut db, "a", "b").is_err());
-        assert!(get_user(&mut db, "a", "a").is_ok());
+        assert!(get_user(&db, "a", "b").is_err());
+        assert!(get_user(&db, "a", "a").is_ok());
     }
 
     #[test]

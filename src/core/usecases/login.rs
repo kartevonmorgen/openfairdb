@@ -7,7 +7,7 @@ pub struct Login {
     password: String,
 }
 
-pub fn login<D: Db>(db: &mut D, login: &Login) -> Result<String> {
+pub fn login<D: Db>(db: &D, login: &Login) -> Result<String> {
     match db.get_user(&login.username) {
         Ok(u) => {
             if bcrypt::verify(&login.password, &u.password) {

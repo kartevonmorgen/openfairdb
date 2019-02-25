@@ -25,6 +25,6 @@ pub fn delete_user(db: DbConn, user: Login, u_id: String) -> Result<()> {
 
 #[get("/users/<username>", format = "application/json")]
 pub fn get_user(db: DbConn, user: Login, username: String) -> Result<json::User> {
-    let (_, email) = usecases::get_user(&mut *db.read_write()?, &user.0, &username)?;
+    let (_, email) = usecases::get_user(&*db.read_only()?, &user.0, &username)?;
     Ok(Json(json::User { username, email }))
 }
