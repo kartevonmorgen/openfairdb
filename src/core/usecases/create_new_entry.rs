@@ -26,11 +26,10 @@ pub struct NewEntry {
     pub image_link_url : Option<String>,
 }
 
-pub fn create_new_entry<D: Db>(
-    db: &mut D,
-    mut indexer: Option<&mut EntryIndexer>,
-    e: NewEntry,
-) -> Result<String> {
+#[derive(Debug, Clone)]
+pub struct Storable(Entry);
+
+pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
     let NewEntry {
         title,
         description,
@@ -78,7 +77,7 @@ pub fn create_new_entry<D: Db>(
         .map(|ref url| parse_url_param(url))
         .transpose()?;
 
-    let new_entry = Entry {
+    let e = Entry {
         id,
         osm_node: None,
         created,
@@ -94,30 +93,20 @@ pub fn create_new_entry<D: Db>(
         image_url,
         image_link_url,
     };
+    e.validate()?;
+    Ok(Storable(e))
+}
 
-    debug!("Creating new entry: {:?}", new_entry);
-    new_entry.validate()?;
-    for t in &new_entry.tags {
+pub fn store_new_entry<D: Db>(db: &D, s: Storable) -> Result<(Entry, Vec<Rating>)> {
+    let Storable(entry) = s;
+    debug!("Storing newly created entry: {:?}", entry);
+    for t in &entry.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
-    if let Some(ref mut indexer) = indexer {
-        indexer
-            .add_or_update_entry(&new_entry)
-            .map_err(RepoError::from)?;
-    }
-    db.create_entry(new_entry).map_err(|err| {
-        if let Some(ref mut indexer) = indexer {
-            // Undo index modification
-            if let Err(err) = indexer.remove_entry_by_id(&new_id) {
-                warn!("Failed to remove new entry {} from index: {}", new_id, err);
-            }
-        }
-        err
-    })?;
-    if let Some(ref mut indexer) = indexer {
-        indexer.flush().map_err(RepoError::from)?;
-    }
-    Ok(new_id)
+    db.create_entry(entry.clone())?;
+    // No initial ratings so far
+    let ratings = vec![];
+    Ok((entry, ratings))
 }
 
 #[cfg(test)]
@@ -148,18 +137,20 @@ mod tests {
             image_url     : None,
             image_link_url: None,
         };
-        let mut mock_db = MockDb::new();
+        let mock_db = MockDb::default();
         let now = Utc::now();
-        let id = create_new_entry(&mut mock_db, None, x).unwrap();
-        assert!(Uuid::parse_str(&id).is_ok());
-        assert_eq!(mock_db.entries.len(), 1);
-        let x = &mock_db.entries[0];
+        let e = prepare_new_entry(&mock_db, x).unwrap();
+        let (e, initial_ratings) = store_new_entry(&mock_db, e).unwrap();
+        assert!(initial_ratings.is_empty());
+        assert!(Uuid::parse_str(&e.id).is_ok());
+        assert_eq!(mock_db.entries.borrow().len(), 1);
+        let x = &mock_db.entries.borrow()[0];
         assert_eq!(x.title, "foo");
         assert_eq!(x.description, "bar");
         assert_eq!(x.version, 0);
         assert!(x.created as i64 >= now.timestamp());
         assert!(Uuid::parse_str(&x.id).is_ok());
-        assert_eq!(x.id, id);
+        assert_eq!(x.id, e.id);
     }
 
     #[test]
@@ -183,8 +174,8 @@ mod tests {
             image_url     : None,
             image_link_url: None,
         };
-        let mut mock_db: MockDb = MockDb::new();
-        assert!(create_new_entry(&mut mock_db, None, x).is_err());
+        let mut mock_db: MockDb = MockDb::default();
+        assert!(prepare_new_entry(&mut mock_db, x).is_err());
     }
 
     #[test]
@@ -208,10 +199,11 @@ mod tests {
             image_url     : None,
             image_link_url: None,
         };
-        let mut mock_db = MockDb::new();
-        create_new_entry(&mut mock_db, None, x).unwrap();
-        assert_eq!(mock_db.tags.len(), 2);
-        assert_eq!(mock_db.entries.len(), 1);
+        let mock_db = MockDb::default();
+        let e = prepare_new_entry(&mock_db, x).unwrap();
+        assert!(store_new_entry(&mock_db, e).is_ok());
+        assert_eq!(mock_db.tags.borrow().len(), 2);
+        assert_eq!(mock_db.entries.borrow().len(), 1);
     }
 
 }

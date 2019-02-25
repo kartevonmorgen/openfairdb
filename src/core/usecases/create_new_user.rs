@@ -76,7 +76,7 @@ mod tests {
 
     #[test]
     fn create_two_users() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         let u = NewUser {
             username: "foo".into(),
             password: "bar".into(),
@@ -98,7 +98,7 @@ mod tests {
 
     #[test]
     fn create_user_with_invalid_name() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         let u = NewUser {
             username: "".into(),
             password: "bar".into(),
@@ -121,7 +121,7 @@ mod tests {
 
     #[test]
     fn create_user_with_invalid_password() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         let u = NewUser {
             username: "user".into(),
             password: "".into(),
@@ -144,7 +144,7 @@ mod tests {
 
     #[test]
     fn create_user_with_invalid_email() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         let u = NewUser {
             username: "user".into(),
             password: "pass".into(),
@@ -167,7 +167,7 @@ mod tests {
 
     #[test]
     fn create_user_with_existing_username() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         db.users = vec![User {
             id: "123".into(),
             username: "foo".into(),
@@ -196,7 +196,7 @@ mod tests {
 
     #[test]
     fn email_unconfirmed_on_default() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         let u = NewUser {
             username: "user".into(),
             password: "pass".into(),
@@ -208,7 +208,7 @@ mod tests {
 
     #[test]
     fn encrypt_user_password() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         let u = NewUser {
             username: "user".into(),
             password: "pass".into(),
@@ -221,7 +221,7 @@ mod tests {
 
     #[test]
     fn test_create_user_from_email() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         assert_eq!(
             create_user_from_email(&mut db, "mail@tld.com").unwrap(),
             "mailtldcom"

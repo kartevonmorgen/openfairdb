@@ -13,6 +13,7 @@ mod create_new_event;
 pub mod create_new_user;
 mod delete_event;
 mod find_duplicates;
+mod indexing;
 mod login;
 mod query_events;
 mod rate_entry;
@@ -24,8 +25,8 @@ mod update_event;
 
 pub use self::{
     confirm_email::*, create_new_entry::*, create_new_event::*, create_new_user::*,
-    delete_event::*, find_duplicates::*, login::*, query_events::*, rate_entry::*, search::*,
-    update_entry::*, update_event::*,
+    delete_event::*, find_duplicates::*, indexing::*, login::*, query_events::*, rate_entry::*,
+    search::*, update_entry::*, update_event::*,
 };
 
 // TODO: Remove this function after replacing Bbox with MapBbox
@@ -206,10 +207,7 @@ pub fn unsubscribe_all_bboxes_by_username(db: &mut Db, username: &str) -> Result
     Ok(())
 }
 
-pub fn bbox_subscriptions_by_coordinate(
-    db: &mut Db,
-    x: &Coordinate,
-) -> Result<Vec<BboxSubscription>> {
+pub fn bbox_subscriptions_by_coordinate(db: &Db, x: &Coordinate) -> Result<Vec<BboxSubscription>> {
     Ok(db
         .all_bbox_subscriptions()?
         .into_iter()
@@ -225,7 +223,7 @@ pub fn bbox_subscriptions_by_coordinate(
 }
 
 pub fn email_addresses_from_subscriptions(
-    db: &mut Db,
+    db: &Db,
     subs: &[BboxSubscription],
 ) -> Result<Vec<String>> {
     let usernames: Vec<_> = subs.iter().map(|s| &s.username).collect();
@@ -240,14 +238,8 @@ pub fn email_addresses_from_subscriptions(
     Ok(addresses)
 }
 
-pub fn email_addresses_by_coordinate(db: &mut Db, lat: &f64, lng: &f64) -> Result<Vec<String>> {
-    let subs = bbox_subscriptions_by_coordinate(
-        db,
-        &Coordinate {
-            lat: *lat,
-            lng: *lng,
-        },
-    )?;
+pub fn email_addresses_by_coordinate(db: &Db, lat: f64, lng: f64) -> Result<Vec<String>> {
+    let subs = bbox_subscriptions_by_coordinate(db, &Coordinate { lat, lng })?;
     let addresses = email_addresses_from_subscriptions(db, &subs)?;
     Ok(addresses)
 }
@@ -255,12 +247,23 @@ pub fn email_addresses_by_coordinate(db: &mut Db, lat: &f64, lng: &f64) -> Resul
 pub fn prepare_tag_list(tags: Vec<String>) -> Vec<String> {
     let mut tags: Vec<_> = tags
         .into_iter()
-        .map(|t| t.trim().to_owned())
-        .filter(|t| !t.is_empty())
+        // Filter empty tags (1st pass)
+        .filter_map(|t| match t.trim() {
+            t if t.is_empty() => None,
+            t => Some(t.to_owned()),
+        })
+        // Split and recollect
         .map(|t| t.split(" ").map(|x| x.to_owned()).collect::<Vec<_>>())
         .flatten()
+        // Remove reserved character
         .map(|t| t.replace("#", ""))
+        // Filter empty tags (2nd pass)
+        .filter_map(|t| match t.trim() {
+            t if t.is_empty() => None,
+            t => Some(t.to_owned()),
+        })
         .collect();
+    tags.sort();
     tags.dedup();
     tags
 }

@@ -6,7 +6,7 @@ use std::result;
 type Result<T> = result::Result<T, RepoError>;
 
 pub trait EntryGateway {
-    fn create_entry(&mut self, _: Entry) -> Result<()>;
+    fn create_entry(&self, _: Entry) -> Result<()>;
     fn get_entry_with_relations(
         &self,
         _: &str,
@@ -16,7 +16,7 @@ pub trait EntryGateway {
     fn get_entry(&self, _: &str) -> Result<Entry>;
     fn all_entries(&self) -> Result<Vec<Entry>>;
     fn count_entries(&self) -> Result<usize>;
-    fn update_entry(&mut self, _: &Entry) -> Result<()>;
+    fn update_entry(&self, _: &Entry) -> Result<()>;
     fn import_multiple_entries(&mut self, _: &[Entry]) -> Result<()>;
 }
 
@@ -38,7 +38,7 @@ pub trait UserGateway {
 }
 
 pub trait CommentGateway {
-    fn create_comment(&mut self, _: Comment) -> Result<()>;
+    fn create_comment(&self, _: Comment) -> Result<()>;
     fn all_comments(&self) -> Result<Vec<Comment>>;
 }
 
@@ -48,24 +48,34 @@ pub trait OrganizationGateway {
     fn get_all_tags_owned_by_orgs(&self) -> Result<Vec<String>>;
 }
 
+pub trait EntryRatingRepository {
+    fn add_rating_for_entry(&self, rating: Rating) -> Result<()>;
+    fn all_ratings_for_entry_by_id(&self, entry_id: &str) -> Result<Vec<Rating>>;
+
+    #[deprecated]
+    fn all_ratings(&self) -> Result<Vec<Rating>>;
+}
+
 //TODO:
 //  - TagGeatway
 //  - CategoryGateway
-//  - RatingGateway
 //  - SubscriptionGateway
 
 pub trait Db:
-    EntryGateway + UserGateway + CommentGateway + EventGateway + OrganizationGateway
+    EntryGateway
+    + UserGateway
+    + CommentGateway
+    + EventGateway
+    + OrganizationGateway
+    + EntryRatingRepository
 {
-    fn create_tag_if_it_does_not_exist(&mut self, _: &Tag) -> Result<()>;
+    fn create_tag_if_it_does_not_exist(&self, _: &Tag) -> Result<()>;
     fn create_category_if_it_does_not_exist(&mut self, _: &Category) -> Result<()>;
-    fn create_rating(&mut self, _: Rating) -> Result<()>;
     fn create_bbox_subscription(&mut self, _: &BboxSubscription) -> Result<()>;
 
     fn all_categories(&self) -> Result<Vec<Category>>;
     fn all_tags(&self) -> Result<Vec<Tag>>;
     fn count_tags(&self) -> Result<usize>;
-    fn all_ratings(&self) -> Result<Vec<Rating>>;
     fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>>;
 
     fn delete_bbox_subscription(&mut self, _: &str) -> Result<()>;
@@ -86,11 +96,11 @@ pub trait EntryIndex {
         entries: &EntryGateway,
         query: &EntryIndexQuery,
         limit: usize,
-    ) -> Fallible<Vec<Entry>>;
+    ) -> Fallible<Vec<(Entry, AvgRatingValue)>>;
 }
 
 pub trait EntryIndexer: EntryIndex {
-    fn add_or_update_entry(&mut self, entry: &Entry) -> Fallible<()>;
+    fn add_or_update_entry(&mut self, entry: &Entry, avg_rating: AvgRatingValue) -> Fallible<()>;
     fn remove_entry_by_id(&mut self, id: &str) -> Fallible<()>;
     fn flush(&mut self) -> Fallible<()>;
 }

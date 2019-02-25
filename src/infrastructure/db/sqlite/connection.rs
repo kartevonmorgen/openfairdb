@@ -1,18 +1,18 @@
-use super::{models, schema};
+use super::*;
+
 use crate::core::prelude::*;
 use chrono::prelude::*;
 use diesel::{
     self,
-    prelude::*,
+    prelude::{Connection as DieselConnection, *},
     result::{DatabaseErrorKind, Error as DieselError},
-    sqlite::SqliteConnection,
 };
 use std::result;
 
 type Result<T> = result::Result<T, RepoError>;
 
-fn unset_current_on_all_entries(
-    con: &&mut SqliteConnection,
+fn reset_current_entry_mut(
+    conn: &&mut SqliteConnection,
     id: &str,
 ) -> result::Result<usize, diesel::result::Error> {
     use self::schema::entries::dsl;
@@ -22,11 +22,25 @@ fn unset_current_on_all_entries(
             .filter(dsl::current.eq(true)),
     )
     .set(dsl::current.eq(false))
-    .execute(*con)
+    .execute(*conn)
+}
+
+fn reset_current_entry(
+    conn: &&SqliteConnection,
+    id: &str,
+) -> result::Result<usize, diesel::result::Error> {
+    use self::schema::entries::dsl;
+    diesel::update(
+        dsl::entries
+            .filter(dsl::id.eq(id))
+            .filter(dsl::current.eq(true)),
+    )
+    .set(dsl::current.eq(false))
+    .execute(*conn)
 }
 
 impl EntryGateway for SqliteConnection {
-    fn create_entry(&mut self, e: Entry) -> Result<()> {
+    fn create_entry(&self, e: Entry) -> Result<()> {
         let cat_rels: Vec<_> = e
             .categories
             .iter()
@@ -48,21 +62,18 @@ impl EntryGateway for SqliteConnection {
             })
             .collect();
         let new_entry = models::Entry::from(e);
-        self.transaction::<_, diesel::result::Error, _>(|| {
-            unset_current_on_all_entries(&self, &new_entry.id)?;
-            diesel::insert_into(schema::entries::table)
-                .values(&new_entry)
-                .execute(self)?;
-            diesel::insert_into(schema::entry_category_relations::table)
-                //WHERE NOT EXISTS
-                .values(&cat_rels)
-                .execute(self)?;
-            diesel::insert_into(schema::entry_tag_relations::table)
-                //WHERE NOT EXISTS
-                .values(&tag_rels)
-                .execute(self)?;
-            Ok(())
-        })?;
+        reset_current_entry(&self, &new_entry.id)?;
+        diesel::insert_into(schema::entries::table)
+            .values(&new_entry)
+            .execute(self)?;
+        diesel::insert_into(schema::entry_category_relations::table)
+            //WHERE NOT EXISTS
+            .values(&cat_rels)
+            .execute(self)?;
+        diesel::insert_into(schema::entry_tag_relations::table)
+            //WHERE NOT EXISTS
+            .values(&tag_rels)
+            .execute(self)?;
         Ok(())
     }
 
@@ -225,11 +236,14 @@ impl EntryGateway for SqliteConnection {
 
     fn count_entries(&self) -> Result<usize> {
         use self::schema::entries::dsl as e_dsl;
-        let count: i64 = e_dsl::entries.select(diesel::dsl::count(e_dsl::id)).filter(e_dsl::current.eq(true)).first(self)?;
+        let count: i64 = e_dsl::entries
+            .select(diesel::dsl::count(e_dsl::id))
+            .filter(e_dsl::current.eq(true))
+            .first(self)?;
         Ok(count as usize)
     }
 
-    fn update_entry(&mut self, entry: &Entry) -> Result<()> {
+    fn update_entry(&self, entry: &Entry) -> Result<()> {
         let e = models::Entry::from(entry.clone());
 
         let cat_rels: Vec<_> = entry
@@ -254,21 +268,18 @@ impl EntryGateway for SqliteConnection {
             })
             .collect();
 
-        self.transaction::<_, diesel::result::Error, _>(|| {
-            unset_current_on_all_entries(&self, &e.id)?;
-            diesel::insert_into(schema::entries::table)
-                .values(&e)
-                .execute(self)?;
-            diesel::insert_into(schema::entry_category_relations::table)
-                //WHERE NOT EXISTS
-                .values(&cat_rels)
-                .execute(self)?;
-            diesel::insert_into(schema::entry_tag_relations::table)
-                //WHERE NOT EXISTS
-                .values(&tag_rels)
-                .execute(self)?;
-            Ok(())
-        })?;
+        reset_current_entry(&self, &e.id)?;
+        diesel::insert_into(schema::entries::table)
+            .values(&e)
+            .execute(self)?;
+        diesel::insert_into(schema::entry_category_relations::table)
+            //WHERE NOT EXISTS
+            .values(&cat_rels)
+            .execute(self)?;
+        diesel::insert_into(schema::entry_tag_relations::table)
+            //WHERE NOT EXISTS
+            .values(&tag_rels)
+            .execute(self)?;
         Ok(())
     }
 
@@ -301,7 +312,7 @@ impl EntryGateway for SqliteConnection {
             .collect();
         self.transaction::<_, diesel::result::Error, _>(|| {
             for (new_entry, cat_rels, tag_rels) in imports {
-                unset_current_on_all_entries(&self, &new_entry.id)?;
+                reset_current_entry_mut(&self, &new_entry.id)?;
                 diesel::insert_into(schema::entries::table)
                     .values(&new_entry)
                     .execute(self)?;
@@ -534,7 +545,7 @@ impl UserGateway for SqliteConnection {
 }
 
 impl CommentGateway for SqliteConnection {
-    fn create_comment(&mut self, c: Comment) -> Result<()> {
+    fn create_comment(&self, c: Comment) -> Result<()> {
         diesel::insert_into(schema::comments::table)
             .values(&models::Comment::from(c))
             .execute(self)?;
@@ -550,8 +561,36 @@ impl CommentGateway for SqliteConnection {
     }
 }
 
+impl EntryRatingRepository for SqliteConnection {
+    fn add_rating_for_entry(&self, rating: Rating) -> Result<()> {
+        diesel::insert_into(schema::ratings::table)
+            .values(&models::Rating::from(rating))
+            .execute(self)?;
+        Ok(())
+    }
+
+    fn all_ratings_for_entry_by_id(&self, entry_id: &str) -> Result<Vec<Rating>> {
+        use self::schema::ratings::dsl;
+        Ok(dsl::ratings
+            .filter(dsl::entry_id.eq(entry_id))
+            .load::<models::Rating>(self)?
+            .into_iter()
+            .map(Rating::from)
+            .collect())
+    }
+
+    fn all_ratings(&self) -> Result<Vec<Rating>> {
+        use self::schema::ratings::dsl::*;
+        Ok(ratings
+            .load::<models::Rating>(self)?
+            .into_iter()
+            .map(Rating::from)
+            .collect())
+    }
+}
+
 impl Db for SqliteConnection {
-    fn create_tag_if_it_does_not_exist(&mut self, t: &Tag) -> Result<()> {
+    fn create_tag_if_it_does_not_exist(&self, t: &Tag) -> Result<()> {
         let res = diesel::insert_into(schema::tags::table)
             .values(&models::Tag::from(t.clone()))
             .execute(self);
@@ -597,12 +636,6 @@ impl Db for SqliteConnection {
         }
         Ok(())
     }
-    fn create_rating(&mut self, r: Rating) -> Result<()> {
-        diesel::insert_into(schema::ratings::table)
-            .values(&models::Rating::from(r))
-            .execute(self)?;
-        Ok(())
-    }
     fn create_bbox_subscription(&mut self, sub: &BboxSubscription) -> Result<()> {
         diesel::insert_into(schema::bbox_subscriptions::table)
             .values(&models::BboxSubscription::from(sub.clone()))
@@ -642,14 +675,6 @@ impl Db for SqliteConnection {
         use self::schema::tags::dsl::*;
         let count: i64 = tags.select(diesel::dsl::count(id)).first(self)?;
         Ok(count as usize)
-    }
-    fn all_ratings(&self) -> Result<Vec<Rating>> {
-        use self::schema::ratings::dsl::*;
-        Ok(ratings
-            .load::<models::Rating>(self)?
-            .into_iter()
-            .map(Rating::from)
-            .collect())
     }
 }
 

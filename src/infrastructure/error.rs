@@ -62,3 +62,9 @@ quick_error! {
         }
     }
 }
+
+impl From<failure::Error> for AppError {
+    fn from(from: failure::Error) -> Self {
+        AppError::Other(Box::new(from.compat()))
+    }
+}

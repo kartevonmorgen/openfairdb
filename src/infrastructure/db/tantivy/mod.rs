@@ -1,18 +1,21 @@
 use crate::core::{
     db::{EntryGateway, EntryIndex, EntryIndexQuery, EntryIndexer},
-    entities::Entry,
+    entities::{AvgRatingValue, Entry},
     util::geo::{LatCoord, LngCoord},
 };
 
 use failure::Fallible;
-use std::ops::Bound;
-use std::path::Path;
+use std::{
+    ops::Bound,
+    path::Path,
+    sync::{Arc, Mutex},
+};
 use tantivy::{
-    collector::{Count, TopDocs},
+    collector::TopDocs,
     query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
     schema::*,
     tokenizer::{LowerCaser, RawTokenizer, Tokenizer},
-    DocAddress, Document, Index, IndexWriter, Score,
+    DocAddress, Document, Index, IndexWriter,
 };
 
 const OVERALL_INDEX_HEAP_SIZE_IN_BYTES: usize = 50_000_000;
@@ -25,6 +28,7 @@ struct TantivyEntryFields {
     lat: Field,
     lng: Field,
     tag: Field,
+    rating: Field,
 }
 
 pub(crate) struct TantivyEntryIndex {
@@ -70,9 +74,10 @@ fn build_schema() -> (Schema, TantivyEntryFields) {
     let lat = schema_builder.add_i64_field("lat", INT_INDEXED);
     let lng = schema_builder.add_i64_field("lng", INT_INDEXED);
     let title = schema_builder.add_text_field("title", text_options.clone());
-    let description = schema_builder.add_text_field("desc", text_options);
-    let category = schema_builder.add_text_field("cat", category_options.clone());
+    let description = schema_builder.add_text_field("description", text_options);
+    let category = schema_builder.add_text_field("category", category_options.clone());
     let tag = schema_builder.add_text_field("tag", tag_options);
+    let rating = schema_builder.add_u64_field("rating", INT_STORED | FAST);
     let schema = schema_builder.build();
     let fields = TantivyEntryFields {
         id,
@@ -82,6 +87,7 @@ fn build_schema() -> (Schema, TantivyEntryFields) {
         description,
         category,
         tag,
+        rating,
     };
     (schema, fields)
 }
@@ -95,6 +101,49 @@ fn register_tokenizers(index: &Index) {
     index
         .tokenizers()
         .register(TAG_TOKENIZER, RawTokenizer.filter(LowerCaser));
+}
+
+fn f64_to_u64(val: f64, min: f64, max: f64) -> u64 {
+    debug_assert!(val >= min);
+    debug_assert!(val <= max);
+    debug_assert!(min < max);
+    if (val - max).abs() <= std::f64::EPSILON {
+        u64::max_value()
+    } else if (val - min).abs() <= std::f64::EPSILON {
+        0u64
+    } else {
+        let norm = (val.max(min).min(max) - min) / (max - min);
+        let mapped = u64::max_value() as f64 * norm;
+        mapped.round() as u64
+    }
+}
+
+fn u64_to_f64(val: u64, min: f64, max: f64) -> f64 {
+    debug_assert!(min < max);
+    if val == u64::max_value() {
+        max
+    } else if val == 0 {
+        min
+    } else {
+        min + val as f64 * ((max - min) / u64::max_value() as f64)
+    }
+}
+
+fn avg_rating_to_u64(avg_rating: AvgRatingValue) -> u64 {
+    f64_to_u64(
+        avg_rating.into(),
+        AvgRatingValue::min().into(),
+        AvgRatingValue::max().into(),
+    )
+}
+
+fn u64_to_avg_rating(val: u64) -> AvgRatingValue {
+    u64_to_f64(
+        val,
+        AvgRatingValue::min().into(),
+        AvgRatingValue::max().into(),
+    )
+    .into()
 }
 
 impl TantivyEntryIndex {
@@ -133,7 +182,8 @@ impl TantivyEntryIndex {
 }
 
 impl EntryIndexer for TantivyEntryIndex {
-    fn add_or_update_entry(&mut self, entry: &Entry) -> Fallible<()> {
+    fn add_or_update_entry(&mut self, entry: &Entry, avg_rating: AvgRatingValue) -> Fallible<()> {
+        debug_assert!(avg_rating.is_valid());
         let id_term = Term::from_field_text(self.fields.id, &entry.id);
         self.writer.delete_term(id_term);
         let mut doc = Document::default();
@@ -154,6 +204,7 @@ impl EntryIndexer for TantivyEntryIndex {
         for tag in &entry.tags {
             doc.add_text(self.fields.tag, tag);
         }
+        doc.add_u64(self.fields.rating, avg_rating_to_u64(avg_rating));
         self.writer.add_document(doc);
         Ok(())
     }
@@ -177,9 +228,8 @@ impl EntryIndex for TantivyEntryIndex {
         entries: &EntryGateway,
         query: &EntryIndexQuery,
         limit: usize,
-    ) -> Fallible<Vec<Entry>> {
-        let mut sub_queries: Vec<(Occur, Box<Query>)> =
-            Vec::with_capacity(2 + 1 + 1 + 1);
+    ) -> Fallible<Vec<(Entry, AvgRatingValue)>> {
+        let mut sub_queries: Vec<(Occur, Box<Query>)> = Vec::with_capacity(2 + 1 + 1 + 1);
 
         // Bbox
         if let Some(ref bbox) = query.bbox {
@@ -256,8 +306,7 @@ impl EntryIndex for TantivyEntryIndex {
                     Vec::with_capacity(query.categories.len());
                 for tag in &query.tags {
                     debug_assert!(!tag.trim().is_empty());
-                    let tag_term =
-                        Term::from_field_text(self.fields.tag, &tag.to_lowercase());
+                    let tag_term = Term::from_field_text(self.fields.tag, &tag.to_lowercase());
                     let tag_query = TermQuery::new(tag_term, IndexRecordOption::Basic);
                     tag_queries.push((Occur::Should, Box::new(tag_query)));
                 }
@@ -266,8 +315,7 @@ impl EntryIndex for TantivyEntryIndex {
                 // Single tag
                 let tag = &query.tags[0];
                 debug_assert!(!tag.trim().is_empty());
-                let tag_term =
-                    Term::from_field_text(self.fields.tag, &tag.to_lowercase());
+                let tag_term = Term::from_field_text(self.fields.tag, &tag.to_lowercase());
                 Box::new(TermQuery::new(tag_term, IndexRecordOption::Basic))
             };
             sub_queries.push((Occur::Must, tags_query));
@@ -275,10 +323,13 @@ impl EntryIndex for TantivyEntryIndex {
 
         let query = BooleanQuery::from(sub_queries);
         let searcher = self.index.searcher();
-        let (_doc_count, top_docs): (usize, Vec<(Score, DocAddress)>) =
-            searcher.search(&query, &(Count, TopDocs::with_limit(limit)))?;
-        let mut top_entries = Vec::with_capacity(top_docs.len());
-        for (_score, doc_addr) in top_docs {
+        // TODO (2019-02-26): Ideally we would like to order the results by
+        // (score * rating) instead of only (rating). Currently Tantivy doesn't
+        // support this kind of collector.
+        let collector = TopDocs::with_limit(limit).order_by_field(self.fields.rating);
+        let top_docs_by_rating: Vec<(u64, DocAddress)> = searcher.search(&query, &collector)?;
+        let mut top_results = Vec::with_capacity(top_docs_by_rating.len());
+        for (rating, doc_addr) in top_docs_by_rating {
             match searcher.doc(doc_addr) {
                 Ok(doc) => {
                     if let Some(id) = doc.get_first(self.fields.id).and_then(Value::text) {
@@ -294,7 +345,8 @@ impl EntryIndex for TantivyEntryIndex {
                             .collect();
                         match entries.get_entry_with_relations(id, categories, tags) {
                             Ok(entry) => {
-                                top_entries.push(entry);
+                                let avg_rating = u64_to_avg_rating(rating);
+                                top_results.push((entry, avg_rating));
                             }
                             Err(err) => {
                                 warn!("Entry {} not found: {}", id, err);
@@ -309,6 +361,62 @@ impl EntryIndex for TantivyEntryIndex {
                 }
             }
         }
-        Ok(top_entries)
+        Ok(top_results)
+    }
+}
+
+#[derive(Clone)]
+pub struct SearchEngine(Arc<Mutex<Box<dyn EntryIndexer + Send>>>);
+
+impl SearchEngine {
+    pub fn init_in_ram() -> Fallible<SearchEngine> {
+        let entry_index = TantivyEntryIndex::create_in_ram()?;
+        Ok(SearchEngine(Arc::new(Mutex::new(Box::new(entry_index)))))
+    }
+
+    pub fn init_with_path<P: AsRef<Path>>(path: Option<P>) -> Fallible<SearchEngine> {
+        let entry_index = TantivyEntryIndex::create(path)?;
+        Ok(SearchEngine(Arc::new(Mutex::new(Box::new(entry_index)))))
+    }
+}
+
+impl EntryIndex for SearchEngine {
+    fn query_entries(
+        &self,
+        entries: &EntryGateway,
+        query: &EntryIndexQuery,
+        limit: usize,
+    ) -> Fallible<Vec<(Entry, AvgRatingValue)>> {
+        let entry_index = match self.0.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        entry_index.query_entries(entries, query, limit)
+    }
+}
+
+impl EntryIndexer for SearchEngine {
+    fn add_or_update_entry(&mut self, entry: &Entry, avg_rating: AvgRatingValue) -> Fallible<()> {
+        let mut inner = match self.0.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        inner.add_or_update_entry(entry, avg_rating)
+    }
+
+    fn remove_entry_by_id(&mut self, id: &str) -> Fallible<()> {
+        let mut inner = match self.0.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        inner.remove_entry_by_id(id)
+    }
+
+    fn flush(&mut self) -> Fallible<()> {
+        let mut inner = match self.0.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        inner.flush()
     }
 }

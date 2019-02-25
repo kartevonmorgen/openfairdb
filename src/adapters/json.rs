@@ -146,7 +146,7 @@ pub struct Rating {
     pub id: String,
     pub title: String,
     pub created: u64,
-    pub value: i8,
+    pub value: e::RatingValue,
     pub context: e::RatingContext,
     pub comments: Vec<Comment>,
     pub source: String,
@@ -168,11 +168,11 @@ pub struct EntrySearchResult {
     pub description: String,
     pub categories: Vec<String>,
     pub tags: Vec<String>,
-    pub avg_rating: f64,
+    pub avg_rating: e::AvgRatingValue,
 }
 
-impl From<(e::Entry, f64)> for EntrySearchResult {
-    fn from(from: (e::Entry, f64)) -> Self {
+impl From<(e::Entry, e::AvgRatingValue)> for EntrySearchResult {
+    fn from(from: (e::Entry, e::AvgRatingValue)) -> Self {
         let (entry, avg_rating) = from;
         Self {
             id: entry.id,

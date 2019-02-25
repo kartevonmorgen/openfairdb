@@ -21,8 +21,8 @@ pub struct CsvRecord {
     pub avg_rating: f64,
 }
 
-impl From<(Entry, Vec<Category>, f64)> for CsvRecord {
-    fn from(t: (Entry, Vec<Category>, f64)) -> Self {
+impl From<(Entry, Vec<Category>, AvgRatingValue)> for CsvRecord {
+    fn from(t: (Entry, Vec<Category>, AvgRatingValue)) -> Self {
         let (e, categories, avg_rating) = t;
 
         let Entry {
@@ -72,7 +72,7 @@ impl From<(Entry, Vec<Category>, f64)> for CsvRecord {
             license,
             categories,
             tags: e.tags.join(","),
-            avg_rating,
+            avg_rating: avg_rating.into(),
         }
     }
 }

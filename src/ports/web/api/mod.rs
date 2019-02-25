@@ -1,4 +1,4 @@
-use super::{guards::*, sqlite::DbConn, tantivy::SearchEngine, util};
+use super::{guards::*, util};
 use crate::{
     adapters::{self, json, user_communication},
     core::{
@@ -6,7 +6,12 @@ use crate::{
         usecases::{self, DuplicateType},
         util::geo,
     },
-    infrastructure::error::AppError,
+    infrastructure::{
+        db::{sqlite, tantivy},
+        error::AppError,
+        flows::prelude as flows,
+        notify,
+    },
 };
 
 use csv;
@@ -75,12 +80,12 @@ struct UserId {
 }
 
 #[get("/entries/<ids>")]
-fn get_entry(db: DbConn, ids: String) -> Result<Vec<json::Entry>> {
+fn get_entry(db: sqlite::Connections, ids: String) -> Result<Vec<json::Entry>> {
     // TODO: Only lookup and return a single entity
     // TODO: Add a new method for searching multiple ids
     let ids = util::extract_ids(&ids);
     let (entries, ratings) = {
-        let db = db.read_only()?;
+        let db = db.shared()?;
         let entries = usecases::get_entries(&*db, &ids)?;
         let ratings = usecases::get_ratings_by_entry_ids(&*db, &ids)?;
         (entries, ratings)
@@ -97,8 +102,8 @@ fn get_entry(db: DbConn, ids: String) -> Result<Vec<json::Entry>> {
 }
 
 #[get("/duplicates")]
-fn get_duplicates(db: DbConn) -> Result<Vec<(String, String, DuplicateType)>> {
-    let entries = db.read_only()?.all_entries()?;
+fn get_duplicates(db: sqlite::Connections) -> Result<Vec<(String, String, DuplicateType)>> {
+    let entries = db.shared()?.all_entries()?;
     let ids = usecases::find_duplicates(&entries);
     Ok(Json(ids))
 }
@@ -116,8 +121,12 @@ fn get_api() -> Content<&'static str> {
 }
 
 #[post("/login", format = "application/json", data = "<login>")]
-fn login(db: DbConn, mut cookies: Cookies, login: Json<usecases::Login>) -> Result<()> {
-    let username = usecases::login(&*db.read_only()?, &login.into_inner())?;
+fn login(
+    db: sqlite::Connections,
+    mut cookies: Cookies,
+    login: Json<usecases::Login>,
+) -> Result<()> {
+    let username = usecases::login(&*db.shared()?, &login.into_inner())?;
     cookies.add_private(
         Cookie::build(COOKIE_USER_KEY, username)
             .same_site(rocket::http::SameSite::None)
@@ -133,9 +142,9 @@ fn logout(mut cookies: Cookies) -> Result<()> {
 }
 
 #[post("/confirm-email-address", format = "application/json", data = "<user>")]
-fn confirm_email_address(db: DbConn, user: Json<UserId>) -> Result<()> {
+fn confirm_email_address(db: sqlite::Connections, user: Json<UserId>) -> Result<()> {
     let u_id = user.into_inner().u_id;
-    usecases::confirm_email_address(&mut *db.read_write()?, &u_id)?;
+    usecases::confirm_email_address(&mut *db.exclusive()?, &u_id)?;
     Ok(Json(()))
 }
 
@@ -145,7 +154,7 @@ fn confirm_email_address(db: DbConn, user: Json<UserId>) -> Result<()> {
     data = "<coordinates>"
 )]
 fn subscribe_to_bbox(
-    db: DbConn,
+    db: sqlite::Connections,
     user: Login,
     coordinates: Json<Vec<json::Coordinate>>,
 ) -> Result<()> {
@@ -155,21 +164,24 @@ fn subscribe_to_bbox(
         .map(Coordinate::from)
         .collect();
     let Login(username) = user;
-    usecases::subscribe_to_bbox(&coordinates, &username, &mut *db.read_write()?)?;
+    usecases::subscribe_to_bbox(&coordinates, &username, &mut *db.exclusive()?)?;
     Ok(Json(()))
 }
 
 #[delete("/unsubscribe-all-bboxes")]
-fn unsubscribe_all_bboxes(db: DbConn, user: Login) -> Result<()> {
+fn unsubscribe_all_bboxes(db: sqlite::Connections, user: Login) -> Result<()> {
     let Login(username) = user;
-    usecases::unsubscribe_all_bboxes_by_username(&mut *db.read_write()?, &username)?;
+    usecases::unsubscribe_all_bboxes_by_username(&mut *db.exclusive()?, &username)?;
     Ok(Json(()))
 }
 
 #[get("/bbox-subscriptions")]
-fn get_bbox_subscriptions(db: DbConn, user: Login) -> Result<Vec<json::BboxSubscription>> {
+fn get_bbox_subscriptions(
+    db: sqlite::Connections,
+    user: Login,
+) -> Result<Vec<json::BboxSubscription>> {
     let Login(username) = user;
-    let user_subscriptions = usecases::get_bbox_subscriptions(&username, &*db.read_only()?)?
+    let user_subscriptions = usecases::get_bbox_subscriptions(&username, &*db.shared()?)?
         .into_iter()
         .map(|s| json::BboxSubscription {
             id: s.id,
@@ -182,62 +194,48 @@ fn get_bbox_subscriptions(db: DbConn, user: Login) -> Result<Vec<json::BboxSubsc
     Ok(Json(user_subscriptions))
 }
 
-#[post("/entries", format = "application/json", data = "<e>")]
+#[post("/entries", format = "application/json", data = "<body>")]
 fn post_entry(
-    db: DbConn,
-    mut search_engine: SearchEngine,
-    e: Json<usecases::NewEntry>,
+    connections: sqlite::Connections,
+    mut search_engine: tantivy::SearchEngine,
+    body: Json<usecases::NewEntry>,
 ) -> Result<String> {
-    let e = e.into_inner();
-    let (id, email_addresses, all_categories) = {
-        let mut db = db.read_write()?;
-        let id = usecases::create_new_entry(&mut *db, Some(&mut search_engine), e.clone())?;
-        let email_addresses = usecases::email_addresses_by_coordinate(&mut *db, &e.lat, &e.lng)?;
-        let all_categories = db.all_categories()?;
-        (id, email_addresses, all_categories)
-    };
-    util::notify_create_entry(&email_addresses, &e, &id, all_categories);
-    Ok(Json(id))
+    Ok(Json(
+        flows::add_entry(&connections, &mut search_engine, body.into_inner())?.id,
+    ))
 }
 
-#[put("/entries/<id>", format = "application/json", data = "<e>")]
+#[put("/entries/<id>", format = "application/json", data = "<data>")]
 fn put_entry(
-    db: DbConn,
-    mut search_engine: SearchEngine,
+    connections: sqlite::Connections,
+    mut search_engine: tantivy::SearchEngine,
     id: String,
-    e: Json<usecases::UpdateEntry>,
+    data: Json<usecases::UpdateEntry>,
 ) -> Result<String> {
-    let e = e.into_inner();
-    let (email_addresses, all_categories) = {
-        let mut db = db.read_write()?;
-        usecases::update_entry(&mut *db, Some(&mut search_engine), e.clone())?;
-        let email_addresses = usecases::email_addresses_by_coordinate(&mut *db, &e.lat, &e.lng)?;
-        let all_categories = db.all_categories()?;
-        (email_addresses, all_categories)
-    };
-    util::notify_update_entry(&email_addresses, &e, all_categories);
-    Ok(Json(id))
+    Ok(Json(
+        flows::update_entry(&connections, &mut search_engine, id, data.into_inner())?.id,
+    ))
 }
 
 #[get("/tags")]
-fn get_tags(db: DbConn) -> Result<Vec<String>> {
-    let tags = db.read_only()?.all_tags()?;
+fn get_tags(connections: sqlite::Connections) -> Result<Vec<String>> {
+    let tags = connections.shared()?.all_tags()?;
     Ok(Json(tags.into_iter().map(|t| t.id).collect()))
 }
 
 #[get("/categories")]
-fn get_categories(db: DbConn) -> Result<Vec<Category>> {
-    let categories = db.read_only()?.all_categories()?;
+fn get_categories(connections: sqlite::Connections) -> Result<Vec<Category>> {
+    let categories = connections.shared()?.all_categories()?;
     Ok(Json(categories))
 }
 
 #[get("/categories/<ids>")]
-fn get_category(db: DbConn, ids: String) -> Result<Vec<Category>> {
+fn get_category(connections: sqlite::Connections, ids: String) -> Result<Vec<Category>> {
     // TODO: Only lookup and return a single entity
     // TODO: Add a new method for searching multiple ids
     let ids = util::extract_ids(&ids);
-    let categories = db
-        .read_only()?
+    let categories = connections
+        .shared()?
         .all_categories()?
         .into_iter()
         .filter(|c| ids.iter().any(|id| &c.id == id))
@@ -254,8 +252,8 @@ struct CsvExport {
 // https://github.com/slowtec/openfairdb/issues/147
 #[get("/export/entries.csv?<export..>")]
 fn csv_export<'a>(
-    db: DbConn,
-    search_engine: SearchEngine,
+    connections: sqlite::Connections,
+    search_engine: tantivy::SearchEngine,
     export: Form<CsvExport>,
 ) -> result::Result<Content<String>, AppError> {
     let bbox = export
@@ -265,36 +263,30 @@ fn csv_export<'a>(
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
 
-    let avg_ratings = match super::ENTRY_RATINGS.lock() {
-        Ok(guard) => guard,
-        Err(poisoned) => poisoned.into_inner(),
-    };
-
     let req = usecases::SearchRequest {
         bbox,
         categories: Default::default(),
         text: Default::default(),
         tags: Default::default(),
-        entry_ratings: &avg_ratings,
     };
 
-    let (entries, all_categories) = {
-        let db = db.read_only()?;
-        let (entries, _) = usecases::search(&search_engine, &*db, req, None)?;
+    let (entries_with_avg_rating, all_categories) = {
+        let db = connections.shared()?;
+        let limit = db.count_entries()? + 100;
+        let (entries, _) = usecases::search(&search_engine, &*db, req, limit)?;
         let all_categories: Vec<_> = db.all_categories()?;
         (entries, all_categories)
     };
 
-    let entries_categories_and_ratings = entries
+    let entries_categories_and_ratings = entries_with_avg_rating
         .into_iter()
-        .map(|e| {
+        .map(|(e, r)| {
             let categories = all_categories
                 .iter()
                 .filter(|c1| e.categories.iter().any(|c2| *c2 == c1.id))
                 .cloned()
                 .collect::<Vec<Category>>();
-            let avg_rating = *avg_ratings.get(&e.id).unwrap_or_else(|| &0.0);
-            (e, categories, avg_rating)
+            (e, categories, r)
         })
         .collect::<Vec<_>>();
 

@@ -1,22 +1,24 @@
 use super::*;
 
-#[post("/ratings", format = "application/json", data = "<u>")]
-pub fn post_rating(db: DbConn, u: Json<usecases::RateEntry>) -> Result<()> {
-    let u = u.into_inner();
-    let e_id = u.entry.clone();
-    let mut db = db.read_write()?;
-    usecases::rate_entry(&mut *db, u)?;
-    super::super::calculate_rating_for_entry(&*db, &e_id)?;
+use crate::infrastructure::flows::prelude as flows;
+
+#[post("/ratings", format = "application/json", data = "<data>")]
+pub fn post_rating(
+    connections: sqlite::Connections,
+    mut search_engine: tantivy::SearchEngine,
+    data: Json<usecases::RateEntry>,
+) -> Result<()> {
+    let _ = flows::add_rating(&connections, &mut search_engine, data.into_inner())?;
     Ok(Json(()))
 }
 
 #[get("/ratings/<ids>")]
-pub fn get_rating(db: DbConn, ids: String) -> Result<Vec<json::Rating>> {
+pub fn get_rating(db: sqlite::Connections, ids: String) -> Result<Vec<json::Rating>> {
     // TODO: Only lookup and return a single entity
     // TODO: Add a new method for searching multiple ids
     let mut ids = util::extract_ids(&ids);
     let (ratings, comments) = {
-        let db = db.read_only()?;
+        let db = db.shared()?;
         let ratings = usecases::get_ratings(&*db, &ids)?;
         // Retain only those ids that have actually been found
         debug_assert!(ratings.len() <= ids.len());
@@ -31,7 +33,7 @@ pub fn get_rating(db: DbConn, ids: String) -> Result<Vec<json::Rating>> {
             id: x.id.clone(),
             created: x.created,
             title: x.title,
-            value: x.value,
+            value: x.value.into(),
             context: x.context,
             source: x.source.unwrap_or_else(|| "".into()),
             comments: comments

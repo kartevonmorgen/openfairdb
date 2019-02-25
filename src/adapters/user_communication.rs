@@ -1,5 +1,4 @@
 use crate::core::entities::*;
-use crate::core::usecases::{NewEntry, UpdateEntry};
 
 pub fn email_confirmation_email(u_id: &str) -> String {
     format!(
@@ -8,92 +7,25 @@ pub fn email_confirmation_email(u_id: &str) -> String {
     )
 }
 
-pub fn new_entry_email(e: &NewEntry, id: &str, categories: &[String]) -> String {
+pub fn new_entry_email(e: &Entry, category_names: &[String]) -> String {
     let intro_sentence = "ein neuer Eintrag auf der Karte von morgen wurde erstellt";
-
-    //TODO: check fields
-    let address = Some(Address {
-        street: e.street.clone(),
-        zip: e.zip.clone(),
-        city: e.city.clone(),
-        country: e.country.clone(),
-    });
-
-    let contact = Some(Contact {
-        email: e.email.clone(),
-        telephone: e.telephone.clone(),
-    });
-
-    let entry = Entry {
-        id: id.into(),
-        osm_node: None,
-        title: e.title.clone(),
-        description: e.description.clone(),
-        homepage: e.homepage.clone(),
-        tags: e.tags.clone(),
-        categories: e.categories.clone(),
-        location: Location {
-            lat: 0.0,
-            lng: 0.0,
-            address,
-        },
-        contact,
-        created: 0,
-        version: 0,
-        license: None,
-        image_url: None,
-        image_link_url: None,
-    };
-    entry_email(&entry, categories, &e.tags, intro_sentence)
+    entry_email(&e, category_names, &e.tags, intro_sentence)
 }
 
 //TODO: calc diff
-pub fn changed_entry_email(e: &UpdateEntry, categories: &[String]) -> String {
+pub fn changed_entry_email(e: &Entry, category_names: &[String]) -> String {
     let intro_sentence = "folgender Eintrag der Karte von morgen wurde verändert";
-
-    let address = Some(Address {
-        street: e.street.clone(),
-        zip: e.zip.clone(),
-        city: e.city.clone(),
-        country: e.country.clone(),
-    });
-
-    let contact = Some(Contact {
-        email: e.email.clone(),
-        telephone: e.telephone.clone(),
-    });
-
-    let entry = Entry {
-        id: e.id.clone(),
-        osm_node: e.osm_node,
-        title: e.title.clone(),
-        description: e.description.clone(),
-        homepage: e.homepage.clone(),
-        tags: e.tags.clone(),
-        categories: e.categories.clone(),
-        location: Location {
-            lat: 0.0,
-            lng: 0.0,
-            address,
-        },
-        contact,
-        created: 0,
-        version: 0,
-        license: None,
-        image_url: None,
-        image_link_url: None,
-    };
-    entry_email(&entry, categories, &e.tags, intro_sentence)
+    entry_email(&e, category_names, &e.tags, intro_sentence)
 }
 
 pub fn entry_email(
     e: &Entry,
-    categories: &[String],
+    category_names: &[String],
     tags: &[String],
     intro_sentence: &str,
 ) -> String {
-    let category = if !categories.is_empty() {
-        categories[0].clone()
+    let category = if !category_names.is_empty() {
+        category_names[0].clone()
     } else {
         "".to_string()
     };

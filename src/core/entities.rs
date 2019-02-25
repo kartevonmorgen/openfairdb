@@ -145,6 +145,112 @@ pub enum RatingContext {
     Solidarity,
 }
 
+#[derive(Debug, Default, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct RatingValue(i8);
+
+impl RatingValue {
+    pub const fn min() -> Self {
+        Self(-1)
+    }
+
+    pub const fn max() -> Self {
+        Self(2)
+    }
+
+    pub fn clamp(self) -> Self {
+        Self(self.0.max(Self::min().0).min(Self::max().0))
+    }
+
+    pub fn is_valid(self) -> bool {
+        self >= Self::min() && self <= Self::max()
+    }
+}
+
+impl From<i8> for RatingValue {
+    fn from(from: i8) -> Self {
+        Self(from)
+    }
+}
+
+impl From<RatingValue> for i8 {
+    fn from(from: RatingValue) -> Self {
+        from.0
+    }
+}
+
+impl From<RatingValue> for f64 {
+    fn from(from: RatingValue) -> Self {
+        from.0 as f64
+    }
+}
+
+impl std::ops::Add for AvgRatingValue {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self {
+        Self(self.0 + rhs.0)
+    }
+}
+
+impl std::ops::AddAssign for AvgRatingValue {
+    fn add_assign(&mut self, rhs: Self) {
+        self.0 += rhs.0
+    }
+}
+
+impl std::ops::Div<f64> for AvgRatingValue {
+    type Output = Self;
+
+    fn div(self, rhs: f64) -> Self {
+        Self(self.0 / rhs)
+    }
+}
+
+impl std::ops::DivAssign<f64> for AvgRatingValue {
+    fn div_assign(&mut self, rhs: f64) {
+        self.0 /= rhs
+    }
+}
+
+#[derive(Debug, Default, Clone, Copy, Deserialize, Serialize, PartialEq, PartialOrd)]
+pub struct AvgRatingValue(f64);
+
+impl AvgRatingValue {
+    pub const fn min() -> Self {
+        Self(-1.0)
+    }
+
+    pub const fn max() -> Self {
+        Self(2.0)
+    }
+
+    pub fn clamp(self) -> Self {
+        Self(self.0.max(Self::min().0).min(Self::max().0))
+    }
+
+    pub fn is_valid(self) -> bool {
+        self >= Self::min() && self <= Self::max()
+    }
+}
+
+impl From<f64> for AvgRatingValue {
+    fn from(from: f64) -> Self {
+        Self(from)
+    }
+}
+
+impl From<AvgRatingValue> for f64 {
+    fn from(from: AvgRatingValue) -> Self {
+        from.0
+    }
+}
+
+impl From<RatingValue> for AvgRatingValue {
+    fn from(from: RatingValue) -> Self {
+        f64::from(i8::from(from)).into()
+    }
+}
+
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Rating {
@@ -152,7 +258,7 @@ pub struct Rating {
     pub entry_id : String,
     pub created  : u64,
     pub title    : String,
-    pub value    : i8,
+    pub value    : RatingValue,
     pub context  : RatingContext,
     pub source   : Option<String>,
 }

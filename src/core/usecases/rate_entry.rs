@@ -7,40 +7,54 @@ use uuid::Uuid;
 pub struct RateEntry {
     pub entry   : String,
     pub title   : String,
-    pub value   : i8,
+    pub value   : RatingValue,
     pub context : RatingContext,
     pub comment : String,
     pub source  : Option<String>,
     pub user    : Option<String>,
 }
 
-pub fn rate_entry<D: Db>(db: &mut D, r: RateEntry) -> Result<()> {
-    let e = db.get_entry(&r.entry)?;
+#[derive(Debug, Clone)]
+pub struct Storable(Entry, Rating, Comment);
+
+pub fn prepare_new_rating<D: Db>(db: &D, r: RateEntry) -> Result<Storable> {
     if r.comment.len() < 1 {
         return Err(Error::Parameter(ParameterError::EmptyComment));
     }
-    if r.value > 2 || r.value < -1 {
+    if !r.value.is_valid() {
         return Err(Error::Parameter(ParameterError::RatingValue));
     }
     let now = Utc::now().timestamp() as u64;
     let rating_id = Uuid::new_v4().to_simple_ref().to_string();
     let comment_id = Uuid::new_v4().to_simple_ref().to_string();
-    db.create_rating(Rating {
+    let entry = db.get_entry(&r.entry)?;
+    debug_assert_eq!(entry.id, r.entry);
+    let rating = Rating {
         id: rating_id.clone(),
-        entry_id: e.id,
+        entry_id: r.entry,
         created: now,
         title: r.title,
         value: r.value,
         context: r.context,
         source: r.source,
-    })?;
-    db.create_comment(Comment {
+    };
+    let comment = Comment {
         id: comment_id,
         created: now,
         text: r.comment,
         rating_id,
-    })?;
-    Ok(())
+    };
+    Ok(Storable(entry, rating, comment))
+}
+
+pub fn store_new_rating<D: Db>(db: &D, s: Storable) -> Result<(Entry, Vec<Rating>)> {
+    let Storable(entry, rating, comment) = s;
+    debug_assert_eq!(entry.id, rating.entry_id);
+    debug_assert_eq!(rating.id, comment.rating_id);
+    db.add_rating_for_entry(rating)?;
+    db.create_comment(comment)?;
+    let ratings = db.all_ratings_for_entry_by_id(&entry.id)?;
+    Ok((entry, ratings))
 }
 
 #[cfg(test)]
@@ -52,16 +66,16 @@ mod tests {
 
     #[test]
     fn rate_non_existing_entry() {
-        let mut db = MockDb::new();
-        assert!(rate_entry(
-            &mut db,
+        let db = MockDb::default();
+        assert!(prepare_new_rating(
+            &db,
             RateEntry {
                 entry: "does_not_exist".into(),
                 title: "title".into(),
                 comment: "a comment".into(),
                 context: RatingContext::Fairness,
                 user: None,
-                value: 2,
+                value: RatingValue::from(2),
                 source: Some("source".into()),
             },
         )
@@ -70,18 +84,18 @@ mod tests {
 
     #[test]
     fn rate_with_empty_comment() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         let e = Entry::build().id("foo").finish();
-        db.entries = vec![e];
-        assert!(rate_entry(
-            &mut db,
+        db.entries = vec![e].into();
+        assert!(prepare_new_rating(
+            &db,
             RateEntry {
                 entry: "foo".into(),
                 comment: "".into(),
                 title: "title".into(),
                 context: RatingContext::Fairness,
                 user: None,
-                value: 2,
+                value: RatingValue::from(2),
                 source: Some("source".into()),
             },
         )
@@ -90,31 +104,31 @@ mod tests {
 
     #[test]
     fn rate_with_invalid_value_comment() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         let e = Entry::build().id("foo").finish();
-        db.entries = vec![e];
-        assert!(rate_entry(
-            &mut db,
+        db.entries = vec![e].into();
+        assert!(prepare_new_rating(
+            &db,
             RateEntry {
                 entry: "foo".into(),
                 comment: "comment".into(),
                 title: "title".into(),
                 context: RatingContext::Fairness,
                 user: None,
-                value: 3,
+                value: RatingValue::from(3),
                 source: Some("source".into()),
             },
         )
         .is_err());
-        assert!(rate_entry(
-            &mut db,
+        assert!(prepare_new_rating(
+            &db,
             RateEntry {
                 entry: "foo".into(),
                 title: "title".into(),
                 comment: "comment".into(),
                 context: RatingContext::Fairness,
                 user: None,
-                value: -2,
+                value: RatingValue::from(-2),
                 source: Some("source".into()),
             },
         )
@@ -123,27 +137,28 @@ mod tests {
 
     #[test]
     fn rate_without_login() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         let e = Entry::build().id("foo").finish();
-        db.entries = vec![e];
-        assert!(rate_entry(
-            &mut db,
+        db.entries = vec![e].into();
+        let c = prepare_new_rating(
+            &db,
             RateEntry {
                 entry: "foo".into(),
                 comment: "comment".into(),
                 title: "title".into(),
                 context: RatingContext::Fairness,
                 user: None,
-                value: 2,
+                value: RatingValue::from(2),
                 source: Some("source".into()),
             },
         )
-        .is_ok());
+        .unwrap();
+        assert!(store_new_rating(&db, c).is_ok());
 
-        assert_eq!(db.ratings.len(), 1);
-        assert_eq!(db.comments.len(), 1);
-        assert_eq!(db.ratings[0].entry_id, "foo");
-        assert_eq!(db.comments[0].rating_id, db.ratings[0].id);
+        assert_eq!(db.ratings.borrow().len(), 1);
+        assert_eq!(db.comments.borrow().len(), 1);
+        assert_eq!(db.ratings.borrow()[0].entry_id, "foo");
+        assert_eq!(db.comments.borrow()[0].rating_id, db.ratings.borrow()[0].id);
     }
 
 }

@@ -18,7 +18,7 @@ impl ManageConnection for MockDbConnectionManager {
     type Error = io::Error;
 
     fn connect(&self) -> Result<MockDb, io::Error> {
-        Ok(MockDb::new())
+        Ok(MockDb::default())
     }
 
     fn is_valid(&self, _: &mut MockDb) -> Result<(), io::Error> {
@@ -30,29 +30,29 @@ impl ManageConnection for MockDbConnectionManager {
     }
 }
 
-pub type ConnectionPool = Pool<MockDbConnectionManager>;
-
-pub struct DbConn(pub PooledConnection<MockDbConnectionManager>);
+pub type ConnectionManager = MockDbConnectionManager;
+pub type ConnectionPool = Pool<ConnectionManager>;
+pub struct Connections(pub PooledConnection<ConnectionManager>);
 
 #[cfg(not(test))]
-pub fn create_connection_pool(_: &str) -> Result<ConnectionPool, PoolError> {
+pub fn init_connections(_: &str) -> Result<ConnectionPool, PoolError> {
     let manager = MockDbConnectionManager {};
     Pool::builder().max_size(1).build(manager)
 }
 
-impl<'a, 'r> FromRequest<'a, 'r> for DbConn {
+impl<'a, 'r> FromRequest<'a, 'r> for Connections {
     type Error = ();
 
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<DbConn, ()> {
+    fn from_request(request: &'a Request<'r>) -> request::Outcome<Connections, ()> {
         let pool = request.guard::<State<ConnectionPool>>()?;
         match pool.get() {
-            Ok(conn) => Outcome::Success(DbConn(conn)),
+            Ok(conn) => Outcome::Success(Connections(conn)),
             Err(_) => Outcome::Failure((Status::ServiceUnavailable, ())),
         }
     }
 }
 
-impl Deref for DbConn {
+impl Deref for Connections {
     type Target = MockDb;
 
     fn deref(&self) -> &Self::Target {
@@ -60,7 +60,7 @@ impl Deref for DbConn {
     }
 }
 
-impl DerefMut for DbConn {
+impl DerefMut for Connections {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
     }

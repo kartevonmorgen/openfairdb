@@ -20,7 +20,7 @@ mod tests {
 
     #[test]
     fn confirm_email_of_existing_user() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         db.users = vec![User {
             id: "1".into(),
             username: "a".into(),

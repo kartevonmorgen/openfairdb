@@ -1,10 +1,12 @@
-use crate::core::{prelude::*, util::parse::parse_url_param};
+use crate::core::{
+    prelude::*,
+    util::{parse::parse_url_param, validate::Validate},
+};
 use chrono::*;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateEntry {
-    pub id             : String,
     pub osm_node       : Option<u64>,
     pub version        : u64,
     pub title          : String,
@@ -24,19 +26,14 @@ pub struct UpdateEntry {
     pub image_link_url : Option<String>,
 }
 
-pub fn update_entry<D: Db>(
-    db: &mut D,
-    mut indexer: Option<&mut EntryIndexer>,
-    e: UpdateEntry,
-) -> Result<()> {
-    let old: Entry = db.get_entry(&e.id)?;
+pub struct Storable(Entry);
+
+pub fn prepare_updated_entry<D: Db>(db: &D, id: String, e: UpdateEntry) -> Result<Storable> {
+    let old: Entry = db.get_entry(&id)?;
     if (old.version + 1) != e.version {
         return Err(Error::Repo(RepoError::InvalidVersion));
     }
-    let mut tags = e.tags;
-    tags.dedup();
     let UpdateEntry {
-        id,
         version,
         title,
         description,
@@ -49,8 +46,11 @@ pub fn update_entry<D: Db>(
         email,
         telephone,
         categories,
+        tags,
         ..
     } = e;
+    let tags = super::prepare_tag_list(tags);
+    super::check_for_owned_tags(db, &tags, &None)?;
     let address = Address {
         street,
         zip,
@@ -62,7 +62,7 @@ pub fn update_entry<D: Db>(
     } else {
         Some(address)
     };
-    let updated_entry = Entry {
+    let e = Entry {
         id,
         osm_node: None,
         created: Utc::now().timestamp() as u64,
@@ -84,18 +84,19 @@ pub fn update_entry<D: Db>(
             .map(|ref url| parse_url_param(url))
             .transpose()?,
     };
-    debug!("Updating existing entry: {:?}", updated_entry);
-    for t in &updated_entry.tags {
+    e.validate()?;
+    Ok(Storable(e))
+}
+
+pub fn store_updated_entry<D: Db>(db: &D, s: Storable) -> Result<(Entry, Vec<Rating>)> {
+    let Storable(entry) = s;
+    debug!("Storing updated entry: {:?}", entry);
+    for t in &entry.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
-    db.update_entry(&updated_entry)?;
-    if let Some(ref mut indexer) = indexer {
-        indexer
-            .add_or_update_entry(&updated_entry)
-            .map_err(RepoError::from)?;
-        indexer.flush().map_err(RepoError::from)?;
-    }
-    Ok(())
+    db.update_entry(&entry)?;
+    let ratings = db.all_ratings_for_entry_by_id(&entry.id)?;
+    Ok((entry, ratings))
 }
 
 #[cfg(test)]
@@ -115,11 +116,11 @@ mod tests {
             .description("bar")
             .image_url(Some("http://img"))
             .image_link_url(Some("http://imglink"))
+            .license(Some("CC0-1.0"))
             .finish();
 
         #[cfg_attr(rustfmt, rustfmt_skip)]
         let new = UpdateEntry {
-            id          : id.clone(),
             osm_node    :  None,
             version     : 2,
             title       : "foo".into(),
@@ -138,12 +139,13 @@ mod tests {
             image_url     : Some("img2".into()),
             image_link_url: old.image_link_url.clone(),
         };
-        let mut mock_db = MockDb::new();
-        mock_db.entries = vec![old];
+        let mut mock_db = MockDb::default();
+        mock_db.entries = vec![old].into();
         let now = Utc::now();
-        assert!(update_entry(&mut mock_db, None, new).is_ok());
-        assert_eq!(mock_db.entries.len(), 1);
-        let x = &mock_db.entries[0];
+        let e = prepare_updated_entry(&mock_db, id.clone(), new).unwrap();
+        assert!(store_updated_entry(&mock_db, e).is_ok());
+        assert_eq!(mock_db.entries.borrow().len(), 1);
+        let x = &mock_db.entries.borrow()[0];
         assert_eq!(
             "street",
             x.location
@@ -174,7 +176,6 @@ mod tests {
 
         #[cfg_attr(rustfmt, rustfmt_skip)]
         let new = UpdateEntry {
-            id          : id.clone(),
             osm_node    : None,
             version     : 3,
             title       : "foo".into(),
@@ -193,9 +194,9 @@ mod tests {
             image_url     : None,
             image_link_url: None,
         };
-        let mut mock_db = MockDb::new();
-        mock_db.entries = vec![old];
-        let result = update_entry(&mut mock_db, None, new);
+        let mut mock_db = MockDb::default();
+        mock_db.entries = vec![old].into();
+        let result = prepare_updated_entry(&mock_db, id.clone(), new);
         assert!(result.is_err());
         match result.err().unwrap() {
             Error::Repo(err) => match err {
@@ -208,7 +209,7 @@ mod tests {
                 panic!("invalid error type");
             }
         }
-        assert_eq!(mock_db.entries.len(), 1);
+        assert_eq!(mock_db.entries.borrow().len(), 1);
     }
 
     #[test]
@@ -216,8 +217,7 @@ mod tests {
         let id = Uuid::new_v4().to_simple_ref().to_string();
         #[cfg_attr(rustfmt, rustfmt_skip)]
         let new = UpdateEntry {
-            id          : id.clone(),
-            osm_node    :  None,
+            osm_node    : None,
             version     : 4,
             title       : "foo".into(),
             description : "bar".into(),
@@ -235,9 +235,9 @@ mod tests {
             image_url     : None,
             image_link_url: None,
         };
-        let mut mock_db = MockDb::new();
-        mock_db.entries = vec![];
-        let result = update_entry(&mut mock_db, None, new);
+        let mut mock_db = MockDb::default();
+        mock_db.entries = vec![].into();
+        let result = prepare_updated_entry(&mock_db, id.clone(), new);
         assert!(result.is_err());
         match result.err().unwrap() {
             Error::Repo(err) => match err {
@@ -250,7 +250,7 @@ mod tests {
                 panic!("invalid error type");
             }
         }
-        assert_eq!(mock_db.entries.len(), 0);
+        assert_eq!(mock_db.entries.borrow().len(), 0);
     }
 
     #[test]
@@ -260,10 +260,10 @@ mod tests {
             .id(&id)
             .version(1)
             .tags(vec!["bio", "fair"])
+            .license(Some("CC0-1.0"))
             .finish();
         #[cfg_attr(rustfmt, rustfmt_skip)]
         let new = UpdateEntry {
-            id          : id.clone(),
             osm_node    :  None,
             version     : 2,
             title       : "foo".into(),
@@ -282,13 +282,14 @@ mod tests {
             image_url     : None,
             image_link_url: None,
         };
-        let mut mock_db = MockDb::new();
-        mock_db.entries = vec![old];
-        mock_db.tags = vec![Tag { id: "bio".into() }, Tag { id: "fair".into() }];
-        assert!(update_entry(&mut mock_db, None, new).is_ok());
+        let mut mock_db = MockDb::default();
+        mock_db.entries = vec![old].into();
+        mock_db.tags = vec![Tag { id: "bio".into() }, Tag { id: "fair".into() }].into();
+        let e = prepare_updated_entry(&mock_db, id.clone(), new).unwrap();
+        assert!(store_updated_entry(&mock_db, e).is_ok());
         let e = mock_db.get_entry(&id).unwrap();
         assert_eq!(e.tags, vec!["vegan"]);
-        assert_eq!(mock_db.tags.len(), 3);
+        assert_eq!(mock_db.tags.borrow().len(), 3);
     }
 
 }

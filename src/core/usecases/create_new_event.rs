@@ -262,11 +262,11 @@ mod tests {
             registration : None,
             organizer    : None,
         };
-        let mut mock_db = MockDb::new();
+        let mut mock_db = MockDb::default();
         let id = create_new_event(&mut mock_db, x).unwrap();
         assert!(Uuid::parse_str(&id).is_ok());
         assert_eq!(mock_db.events.len(), 1);
-        assert_eq!(mock_db.tags.len(), 2);
+        assert_eq!(mock_db.tags.borrow().len(), 2);
         let x = &mock_db.events[0];
         assert_eq!(x.title, "foo");
         assert_eq!(x.start.timestamp(), 9999);
@@ -299,7 +299,7 @@ mod tests {
             registration : None,
             organizer    : None,
         };
-        let mut mock_db: MockDb = MockDb::new();
+        let mut mock_db: MockDb = MockDb::default();
         assert!(create_new_event(&mut mock_db, x).is_err());
     }
 
@@ -326,7 +326,7 @@ mod tests {
             registration : None,
             organizer    : None,
         };
-        let mut mock_db: MockDb = MockDb::new();
+        let mut mock_db: MockDb = MockDb::default();
         assert!(create_new_event(&mut mock_db, x).is_ok());
         let users = mock_db.all_users().unwrap();
         assert_eq!(users.len(), 1);
@@ -336,7 +336,7 @@ mod tests {
 
     #[test]
     fn create_event_with_valid_existing_creator_email() {
-        let mut mock_db: MockDb = MockDb::new();
+        let mut mock_db: MockDb = MockDb::default();
         mock_db
             .create_user(User {
                 id: "x".into(),

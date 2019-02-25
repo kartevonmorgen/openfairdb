@@ -1,11 +1,19 @@
-use super::web::{self, sqlite::create_connection_pool, tantivy::create_search_engine};
+use super::web;
+
 use crate::core::prelude::*;
-use crate::infrastructure::osm;
+use crate::infrastructure::{
+    db::{sqlite, tantivy},
+    osm,
+};
+
 use clap::{App, Arg, SubCommand};
 use dotenv::dotenv;
 use std::{env, path::Path, process};
 
 const DEFAULT_DB_URL: &str = "openfair.db";
+const DB_CONNECTION_POOL_SIZE: u32 = 10;
+
+embed_migrations!();
 
 fn update_event_locations<D: Db>(db: &mut D) -> Result<()> {
     let events = db.all_events()?;
@@ -73,14 +81,22 @@ pub fn run() {
         .value_of("db-url")
         .map(ToString::to_string)
         .unwrap_or_else(|| env::var("DATABASE_URL").unwrap_or_else(|_| DEFAULT_DB_URL.to_string()));
-    let pool = create_connection_pool(&db_url).unwrap();
+    info!(
+        "Connecting to SQLite database '{}' (pool size = {})",
+        db_url, DB_CONNECTION_POOL_SIZE
+    );
+    let connections = sqlite::Connections::init(&db_url, DB_CONNECTION_POOL_SIZE).unwrap();
+
+    info!("Running embedded database migrations");
+    embedded_migrations::run(&*connections.exclusive().unwrap()).unwrap();
 
     let idx_dir = matches
         .value_of("idx-dir")
         .map(ToString::to_string)
         .or_else(|| env::var("INDEX_DIR").map(Option::Some).unwrap_or(None));
     let idx_path = idx_dir.as_ref().map(|dir| Path::new(dir));
-    let search_engine = create_search_engine(idx_path).unwrap();
+    info!("Initializing Tantivy full-text search engine");
+    let search_engine = tantivy::SearchEngine::init_with_path(idx_path).unwrap();
 
     match matches.subcommand() {
         ("osm", Some(osm_matches)) => match osm_matches.subcommand() {
@@ -102,9 +118,13 @@ pub fn run() {
         _ => {
             if matches.is_present("fix-event-address-location") {
                 info!("Updating all event locations...");
-                update_event_locations(&mut *pool.get().unwrap()).unwrap();
+                update_event_locations(&mut *connections.exclusive().unwrap()).unwrap();
             }
-            web::run(pool, search_engine, matches.is_present("enable-cors"));
+            web::run(
+                connections,
+                search_engine,
+                matches.is_present("enable-cors"),
+            );
         }
     }
 }

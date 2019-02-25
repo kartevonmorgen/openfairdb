@@ -468,7 +468,7 @@ impl From<Rating> for e::Rating {
             entry_id,
             created: created as u64,
             title,
-            value: value as i8,
+            value: (value as i8).into(),
             context: context.parse().unwrap(),
             source,
         }
@@ -490,7 +490,7 @@ impl From<e::Rating> for Rating {
             id,
             created: created as i64,
             title,
-            value: i32::from(value),
+            value: i8::from(value).into(),
             context: context.into(),
             source,
             entry_id,

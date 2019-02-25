@@ -9,7 +9,7 @@ use crate::core::{
 };
 
 use failure::{format_err, Fallible};
-use std::result;
+use std::{cell::RefCell, result};
 
 //TODO: move tests to corresponding usecase
 
@@ -74,37 +74,25 @@ impl Id for Organization {
 }
 
 #[cfg(test)]
+#[derive(Default)]
 pub struct MockDb {
-    pub entries: Vec<Entry>,
+    pub entries: RefCell<Vec<Entry>>,
     pub events: Vec<Event>,
     pub categories: Vec<Category>,
-    pub tags: Vec<Tag>,
+    pub tags: RefCell<Vec<Tag>>,
     pub users: Vec<User>,
-    pub ratings: Vec<Rating>,
-    pub comments: Vec<Comment>,
+    pub ratings: RefCell<Vec<Rating>>,
+    pub comments: RefCell<Vec<Comment>>,
     pub bbox_subscriptions: Vec<BboxSubscription>,
     pub orgs: Vec<Organization>,
 }
 
 #[cfg(test)]
 impl MockDb {
-    pub fn new() -> MockDb {
-        MockDb {
-            entries: vec![],
-            events: vec![],
-            categories: vec![],
-            tags: vec![],
-            users: vec![],
-            ratings: vec![],
-            comments: vec![],
-            bbox_subscriptions: vec![],
-            orgs: vec![],
-        }
-    }
-
     pub fn get_entries_by_bbox(&self, bbox: &geo::MapBbox) -> RepoResult<Vec<Entry>> {
         Ok(self
             .entries
+            .borrow()
             .iter()
             .filter(|e| e.in_bbox(bbox))
             .cloned()
@@ -114,7 +102,7 @@ impl MockDb {
 
 #[cfg(test)]
 impl EntryIndexer for MockDb {
-    fn add_or_update_entry(&mut self, entry: &Entry) -> Fallible<()> {
+    fn add_or_update_entry(&mut self, entry: &Entry, _avg_rating: AvgRatingValue) -> Fallible<()> {
         // Nothing to do, the entry has already been stored
         // in the database.
         //debug_assert_eq!(Ok(entry), self.db.get_entry(&entry.id).as_ref());
@@ -142,7 +130,7 @@ impl EntryIndex for MockDb {
         _entries: &EntryGateway,
         query: &EntryIndexQuery,
         limit: usize,
-    ) -> Fallible<Vec<Entry>> {
+    ) -> Fallible<Vec<(Entry, AvgRatingValue)>> {
         let mut entries = if let Some(ref bbox) = query.bbox {
             self.get_entries_by_bbox(&bbox)
         } else {
@@ -157,16 +145,17 @@ impl EntryIndex for MockDb {
                 .collect();
         }
 
-        entries = entries
+        let entries_with_rating = entries
             .into_iter()
             .take(limit)
             .filter(&*filter::entries_by_tags_or_search_text(
                 query.text.as_ref().map(String::as_str).unwrap_or(""),
                 &query.tags,
             ))
+            .map(|e| (e, AvgRatingValue::default()))
             .collect();
 
-        Ok(entries)
+        Ok(entries_with_rating)
     }
 }
 
@@ -206,11 +195,11 @@ fn delete<T: Clone + Id>(objects: &mut Vec<T>, id: &str) -> RepoResult<()> {
 
 #[cfg(test)]
 impl EntryGateway for MockDb {
-    fn create_entry(&mut self, e: Entry) -> RepoResult<()> {
-        create(&mut self.entries, e)
+    fn create_entry(&self, e: Entry) -> RepoResult<()> {
+        create(&mut self.entries.borrow_mut(), e)
     }
     fn get_entry(&self, id: &str) -> RepoResult<Entry> {
-        get(&self.entries, id)
+        get(&self.entries.borrow(), id)
     }
     fn get_entry_with_relations(
         &self,
@@ -225,14 +214,14 @@ impl EntryGateway for MockDb {
         })
     }
     fn all_entries(&self) -> RepoResult<Vec<Entry>> {
-        Ok(self.entries.clone())
+        Ok(self.entries.borrow().clone())
     }
     fn count_entries(&self) -> RepoResult<usize> {
-        Ok(self.entries.len())
+        Ok(self.entries.borrow().len())
     }
 
-    fn update_entry(&mut self, e: &Entry) -> RepoResult<()> {
-        update(&mut self.entries, e)
+    fn update_entry(&self, e: &Entry) -> RepoResult<()> {
+        update(&mut self.entries.borrow_mut(), e)
     }
 
     fn import_multiple_entries(&mut self, entries: &[Entry]) -> RepoResult<()> {
@@ -307,12 +296,12 @@ impl UserGateway for MockDb {
 
 #[cfg(test)]
 impl CommentGateway for MockDb {
-    fn create_comment(&mut self, c: Comment) -> RepoResult<()> {
-        create(&mut self.comments, c)
+    fn create_comment(&self, c: Comment) -> RepoResult<()> {
+        create(&mut self.comments.borrow_mut(), c)
     }
 
     fn all_comments(&self) -> RepoResult<Vec<Comment>> {
-        Ok(self.comments.clone())
+        Ok(self.comments.borrow().clone())
     }
 }
 
@@ -338,10 +327,30 @@ impl OrganizationGateway for MockDb {
     }
 }
 
+impl EntryRatingRepository for MockDb {
+    fn add_rating_for_entry(&self, r: Rating) -> RepoResult<()> {
+        create(&mut self.ratings.borrow_mut(), r)
+    }
+
+    fn all_ratings_for_entry_by_id(&self, entry_id: &str) -> RepoResult<Vec<Rating>> {
+        Ok(self
+            .ratings
+            .borrow()
+            .clone()
+            .into_iter()
+            .filter(|r| r.entry_id == entry_id)
+            .collect())
+    }
+
+    fn all_ratings(&self) -> RepoResult<Vec<Rating>> {
+        Ok(self.ratings.borrow().clone())
+    }
+}
+
 #[cfg(test)]
 impl Db for MockDb {
-    fn create_tag_if_it_does_not_exist(&mut self, e: &Tag) -> RepoResult<()> {
-        if let Err(err) = create(&mut self.tags, e.clone()) {
+    fn create_tag_if_it_does_not_exist(&self, e: &Tag) -> RepoResult<()> {
+        if let Err(err) = create(&mut self.tags.borrow_mut(), e.clone()) {
             match err {
                 RepoError::AlreadyExists => {
                     // that's ok
@@ -364,10 +373,6 @@ impl Db for MockDb {
         Ok(())
     }
 
-    fn create_rating(&mut self, r: Rating) -> RepoResult<()> {
-        create(&mut self.ratings, r)
-    }
-
     fn create_bbox_subscription(&mut self, s: &BboxSubscription) -> RepoResult<()> {
         create(&mut self.bbox_subscriptions, s.clone())
     }
@@ -377,14 +382,10 @@ impl Db for MockDb {
     }
 
     fn all_tags(&self) -> RepoResult<Vec<Tag>> {
-        Ok(self.tags.clone())
+        Ok(self.tags.borrow().clone())
     }
     fn count_tags(&self) -> RepoResult<usize> {
-        Ok(self.tags.len())
-    }
-
-    fn all_ratings(&self) -> RepoResult<Vec<Rating>> {
-        Ok(self.ratings.clone())
+        Ok(self.tags.borrow().len())
     }
 
     fn all_bbox_subscriptions(&self) -> RepoResult<Vec<BboxSubscription>> {
@@ -408,7 +409,7 @@ mod tests {
     use chrono::prelude::*;
     #[test]
     fn receive_different_user() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         db.users = vec![
             User {
                 id: "1".into(),
@@ -433,7 +434,7 @@ mod tests {
 
     #[test]
     fn create_bbox_subscription() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         let bbox_new = Bbox {
             north_east: Coordinate {
                 lat: 10.0,
@@ -469,7 +470,7 @@ mod tests {
 
     #[test]
     fn modify_bbox_subscription() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
 
         let bbox_old = Bbox {
             north_east: Coordinate {
@@ -533,7 +534,7 @@ mod tests {
 
     #[test]
     fn get_bbox_subscriptions() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
 
         let bbox1 = Bbox {
             north_east: Coordinate {
@@ -603,7 +604,7 @@ mod tests {
 
     #[test]
     fn email_addresses_by_coordinate() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         let bbox_new = Bbox {
             north_east: Coordinate {
                 lat: 10.0,
@@ -631,18 +632,17 @@ mod tests {
         )
         .unwrap();
 
-        let email_addresses = usecases::email_addresses_by_coordinate(&mut db, &5.0, &5.0).unwrap();
+        let email_addresses = usecases::email_addresses_by_coordinate(&db, 5.0, 5.0).unwrap();
         assert_eq!(email_addresses.len(), 1);
         assert_eq!(email_addresses[0], "abc@abc.de");
 
-        let no_email_addresses =
-            usecases::email_addresses_by_coordinate(&mut db, &20.0, &20.0).unwrap();
+        let no_email_addresses = usecases::email_addresses_by_coordinate(&db, 20.0, 20.0).unwrap();
         assert_eq!(no_email_addresses.len(), 0);
     }
 
     #[test]
     fn delete_user() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         let username = "a".to_string();
         let u_id = "1".to_string();
         assert!(db
@@ -675,7 +675,7 @@ mod tests {
 
     #[test]
     fn receive_event_with_creators_email() {
-        let mut db = MockDb::new();
+        let mut db = MockDb::default();
         db.create_user(User {
             id: "x".into(),
             username: "user".into(),
@@ -702,5 +702,13 @@ mod tests {
         .unwrap();
         let e = usecases::get_event(&mut db, "x").unwrap();
         assert_eq!(e.created_by.unwrap(), "abc@abc.de");
+    }
+
+    #[test]
+    fn tag_lists() {
+        assert_eq!(
+            vec!["a".to_string(), "b".to_string(), "c".to_string()],
+            prepare_tag_list(vec!["  a  c #b ".to_string()])
+        );
     }
 }

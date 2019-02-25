@@ -1,7 +1,6 @@
 use crate::{
     core::prelude::*,
-    infrastructure::error::AppError,
-    ports::web::sqlite::create_connection_pool, //TODO: import from infrastructure
+    infrastructure::{db::sqlite, error::AppError},
 };
 
 use std::{
@@ -36,8 +35,8 @@ pub fn import_from_osm_file(db_url: &str, file_name: &str) -> Result<()> {
     file.read_to_string(&mut contents)?;
     let osm_entries = parse_query_result(&contents)?;
     debug!("parsed {} entries", osm_entries.len());
-    let pool = create_connection_pool(db_url).unwrap();
-    let db = &mut *pool.get().unwrap();
+    let pool = sqlite::Connections::init(db_url, 1).unwrap();
+    let db = &mut *pool.exclusive().unwrap();
     let ofdb_entries = db.all_entries()?;
     let old_osm_entries: Vec<_> = ofdb_entries
         .into_iter()
@@ -209,7 +208,7 @@ fn test_parse_query_result() {
     }"#;
     let x = parse_query_result(result).unwrap();
     assert_eq!(x.len(), 1);
-    assert_eq!(x[0].id, 20962297);
+    assert_eq!(x[0].id, 20_962_297);
     assert_eq!(x[0].tags.get("addr:city").unwrap(), "Graz");
 }
 
