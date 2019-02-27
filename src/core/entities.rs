@@ -134,7 +134,7 @@ pub struct Comment {
     pub rating_id : String,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum RatingContext {
     Diversity,
@@ -248,6 +248,98 @@ impl From<AvgRatingValue> for f64 {
 impl From<RatingValue> for AvgRatingValue {
     fn from(from: RatingValue) -> Self {
         f64::from(i8::from(from)).into()
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct AvgRatingValueBuilder {
+    acc: i64,
+    cnt: usize,
+}
+
+impl AvgRatingValueBuilder {
+    fn add(&mut self, val: RatingValue) {
+        debug_assert!(val.is_valid());
+        self.acc += i64::from(val.0);
+        self.cnt += 1;
+    }
+
+    pub fn build(self) -> AvgRatingValue {
+        if self.cnt > 0 {
+            AvgRatingValue::from(self.acc as f64 / self.cnt as f64).clamp()
+        } else {
+            Default::default()
+        }
+    }
+}
+
+impl std::ops::AddAssign<RatingValue> for AvgRatingValueBuilder {
+    fn add_assign(&mut self, rhs: RatingValue) {
+        self.add(rhs);
+    }
+}
+
+#[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq)]
+pub struct AvgRatings {
+    pub diversity: AvgRatingValue,
+    pub fairness: AvgRatingValue,
+    pub humanity: AvgRatingValue,
+    pub renewable: AvgRatingValue,
+    pub solidarity: AvgRatingValue,
+    pub transparency: AvgRatingValue,
+}
+
+impl AvgRatings {
+    pub fn total(&self) -> AvgRatingValue {
+        ((self.diversity
+            + self.fairness
+            + self.humanity
+            + self.renewable
+            + self.solidarity
+            + self.transparency)
+            / 6.0)
+            .clamp()
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct AvgRatingsBuilder {
+    pub diversity: AvgRatingValueBuilder,
+    pub fairness: AvgRatingValueBuilder,
+    pub humanity: AvgRatingValueBuilder,
+    pub renewable: AvgRatingValueBuilder,
+    pub solidarity: AvgRatingValueBuilder,
+    pub transparency: AvgRatingValueBuilder,
+}
+
+impl AvgRatingsBuilder {
+    pub fn add(&mut self, ctx: RatingContext, val: RatingValue) {
+        use RatingContext::*;
+        match ctx {
+            Diversity => self.diversity.add(val),
+            Fairness => self.fairness.add(val),
+            Humanity => self.humanity.add(val),
+            Renewable => self.renewable.add(val),
+            Solidarity => self.solidarity.add(val),
+            Transparency => self.transparency.add(val),
+        }
+    }
+
+    pub fn build(self) -> AvgRatings {
+        AvgRatings {
+            diversity: self.diversity.build(),
+            fairness: self.fairness.build(),
+            humanity: self.humanity.build(),
+            renewable: self.renewable.build(),
+            solidarity: self.solidarity.build(),
+            transparency: self.transparency.build(),
+        }
+    }
+}
+
+impl std::ops::AddAssign<(RatingContext, RatingValue)> for AvgRatingsBuilder {
+    fn add_assign(&mut self, rhs: (RatingContext, RatingValue)) {
+        self.add(rhs.0, rhs.1);
     }
 }
 

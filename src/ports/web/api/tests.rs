@@ -466,8 +466,9 @@ fn search_with_tags() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    println!("{}", body_str);
     assert!(body_str.contains(&format!(
-        "\"visible\":[{{\"id\":\"{}\",\"lat\":0.0,\"lng\":0.0,\"title\":\"\",\"description\":\"\",\"categories\":[\"foo\"],\"tags\":[\"bla-blubb\",\"foo-bar\"],\"avg_rating\":0.0}}]",
+        "\"visible\":[{{\"id\":\"{}\",\"lat\":0.0,\"lng\":0.0,\"title\":\"\",\"description\":\"\",\"categories\":[\"foo\"],\"tags\":[\"bla-blubb\",\"foo-bar\"],\"ratings\":{{\"total\":0.0,\"diversity\":0.0,\"fairness\":0.0,\"humainty\":0.0,\"renewable\":0.0,\"solidarity\":0.0,\"transparency\":0.0}}}}]",
         entries[1].id,
     )));
 
@@ -1279,7 +1280,7 @@ fn export_csv() {
             entry_id: "entry1".into(),
             created: 123,
             title: "rating2".into(),
-            value: RatingValue::from(4),
+            value: RatingValue::from(1),
             context: diversity,
             source: None,
         })
@@ -1293,7 +1294,7 @@ fn export_csv() {
             .all_ratings_for_entry_by_id(&e.id)
             .unwrap();
         search_engine
-            .add_or_update_entry(&e, e.avg_rating(&ratings))
+            .add_or_update_entry(&e, &e.avg_ratings(&ratings))
             .unwrap();
     }
     search_engine.flush().unwrap();
@@ -1309,6 +1310,6 @@ fn export_csv() {
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str, "id,osm_node,created,version,title,description,lat,lng,street,zip,city,country,homepage,categories,tags,license,avg_rating\n\
-        entry1,1,2,3,title1,desc1,0.1,0.2,street1,zip1,city1,country1,homepage1,\"cat1,cat2\",\"bla,bli\",license1,0.5\n\
+        entry1,1,2,3,title1,desc1,0.1,0.2,street1,zip1,city1,country1,homepage1,\"cat1,cat2\",\"bla,bli\",license1,0.25\n\
         entry2,,0,0,,,0,0,,,,,,cat1,,,0\n");
 }

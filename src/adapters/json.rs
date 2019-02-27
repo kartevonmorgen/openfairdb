@@ -160,6 +160,17 @@ pub struct Comment {
 }
 
 #[derive(Serialize)]
+pub struct EntrySearchRatings {
+    pub total: e::AvgRatingValue,
+    pub diversity: e::AvgRatingValue,
+    pub fairness: e::AvgRatingValue,
+    pub humainty: e::AvgRatingValue,
+    pub renewable: e::AvgRatingValue,
+    pub solidarity: e::AvgRatingValue,
+    pub transparency: e::AvgRatingValue,
+}
+
+#[derive(Serialize)]
 pub struct EntrySearchResult {
     pub id: String,
     pub lat: f64,
@@ -168,7 +179,7 @@ pub struct EntrySearchResult {
     pub description: String,
     pub categories: Vec<String>,
     pub tags: Vec<String>,
-    pub avg_rating: e::AvgRatingValue,
+    pub ratings: EntrySearchRatings,
 }
 
 impl From<IndexedEntry> for EntrySearchResult {
@@ -181,7 +192,15 @@ impl From<IndexedEntry> for EntrySearchResult {
             description: from.description,
             categories: from.categories,
             tags: from.tags,
-            avg_rating: from.avg_rating,
+            ratings: EntrySearchRatings {
+                total: from.ratings.total(),
+                diversity: from.ratings.diversity,
+                fairness: from.ratings.fairness,
+                humainty: from.ratings.humanity,
+                renewable: from.ratings.renewable,
+                solidarity: from.ratings.solidarity,
+                transparency: from.ratings.transparency,
+            },
         }
     }
 }

@@ -6,10 +6,10 @@ pub fn index_entry(
     indexer: &mut EntryIndexer,
     entry: &Entry,
     ratings: &[Rating],
-) -> Fallible<AvgRatingValue> {
-    let avg_rating = entry.avg_rating(ratings);
-    indexer.add_or_update_entry(entry, avg_rating)?;
-    Ok(avg_rating)
+) -> Fallible<AvgRatings> {
+    let avg_ratings = entry.avg_ratings(ratings);
+    indexer.add_or_update_entry(entry, &avg_ratings)?;
+    Ok(avg_ratings)
 }
 
 pub fn unindex_entry(indexer: &mut EntryIndexer, entry_id: &str) -> Fallible<()> {

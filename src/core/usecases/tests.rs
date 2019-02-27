@@ -102,7 +102,7 @@ impl MockDb {
 
 #[cfg(test)]
 impl EntryIndexer for MockDb {
-    fn add_or_update_entry(&mut self, entry: &Entry, _avg_rating: AvgRatingValue) -> Fallible<()> {
+    fn add_or_update_entry(&mut self, entry: &Entry, _ratings: &AvgRatings) -> Fallible<()> {
         // Nothing to do, the entry has already been stored
         // in the database.
         //debug_assert_eq!(Ok(entry), self.db.get_entry(&entry.id).as_ref());
@@ -154,7 +154,7 @@ impl EntryIndex for MockDb {
                 description: e.description,
                 categories: e.categories,
                 tags: e.tags,
-                avg_rating: AvgRatingValue::default(),
+                ratings: Default::default(),
             })
             /*id: e.id,
             title: e.title,

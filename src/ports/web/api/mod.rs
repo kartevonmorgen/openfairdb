@@ -279,7 +279,9 @@ fn csv_export<'a>(
             .into_iter()
             .filter_map(|indexed_entry| {
                 let IndexedEntry {
-                    ref id, avg_rating, ..
+                    ref id,
+                    ref ratings,
+                    ..
                 } = indexed_entry;
                 if let Ok(entry) = db.get_entry(id) {
                     let categories = all_categories
@@ -287,7 +289,7 @@ fn csv_export<'a>(
                         .filter(|c1| entry.categories.iter().any(|c2| *c2 == c1.id))
                         .cloned()
                         .collect::<Vec<Category>>();
-                    Some((entry, categories, avg_rating))
+                    Some((entry, categories, ratings.total()))
                 } else {
                     None
                 }

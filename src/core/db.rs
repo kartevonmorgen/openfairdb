@@ -87,7 +87,7 @@ pub struct IndexedEntry {
     pub description: String,
     pub categories: Vec<String>,
     pub tags: Vec<String>,
-    pub avg_rating: AvgRatingValue,
+    pub ratings: AvgRatings,
 }
 
 #[derive(Debug, Clone)]
@@ -103,7 +103,7 @@ pub trait EntryIndex {
 }
 
 pub trait EntryIndexer: EntryIndex {
-    fn add_or_update_entry(&mut self, entry: &Entry, avg_rating: AvgRatingValue) -> Fallible<()>;
+    fn add_or_update_entry(&mut self, entry: &Entry, ratings: &AvgRatings) -> Fallible<()>;
     fn remove_entry_by_id(&mut self, id: &str) -> Fallible<()>;
     fn flush(&mut self) -> Fallible<()>;
 }

@@ -1,6 +1,6 @@
 use crate::core::{
     db::{EntryIndex, EntryIndexQuery, EntryIndexer, IndexedEntry},
-    entities::{AvgRatingValue, Entry},
+    entities::{AvgRatingValue, AvgRatings, Entry},
     util::geo::{LatCoord, LngCoord, MapPoint},
 };
 
@@ -28,7 +28,13 @@ struct TantivyEntryFields {
     lat: Field,
     lng: Field,
     tag: Field,
-    rating: Field,
+    total_rating: Field,
+    diversity_rating: Field,
+    fairness_rating: Field,
+    humanity_rating: Field,
+    renewable_rating: Field,
+    solidarity_rating: Field,
+    transparency_rating: Field,
 }
 
 pub(crate) struct TantivyEntryIndex {
@@ -79,7 +85,13 @@ fn build_schema() -> (Schema, TantivyEntryFields) {
     let description = schema_builder.add_text_field("description", text_options);
     let category = schema_builder.add_text_field("category", category_options.clone());
     let tag = schema_builder.add_text_field("tag", tag_options);
-    let rating = schema_builder.add_u64_field("rating", INT_STORED | FAST);
+    let total_rating = schema_builder.add_u64_field("total_rating", INT_STORED | FAST);
+    let diversity_rating = schema_builder.add_u64_field("diversity_rating", INT_STORED);
+    let fairness_rating = schema_builder.add_u64_field("fairness_rating", INT_STORED);
+    let humanity_rating = schema_builder.add_u64_field("humanity_rating", INT_STORED);
+    let renewable_rating = schema_builder.add_u64_field("renewable_rating", INT_STORED);
+    let solidarity_rating = schema_builder.add_u64_field("solidarity_rating", INT_STORED);
+    let transparency_rating = schema_builder.add_u64_field("transparency_rating", INT_STORED);
     let schema = schema_builder.build();
     let fields = TantivyEntryFields {
         id,
@@ -89,7 +101,13 @@ fn build_schema() -> (Schema, TantivyEntryFields) {
         description,
         category,
         tag,
-        rating,
+        total_rating,
+        diversity_rating,
+        fairness_rating,
+        humanity_rating,
+        renewable_rating,
+        solidarity_rating,
+        transparency_rating,
     };
     (schema, fields)
 }
@@ -184,8 +202,7 @@ impl TantivyEntryIndex {
 }
 
 impl EntryIndexer for TantivyEntryIndex {
-    fn add_or_update_entry(&mut self, entry: &Entry, avg_rating: AvgRatingValue) -> Fallible<()> {
-        debug_assert!(avg_rating.is_valid());
+    fn add_or_update_entry(&mut self, entry: &Entry, ratings: &AvgRatings) -> Fallible<()> {
         let id_term = Term::from_field_text(self.fields.id, &entry.id);
         self.writer.delete_term(id_term);
         let mut doc = Document::default();
@@ -206,7 +223,31 @@ impl EntryIndexer for TantivyEntryIndex {
         for tag in &entry.tags {
             doc.add_text(self.fields.tag, tag);
         }
-        doc.add_u64(self.fields.rating, avg_rating_to_u64(avg_rating));
+        doc.add_u64(self.fields.total_rating, avg_rating_to_u64(ratings.total()));
+        doc.add_u64(
+            self.fields.diversity_rating,
+            avg_rating_to_u64(ratings.diversity),
+        );
+        doc.add_u64(
+            self.fields.fairness_rating,
+            avg_rating_to_u64(ratings.fairness),
+        );
+        doc.add_u64(
+            self.fields.humanity_rating,
+            avg_rating_to_u64(ratings.humanity),
+        );
+        doc.add_u64(
+            self.fields.renewable_rating,
+            avg_rating_to_u64(ratings.renewable),
+        );
+        doc.add_u64(
+            self.fields.solidarity_rating,
+            avg_rating_to_u64(ratings.solidarity),
+        );
+        doc.add_u64(
+            self.fields.transparency_rating,
+            avg_rating_to_u64(ratings.transparency),
+        );
         self.writer.add_document(doc);
         Ok(())
     }
@@ -327,12 +368,14 @@ impl EntryIndex for TantivyEntryIndex {
         // TODO (2019-02-26): Ideally we would like to order the results by
         // (score * rating) instead of only (rating). Currently Tantivy doesn't
         // support this kind of collector.
-        let collector = TopDocs::with_limit(limit).order_by_field(self.fields.rating);
+        let collector = TopDocs::with_limit(limit).order_by_field(self.fields.total_rating);
         let top_docs_by_rating: Vec<(u64, DocAddress)> = searcher.search(&query, &collector)?;
         let mut top_results = Vec::with_capacity(top_docs_by_rating.len());
-        for (rating, doc_addr) in top_docs_by_rating {
+        for (_total_rating, doc_addr) in top_docs_by_rating {
             match searcher.doc(doc_addr) {
                 Ok(doc) => {
+                    // TODO: Use field_values() accessor to iterator over all
+                    // FieldValue tuples once!
                     if let Some(id) = doc.get_first(self.fields.id).and_then(Value::text) {
                         if let (Some(lat), Some(lng)) = (
                             doc.get_first(self.fields.lat),
@@ -364,7 +407,41 @@ impl EntryIndex for TantivyEntryIndex {
                                 .into_iter()
                                 .filter_map(|val| val.text().map(ToString::to_string))
                                 .collect();
-                            let avg_rating = u64_to_avg_rating(rating);
+                            let ratings = AvgRatings {
+                                diversity: doc
+                                    .get_first(self.fields.diversity_rating)
+                                    .map(Value::u64_value)
+                                    .map(u64_to_avg_rating)
+                                    .unwrap_or_default(),
+                                fairness: doc
+                                    .get_first(self.fields.fairness_rating)
+                                    .map(Value::u64_value)
+                                    .map(u64_to_avg_rating)
+                                    .unwrap_or_default(),
+                                humanity: doc
+                                    .get_first(self.fields.humanity_rating)
+                                    .map(Value::u64_value)
+                                    .map(u64_to_avg_rating)
+                                    .unwrap_or_default(),
+                                renewable: doc
+                                    .get_first(self.fields.renewable_rating)
+                                    .map(Value::u64_value)
+                                    .map(u64_to_avg_rating)
+                                    .unwrap_or_default(),
+                                solidarity: doc
+                                    .get_first(self.fields.solidarity_rating)
+                                    .map(Value::u64_value)
+                                    .map(u64_to_avg_rating)
+                                    .unwrap_or_default(),
+                                transparency: doc
+                                    .get_first(self.fields.transparency_rating)
+                                    .map(Value::u64_value)
+                                    .map(u64_to_avg_rating)
+                                    .unwrap_or_default(),
+                            };
+                            // The resulting calculated total rating `ratings.total()`
+                            // might slightly differ from value stored in the document due
+                            // to rounding errors when converting from f64 -> u64 -> f64!
                             top_results.push(IndexedEntry {
                                 id: id.to_owned(),
                                 pos,
@@ -374,7 +451,7 @@ impl EntryIndex for TantivyEntryIndex {
                                     .unwrap_or_default(),
                                 categories,
                                 tags,
-                                avg_rating,
+                                ratings,
                             });
                         } else {
                             error!("Indexed entry {} has no position", id);
@@ -418,12 +495,12 @@ impl EntryIndex for SearchEngine {
 }
 
 impl EntryIndexer for SearchEngine {
-    fn add_or_update_entry(&mut self, entry: &Entry, avg_rating: AvgRatingValue) -> Fallible<()> {
+    fn add_or_update_entry(&mut self, entry: &Entry, ratings: &AvgRatings) -> Fallible<()> {
         let mut inner = match self.0.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         };
-        inner.add_or_update_entry(entry, avg_rating)
+        inner.add_or_update_entry(entry, ratings)
     }
 
     fn remove_entry_by_id(&mut self, id: &str) -> Fallible<()> {

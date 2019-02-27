@@ -27,7 +27,8 @@ fn index_all_entries<D: EntryGateway + EntryRatingRepository>(
     let entries = db.all_entries()?;
     for entry in entries {
         let ratings = db.all_ratings_for_entry_by_id(&entry.id)?;
-        if let Err(err) = entry_indexer.add_or_update_entry(&entry, entry.avg_rating(&ratings[..]))
+        if let Err(err) =
+            entry_indexer.add_or_update_entry(&entry, &entry.avg_ratings(&ratings[..]))
         {
             error!("Failed to index entry {:?}: {}", entry, err);
         }

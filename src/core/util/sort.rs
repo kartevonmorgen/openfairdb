@@ -32,47 +32,22 @@ impl SortByDistanceTo for [Entry] {
 }
 
 pub trait Rated {
-    fn avg_rating(&self, _: &[Rating]) -> AvgRatingValue;
+    fn avg_ratings(&self, _: &[Rating]) -> AvgRatings;
 }
 
 impl Rated for Entry {
-    fn avg_rating(&self, ratings: &[Rating]) -> AvgRatingValue {
-        use self::RatingContext::*;
-
+    fn avg_ratings(&self, ratings: &[Rating]) -> AvgRatings {
         debug_assert_eq!(
             ratings.len(),
             ratings.iter().filter(|r| r.entry_id == self.id).count()
         );
-        let avg_ratings = [
-            avg_rating_for_context(ratings, &Diversity),
-            avg_rating_for_context(ratings, &Renewable),
-            avg_rating_for_context(ratings, &Fairness),
-            avg_rating_for_context(ratings, &Humanity),
-            avg_rating_for_context(ratings, &Transparency),
-            avg_rating_for_context(ratings, &Solidarity),
-        ];
-        let sum_ratings = avg_ratings
+        ratings
             .iter()
-            .fold(AvgRatingValue::default(), |acc, &r| {
-                acc + r.unwrap_or_default()
-            });
-        debug_assert!(avg_ratings.len() == 6);
-        sum_ratings / 6.0
-    }
-}
-
-fn avg_rating_for_context(ratings: &[Rating], context: &RatingContext) -> Option<AvgRatingValue> {
-    let (cnt, sum) = ratings
-        .iter()
-        .filter(|rating| rating.context == *context)
-        .fold((0usize, 0i64), |(cnt, acc), rating| {
-            (cnt + 1, acc + i8::from(rating.value) as i64)
-        });
-    if cnt > 0 {
-        let avg = sum as f64 / cnt as f64;
-        Some(avg.into())
-    } else {
-        None
+            .fold(AvgRatingsBuilder::default(), |mut acc, r| {
+                acc.add(r.context, r.value);
+                acc
+            })
+            .build()
     }
 }
 
@@ -105,19 +80,19 @@ pub mod tests {
         let entry3 = new_entry("c", 0.0, 0.0);
 
         let ratings1 = [
-            new_rating("1", "a", 0, RatingContext::Diversity),
-            new_rating("2", "a", 0, RatingContext::Diversity),
-            new_rating("3", "a", 3, RatingContext::Diversity),
-            new_rating("4", "a", 3, RatingContext::Diversity),
+            new_rating("1", "a", -1, RatingContext::Diversity),
+            new_rating("2", "a", 1, RatingContext::Diversity),
+            new_rating("3", "a", 2, RatingContext::Diversity),
+            new_rating("4", "a", 1, RatingContext::Diversity),
         ];
 
         let ratings2 = [
-            new_rating("5", "b", -3, RatingContext::Diversity),
-            new_rating("6", "b", 3, RatingContext::Diversity),
+            new_rating("5", "b", -1, RatingContext::Diversity),
+            new_rating("6", "b", 1, RatingContext::Diversity),
         ];
-        assert_eq!(entry1.avg_rating(&ratings1), 0.25.into());
-        assert_eq!(entry2.avg_rating(&ratings2), 0.0.into());
-        assert_eq!(entry3.avg_rating(&[]), 0.0.into());
+        assert_eq!(entry1.avg_ratings(&ratings1).total(), 0.125.into());
+        assert_eq!(entry2.avg_ratings(&ratings2).total(), 0.0.into());
+        assert_eq!(entry3.avg_ratings(&[]).total(), 0.0.into());
     }
 
     #[test]
@@ -126,19 +101,21 @@ pub mod tests {
         let entry2 = new_entry("b", 0.0, 0.0);
 
         let ratings1 = [
-            new_rating("1", "a", 0, RatingContext::Diversity),
-            new_rating("2", "a", 10, RatingContext::Renewable),
-            new_rating("3", "a", 7, RatingContext::Fairness),
-            new_rating("4", "a", 9, RatingContext::Fairness),
+            new_rating("1", "a", -1, RatingContext::Diversity),
+            new_rating("2", "a", 2, RatingContext::Renewable),
+            new_rating("3", "a", 1, RatingContext::Fairness),
+            new_rating("4", "a", 1, RatingContext::Renewable),
+            new_rating("4", "a", 2, RatingContext::Fairness),
+            new_rating("3", "a", 1, RatingContext::Diversity),
         ];
 
         let ratings2 = [
-            new_rating("5", "b", -3, RatingContext::Diversity),
-            new_rating("6", "b", 3, RatingContext::Fairness),
+            new_rating("5", "b", -1, RatingContext::Diversity),
+            new_rating("6", "b", 1, RatingContext::Fairness),
         ];
 
-        assert_eq!(entry1.avg_rating(&ratings1), 3.0.into());
-        assert_eq!(entry2.avg_rating(&ratings2), 0.0.into());
+        assert_eq!(entry1.avg_ratings(&ratings1).total(), 0.5.into());
+        assert_eq!(entry2.avg_ratings(&ratings2).total(), 0.0.into());
     }
 
     #[test]
@@ -225,18 +202,6 @@ pub mod tests {
     #[bench]
     fn bench_calc_avg_of_1000_ratings_for_an_entry(b: &mut Bencher) {
         let (entry, ratings) = create_entry_with_multiple_ratings(1000);
-        b.iter(|| entry.avg_rating(&ratings[..]));
-    }
-
-    #[bench]
-    fn bench_calc_avg_of_100_ratings_for_a_rating_context(b: &mut Bencher) {
-        let (_, ratings) = create_entry_with_multiple_ratings(100);
-        b.iter(|| avg_rating_for_context(&ratings[..], &RatingContext::Diversity));
-    }
-
-    #[bench]
-    fn bench_calc_avg_of_1000_ratings_for_a_rating_context(b: &mut Bencher) {
-        let (_, ratings) = create_entry_with_multiple_ratings(1000);
-        b.iter(|| avg_rating_for_context(&ratings[..], &RatingContext::Diversity));
+        b.iter(|| entry.avg_ratings(&ratings[..]));
     }
 }
