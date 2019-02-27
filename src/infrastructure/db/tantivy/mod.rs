@@ -64,15 +64,17 @@ fn build_schema() -> (Schema, TantivyEntryFields) {
                 .set_index_option(IndexRecordOption::WithFreqs),
         )
         .set_stored();
-    let text_options = TextOptions::default().set_indexing_options(
-        TextFieldIndexing::default()
-            .set_tokenizer(TEXT_TOKENIZER)
-            .set_index_option(IndexRecordOption::WithFreqsAndPositions),
-    );
+    let text_options = TextOptions::default()
+        .set_indexing_options(
+            TextFieldIndexing::default()
+                .set_tokenizer(TEXT_TOKENIZER)
+                .set_index_option(IndexRecordOption::WithFreqsAndPositions),
+        )
+        .set_stored();
     let mut schema_builder = SchemaBuilder::default();
     let id = schema_builder.add_text_field("id", id_options);
-    let lat = schema_builder.add_i64_field("lat", INT_INDEXED);
-    let lng = schema_builder.add_i64_field("lng", INT_INDEXED);
+    let lat = schema_builder.add_i64_field("lat", INT_INDEXED | INT_STORED);
+    let lng = schema_builder.add_i64_field("lng", INT_INDEXED | INT_STORED);
     let title = schema_builder.add_text_field("title", text_options.clone());
     let description = schema_builder.add_text_field("description", text_options);
     let category = schema_builder.add_text_field("category", category_options.clone());
