@@ -488,40 +488,52 @@ components:
           description: The entries that are in the given bounding box (bbox, area of the map).
           type: array
           items:
-            type: object
-            properties:
-              id:
-                type: string
-              lat:
-                type: number
-              lng:
-                type: number
-              title:
-                type: string
-              description:
-                type: string
-              categories:
-                type: array
-                items:
-                  type: string
-              tags:
-                type: array
-                items:
-                  type: string
-              avg_rating:
-                type: number
+            $ref: '#/components/schemas/SearchEntry'
         invisible:
           description: Up to 5 entries outside the bbox.
           type: array
           items:
-            type: object
-            properties:
-              id:
-                type: string
-              lat:
-                type: number
-              lng:
-                type: number
+            $ref: '#/components/schemas/SearchEntry'
+    SearchEntry:
+      description: The compact view of an entry as returned in search results.
+      properties:
+        id:
+          type: string
+        lat:
+          type: number
+        lng:
+          type: number
+        title:
+          type: string
+        description:
+          type: string
+        categories:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        ratings:
+          $ref: '#/components/schemas/AvgRatings'
+    AvgRatings:
+      description: All average ratings of an entry.
+      properties:
+        total:
+          type: number
+        diversity:
+          type: number
+        fairness:
+          type: number
+        humanity:
+          type: number
+        renewable:
+          type: number
+        solidarity:
+          type: number
+        transparency:
+          type: number
     Event:
       properties:
         id:
