@@ -208,18 +208,6 @@ impl EntryGateway for MockDb {
     fn get_entry(&self, id: &str) -> RepoResult<Entry> {
         get(&self.entries.borrow(), id)
     }
-    fn get_entry_with_relations(
-        &self,
-        id: &str,
-        categories: Vec<String>,
-        tags: Vec<String>,
-    ) -> RepoResult<Entry> {
-        self.get_entry(id).map(|e| Entry {
-            categories,
-            tags,
-            ..e
-        })
-    }
     fn all_entries(&self) -> RepoResult<Vec<Entry>> {
         Ok(self.entries.borrow().clone())
     }

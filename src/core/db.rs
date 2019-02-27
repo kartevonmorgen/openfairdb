@@ -11,12 +11,6 @@ type Result<T> = result::Result<T, RepoError>;
 
 pub trait EntryGateway {
     fn create_entry(&self, _: Entry) -> Result<()>;
-    fn get_entry_with_relations(
-        &self,
-        _: &str,
-        categories: Vec<String>,
-        tags: Vec<String>,
-    ) -> Result<Entry>;
     fn get_entry(&self, _: &str) -> Result<Entry>;
     fn all_entries(&self) -> Result<Vec<Entry>>;
     fn count_entries(&self) -> Result<usize>;
