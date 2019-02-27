@@ -80,6 +80,11 @@ pub fn get_search(
                 limit, MAX_RESULTS
             );
             MAX_RESULTS
+        } else if limit <= 0 {
+            warn!("Invalid search limit: {}", limit);
+            return Err(AppError::Business(Error::Parameter(
+                ParameterError::InvalidLimit,
+            )));
         } else {
             limit
         }

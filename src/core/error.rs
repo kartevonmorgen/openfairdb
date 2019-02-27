@@ -67,6 +67,9 @@ quick_error! {
         CreatorEmail{
             description("Missing the email of the creator")
         }
+        InvalidLimit{
+            description("Invalid limit")
+        }
     }
 }
 

@@ -4,7 +4,7 @@ use crate::core::{
     util::geo::{LatCoord, LngCoord, MapPoint},
 };
 
-use failure::Fallible;
+use failure::{bail, Fallible};
 use std::{
     ops::Bound,
     path::Path,
@@ -226,6 +226,10 @@ impl EntryIndexer for TantivyEntryIndex {
 
 impl EntryIndex for TantivyEntryIndex {
     fn query_entries(&self, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<IndexedEntry>> {
+        if limit <= 0 {
+            bail!("Invalid limit: {}", limit);
+        }
+
         let mut sub_queries: Vec<(Occur, Box<Query>)> = Vec::with_capacity(2 + 1 + 1 + 1);
 
         // Bbox
