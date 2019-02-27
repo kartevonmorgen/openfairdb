@@ -2,10 +2,7 @@ use super::super::util;
 use crate::{
     adapters::json,
     core::{prelude::*, usecases, util::geo},
-    infrastructure::{
-        db::{sqlite, tantivy},
-        error::AppError,
-    },
+    infrastructure::{db::tantivy, error::AppError},
 };
 
 use rocket::{self, request::Form};
@@ -27,7 +24,6 @@ const MAX_RESULTS: usize = 100;
 
 #[get("/search?<search..>")]
 pub fn get_search(
-    db: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     search: Form<SearchQuery>,
 ) -> Result<json::SearchResponse> {
@@ -95,7 +91,7 @@ pub fn get_search(
         MAX_RESULTS
     };
 
-    let (visible, invisible) = usecases::search(&search_engine, &*db.shared()?, req, search_limit)?;
+    let (visible, invisible) = usecases::search(&search_engine, req, search_limit)?;
 
     let visible_len = visible.len();
     let visible: Vec<json::EntrySearchResult> = visible

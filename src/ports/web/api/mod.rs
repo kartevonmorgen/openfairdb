@@ -270,25 +270,30 @@ fn csv_export<'a>(
         tags: Default::default(),
     };
 
-    let (entries_with_avg_rating, all_categories) = {
+    let entries_categories_and_ratings = {
         let db = connections.shared()?;
-        let limit = db.count_entries()? + 100;
-        let (entries, _) = usecases::search(&search_engine, &*db, req, limit)?;
         let all_categories: Vec<_> = db.all_categories()?;
-        (entries, all_categories)
+        let limit = db.count_entries()? + 100;
+        usecases::search(&search_engine, req, limit)?
+            .0
+            .into_iter()
+            .filter_map(|indexed_entry| {
+                let IndexedEntry {
+                    ref id, avg_rating, ..
+                } = indexed_entry;
+                if let Ok(entry) = db.get_entry(id) {
+                    let categories = all_categories
+                        .iter()
+                        .filter(|c1| entry.categories.iter().any(|c2| *c2 == c1.id))
+                        .cloned()
+                        .collect::<Vec<Category>>();
+                    Some((entry, categories, avg_rating))
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>()
     };
-
-    let entries_categories_and_ratings = entries_with_avg_rating
-        .into_iter()
-        .map(|(e, r)| {
-            let categories = all_categories
-                .iter()
-                .filter(|c1| e.categories.iter().any(|c2| *c2 == c1.id))
-                .cloned()
-                .collect::<Vec<Category>>();
-            (e, categories, r)
-        })
-        .collect::<Vec<_>>();
 
     let records: Vec<adapters::csv::CsvRecord> = entries_categories_and_ratings
         .into_iter()

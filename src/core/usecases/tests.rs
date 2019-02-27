@@ -125,12 +125,7 @@ impl EntryIndexer for MockDb {
 
 #[cfg(test)]
 impl EntryIndex for MockDb {
-    fn query_entries(
-        &self,
-        _entries: &EntryGateway,
-        query: &EntryIndexQuery,
-        limit: usize,
-    ) -> Fallible<Vec<(Entry, AvgRatingValue)>> {
+    fn query_entries(&self, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<IndexedEntry>> {
         let mut entries = if let Some(ref bbox) = query.bbox {
             self.get_entries_by_bbox(&bbox)
         } else {
@@ -145,17 +140,29 @@ impl EntryIndex for MockDb {
                 .collect();
         }
 
-        let entries_with_rating = entries
+        let indexed_entries = entries
             .into_iter()
             .take(limit)
             .filter(&*filter::entries_by_tags_or_search_text(
                 query.text.as_ref().map(String::as_str).unwrap_or(""),
                 &query.tags,
             ))
-            .map(|e| (e, AvgRatingValue::default()))
+            .map(|e| IndexedEntry {
+                id: e.id,
+                pos: MapPoint::from_lat_lng_deg(e.location.lat, e.location.lng),
+                title: e.title,
+                description: e.description,
+                categories: e.categories,
+                tags: e.tags,
+                avg_rating: AvgRatingValue::default(),
+            })
+            /*id: e.id,
+            title: e.title,
+            description: e.description,
+            categories: e.categories,*/
             .collect();
 
-        Ok(entries_with_rating)
+        Ok(indexed_entries)
     }
 }
 

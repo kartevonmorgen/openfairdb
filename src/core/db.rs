@@ -1,4 +1,8 @@
-use super::{entities::*, error::RepoError, util::geo::MapBbox};
+use super::{
+    entities::*,
+    error::RepoError,
+    util::geo::{MapBbox, MapPoint},
+};
 
 use failure::Fallible;
 use std::result;
@@ -81,22 +85,27 @@ pub trait Db:
     fn delete_bbox_subscription(&mut self, _: &str) -> Result<()>;
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[derive(Debug, Clone)]
+pub struct IndexedEntry {
+    pub id: String,
+    pub pos: MapPoint,
+    pub title: String,
+    pub description: String,
+    pub categories: Vec<String>,
+    pub tags: Vec<String>,
+    pub avg_rating: AvgRatingValue,
+}
+
 #[derive(Debug, Clone)]
 pub struct EntryIndexQuery {
-    pub bbox       : Option<MapBbox>,
-    pub text       : Option<String>,
-    pub categories : Vec<String>,
-    pub tags       : Vec<String>,
+    pub bbox: Option<MapBbox>,
+    pub text: Option<String>,
+    pub categories: Vec<String>,
+    pub tags: Vec<String>,
 }
 
 pub trait EntryIndex {
-    fn query_entries(
-        &self,
-        entries: &EntryGateway,
-        query: &EntryIndexQuery,
-        limit: usize,
-    ) -> Fallible<Vec<(Entry, AvgRatingValue)>>;
+    fn query_entries(&self, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<IndexedEntry>>;
 }
 
 pub trait EntryIndexer: EntryIndex {

@@ -1,4 +1,4 @@
-use crate::core::entities as e;
+use crate::core::{db::IndexedEntry, entities as e};
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -171,18 +171,17 @@ pub struct EntrySearchResult {
     pub avg_rating: e::AvgRatingValue,
 }
 
-impl From<(e::Entry, e::AvgRatingValue)> for EntrySearchResult {
-    fn from(from: (e::Entry, e::AvgRatingValue)) -> Self {
-        let (entry, avg_rating) = from;
+impl From<IndexedEntry> for EntrySearchResult {
+    fn from(from: IndexedEntry) -> Self {
         Self {
-            id: entry.id,
-            lat: entry.location.lat,
-            lng: entry.location.lng,
-            title: entry.title,
-            description: entry.description,
-            categories: entry.categories,
-            tags: entry.tags,
-            avg_rating,
+            id: from.id,
+            lat: from.pos.lat().to_deg(),
+            lng: from.pos.lng().to_deg(),
+            title: from.title,
+            description: from.description,
+            categories: from.categories,
+            tags: from.tags,
+            avg_rating: from.avg_rating,
         }
     }
 }

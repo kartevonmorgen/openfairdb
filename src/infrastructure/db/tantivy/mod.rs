@@ -1,7 +1,7 @@
 use crate::core::{
-    db::{EntryGateway, EntryIndex, EntryIndexQuery, EntryIndexer},
+    db::{EntryIndex, EntryIndexQuery, EntryIndexer, IndexedEntry},
     entities::{AvgRatingValue, Entry},
-    util::geo::{LatCoord, LngCoord},
+    util::geo::{LatCoord, LngCoord, MapPoint},
 };
 
 use failure::Fallible;
@@ -225,12 +225,7 @@ impl EntryIndexer for TantivyEntryIndex {
 }
 
 impl EntryIndex for TantivyEntryIndex {
-    fn query_entries(
-        &self,
-        entries: &EntryGateway,
-        query: &EntryIndexQuery,
-        limit: usize,
-    ) -> Fallible<Vec<(Entry, AvgRatingValue)>> {
+    fn query_entries(&self, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<IndexedEntry>> {
         let mut sub_queries: Vec<(Occur, Box<Query>)> = Vec::with_capacity(2 + 1 + 1 + 1);
 
         // Bbox
@@ -335,27 +330,53 @@ impl EntryIndex for TantivyEntryIndex {
             match searcher.doc(doc_addr) {
                 Ok(doc) => {
                     if let Some(id) = doc.get_first(self.fields.id).and_then(Value::text) {
-                        let categories = doc
-                            .get_all(self.fields.category)
-                            .into_iter()
-                            .filter_map(|val| val.text().map(ToString::to_string))
-                            .collect();
-                        let tags = doc
-                            .get_all(self.fields.tag)
-                            .into_iter()
-                            .filter_map(|val| val.text().map(ToString::to_string))
-                            .collect();
-                        match entries.get_entry_with_relations(id, categories, tags) {
-                            Ok(entry) => {
-                                let avg_rating = u64_to_avg_rating(rating);
-                                top_results.push((entry, avg_rating));
-                            }
-                            Err(err) => {
-                                warn!("Entry {} not found: {}", id, err);
-                            }
+                        if let (Some(lat), Some(lng)) = (
+                            doc.get_first(self.fields.lat),
+                            doc.get_first(self.fields.lng),
+                        ) {
+                            debug_assert!(lat.i64_value() >= LatCoord::min().to_raw() as i64);
+                            debug_assert!(lat.i64_value() <= LatCoord::max().to_raw() as i64);
+                            debug_assert!(lng.i64_value() >= LngCoord::min().to_raw() as i64);
+                            debug_assert!(lng.i64_value() <= LngCoord::max().to_raw() as i64);
+                            let pos = MapPoint::new(
+                                LatCoord::from_raw(lat.i64_value() as i32),
+                                LngCoord::from_raw(lng.i64_value() as i32),
+                            );
+                            let title = doc
+                                .get_first(self.fields.title)
+                                .map(Value::text)
+                                .unwrap_or_default();
+                            let description = doc
+                                .get_first(self.fields.description)
+                                .map(Value::text)
+                                .unwrap_or_default();
+                            let categories = doc
+                                .get_all(self.fields.category)
+                                .into_iter()
+                                .filter_map(|val| val.text().map(ToString::to_string))
+                                .collect();
+                            let tags = doc
+                                .get_all(self.fields.tag)
+                                .into_iter()
+                                .filter_map(|val| val.text().map(ToString::to_string))
+                                .collect();
+                            let avg_rating = u64_to_avg_rating(rating);
+                            top_results.push(IndexedEntry {
+                                id: id.to_owned(),
+                                pos,
+                                title: title.map(ToString::to_string).unwrap_or_default(),
+                                description: description
+                                    .map(ToString::to_string)
+                                    .unwrap_or_default(),
+                                categories,
+                                tags,
+                                avg_rating,
+                            });
+                        } else {
+                            error!("Indexed entry {} has no position", id);
                         }
                     } else {
-                        warn!("Missing entry id in document {:?}", doc_addr);
+                        error!("Missing entry id in document {:?}", doc_addr);
                     }
                 }
                 Err(err) => {
@@ -383,17 +404,12 @@ impl SearchEngine {
 }
 
 impl EntryIndex for SearchEngine {
-    fn query_entries(
-        &self,
-        entries: &EntryGateway,
-        query: &EntryIndexQuery,
-        limit: usize,
-    ) -> Fallible<Vec<(Entry, AvgRatingValue)>> {
+    fn query_entries(&self, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<IndexedEntry>> {
         let entry_index = match self.0.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         };
-        entry_index.query_entries(entries, query, limit)
+        entry_index.query_entries(query, limit)
     }
 }
 

@@ -1,8 +1,5 @@
 use crate::core::prelude::*;
-use crate::core::util::{
-    filter::{self, InBBox},
-    geo::MapBbox,
-};
+use crate::core::util::{filter, geo::MapBbox};
 
 const MAX_INVISIBLE_RESULTS: usize = 5;
 
@@ -17,10 +14,9 @@ pub struct SearchRequest {
 
 pub fn search(
     index: &EntryIndex,
-    entries: &EntryGateway,
     req: SearchRequest,
     limit: usize,
-) -> Result<(Vec<(Entry, AvgRatingValue)>, Vec<(Entry, AvgRatingValue)>)> {
+) -> Result<(Vec<IndexedEntry>, Vec<IndexedEntry>)> {
     let visible_bbox: MapBbox = req.bbox;
 
     let index_bbox =
@@ -38,19 +34,19 @@ pub fn search(
     };
 
     let entries = index
-        .query_entries(entries, &index_query, limit)
+        .query_entries(&index_query, limit)
         .map_err(|err| RepoError::Other(Box::new(err.compat())))?;
 
     let invisible_results = entries
         .iter()
-        .filter(|(e, _)| !e.in_bbox(&visible_bbox))
+        .filter(|e| !visible_bbox.contains_point(&e.pos))
         .take(MAX_INVISIBLE_RESULTS)
         .cloned()
         .collect();
 
     let visible_results: Vec<_> = entries
         .into_iter()
-        .filter(|(e, _)| e.in_bbox(&visible_bbox))
+        .filter(|e| visible_bbox.contains_point(&e.pos))
         .collect();
 
     Ok((visible_results, invisible_results))
@@ -80,7 +76,7 @@ mod tests {
             tags: vec![],
         };
 
-        b.iter(|| super::search(&db, &db, req.clone(), 100).unwrap());
+        b.iter(|| super::search(&db, req.clone(), 100).unwrap());
     }
 
     #[ignore]
@@ -100,7 +96,7 @@ mod tests {
             tags: vec![],
         };
 
-        b.iter(|| super::search(&db, &db, req.clone(), 100).unwrap());
+        b.iter(|| super::search(&db, req.clone(), 100).unwrap());
     }
 
 }
