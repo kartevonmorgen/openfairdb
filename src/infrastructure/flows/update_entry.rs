@@ -11,18 +11,31 @@ pub fn update_entry(
     // Update existing entry
     let (entry, ratings) = {
         let connection = connections.exclusive()?;
-        // TODO: Move creation & validation into transaction
-        let storable = usecases::prepare_updated_entry(&*connection, id, update_entry)?;
+        let mut prepare_err = None;
         connection
             .transaction::<_, diesel::result::Error, _>(|| {
-                let (entry, ratings) = usecases::store_updated_entry(&*connection, storable)
-                    .map_err(|err| {
-                        warn!("Failed to store updated entry: {}", err);
-                        diesel::result::Error::RollbackTransaction
-                    })?;
-                Ok((entry, ratings))
+                match usecases::prepare_updated_entry(&*connection, id, update_entry) {
+                    Ok(storable) => {
+                        let (entry, ratings) = usecases::store_updated_entry(&*connection, storable)
+                            .map_err(|err| {
+                                warn!("Failed to store updated entry: {}", err);
+                                diesel::result::Error::RollbackTransaction
+                            })?;
+                        Ok((entry, ratings))
+                    }
+                    Err(err) => {
+                        prepare_err = Some(err);
+                        Err(diesel::result::Error::RollbackTransaction)
+                    }
+                }
             })
-            .map_err(RepoError::from)
+            .map_err(|err| {
+                if let Some(err) = prepare_err {
+                    err
+                } else {
+                    RepoError::from(err).into()
+                }
+            })
     }?;
 
     // Reindex updated entry

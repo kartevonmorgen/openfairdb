@@ -10,18 +10,31 @@ pub fn add_rating(
     // Add new rating to existing entry
     let (entry, ratings) = {
         let connection = connections.exclusive()?;
-        // TODO: Move creation & validation into transaction
-        let storable = usecases::prepare_new_rating(&*connection, rate_entry)?;
+        let mut prepare_err = None;
         connection
             .transaction::<_, diesel::result::Error, _>(|| {
-                let (entry, ratings) =
-                    usecases::store_new_rating(&*connection, storable).map_err(|err| {
-                        warn!("Failed to store new rating for entry: {}", err);
-                        diesel::result::Error::RollbackTransaction
-                    })?;
-                Ok((entry, ratings))
+                match usecases::prepare_new_rating(&*connection, rate_entry) {
+                    Ok(storable) => {
+                        let (entry, ratings) =
+                            usecases::store_new_rating(&*connection, storable).map_err(|err| {
+                                warn!("Failed to store new rating for entry: {}", err);
+                                diesel::result::Error::RollbackTransaction
+                            })?;
+                        Ok((entry, ratings))
+                    }
+                    Err(err) => {
+                        prepare_err = Some(err);
+                        Err(diesel::result::Error::RollbackTransaction)
+                    }
+                }
             })
-            .map_err(RepoError::from)
+            .map_err(|err| {
+                if let Some(err) = prepare_err {
+                    err
+                } else {
+                    RepoError::from(err).into()
+                }
+            })
     }?;
 
     // Reindex entry after adding the new rating
