@@ -1,7 +1,7 @@
 use crate::core::{
     db::{EntryIndex, EntryIndexQuery, EntryIndexer, IndexedEntry},
     entities::{AvgRatingValue, AvgRatings, Entry},
-    util::geo::{LatCoord, LngCoord, MapPoint},
+    util::geo::{LatCoord, LngCoord, MapPoint, RawCoord},
 };
 
 use failure::{bail, Fallible};
@@ -20,25 +20,173 @@ use tantivy::{
 
 const OVERALL_INDEX_HEAP_SIZE_IN_BYTES: usize = 50_000_000;
 
-struct TantivyEntryFields {
+struct IndexedEntryFields {
     id: Field,
+    lat: Field,
+    lng: Field,
     title: Field,
     description: Field,
     category: Field,
-    lat: Field,
-    lng: Field,
     tag: Field,
+    ratings_diversity: Field,
+    ratings_fairness: Field,
+    ratings_humanity: Field,
+    ratings_renewable: Field,
+    ratings_solidarity: Field,
+    ratings_transparency: Field,
     total_rating: Field,
-    diversity_rating: Field,
-    fairness_rating: Field,
-    humanity_rating: Field,
-    renewable_rating: Field,
-    solidarity_rating: Field,
-    transparency_rating: Field,
+}
+
+impl IndexedEntryFields {
+    fn build_schema() -> (Self, Schema) {
+        let id_options = TextOptions::default()
+            .set_indexing_options(
+                TextFieldIndexing::default()
+                    .set_tokenizer(ID_TOKENIZER)
+                    .set_index_option(IndexRecordOption::Basic),
+            )
+            .set_stored();
+        let category_options = TextOptions::default()
+            .set_indexing_options(
+                TextFieldIndexing::default()
+                    .set_tokenizer(ID_TOKENIZER)
+                    .set_index_option(IndexRecordOption::WithFreqs),
+            )
+            .set_stored();
+        let tag_options = TextOptions::default()
+            .set_indexing_options(
+                TextFieldIndexing::default()
+                    .set_tokenizer(TAG_TOKENIZER)
+                    .set_index_option(IndexRecordOption::WithFreqs),
+            )
+            .set_stored();
+        let text_options = TextOptions::default()
+            .set_indexing_options(
+                TextFieldIndexing::default()
+                    .set_tokenizer(TEXT_TOKENIZER)
+                    .set_index_option(IndexRecordOption::WithFreqsAndPositions),
+            )
+            .set_stored();
+        let mut schema_builder = SchemaBuilder::default();
+        let fields = Self {
+            id: schema_builder.add_text_field("id", id_options),
+            lat: schema_builder.add_i64_field("lat", INT_INDEXED | INT_STORED),
+            lng: schema_builder.add_i64_field("lng", INT_INDEXED | INT_STORED),
+            title: schema_builder.add_text_field("title", text_options.clone()),
+            description: schema_builder.add_text_field("description", text_options),
+            category: schema_builder.add_text_field("category", category_options.clone()),
+            tag: schema_builder.add_text_field("tag", tag_options),
+            ratings_diversity: schema_builder.add_u64_field("ratings_diversity", INT_STORED),
+            ratings_fairness: schema_builder.add_u64_field("ratings_fairness", INT_STORED),
+            ratings_humanity: schema_builder.add_u64_field("ratings_humanity", INT_STORED),
+            ratings_renewable: schema_builder.add_u64_field("ratings_renewable", INT_STORED),
+            ratings_solidarity: schema_builder.add_u64_field("ratings_solidarity", INT_STORED),
+            ratings_transparency: schema_builder.add_u64_field("ratings_transparency", INT_STORED),
+            total_rating: schema_builder.add_u64_field("total_rating", INT_STORED | FAST),
+        };
+        (fields, schema_builder.build())
+    }
+
+    fn read_document(&self, doc: &Document) -> IndexedEntry {
+        let mut lat: Option<LatCoord> = Default::default();
+        let mut lng: Option<LngCoord> = Default::default();
+        let mut entry = IndexedEntry::default();
+        entry.categories.reserve(4);
+        entry.tags.reserve(32);
+        for field_value in doc.field_values() {
+            match field_value {
+                fv if fv.field() == self.lat => {
+                    debug_assert!(lat.is_none());
+                    let raw_val = fv.value().i64_value();
+                    debug_assert!(raw_val >= LatCoord::min().to_raw().into());
+                    debug_assert!(raw_val <= LatCoord::max().to_raw().into());
+                    lat = Some(LatCoord::from_raw(raw_val as RawCoord));
+                }
+                fv if fv.field() == self.lng => {
+                    debug_assert!(lng.is_none());
+                    let raw_val = fv.value().i64_value();
+                    debug_assert!(raw_val >= LngCoord::min().to_raw().into());
+                    debug_assert!(raw_val <= LngCoord::max().to_raw().into());
+                    lng = Some(LngCoord::from_raw(raw_val as RawCoord));
+                }
+                fv if fv.field() == self.id => {
+                    debug_assert!(entry.id.is_empty());
+                    if let Some(id) = fv.value().text() {
+                        entry.id = id.into();
+                    } else {
+                        error!("Invalid id value: {:?}", fv.value());
+                    }
+                }
+                fv if fv.field() == self.title => {
+                    debug_assert!(entry.title.is_empty());
+                    if let Some(title) = fv.value().text() {
+                        entry.title = title.into();
+                    } else {
+                        error!("Invalid title value: {:?}", fv.value());
+                    }
+                }
+                fv if fv.field() == self.description => {
+                    debug_assert!(entry.description.is_empty());
+                    if let Some(description) = fv.value().text() {
+                        entry.description = description.into();
+                    } else {
+                        error!("Invalid description value: {:?}", fv.value());
+                    }
+                }
+                fv if fv.field() == self.category => {
+                    if let Some(category) = fv.value().text() {
+                        entry.categories.push(category.into());
+                    } else {
+                        error!("Invalid category value: {:?}", fv.value());
+                    }
+                }
+                fv if fv.field() == self.tag => {
+                    if let Some(tag) = fv.value().text() {
+                        entry.tags.push(tag.into());
+                    } else {
+                        error!("Invalid tag value: {:?}", fv.value());
+                    }
+                }
+                fv if fv.field() == self.ratings_diversity => {
+                    debug_assert!(entry.ratings.diversity == Default::default());
+                    entry.ratings.diversity = u64_to_avg_rating(fv.value().u64_value());
+                }
+                fv if fv.field() == self.ratings_fairness => {
+                    debug_assert!(entry.ratings.fairness == Default::default());
+                    entry.ratings.fairness = u64_to_avg_rating(fv.value().u64_value());
+                }
+                fv if fv.field() == self.ratings_humanity => {
+                    debug_assert!(entry.ratings.humanity == Default::default());
+                    entry.ratings.humanity = u64_to_avg_rating(fv.value().u64_value());
+                }
+                fv if fv.field() == self.ratings_renewable => {
+                    debug_assert!(entry.ratings.renewable == Default::default());
+                    entry.ratings.renewable = u64_to_avg_rating(fv.value().u64_value());
+                }
+                fv if fv.field() == self.ratings_solidarity => {
+                    debug_assert!(entry.ratings.solidarity == Default::default());
+                    entry.ratings.solidarity = u64_to_avg_rating(fv.value().u64_value());
+                }
+                fv if fv.field() == self.ratings_transparency => {
+                    debug_assert!(entry.ratings.transparency == Default::default());
+                    entry.ratings.transparency = u64_to_avg_rating(fv.value().u64_value());
+                }
+                fv => {
+                    error!("Unexpected field value: {:?}", fv);
+                }
+            }
+        }
+        if let (Some(lat), Some(lng)) = (lat, lng) {
+            entry.pos = MapPoint::new(lat, lng);
+        } else {
+            error!("Invalid position: lat = {:?}, lng = {:?}", lat, lng);
+        }
+        entry
+    }
 }
 
 pub(crate) struct TantivyEntryIndex {
-    fields: TantivyEntryFields,
+    fields: IndexedEntryFields,
     index: Index,
     writer: IndexWriter,
     text_query_parser: QueryParser,
@@ -47,70 +195,6 @@ pub(crate) struct TantivyEntryIndex {
 const ID_TOKENIZER: &str = "raw";
 const TAG_TOKENIZER: &str = "tag";
 const TEXT_TOKENIZER: &str = "default";
-
-fn build_schema() -> (Schema, TantivyEntryFields) {
-    let id_options = TextOptions::default()
-        .set_indexing_options(
-            TextFieldIndexing::default()
-                .set_tokenizer(ID_TOKENIZER)
-                .set_index_option(IndexRecordOption::Basic),
-        )
-        .set_stored();
-    let category_options = TextOptions::default()
-        .set_indexing_options(
-            TextFieldIndexing::default()
-                .set_tokenizer(ID_TOKENIZER)
-                .set_index_option(IndexRecordOption::WithFreqs),
-        )
-        .set_stored();
-    let tag_options = TextOptions::default()
-        .set_indexing_options(
-            TextFieldIndexing::default()
-                .set_tokenizer(TAG_TOKENIZER)
-                .set_index_option(IndexRecordOption::WithFreqs),
-        )
-        .set_stored();
-    let text_options = TextOptions::default()
-        .set_indexing_options(
-            TextFieldIndexing::default()
-                .set_tokenizer(TEXT_TOKENIZER)
-                .set_index_option(IndexRecordOption::WithFreqsAndPositions),
-        )
-        .set_stored();
-    let mut schema_builder = SchemaBuilder::default();
-    let id = schema_builder.add_text_field("id", id_options);
-    let lat = schema_builder.add_i64_field("lat", INT_INDEXED | INT_STORED);
-    let lng = schema_builder.add_i64_field("lng", INT_INDEXED | INT_STORED);
-    let title = schema_builder.add_text_field("title", text_options.clone());
-    let description = schema_builder.add_text_field("description", text_options);
-    let category = schema_builder.add_text_field("category", category_options.clone());
-    let tag = schema_builder.add_text_field("tag", tag_options);
-    let total_rating = schema_builder.add_u64_field("total_rating", INT_STORED | FAST);
-    let diversity_rating = schema_builder.add_u64_field("diversity_rating", INT_STORED);
-    let fairness_rating = schema_builder.add_u64_field("fairness_rating", INT_STORED);
-    let humanity_rating = schema_builder.add_u64_field("humanity_rating", INT_STORED);
-    let renewable_rating = schema_builder.add_u64_field("renewable_rating", INT_STORED);
-    let solidarity_rating = schema_builder.add_u64_field("solidarity_rating", INT_STORED);
-    let transparency_rating = schema_builder.add_u64_field("transparency_rating", INT_STORED);
-    let schema = schema_builder.build();
-    let fields = TantivyEntryFields {
-        id,
-        lat,
-        lng,
-        title,
-        description,
-        category,
-        tag,
-        total_rating,
-        diversity_rating,
-        fairness_rating,
-        humanity_rating,
-        renewable_rating,
-        solidarity_rating,
-        transparency_rating,
-    };
-    (schema, fields)
-}
 
 fn register_tokenizers(index: &Index) {
     // Predefined tokenizers
@@ -173,7 +257,7 @@ impl TantivyEntryIndex {
     }
 
     pub fn create<P: AsRef<Path>>(path: Option<P>) -> Fallible<Self> {
-        let (schema, fields) = build_schema();
+        let (fields, schema) = IndexedEntryFields::build_schema();
 
         // TODO: Open index from existing directory
         let index = if let Some(path) = path {
@@ -199,78 +283,8 @@ impl TantivyEntryIndex {
             text_query_parser,
         })
     }
-}
 
-impl EntryIndexer for TantivyEntryIndex {
-    fn add_or_update_entry(&mut self, entry: &Entry, ratings: &AvgRatings) -> Fallible<()> {
-        let id_term = Term::from_field_text(self.fields.id, &entry.id);
-        self.writer.delete_term(id_term);
-        let mut doc = Document::default();
-        doc.add_text(self.fields.id, &entry.id);
-        doc.add_i64(
-            self.fields.lat,
-            i64::from(LatCoord::from_deg(entry.location.lat).to_raw()),
-        );
-        doc.add_i64(
-            self.fields.lng,
-            i64::from(LngCoord::from_deg(entry.location.lng).to_raw()),
-        );
-        doc.add_text(self.fields.title, &entry.title);
-        doc.add_text(self.fields.description, &entry.description);
-        for category in &entry.categories {
-            doc.add_text(self.fields.category, category);
-        }
-        for tag in &entry.tags {
-            doc.add_text(self.fields.tag, tag);
-        }
-        doc.add_u64(self.fields.total_rating, avg_rating_to_u64(ratings.total()));
-        doc.add_u64(
-            self.fields.diversity_rating,
-            avg_rating_to_u64(ratings.diversity),
-        );
-        doc.add_u64(
-            self.fields.fairness_rating,
-            avg_rating_to_u64(ratings.fairness),
-        );
-        doc.add_u64(
-            self.fields.humanity_rating,
-            avg_rating_to_u64(ratings.humanity),
-        );
-        doc.add_u64(
-            self.fields.renewable_rating,
-            avg_rating_to_u64(ratings.renewable),
-        );
-        doc.add_u64(
-            self.fields.solidarity_rating,
-            avg_rating_to_u64(ratings.solidarity),
-        );
-        doc.add_u64(
-            self.fields.transparency_rating,
-            avg_rating_to_u64(ratings.transparency),
-        );
-        self.writer.add_document(doc);
-        Ok(())
-    }
-
-    fn remove_entry_by_id(&mut self, id: &str) -> Fallible<()> {
-        let id_term = Term::from_field_text(self.fields.id, id);
-        self.writer.delete_term(id_term);
-        Ok(())
-    }
-
-    fn flush(&mut self) -> Fallible<()> {
-        self.writer.commit()?;
-        self.index.load_searchers()?;
-        Ok(())
-    }
-}
-
-impl EntryIndex for TantivyEntryIndex {
-    fn query_entries(&self, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<IndexedEntry>> {
-        if limit <= 0 {
-            bail!("Invalid limit: {}", limit);
-        }
-
+    fn build_query(&self, query: &EntryIndexQuery) -> BooleanQuery {
         let mut sub_queries: Vec<(Occur, Box<Query>)> = Vec::with_capacity(2 + 1 + 1 + 1);
 
         // Bbox
@@ -363,109 +377,99 @@ impl EntryIndex for TantivyEntryIndex {
             sub_queries.push((Occur::Must, tags_query));
         }
 
-        let query = BooleanQuery::from(sub_queries);
+        BooleanQuery::from(sub_queries)
+    }
+}
+
+impl EntryIndexer for TantivyEntryIndex {
+    fn add_or_update_entry(&mut self, entry: &Entry, ratings: &AvgRatings) -> Fallible<()> {
+        let id_term = Term::from_field_text(self.fields.id, &entry.id);
+        self.writer.delete_term(id_term);
+        let mut doc = Document::default();
+        doc.add_text(self.fields.id, &entry.id);
+        doc.add_i64(
+            self.fields.lat,
+            i64::from(LatCoord::from_deg(entry.location.lat).to_raw()),
+        );
+        doc.add_i64(
+            self.fields.lng,
+            i64::from(LngCoord::from_deg(entry.location.lng).to_raw()),
+        );
+        doc.add_text(self.fields.title, &entry.title);
+        doc.add_text(self.fields.description, &entry.description);
+        for category in &entry.categories {
+            doc.add_text(self.fields.category, category);
+        }
+        for tag in &entry.tags {
+            doc.add_text(self.fields.tag, tag);
+        }
+        doc.add_u64(self.fields.total_rating, avg_rating_to_u64(ratings.total()));
+        doc.add_u64(
+            self.fields.ratings_diversity,
+            avg_rating_to_u64(ratings.diversity),
+        );
+        doc.add_u64(
+            self.fields.ratings_fairness,
+            avg_rating_to_u64(ratings.fairness),
+        );
+        doc.add_u64(
+            self.fields.ratings_humanity,
+            avg_rating_to_u64(ratings.humanity),
+        );
+        doc.add_u64(
+            self.fields.ratings_renewable,
+            avg_rating_to_u64(ratings.renewable),
+        );
+        doc.add_u64(
+            self.fields.ratings_solidarity,
+            avg_rating_to_u64(ratings.solidarity),
+        );
+        doc.add_u64(
+            self.fields.ratings_transparency,
+            avg_rating_to_u64(ratings.transparency),
+        );
+        self.writer.add_document(doc);
+        Ok(())
+    }
+
+    fn remove_entry_by_id(&mut self, id: &str) -> Fallible<()> {
+        let id_term = Term::from_field_text(self.fields.id, id);
+        self.writer.delete_term(id_term);
+        Ok(())
+    }
+
+    fn flush(&mut self) -> Fallible<()> {
+        self.writer.commit()?;
+        self.index.load_searchers()?;
+        Ok(())
+    }
+}
+
+impl EntryIndex for TantivyEntryIndex {
+    fn query_entries(&self, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<IndexedEntry>> {
+        if limit <= 0 {
+            bail!("Invalid limit: {}", limit);
+        }
+
         let searcher = self.index.searcher();
         // TODO (2019-02-26): Ideally we would like to order the results by
         // (score * rating) instead of only (rating). Currently Tantivy doesn't
         // support this kind of collector.
         let collector = TopDocs::with_limit(limit).order_by_field(self.fields.total_rating);
-        let top_docs_by_rating: Vec<(u64, DocAddress)> = searcher.search(&query, &collector)?;
-        let mut top_results = Vec::with_capacity(top_docs_by_rating.len());
+        let top_docs_by_rating: Vec<(u64, DocAddress)> =
+            searcher.search(&self.build_query(query), &collector)?;
+        let mut entries = Vec::with_capacity(top_docs_by_rating.len());
         for (_total_rating, doc_addr) in top_docs_by_rating {
             match searcher.doc(doc_addr) {
-                Ok(doc) => {
-                    // TODO: Use field_values() accessor to iterator over all
-                    // FieldValue tuples once!
-                    if let Some(id) = doc.get_first(self.fields.id).and_then(Value::text) {
-                        if let (Some(lat), Some(lng)) = (
-                            doc.get_first(self.fields.lat),
-                            doc.get_first(self.fields.lng),
-                        ) {
-                            debug_assert!(lat.i64_value() >= LatCoord::min().to_raw() as i64);
-                            debug_assert!(lat.i64_value() <= LatCoord::max().to_raw() as i64);
-                            debug_assert!(lng.i64_value() >= LngCoord::min().to_raw() as i64);
-                            debug_assert!(lng.i64_value() <= LngCoord::max().to_raw() as i64);
-                            let pos = MapPoint::new(
-                                LatCoord::from_raw(lat.i64_value() as i32),
-                                LngCoord::from_raw(lng.i64_value() as i32),
-                            );
-                            let title = doc
-                                .get_first(self.fields.title)
-                                .map(Value::text)
-                                .unwrap_or_default();
-                            let description = doc
-                                .get_first(self.fields.description)
-                                .map(Value::text)
-                                .unwrap_or_default();
-                            let categories = doc
-                                .get_all(self.fields.category)
-                                .into_iter()
-                                .filter_map(|val| val.text().map(ToString::to_string))
-                                .collect();
-                            let tags = doc
-                                .get_all(self.fields.tag)
-                                .into_iter()
-                                .filter_map(|val| val.text().map(ToString::to_string))
-                                .collect();
-                            let ratings = AvgRatings {
-                                diversity: doc
-                                    .get_first(self.fields.diversity_rating)
-                                    .map(Value::u64_value)
-                                    .map(u64_to_avg_rating)
-                                    .unwrap_or_default(),
-                                fairness: doc
-                                    .get_first(self.fields.fairness_rating)
-                                    .map(Value::u64_value)
-                                    .map(u64_to_avg_rating)
-                                    .unwrap_or_default(),
-                                humanity: doc
-                                    .get_first(self.fields.humanity_rating)
-                                    .map(Value::u64_value)
-                                    .map(u64_to_avg_rating)
-                                    .unwrap_or_default(),
-                                renewable: doc
-                                    .get_first(self.fields.renewable_rating)
-                                    .map(Value::u64_value)
-                                    .map(u64_to_avg_rating)
-                                    .unwrap_or_default(),
-                                solidarity: doc
-                                    .get_first(self.fields.solidarity_rating)
-                                    .map(Value::u64_value)
-                                    .map(u64_to_avg_rating)
-                                    .unwrap_or_default(),
-                                transparency: doc
-                                    .get_first(self.fields.transparency_rating)
-                                    .map(Value::u64_value)
-                                    .map(u64_to_avg_rating)
-                                    .unwrap_or_default(),
-                            };
-                            // The resulting calculated total rating `ratings.total()`
-                            // might slightly differ from value stored in the document due
-                            // to rounding errors when converting from f64 -> u64 -> f64!
-                            top_results.push(IndexedEntry {
-                                id: id.to_owned(),
-                                pos,
-                                title: title.map(ToString::to_string).unwrap_or_default(),
-                                description: description
-                                    .map(ToString::to_string)
-                                    .unwrap_or_default(),
-                                categories,
-                                tags,
-                                ratings,
-                            });
-                        } else {
-                            error!("Indexed entry {} has no position", id);
-                        }
-                    } else {
-                        error!("Missing entry id in document {:?}", doc_addr);
-                    }
+                Ok(ref doc) => {
+                    entries.push(self.fields.read_document(doc));
                 }
                 Err(err) => {
                     warn!("Failed to load document {:?}: {}", doc_addr, err);
                 }
             }
         }
-        Ok(top_results)
+        Ok(entries)
     }
 }
 

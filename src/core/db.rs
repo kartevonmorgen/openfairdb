@@ -79,7 +79,7 @@ pub trait Db:
     fn delete_bbox_subscription(&mut self, _: &str) -> Result<()>;
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone)]
 pub struct IndexedEntry {
     pub id: String,
     pub pos: MapPoint,
