@@ -48,17 +48,14 @@ pub trait InBBox {
 
 impl InBBox for Entry {
     fn in_bbox(&self, bbox: &MapBbox) -> bool {
-        bbox.contains_point(&MapPoint::from_lat_lng_deg(
-            self.location.lat,
-            self.location.lng,
-        ))
+        bbox.contains_point(&self.location.pos)
     }
 }
 
 impl InBBox for Event {
     fn in_bbox(&self, bbox: &MapBbox) -> bool {
         if let Some(ref location) = self.location {
-            bbox.contains_point(&MapPoint::from_lat_lng_deg(location.lat, location.lng))
+            bbox.contains_point(&location.pos)
         } else {
             false
         }
@@ -138,15 +135,13 @@ mod tests {
         let e = Entry::build()
             .title("foo")
             .description("bar")
-            .lat(5.0)
-            .lng(5.0)
+            .pos(MapPoint::from_lat_lng_deg(5.0, 5.0))
             .finish();
         assert_eq!(e.in_bbox(&bb), true);
         let e = Entry::build()
             .title("foo")
             .description("bar")
-            .lat(10.1)
-            .lng(10.0)
+            .pos(MapPoint::from_lat_lng_deg(10.1, 10.0))
             .finish();
         assert_eq!(e.in_bbox(&bb), false);
     }
@@ -158,9 +153,9 @@ mod tests {
             MapPoint::from_lat_lng_deg(10.0, 10.0),
         );
         let entries = vec![
-            Entry::build().lat(5.0).lng(5.0).finish(),
-            Entry::build().lat(-5.0).lng(5.0).finish(),
-            Entry::build().lat(10.0).lng(10.1).finish(),
+            Entry::build().pos(MapPoint::from_lat_lng_deg(5.0, 5.0)).finish(),
+            Entry::build().pos(MapPoint::from_lat_lng_deg(-5.0, 5.0)).finish(),
+            Entry::build().pos(MapPoint::from_lat_lng_deg(10.0, 10.1)).finish(),
         ];
         assert_eq!(
             entries

@@ -76,11 +76,17 @@ impl From<e::Event> for Event {
             ..
         } = e;
 
-        let e::Location { lat, lng, address } = location.unwrap_or_default();
-
-        let lat = if lat == 0.0 { None } else { Some(lat) };
-
-        let lng = if lng == 0.0 { None } else { Some(lng) };
+        let (lat, lng, address) = if let Some(location) = location {
+            if location.pos.is_valid() {
+                let lat = location.pos.lat().to_deg();
+                let lng = location.pos.lng().to_deg();
+                (Some(lat), Some(lng), location.address)
+            } else {
+                (None, None, location.address)
+            }
+        } else {
+            (None, None, None)
+        };
 
         let e::Address {
             street,
@@ -245,7 +251,9 @@ impl Entry {
             image_link_url,
             ..
         } = e;
-        let e::Location { lat, lng, address } = location;
+        let e::Location { pos, address } = location;
+        let lat = pos.lat().to_deg();
+        let lng = pos.lng().to_deg();
         let e::Address {
             street,
             zip,

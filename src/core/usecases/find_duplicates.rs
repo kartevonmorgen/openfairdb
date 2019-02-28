@@ -35,12 +35,8 @@ fn is_duplicate(e1: &Entry, e2: &Entry) -> Option<DuplicateType> {
 }
 
 fn in_close_proximity(e1: &Entry, e2: &Entry, max_dist: Distance) -> bool {
-    let p1 = MapPoint::try_from_lat_lng_deg(e1.location.lat, e1.location.lng);
-    let p2 = MapPoint::try_from_lat_lng_deg(e2.location.lat, e2.location.lng);
-    if let (Some(p1), Some(p2)) = (p1, p2) {
-        if let Some(dist) = MapPoint::distance(&p1, &p2) {
-            return dist <= max_dist;
-        }
+    if let Some(dist) = MapPoint::distance(&e1.location.pos, &e2.location.pos) {
+        return dist <= max_dist;
     }
     false
 }
@@ -156,13 +152,12 @@ fn min3(s: usize, t: usize, u: usize) -> usize {
 mod tests {
     use super::*;
 
-    fn new_entry(title: String, description: String, lat: f64, lng: f64) -> Entry {
+    fn new_entry(title: String, description: String, pos: MapPoint) -> Entry {
         Entry::build()
             .id(&title)
             .title(&title)
             .description(&description)
-            .lat(lat)
-            .lng(lng)
+            .pos(pos)
             .finish()
     }
 
@@ -171,14 +166,12 @@ mod tests {
         let e1 = new_entry(
             "Entry 1".to_string(),
             "Punkt1".to_string(),
-            48.23153745093964,
-            8.003816366195679,
+            MapPoint::from_lat_lng_deg(48.23153745093964, 8.003816366195679),
         );
         let e2 = new_entry(
             "Entry 2".to_string(),
             "Punkt2".to_string(),
-            48.23167056421013,
-            8.003558874130248,
+            MapPoint::from_lat_lng_deg(48.23167056421013, 8.003558874130248),
         );
 
         assert!(in_close_proximity(&e1, &e2, Distance::from_meters(30.0)));
@@ -190,26 +183,22 @@ mod tests {
         let e1 = new_entry(
             "0123456789".to_string(),
             "Hallo! Ein Eintrag".to_string(),
-            48.23153745093964,
-            6.003816366195679,
+            MapPoint::from_lat_lng_deg(48.23153745093964, 6.003816366195679),
         );
         let e2 = new_entry(
             "01234567".to_string(),
             "allo! Ein Eintra".to_string(),
-            48.23153745093964,
-            6.003816366195679,
+            MapPoint::from_lat_lng_deg(48.23153745093964, 6.003816366195679)
         );
         let e3 = new_entry(
             "eins zwei drei".to_string(),
             "allo! Ein Eintra".to_string(),
-            48.23153745093964,
-            6.003816366195679,
+            MapPoint::from_lat_lng_deg(48.23153745093964, 6.003816366195679),
         );
         let e4 = new_entry(
             "eins zwei fünf sechs".to_string(),
             "allo! Ein Eintra".to_string(),
-            48.23153745093964,
-            6.003816366195679,
+            MapPoint::from_lat_lng_deg(48.23153745093964, 6.003816366195679),
         );
 
         assert_eq!(true, similar_title(&e1, &e2, 0.2, 0)); // only 2 characters changed
@@ -223,32 +212,27 @@ mod tests {
         let e1 = new_entry(
             "Ein Eintrag Blablabla".to_string(),
             "Hallo! Ein Eintrag".to_string(),
-            47.23153745093964,
-            5.003816366195679,
+            MapPoint::from_lat_lng_deg(47.23153745093964, 5.003816366195679),
         );
         let e2 = new_entry(
             "Eintrag".to_string(),
             "Hallo! Ein Eintrag".to_string(),
-            47.23153745093970,
-            5.003816366195679,
+            MapPoint::from_lat_lng_deg(47.23153745093970, 5.003816366195679),
         );
         let e3 = new_entry(
             "Enn Eintrxg Blablalx".to_string(),
             "Hallo! Ein Eintrag".to_string(),
-            47.23153745093955,
-            5.003816366195679,
+            MapPoint::from_lat_lng_deg(47.23153745093955, 5.003816366195679),
         );
         let e4 = new_entry(
             "En Eintrg Blablala".to_string(),
             "Hallo! Ein Eintrag".to_string(),
-            47.23153745093955,
-            5.003816366195679,
+            MapPoint::from_lat_lng_deg(47.23153745093955, 5.003816366195679),
         );
         let e5 = new_entry(
             "Ein Eintrag Blabla".to_string(),
             "Hallo! Ein Eintrag".to_string(),
-            40.23153745093960,
-            5.003816366195670,
+            MapPoint::from_lat_lng_deg(40.23153745093960, 5.003816366195670),
         );
 
         // titles have a word that is equal

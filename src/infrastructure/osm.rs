@@ -109,8 +109,7 @@ fn map_osm_to_ofdb_entry(osm: &OsmEntry) -> Result<Entry> {
 
     let osm_node = Some(osm.id);
 
-    let lat = osm.lat;
-    let lng = osm.lon;
+    let pos = MapPoint::try_from_lat_lng_deg(osm.lat, osm.lon).unwrap_or_default();
 
     let version = 0;
     let created = Utc::now().timestamp() as u64;
@@ -146,7 +145,7 @@ fn map_osm_to_ofdb_entry(osm: &OsmEntry) -> Result<Entry> {
         country,
     });
 
-    let location = Location { lat, lng, address };
+    let location = Location { pos, address };
 
     Ok(Entry {
         id,
@@ -243,8 +242,8 @@ fn test_from_osm_for_entry() {
 
     let e = map_osm_to_ofdb_entry(&osm).unwrap();
 
-    assert_eq!(e.location.lat, 48.0);
-    assert_eq!(e.location.lng, 10.0);
+    assert_eq!(e.location.pos.lat(), LatCoord::from_deg(48.0));
+    assert_eq!(e.location.pos.lng(), LngCoord::from_deg(10.0));
     assert_eq!(e.version, 0);
     assert_eq!(e.osm_node, Some(12123));
     assert_eq!(e.title, "denn's Biomarkt");

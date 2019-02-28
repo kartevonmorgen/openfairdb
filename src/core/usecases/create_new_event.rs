@@ -121,10 +121,14 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
     };
 
     //TODO: use location.is_empty()
-    let location = if lat.is_some() || lng.is_some() || address.is_some() {
+    let pos = if let (Some(lat), Some(lng)) = (lat, lng) {
+        MapPoint::try_from_lat_lng_deg(lat, lng)
+    } else {
+        None
+    };
+    let location = if pos.is_some() || address.is_some() {
         Some(Location {
-            lat: lat.unwrap_or(0.0),
-            lng: lng.unwrap_or(0.0),
+            pos: pos.unwrap_or_default(),
             address,
         })
     } else {

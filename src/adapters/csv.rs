@@ -38,7 +38,7 @@ impl From<(Entry, Vec<Category>, AvgRatingValue)> for CsvRecord {
             ..
         } = e.clone();
 
-        let Location { lat, lng, address } = location;
+        let Location { pos, address } = location;
 
         let address = address.unwrap_or_default();
 
@@ -62,8 +62,8 @@ impl From<(Entry, Vec<Category>, AvgRatingValue)> for CsvRecord {
             version: version as u64,
             title,
             description,
-            lat,
-            lng,
+            lat: pos.lat().to_deg(),
+            lng: pos.lng().to_deg(),
             street,
             zip,
             city,

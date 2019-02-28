@@ -1194,8 +1194,7 @@ fn export_csv() {
             .version(3)
             .title("title1")
             .description("desc1")
-            .lat(0.1)
-            .lng(0.2)
+            .pos(MapPoint::from_lat_lng_deg(0.1, 0.2))
             .categories(vec![
                 "2cd00bebec0c48ba9db761da48678134",
                 "77b3c33a92554bcf8e8c2c86cedd6f6f",
@@ -1206,14 +1205,11 @@ fn export_csv() {
         Entry::build()
             .id("entry2")
             .categories(vec!["2cd00bebec0c48ba9db761da48678134"])
-            .lat(0.0)
-            .lng(0.0)
             .finish(),
         Entry::build()
             .id("entry3")
             .categories(vec!["77b3c33a92554bcf8e8c2c86cedd6f6f"])
-            .lat(2.0)
-            .lng(2.0)
+            .pos(MapPoint::from_lat_lng_deg(2.0, 2.0))
             .finish(),
     ];
     entries[0].location.address = Some(Address::build().street("street1").finish());
@@ -1309,7 +1305,7 @@ fn export_csv() {
         }
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert_eq!(body_str, "id,osm_node,created,version,title,description,lat,lng,street,zip,city,country,homepage,categories,tags,license,avg_rating\n\
-        entry1,1,2,3,title1,desc1,0.1,0.2,street1,zip1,city1,country1,homepage1,\"cat1,cat2\",\"bla,bli\",license1,0.25\n\
-        entry2,,0,0,,,0,0,,,,,,cat1,,,0\n");
+    assert_eq!(body_str, format!("id,osm_node,created,version,title,description,lat,lng,street,zip,city,country,homepage,categories,tags,license,avg_rating\n\
+        entry1,1,2,3,title1,desc1,{lat1},{lng1},street1,zip1,city1,country1,homepage1,\"cat1,cat2\",\"bla,bli\",license1,0.25\n\
+        entry2,,0,0,,,0,0,,,,,,cat1,,,0\n", lat1 = LatCoord::from_deg(0.1).to_deg(), lng1 = LngCoord::from_deg(0.2).to_deg()));
 }

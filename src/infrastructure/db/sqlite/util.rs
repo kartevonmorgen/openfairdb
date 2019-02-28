@@ -1,6 +1,7 @@
 use super::models::*;
 use crate::core::{
     entities as e,
+    util::geo::MapPoint,
     prelude::{Error, ParameterError, Result},
 };
 use chrono::prelude::*;
@@ -24,7 +25,8 @@ impl From<e::Entry> for Entry {
             ..
         } = e;
 
-        let e::Location { lat, lng, address } = location;
+        let e::Location { pos, address } = location;
+        debug_assert!(pos.is_valid());
 
         let e::Address {
             street,
@@ -51,8 +53,8 @@ impl From<e::Entry> for Entry {
             current: true,
             title,
             description,
-            lat,
-            lng,
+            lat: pos.lat().to_deg(),
+            lng: pos.lng().to_deg(),
             street,
             zip,
             city,
@@ -148,7 +150,7 @@ impl From<e::Event> for Event {
                 city = a.city;
                 country = a.country;
             }
-            (Some(l.lat), Some(l.lng))
+            (Some(l.pos.lat().to_deg()), Some(l.pos.lng().to_deg()))
         } else {
             (None, None)
         };
@@ -207,8 +209,7 @@ impl From<(Entry, Vec<String>, Vec<String>)> for e::Entry {
             ..
         } = e;
         let location = e::Location {
-            lat: lat as f64,
-            lng: lng as f64,
+            pos: MapPoint::try_from_lat_lng_deg(lat, lng).unwrap_or_default(),
             address: if street.is_some() || zip.is_some() || city.is_some() || country.is_some() {
                 Some(e::Address {
                     street,
@@ -283,11 +284,14 @@ impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
         } else {
             None
         };
+        let pos = if let (Some(lat), Some(lng)) = (lat, lng) {
+            MapPoint::try_from_lat_lng_deg(lat, lng)
+        } else {
+            None
+        };
         let location = if address.is_some() || lat.is_some() || lng.is_some() {
             Some(e::Location {
-                // TODO: How to handle missing lat/lng?
-                lat: lat.unwrap_or(0.0),
-                lng: lng.unwrap_or(0.0),
+                pos: pos.unwrap_or_default(),
                 address,
             })
         } else {

@@ -49,6 +49,10 @@ pub fn prepare_updated_entry<D: Db>(db: &D, id: String, e: UpdateEntry) -> Resul
         tags,
         ..
     } = e;
+    let pos = match MapPoint::try_from_lat_lng_deg(lat, lng) {
+        None => return Err(ParameterError::InvalidPosition.into()),
+        Some(pos) => pos,
+    };
     let tags = super::prepare_tag_list(tags);
     super::check_for_owned_tags(db, &tags, &None)?;
     let address = Address {
@@ -69,7 +73,7 @@ pub fn prepare_updated_entry<D: Db>(db: &D, id: String, e: UpdateEntry) -> Resul
         version,
         title,
         description,
-        location: Location { lat, lng, address },
+        location: Location { pos, address },
         contact: Some(Contact { email, telephone }),
         homepage: e.homepage.map(|ref url| parse_url_param(url)).transpose()?,
         categories,

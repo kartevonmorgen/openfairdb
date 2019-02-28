@@ -145,7 +145,7 @@ impl EntryIndex for MockDb {
             ))
             .map(|e| IndexedEntry {
                 id: e.id,
-                pos: MapPoint::from_lat_lng_deg(e.location.lat, e.location.lng),
+                pos: e.location.pos,
                 title: e.title,
                 description: e.description,
                 categories: e.categories,
