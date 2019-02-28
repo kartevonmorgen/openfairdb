@@ -1,4 +1,4 @@
-use crate::core::{db::IndexedEntry, entities as e};
+use crate::core::{db::IndexedEntry, entities as e, util::geo::MapPoint};
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -138,12 +138,9 @@ pub struct Coordinate {
     pub lng: f64,
 }
 
-impl From<Coordinate> for e::Coordinate {
+impl From<Coordinate> for MapPoint {
     fn from(c: Coordinate) -> Self {
-        e::Coordinate {
-            lat: c.lat,
-            lng: c.lng,
-        }
+        MapPoint::try_from_lat_lng_deg(c.lat, c.lng).unwrap_or_default()
     }
 }
 

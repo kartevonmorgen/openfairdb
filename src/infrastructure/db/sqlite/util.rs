@@ -515,14 +515,8 @@ impl From<BboxSubscription> for e::BboxSubscription {
         e::BboxSubscription {
             id,
             bbox: e::Bbox {
-                south_west: e::Coordinate {
-                    lat: south_west_lat as f64,
-                    lng: south_west_lng as f64,
-                },
-                north_east: e::Coordinate {
-                    lat: north_east_lat as f64,
-                    lng: north_east_lng as f64,
-                },
+                south_west: MapPoint::try_from_lat_lng_deg(south_west_lat, south_west_lng).unwrap_or_default(),
+                north_east: MapPoint::try_from_lat_lng_deg(north_east_lat, north_east_lng).unwrap_or_default(),
             },
             username,
         }
@@ -534,10 +528,10 @@ impl From<e::BboxSubscription> for BboxSubscription {
         let e::BboxSubscription { id, bbox, username } = s;
         BboxSubscription {
             id,
-            south_west_lat: bbox.south_west.lat,
-            south_west_lng: bbox.south_west.lng,
-            north_east_lat: bbox.north_east.lat,
-            north_east_lng: bbox.north_east.lng,
+            south_west_lat: bbox.south_west.lat().to_deg(),
+            south_west_lng: bbox.south_west.lng().to_deg(),
+            north_east_lat: bbox.north_east.lat().to_deg(),
+            north_east_lng: bbox.north_east.lng().to_deg(),
             username,
         }
     }

@@ -424,14 +424,8 @@ mod tests {
     fn create_bbox_subscription() {
         let mut db = MockDb::default();
         let bbox_new = Bbox {
-            north_east: Coordinate {
-                lat: 10.0,
-                lng: 10.0,
-            },
-            south_west: Coordinate {
-                lat: 10.0,
-                lng: 5.0,
-            },
+            south_west: MapPoint::from_lat_lng_deg(-71.3, 179.5),
+            north_east: MapPoint::from_lat_lng_deg(88.2, -160),
         };
 
         let username = "a";
@@ -453,7 +447,7 @@ mod tests {
         .is_ok());
 
         let bbox_subscription = db.all_bbox_subscriptions().unwrap()[0].clone();
-        assert_eq!(bbox_subscription.bbox.north_east.lat, 10.0);
+        assert_eq!(bbox_subscription.bbox.north_east.lat(), LatCoord::from_deg(88.2));
     }
 
     #[test]
@@ -461,25 +455,13 @@ mod tests {
         let mut db = MockDb::default();
 
         let bbox_old = Bbox {
-            north_east: Coordinate {
-                lat: 50.0,
-                lng: 10.0,
-            },
-            south_west: Coordinate {
-                lat: 50.0,
-                lng: 5.0,
-            },
+            south_west: MapPoint::from_lat_lng_deg(49.0, 5.0),
+            north_east: MapPoint::from_lat_lng_deg(50.0, 10.0),
         };
 
         let bbox_new = Bbox {
-            north_east: Coordinate {
-                lat: 10.0,
-                lng: 10.0,
-            },
-            south_west: Coordinate {
-                lat: 10.0,
-                lng: 5.0,
-            },
+            south_west: MapPoint::from_lat_lng_deg(9.0, 5.0),
+            north_east: MapPoint::from_lat_lng_deg(10.0, 10.0),
         };
 
         let username = "a";
@@ -517,7 +499,7 @@ mod tests {
             .collect();
 
         assert_eq!(bbox_subscriptions.len(), 1);
-        assert_eq!(bbox_subscriptions[0].clone().bbox.north_east.lat, 10.0);
+        assert_eq!(bbox_subscriptions[0].clone().bbox.north_east.lat(), LatCoord::from_deg(10.0));
     }
 
     #[test]
@@ -525,25 +507,13 @@ mod tests {
         let mut db = MockDb::default();
 
         let bbox1 = Bbox {
-            north_east: Coordinate {
-                lat: 50.0,
-                lng: 10.0,
-            },
-            south_west: Coordinate {
-                lat: 50.0,
-                lng: 5.0,
-            },
+            south_west: MapPoint::from_lat_lng_deg(49.0, 5.0),
+            north_east: MapPoint::from_lat_lng_deg(50.0, 10.0),
         };
 
         let bbox2 = Bbox {
-            north_east: Coordinate {
-                lat: 10.0,
-                lng: 10.0,
-            },
-            south_west: Coordinate {
-                lat: 10.0,
-                lng: 5.0,
-            },
+            south_west: MapPoint::from_lat_lng_deg(9.0, 5.0),
+            north_east: MapPoint::from_lat_lng_deg(10.0, 10.0),
         };
 
         let user1 = "a";
@@ -594,11 +564,8 @@ mod tests {
     fn email_addresses_by_coordinate() {
         let mut db = MockDb::default();
         let bbox_new = Bbox {
-            north_east: Coordinate {
-                lat: 10.0,
-                lng: 10.0,
-            },
-            south_west: Coordinate { lat: 0.0, lng: 0.0 },
+            south_west: MapPoint::from_lat_lng_deg(0.0, 0.0),
+            north_east: MapPoint::from_lat_lng_deg(10.0, 10.0),
         };
 
         let username = "a";
@@ -620,11 +587,11 @@ mod tests {
         )
         .unwrap();
 
-        let email_addresses = usecases::email_addresses_by_coordinate(&db, 5.0, 5.0).unwrap();
+        let email_addresses = usecases::email_addresses_by_coordinate(&db, &MapPoint::from_lat_lng_deg(5.0, 5.0)).unwrap();
         assert_eq!(email_addresses.len(), 1);
         assert_eq!(email_addresses[0], "abc@abc.de");
 
-        let no_email_addresses = usecases::email_addresses_by_coordinate(&db, 20.0, 20.0).unwrap();
+        let no_email_addresses = usecases::email_addresses_by_coordinate(&db, &MapPoint::from_lat_lng_deg(20.0, 20.0)).unwrap();
         assert_eq!(no_email_addresses.len(), 0);
     }
 
