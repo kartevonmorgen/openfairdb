@@ -1,5 +1,5 @@
 use super::super::{
-    entities::{Bbox, Coordinate},
+    entities::Bbox,
     error::ParameterError,
 };
 
@@ -403,6 +403,8 @@ impl MapBbox {
     }
 
     pub fn is_empty(&self) -> bool {
+        debug_assert!(self.sw.is_valid());
+        debug_assert!(self.ne.is_valid());
         self.sw.lat() >= self.ne.lat() || self.sw.lng() == self.ne.lng()
     }
 
@@ -452,14 +454,8 @@ impl std::str::FromStr for MapBbox {
 pub fn extract_bbox(s: &str) -> Result<Bbox, ParameterError> {
     s.parse::<MapBbox>()
         .map(|bbox| Bbox {
-            south_west: Coordinate {
-                lat: bbox.south_west().lat().to_deg(),
-                lng: bbox.south_west().lng().to_deg(),
-            },
-            north_east: Coordinate {
-                lat: bbox.north_east().lat().to_deg(),
-                lng: bbox.north_east().lng().to_deg(),
-            },
+            south_west: bbox.south_west(),
+            north_east: bbox.north_east(),
         })
         .map_err(|err| {
             warn!("Failed to parse bounding box: {}", err);
@@ -681,18 +677,16 @@ mod tests {
         assert!(bbox4.contains_point(&MapPoint::from_lat_lng_deg(lat4, lng4)));
     }
 
-    const BBOX_COORD_PRECISION: f64 = 1e-6;
-
     #[test]
     fn extract_bbox_from_str() {
         assert!(extract_bbox("0,-10.0870,90,180.0").is_ok());
         let bb = extract_bbox("0,-10.9876,20,30");
         assert!(bb.is_ok());
         let bb = bb.unwrap();
-        assert!((bb.south_west.lat - 0.0).abs() < BBOX_COORD_PRECISION);
-        assert!((bb.south_west.lng - -10.9876).abs() < BBOX_COORD_PRECISION);
-        assert!((bb.north_east.lat - 20.0).abs() < BBOX_COORD_PRECISION);
-        assert!((bb.north_east.lng - 30.0).abs() < BBOX_COORD_PRECISION);
+        assert_eq!(bb.south_west.lat(), LatCoord::from_deg(0.0));
+        assert_eq!(bb.south_west.lng(), LngCoord::from_deg(-10.9876));
+        assert_eq!(bb.north_east.lat(), LatCoord::from_deg(20.0));
+        assert_eq!(bb.north_east.lng(), LngCoord::from_deg(30.0));
     }
 
     #[test]

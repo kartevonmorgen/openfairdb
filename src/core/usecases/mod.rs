@@ -30,15 +30,8 @@ pub use self::{
 };
 
 // TODO: Remove this function after replacing Bbox with MapBbox
-fn map_bbox(bbox: &Bbox) -> Option<geo::MapBbox> {
-    let sw = MapPoint::try_from_lat_lng_deg(bbox.south_west.lat, bbox.south_west.lng);
-    let ne = MapPoint::try_from_lat_lng_deg(bbox.north_east.lat, bbox.north_east.lng);
-    if let (Some(sw), Some(ne)) = (sw, ne) {
-        Some(geo::MapBbox::new(sw, ne))
-    } else {
-        warn!("Invalid Bbox: {:?}", bbox);
-        None
-    }
+fn map_bbox(bbox: &Bbox) -> geo::MapBbox {
+    geo::MapBbox::new(bbox.south_west, bbox.north_east)
 }
 
 pub fn get_comments_by_rating_ids<D: Db>(
@@ -118,13 +111,13 @@ pub fn delete_user(db: &mut Db, login_id: &str, u_id: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn subscribe_to_bbox(coordinates: &[Coordinate], username: &str, db: &mut Db) -> Result<()> {
-    if coordinates.len() != 2 {
+pub fn subscribe_to_bbox(sw_ne: &[MapPoint], username: &str, db: &mut Db) -> Result<()> {
+    if sw_ne.len() != 2 {
         return Err(Error::Parameter(ParameterError::Bbox));
     }
     let bbox = Bbox {
-        south_west: coordinates[0].clone(),
-        north_east: coordinates[1].clone(),
+        south_west: sw_ne[0],
+        north_east: sw_ne[1],
     };
     validate::bbox(&bbox)?;
 
@@ -163,17 +156,12 @@ pub fn unsubscribe_all_bboxes_by_username(db: &mut Db, username: &str) -> Result
     Ok(())
 }
 
-pub fn bbox_subscriptions_by_coordinate(db: &Db, x: &Coordinate) -> Result<Vec<BboxSubscription>> {
+pub fn bbox_subscriptions_by_coordinate(db: &Db, pos: &MapPoint) -> Result<Vec<BboxSubscription>> {
     Ok(db
         .all_bbox_subscriptions()?
         .into_iter()
         .filter(|s| {
-            if let Some(bbox) = map_bbox(&s.bbox) {
-                let pt = geo::MapPoint::from_lat_lng_deg(x.lat, x.lng);
-                bbox.contains_point(&pt)
-            } else {
-                false
-            }
+            map_bbox(&s.bbox).contains_point(&pos)
         })
         .collect())
 }
@@ -194,8 +182,8 @@ pub fn email_addresses_from_subscriptions(
     Ok(addresses)
 }
 
-pub fn email_addresses_by_coordinate(db: &Db, lat: f64, lng: f64) -> Result<Vec<String>> {
-    let subs = bbox_subscriptions_by_coordinate(db, &Coordinate { lat, lng })?;
+pub fn email_addresses_by_coordinate(db: &Db, pos: &MapPoint) -> Result<Vec<String>> {
+    let subs = bbox_subscriptions_by_coordinate(db, pos)?;
     let addresses = email_addresses_from_subscriptions(db, &subs)?;
     Ok(addresses)
 }

@@ -1,5 +1,5 @@
 use super::super::{
-    entities::*, error::ParameterError, usecases::create_new_user::MAX_USERNAME_LEN, util::geo::MapPoint,
+    entities::*, error::ParameterError, usecases::create_new_user::MAX_USERNAME_LEN, util::geo::{MapPoint, MapBbox},
 };
 use fast_chemail::is_valid_email;
 use regex::Regex;
@@ -37,19 +37,8 @@ fn license(s: &str) -> Result<(), ParameterError> {
 }
 
 pub fn bbox(bbox: &Bbox) -> Result<(), ParameterError> {
-    let lats = vec![bbox.north_east.lat, bbox.south_west.lat];
-    let lngs = vec![bbox.north_east.lng, bbox.south_west.lng];
-    for lat in lats {
-        if lat < -90.0 || lat > 90.0 {
-            return Err(ParameterError::Bbox);
-        }
-    }
-    for lng in lngs {
-        if lng < -180.0 || lng > 180.0 {
-            return Err(ParameterError::Bbox);
-        }
-    }
-    if bbox.north_east.lat == bbox.south_west.lat && bbox.north_east.lng == bbox.south_west.lng {
+    let bbox = MapBbox::new(bbox.south_west, bbox.north_east);
+    if !bbox.is_valid() || bbox.is_empty() {
         return Err(ParameterError::Bbox);
     }
     Ok(())
@@ -380,32 +369,23 @@ mod tests {
 
     #[test]
     fn bbox_test() {
-        let c1 = Coordinate {
-            lat: 49.123,
-            lng: 10.123,
-        };
-        let c2 = Coordinate {
-            lat: 48.123,
-            lng: 5.123,
-        };
-        let c3 = Coordinate {
-            lat: 48.123,
-            lng: 500.123,
-        };
+        let p1 = MapPoint::from_lat_lng_deg(48.123, 5.123);
+        let p2 = MapPoint::try_from_lat_lng_deg(48.123, 500.123).unwrap_or_default();
+        let p3 = MapPoint::from_lat_lng_deg(49.123, 10.123);
         let valid_bbox = Bbox {
-            north_east: c1.clone(),
-            south_west: c2.clone(),
+            south_west: p1,
+            north_east: p3,
         };
         let empty_bbox = Bbox {
-            north_east: c1.clone(),
-            south_west: c1.clone(),
+            south_west: p3,
+            north_east: p3,
         };
-        let too_large_bbox = Bbox {
-            north_east: c1.clone(),
-            south_west: c3.clone(),
+        let invalid_bbox = Bbox {
+            south_west: p2,
+            north_east: p3,
         };
         assert!(bbox(&valid_bbox).is_ok());
         assert!(bbox(&empty_bbox).is_err());
-        assert!(bbox(&too_large_bbox).is_err());
+        assert!(bbox(&invalid_bbox).is_err());
     }
 }

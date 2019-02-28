@@ -353,27 +353,11 @@ pub struct Rating {
     pub source   : Option<String>,
 }
 
-// TODO: Replace by geo::MapPoint
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Coordinate {
-    pub lat: f64,
-    pub lng: f64,
-}
-
-impl From<MapPoint> for Coordinate {
-    fn from(from: MapPoint) -> Self {
-        Self {
-            lat: from.lat().to_deg(),
-            lng: from.lng().to_deg(),
-        }
-    }
-}
-
 // TODO: Replace by geo::MapBbox
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Bbox {
-    pub south_west: Coordinate,
-    pub north_east: Coordinate,
+    pub south_west: MapPoint,
+    pub north_east: MapPoint,
 }
 
 impl From<MapBbox> for Bbox {

@@ -29,7 +29,7 @@ pub fn query_events<D: Db>(
 
     if let Some(bbox) = bbox
         .as_ref()
-        .and_then(map_bbox)
+        .map(map_bbox)
         .as_ref()
         .map(filter::extend_bbox)
     {

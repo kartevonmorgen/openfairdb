@@ -153,13 +153,13 @@ fn subscribe_to_bbox(
     user: Login,
     coordinates: Json<Vec<json::Coordinate>>,
 ) -> Result<()> {
-    let coordinates: Vec<Coordinate> = coordinates
+    let sw_ne: Vec<_> = coordinates
         .into_inner()
         .into_iter()
-        .map(Coordinate::from)
+        .map(MapPoint::from)
         .collect();
     let Login(username) = user;
-    usecases::subscribe_to_bbox(&coordinates, &username, &mut *db.exclusive()?)?;
+    usecases::subscribe_to_bbox(&sw_ne, &username, &mut *db.exclusive()?)?;
     Ok(Json(()))
 }
 
@@ -180,10 +180,10 @@ fn get_bbox_subscriptions(
         .into_iter()
         .map(|s| json::BboxSubscription {
             id: s.id,
-            south_west_lat: s.bbox.south_west.lat,
-            south_west_lng: s.bbox.south_west.lng,
-            north_east_lat: s.bbox.north_east.lat,
-            north_east_lng: s.bbox.north_east.lng,
+            south_west_lat: s.bbox.south_west.lat().to_deg(),
+            south_west_lng: s.bbox.south_west.lng().to_deg(),
+            north_east_lat: s.bbox.north_east.lat().to_deg(),
+            north_east_lng: s.bbox.north_east.lng().to_deg(),
         })
         .collect();
     Ok(Json(user_subscriptions))
