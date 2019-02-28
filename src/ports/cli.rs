@@ -21,12 +21,14 @@ fn update_event_locations<D: Db>(db: &mut D) -> Result<()> {
         if let Some(ref mut loc) = e.location {
             if let Some(ref addr) = loc.address {
                 if let Some((lat, lng)) = web::api::geocoding::resolve_address_lat_lng(addr) {
-                    loc.lat = lat;
-                    loc.lng = lng;
-                    if let Err(err) = db.update_event(&e) {
-                        warn!("Failed to update location of event {}: {}", e.id, err);
-                    } else {
-                        info!("Updated location of event {}", e.id);
+                    if let Some(pos) = MapPoint::try_from_lat_lng_deg(lat, lng) {
+                        if pos.is_valid() {
+                            if let Err(err) = db.update_event(&e) {
+                                warn!("Failed to update location of event {}: {}", e.id, err);
+                            } else {
+                                info!("Updated location of event {}", e.id);
+                            }
+                        }
                     }
                 }
             }

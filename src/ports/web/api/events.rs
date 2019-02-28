@@ -858,8 +858,7 @@ mod tests {
                         start: NaiveDateTime::from_timestamp(0, 0),
                         end: None,
                         location: Some(Location {
-                            lat,
-                            lng,
+                            pos: MapPoint::from_lat_lng_deg(lat, lng),
                             address: None,
                         }),
                         contact: None,

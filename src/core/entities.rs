@@ -24,9 +24,7 @@ pub struct Entry {
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Location {
-    //TODO: use Coordinate
-    pub lat     : f64,
-    pub lng     : f64,
+    pub pos:      MapPoint,
     pub address : Option<Address>
 }
 
@@ -439,12 +437,8 @@ pub mod entry_builder {
             self.entry.description = desc.into();
             self
         }
-        pub fn lat(mut self, lat: f64) -> Self {
-            self.entry.location.lat = lat;
-            self
-        }
-        pub fn lng(mut self, lng: f64) -> Self {
-            self.entry.location.lng = lng;
+        pub fn pos(mut self, pos: MapPoint) -> Self {
+            self.entry.location.pos = pos;
             self
         }
         pub fn categories(mut self, cats: Vec<&str>) -> Self {
@@ -484,8 +478,7 @@ pub mod entry_builder {
                     title: "".into(),
                     description: "".into(),
                     location: Location {
-                        lat: 0.0,
-                        lng: 0.0,
+                        pos: MapPoint::from_lat_lng_deg(0.0, 0.0),
                         address: None,
                     },
                     contact: None,

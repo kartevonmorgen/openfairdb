@@ -49,7 +49,7 @@ pub fn event(ev: Event) -> Markup {
                     }
                     h4 {"Koordinaten"}
                     p{
-                        (format!("{:.2} / {:.2}",location.lat, location.lng))
+                        (format!("{:.2} / {:.2}",location.pos.lat().to_deg(), location.pos.lng().to_deg()))
                     }
             }
             @if let Some(org) = ev.organizer {
@@ -100,7 +100,7 @@ pub fn event(ev: Event) -> Markup {
                     integrity=(LEAFLET_JS_SHA512)
                     crossorigin=""{}
                 script{
-                    (format!("window.OFDB_EVENT_POS={{lat:{lat},lng:{lng}}};", lat=location.lat,lng=location.lng))
+                    (format!("window.OFDB_EVENT_POS={{lat:{lat},lng:{lng}}};", lat=location.pos.lat().to_deg(),lng=location.pos.lng().to_deg()))
                 }
                 script src= "/frontend/event.js"{}
             }

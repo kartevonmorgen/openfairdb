@@ -61,8 +61,8 @@ fn notify_entry_added(connections: &sqlite::Connections, entry: &Entry) -> Resul
         let connection = connections.shared()?;
         let email_addresses = usecases::email_addresses_by_coordinate(
             &*connection,
-            entry.location.lat,
-            entry.location.lng,
+            entry.location.pos.lat().to_deg(),
+            entry.location.pos.lng().to_deg(),
         )?;
         let all_categories = connection.all_categories()?;
         (email_addresses, all_categories)

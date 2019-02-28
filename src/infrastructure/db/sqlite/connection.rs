@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::core::prelude::*;
+use crate::core::{prelude::*, util::geo::MapPoint};
 use chrono::prelude::*;
 use diesel::{
     self,
@@ -108,8 +108,7 @@ impl EntryGateway for SqliteConnection {
             .first(self)?;
 
         let location = Location {
-            lat: lat as f64,
-            lng: lng as f64,
+            pos: MapPoint::try_from_lat_lng_deg(lat, lng).unwrap_or_default(),
             address: Some(Address {
                 street,
                 zip,
@@ -420,11 +419,14 @@ impl EventGateway for SqliteConnection {
             Some(address)
         };
 
-        let location = if lat.is_some() || lng.is_some() || address.is_some() {
+        let pos = if let (Some(lat), Some(lng)) = (lat, lng) {
+            MapPoint::try_from_lat_lng_deg(lat, lng)
+        } else {
+            None
+        };
+        let location = if pos.is_some() || address.is_some() {
             Some(Location {
-                // TODO: How to handle missing lat/lng?
-                lat: lat.map(|x| x as f64).unwrap_or(0.0),
-                lng: lng.map(|x| x as f64).unwrap_or(0.0),
+                pos: pos.unwrap_or_default(),
                 address,
             })
         } else {

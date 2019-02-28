@@ -390,11 +390,11 @@ impl EntryIndexer for TantivyEntryIndex {
         doc.add_text(self.fields.id, &entry.id);
         doc.add_i64(
             self.fields.lat,
-            i64::from(LatCoord::from_deg(entry.location.lat).to_raw()),
+            i64::from(entry.location.pos.lat().to_raw()),
         );
         doc.add_i64(
             self.fields.lng,
-            i64::from(LngCoord::from_deg(entry.location.lng).to_raw()),
+            i64::from(entry.location.pos.lng().to_raw()),
         );
         doc.add_text(self.fields.title, &entry.title);
         doc.add_text(self.fields.description, &entry.description);

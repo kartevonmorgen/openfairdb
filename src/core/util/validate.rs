@@ -1,5 +1,5 @@
 use super::super::{
-    entities::*, error::ParameterError, usecases::create_new_user::MAX_USERNAME_LEN,
+    entities::*, error::ParameterError, usecases::create_new_user::MAX_USERNAME_LEN, util::geo::MapPoint,
 };
 use fast_chemail::is_valid_email;
 use regex::Regex;
@@ -107,7 +107,7 @@ impl AutoCorrect for Event {
         self.description = self.description.filter(|x| !x.is_empty());
         self.location = self.location.and_then(|l| {
             let l = l.auto_correct();
-            if l.address.is_none() && l.lat == 0.0 && l.lng == 0.0 {
+            if l.address.is_none() && l.pos == MapPoint::default() {
                 None
             } else {
                 Some(l)
@@ -270,8 +270,7 @@ mod tests {
 
         let mut x = e.clone();
         x.location = Some(Location {
-            lat: 0.0,
-            lng: 0.0,
+            pos: Default::default(),
             address: Some(Address {
                 street: None,
                 zip: None,
@@ -311,8 +310,7 @@ mod tests {
     #[test]
     fn location_autocorrect() {
         let l = Location {
-            lat: 0.0,
-            lng: 0.0,
+            pos: Default::default(),
             address: Some(Address {
                 street: None,
                 zip: Some("".into()),

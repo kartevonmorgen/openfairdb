@@ -45,6 +45,10 @@ pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
         tags,
         ..
     } = e;
+    let pos = match MapPoint::try_from_lat_lng_deg(lat, lng) {
+        None => return Err(ParameterError::InvalidPosition.into()),
+        Some(pos) => pos,
+    };
     let tags = super::prepare_tag_list(tags);
     super::check_for_owned_tags(db, &tags, &None)?;
     let address = Address {
@@ -58,7 +62,7 @@ pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
     } else {
         Some(address)
     };
-    let location = Location { lat, lng, address };
+    let location = Location { pos, address };
     let contact = if email.is_some() || telephone.is_some() {
         Some(Contact { email, telephone })
     } else {
