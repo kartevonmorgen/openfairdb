@@ -18,7 +18,7 @@ mod util;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
-fn index_all_entries<D: EntryGateway + EntryRatingRepository>(
+fn index_all_entries<D: EntryGateway + RatingRepository>(
     db: &D,
     entry_indexer: &mut dyn EntryIndexer,
 ) -> Result<()> {

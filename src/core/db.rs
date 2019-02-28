@@ -46,12 +46,13 @@ pub trait OrganizationGateway {
     fn get_all_tags_owned_by_orgs(&self) -> Result<Vec<String>>;
 }
 
-pub trait EntryRatingRepository {
-    fn add_rating_for_entry(&self, rating: Rating) -> Result<()>;
-    fn all_ratings_for_entry_by_id(&self, entry_id: &str) -> Result<Vec<Rating>>;
+pub trait RatingRepository {
+    fn get_rating(&self, id: &str) -> Result<Rating>;
+    fn get_ratings(&self, ids: &[String]) -> Result<Vec<Rating>>;
 
-    #[deprecated]
-    fn all_ratings(&self) -> Result<Vec<Rating>>;
+    fn add_rating_for_entry(&self, rating: Rating) -> Result<()>;
+
+    fn all_ratings_for_entry_by_id(&self, entry_id: &str) -> Result<Vec<Rating>>;
 }
 
 //TODO:
@@ -65,7 +66,7 @@ pub trait Db:
     + CommentGateway
     + EventGateway
     + OrganizationGateway
-    + EntryRatingRepository
+    + RatingRepository
 {
     fn create_tag_if_it_does_not_exist(&self, _: &Tag) -> Result<()>;
     fn create_category_if_it_does_not_exist(&mut self, _: &Category) -> Result<()>;

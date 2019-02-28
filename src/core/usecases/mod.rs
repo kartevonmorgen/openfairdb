@@ -41,35 +41,6 @@ fn map_bbox(bbox: &Bbox) -> Option<geo::MapBbox> {
     }
 }
 
-pub fn get_ratings<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Rating>> {
-    Ok(db
-        .all_ratings()?
-        .iter()
-        .filter(|x| ids.iter().any(|id| *id == x.id))
-        .cloned()
-        .collect())
-}
-
-pub fn get_ratings_by_entry_ids<D: Db>(
-    db: &D,
-    ids: &[String],
-) -> Result<HashMap<String, Vec<Rating>>> {
-    let ratings = db.all_ratings()?;
-    Ok(ids
-        .iter()
-        .map(|e_id| {
-            (
-                e_id.clone(),
-                ratings
-                    .iter()
-                    .filter(|r| r.entry_id == **e_id)
-                    .cloned()
-                    .collect(),
-            )
-        })
-        .collect())
-}
-
 pub fn get_comments_by_rating_ids<D: Db>(
     db: &D,
     ids: &[String],
@@ -96,40 +67,25 @@ pub fn get_comments_by_rating_ids<D: Db>(
         .collect())
 }
 
-// TODO: all_entries() currently is very inefficient
-// and should be used seldom!!! This constant should
-// disappear once multiple entries can be loaded in
-// batches.
-// TODO: Tune this constant based on performance tests.
-const MAX_COUNT_FOR_SINGLE_ENTRY_LOOKUP: usize = 50;
-
 pub fn get_entries<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Entry>> {
-    // TODO: Retrieve multiple entries in batches instead of either all or one-by-one!
-    let entries = if ids.len() > MAX_COUNT_FOR_SINGLE_ENTRY_LOOKUP {
-        db.all_entries()?
-            .into_iter()
-            .filter(|e| ids.iter().any(|id| *id == e.id))
-            .collect()
-    } else {
-        let mut entries = Vec::with_capacity(ids.len());
-        for id in ids {
-            match db.get_entry(id) {
-                Ok(entry) => {
-                    // Success
-                    entries.push(entry);
-                }
-                Err(RepoError::NotFound) => {
-                    // Some of the requested entries might not exist
-                    info!("One of multiple entries not found: {}", id);
-                }
-                Err(err) => {
-                    // Abort on any unexpected error
-                    Err(err)?;
-                }
+    let mut entries = Vec::with_capacity(ids.len());
+    // TODO: Load multiple entries at once in batches of limited size
+    for id in ids {
+        match db.get_entry(id) {
+            Ok(entry) => {
+                // Success
+                entries.push(entry);
+            }
+            Err(RepoError::NotFound) => {
+                // Some of the requested entries might not exist
+                info!("One of multiple entries not found: {}", id);
+            }
+            Err(err) => {
+                // Abort on any unexpected error
+                Err(err)?;
             }
         }
-        entries
-    };
+    }
     Ok(entries)
 }
 

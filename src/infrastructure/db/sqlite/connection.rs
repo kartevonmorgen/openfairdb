@@ -559,12 +559,36 @@ impl CommentGateway for SqliteConnection {
     }
 }
 
-impl EntryRatingRepository for SqliteConnection {
-    fn add_rating_for_entry(&self, rating: Rating) -> Result<()> {
-        diesel::insert_into(schema::ratings::table)
-            .values(&models::Rating::from(rating))
-            .execute(self)?;
-        Ok(())
+impl RatingRepository for SqliteConnection {
+    fn get_rating(&self, id: &str) -> Result<Rating> {
+        use self::schema::ratings::dsl;
+        dsl::ratings
+            .filter(dsl::id.eq(id))
+            .first::<models::Rating>(self)
+            .map(Rating::from)
+            .map_err(Into::into)
+    }
+
+    fn get_ratings(&self, ids: &[String]) -> Result<Vec<Rating>> {
+        let mut ratings = Vec::with_capacity(ids.len());
+        // TODO: Load multiple ratings at once in batches of limited size
+        for id in ids {
+            match self.get_rating(id) {
+                Ok(rating) => {
+                    // Success
+                    ratings.push(rating);
+                }
+                Err(RepoError::NotFound) => {
+                    // Some of the requested ratings might not exist
+                    info!("One of multiple ratings not found: {}", id);
+                }
+                Err(err) => {
+                    // Abort on any unexpected error
+                    return Err(err);
+                }
+            }
+        }
+        Ok(ratings)
     }
 
     fn all_ratings_for_entry_by_id(&self, entry_id: &str) -> Result<Vec<Rating>> {
@@ -577,13 +601,11 @@ impl EntryRatingRepository for SqliteConnection {
             .collect())
     }
 
-    fn all_ratings(&self) -> Result<Vec<Rating>> {
-        use self::schema::ratings::dsl::*;
-        Ok(ratings
-            .load::<models::Rating>(self)?
-            .into_iter()
-            .map(Rating::from)
-            .collect())
+    fn add_rating_for_entry(&self, rating: Rating) -> Result<()> {
+        diesel::insert_into(schema::ratings::table)
+            .values(&models::Rating::from(rating))
+            .execute(self)?;
+        Ok(())
     }
 }
 

@@ -19,7 +19,7 @@ pub fn get_rating(db: sqlite::Connections, ids: String) -> Result<Vec<json::Rati
     let mut ids = util::extract_ids(&ids);
     let (ratings, comments) = {
         let db = db.shared()?;
-        let ratings = usecases::get_ratings(&*db, &ids)?;
+        let ratings = db.get_ratings(&ids)?;
         // Retain only those ids that have actually been found
         debug_assert!(ratings.len() <= ids.len());
         ids.retain(|id| ratings.iter().any(|r| &r.id == id));

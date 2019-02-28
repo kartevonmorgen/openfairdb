@@ -73,7 +73,6 @@ impl Id for Organization {
     }
 }
 
-#[cfg(test)]
 #[derive(Default)]
 pub struct MockDb {
     pub entries: RefCell<Vec<Entry>>,
@@ -87,7 +86,6 @@ pub struct MockDb {
     pub orgs: Vec<Organization>,
 }
 
-#[cfg(test)]
 impl MockDb {
     pub fn get_entries_by_bbox(&self, bbox: &geo::MapBbox) -> RepoResult<Vec<Entry>> {
         Ok(self
@@ -100,7 +98,6 @@ impl MockDb {
     }
 }
 
-#[cfg(test)]
 impl EntryIndexer for MockDb {
     fn add_or_update_entry(&mut self, entry: &Entry, _ratings: &AvgRatings) -> Fallible<()> {
         // Nothing to do, the entry has already been stored
@@ -123,7 +120,6 @@ impl EntryIndexer for MockDb {
     }
 }
 
-#[cfg(test)]
 impl EntryIndex for MockDb {
     fn query_entries(&self, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<IndexedEntry>> {
         let mut entries = if let Some(ref bbox) = query.bbox {
@@ -200,7 +196,6 @@ fn delete<T: Clone + Id>(objects: &mut Vec<T>, id: &str) -> RepoResult<()> {
     Ok(())
 }
 
-#[cfg(test)]
 impl EntryGateway for MockDb {
     fn create_entry(&self, e: Entry) -> RepoResult<()> {
         create(&mut self.entries.borrow_mut(), e)
@@ -230,7 +225,6 @@ impl EntryGateway for MockDb {
     }
 }
 
-#[cfg(test)]
 impl EventGateway for MockDb {
     fn create_event(&mut self, e: Event) -> RepoResult<()> {
         create(&mut self.events, e)
@@ -250,7 +244,6 @@ impl EventGateway for MockDb {
     }
 }
 
-#[cfg(test)]
 impl UserGateway for MockDb {
     fn create_user(&mut self, u: User) -> RepoResult<()> {
         create(&mut self.users, u)
@@ -289,7 +282,6 @@ impl UserGateway for MockDb {
     }
 }
 
-#[cfg(test)]
 impl CommentGateway for MockDb {
     fn create_comment(&self, c: Comment) -> RepoResult<()> {
         create(&mut self.comments.borrow_mut(), c)
@@ -300,7 +292,6 @@ impl CommentGateway for MockDb {
     }
 }
 
-#[cfg(test)]
 impl OrganizationGateway for MockDb {
     fn create_org(&mut self, o: Organization) -> RepoResult<()> {
         create(&mut self.orgs, o)
@@ -322,7 +313,15 @@ impl OrganizationGateway for MockDb {
     }
 }
 
-impl EntryRatingRepository for MockDb {
+impl RatingRepository for MockDb {
+    fn get_rating(&self, id: &str) -> RepoResult<Rating> {
+        get(&self.ratings.borrow(), id)
+    }
+
+    fn get_ratings(&self, ids: &[String]) -> RepoResult<Vec<Rating>> {
+        Ok(self.ratings.borrow().iter().filter(|r| ids.iter().any(|id| &r.id == id)).cloned().collect())
+    }
+
     fn add_rating_for_entry(&self, r: Rating) -> RepoResult<()> {
         create(&mut self.ratings.borrow_mut(), r)
     }
@@ -331,18 +330,13 @@ impl EntryRatingRepository for MockDb {
         Ok(self
             .ratings
             .borrow()
-            .clone()
-            .into_iter()
+            .iter()
             .filter(|r| r.entry_id == entry_id)
+            .cloned()
             .collect())
-    }
-
-    fn all_ratings(&self) -> RepoResult<Vec<Rating>> {
-        Ok(self.ratings.borrow().clone())
     }
 }
 
-#[cfg(test)]
 impl Db for MockDb {
     fn create_tag_if_it_does_not_exist(&self, e: &Tag) -> RepoResult<()> {
         if let Err(err) = create(&mut self.tags.borrow_mut(), e.clone()) {
@@ -398,7 +392,6 @@ impl Db for MockDb {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use chrono::prelude::*;

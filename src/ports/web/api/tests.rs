@@ -235,7 +235,7 @@ fn get_one_entry() {
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
     let entries: Vec<json::Entry> = serde_json::from_str(&body_str).unwrap();
-    let rating = connections.shared().unwrap().all_ratings().unwrap()[0].clone();
+    let rating = connections.shared().unwrap().all_ratings_for_entry_by_id("get_one_entry_test").unwrap()[0].clone();
     assert!(body_str.contains(&format!(r#""ratings":["{}"]"#, rating.id)));
     assert_eq!(
         entries[0],
@@ -819,7 +819,7 @@ fn create_rating() {
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(
-        connections.shared().unwrap().all_ratings().unwrap()[0].value,
+        connections.shared().unwrap().all_ratings_for_entry_by_id("foo").unwrap()[0].value,
         RatingValue::from(1)
     );
     test_json(&response);
@@ -844,7 +844,7 @@ fn get_one_rating() {
         },
     )
     .unwrap();
-    let rid = connections.shared().unwrap().all_ratings().unwrap()[0]
+    let rid = connections.shared().unwrap().all_ratings_for_entry_by_id("foo").unwrap()[0]
         .id
         .clone();
     let req = client.get(format!("/ratings/{}", rid));
@@ -894,7 +894,7 @@ fn ratings_with_and_without_source() {
     )
     .unwrap();
 
-    let rid = connections.shared().unwrap().all_ratings().unwrap()[0]
+    let rid = connections.shared().unwrap().all_ratings_for_entry_by_id("bar").unwrap()[0]
         .id
         .clone();
     let req = client.get(format!("/ratings/{}", rid));

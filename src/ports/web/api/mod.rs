@@ -83,22 +83,17 @@ struct UserId {
 fn get_entry(db: sqlite::Connections, ids: String) -> Result<Vec<json::Entry>> {
     // TODO: Only lookup and return a single entity
     // TODO: Add a new method for searching multiple ids
-    let ids = util::extract_ids(&ids);
-    let (entries, ratings) = {
+    let json_entries = {
+        let ids = util::extract_ids(&ids);
+        let mut json_entries = Vec::with_capacity(ids.len());
         let db = db.shared()?;
-        let entries = usecases::get_entries(&*db, &ids)?;
-        let ratings = usecases::get_ratings_by_entry_ids(&*db, &ids)?;
-        (entries, ratings)
+        for e in usecases::get_entries(&*db, &ids)?.into_iter() {
+            let r = db.all_ratings_for_entry_by_id(&e.id)?;
+            json_entries.push(json::Entry::from_entry_with_ratings(e, r));
+        }
+        json_entries
     };
-    Ok(Json(
-        entries
-            .into_iter()
-            .map(|e| {
-                let r = ratings.get(&e.id).cloned().unwrap_or_else(|| vec![]);
-                json::Entry::from_entry_with_ratings(e, r)
-            })
-            .collect::<Vec<json::Entry>>(),
-    ))
+    Ok(Json(json_entries))
 }
 
 #[get("/duplicates")]
