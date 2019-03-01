@@ -17,8 +17,8 @@ pub fn add_entry(
             .transaction::<_, diesel::result::Error, _>(|| {
                 match usecases::prepare_new_entry(&*connection, new_entry) {
                     Ok(storable) => {
-                        let (entry, ratings) =
-                            usecases::store_new_entry(&*connection, storable).map_err(|err| {
+                        let (entry, ratings) = usecases::store_new_entry(&*connection, storable)
+                            .map_err(|err| {
                                 warn!("Failed to store newly created entry: {}", err);
                                 diesel::result::Error::RollbackTransaction
                             })?;
@@ -36,7 +36,7 @@ pub fn add_entry(
                 } else {
                     RepoError::from(err).into()
                 }
-            }
+            })
     }?;
 
     // Index newly added entry
@@ -59,10 +59,8 @@ pub fn add_entry(
 fn notify_entry_added(connections: &sqlite::Connections, entry: &Entry) -> Result<()> {
     let (email_addresses, all_categories) = {
         let connection = connections.shared()?;
-        let email_addresses = usecases::email_addresses_by_coordinate(
-            &*connection,
-            &entry.location.pos,
-        )?;
+        let email_addresses =
+            usecases::email_addresses_by_coordinate(&*connection, &entry.location.pos)?;
         let all_categories = connection.all_categories()?;
         (email_addresses, all_categories)
     };

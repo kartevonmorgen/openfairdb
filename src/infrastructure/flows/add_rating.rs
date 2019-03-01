@@ -15,11 +15,11 @@ pub fn add_rating(
             .transaction::<_, diesel::result::Error, _>(|| {
                 match usecases::prepare_new_rating(&*connection, rate_entry) {
                     Ok(storable) => {
-                        let (entry, ratings) =
-                            usecases::store_new_rating(&*connection, storable).map_err(|err| {
-                                warn!("Failed to store new rating for entry: {}", err);
-                                diesel::result::Error::RollbackTransaction
-                            })?;
+                        let (entry, ratings) = usecases::store_new_rating(&*connection, storable)
+                            .map_err(|err| {
+                            warn!("Failed to store new rating for entry: {}", err);
+                            diesel::result::Error::RollbackTransaction
+                        })?;
                         Ok((entry, ratings))
                     }
                     Err(err) => {

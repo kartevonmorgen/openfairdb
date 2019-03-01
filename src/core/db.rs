@@ -61,12 +61,7 @@ pub trait RatingRepository {
 //  - SubscriptionGateway
 
 pub trait Db:
-    EntryGateway
-    + UserGateway
-    + CommentGateway
-    + EventGateway
-    + OrganizationGateway
-    + RatingRepository
+    EntryGateway + UserGateway + CommentGateway + EventGateway + OrganizationGateway + RatingRepository
 {
     fn create_tag_if_it_does_not_exist(&self, _: &Tag) -> Result<()>;
     fn create_category_if_it_does_not_exist(&mut self, _: &Category) -> Result<()>;

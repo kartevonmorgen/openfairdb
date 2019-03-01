@@ -16,11 +16,13 @@ pub fn update_entry(
             .transaction::<_, diesel::result::Error, _>(|| {
                 match usecases::prepare_updated_entry(&*connection, id, update_entry) {
                     Ok(storable) => {
-                        let (entry, ratings) = usecases::store_updated_entry(&*connection, storable)
-                            .map_err(|err| {
-                                warn!("Failed to store updated entry: {}", err);
-                                diesel::result::Error::RollbackTransaction
-                            })?;
+                        let (entry, ratings) =
+                            usecases::store_updated_entry(&*connection, storable).map_err(
+                                |err| {
+                                    warn!("Failed to store updated entry: {}", err);
+                                    diesel::result::Error::RollbackTransaction
+                                },
+                            )?;
                         Ok((entry, ratings))
                     }
                     Err(err) => {
@@ -58,10 +60,8 @@ pub fn update_entry(
 fn notify_entry_updated(connections: &sqlite::Connections, entry: &Entry) -> Result<()> {
     let (email_addresses, all_categories) = {
         let connection = connections.shared()?;
-        let email_addresses = usecases::email_addresses_by_coordinate(
-            &*connection,
-            &entry.location.pos,
-        )?;
+        let email_addresses =
+            usecases::email_addresses_by_coordinate(&*connection, &entry.location.pos)?;
         let all_categories = connection.all_categories()?;
         (email_addresses, all_categories)
     };

@@ -188,7 +188,7 @@ mod tests {
         let e2 = new_entry(
             "01234567".to_string(),
             "allo! Ein Eintra".to_string(),
-            MapPoint::from_lat_lng_deg(48.23153745093964, 6.003816366195679)
+            MapPoint::from_lat_lng_deg(48.23153745093964, 6.003816366195679),
         );
         let e3 = new_entry(
             "eins zwei drei".to_string(),

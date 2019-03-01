@@ -1,8 +1,8 @@
 use super::models::*;
 use crate::core::{
     entities as e,
-    util::geo::MapPoint,
     prelude::{Error, ParameterError, Result},
+    util::geo::{MapBbox, MapPoint},
 };
 use chrono::prelude::*;
 use std::str::FromStr;
@@ -514,10 +514,10 @@ impl From<BboxSubscription> for e::BboxSubscription {
         } = s;
         e::BboxSubscription {
             id,
-            bbox: e::Bbox {
-                south_west: MapPoint::try_from_lat_lng_deg(south_west_lat, south_west_lng).unwrap_or_default(),
-                north_east: MapPoint::try_from_lat_lng_deg(north_east_lat, north_east_lng).unwrap_or_default(),
-            },
+            bbox: MapBbox::new(
+                MapPoint::try_from_lat_lng_deg(south_west_lat, south_west_lng).unwrap_or_default(),
+                MapPoint::try_from_lat_lng_deg(north_east_lat, north_east_lng).unwrap_or_default(),
+            ),
             username,
         }
     }
@@ -528,10 +528,10 @@ impl From<e::BboxSubscription> for BboxSubscription {
         let e::BboxSubscription { id, bbox, username } = s;
         BboxSubscription {
             id,
-            south_west_lat: bbox.south_west.lat().to_deg(),
-            south_west_lng: bbox.south_west.lng().to_deg(),
-            north_east_lat: bbox.north_east.lat().to_deg(),
-            north_east_lng: bbox.north_east.lng().to_deg(),
+            south_west_lat: bbox.south_west().lat().to_deg(),
+            south_west_lng: bbox.south_west().lng().to_deg(),
+            north_east_lat: bbox.north_east().lat().to_deg(),
+            north_east_lng: bbox.north_east().lng().to_deg(),
             username,
         }
     }

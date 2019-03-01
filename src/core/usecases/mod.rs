@@ -1,6 +1,9 @@
 use crate::core::{
     prelude::*,
-    util::{geo, validate},
+    util::{
+        geo::{MapBbox, MapPoint},
+        validate,
+    },
 };
 use std::collections::HashMap;
 use uuid::Uuid;
@@ -28,11 +31,6 @@ pub use self::{
     delete_event::*, find_duplicates::*, indexing::*, login::*, query_events::*, rate_entry::*,
     search::*, update_entry::*, update_event::*,
 };
-
-// TODO: Remove this function after replacing Bbox with MapBbox
-fn map_bbox(bbox: &Bbox) -> geo::MapBbox {
-    geo::MapBbox::new(bbox.south_west, bbox.north_east)
-}
 
 pub fn get_comments_by_rating_ids<D: Db>(
     db: &D,
@@ -111,14 +109,7 @@ pub fn delete_user(db: &mut Db, login_id: &str, u_id: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn subscribe_to_bbox(sw_ne: &[MapPoint], username: &str, db: &mut Db) -> Result<()> {
-    if sw_ne.len() != 2 {
-        return Err(Error::Parameter(ParameterError::Bbox));
-    }
-    let bbox = Bbox {
-        south_west: sw_ne[0],
-        north_east: sw_ne[1],
-    };
+pub fn subscribe_to_bbox(bbox: MapBbox, username: &str, db: &mut Db) -> Result<()> {
     validate::bbox(&bbox)?;
 
     // TODO: support multiple subscriptions in KVM (frontend)
@@ -160,9 +151,7 @@ pub fn bbox_subscriptions_by_coordinate(db: &Db, pos: &MapPoint) -> Result<Vec<B
     Ok(db
         .all_bbox_subscriptions()?
         .into_iter()
-        .filter(|s| {
-            map_bbox(&s.bbox).contains_point(&pos)
-        })
+        .filter(|s| s.bbox.contains_point(&pos))
         .collect())
 }
 

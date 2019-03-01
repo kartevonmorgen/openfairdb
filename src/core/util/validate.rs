@@ -1,5 +1,8 @@
 use super::super::{
-    entities::*, error::ParameterError, usecases::create_new_user::MAX_USERNAME_LEN, util::geo::{MapPoint, MapBbox},
+    entities::*,
+    error::ParameterError,
+    usecases::create_new_user::MAX_USERNAME_LEN,
+    util::geo::{MapBbox, MapPoint},
 };
 use fast_chemail::is_valid_email;
 use regex::Regex;
@@ -36,8 +39,7 @@ fn license(s: &str) -> Result<(), ParameterError> {
     }
 }
 
-pub fn bbox(bbox: &Bbox) -> Result<(), ParameterError> {
-    let bbox = MapBbox::new(bbox.south_west, bbox.north_east);
+pub fn bbox(bbox: &MapBbox) -> Result<(), ParameterError> {
     if !bbox.is_valid() || bbox.is_empty() {
         return Err(ParameterError::Bbox);
     }
@@ -372,18 +374,9 @@ mod tests {
         let p1 = MapPoint::from_lat_lng_deg(48.123, 5.123);
         let p2 = MapPoint::try_from_lat_lng_deg(48.123, 500.123).unwrap_or_default();
         let p3 = MapPoint::from_lat_lng_deg(49.123, 10.123);
-        let valid_bbox = Bbox {
-            south_west: p1,
-            north_east: p3,
-        };
-        let empty_bbox = Bbox {
-            south_west: p3,
-            north_east: p3,
-        };
-        let invalid_bbox = Bbox {
-            south_west: p2,
-            north_east: p3,
-        };
+        let valid_bbox = MapBbox::new(p1, p3);
+        let empty_bbox = MapBbox::new(p3, p3);
+        let invalid_bbox = MapBbox::new(p2, p3);
         assert!(bbox(&valid_bbox).is_ok());
         assert!(bbox(&empty_bbox).is_err());
         assert!(bbox(&invalid_bbox).is_err());

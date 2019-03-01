@@ -353,27 +353,11 @@ pub struct Rating {
     pub source   : Option<String>,
 }
 
-// TODO: Replace by geo::MapBbox
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Bbox {
-    pub south_west: MapPoint,
-    pub north_east: MapPoint,
-}
-
-impl From<MapBbox> for Bbox {
-    fn from(from: MapBbox) -> Bbox {
-        Self {
-            south_west: from.south_west().into(),
-            north_east: from.north_east().into(),
-        }
-    }
-}
-
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Debug, Clone, PartialEq)]
 pub struct BboxSubscription {
     pub id       : String,
-    pub bbox     : Bbox,
+    pub bbox     : MapBbox,
     pub username : String,
 }
 
