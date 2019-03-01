@@ -1,15 +1,16 @@
 use crate::core::{
     prelude::*,
-    util::filter::{self, InBBox},
+    util::{
+        filter::{self, InBBox},
+        geo::MapBbox,
+    },
 };
 use chrono::prelude::*;
-
-use super::map_bbox;
 
 pub fn query_events<D: Db>(
     db: &D,
     tags: Option<Vec<String>>,
-    bbox: Option<Bbox>,
+    bbox: Option<MapBbox>,
     start_min: Option<NaiveDateTime>,
     start_max: Option<NaiveDateTime>,
     created_by: Option<String>,
@@ -27,12 +28,7 @@ pub fn query_events<D: Db>(
 
     let mut events = db.all_events()?;
 
-    if let Some(bbox) = bbox
-        .as_ref()
-        .map(map_bbox)
-        .as_ref()
-        .map(filter::extend_bbox)
-    {
+    if let Some(bbox) = bbox.as_ref().map(filter::extend_bbox) {
         events = events.into_iter().filter(|x| x.in_bbox(&bbox)).collect();
     }
 

@@ -1,5 +1,7 @@
 use super::{super::guards::Bearer, geocoding::*, *};
 
+use crate::core::util::{geo::MapBbox, validate};
+
 use chrono::prelude::*;
 use rocket::{
     http::{RawStr, Status},
@@ -86,7 +88,7 @@ pub fn put_event_with_token(
 pub struct EventQuery {
     tags: Option<Vec<String>>,
     created_by: Option<String>,
-    bbox: Option<Bbox>,
+    bbox: Option<MapBbox>,
     start_min: Option<i64>,
     start_max: Option<i64>,
 }
@@ -143,7 +145,10 @@ impl<'q> FromQuery<'q> for EventQuery {
             .filter(|v| !v.is_empty())
             .nth(0);
         if let Some(bbox) = bbox {
-            let bbox = geo::extract_bbox(&bbox)?;
+            let bbox = bbox
+                .parse::<MapBbox>()
+                .map_err(|_err| ParameterError::Bbox)?;
+            validate::bbox(&bbox)?;
             q.bbox = Some(bbox);
         }
 

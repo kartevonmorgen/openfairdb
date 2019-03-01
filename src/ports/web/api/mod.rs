@@ -158,8 +158,12 @@ fn subscribe_to_bbox(
         .into_iter()
         .map(MapPoint::from)
         .collect();
+    if sw_ne.len() != 2 {
+        return Err(Error::Parameter(ParameterError::Bbox).into());
+    }
+    let bbox = geo::MapBbox::new(sw_ne[0], sw_ne[1]);
     let Login(username) = user;
-    usecases::subscribe_to_bbox(&sw_ne, &username, &mut *db.exclusive()?)?;
+    usecases::subscribe_to_bbox(bbox, &username, &mut *db.exclusive()?)?;
     Ok(Json(()))
 }
 
@@ -180,10 +184,10 @@ fn get_bbox_subscriptions(
         .into_iter()
         .map(|s| json::BboxSubscription {
             id: s.id,
-            south_west_lat: s.bbox.south_west.lat().to_deg(),
-            south_west_lng: s.bbox.south_west.lng().to_deg(),
-            north_east_lat: s.bbox.north_east.lat().to_deg(),
-            north_east_lng: s.bbox.north_east.lng().to_deg(),
+            south_west_lat: s.bbox.south_west().lat().to_deg(),
+            south_west_lng: s.bbox.south_west().lng().to_deg(),
+            north_east_lat: s.bbox.north_east().lat().to_deg(),
+            north_east_lng: s.bbox.north_east().lng().to_deg(),
         })
         .collect();
     Ok(Json(user_subscriptions))

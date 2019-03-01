@@ -153,9 +153,15 @@ mod tests {
             MapPoint::from_lat_lng_deg(10.0, 10.0),
         );
         let entries = vec![
-            Entry::build().pos(MapPoint::from_lat_lng_deg(5.0, 5.0)).finish(),
-            Entry::build().pos(MapPoint::from_lat_lng_deg(-5.0, 5.0)).finish(),
-            Entry::build().pos(MapPoint::from_lat_lng_deg(10.0, 10.1)).finish(),
+            Entry::build()
+                .pos(MapPoint::from_lat_lng_deg(5.0, 5.0))
+                .finish(),
+            Entry::build()
+                .pos(MapPoint::from_lat_lng_deg(-5.0, 5.0))
+                .finish(),
+            Entry::build()
+                .pos(MapPoint::from_lat_lng_deg(10.0, 10.1))
+                .finish(),
         ];
         assert_eq!(
             entries

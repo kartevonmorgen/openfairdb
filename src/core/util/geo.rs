@@ -1,7 +1,4 @@
-use super::super::{
-    entities::Bbox,
-    error::ParameterError,
-};
+use super::super::error::ParameterError;
 
 use itertools::Itertools;
 
@@ -450,17 +447,11 @@ impl std::str::FromStr for MapBbox {
     }
 }
 
-// TODO: Replace legacy function
-pub fn extract_bbox(s: &str) -> Result<Bbox, ParameterError> {
-    s.parse::<MapBbox>()
-        .map(|bbox| Bbox {
-            south_west: bbox.south_west(),
-            north_east: bbox.north_east(),
-        })
-        .map_err(|err| {
-            warn!("Failed to parse bounding box: {}", err);
-            ParameterError::Bbox
-        })
+pub fn extract_bbox(s: &str) -> Result<MapBbox, ParameterError> {
+    s.parse::<MapBbox>().map_err(|err| {
+        warn!("Failed to parse bounding box: {}", err);
+        ParameterError::Bbox
+    })
 }
 
 #[cfg(test)]
@@ -683,10 +674,10 @@ mod tests {
         let bb = extract_bbox("0,-10.9876,20,30");
         assert!(bb.is_ok());
         let bb = bb.unwrap();
-        assert_eq!(bb.south_west.lat(), LatCoord::from_deg(0.0));
-        assert_eq!(bb.south_west.lng(), LngCoord::from_deg(-10.9876));
-        assert_eq!(bb.north_east.lat(), LatCoord::from_deg(20.0));
-        assert_eq!(bb.north_east.lng(), LngCoord::from_deg(30.0));
+        assert_eq!(bb.south_west().lat(), LatCoord::from_deg(0.0));
+        assert_eq!(bb.south_west().lng(), LngCoord::from_deg(-10.9876));
+        assert_eq!(bb.north_east().lat(), LatCoord::from_deg(20.0));
+        assert_eq!(bb.north_east().lng(), LngCoord::from_deg(30.0));
     }
 
     #[test]
