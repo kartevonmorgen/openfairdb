@@ -98,17 +98,13 @@ pub fn get_search(
 
     let (visible, invisible) = usecases::search(&search_engine, req, search_limit)?;
 
-    let visible_len = visible.len();
     let visible: Vec<json::EntrySearchResult> = visible
         .into_iter()
-        .take(visible_len.min(search_limit))
         .map(Into::into)
         .collect();
 
-    let invisible_len = invisible.len();
     let invisible: Vec<json::EntrySearchResult> = invisible
         .into_iter()
-        .take(invisible_len.min(search_limit - search_limit.min(visible.len())))
         .map(Into::into)
         .collect();
 

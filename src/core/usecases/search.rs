@@ -1,8 +1,6 @@
 use crate::core::prelude::*;
 use crate::core::util::{filter, geo::MapBbox};
 
-const MAX_INVISIBLE_RESULTS: usize = 5;
-
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Debug, Clone)]
 pub struct SearchRequest {
@@ -37,19 +35,11 @@ pub fn search(
         .query_entries(&index_query, limit)
         .map_err(|err| RepoError::Other(Box::new(err.compat())))?;
 
-    let invisible_results = entries
-        .iter()
-        .filter(|e| !visible_bbox.contains_point(&e.pos))
-        .take(MAX_INVISIBLE_RESULTS)
-        .cloned()
-        .collect();
-
-    let visible_results: Vec<_> = entries
+    let (visible_entries, invisible_entries): (Vec<_>, Vec<_>) = entries
         .into_iter()
-        .filter(|e| visible_bbox.contains_point(&e.pos))
-        .collect();
+        .partition(|e| visible_bbox.contains_point(&e.pos));
 
-    Ok((visible_results, invisible_results))
+    Ok((visible_entries, invisible_entries))
 }
 
 #[cfg(test)]
