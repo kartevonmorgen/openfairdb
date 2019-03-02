@@ -31,7 +31,7 @@ build:
 	mkdir -p "$(CARGO_REGISTRY)"
 	mkdir -p "$(PROJECT_ROOT)"
 	# rust-toolchain: Implicitly defined by the Docker image and cannot be changed!
-	rsync -av --delete --chown `id -gn`:`id -un` --progress . "$(PROJECT_ROOT)" --exclude target --exclude rust-toolchain --exclude .git
+	rsync -av --delete --chown `id -gn`:`id -un` --progress . "$(PROJECT_ROOT)" --exclude bin --exclude target --exclude rust-toolchain --exclude .git
 	docker run --rm \
 		-v "$(CARGO_GIT)":/root/.cargo/git:Z \
 		-v "$(CARGO_REGISTRY)":/root/.cargo/registry:Z \
