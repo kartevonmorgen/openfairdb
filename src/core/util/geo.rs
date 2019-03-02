@@ -1,5 +1,3 @@
-use super::super::error::ParameterError;
-
 use itertools::Itertools;
 
 pub type RawCoord = i32;
@@ -447,13 +445,6 @@ impl std::str::FromStr for MapBbox {
     }
 }
 
-pub fn extract_bbox(s: &str) -> Result<MapBbox, ParameterError> {
-    s.parse::<MapBbox>().map_err(|err| {
-        warn!("Failed to parse bounding box: {}", err);
-        ParameterError::Bbox
-    })
-}
-
 #[cfg(test)]
 mod tests {
 
@@ -666,29 +657,6 @@ mod tests {
         assert!(!bbox2.contains_point(&MapPoint::from_lat_lng_deg(lat4, lng4)));
         assert!(!bbox3.contains_point(&MapPoint::from_lat_lng_deg(lat4, lng4)));
         assert!(bbox4.contains_point(&MapPoint::from_lat_lng_deg(lat4, lng4)));
-    }
-
-    #[test]
-    fn extract_bbox_from_str() {
-        assert!(extract_bbox("0,-10.0870,90,180.0").is_ok());
-        let bb = extract_bbox("0,-10.9876,20,30");
-        assert!(bb.is_ok());
-        let bb = bb.unwrap();
-        assert_eq!(bb.south_west().lat(), LatCoord::from_deg(0.0));
-        assert_eq!(bb.south_west().lng(), LngCoord::from_deg(-10.9876));
-        assert_eq!(bb.north_east().lat(), LatCoord::from_deg(20.0));
-        assert_eq!(bb.north_east().lng(), LngCoord::from_deg(30.0));
-    }
-
-    #[test]
-    fn extract_bbox_from_str_with_missing_lng() {
-        assert!(extract_bbox("5,4,3").is_err());
-    }
-
-    #[test]
-    fn extract_bbox_from_str_with_invalid_chars() {
-        assert!(extract_bbox("5,4,3,o").is_err());
-        assert!(extract_bbox("5;4;3,0").is_err());
     }
 
     use crate::test::Bencher;
