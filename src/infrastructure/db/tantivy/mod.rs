@@ -171,6 +171,7 @@ impl IndexedEntryFields {
                     debug_assert!(entry.ratings.transparency == Default::default());
                     entry.ratings.transparency = u64_to_avg_rating(fv.value().u64_value());
                 }
+                fv if fv.field() == self.total_rating => (),
                 fv => {
                     error!("Unexpected field value: {:?}", fv);
                 }
