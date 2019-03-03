@@ -125,9 +125,8 @@ pub struct Tag {
     pub id: String,
 }
 
-#[derive(Identifiable, Queryable, Insertable, AsChangeset)]
+#[derive(Queryable, Insertable, AsChangeset)]
 #[table_name = "users"]
-#[primary_key(username)]
 pub struct User {
     pub id: String, // TOTO: remove
     pub username: String,
@@ -146,9 +145,8 @@ pub struct Comment {
     pub rating_id: String,
 }
 
-#[derive(Queryable, Insertable, Associations)]
+#[derive(Queryable, Insertable)]
 #[table_name = "ratings"]
-#[belongs_to(Entry, foreign_key = "entry_id")]
 pub struct Rating {
     pub id: String,
     pub created: i64,
@@ -159,9 +157,8 @@ pub struct Rating {
     pub entry_id: String,
 }
 
-#[derive(Queryable, Insertable, Associations)]
+#[derive(Queryable, Insertable)]
 #[table_name = "bbox_subscriptions"]
-#[belongs_to(User, foreign_key = "username")]
 pub struct BboxSubscription {
     pub id: String,
     pub south_west_lat: f64,
