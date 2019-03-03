@@ -758,11 +758,11 @@ fn search_without_specifying_hashtag_symbol() {
 }
 
 #[test]
-fn extract_ids_test() {
-    assert_eq!(extract_ids("abc"), vec!["abc"]);
-    assert_eq!(extract_ids("a, b,c"), vec!["a", "b", "c"]);
-    assert_eq!(extract_ids("\t").len(), 0);
-    assert_eq!(extract_ids("abc, ,d,"), vec!["abc", "d"]);
+fn split_ids_test() {
+    assert_eq!(split_ids("abc"), vec!["abc"]);
+    assert_eq!(split_ids("a, b,c"), vec!["a", "b", "c"]);
+    assert_eq!(split_ids("\t").len(), 0);
+    assert_eq!(split_ids("abc, ,d,"), vec!["abc", "d"]);
 }
 
 #[test]

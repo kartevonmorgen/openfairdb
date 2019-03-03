@@ -203,7 +203,7 @@ impl EntryGateway for MockDb {
     fn get_entry(&self, id: &str) -> RepoResult<Entry> {
         get(&self.entries.borrow(), id)
     }
-    fn get_entries(&self, ids: &[String]) -> RepoResult<Vec<Entry>> {
+    fn get_entries(&self, ids: &[&str]) -> RepoResult<Vec<Entry>> {
         Ok(self
             .entries
             .borrow()
@@ -333,7 +333,7 @@ impl RatingRepository for MockDb {
         get(&self.ratings.borrow(), id)
     }
 
-    fn get_ratings(&self, ids: &[String]) -> RepoResult<Vec<Rating>> {
+    fn get_ratings(&self, ids: &[&str]) -> RepoResult<Vec<Rating>> {
         Ok(self
             .ratings
             .borrow()

@@ -17,7 +17,7 @@ pub fn get_rating(db: sqlite::Connections, ids: String) -> Result<Vec<json::Rati
     // TODO: RESTful API
     //   - Only lookup and return a single entity
     //   - Add a new action and method for getting multiple ids at once
-    let ids = util::extract_ids(&ids);
+    let ids = util::split_ids(&ids);
     if ids.is_empty() {
         return Ok(Json(vec![]));
     }

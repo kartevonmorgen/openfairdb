@@ -83,7 +83,7 @@ struct UserId {
 fn get_entry(db: sqlite::Connections, ids: String) -> Result<Vec<json::Entry>> {
     // TODO: Only lookup and return a single entity
     // TODO: Add a new method for searching multiple ids
-    let ids = util::extract_ids(&ids);
+    let ids = util::split_ids(&ids);
     if ids.is_empty() {
         return Ok(Json(vec![]));
     }
@@ -104,7 +104,7 @@ fn get_duplicates(
     db: sqlite::Connections,
     ids: String,
 ) -> Result<Vec<(String, String, DuplicateType)>> {
-    let ids = util::extract_ids(&ids);
+    let ids = util::split_ids(&ids);
     if ids.is_empty() {
         return Ok(Json(vec![]));
     }
@@ -245,7 +245,7 @@ fn get_categories(connections: sqlite::Connections) -> Result<Vec<Category>> {
 fn get_category(connections: sqlite::Connections, ids: String) -> Result<Vec<Category>> {
     // TODO: Only lookup and return a single entity
     // TODO: Add a new method for searching multiple ids
-    let ids = util::extract_ids(&ids);
+    let ids = util::split_ids(&ids);
     if ids.is_empty() {
         return Ok(Json(vec![]));
     }

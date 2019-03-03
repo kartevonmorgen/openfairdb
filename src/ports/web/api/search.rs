@@ -38,7 +38,8 @@ pub fn get_search(
         .categories
         .as_ref()
         .map(String::as_str)
-        .map(util::extract_ids)
+        .map(util::split_ids)
+        .map(|v| v.into_iter().map(ToOwned::to_owned).collect())
         .unwrap_or_else(|| vec![]);
 
     let mut tags = search
@@ -48,8 +49,8 @@ pub fn get_search(
         .map(util::extract_hash_tags)
         .unwrap_or_else(|| vec![]);
     if let Some(ref tags_str) = search.tags {
-        for t in util::extract_ids(tags_str) {
-            tags.push(t);
+        for t in util::split_ids(tags_str) {
+            tags.push(t.to_owned());
         }
     }
 

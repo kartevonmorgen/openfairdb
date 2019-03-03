@@ -11,7 +11,7 @@ type Result<T> = result::Result<T, RepoError>;
 
 pub trait EntryGateway {
     fn get_entry(&self, _: &str) -> Result<Entry>;
-    fn get_entries(&self, ids: &[String]) -> Result<Vec<Entry>>;
+    fn get_entries(&self, ids: &[&str]) -> Result<Vec<Entry>>;
 
     fn all_entries(&self) -> Result<Vec<Entry>>;
     fn count_entries(&self) -> Result<usize>;
@@ -64,7 +64,7 @@ pub trait OrganizationGateway {
 
 pub trait RatingRepository {
     fn get_rating(&self, id: &str) -> Result<Rating>;
-    fn get_ratings(&self, ids: &[String]) -> Result<Vec<Rating>>;
+    fn get_ratings(&self, ids: &[&str]) -> Result<Vec<Rating>>;
 
     fn get_ratings_for_entry(&self, entry_id: &str) -> Result<Vec<Rating>>;
 

@@ -6,14 +6,14 @@ lazy_static! {
 
 pub const ID_LIST_SEPARATOR: char = ',';
 
-pub fn extract_ids(s: &str) -> Vec<String> {
-    s.split(ID_LIST_SEPARATOR)
+pub fn split_ids(ids: &str) -> Vec<&str> {
+    ids.split(ID_LIST_SEPARATOR)
         .map(|x| x.trim())
         .filter_map(|id| {
             if id.is_empty() {
                 None
             } else {
-                Some(id.to_owned())
+                Some(id)
             }
         })
         .collect()

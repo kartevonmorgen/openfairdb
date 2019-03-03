@@ -164,7 +164,7 @@ impl EntryGateway for SqliteConnection {
         load_entry(self, entry)
     }
 
-    fn get_entries(&self, ids: &[String]) -> Result<Vec<Entry>> {
+    fn get_entries(&self, ids: &[&str]) -> Result<Vec<Entry>> {
         use self::schema::entries::dsl as e_dsl;
 
         // TODO: Split loading into chunks of fixed size
@@ -597,7 +597,7 @@ impl RatingRepository for SqliteConnection {
             .map_err(Into::into)
     }
 
-    fn get_ratings(&self, ids: &[String]) -> Result<Vec<Rating>> {
+    fn get_ratings(&self, ids: &[&str]) -> Result<Vec<Rating>> {
         use self::schema::ratings::dsl;
         // TODO: Split loading into chunks of fixed size
         info!("Loading multiple ({}) ratings at once", ids.len());
