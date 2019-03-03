@@ -120,24 +120,22 @@ impl EntryGateway for SqliteConnection {
         let cat_rels: Vec<_> = e
             .categories
             .iter()
-            .cloned()
-            .map(|category_id| models::EntryCategoryRelation {
-                entry_id: e.id.clone(),
+            .map(|category_id| models::StoreableEntryCategoryRelation {
+                entry_id: &e.id,
                 entry_version: e.version as i64,
-                category_id,
+                category_id: &category_id,
             })
             .collect();
         let tag_rels: Vec<_> = e
             .tags
             .iter()
-            .cloned()
-            .map(|tag_id| models::EntryTagRelation {
-                entry_id: e.id.clone(),
+            .map(|tag_id| models::StoreableEntryTagRelation {
+                entry_id: &e.id,
                 entry_version: e.version as i64,
-                tag_id,
+                tag_id: &tag_id,
             })
             .collect();
-        let new_entry = models::Entry::from(e);
+        let new_entry = models::Entry::from(e.clone());
         reset_current_entry(&self, &new_entry.id)?;
         diesel::insert_into(schema::entries::table)
             .values(&new_entry)
@@ -270,22 +268,20 @@ impl EntryGateway for SqliteConnection {
         let cat_rels: Vec<_> = entry
             .categories
             .iter()
-            .cloned()
-            .map(|category_id| models::EntryCategoryRelation {
-                entry_id: entry.id.clone(),
+            .map(|category_id| models::StoreableEntryCategoryRelation {
+                entry_id: &entry.id,
                 entry_version: entry.version as i64,
-                category_id,
+                category_id: &category_id,
             })
             .collect();
 
         let tag_rels: Vec<_> = entry
             .tags
             .iter()
-            .cloned()
-            .map(|tag_id| models::EntryTagRelation {
-                entry_id: entry.id.clone(),
+            .map(|tag_id| models::StoreableEntryTagRelation {
+                entry_id: &entry.id,
                 entry_version: entry.version as i64,
-                tag_id,
+                tag_id: &tag_id,
             })
             .collect();
 
@@ -312,20 +308,19 @@ impl EntryGateway for SqliteConnection {
                 let cat_rels: Vec<_> = e
                     .categories
                     .iter()
-                    .cloned()
-                    .map(|category_id| models::EntryCategoryRelation {
-                        entry_id: e.id.clone(),
+                    .map(|category_id| models::StoreableEntryCategoryRelation {
+                        entry_id: &e.id,
                         entry_version: e.version as i64,
-                        category_id,
+                        category_id: &category_id,
                     })
                     .collect();
                 let tag_rels: Vec<_> = e
                     .tags
                     .iter()
-                    .map(|tag_id| models::EntryTagRelation {
-                        entry_id: e.id.clone(),
+                    .map(|tag_id| models::StoreableEntryTagRelation {
+                        entry_id: &e.id,
                         entry_version: e.version as i64,
-                        tag_id: tag_id.clone(),
+                        tag_id: &tag_id,
                     })
                     .collect();
                 (new_entry, cat_rels, tag_rels)
@@ -344,7 +339,7 @@ impl EntryGateway for SqliteConnection {
                 for r in &tag_rels {
                     let res = diesel::insert_into(schema::tags::table)
                         .values(&models::Tag {
-                            id: r.tag_id.clone(),
+                            id: r.tag_id.to_owned(),
                         })
                         .execute(self);
                     if let Err(err) = res {
@@ -380,13 +375,12 @@ impl EventGateway for SqliteConnection {
         let tag_rels: Vec<_> = e
             .tags
             .iter()
-            .cloned()
-            .map(|tag_id| models::EventTagRelation {
-                event_id: e.id.clone(),
-                tag_id,
+            .map(|tag_id| models::StoreableEventTagRelation {
+                event_id: &e.id,
+                tag_id: &tag_id,
             })
             .collect();
-        let new_event = models::Event::from(e);
+        let new_event = models::Event::from(e.clone());
         self.transaction::<_, diesel::result::Error, _>(|| {
             diesel::insert_into(schema::events::table)
                 .values(&new_event)
@@ -499,10 +493,10 @@ impl EventGateway for SqliteConnection {
 
             let tag_rels: Vec<_> = diff
                 .added
-                .into_iter()
-                .map(|tag_id| models::EventTagRelation {
-                    event_id: event.id.clone(),
-                    tag_id,
+                .iter()
+                .map(|tag_id| models::StoreableEventTagRelation {
+                    event_id: &event.id,
+                    tag_id: &tag_id,
                 })
                 .collect();
 
@@ -720,13 +714,12 @@ impl OrganizationGateway for SqliteConnection {
         let tag_rels: Vec<_> = o
             .owned_tags
             .iter()
-            .cloned()
-            .map(|tag_id| models::OrgTagRelation {
-                org_id: o.id.clone(),
-                tag_id,
+            .map(|tag_id| models::StoreableOrgTagRelation {
+                org_id: &o.id,
+                tag_id: &tag_id,
             })
             .collect();
-        let new_org = models::Organization::from(o);
+        let new_org = models::Organization::from(o.clone());
         self.transaction::<_, diesel::result::Error, _>(|| {
             diesel::insert_into(schema::organizations::table)
                 .values(&new_org)

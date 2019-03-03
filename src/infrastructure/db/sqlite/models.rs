@@ -63,38 +63,60 @@ pub struct Category {
     pub name: String,
 }
 
-#[derive(Identifiable, Queryable, Insertable, Associations)]
-#[table_name = "entry_category_relations"]
-#[primary_key(entry_id, entry_version, category_id)]
+#[derive(Queryable)]
 pub struct EntryCategoryRelation {
     pub entry_id: String,
     pub entry_version: i64,
     pub category_id: String,
 }
 
-#[derive(Identifiable, Queryable, Insertable, Associations)]
-#[table_name = "entry_tag_relations"]
-#[primary_key(entry_id, entry_version, tag_id)]
+#[derive(Insertable)]
+#[table_name = "entry_category_relations"]
+pub struct StoreableEntryCategoryRelation<'a, 'b> {
+    pub entry_id: &'a str,
+    pub entry_version: i64,
+    pub category_id: &'b str,
+}
+
+#[derive(Queryable)]
 pub struct EntryTagRelation {
     pub entry_id: String,
     pub entry_version: i64,
     pub tag_id: String,
 }
 
-#[derive(Identifiable, Queryable, Insertable, Associations)]
-#[table_name = "event_tag_relations"]
-#[primary_key(event_id, tag_id)]
+#[derive(Insertable)]
+#[table_name = "entry_tag_relations"]
+pub struct StoreableEntryTagRelation<'a, 'b> {
+    pub entry_id: &'a str,
+    pub entry_version: i64,
+    pub tag_id: &'b str,
+}
+
+#[derive(Queryable)]
 pub struct EventTagRelation {
     pub event_id: String,
     pub tag_id: String,
 }
 
-#[derive(Identifiable, Queryable, Insertable, Associations)]
-#[table_name = "org_tag_relations"]
-#[primary_key(org_id, tag_id)]
+#[derive(Insertable)]
+#[table_name = "event_tag_relations"]
+pub struct StoreableEventTagRelation<'a, 'b> {
+    pub event_id: &'a str,
+    pub tag_id: &'b str,
+}
+
+#[derive(Queryable)]
 pub struct OrgTagRelation {
     pub org_id: String,
     pub tag_id: String,
+}
+
+#[derive(Insertable)]
+#[table_name = "org_tag_relations"]
+pub struct StoreableOrgTagRelation<'a, 'b> {
+    pub org_id: &'a str,
+    pub tag_id: &'b str,
 }
 
 #[derive(Queryable, Insertable)]
