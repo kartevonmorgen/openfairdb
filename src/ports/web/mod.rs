@@ -22,7 +22,7 @@ fn index_all_entries<D: EntryGateway + RatingRepository>(
     db: &D,
     entry_indexer: &mut dyn EntryIndexer,
 ) -> Result<()> {
-    // TODO: Split into batches with limited size instead of
+    // TODO: Split into chunks with fixed size instead of
     // loading all entries at once!
     let entries = db.all_entries()?;
     for entry in entries {

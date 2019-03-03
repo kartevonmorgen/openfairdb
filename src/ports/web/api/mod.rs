@@ -83,17 +83,20 @@ struct UserId {
 fn get_entry(db: sqlite::Connections, ids: String) -> Result<Vec<json::Entry>> {
     // TODO: Only lookup and return a single entity
     // TODO: Add a new method for searching multiple ids
-    let json_entries = {
-        let ids = util::extract_ids(&ids);
-        let mut json_entries = Vec::with_capacity(ids.len());
+    let ids = util::extract_ids(&ids);
+    if ids.is_empty() {
+        return Ok(Json(vec![]));
+    }
+    let results = {
+        let mut results = Vec::with_capacity(ids.len());
         let db = db.shared()?;
         for e in db.get_entries(&ids)?.into_iter() {
             let r = db.get_ratings_for_entry(&e.id)?;
-            json_entries.push(json::Entry::from_entry_with_ratings(e, r));
+            results.push(json::Entry::from_entry_with_ratings(e, r));
         }
-        json_entries
+        results
     };
-    Ok(Json(json_entries))
+    Ok(Json(results))
 }
 
 #[get("/duplicates")]
@@ -233,6 +236,9 @@ fn get_category(connections: sqlite::Connections, ids: String) -> Result<Vec<Cat
     // TODO: Only lookup and return a single entity
     // TODO: Add a new method for searching multiple ids
     let ids = util::extract_ids(&ids);
+    if ids.is_empty() {
+        return Ok(Json(vec![]));
+    }
     let categories = connections
         .shared()?
         .all_categories()?

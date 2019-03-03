@@ -18,6 +18,9 @@ pub fn get_rating(db: sqlite::Connections, ids: String) -> Result<Vec<json::Rati
     //   - Only lookup and return a single entity
     //   - Add a new action and method for getting multiple ids at once
     let ids = util::extract_ids(&ids);
+    if ids.is_empty() {
+        return Ok(Json(vec![]));
+    }
     let ratings_with_comments = usecases::load_ratings_with_comments(&*db.shared()?, &ids)?;
     let result = ratings_with_comments
         .into_iter()
