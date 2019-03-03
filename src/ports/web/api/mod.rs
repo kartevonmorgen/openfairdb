@@ -87,8 +87,8 @@ fn get_entry(db: sqlite::Connections, ids: String) -> Result<Vec<json::Entry>> {
         let ids = util::extract_ids(&ids);
         let mut json_entries = Vec::with_capacity(ids.len());
         let db = db.shared()?;
-        for e in usecases::get_entries(&*db, &ids)?.into_iter() {
-            let r = db.all_ratings_for_entry_by_id(&e.id)?;
+        for e in db.get_entries(&ids)?.into_iter() {
+            let r = db.get_ratings_for_entry(&e.id)?;
             json_entries.push(json::Entry::from_entry_with_ratings(e, r));
         }
         json_entries

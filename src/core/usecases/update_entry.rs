@@ -99,7 +99,7 @@ pub fn store_updated_entry<D: Db>(db: &D, s: Storable) -> Result<(Entry, Vec<Rat
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
     db.update_entry(&entry)?;
-    let ratings = db.all_ratings_for_entry_by_id(&entry.id)?;
+    let ratings = db.get_ratings_for_entry(&entry.id)?;
     Ok((entry, ratings))
 }
 

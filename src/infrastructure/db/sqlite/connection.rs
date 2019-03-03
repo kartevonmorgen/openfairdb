@@ -39,6 +39,82 @@ fn reset_current_entry(
     .execute(*conn)
 }
 
+fn load_entry(conn: &SqliteConnection, entry: models::Entry) -> Result<Entry> {
+    use self::schema::entry_category_relations::dsl as e_c_dsl;
+    use self::schema::entry_tag_relations::dsl as e_t_dsl;
+
+    let models::Entry {
+        id,
+        osm_node,
+        created,
+        version,
+        title,
+        description,
+        lat,
+        lng,
+        street,
+        zip,
+        city,
+        country,
+        email,
+        telephone,
+        homepage,
+        license,
+        image_url,
+        image_link_url,
+        ..
+    } = entry;
+
+    let location = Location {
+        pos: MapPoint::try_from_lat_lng_deg(lat, lng).unwrap_or_default(),
+        address: Some(Address {
+            street,
+            zip,
+            city,
+            country,
+        }),
+    };
+
+    let categories = e_c_dsl::entry_category_relations
+        .filter(
+            e_c_dsl::entry_id
+                .eq(&id)
+                .and(e_c_dsl::entry_version.eq(version)),
+        )
+        .load::<models::EntryCategoryRelation>(conn)?
+        .into_iter()
+        .map(|r| r.category_id)
+        .collect();
+
+    let tags = e_t_dsl::entry_tag_relations
+        .filter(
+            e_t_dsl::entry_id
+                .eq(&id)
+                .and(e_t_dsl::entry_version.eq(version)),
+        )
+        .load::<models::EntryTagRelation>(conn)?
+        .into_iter()
+        .map(|r| r.tag_id)
+        .collect();
+
+    Ok(Entry {
+        id,
+        osm_node: osm_node.map(|x| x as u64),
+        created: created as u64,
+        version: version as u64,
+        title,
+        description,
+        location,
+        contact: Some(Contact { email, telephone }),
+        homepage,
+        categories,
+        tags,
+        license,
+        image_url,
+        image_link_url,
+    })
+}
+
 impl EntryGateway for SqliteConnection {
     fn create_entry(&self, e: Entry) -> Result<()> {
         let cat_rels: Vec<_> = e
@@ -79,82 +155,30 @@ impl EntryGateway for SqliteConnection {
 
     fn get_entry(&self, id: &str) -> Result<Entry> {
         use self::schema::entries::dsl as e_dsl;
-        use self::schema::entry_category_relations::dsl as e_c_dsl;
-        use self::schema::entry_tag_relations::dsl as e_t_dsl;
 
-        let models::Entry {
-            id,
-            osm_node,
-            created,
-            version,
-            title,
-            description,
-            lat,
-            lng,
-            street,
-            zip,
-            city,
-            country,
-            email,
-            telephone,
-            homepage,
-            license,
-            image_url,
-            image_link_url,
-            ..
-        } = e_dsl::entries
+        let entry = e_dsl::entries
             .filter(e_dsl::id.eq(id))
             .filter(e_dsl::current.eq(true))
             .first(self)?;
 
-        let location = Location {
-            pos: MapPoint::try_from_lat_lng_deg(lat, lng).unwrap_or_default(),
-            address: Some(Address {
-                street,
-                zip,
-                city,
-                country,
-            }),
-        };
+        load_entry(self, entry)
+    }
 
-        let categories = e_c_dsl::entry_category_relations
-            .filter(
-                e_c_dsl::entry_id
-                    .eq(&id)
-                    .and(e_c_dsl::entry_version.eq(version)),
-            )
-            .load::<models::EntryCategoryRelation>(self)?
-            .into_iter()
-            .map(|r| r.category_id)
-            .collect();
+    fn get_entries(&self, ids: &[String]) -> Result<Vec<Entry>> {
+        use self::schema::entries::dsl as e_dsl;
 
-        let tags = e_t_dsl::entry_tag_relations
-            .filter(
-                e_t_dsl::entry_id
-                    .eq(&id)
-                    .and(e_t_dsl::entry_version.eq(version)),
-            )
-            .load::<models::EntryTagRelation>(self)?
-            .into_iter()
-            .map(|r| r.tag_id)
-            .collect();
+        // TODO: Split loading into chunks of fixed size
+        info!("Loading multiple ({}) entries at once", ids.len());
+        let entries = e_dsl::entries
+            .filter(e_dsl::id.eq_any(ids))
+            .filter(e_dsl::current.eq(true))
+            .load::<models::Entry>(self)?;
 
-        Ok(Entry {
-            id,
-            osm_node: osm_node.map(|x| x as u64),
-            created: created as u64,
-            version: version as u64,
-            title,
-            description,
-            location,
-            contact: Some(Contact { email, telephone }),
-            homepage,
-            categories,
-            tags,
-            license,
-            image_url,
-            image_link_url,
-        })
+        let mut results = Vec::with_capacity(entries.len());
+        for entry in entries {
+            results.push(load_entry(self, entry)?);
+        }
+        Ok(results)
     }
 
     fn all_entries(&self) -> Result<Vec<Entry>> {
@@ -593,7 +617,7 @@ impl RatingRepository for SqliteConnection {
         Ok(ratings)
     }
 
-    fn all_ratings_for_entry_by_id(&self, entry_id: &str) -> Result<Vec<Rating>> {
+    fn get_ratings_for_entry(&self, entry_id: &str) -> Result<Vec<Rating>> {
         use self::schema::ratings::dsl;
         Ok(dsl::ratings
             .filter(dsl::entry_id.eq(entry_id))

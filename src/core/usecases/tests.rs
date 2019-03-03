@@ -203,6 +203,15 @@ impl EntryGateway for MockDb {
     fn get_entry(&self, id: &str) -> RepoResult<Entry> {
         get(&self.entries.borrow(), id)
     }
+    fn get_entries(&self, ids: &[String]) -> RepoResult<Vec<Entry>> {
+        Ok(self
+            .entries
+            .borrow()
+            .iter()
+            .filter(|e| ids.iter().any(|id| &e.id == id))
+            .cloned()
+            .collect())
+    }
     fn all_entries(&self) -> RepoResult<Vec<Entry>> {
         Ok(self.entries.borrow().clone())
     }
@@ -332,7 +341,7 @@ impl RatingRepository for MockDb {
         create(&mut self.ratings.borrow_mut(), r)
     }
 
-    fn all_ratings_for_entry_by_id(&self, entry_id: &str) -> RepoResult<Vec<Rating>> {
+    fn get_ratings_for_entry(&self, entry_id: &str) -> RepoResult<Vec<Rating>> {
         Ok(self
             .ratings
             .borrow()

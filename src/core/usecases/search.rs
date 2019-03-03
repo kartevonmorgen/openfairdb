@@ -47,11 +47,7 @@ pub fn search(
 /// of only one single search input.
 /// So here we don't care about tags, categories etc.
 /// We also ignore the rating of an entry for now.
-pub fn global_search(
-    index: &EntryIndex,
-    txt: &str,
-    limit: usize,
-) -> Result<Vec<IndexedEntry>> {
+pub fn global_search(index: &EntryIndex, txt: &str, limit: usize) -> Result<Vec<IndexedEntry>> {
     let index_query = EntryIndexQuery {
         text: Some(txt.into()),
         ..Default::default()

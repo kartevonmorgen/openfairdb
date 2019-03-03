@@ -26,16 +26,8 @@ pub fn get_index_html() -> Markup {
 }
 
 #[get("/search?<q>&<limit>")]
-pub fn get_search(
-    search_engine: SearchEngine,
-    q: &RawStr,
-    limit: Option<usize>,
-) -> Result<Markup> {
-    let entries = usecases::global_search(
-        &search_engine,
-        q.as_str(),
-        limit.unwrap_or(10),
-    )?;
+pub fn get_search(search_engine: SearchEngine, q: &RawStr, limit: Option<usize>) -> Result<Markup> {
+    let entries = usecases::global_search(&search_engine, q.as_str(), limit.unwrap_or(10))?;
     Ok(view::search_results(q.as_str(), &entries))
 }
 
@@ -61,7 +53,10 @@ pub fn get_event(db: sqlite::Connections, id: &RawStr) -> Result<Markup> {
 
 #[get("/entries/<id>")]
 pub fn get_entry(db: sqlite::Connections, id: &RawStr) -> Result<Markup> {
-    let e = db.shared().map_err(RepoError::from)?.get_entry(id.as_str())?;
+    let e = db
+        .shared()
+        .map_err(RepoError::from)?
+        .get_entry(id.as_str())?;
     Ok(view::entry(e))
 }
 

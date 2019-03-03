@@ -10,10 +10,13 @@ use std::result;
 type Result<T> = result::Result<T, RepoError>;
 
 pub trait EntryGateway {
-    fn create_entry(&self, _: Entry) -> Result<()>;
     fn get_entry(&self, _: &str) -> Result<Entry>;
+    fn get_entries(&self, ids: &[String]) -> Result<Vec<Entry>>;
+
     fn all_entries(&self) -> Result<Vec<Entry>>;
     fn count_entries(&self) -> Result<usize>;
+
+    fn create_entry(&self, _: Entry) -> Result<()>;
     fn update_entry(&self, _: &Entry) -> Result<()>;
     fn import_multiple_entries(&mut self, _: &[Entry]) -> Result<()>;
 }
@@ -50,9 +53,9 @@ pub trait RatingRepository {
     fn get_rating(&self, id: &str) -> Result<Rating>;
     fn get_ratings(&self, ids: &[String]) -> Result<Vec<Rating>>;
 
-    fn add_rating_for_entry(&self, rating: Rating) -> Result<()>;
+    fn get_ratings_for_entry(&self, entry_id: &str) -> Result<Vec<Rating>>;
 
-    fn all_ratings_for_entry_by_id(&self, entry_id: &str) -> Result<Vec<Rating>>;
+    fn add_rating_for_entry(&self, rating: Rating) -> Result<()>;
 }
 
 //TODO:

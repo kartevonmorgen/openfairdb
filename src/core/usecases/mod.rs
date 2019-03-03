@@ -58,28 +58,6 @@ pub fn get_comments_by_rating_ids<D: Db>(
         .collect())
 }
 
-pub fn get_entries<D: Db>(db: &D, ids: &[String]) -> Result<Vec<Entry>> {
-    let mut entries = Vec::with_capacity(ids.len());
-    // TODO: Load multiple entries at once in batches of limited size
-    for id in ids {
-        match db.get_entry(id) {
-            Ok(entry) => {
-                // Success
-                entries.push(entry);
-            }
-            Err(RepoError::NotFound) => {
-                // Some of the requested entries might not exist
-                info!("One of multiple entries not found: {}", id);
-            }
-            Err(err) => {
-                // Abort on any unexpected error
-                Err(err)?;
-            }
-        }
-    }
-    Ok(entries)
-}
-
 pub fn get_user<D: Db>(
     db: &D,
     logged_in_username: &str,
