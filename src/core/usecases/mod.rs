@@ -5,7 +5,6 @@ use crate::core::{
         validate,
     },
 };
-use std::collections::HashMap;
 use uuid::Uuid;
 
 //TODO: move usecases into separate files
@@ -32,30 +31,13 @@ pub use self::{
     search::*, update_entry::*, update_event::*,
 };
 
-pub fn get_comments_by_rating_ids<D: Db>(
+pub fn load_ratings_with_comments<D: Db>(
     db: &D,
-    ids: &[String],
-) -> Result<HashMap<String, Vec<Comment>>> {
-    let comments = db.all_comments()?;
-    Ok(ids
-        .iter()
-        .map(|r_id| {
-            (
-                r_id.clone(),
-                comments
-                    .iter()
-                    .filter_map(|comment| {
-                        if comment.rating_id == *r_id {
-                            Some(comment)
-                        } else {
-                            None
-                        }
-                    })
-                    .cloned()
-                    .collect(),
-            )
-        })
-        .collect())
+    rating_ids: &[String],
+) -> Result<Vec<(Rating, Vec<Comment>)>> {
+    let ratings = db.get_ratings(&rating_ids)?;
+    let results = db.load_comments_for_ratings(ratings)?;
+    Ok(results)
 }
 
 pub fn get_user<D: Db>(

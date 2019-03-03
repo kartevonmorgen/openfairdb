@@ -39,8 +39,21 @@ pub trait UserGateway {
 }
 
 pub trait CommentGateway {
+    fn get_comments_for_rating(&self, rating_id: &str) -> Result<Vec<Comment>>;
+
+    fn load_comments_for_ratings(
+        &self,
+        ratings: Vec<Rating>,
+    ) -> Result<Vec<(Rating, Vec<Comment>)>> {
+        let mut results = Vec::with_capacity(ratings.len());
+        for rating in ratings {
+            let comments = self.get_comments_for_rating(&rating.id)?;
+            results.push((rating, comments));
+        }
+        Ok(results)
+    }
+
     fn create_comment(&self, _: Comment) -> Result<()>;
-    fn all_comments(&self) -> Result<Vec<Comment>>;
 }
 
 pub trait OrganizationGateway {

@@ -296,8 +296,14 @@ impl CommentGateway for MockDb {
         create(&mut self.comments.borrow_mut(), c)
     }
 
-    fn all_comments(&self) -> RepoResult<Vec<Comment>> {
-        Ok(self.comments.borrow().clone())
+    fn get_comments_for_rating(&self, rating_id: &str) -> RepoResult<Vec<Comment>> {
+        Ok(self
+            .comments
+            .borrow()
+            .iter()
+            .filter(|c| &c.rating_id == rating_id)
+            .cloned()
+            .collect())
     }
 }
 

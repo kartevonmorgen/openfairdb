@@ -569,19 +569,21 @@ impl UserGateway for SqliteConnection {
 }
 
 impl CommentGateway for SqliteConnection {
+    fn get_comments_for_rating(&self, rating_id: &str) -> Result<Vec<Comment>> {
+        use self::schema::comments::dsl;
+        Ok(dsl::comments
+            .filter(dsl::rating_id.eq(rating_id))
+            .load::<models::Comment>(self)?
+            .into_iter()
+            .map(Comment::from)
+            .collect())
+    }
+
     fn create_comment(&self, c: Comment) -> Result<()> {
         diesel::insert_into(schema::comments::table)
             .values(&models::Comment::from(c))
             .execute(self)?;
         Ok(())
-    }
-    fn all_comments(&self) -> Result<Vec<Comment>> {
-        use self::schema::comments::dsl::*;
-        Ok(comments
-            .load::<models::Comment>(self)?
-            .into_iter()
-            .map(Comment::from)
-            .collect())
     }
 }
 
@@ -596,25 +598,14 @@ impl RatingRepository for SqliteConnection {
     }
 
     fn get_ratings(&self, ids: &[String]) -> Result<Vec<Rating>> {
-        let mut ratings = Vec::with_capacity(ids.len());
-        // TODO: Load multiple ratings at once in batches of limited size
-        for id in ids {
-            match self.get_rating(id) {
-                Ok(rating) => {
-                    // Success
-                    ratings.push(rating);
-                }
-                Err(RepoError::NotFound) => {
-                    // Some of the requested ratings might not exist
-                    info!("One of multiple ratings not found: {}", id);
-                }
-                Err(err) => {
-                    // Abort on any unexpected error
-                    return Err(err);
-                }
-            }
-        }
-        Ok(ratings)
+        use self::schema::ratings::dsl;
+        // TODO: Split loading into chunks of fixed size
+        info!("Loading multiple ({}) ratings at once", ids.len());
+        dsl::ratings
+            .filter(dsl::id.eq_any(ids))
+            .load::<models::Rating>(self)
+            .map(|v| v.into_iter().map(Rating::from).collect())
+            .map_err(Into::into)
     }
 
     fn get_ratings_for_entry(&self, entry_id: &str) -> Result<Vec<Rating>> {

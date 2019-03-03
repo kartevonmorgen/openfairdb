@@ -14,39 +14,31 @@ pub fn post_rating(
 
 #[get("/ratings/<ids>")]
 pub fn get_rating(db: sqlite::Connections, ids: String) -> Result<Vec<json::Rating>> {
-    // TODO: Only lookup and return a single entity
-    // TODO: Add a new method for searching multiple ids
-    let mut ids = util::extract_ids(&ids);
-    let (ratings, comments) = {
-        let db = db.shared()?;
-        let ratings = db.get_ratings(&ids)?;
-        // Retain only those ids that have actually been found
-        debug_assert!(ratings.len() <= ids.len());
-        ids.retain(|id| ratings.iter().any(|r| &r.id == id));
-        debug_assert!(ratings.len() == ids.len());
-        let comments = usecases::get_comments_by_rating_ids(&*db, &ids)?;
-        (ratings, comments)
-    };
-    let result = ratings
+    // TODO: RESTful API
+    //   - Only lookup and return a single entity
+    //   - Add a new action and method for getting multiple ids at once
+    let ids = util::extract_ids(&ids);
+    let ratings_with_comments = usecases::load_ratings_with_comments(&*db.shared()?, &ids)?;
+    let result = ratings_with_comments
         .into_iter()
-        .map(|x| json::Rating {
-            id: x.id.clone(),
-            created: x.created,
-            title: x.title,
-            value: x.value.into(),
-            context: x.context,
-            source: x.source.unwrap_or_else(|| "".into()),
-            comments: comments
-                .get(&x.id)
-                .cloned()
-                .unwrap_or_else(|| vec![])
+        .map(|(r, cs)| {
+            let comments = cs
                 .into_iter()
                 .map(|c| json::Comment {
                     id: c.id.clone(),
                     created: c.created,
                     text: c.text,
                 })
-                .collect(),
+                .collect();
+            json::Rating {
+                id: r.id,
+                created: r.created,
+                title: r.title,
+                value: r.value.into(),
+                context: r.context,
+                source: r.source.unwrap_or_default(),
+                comments,
+            }
         })
         .collect();
     Ok(Json(result))
