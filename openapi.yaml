@@ -55,13 +55,14 @@ paths:
       responses:
         '200':
           description: Successful response
-  '/entries/{id}':
+  '/entries/{ids}':
     get:
-      summary: Get an entry
+      summary: Get multiple entries
       tags:
         - Entries
       parameters:
-        - name: id
+        - name: ids
+          description: Comma-separated list of entry identifiers
           in: path
           required: true
           schema:
@@ -74,13 +75,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/Entry'
 
-  '/ratings/{id}':
+  '/ratings/{ids}':
     get:
-      summary: Get a specific rating
+      summary: Get multiple ratings
       tags:
         - Ratings
       parameters:
-        - name: id
+        - name: ids
+          description: Comma-separated list of rating identifiers
           in: path
           required: true
           schema:
@@ -106,13 +108,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Category'
-  '/categories/{id}':
+  '/categories/{ids}':
     get:
-      summary: Get a specific categories
+      summary: Get multiple categories
       tags:
         - Categories
       parameters:
-        - name: id
+        - name: ids
+          description: Comma-separated list of category identifiers
           in: path
           required: true
           schema:
