@@ -99,11 +99,21 @@ fn get_entry(db: sqlite::Connections, ids: String) -> Result<Vec<json::Entry>> {
     Ok(Json(results))
 }
 
-#[get("/duplicates")]
-fn get_duplicates(db: sqlite::Connections) -> Result<Vec<(String, String, DuplicateType)>> {
-    let entries = db.shared()?.all_entries()?;
-    let ids = usecases::find_duplicates(&entries);
-    Ok(Json(ids))
+#[get("/duplicates/<ids>")]
+fn get_duplicates(
+    db: sqlite::Connections,
+    ids: String,
+) -> Result<Vec<(String, String, DuplicateType)>> {
+    let ids = util::extract_ids(&ids);
+    if ids.is_empty() {
+        return Ok(Json(vec![]));
+    }
+    let (entries, all_entries) = {
+        let db = db.shared()?;
+        (db.get_entries(&ids)?, db.all_entries()?)
+    };
+    let results = usecases::find_duplicates(&entries, &all_entries);
+    Ok(Json(results))
 }
 
 #[get("/server/version")]

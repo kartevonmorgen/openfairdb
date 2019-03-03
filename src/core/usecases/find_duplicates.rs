@@ -9,12 +9,20 @@ pub enum DuplicateType {
 
 // return vector of entries like: (entry1ID, entry2ID, reason)
 // where entry1 and entry2 are similar entries
-pub fn find_duplicates(entries: &[Entry]) -> Vec<(String, String, DuplicateType)> {
+pub fn find_duplicates(
+    entries: &[Entry],
+    all_entries: &[Entry],
+) -> Vec<(String, String, DuplicateType)> {
     let mut duplicates = Vec::new();
     for i in 0..entries.len() {
-        for j in (i + 1)..entries.len() {
-            if let Some(t) = is_duplicate(&entries[i], &entries[j]) {
-                duplicates.push((entries[i].id.clone(), entries[j].id.clone(), t));
+        for j in 0..all_entries.len() {
+            let e1 = &entries[i];
+            let e2 = &all_entries[j];
+            if e1.id >= e2.id {
+                continue;
+            }
+            if let Some(t) = is_duplicate(e1, e2) {
+                duplicates.push((e1.id.clone(), e2.id.clone(), t));
             }
         }
     }
