@@ -1,4 +1,4 @@
-## v0.5.0 (2019-02-dd)
+## v0.5.0 (2019-03-04)
 - new(web): Return additional properties of entries in search results
 - new(web): Limit max. number of search results
 - new(web): Bundle a basic frontend with a minimum of JavaScript
