@@ -16,24 +16,34 @@ servers:
 paths:
   /search:
     get:
-      summary: Search for entries
+      summary: Search for entries ordered by their total rating
       tags:
         - Search
       parameters:
-        - name: text
-          in: query
-          schema:
-            type: string
         - $ref: '#/components/parameters/BoundingBox'
         - name: categories
           in: query
           schema:
             type: string
           description: |
-             An optional filter.
+             Comma-separated list if category identifiers.
              We currently use the following two:
              - Initiative (non-commercial): `2cd00bebec0c48ba9db761da48678134`
-             - Company: `77b3c33a92554bcf8e8c2c86cedd6f6f`
+             - Company (commercial): `77b3c33a92554bcf8e8c2c86cedd6f6f`
+        - name: tags
+          description: Comma-separated list of tags
+          in: query
+          schema:
+            type: string
+        - name: text
+          in: query
+          schema:
+            type: string
+        - name: limit
+          description: Maximum number of entries that should be returned. The (implicit) upper bound for all requests is 100!
+          in: query
+          schema:
+            type: integer
       responses:
         '200':
           description: Successful response
