@@ -13,8 +13,10 @@ use std::result;
 pub struct SearchQuery {
     bbox: String,
     categories: Option<String>,
-    text: Option<String>,
+    ids: Option<String>,
     tags: Option<String>,
+    text: Option<String>,
+
     limit: Option<usize>,
 }
 
@@ -33,6 +35,14 @@ pub fn get_search(
         .map_err(|_| ParameterError::Bbox)
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
+
+    let ids = search
+        .ids
+        .as_ref()
+        .map(String::as_str)
+        .map(util::split_ids)
+        .map(|v| v.into_iter().map(ToOwned::to_owned).collect())
+        .unwrap_or_else(|| vec![]);
 
     let categories = search
         .categories
@@ -70,8 +80,9 @@ pub fn get_search(
     let req = usecases::SearchRequest {
         bbox,
         categories,
-        text,
+        ids,
         tags,
+        text,
     };
 
     let search_limit = if let Some(limit) = search.limit {

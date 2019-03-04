@@ -6,8 +6,9 @@ use crate::core::util::{filter, geo::MapBbox};
 pub struct SearchRequest {
     pub bbox          : MapBbox,
     pub categories    : Vec<String>,
-    pub text          : Option<String>,
+    pub ids           : Vec<String>,
     pub tags          : Vec<String>,
+    pub text          : Option<String>,
 }
 
 pub fn search(
@@ -16,7 +17,6 @@ pub fn search(
     limit: usize,
 ) -> Result<(Vec<IndexedEntry>, Vec<IndexedEntry>)> {
     let visible_bbox: MapBbox = req.bbox;
-
     let index_bbox =
         if req.text.as_ref().map(String::is_empty).unwrap_or(true) && req.tags.is_empty() {
             Some(filter::extend_bbox(&visible_bbox))
@@ -26,9 +26,10 @@ pub fn search(
 
     let index_query = EntryIndexQuery {
         bbox: index_bbox.map(Into::into),
-        text: req.text,
         categories: req.categories,
+        ids: req.ids,
         tags: req.tags,
+        text: req.text,
     };
 
     let entries = index
@@ -80,8 +81,9 @@ mod tests {
                 MapPoint::from_lat_lng_deg(10.0, 10.0),
             ),
             categories: vec![],
-            text: None,
+            ids: vec![],
             tags: vec![],
+            text: None,
         };
 
         b.iter(|| super::search(&db, req.clone(), 100).unwrap());
@@ -100,8 +102,9 @@ mod tests {
                 MapPoint::from_lat_lng_deg(10.0, 10.0),
             ),
             categories: vec![],
-            text: None,
+            ids: vec![],
             tags: vec![],
+            text: None,
         };
 
         b.iter(|| super::search(&db, req.clone(), 100).unwrap());

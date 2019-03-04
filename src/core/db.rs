@@ -104,6 +104,7 @@ pub struct IndexedEntry {
 
 #[derive(Debug, Default, Clone)]
 pub struct EntryIndexQuery {
+    pub ids: Vec<String>,
     pub bbox: Option<MapBbox>,
     pub text: Option<String>,
     pub categories: Vec<String>,

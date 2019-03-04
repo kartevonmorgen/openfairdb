@@ -129,6 +129,13 @@ impl EntryIndex for MockDb {
         }
         .map_err(|err| format_err!("{}", err))?;
 
+        if !query.ids.is_empty() {
+            entries = entries
+                .into_iter()
+                .filter(|e| query.ids.iter().any(|id| &e.id == id))
+                .collect();
+        }
+
         if !query.categories.is_empty() {
             entries = entries
                 .into_iter()

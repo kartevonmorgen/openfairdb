@@ -286,7 +286,31 @@ impl TantivyEntryIndex {
     }
 
     fn build_query(&self, query: &EntryIndexQuery) -> BooleanQuery {
-        let mut sub_queries: Vec<(Occur, Box<Query>)> = Vec::with_capacity(2 + 1 + 1 + 1);
+        let mut sub_queries: Vec<(Occur, Box<Query>)> = Vec::with_capacity(1 + 2 + 1 + 1 + 1);
+
+        if !query.ids.is_empty() {
+            let ids_query: Box<Query> = if query.ids.len() > 1 {
+                // Multiple ids
+                let mut id_queries: Vec<(Occur, Box<Query>)> =
+                    Vec::with_capacity(query.ids.len());
+                for id in &query.ids {
+                    debug_assert!(!id.trim().is_empty());
+                    let id_term =
+                        Term::from_field_text(self.fields.id, &id);
+                    let id_query = TermQuery::new(id_term, IndexRecordOption::Basic);
+                    id_queries.push((Occur::Should, Box::new(id_query)));
+                }
+                Box::new(BooleanQuery::from(id_queries))
+            } else {
+                // Single id
+                let id = &query.ids[0];
+                debug_assert!(!id.trim().is_empty());
+                let id_term =
+                    Term::from_field_text(self.fields.id, &id);
+                Box::new(TermQuery::new(id_term, IndexRecordOption::Basic))
+            };
+            sub_queries.push((Occur::Must, ids_query));
+        }
 
         // Bbox
         if let Some(ref bbox) = query.bbox {

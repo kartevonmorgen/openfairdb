@@ -280,9 +280,10 @@ fn csv_export<'a>(
 
     let req = usecases::SearchRequest {
         bbox,
-        categories: Default::default(),
-        text: Default::default(),
-        tags: Default::default(),
+        categories: vec![],
+        ids: vec![],
+        tags: vec![],
+        text: None,
     };
 
     let entries_categories_and_ratings = {
