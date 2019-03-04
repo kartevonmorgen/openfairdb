@@ -63,7 +63,7 @@ impl InBBox for Event {
 }
 
 #[cfg(test)]
-pub fn entries_by_category_ids<'a>(ids: &'a [String]) -> impl Fn(&Entry) -> bool + 'a {
+pub fn entries_by_category_ids<'a, 'b>(ids: &'a [&'b str]) -> impl Fn(&Entry) -> bool + 'a {
     move |e| ids.iter().any(|c| e.categories.iter().any(|x| x == c))
 }
 

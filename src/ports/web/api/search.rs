@@ -41,7 +41,6 @@ pub fn get_search(
         .as_ref()
         .map(String::as_str)
         .map(util::split_ids)
-        .map(|v| v.into_iter().map(ToOwned::to_owned).collect())
         .unwrap_or_else(|| vec![]);
 
     let categories = search
@@ -49,7 +48,6 @@ pub fn get_search(
         .as_ref()
         .map(String::as_str)
         .map(util::split_ids)
-        .map(|v| v.into_iter().map(ToOwned::to_owned).collect())
         .unwrap_or_else(|| vec![]);
 
     let mut tags = search

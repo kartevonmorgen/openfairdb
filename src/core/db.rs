@@ -103,12 +103,12 @@ pub struct IndexedEntry {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct EntryIndexQuery {
-    pub ids: Vec<String>,
+pub struct EntryIndexQuery<'a, 'b> {
     pub bbox: Option<MapBbox>,
-    pub text: Option<String>,
-    pub categories: Vec<String>,
+    pub categories: Vec<&'a str>,
+    pub ids: Vec<&'b str>,
     pub tags: Vec<String>,
+    pub text: Option<String>,
 }
 
 pub trait EntryIndex {

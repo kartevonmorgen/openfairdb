@@ -3,10 +3,10 @@ use crate::core::util::{filter, geo::MapBbox};
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Debug, Clone)]
-pub struct SearchRequest {
+pub struct SearchRequest<'a, 'b> {
     pub bbox          : MapBbox,
-    pub categories    : Vec<String>,
-    pub ids           : Vec<String>,
+    pub categories    : Vec<&'a str>,
+    pub ids           : Vec<&'b str>,
     pub tags          : Vec<String>,
     pub text          : Option<String>,
 }

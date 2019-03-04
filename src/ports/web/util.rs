@@ -9,13 +9,7 @@ pub const ID_LIST_SEPARATOR: char = ',';
 pub fn split_ids(ids: &str) -> Vec<&str> {
     ids.split(ID_LIST_SEPARATOR)
         .map(|x| x.trim())
-        .filter_map(|id| {
-            if id.is_empty() {
-                None
-            } else {
-                Some(id)
-            }
-        })
+        .filter_map(|id| if id.is_empty() { None } else { Some(id) })
         .collect()
 }
 
