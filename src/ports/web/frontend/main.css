@@ -3,6 +3,52 @@ html, body {
   font-family: sans-serif;
 }
 
+header {
+  background: #333;
+  text-align: right;
+}
+
+header, header a {
+  color: #fff;
+}
+
+header {
+  font-size:0.9em;
+}
+
+header .msg {
+  margin-right: 0.3em;
+}
+
+header .msg span.email {
+  font-weight: bold;
+}
+
+header nav {
+  padding-bottom: 0.1em;
+}
+
+header nav form.logout input {
+  color: #fff;
+  margin: 0;
+  padding: 0;
+  border:none;
+  background:none;
+  cursor: pointer;
+}
+
+header nav form.logout input,
+header nav a {
+  text-decoration: none;
+  margin-left: 0.3em;
+  margin-right: 0.3em;
+}
+
+header nav form.logout input:hover,
+header nav a:hover {
+  color: #5f5;
+}
+
 .search h1 {
   text-align: center;
 }
@@ -29,4 +75,25 @@ html, body {
 
 ul.result-list {
   list-style: none;
+}
+
+fieldset {
+  border: none;
+}
+
+.flash {
+  padding-top: 1em;
+  padding-bottom: 1em;
+  font-weight: bold;
+  text-align:center;
+}
+
+.flash.error {
+  background-color: red;
+  color: #fff;
+}
+
+.flash.success {
+  background-color: green;
+  color: #000;
 }

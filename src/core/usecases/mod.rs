@@ -19,6 +19,7 @@ mod indexing;
 mod login;
 mod query_events;
 mod rate_entry;
+mod register;
 mod search;
 #[cfg(test)]
 pub mod tests;
@@ -28,7 +29,7 @@ mod update_event;
 pub use self::{
     confirm_email::*, create_new_entry::*, create_new_event::*, create_new_user::*,
     delete_event::*, find_duplicates::*, indexing::*, login::*, query_events::*, rate_entry::*,
-    search::*, update_entry::*, update_event::*,
+    register::*, search::*, update_entry::*, update_event::*,
 };
 
 pub fn load_ratings_with_comments<D: Db>(

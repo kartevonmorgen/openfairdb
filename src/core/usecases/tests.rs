@@ -279,6 +279,20 @@ impl UserGateway for MockDb {
         }
     }
 
+    fn get_user_by_email(&self, email: &str) -> RepoResult<User> {
+        let users: &Vec<User> = &self
+            .users
+            .iter()
+            .filter(|u| u.email == email)
+            .cloned()
+            .collect();
+        if users.len() > 0 {
+            Ok(users[0].clone())
+        } else {
+            Err(RepoError::NotFound)
+        }
+    }
+
     fn all_users(&self) -> RepoResult<Vec<User>> {
         Ok(self.users.clone())
     }

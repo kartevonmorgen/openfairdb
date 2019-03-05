@@ -1,5 +1,7 @@
+use super::login::Account;
 use crate::core::prelude::*;
 use maud::{html, Markup, DOCTYPE};
+use rocket::request::FlashMessage;
 
 const LEAFLET_CSS_URL: &str = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.4.0/leaflet.css";
 const LEAFLET_CSS_SHA512: &str="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA==";
@@ -8,11 +10,27 @@ const LEAFLET_JS_SHA512 : &str="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq
 const MAIN_CSS_URL: &str = "/main.css";
 const MAP_JS_URL: &str = "/map.js";
 
-pub fn index() -> Markup {
+pub fn index(account: Option<Account>) -> Markup {
     page(
         "OpenFairDB Search",
         None,
         html! {
+            header {
+                @if let Some(a) = account {
+                    div class="msg" { "Your are logged with " span class="email" { (a.email()) } }
+                    nav {
+                        form class="logout" action="logout" method ="POST" {
+                            input type="submit" value="logout";
+                        }
+                    }
+                }
+                @ else {
+                    nav {
+                        a href="login"  { "login" }
+                        a href="register" { "register" }
+                    }
+                }
+            }
             div class="search" {
                 h1 {"OpenFairDB Search"}
                 (global_search_form(None))
@@ -315,18 +333,17 @@ fn map_scripts(pins: &[MapPin]) -> Markup {
         .join(",");
 
     html! {
-                script{
-                    (format!("window.OFDB_MAP_PINS=[{}];window.OFDB_MAP_ZOOM={};OFDB_MAP_CENTER={};",
-                             pins,
-                             zoom,
-                             center
-                             )) }
-                script
-                    src=(LEAFLET_JS_URL)
-                    integrity=(LEAFLET_JS_SHA512)
-                    crossorigin="anonymous" {}
-                script src=(MAP_JS_URL){}
-
+      script{
+        (format!("window.OFDB_MAP_PINS=[{}];window.OFDB_MAP_ZOOM={};OFDB_MAP_CENTER={};",
+                 pins,
+                 zoom,
+                 center))
+      }
+      script
+        src=(LEAFLET_JS_URL)
+        integrity=(LEAFLET_JS_SHA512)
+        crossorigin="anonymous" {}
+      script src=(MAP_JS_URL){}
     }
 }
 
@@ -335,16 +352,96 @@ pub fn events(events: &[Event]) -> Markup {
         "List of events",
         None,
         html! {
-            h3{ "Events" }
-            ul {
-                @for e in events{
-                    li{
-                        a href=(format!("/events/{}",e.id)) {
-                        (format!("{} - {}", e.start.to_string(), e.title))
-                        }
-                    }
+          h3{ "Events" }
+          ul {
+              @for e in events{
+                  li{
+                      a href=(format!("/events/{}",e.id)) {
+                      (format!("{} - {}", e.start.to_string(), e.title))
+                      }
+                  }
+              }
+          }
+        },
+    )
+}
+
+pub fn login(flash: Option<FlashMessage>) -> Markup {
+    flash_page(
+        "Login",
+        None,
+        flash,
+        html! {
+          form class="login" action="login" method="POST" {
+              fieldset{
+                label {
+                    "eMail:"
+                    br;
+                    input type="email" name="email" placeholder="eMail address";
                 }
+                    br;
+                label{
+                    "Password:"
+                    br;
+                    input type="password" name="password" placeholder="Password";
+                }
+                br;
+                input type="submit" value="login";
+              }
+          }
+        },
+    )
+}
+
+pub fn register(flash: Option<FlashMessage>) -> Markup {
+    flash_page(
+        "Register",
+        None,
+        flash,
+        html! {
+          form class="register" action="register" method="POST" {
+              fieldset{
+                label {
+                    "eMail:"
+                    br;
+                    input type="email" name="email" placeholder="eMail address";
+                }
+                    br;
+                label{
+                    "Password:"
+                    br;
+                    input type="password" name="password" placeholder="Password";
+                }
+                br;
+                input type="submit" value="register";
+              }
+          }
+        },
+    )
+}
+
+fn flash_msg(flash: Option<FlashMessage>) -> Markup {
+    html! {
+        @if let Some(msg) = flash {
+            div class=(format!("flash {}", msg.name())) {
+                (msg.msg())
             }
+        }
+    }
+}
+
+fn flash_page(
+    title: &str,
+    h: Option<Markup>,
+    flash: Option<FlashMessage>,
+    content: Markup,
+) -> Markup {
+    page(
+        title,
+        h,
+        html! {
+          (flash_msg(flash))
+          (content)
         },
     )
 }

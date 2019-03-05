@@ -134,7 +134,8 @@ fn login(
     mut cookies: Cookies,
     login: Json<usecases::Login>,
 ) -> Result<()> {
-    let username = usecases::login(&*db.shared()?, &login.into_inner())?;
+    //TODO: login with email
+    let username = usecases::login_with_username(&*db.shared()?, &login.into_inner())?;
     cookies.add_private(
         Cookie::build(COOKIE_USER_KEY, username)
             .same_site(rocket::http::SameSite::None)

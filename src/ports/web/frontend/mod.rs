@@ -7,22 +7,30 @@ use rocket::{
     Route,
 };
 
+mod login;
+mod register;
 mod view;
 
 const MAP_JS: &str = include_str!("map.js");
 const MAIN_CSS: &str = include_str!("main.css");
 
 use crate::ports::web::tantivy::SearchEngine;
+use login::Account;
 use rocket::http::RawStr;
 
 #[get("/")]
+pub fn get_index_user(account: Account) -> Markup {
+    view::index(Some(account))
+}
+
+#[get("/", rank = 2)]
 pub fn get_index() -> Markup {
-    view::index()
+    view::index(None)
 }
 
 #[get("/index.html")]
 pub fn get_index_html() -> Markup {
-    view::index()
+    view::index(None)
 }
 
 #[get("/search?<q>&<limit>")]
@@ -68,6 +76,7 @@ pub fn get_events(db: sqlite::Connections) -> Result<Markup> {
 
 pub fn routes() -> Vec<Route> {
     routes![
+        get_index_user,
         get_index,
         get_index_html,
         get_search,
@@ -75,7 +84,14 @@ pub fn routes() -> Vec<Route> {
         get_events,
         get_event,
         get_main_css,
-        get_map_js
+        get_map_js,
+        login::get_login,
+        login::get_login_user,
+        login::post_login,
+        login::post_logout,
+        register::get_register,
+        register::post_register,
+        register::get_email_confirmation
     ]
 }
 
