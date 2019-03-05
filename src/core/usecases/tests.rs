@@ -225,10 +225,21 @@ impl EntryGateway for MockDb {
             .collect())
     }
     fn all_entries(&self) -> RepoResult<Vec<Entry>> {
-        Ok(self.entries.borrow().iter().filter(|e| e.archived.is_none()).cloned().collect())
+        Ok(self
+            .entries
+            .borrow()
+            .iter()
+            .filter(|e| e.archived.is_none())
+            .cloned()
+            .collect())
     }
     fn count_entries(&self) -> RepoResult<usize> {
-        Ok(self.entries.borrow().iter().filter(|e| e.archived.is_none()).count())
+        Ok(self
+            .entries
+            .borrow()
+            .iter()
+            .filter(|e| e.archived.is_none())
+            .count())
     }
 
     fn update_entry(&self, e: &Entry) -> RepoResult<()> {
@@ -243,6 +254,14 @@ impl EntryGateway for MockDb {
             }
         }
         Ok(())
+    }
+
+    fn archive_entries(&self, ids: &[&str], archived: u64) -> RepoResult<()> {
+        for id in ids {
+            let mut e = get(&self.entries.borrow_mut(), id)?;
+            e.archived = Some(archived);
+        }
+        return Ok(());
     }
 }
 
@@ -259,6 +278,13 @@ impl EventGateway for MockDb {
     }
     fn update_event(&mut self, e: &Event) -> RepoResult<()> {
         update(&mut self.events, e)
+    }
+    fn archive_events(&mut self, ids: &[&str], archived: u64) -> RepoResult<()> {
+        for id in ids {
+            let mut e = get(&mut self.events, id)?;
+            e.archived = Some(archived);
+        }
+        return Ok(());
     }
     fn delete_event(&mut self, id: &str) -> RepoResult<()> {
         delete(&mut self.events, id)
@@ -322,6 +348,14 @@ impl CommentGateway for MockDb {
         create(&mut self.comments.borrow_mut(), c)
     }
 
+    fn archive_comments(&self, ids: &[&str], archived: u64) -> RepoResult<()> {
+        for id in ids {
+            let mut c = get(&self.comments.borrow_mut(), id)?;
+            c.archived = Some(archived);
+        }
+        return Ok(());
+    }
+
     fn get_comments_for_rating(&self, rating_id: &str) -> RepoResult<Vec<Comment>> {
         Ok(self
             .comments
@@ -381,6 +415,14 @@ impl RatingRepository for MockDb {
             .filter(|r| r.entry_id == entry_id)
             .cloned()
             .collect())
+    }
+
+    fn archive_ratings(&self, ids: &[&str], archived: u64) -> RepoResult<()> {
+        for id in ids {
+            let mut r = get(&self.ratings.borrow_mut(), id)?;
+            r.archived = Some(archived);
+        }
+        return Ok(());
     }
 }
 

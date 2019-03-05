@@ -19,6 +19,7 @@ pub trait EntryGateway {
     fn create_entry(&self, _: Entry) -> Result<()>;
     fn update_entry(&self, _: &Entry) -> Result<()>;
     fn import_multiple_entries(&mut self, _: &[Entry]) -> Result<()>;
+    fn archive_entries(&self, ids: &[&str], archived: u64) -> Result<()>;
 }
 
 pub trait EventGateway {
@@ -26,6 +27,7 @@ pub trait EventGateway {
     fn get_event(&self, _: &str) -> Result<Event>;
     fn all_events(&self) -> Result<Vec<Event>>;
     fn update_event(&mut self, _: &Event) -> Result<()>;
+    fn archive_events(&mut self, ids: &[&str], archived: u64) -> Result<()>;
     fn delete_event(&mut self, _: &str) -> Result<()>;
     //TODO: fn count_events(&self) -> Result<usize>;
 }
@@ -56,6 +58,7 @@ pub trait CommentGateway {
     }
 
     fn create_comment(&self, _: Comment) -> Result<()>;
+    fn archive_comments(&self, ids: &[&str], archived: u64) -> Result<()>;
 }
 
 pub trait OrganizationGateway {
@@ -69,8 +72,9 @@ pub trait RatingRepository {
     fn get_ratings(&self, ids: &[&str]) -> Result<Vec<Rating>>;
 
     fn get_ratings_for_entry(&self, entry_id: &str) -> Result<Vec<Rating>>;
-
     fn add_rating_for_entry(&self, rating: Rating) -> Result<()>;
+
+    fn archive_ratings(&self, ids: &[&str], archived: u64) -> Result<()>;
 }
 
 //TODO:

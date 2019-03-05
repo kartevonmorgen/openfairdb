@@ -292,6 +292,24 @@ impl EntryGateway for SqliteConnection {
         Ok(())
     }
 
+    fn archive_entries(&self, ids: &[&str], archived: u64) -> Result<()> {
+        use self::schema::entries::dsl;
+        let count = diesel::update(
+            dsl::entries
+                .filter(dsl::id.eq_any(ids))
+                .filter(dsl::current.eq(true))
+                .filter(dsl::archived.is_null()),
+        )
+        .set(dsl::archived.eq(Some(archived as i64)))
+        .execute(self)?;
+        match count {
+            0 => Err(RepoError::NotFound),
+            1 => Ok(()),
+            n if n > 1 => Err(RepoError::TooManyFound),
+            _ => unreachable!(),
+        }
+    }
+
     fn import_multiple_entries(&mut self, new_entries: &[Entry]) -> Result<()> {
         let imports: Vec<_> = new_entries
             .into_iter()
@@ -536,6 +554,23 @@ impl EventGateway for SqliteConnection {
         Ok(())
     }
 
+    fn archive_events(&mut self, ids: &[&str], archived: u64) -> Result<()> {
+        use self::schema::events::dsl;
+        let count = diesel::update(
+            dsl::events
+                .filter(dsl::id.eq_any(ids))
+                .filter(dsl::archived.is_null()),
+        )
+        .set(dsl::archived.eq(Some(archived as i64)))
+        .execute(self)?;
+        match count {
+            _ if count < ids.len() => Err(RepoError::NotFound),
+            _ if count == ids.len() => Ok(()),
+            _ if count > ids.len() => Err(RepoError::TooManyFound),
+            _ => unreachable!(),
+        }
+    }
+
     fn delete_event(&mut self, id: &str) -> Result<()> {
         use self::schema::events::dsl;
         diesel::delete(dsl::events.filter(dsl::id.eq(id))).execute(self)?;
@@ -601,6 +636,23 @@ impl CommentGateway for SqliteConnection {
             .execute(self)?;
         Ok(())
     }
+
+    fn archive_comments(&self, ids: &[&str], archived: u64) -> Result<()> {
+        use self::schema::comments::dsl;
+        let count = diesel::update(
+            dsl::comments
+                .filter(dsl::id.eq_any(ids))
+                .filter(dsl::archived.is_null()),
+        )
+        .set(dsl::archived.eq(Some(archived as i64)))
+        .execute(self)?;
+        match count {
+            _ if count < ids.len() => Err(RepoError::NotFound),
+            _ if count == ids.len() => Ok(()),
+            _ if count > ids.len() => Err(RepoError::TooManyFound),
+            _ => unreachable!(),
+        }
+    }
 }
 
 impl RatingRepository for SqliteConnection {
@@ -642,6 +694,22 @@ impl RatingRepository for SqliteConnection {
             .values(&models::Rating::from(rating))
             .execute(self)?;
         Ok(())
+    }
+
+    fn archive_ratings(&self, ids: &[&str], archived: u64) -> Result<()> {
+        use self::schema::ratings::dsl;
+        let count = diesel::update(
+            dsl::ratings
+                .filter(dsl::id.eq_any(ids))
+                .filter(dsl::archived.is_null()),
+        )
+        .set(dsl::archived.eq(Some(archived as i64)))
+        .execute(self)?;
+        match count {
+            0 => Err(RepoError::NotFound),
+            1 => Ok(()),
+            _ => unreachable!(),
+        }
     }
 }
 

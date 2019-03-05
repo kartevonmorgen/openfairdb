@@ -179,6 +179,7 @@ mod tests {
                     created_by: None,
                     registration: Some(RegistrationType::Email),
                     organizer: None,
+                    archived: None,
                 },
                 Event {
                     id: "0000".into(),
