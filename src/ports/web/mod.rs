@@ -1,19 +1,19 @@
-use crate::core::{db::EntryIndexer, prelude::*, util::sort::Rated};
-use crate::infrastructure::error::AppError;
-use rocket::{config::Config, Rocket};
+use crate::{
+    core::{db::EntryIndexer, prelude::*, util::sort::Rated},
+    infrastructure::error::AppError,
+};
+use rocket::{config::Config, Rocket, Route};
 use rocket_contrib::json::Json;
 use std::result;
 
 pub mod api;
+#[cfg(feature = "frontend")]
+mod frontend;
+mod guards;
 #[cfg(test)]
 mod mockdb;
 mod sqlite;
 mod tantivy;
-#[cfg(test)]
-pub use self::api::tests;
-#[cfg(feature = "frontend")]
-mod frontend;
-mod guards;
 mod util;
 
 type Result<T> = result::Result<Json<T>, AppError>;
@@ -42,6 +42,7 @@ fn index_all_entries<D: EntryGateway + RatingRepository>(
 fn rocket_instance(
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
+    mounts: Vec<(&str, Vec<Route>)>,
     cfg: Option<Config>,
 ) -> Rocket {
     info!("Indexing all entries...");
@@ -52,10 +53,22 @@ fn rocket_instance(
         Some(cfg) => rocket::custom(cfg),
         None => rocket::ignite(),
     };
-    r.manage(connections)
-        .manage(search_engine)
-        .mount("/", api::routes())
-        .mount("/frontend", frontend::routes()) // TODO don't mount if feature "frontend" is disabled
+    let mut instance = r.manage(connections).manage(search_engine);
+
+    for (m, r) in mounts {
+        instance = instance.mount(m, r);
+    }
+    instance
+}
+
+#[cfg(not(feature = "frontend"))]
+fn mounts() -> Vec<(&'static str, Vec<Route>)> {
+    vec![("/api", api::routes())]
+}
+
+#[cfg(feature = "frontend")]
+fn mounts() -> Vec<(&'static str, Vec<Route>)> {
+    vec![("/api", api::routes()), ("/", frontend::routes())]
 }
 
 pub fn run(
@@ -69,6 +82,55 @@ pub fn run(
              \nhttps://github.com/SergioBenitez/Rocket/pull/141\nis merged :("
         );
     }
+    rocket_instance(connections, search_engine, mounts(), None).launch();
+}
 
-    rocket_instance(connections, search_engine, None).launch();
+#[cfg(test)]
+mod tests {
+    use crate::infrastructure::db::{sqlite, tantivy};
+    use rocket::{
+        config::{Config, Environment},
+        local::Client,
+        logger::LoggingLevel,
+        Route,
+    };
+    use std::fs;
+    use uuid::Uuid;
+
+    pub mod prelude {
+        pub use crate::core::db::*;
+        pub use rocket::{
+            http::{ContentType, Cookie, Status},
+            local::Client,
+            response::Response,
+        };
+    }
+
+    embed_migrations!();
+
+    pub fn setup(
+        mounts: Vec<(&'static str, Vec<Route>)>,
+    ) -> (
+        rocket::local::Client,
+        sqlite::Connections,
+        tantivy::SearchEngine,
+    ) {
+        let cfg = Config::build(Environment::Development)
+            .log_level(LoggingLevel::Debug)
+            .finalize()
+            .unwrap();
+        let uuid = Uuid::new_v4().to_simple_ref().to_string();
+        fs::create_dir_all("test-dbs").unwrap();
+        let connections = sqlite::Connections::init(&format!("./test-dbs/{}", uuid), 1).unwrap();
+        embedded_migrations::run(&*connections.exclusive().unwrap()).unwrap();
+        let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
+        let rocket = super::rocket_instance(
+            connections.clone(),
+            search_engine.clone(),
+            mounts,
+            Some(cfg),
+        );
+        let client = Client::new(rocket).unwrap();
+        (client, connections, search_engine)
+    }
 }

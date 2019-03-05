@@ -22,7 +22,7 @@ diesel_migrations = { version = "*", features = ["sqlite"]  }
 dotenv = "*"
 env_logger = "*"
 failure = "*"
-fast_chemail = { version = "*", optional = true }
+fast_chemail = "*"
 geocoding = "*"
 itertools = "*"
 lazy_static = "*"
@@ -53,5 +53,5 @@ rand = "*"
 
 [features]
 default = ["email","frontend"]
-email = ["fast_chemail", "quoted_printable"]
+email = ["quoted_printable"]
 frontend = ["maud"]

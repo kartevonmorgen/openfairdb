@@ -81,9 +81,15 @@ pub fn routes() -> Vec<Route> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::tests::prelude::*;
     use super::*;
-    use chrono::prelude::*;
+    use crate::ports::web::tests::prelude::*;
+    use chrono::*;
+
+    fn setup() -> (rocket::local::Client, sqlite::Connections) {
+        let (client, connections, _) =
+            crate::ports::web::tests::setup(vec![("/", super::routes())]);
+        (client, connections)
+    }
 
     mod events {
         use super::*;
@@ -129,11 +135,11 @@ mod tests {
                 }
             }
 
-            let mut res = client.get("/frontend/events").dispatch();
+            let mut res = client.get("/events").dispatch();
             assert_eq!(res.status(), Status::Ok);
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
-            assert!(body_str.contains("<li><a href=\"/frontend/events/1234\">"));
-            assert!(body_str.contains("<li><a href=\"/frontend/events/5678\">"));
+            assert!(body_str.contains("<li><a href=\"/events/1234\">"));
+            assert!(body_str.contains("<li><a href=\"/events/5678\">"));
         }
 
         #[test]
@@ -161,7 +167,7 @@ mod tests {
                 }
             }
 
-            let mut res = client.get("/frontend/events/1234").dispatch();
+            let mut res = client.get("/events/1234").dispatch();
             assert_eq!(res.status(), Status::Ok);
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
             assert!(body_str.contains("<h2>A great event</h2>"));
@@ -175,10 +181,10 @@ mod tests {
         #[test]
         fn get_the_index_html() {
             let (client, _db) = setup();
-            let mut index = client.get("/frontend/").dispatch();
+            let mut index = client.get("/").dispatch();
             assert_eq!(index.status(), Status::Ok);
 
-            let mut index_html = client.get("/frontend/index.html").dispatch();
+            let mut index_html = client.get("/index.html").dispatch();
             assert_eq!(index_html.status(), Status::Ok);
 
             let index_str = index.body().and_then(|b| b.into_string()).unwrap();

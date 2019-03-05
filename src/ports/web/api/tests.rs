@@ -7,48 +7,19 @@ use crate::{
 use pwhash::bcrypt;
 
 pub mod prelude {
-    use super::super::super::rocket_instance;
-    use rocket::{
-        config::{Config, Environment},
-        logger::LoggingLevel,
-    };
-
     pub use crate::core::db::*;
-    pub use crate::infrastructure::flows::prelude as flows;
-
     use crate::infrastructure::db::{sqlite, tantivy};
-    pub use rocket::{
-        http::{ContentType, Cookie, Status},
-        local::Client,
-        response::Response,
-    };
-
-    embed_migrations!();
+    pub use crate::infrastructure::flows::prelude as flows;
+    pub use crate::ports::web::tests::prelude::*;
+    use crate::ports::web::{self, api};
 
     pub fn setup() -> (Client, sqlite::Connections) {
-        let cfg = Config::build(Environment::Development)
-            .log_level(LoggingLevel::Debug)
-            .finalize()
-            .unwrap();
-        let connections = sqlite::Connections::init(":memory:", 1).unwrap();
-        embedded_migrations::run(&*connections.exclusive().unwrap()).unwrap();
-        let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
-        let rocket = rocket_instance(connections.clone(), search_engine, Some(cfg));
-        let client = Client::new(rocket).unwrap();
-        (client, connections)
+        let (client, conn, _) = web::tests::setup(vec![("/", api::routes())]);
+        (client, conn)
     }
 
     pub fn setup2() -> (Client, sqlite::Connections, tantivy::SearchEngine) {
-        let cfg = Config::build(Environment::Development)
-            .log_level(LoggingLevel::Debug)
-            .finalize()
-            .unwrap();
-        let connections = sqlite::Connections::init(":memory:", 1).unwrap();
-        embedded_migrations::run(&*connections.exclusive().unwrap()).unwrap();
-        let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
-        let rocket = rocket_instance(connections.clone(), search_engine.clone(), Some(cfg));
-        let client = Client::new(rocket).unwrap();
-        (client, connections, search_engine)
+        web::tests::setup(vec![("/", api::routes())])
     }
 
     pub fn test_json(r: &Response) {

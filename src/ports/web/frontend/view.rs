@@ -5,8 +5,8 @@ const LEAFLET_CSS_URL: &str = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.
 const LEAFLET_CSS_SHA512: &str="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA==";
 const LEAFLET_JS_URL: &str = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.4.0/leaflet.js";
 const LEAFLET_JS_SHA512 : &str="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg==";
-const MAIN_CSS_URL: &str = "/frontend/main.css";
-const MAP_JS_URL: &str = "/frontend/map.js";
+const MAIN_CSS_URL: &str = "/main.css";
+const MAP_JS_URL: &str = "/map.js";
 
 pub fn index() -> Markup {
     page(
@@ -339,7 +339,7 @@ pub fn events(events: &[Event]) -> Markup {
             ul {
                 @for e in events{
                     li{
-                        a href=(format!("/frontend/events/{}",e.id)) {
+                        a href=(format!("/events/{}",e.id)) {
                         (format!("{} - {}", e.start.to_string(), e.title))
                         }
                     }
