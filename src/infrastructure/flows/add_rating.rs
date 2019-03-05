@@ -38,6 +38,7 @@ pub fn add_rating(
     }?;
 
     // Reindex entry after adding the new rating
+    // TODO: Move to a separate task/thread that doesn't delay this request
     if let Err(err) = usecases::index_entry(indexer, &entry, &ratings).and_then(|_| indexer.flush())
     {
         error!(

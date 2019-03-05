@@ -40,12 +40,14 @@ pub fn add_entry(
     }?;
 
     // Index newly added entry
+    // TODO: Move to a separate task/thread that doesn't delay this request
     if let Err(err) = usecases::index_entry(indexer, &entry, &ratings).and_then(|_| indexer.flush())
     {
         error!("Failed to index newly added entry {}: {}", entry.id, err);
     }
 
     // Send subscription e-mails
+    // TODO: Move to a separate task/thread that doesn't delay this request
     if let Err(err) = notify_entry_added(connections, &entry) {
         error!(
             "Failed to send notifications for newly added entry {}: {}",

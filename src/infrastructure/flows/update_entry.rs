@@ -41,12 +41,14 @@ pub fn update_entry(
     }?;
 
     // Reindex updated entry
+    // TODO: Move to a separate task/thread that doesn't delay this request
     if let Err(err) = usecases::index_entry(indexer, &entry, &ratings).and_then(|_| indexer.flush())
     {
         error!("Failed to reindex updated entry {}: {}", entry.id, err);
     }
 
     // Send subscription e-mails
+    // TODO: Move to a separate task/thread that doesn't delay this request
     if let Err(err) = notify_entry_updated(connections, &entry) {
         error!(
             "Failed to send notifications for updated entry {}: {}",
