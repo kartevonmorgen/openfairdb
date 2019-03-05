@@ -214,6 +214,7 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
         created_by,
         registration,
         organizer,
+        archived: None,
     };
     let event = event.auto_correct();
     event.validate()?;

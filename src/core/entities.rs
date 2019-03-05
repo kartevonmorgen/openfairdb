@@ -8,6 +8,7 @@ pub struct Entry {
     pub id             : String,
     pub osm_node       : Option<u64>,
     pub created        : u64,
+    pub archived       : Option<u64>,
     pub version        : u64,
     pub title          : String,
     pub description    : String,
@@ -74,6 +75,7 @@ pub struct Event {
     pub created_by   : Option<String>,
     pub registration : Option<RegistrationType>,
     pub organizer    : Option<String>,
+    pub archived     : Option<u64>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -128,6 +130,7 @@ impl Default for Role {
 pub struct Comment {
     pub id        : String,
     pub created   : u64,
+    pub archived  : Option<u64>,
     pub text      : String,
     pub rating_id : String,
 }
@@ -347,6 +350,7 @@ pub struct Rating {
     pub id       : String,
     pub entry_id : String,
     pub created  : u64,
+    pub archived : Option<u64>,
     pub title    : String,
     pub value    : RatingValue,
     pub context  : RatingContext,
@@ -442,6 +446,7 @@ pub mod entry_builder {
                     id: Uuid::new_v4().to_simple_ref().to_string(),
                     osm_node: None,
                     created: 0,
+                    archived: None,
                     version: 0,
                     title: "".into(),
                     description: "".into(),

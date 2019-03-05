@@ -22,6 +22,7 @@ table! {
     comments (id) {
         id -> Text,
         created -> BigInt,
+        archived -> Nullable<BigInt>,
         text -> Text,
         rating_id -> Text,
     }
@@ -32,6 +33,7 @@ table! {
         id -> Text,
         osm_node -> Nullable<BigInt>,
         created -> BigInt,
+        archived -> Nullable<BigInt>,
         version -> BigInt,
         current -> Bool,
         title -> Text,
@@ -100,6 +102,7 @@ table! {
         created_by -> Nullable<Text>,
         registration -> Nullable<SmallInt>,
         organizer -> Nullable<Text>,
+        archived -> Nullable<BigInt>,
     }
 }
 
@@ -107,6 +110,7 @@ table! {
     ratings (id) {
         id -> Text,
         created -> BigInt,
+        archived -> Nullable<BigInt>,
         title -> Text,
         value -> Integer,
         context -> Text,

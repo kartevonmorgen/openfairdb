@@ -11,32 +11,24 @@ use std::result;
 
 type Result<T> = result::Result<T, RepoError>;
 
-fn reset_current_entry_mut(
-    conn: &&mut SqliteConnection,
-    id: &str,
-) -> result::Result<usize, diesel::result::Error> {
+fn reset_current_entry_before_insert_new_version(conn: &SqliteConnection, id: &str) -> Result<()> {
     use self::schema::entries::dsl;
-    diesel::update(
+    let count = diesel::update(
         dsl::entries
             .filter(dsl::id.eq(id))
-            .filter(dsl::current.eq(true)),
+            .filter(dsl::current.eq(true))
+            .filter(dsl::archived.is_null()),
     )
     .set(dsl::current.eq(false))
-    .execute(*conn)
-}
-
-fn reset_current_entry(
-    conn: &&SqliteConnection,
-    id: &str,
-) -> result::Result<usize, diesel::result::Error> {
-    use self::schema::entries::dsl;
-    diesel::update(
-        dsl::entries
-            .filter(dsl::id.eq(id))
-            .filter(dsl::current.eq(true)),
-    )
-    .set(dsl::current.eq(false))
-    .execute(*conn)
+    .execute(conn)?;
+    match count {
+        // Either none or one entry version was marked as
+        // `current` before and has been reset.
+        n if n <= 1 => Ok(()),
+        // Otherwise refuse to insert a new entry version.
+        n if n > 1 => Err(RepoError::TooManyFound),
+        _ => unreachable!(),
+    }
 }
 
 fn load_entry(conn: &SqliteConnection, entry: models::Entry) -> Result<Entry> {
@@ -47,6 +39,7 @@ fn load_entry(conn: &SqliteConnection, entry: models::Entry) -> Result<Entry> {
         id,
         osm_node,
         created,
+        archived,
         version,
         title,
         description,
@@ -76,22 +69,16 @@ fn load_entry(conn: &SqliteConnection, entry: models::Entry) -> Result<Entry> {
     };
 
     let categories = e_c_dsl::entry_category_relations
-        .filter(
-            e_c_dsl::entry_id
-                .eq(&id)
-                .and(e_c_dsl::entry_version.eq(version)),
-        )
+        .filter(e_c_dsl::entry_id.eq(&id))
+        .filter(e_c_dsl::entry_version.eq(version))
         .load::<models::EntryCategoryRelation>(conn)?
         .into_iter()
         .map(|r| r.category_id)
         .collect();
 
     let tags = e_t_dsl::entry_tag_relations
-        .filter(
-            e_t_dsl::entry_id
-                .eq(&id)
-                .and(e_t_dsl::entry_version.eq(version)),
-        )
+        .filter(e_t_dsl::entry_id.eq(&id))
+        .filter(e_t_dsl::entry_version.eq(version))
         .load::<models::EntryTagRelation>(conn)?
         .into_iter()
         .map(|r| r.tag_id)
@@ -101,6 +88,7 @@ fn load_entry(conn: &SqliteConnection, entry: models::Entry) -> Result<Entry> {
         id,
         osm_node: osm_node.map(|x| x as u64),
         created: created as u64,
+        archived: archived.map(|x| x as u64),
         version: version as u64,
         title,
         description,
@@ -136,7 +124,7 @@ impl EntryGateway for SqliteConnection {
             })
             .collect();
         let new_entry = models::Entry::from(e.clone());
-        reset_current_entry(&self, &new_entry.id)?;
+        reset_current_entry_before_insert_new_version(self, &new_entry.id)?;
         diesel::insert_into(schema::entries::table)
             .values(&new_entry)
             .execute(self)?;
@@ -157,6 +145,7 @@ impl EntryGateway for SqliteConnection {
         let entry = e_dsl::entries
             .filter(e_dsl::id.eq(id))
             .filter(e_dsl::current.eq(true))
+            .filter(e_dsl::archived.is_null())
             .first(self)?;
 
         load_entry(self, entry)
@@ -170,6 +159,7 @@ impl EntryGateway for SqliteConnection {
         let entries = e_dsl::entries
             .filter(e_dsl::id.eq_any(ids))
             .filter(e_dsl::current.eq(true))
+            .filter(e_dsl::archived.is_null())
             .load::<models::Entry>(self)?;
 
         let mut results = Vec::with_capacity(entries.len());
@@ -189,6 +179,7 @@ impl EntryGateway for SqliteConnection {
         // Unfortunately Diesel does not offer a Cursor API.
         let entries: Vec<models::Entry> = e_dsl::entries
             .filter(e_dsl::current.eq(true))
+            .filter(e_dsl::archived.is_null())
             .order_by(e_dsl::id)
             .load(self)?;
         let mut cat_rels = e_c_dsl::entry_category_relations
@@ -258,6 +249,7 @@ impl EntryGateway for SqliteConnection {
         let count: i64 = e_dsl::entries
             .select(diesel::dsl::count(e_dsl::id))
             .filter(e_dsl::current.eq(true))
+            .filter(e_dsl::archived.is_null())
             .first(self)?;
         Ok(count as usize)
     }
@@ -285,7 +277,7 @@ impl EntryGateway for SqliteConnection {
             })
             .collect();
 
-        reset_current_entry(&self, &e.id)?;
+        reset_current_entry_before_insert_new_version(self, &e.id)?;
         diesel::insert_into(schema::entries::table)
             .values(&e)
             .execute(self)?;
@@ -328,7 +320,15 @@ impl EntryGateway for SqliteConnection {
             .collect();
         self.transaction::<_, diesel::result::Error, _>(|| {
             for (new_entry, cat_rels, tag_rels) in imports {
-                reset_current_entry_mut(&self, &new_entry.id)?;
+                reset_current_entry_before_insert_new_version(self, &new_entry.id).map_err(
+                    |err| {
+                        error!(
+                            "Import: Failed to reset current entry {}: {}",
+                            new_entry.id, err
+                        );
+                        diesel::result::Error::RollbackTransaction
+                    },
+                )?;
                 diesel::insert_into(schema::entries::table)
                     .values(&new_entry)
                     .execute(self)?;
@@ -415,7 +415,11 @@ impl EventGateway for SqliteConnection {
             created_by,
             registration,
             organizer,
-        } = e_dsl::events.filter(e_dsl::id.eq(e_id)).first(self)?;
+            archived,
+        } = e_dsl::events
+            .filter(e_dsl::id.eq(e_id))
+            .filter(e_dsl::archived.is_null())
+            .first(self)?;
 
         let tags = e_t_dsl::event_tag_relations
             .filter(e_t_dsl::event_id.eq(&id))
@@ -471,12 +475,14 @@ impl EventGateway for SqliteConnection {
             created_by,
             registration,
             organizer,
+            archived: archived.map(|x| x as u64),
         })
     }
 
     fn all_events(&self) -> Result<Vec<Event>> {
         use self::schema::{event_tag_relations::dsl as e_t_dsl, events::dsl as e_dsl};
-        let events: Vec<models::Event> = e_dsl::events.load(self)?;
+        let events: Vec<models::Event> =
+            e_dsl::events.filter(e_dsl::archived.is_null()).load(self)?;
         let tag_rels = e_t_dsl::event_tag_relations.load(self)?;
         Ok(events.into_iter().map(|e| (e, &tag_rels).into()).collect())
     }
@@ -487,7 +493,17 @@ impl EventGateway for SqliteConnection {
             use self::schema::event_tag_relations::dsl as e_t_dsl;
             use self::schema::events::dsl as e_dsl;
 
-            let old_tags = self.get_event(&e.id).unwrap().tags;
+            let old_tags = match self.get_event(&e.id) {
+                Ok(e) => e,
+                Err(err) => {
+                    warn!(
+                        "Cannot update non-existent or archived event '{}': {}",
+                        e.id, err
+                    );
+                    return Err(diesel::result::Error::RollbackTransaction);
+                }
+            }
+            .tags;
             let new_tags = &event.tags;
             let diff = super::util::tags_diff(&old_tags, new_tags);
 
@@ -572,6 +588,7 @@ impl CommentGateway for SqliteConnection {
         use self::schema::comments::dsl;
         Ok(dsl::comments
             .filter(dsl::rating_id.eq(rating_id))
+            .filter(dsl::archived.is_null())
             .load::<models::Comment>(self)?
             .into_iter()
             .map(Comment::from)
@@ -591,6 +608,7 @@ impl RatingRepository for SqliteConnection {
         use self::schema::ratings::dsl;
         dsl::ratings
             .filter(dsl::id.eq(id))
+            .filter(dsl::archived.is_null())
             .first::<models::Rating>(self)
             .map(Rating::from)
             .map_err(Into::into)
@@ -602,6 +620,7 @@ impl RatingRepository for SqliteConnection {
         info!("Loading multiple ({}) ratings at once", ids.len());
         dsl::ratings
             .filter(dsl::id.eq_any(ids))
+            .filter(dsl::archived.is_null())
             .load::<models::Rating>(self)
             .map(|v| v.into_iter().map(Rating::from).collect())
             .map_err(Into::into)
@@ -611,6 +630,7 @@ impl RatingRepository for SqliteConnection {
         use self::schema::ratings::dsl;
         Ok(dsl::ratings
             .filter(dsl::entry_id.eq(entry_id))
+            .filter(dsl::archived.is_null())
             .load::<models::Rating>(self)?
             .into_iter()
             .map(Rating::from)

@@ -33,6 +33,7 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: RateEntry) -> Result<Storable> {
         id: rating_id.clone(),
         entry_id: r.entry,
         created: now,
+        archived: None,
         title: r.title,
         value: r.value,
         context: r.context,
@@ -41,6 +42,7 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: RateEntry) -> Result<Storable> {
     let comment = Comment {
         id: comment_id,
         created: now,
+        archived: None,
         text: r.comment,
         rating_id,
     };

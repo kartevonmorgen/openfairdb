@@ -161,6 +161,7 @@ mod tests {
                     created_by: None,
                     registration: Some(RegistrationType::Email),
                     organizer: None,
+                    archived: None,
                 },
                 Event {
                     id: "5678".into(),
@@ -195,6 +196,7 @@ mod tests {
                     created_by: None,
                     registration: Some(RegistrationType::Email),
                     organizer: None,
+                    archived: None,
                 },
             ];
 
@@ -229,6 +231,7 @@ mod tests {
                 created_by: None,
                 registration: Some(RegistrationType::Email),
                 organizer: None,
+                archived: None,
             }];
 
             {

@@ -83,6 +83,9 @@ quick_error! {
         NotFound{
             description("The requested object could not be found")
         }
+        TooManyFound{
+            description("Too many instead of only one requested object has been found")
+        }
         #[cfg(test)]
         AlreadyExists{
             description("The object already exists")

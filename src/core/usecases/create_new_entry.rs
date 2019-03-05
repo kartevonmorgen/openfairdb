@@ -85,6 +85,7 @@ pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
         id,
         osm_node: None,
         created,
+        archived: None,
         version: 0,
         title,
         description,
@@ -153,6 +154,7 @@ mod tests {
         assert_eq!(x.description, "bar");
         assert_eq!(x.version, 0);
         assert!(x.created as i64 >= now.timestamp());
+        assert_eq!(None, x.archived);
         assert!(Uuid::parse_str(&x.id).is_ok());
         assert_eq!(x.id, e.id);
     }

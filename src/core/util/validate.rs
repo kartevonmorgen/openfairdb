@@ -231,6 +231,7 @@ mod tests {
             created_by: None,
             registration: None,
             organizer: None,
+            archived: None,
         };
 
         let mut x = e.clone();
@@ -327,6 +328,7 @@ mod tests {
             created_by: None,
             registration: None,
             organizer: None,
+            archived: None,
         };
         assert!(e.validate().is_ok());
     }
@@ -346,6 +348,7 @@ mod tests {
             created_by: None,
             registration: None,
             organizer: None,
+            archived: None,
         };
         assert!(e.validate().is_err());
     }
@@ -365,6 +368,7 @@ mod tests {
             created_by: None,
             registration: None,
             organizer: None,
+            archived: None,
         };
         assert!(e.validate().is_err());
     }

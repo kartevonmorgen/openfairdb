@@ -6,6 +6,7 @@ pub struct Entry {
     pub id: String,
     pub osm_node: Option<i64>,
     pub created: i64,
+    pub archived: Option<i64>,
     pub version: i64,
     pub current: bool,
     pub title: String,
@@ -44,6 +45,7 @@ pub struct Event {
     pub created_by: Option<String>,
     pub registration: Option<i16>,
     pub organizer: Option<String>,
+    pub archived: Option<i64>,
 }
 
 #[derive(Queryable, Insertable)]
@@ -141,6 +143,7 @@ pub struct User {
 pub struct Comment {
     pub id: String,
     pub created: i64,
+    pub archived: Option<i64>,
     pub text: String,
     pub rating_id: String,
 }
@@ -150,6 +153,7 @@ pub struct Comment {
 pub struct Rating {
     pub id: String,
     pub created: i64,
+    pub archived: Option<i64>,
     pub title: String,
     pub value: i32,
     pub context: String,

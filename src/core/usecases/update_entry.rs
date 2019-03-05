@@ -70,6 +70,7 @@ pub fn prepare_updated_entry<D: Db>(db: &D, id: String, e: UpdateEntry) -> Resul
         id,
         osm_node: None,
         created: Utc::now().timestamp() as u64,
+        archived: None,
         version,
         title,
         description,
@@ -163,6 +164,7 @@ mod tests {
         assert_eq!("bar", x.description);
         assert_eq!(2, x.version);
         assert!(x.created as i64 >= now.timestamp());
+        assert_eq!(None, x.archived);
         assert!(Uuid::parse_str(&x.id).is_ok());
         assert_eq!("https://www.img2/", x.image_url.as_ref().unwrap());
         assert_eq!("http://imglink/", x.image_link_url.as_ref().unwrap());
@@ -292,6 +294,7 @@ mod tests {
         let e = prepare_updated_entry(&mock_db, id.clone(), new).unwrap();
         assert!(store_updated_entry(&mock_db, e).is_ok());
         let e = mock_db.get_entry(&id).unwrap();
+        assert_eq!(None, e.archived);
         assert_eq!(e.tags, vec!["vegan"]);
         assert_eq!(mock_db.tags.borrow().len(), 3);
     }

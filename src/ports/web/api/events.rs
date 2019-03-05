@@ -565,6 +565,7 @@ mod tests {
                 created_by: None,
                 registration: Some(RegistrationType::Email),
                 organizer: None,
+                archived: None,
             };
             db.exclusive().unwrap().create_event(e).unwrap();
             let req = client.get("/events/1234").header(ContentType::JSON);
@@ -598,6 +599,7 @@ mod tests {
                         created_by: None,
                         registration: None,
                         organizer: None,
+                        archived: None,
                     })
                     .unwrap();
             }
@@ -630,6 +632,7 @@ mod tests {
                         created_by: None,
                         registration: None,
                         organizer: None,
+                        archived: None,
                     })
                     .unwrap();
             }
@@ -665,6 +668,7 @@ mod tests {
                         created_by: None,
                         registration: None,
                         organizer: None,
+                        archived: None,
                     })
                     .unwrap();
             }
@@ -726,6 +730,7 @@ mod tests {
                         created_by: Some(username.clone()),
                         registration: None,
                         organizer: None,
+                        archived: None,
                     })
                     .unwrap();
                 db.exclusive()
@@ -794,6 +799,7 @@ mod tests {
                         created_by: None,
                         registration: None,
                         organizer: None,
+                        archived: None,
                     })
                     .unwrap();
             }
@@ -831,6 +837,7 @@ mod tests {
                         created_by: None,
                         registration: None,
                         organizer: None,
+                        archived: None,
                     })
                     .unwrap();
             }
@@ -872,6 +879,7 @@ mod tests {
                         created_by: None,
                         registration: None,
                         organizer: None,
+                        archived: None,
                     })
                     .unwrap();
             }
@@ -950,6 +958,7 @@ mod tests {
                 created_by: Some("foo@bar.com".into()),
                 registration: None,
                 organizer: None,
+                archived: None,
             };
             db.exclusive().unwrap().create_event(e.clone()).unwrap();
             let res = client
@@ -990,6 +999,7 @@ mod tests {
                 created_by: Some("foo@bar.com".into()),
                 registration: None,
                 organizer: None,
+                archived: None,
             };
             db.exclusive().unwrap().create_event(e.clone()).unwrap();
             let res = client
@@ -1026,6 +1036,7 @@ mod tests {
                 created_by: Some("foo@bar.com".into()),
                 registration: None,
                 organizer: None,
+                archived: None,
             };
             db.exclusive().unwrap().create_event(e.clone()).unwrap();
             let res = client
@@ -1064,6 +1075,7 @@ mod tests {
                 created_by: Some("foo@bar.com".into()),
                 registration: None,
                 organizer: None,
+                archived: None,
             };
             db.exclusive().unwrap().create_event(e.clone()).unwrap();
             let res = client
@@ -1137,6 +1149,7 @@ mod tests {
                 created_by: Some("foo@bar.com".into()),
                 registration: None,
                 organizer: None,
+                archived: None,
             };
             let e1 = Event {
                 id: "9999".into(),
@@ -1151,6 +1164,7 @@ mod tests {
                 created_by: Some("foo@bar.com".into()),
                 registration: None,
                 organizer: None,
+                archived: None,
             };
             db.exclusive().unwrap().create_event(e0.clone()).unwrap();
             db.exclusive().unwrap().create_event(e1.clone()).unwrap();

@@ -208,22 +208,27 @@ impl EntryGateway for MockDb {
         create(&mut self.entries.borrow_mut(), e)
     }
     fn get_entry(&self, id: &str) -> RepoResult<Entry> {
-        get(&self.entries.borrow(), id)
+        let e = get(&self.entries.borrow(), id)?;
+        if e.archived.is_some() {
+            return Err(RepoError::NotFound);
+        }
+        Ok(e)
     }
     fn get_entries(&self, ids: &[&str]) -> RepoResult<Vec<Entry>> {
         Ok(self
             .entries
             .borrow()
             .iter()
+            .filter(|e| e.archived.is_none())
             .filter(|e| ids.iter().any(|id| &e.id == id))
             .cloned()
             .collect())
     }
     fn all_entries(&self) -> RepoResult<Vec<Entry>> {
-        Ok(self.entries.borrow().clone())
+        Ok(self.entries.borrow().iter().filter(|e| e.archived.is_none()).cloned().collect())
     }
     fn count_entries(&self) -> RepoResult<usize> {
-        Ok(self.entries.borrow().len())
+        Ok(self.entries.borrow().iter().filter(|e| e.archived.is_none()).count())
     }
 
     fn update_entry(&self, e: &Entry) -> RepoResult<()> {
@@ -690,6 +695,7 @@ mod tests {
             created_by: Some("user".into()),
             registration: None,
             organizer: None,
+            archived: None,
         })
         .unwrap();
         let e = usecases::get_event(&mut db, "x").unwrap();
