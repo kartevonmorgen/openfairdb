@@ -28,6 +28,10 @@ header nav {
   padding-bottom: 0.1em;
 }
 
+header nav form.logout {
+  display: inline-block;
+}
+
 header nav form.logout input {
   color: #fff;
   margin: 0;

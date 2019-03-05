@@ -132,7 +132,7 @@ pub struct Comment {
     pub rating_id : String,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum RatingContext {
     Diversity,

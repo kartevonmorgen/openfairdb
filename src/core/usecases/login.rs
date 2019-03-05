@@ -34,12 +34,12 @@ pub fn login_with_username<D: Db>(db: &D, login: &Login) -> Result<String> {
     }
 }
 
-pub fn login_with_email<D: Db>(db: &D, login: &Credentials) -> Result<()> {
+pub fn login_with_email<D: Db>(db: &D, login: &Credentials) -> Result<Role> {
     match db.get_user_by_email(&login.email) {
         Ok(u) => {
             if bcrypt::verify(&login.password, &u.password) {
                 if u.email_confirmed {
-                    Ok(())
+                    Ok(u.role)
                 } else {
                     Err(Error::Parameter(ParameterError::EmailNotConfirmed))
                 }

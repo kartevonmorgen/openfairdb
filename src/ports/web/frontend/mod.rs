@@ -1,8 +1,12 @@
-use crate::core::{prelude::*, usecases};
-use crate::infrastructure::db::sqlite;
+use crate::{
+    core::{prelude::*, usecases},
+    infrastructure::db::sqlite,
+    ports::web::{guards::*, tantivy::SearchEngine},
+};
 use maud::Markup;
 use rocket::{
     self,
+    http::RawStr,
     response::content::{Css, JavaScript},
     Route,
 };
@@ -14,13 +18,9 @@ mod view;
 const MAP_JS: &str = include_str!("map.js");
 const MAIN_CSS: &str = include_str!("main.css");
 
-use crate::ports::web::tantivy::SearchEngine;
-use login::Account;
-use rocket::http::RawStr;
-
 #[get("/")]
 pub fn get_index_user(account: Account) -> Markup {
-    view::index(Some(account))
+    view::index(Some(&account.email()))
 }
 
 #[get("/", rank = 2)]
@@ -60,12 +60,15 @@ pub fn get_event(db: sqlite::Connections, id: &RawStr) -> Result<Markup> {
 }
 
 #[get("/entries/<id>")]
-pub fn get_entry(db: sqlite::Connections, id: &RawStr) -> Result<Markup> {
-    let e = db
-        .shared()
-        .map_err(RepoError::from)?
-        .get_entry(id.as_str())?;
-    Ok(view::entry(e))
+pub fn get_entry(pool: sqlite::Connections, id: &RawStr) -> Result<Markup> {
+    let (e, ratings) = {
+        let db = pool.shared().map_err(RepoError::from)?;
+        let e = db.get_entry(id.as_str())?;
+        let ratings = db.get_ratings_for_entry(&e.id)?;
+        let full_ratings = db.load_comments_for_ratings(ratings)?;
+        (e, full_ratings)
+    };
+    Ok(view::entry((e, ratings).into()))
 }
 
 #[get("/events")]
@@ -74,11 +77,28 @@ pub fn get_events(db: sqlite::Connections) -> Result<Markup> {
     Ok(view::events(&events))
 }
 
+#[get("/dashboard")]
+pub fn get_dashboard(db: sqlite::Connections, admin: Admin) -> Result<Markup> {
+    let tag_count = db.shared().map_err(RepoError::from)?.count_tags()?;
+    let entry_count = db.shared().map_err(RepoError::from)?.count_entries()?;
+    let user_count = db.shared().map_err(RepoError::from)?.all_users()?.len();
+    let event_count = db.shared().map_err(RepoError::from)?.all_events()?.len();
+    let data = view::DashBoardPresenter {
+        email: &admin.0,
+        entry_count,
+        event_count,
+        tag_count,
+        user_count,
+    };
+    Ok(view::dashboard(data))
+}
+
 pub fn routes() -> Vec<Route> {
     routes![
         get_index_user,
         get_index,
         get_index_html,
+        get_dashboard,
         get_search,
         get_entry,
         get_events,

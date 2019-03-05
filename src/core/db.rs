@@ -27,6 +27,7 @@ pub trait EventGateway {
     fn all_events(&self) -> Result<Vec<Event>>;
     fn update_event(&mut self, _: &Event) -> Result<()>;
     fn delete_event(&mut self, _: &str) -> Result<()>;
+    //TODO: fn count_events(&self) -> Result<usize>;
 }
 
 pub trait UserGateway {
@@ -36,6 +37,7 @@ pub trait UserGateway {
     fn get_user_by_email(&self, email: &str) -> Result<User>;
     fn all_users(&self) -> Result<Vec<User>>;
     fn delete_user(&mut self, username: &str) -> Result<()>;
+    //TODO: fn count_users(&self) -> Result<usize>;
 }
 
 pub trait CommentGateway {

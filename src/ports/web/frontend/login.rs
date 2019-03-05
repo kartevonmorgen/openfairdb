@@ -1,14 +1,15 @@
+use super::super::guards::*;
 use super::view;
 use crate::{
     core::{prelude::*, usecases},
     ports::web::sqlite::Connections,
 };
 use maud::Markup;
+use num_traits::ToPrimitive;
 use rocket::{
     self,
     http::{Cookie, Cookies},
-    outcome::IntoOutcome,
-    request::{self, FlashMessage, Form, FromRequest, Request},
+    request::{FlashMessage, Form},
     response::{Flash, Redirect},
 };
 
@@ -25,30 +26,6 @@ impl<'a> LoginCredentials {
             ref password,
         } = self;
         usecases::Credentials { email, password }
-    }
-}
-
-#[derive(Debug)]
-pub struct Account(String);
-
-impl Account {
-    pub fn email(&self) -> &str {
-        &self.0
-    }
-}
-
-const COOKIE_EMAIL_KEY: &str = "ofdb-user-email";
-
-impl<'a, 'r> FromRequest<'a, 'r> for Account {
-    type Error = !;
-
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Account, !> {
-        request
-            .cookies()
-            .get_private(COOKIE_EMAIL_KEY)
-            .and_then(|cookie| cookie.value().parse().ok())
-            .map(|email| Account(email))
-            .or_forward(())
     }
 }
 
@@ -88,8 +65,12 @@ pub fn post_login(
                     };
                     Err(Flash::error(Redirect::to(uri!(get_login)), msg))
                 }
-                Ok(_) => {
+                Ok(role) => {
                     cookies.add_private(Cookie::new(COOKIE_EMAIL_KEY, credentials.email));
+                    cookies.add_private(Cookie::new(
+                        super::super::guards::COOKIE_USER_ACCESS_LEVEL,
+                        role.to_usize().unwrap().to_string(),
+                    ));
                     Ok(Redirect::to(uri!(super::get_index)))
                 }
             }
