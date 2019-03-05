@@ -73,7 +73,18 @@ pub fn get_entry(pool: sqlite::Connections, id: &RawStr) -> Result<Markup> {
 
 #[get("/events")]
 pub fn get_events(db: sqlite::Connections) -> Result<Markup> {
-    let events = db.shared().map_err(RepoError::from)?.all_events()?;
+    let yesterday = chrono::Utc::now()
+        .checked_sub_signed(chrono::Duration::days(1))
+        .unwrap()
+        .naive_utc();
+    let mut events: Vec<_> = db
+        .shared()
+        .map_err(RepoError::from)?
+        .all_events()?
+        .into_iter()
+        .filter(|e| e.start > yesterday)
+        .collect();
+    events.sort_by(|a, b| a.start.cmp(&b.start));
     Ok(view::events(&events))
 }
 

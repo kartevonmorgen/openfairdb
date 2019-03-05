@@ -101,3 +101,51 @@ fieldset {
   background-color: green;
   color: #000;
 }
+
+.events h3 {
+  text-align: center;
+  color: #fff;
+  background-color: rgb(229, 98, 146);
+  margin: 0;
+  padding: 0.5em;
+}
+
+.event-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.event-list li a {
+  color: #222;
+  text-decoration: none;
+
+}
+.event-list li a div {
+  background-color: #efefefef;
+  border-left: 5px solid transparent;
+  padding-left: 1em;
+  padding-right: 1em;
+  padding-top: 0.6em;
+  padding-bottom: 0.6em;
+  border-bottom: 1px solid rgb(221, 221, 221);
+}
+.event-list li a div p {
+  margin-bottom: 0;
+  margin-top: 0.4em;
+  color: #555;
+}
+
+.event-list li a div:hover {
+  border-left-color: rgb(229, 98, 146);
+  background-color: #fff;
+}
+.event-list li a h4  {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+.event-list li a h4 span.date {
+  float: right;
+  font-weight: normal;
+
+}

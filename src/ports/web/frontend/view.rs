@@ -460,16 +460,39 @@ pub fn events(events: &[Event]) -> Markup {
         "List of events",
         None,
         html! {
+            div class="events" {
           h3{ "Events" }
-          ul {
+          ul class="event-list" {
               @for e in events{
                   li{
                       a href=(format!("/events/{}",e.id)) {
-                      (format!("{} - {}", e.start.to_string(), e.title))
+                          div {
+                              h4 {
+                                  span class="title" { (e.title) }
+                                  " "
+                                  span class="date" {
+                                    (e.start.format("%d.%m.%y"))
+                                  }
+                              }
+                              p {
+                                @if let Some(ref l) = e.location {
+                                    @if let Some(ref a) = l.address {
+                                        @if let Some(ref city) = a.city {
+                                            span class="city" { (city) }
+                                            br;
+                                        }
+                                    }
+                                }
+                                @if let Some(ref o) = e.organizer {
+                                   span class="organizier" { (o) }
+                                }
+                              }
+                          }
                       }
                   }
               }
           }
+            }
         },
     )
 }
