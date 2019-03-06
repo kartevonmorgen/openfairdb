@@ -214,7 +214,7 @@ fn test_parse_query_result() {
 }
 
 #[test]
-fn test_from_osm_for_entry() {
+fn test_from_osm_of_entry() {
     let mut tags = HashMap::new();
 
     tags.insert("addr:street".into(), "Plüddemanngasse".into());

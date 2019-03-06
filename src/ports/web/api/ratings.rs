@@ -13,7 +13,7 @@ pub fn post_rating(
 }
 
 #[get("/ratings/<ids>")]
-pub fn get_rating(db: sqlite::Connections, ids: String) -> Result<Vec<json::Rating>> {
+pub fn load_rating(db: sqlite::Connections, ids: String) -> Result<Vec<json::Rating>> {
     // TODO: RESTful API
     //   - Only lookup and return a single entity
     //   - Add a new action and method for getting multiple ids at once

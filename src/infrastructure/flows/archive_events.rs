@@ -5,7 +5,7 @@ use diesel::connection::Connection;
 pub fn archive_events(connections: &sqlite::Connections, ids: &[&str]) -> Result<()> {
     let mut repo_err = None;
     let connection = connections.exclusive()?;
-    connection
+    Ok(connection
         .transaction::<_, diesel::result::Error, _>(|| {
             usecases::archive_events(&*connection, ids).map_err(|err| {
                 warn!("Failed to archive {} events: {}", ids.len(), err);
@@ -19,6 +19,5 @@ pub fn archive_events(connections: &sqlite::Connections, ids: &[&str]) -> Result
             } else {
                 RepoError::from(err).into()
             }
-        })?;
-    Ok(())
+        })?)
 }

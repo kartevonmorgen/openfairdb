@@ -2,14 +2,10 @@ use super::*;
 
 use diesel::connection::Connection;
 
-pub fn archive_entries(
-    connections: &sqlite::Connections,
-    indexer: &mut EntryIndexer,
-    ids: &[&str],
-) -> Result<()> {
+pub fn exec_archive_entries(connections: &sqlite::Connections, ids: &[&str]) -> Result<()> {
     let mut repo_err = None;
     let connection = connections.exclusive()?;
-    connection
+    Ok(connection
         .transaction::<_, diesel::result::Error, _>(|| {
             usecases::archive_entries(&*connection, ids).map_err(|err| {
                 warn!("Failed to archive {} entries: {}", ids.len(), err);
@@ -23,8 +19,10 @@ pub fn archive_entries(
             } else {
                 RepoError::from(err).into()
             }
-        })?;
+        })?)
+}
 
+pub fn post_archive_entries(indexer: &mut EntryIndexer, ids: &[&str]) -> Result<()> {
     // Remove archived entries from search index
     // TODO: Move to a separate task/thread that doesn't delay this request
     for id in ids {
@@ -41,7 +39,16 @@ pub fn archive_entries(
             err
         );
     }
+    Ok(())
+}
 
+pub fn archive_entries(
+    connections: &sqlite::Connections,
+    indexer: &mut EntryIndexer,
+    ids: &[&str],
+) -> Result<()> {
+    exec_archive_entries(connections, ids)?;
+    post_archive_entries(indexer, ids)?;
     Ok(())
 }
 

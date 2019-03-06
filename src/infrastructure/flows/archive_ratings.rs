@@ -2,32 +2,33 @@ use super::*;
 
 use diesel::connection::Connection;
 
-pub fn archive_ratings(
+pub fn exec_archive_ratings(connections: &sqlite::Connections, ids: &[&str]) -> Result<()> {
+    let mut repo_err = None;
+    let connection = connections.exclusive()?;
+    Ok(connection
+        .transaction::<_, diesel::result::Error, _>(|| {
+            usecases::archive_ratings(&*connection, ids).map_err(|err| {
+                warn!("Failed to archive {} ratings: {}", ids.len(), err);
+                repo_err = Some(err);
+                diesel::result::Error::RollbackTransaction
+            })
+        })
+        .map_err(|err| {
+            if let Some(repo_err) = repo_err {
+                repo_err
+            } else {
+                RepoError::from(err).into()
+            }
+        })?)
+}
+
+pub fn post_archive_ratings(
     connections: &sqlite::Connections,
     indexer: &mut EntryIndexer,
     ids: &[&str],
 ) -> Result<()> {
-    let entry_ids = {
-        let mut repo_err = None;
-        let connection = connections.exclusive()?;
-        connection
-            .transaction::<_, diesel::result::Error, _>(|| {
-                usecases::archive_ratings(&*connection, ids).map_err(|err| {
-                    warn!("Failed to archive {} ratings: {}", ids.len(), err);
-                    repo_err = Some(err);
-                    diesel::result::Error::RollbackTransaction
-                })
-            })
-            .map_err(|err| {
-                if let Some(repo_err) = repo_err {
-                    repo_err
-                } else {
-                    RepoError::from(err).into()
-                }
-            })
-    }?;
-
     let connection = connections.shared()?;
+    let entry_ids = connection.load_entry_ids_of_ratings(ids)?;
     for entry_id in entry_ids {
         let entry = match connection.get_entry(&entry_id) {
             Ok(entry) => entry,
@@ -40,7 +41,7 @@ pub fn archive_ratings(
                 continue;
             }
         };
-        let ratings = match connection.get_ratings_for_entry(&entry.id) {
+        let ratings = match connection.load_ratings_of_entry(&entry.id) {
             Ok(ratings) => ratings,
             Err(err) => {
                 error!(
@@ -64,6 +65,15 @@ pub fn archive_ratings(
             err
         );
     }
+    Ok(())
+}
 
+pub fn archive_ratings(
+    connections: &sqlite::Connections,
+    indexer: &mut EntryIndexer,
+    ids: &[&str],
+) -> Result<()> {
+    exec_archive_ratings(connections, ids)?;
+    post_archive_ratings(connections, indexer, ids)?;
     Ok(())
 }

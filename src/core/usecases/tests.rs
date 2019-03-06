@@ -208,19 +208,20 @@ impl EntryGateway for MockDb {
         create(&mut self.entries.borrow_mut(), e)
     }
     fn get_entry(&self, id: &str) -> RepoResult<Entry> {
-        let e = get(&self.entries.borrow(), id)?;
-        if e.archived.is_some() {
-            return Err(RepoError::NotFound);
-        }
-        Ok(e)
+        get(&self.entries.borrow(), id).and_then(|e| {
+            if e.archived.is_none() {
+                Ok(e)
+            } else {
+                Err(RepoError::NotFound)
+            }
+        })
     }
     fn get_entries(&self, ids: &[&str]) -> RepoResult<Vec<Entry>> {
         Ok(self
             .entries
             .borrow()
             .iter()
-            .filter(|e| e.archived.is_none())
-            .filter(|e| ids.iter().any(|id| &e.id == id))
+            .filter(|e| e.archived.is_none() && ids.iter().any(|id| &e.id == id))
             .cloned()
             .collect())
     }
@@ -246,22 +247,12 @@ impl EntryGateway for MockDb {
         update(&mut self.entries.borrow_mut(), e)
     }
 
-    fn import_multiple_entries(&mut self, entries: &[Entry]) -> RepoResult<()> {
-        for e in entries.iter() {
-            self.create_entry(e.clone())?;
-            for t in e.tags.iter() {
-                self.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
-            }
-        }
-        Ok(())
+    fn import_multiple_entries(&mut self, _entries: &[Entry]) -> RepoResult<()> {
+        unimplemented!();
     }
 
-    fn archive_entries(&self, ids: &[&str], archived: u64) -> RepoResult<()> {
-        for id in ids {
-            let mut e = get(&self.entries.borrow_mut(), id)?;
-            e.archived = Some(archived);
-        }
-        return Ok(());
+    fn archive_entries(&self, _ids: &[&str], _archived: u64) -> RepoResult<usize> {
+        unimplemented!();
     }
 }
 
@@ -271,21 +262,33 @@ impl EventGateway for MockDb {
     }
 
     fn get_event(&self, id: &str) -> RepoResult<Event> {
-        get(&self.events.borrow(), id)
+        get(&self.events.borrow(), id).and_then(|e| {
+            if e.archived.is_none() {
+                Ok(e)
+            } else {
+                Err(RepoError::NotFound)
+            }
+        })
     }
+
     fn all_events(&self) -> RepoResult<Vec<Event>> {
-        Ok(self.events.borrow().clone())
+        Ok(self
+            .events
+            .borrow()
+            .iter()
+            .filter(|e| e.archived.is_none())
+            .cloned()
+            .collect())
     }
+
     fn update_event(&self, e: &Event) -> RepoResult<()> {
         update(&mut self.events.borrow_mut(), e)
     }
-    fn archive_events(&self, ids: &[&str], archived: u64) -> RepoResult<()> {
-        for id in ids {
-            let mut e = get(&mut self.events.borrow_mut(), id)?;
-            e.archived = Some(archived);
-        }
-        return Ok(());
+
+    fn archive_events(&self, _ids: &[&str], _archived: u64) -> RepoResult<usize> {
+        unimplemented!();
     }
+
     fn delete_event(&self, id: &str) -> RepoResult<()> {
         delete(&mut self.events.borrow_mut(), id)
     }
@@ -343,27 +346,37 @@ impl UserGateway for MockDb {
     }
 }
 
-impl CommentGateway for MockDb {
+impl CommentRepository for MockDb {
     fn create_comment(&self, c: Comment) -> RepoResult<()> {
         create(&mut self.comments.borrow_mut(), c)
     }
 
-    fn archive_comments(&self, ids: &[&str], archived: u64) -> RepoResult<()> {
-        for id in ids {
-            let mut c = get(&self.comments.borrow_mut(), id)?;
-            c.archived = Some(archived);
-        }
-        return Ok(());
-    }
-
-    fn get_comments_for_rating(&self, rating_id: &str) -> RepoResult<Vec<Comment>> {
+    fn load_comments_of_rating(&self, rating_id: &str) -> RepoResult<Vec<Comment>> {
         Ok(self
             .comments
             .borrow()
             .iter()
-            .filter(|c| &c.rating_id == rating_id)
+            .filter(|c| &c.rating_id == rating_id && c.archived.is_none())
             .cloned()
             .collect())
+    }
+
+    fn archive_comments(&self, _ids: &[&str], _archived: u64) -> RepoResult<usize> {
+        unimplemented!();
+    }
+    fn archive_comments_of_ratings(
+        &self,
+        _rating_ids: &[&str],
+        _archived: u64,
+    ) -> RepoResult<usize> {
+        unimplemented!();
+    }
+    fn archive_comments_of_entries(
+        &self,
+        _entry_ids: &[&str],
+        _archived: u64,
+    ) -> RepoResult<usize> {
+        unimplemented!();
     }
 }
 
@@ -389,44 +402,48 @@ impl OrganizationGateway for MockDb {
 }
 
 impl RatingRepository for MockDb {
-    fn get_rating(&self, id: &str) -> RepoResult<Rating> {
-        get(&self.ratings.borrow(), id)
-    }
-
-    fn get_ratings(&self, ids: &[&str]) -> RepoResult<Vec<Rating>> {
-        Ok(self
-            .ratings
-            .borrow()
-            .iter()
-            .filter(|r| ids.iter().any(|id| &r.id == id))
-            .cloned()
-            .collect())
-    }
-
-    fn add_rating_for_entry(&self, r: Rating) -> RepoResult<()> {
+    fn create_rating(&self, r: Rating) -> RepoResult<()> {
         create(&mut self.ratings.borrow_mut(), r)
     }
 
-    fn get_ratings_for_entry(&self, entry_id: &str) -> RepoResult<Vec<Rating>> {
+    fn load_rating(&self, id: &str) -> RepoResult<Rating> {
+        get(&self.ratings.borrow(), id).and_then(|r| {
+            if r.archived.is_none() {
+                Ok(r)
+            } else {
+                Err(RepoError::NotFound)
+            }
+        })
+    }
+
+    fn load_ratings(&self, ids: &[&str]) -> RepoResult<Vec<Rating>> {
         Ok(self
             .ratings
             .borrow()
             .iter()
-            .filter(|r| r.entry_id == entry_id)
+            .filter(|r| ids.iter().any(|id| &r.id == id) && r.archived.is_none())
             .cloned()
             .collect())
     }
 
-    fn archive_ratings(&self, ids: &[&str], archived: u64) -> RepoResult<Vec<String>> {
-        let mut entry_ids = Vec::with_capacity(ids.len());
-        for id in ids {
-            let mut r = get(&self.ratings.borrow_mut(), id)?;
-            entry_ids.push(r.entry_id);
-            r.archived = Some(archived);
-        }
-        entry_ids.sort();
-        entry_ids.dedup();
-        return Ok(entry_ids);
+    fn load_ratings_of_entry(&self, entry_id: &str) -> RepoResult<Vec<Rating>> {
+        Ok(self
+            .ratings
+            .borrow()
+            .iter()
+            .filter(|r| r.archived.is_none() && &r.entry_id == entry_id)
+            .cloned()
+            .collect())
+    }
+
+    fn load_entry_ids_of_ratings(&self, _ids: &[&str]) -> RepoResult<Vec<String>> {
+        unimplemented!();
+    }
+    fn archive_ratings(&self, _ids: &[&str], _archived: u64) -> RepoResult<usize> {
+        unimplemented!();
+    }
+    fn archive_ratings_of_entries(&self, _entry_ids: &[&str], _archived: u64) -> RepoResult<usize> {
+        unimplemented!();
     }
 }
 

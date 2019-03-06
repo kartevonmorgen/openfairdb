@@ -19,7 +19,7 @@ pub trait EntryGateway {
     fn create_entry(&self, _: Entry) -> Result<()>;
     fn update_entry(&self, _: &Entry) -> Result<()>;
     fn import_multiple_entries(&mut self, _: &[Entry]) -> Result<()>;
-    fn archive_entries(&self, ids: &[&str], archived: u64) -> Result<()>;
+    fn archive_entries(&self, ids: &[&str], archived: u64) -> Result<usize>;
 }
 
 pub trait EventGateway {
@@ -27,7 +27,7 @@ pub trait EventGateway {
     fn get_event(&self, _: &str) -> Result<Event>;
     fn all_events(&self) -> Result<Vec<Event>>;
     fn update_event(&self, _: &Event) -> Result<()>;
-    fn archive_events(&self, ids: &[&str], archived: u64) -> Result<()>;
+    fn archive_events(&self, ids: &[&str], archived: u64) -> Result<usize>;
     fn delete_event(&self, _: &str) -> Result<()>;
     //TODO: fn count_events(&self) -> Result<usize>;
 }
@@ -42,23 +42,29 @@ pub trait UserGateway {
     //TODO: fn count_users(&self) -> Result<usize>;
 }
 
-pub trait CommentGateway {
-    fn get_comments_for_rating(&self, rating_id: &str) -> Result<Vec<Comment>>;
+pub trait CommentRepository {
+    fn create_comment(&self, _: Comment) -> Result<()>;
 
-    fn load_comments_for_ratings(
+    // Only unarchived comments
+    fn load_comments_of_rating(&self, rating_id: &str) -> Result<Vec<Comment>>;
+
+    // Only unarchived comments (even if the rating has already been archived)
+    fn zip_ratings_with_comments(
         &self,
         ratings: Vec<Rating>,
     ) -> Result<Vec<(Rating, Vec<Comment>)>> {
         let mut results = Vec::with_capacity(ratings.len());
         for rating in ratings {
-            let comments = self.get_comments_for_rating(&rating.id)?;
+            debug_assert!(rating.archived.is_none());
+            let comments = self.load_comments_of_rating(&rating.id)?;
             results.push((rating, comments));
         }
         Ok(results)
     }
 
-    fn create_comment(&self, _: Comment) -> Result<()>;
-    fn archive_comments(&self, ids: &[&str], archived: u64) -> Result<()>;
+    fn archive_comments(&self, ids: &[&str], archived: u64) -> Result<usize>;
+    fn archive_comments_of_ratings(&self, rating_ids: &[&str], archived: u64) -> Result<usize>;
+    fn archive_comments_of_entries(&self, entry_ids: &[&str], archived: u64) -> Result<usize>;
 }
 
 pub trait OrganizationGateway {
@@ -68,14 +74,17 @@ pub trait OrganizationGateway {
 }
 
 pub trait RatingRepository {
-    fn get_rating(&self, id: &str) -> Result<Rating>;
-    fn get_ratings(&self, ids: &[&str]) -> Result<Vec<Rating>>;
+    fn create_rating(&self, rating: Rating) -> Result<()>;
 
-    fn get_ratings_for_entry(&self, entry_id: &str) -> Result<Vec<Rating>>;
-    fn add_rating_for_entry(&self, rating: Rating) -> Result<()>;
+    // Only unarchived ratings without comments
+    fn load_rating(&self, id: &str) -> Result<Rating>;
+    fn load_ratings(&self, ids: &[&str]) -> Result<Vec<Rating>>;
+    fn load_ratings_of_entry(&self, entry_id: &str) -> Result<Vec<Rating>>;
 
-    // Returns the ids of all affected entries
-    fn archive_ratings(&self, ids: &[&str], archived: u64) -> Result<Vec<String>>;
+    fn archive_ratings(&self, ids: &[&str], archived: u64) -> Result<usize>;
+    fn archive_ratings_of_entries(&self, entry_ids: &[&str], archived: u64) -> Result<usize>;
+
+    fn load_entry_ids_of_ratings(&self, ids: &[&str]) -> Result<Vec<String>>;
 }
 
 //TODO:
@@ -84,7 +93,12 @@ pub trait RatingRepository {
 //  - SubscriptionGateway
 
 pub trait Db:
-    EntryGateway + UserGateway + CommentGateway + EventGateway + OrganizationGateway + RatingRepository
+    EntryGateway
+    + UserGateway
+    + CommentRepository
+    + EventGateway
+    + OrganizationGateway
+    + RatingRepository
 {
     fn create_tag_if_it_does_not_exist(&self, _: &Tag) -> Result<()>;
     fn create_category_if_it_does_not_exist(&mut self, _: &Category) -> Result<()>;

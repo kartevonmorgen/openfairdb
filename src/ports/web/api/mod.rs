@@ -58,7 +58,7 @@ pub fn routes() -> Vec<Route> {
         events::delete_event_with_token,
         users::post_user,
         ratings::post_rating,
-        ratings::get_rating,
+        ratings::load_rating,
         users::get_user,
         users::delete_user,
         get_categories,
@@ -91,7 +91,7 @@ fn get_entry(db: sqlite::Connections, ids: String) -> Result<Vec<json::Entry>> {
         let mut results = Vec::with_capacity(ids.len());
         let db = db.shared()?;
         for e in db.get_entries(&ids)?.into_iter() {
-            let r = db.get_ratings_for_entry(&e.id)?;
+            let r = db.load_ratings_of_entry(&e.id)?;
             results.push(json::Entry::from_entry_with_ratings(e, r));
         }
         results

@@ -64,9 +64,9 @@ pub fn get_entry(pool: sqlite::Connections, id: &RawStr) -> Result<Markup> {
     let (e, ratings) = {
         let db = pool.shared().map_err(RepoError::from)?;
         let e = db.get_entry(id.as_str())?;
-        let ratings = db.get_ratings_for_entry(&e.id)?;
-        let full_ratings = db.load_comments_for_ratings(ratings)?;
-        (e, full_ratings)
+        let ratings = db.load_ratings_of_entry(&e.id)?;
+        let ratings_with_comments = db.zip_ratings_with_comments(ratings)?;
+        (e, ratings_with_comments)
     };
     Ok(view::entry((e, ratings).into()))
 }

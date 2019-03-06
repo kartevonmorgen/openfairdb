@@ -94,7 +94,7 @@ pub mod tests {
         let ratings: Vec<_> = entries
             .iter()
             .map(|e| {
-                let ratings = create_ratings_for_entry(&e.id, 1);
+                let ratings = create_ratings_of_entry(&e.id, 1);
                 ratings[0].clone()
             })
             .collect();
@@ -104,11 +104,11 @@ pub mod tests {
 
     fn create_entry_with_multiple_ratings(n: usize) -> (Entry, Vec<Rating>) {
         let entry = Entry::build().finish();
-        let ratings = create_ratings_for_entry(&entry.id, n);
+        let ratings = create_ratings_of_entry(&entry.id, n);
         (entry, ratings)
     }
 
-    fn create_ratings_for_entry(id: &str, n: usize) -> Vec<Rating> {
+    fn create_ratings_of_entry(id: &str, n: usize) -> Vec<Rating> {
         (0..n)
             .map(|_| Rating {
                 id: Uuid::new_v4().to_simple_ref().to_string(),

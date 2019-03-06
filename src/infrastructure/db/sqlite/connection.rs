@@ -292,7 +292,7 @@ impl EntryGateway for SqliteConnection {
         Ok(())
     }
 
-    fn archive_entries(&self, ids: &[&str], archived: u64) -> Result<()> {
+    fn archive_entries(&self, ids: &[&str], archived: u64) -> Result<usize> {
         // Entry
         use self::schema::entries::dsl as e_dsl;
         let count = diesel::update(
@@ -311,34 +311,7 @@ impl EntryGateway for SqliteConnection {
             // Should never happen
             return Err(RepoError::TooManyFound);
         }
-
-        // Entry -> Rating
-        use self::schema::ratings::dsl as r_dsl;
-        diesel::update(
-            r_dsl::ratings
-                .filter(r_dsl::entry_id.eq_any(ids))
-                .filter(r_dsl::archived.is_null()),
-        )
-        .set(r_dsl::archived.eq(Some(archived as i64)))
-        .execute(self)?;
-
-        // Entry -> Rating -> Comment
-        use self::schema::comments::dsl as c_dsl;
-        diesel::update(
-            c_dsl::comments
-                .filter(
-                    c_dsl::rating_id.eq_any(
-                        r_dsl::ratings
-                            .select(r_dsl::id)
-                            .filter(r_dsl::entry_id.eq_any(ids)),
-                    ),
-                )
-                .filter(c_dsl::archived.is_null()),
-        )
-        .set(c_dsl::archived.eq(Some(archived as i64)))
-        .execute(self)?;
-
-        Ok(())
+        Ok(count)
     }
 
     fn import_multiple_entries(&mut self, new_entries: &[Entry]) -> Result<()> {
@@ -585,7 +558,7 @@ impl EventGateway for SqliteConnection {
         Ok(())
     }
 
-    fn archive_events(&self, ids: &[&str], archived: u64) -> Result<()> {
+    fn archive_events(&self, ids: &[&str], archived: u64) -> Result<usize> {
         use self::schema::events::dsl;
         let count = diesel::update(
             dsl::events
@@ -594,12 +567,14 @@ impl EventGateway for SqliteConnection {
         )
         .set(dsl::archived.eq(Some(archived as i64)))
         .execute(self)?;
-        match count {
-            n if n < ids.len() => Err(RepoError::NotFound),
-            n if n == ids.len() => Ok(()),
-            n if n > ids.len() => Err(RepoError::TooManyFound),
-            _ => unreachable!(),
+        debug_assert!(count <= ids.len());
+        if count < ids.len() {
+            return Err(RepoError::NotFound);
         }
+        if count > ids.len() {
+            return Err(RepoError::TooManyFound);
+        }
+        Ok(count)
     }
 
     fn delete_event(&self, id: &str) -> Result<()> {
@@ -626,8 +601,7 @@ impl UserGateway for SqliteConnection {
     }
     fn get_user(&self, username: &str) -> Result<User> {
         use self::schema::users::dsl::users;
-        let u: models::User = users.find(username).first(self)?;
-        Ok(User::from(u))
+        Ok(users.find(username).first::<models::User>(self)?.into())
     }
     fn get_user_by_email(&self, email: &str) -> Result<User> {
         use self::schema::users::dsl;
@@ -639,7 +613,7 @@ impl UserGateway for SqliteConnection {
         Ok(dsl::users
             .load::<models::User>(self)?
             .into_iter()
-            .map(User::from)
+            .map(Into::into)
             .collect())
     }
     fn delete_user(&mut self, user_name: &str) -> Result<()> {
@@ -649,93 +623,58 @@ impl UserGateway for SqliteConnection {
     }
 }
 
-impl CommentGateway for SqliteConnection {
-    fn get_comments_for_rating(&self, rating_id: &str) -> Result<Vec<Comment>> {
-        use self::schema::comments::dsl;
-        Ok(dsl::comments
-            .filter(dsl::rating_id.eq(rating_id))
-            .filter(dsl::archived.is_null())
-            .load::<models::Comment>(self)?
-            .into_iter()
-            .map(Comment::from)
-            .collect())
-    }
-
-    fn create_comment(&self, c: Comment) -> Result<()> {
-        diesel::insert_into(schema::comments::table)
-            .values(&models::Comment::from(c))
-            .execute(self)?;
-        Ok(())
-    }
-
-    fn archive_comments(&self, ids: &[&str], archived: u64) -> Result<()> {
-        use self::schema::comments::dsl;
-        let count = diesel::update(
-            dsl::comments
-                .filter(dsl::id.eq_any(ids))
-                .filter(dsl::archived.is_null()),
-        )
-        .set(dsl::archived.eq(Some(archived as i64)))
-        .execute(self)?;
-        match count {
-            n if n < ids.len() => Err(RepoError::NotFound),
-            n if n == ids.len() => Ok(()),
-            n if n > ids.len() => Err(RepoError::TooManyFound),
-            _ => unreachable!(),
-        }
-    }
-}
-
 impl RatingRepository for SqliteConnection {
-    fn get_rating(&self, id: &str) -> Result<Rating> {
-        use self::schema::ratings::dsl;
-        dsl::ratings
-            .filter(dsl::id.eq(id))
-            .filter(dsl::archived.is_null())
-            .first::<models::Rating>(self)
-            .map(Rating::from)
-            .map_err(Into::into)
-    }
-
-    fn get_ratings(&self, ids: &[&str]) -> Result<Vec<Rating>> {
-        use self::schema::ratings::dsl;
-        // TODO: Split loading into chunks of fixed size
-        info!("Loading multiple ({}) ratings at once", ids.len());
-        dsl::ratings
-            .filter(dsl::id.eq_any(ids))
-            .filter(dsl::archived.is_null())
-            .load::<models::Rating>(self)
-            .map(|v| v.into_iter().map(Rating::from).collect())
-            .map_err(Into::into)
-    }
-
-    fn get_ratings_for_entry(&self, entry_id: &str) -> Result<Vec<Rating>> {
-        use self::schema::ratings::dsl;
-        Ok(dsl::ratings
-            .filter(dsl::entry_id.eq(entry_id))
-            .filter(dsl::archived.is_null())
-            .load::<models::Rating>(self)?
-            .into_iter()
-            .map(Rating::from)
-            .collect())
-    }
-
-    fn add_rating_for_entry(&self, rating: Rating) -> Result<()> {
+    fn create_rating(&self, rating: Rating) -> Result<()> {
         diesel::insert_into(schema::ratings::table)
             .values(&models::Rating::from(rating))
             .execute(self)?;
         Ok(())
     }
 
-    fn archive_ratings(&self, ids: &[&str], archived: u64) -> Result<Vec<String>> {
-        use self::schema::ratings::dsl as r_dsl;
-        let entry_ids = r_dsl::ratings
-            .select(r_dsl::entry_id)
+    fn load_rating(&self, id: &str) -> Result<Rating> {
+        use self::schema::ratings::dsl;
+        Ok(dsl::ratings
+            .filter(dsl::id.eq(id))
+            .filter(dsl::archived.is_null())
+            .first::<models::Rating>(self)?
+            .into())
+    }
+
+    fn load_ratings(&self, ids: &[&str]) -> Result<Vec<Rating>> {
+        use self::schema::ratings::dsl;
+        // TODO: Split loading into chunks of fixed size
+        info!("Loading multiple ({}) ratings at once", ids.len());
+        Ok(dsl::ratings
+            .filter(dsl::id.eq_any(ids))
+            .filter(dsl::archived.is_null())
+            .load::<models::Rating>(self)?
+            .into_iter()
+            .map(Into::into)
+            .collect())
+    }
+
+    fn load_ratings_of_entry(&self, entry_id: &str) -> Result<Vec<Rating>> {
+        use self::schema::ratings::dsl;
+        Ok(dsl::ratings
+            .filter(dsl::entry_id.eq(entry_id))
+            .filter(dsl::archived.is_null())
+            .load::<models::Rating>(self)?
+            .into_iter()
+            .map(Into::into)
+            .collect())
+    }
+
+    fn load_entry_ids_of_ratings(&self, ids: &[&str]) -> Result<Vec<String>> {
+        use self::schema::ratings::dsl;
+        Ok(dsl::ratings
+            .select(dsl::entry_id)
             .distinct()
-            .filter(r_dsl::id.eq_any(ids))
-            .filter(r_dsl::archived.is_null())
-            .load::<String>(self)?;
-        debug_assert!(entry_ids.len() <= ids.len());
+            .filter(dsl::id.eq_any(ids))
+            .load::<String>(self)?)
+    }
+
+    fn archive_ratings(&self, ids: &[&str], archived: u64) -> Result<usize> {
+        use self::schema::ratings::dsl as r_dsl;
         let count = diesel::update(
             r_dsl::ratings
                 .filter(r_dsl::entry_id.eq_any(ids))
@@ -751,18 +690,86 @@ impl RatingRepository for SqliteConnection {
             // Should never happen
             return Err(RepoError::TooManyFound);
         }
+        Ok(count)
+    }
 
-        // Rating -> Comment
+    fn archive_ratings_of_entries(&self, entry_ids: &[&str], archived: u64) -> Result<usize> {
+        use self::schema::ratings::dsl;
+        Ok(diesel::update(
+            dsl::ratings
+                .filter(dsl::entry_id.eq_any(entry_ids))
+                .filter(dsl::archived.is_null()),
+        )
+        .set(dsl::archived.eq(Some(archived as i64)))
+        .execute(self)?)
+    }
+}
+
+impl CommentRepository for SqliteConnection {
+    fn create_comment(&self, c: Comment) -> Result<()> {
+        diesel::insert_into(schema::comments::table)
+            .values(&models::Comment::from(c))
+            .execute(self)?;
+        Ok(())
+    }
+
+    fn load_comments_of_rating(&self, rating_id: &str) -> Result<Vec<Comment>> {
+        use self::schema::comments::dsl;
+        Ok(dsl::comments
+            .filter(dsl::rating_id.eq(rating_id))
+            .filter(dsl::archived.is_null())
+            .load::<models::Comment>(self)?
+            .into_iter()
+            .map(Into::into)
+            .collect())
+    }
+
+    fn archive_comments(&self, ids: &[&str], archived: u64) -> Result<usize> {
+        use self::schema::comments::dsl;
+        let count = diesel::update(
+            dsl::comments
+                .filter(dsl::id.eq_any(ids))
+                .filter(dsl::archived.is_null()),
+        )
+        .set(dsl::archived.eq(Some(archived as i64)))
+        .execute(self)?;
+        debug_assert!(count <= ids.len());
+        if count < ids.len() {
+            return Err(RepoError::NotFound);
+        }
+        if count > ids.len() {
+            return Err(RepoError::TooManyFound);
+        }
+        Ok(count)
+    }
+
+    fn archive_comments_of_ratings(&self, rating_ids: &[&str], archived: u64) -> Result<usize> {
+        use self::schema::comments::dsl;
+        Ok(diesel::update(
+            dsl::comments
+                .filter(dsl::rating_id.eq_any(rating_ids))
+                .filter(dsl::archived.is_null()),
+        )
+        .set(dsl::archived.eq(Some(archived as i64)))
+        .execute(self)?)
+    }
+
+    fn archive_comments_of_entries(&self, entry_ids: &[&str], archived: u64) -> Result<usize> {
         use self::schema::comments::dsl as c_dsl;
-        diesel::update(
+        use self::schema::ratings::dsl as r_dsl;
+        Ok(diesel::update(
             c_dsl::comments
-                .filter(c_dsl::rating_id.eq_any(ids))
+                .filter(
+                    c_dsl::rating_id.eq_any(
+                        r_dsl::ratings
+                            .select(r_dsl::id)
+                            .filter(r_dsl::entry_id.eq_any(entry_ids)),
+                    ),
+                )
                 .filter(c_dsl::archived.is_null()),
         )
         .set(c_dsl::archived.eq(Some(archived as i64)))
-        .execute(self)?;
-
-        Ok(entry_ids)
+        .execute(self)?)
     }
 }
 

@@ -203,7 +203,7 @@ fn get_one_entry() {
     let rating = connections
         .shared()
         .unwrap()
-        .get_ratings_for_entry("get_one_entry_test")
+        .load_ratings_of_entry("get_one_entry_test")
         .unwrap()[0]
         .clone();
     assert!(body_str.contains(&format!(r#""ratings":["{}"]"#, rating.id)));
@@ -378,7 +378,7 @@ fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
         conn.create_entry(e).unwrap();
     }
     for r in ratings {
-        conn.add_rating_for_entry(r).unwrap();
+        conn.create_rating(r).unwrap();
     }
     b.iter(|| client.get("/search?bbox=-10,-10,10,10").dispatch());
 }
@@ -791,7 +791,7 @@ fn create_rating() {
         connections
             .shared()
             .unwrap()
-            .get_ratings_for_entry("foo")
+            .load_ratings_of_entry("foo")
             .unwrap()[0]
             .value,
         RatingValue::from(1)
@@ -821,7 +821,7 @@ fn get_one_rating() {
     let rid = connections
         .shared()
         .unwrap()
-        .get_ratings_for_entry("foo")
+        .load_ratings_of_entry("foo")
         .unwrap()[0]
         .id
         .clone();
@@ -875,7 +875,7 @@ fn ratings_with_and_without_source() {
     let rid = connections
         .shared()
         .unwrap()
-        .get_ratings_for_entry("bar")
+        .load_ratings_of_entry("bar")
         .unwrap()[0]
         .id
         .clone();
@@ -1241,7 +1241,7 @@ fn export_csv() {
     let diversity = RatingContext::Diversity;
     db.exclusive()
         .unwrap()
-        .add_rating_for_entry(Rating {
+        .create_rating(Rating {
             id: "123".into(),
             entry_id: "entry1".into(),
             created: 123,
@@ -1254,7 +1254,7 @@ fn export_csv() {
         .unwrap();
     db.exclusive()
         .unwrap()
-        .add_rating_for_entry(Rating {
+        .create_rating(Rating {
             id: "345".into(),
             entry_id: "entry1".into(),
             created: 123,
@@ -1268,7 +1268,7 @@ fn export_csv() {
 
     let entries = db.shared().unwrap().all_entries().unwrap();
     for e in &entries {
-        let ratings = db.shared().unwrap().get_ratings_for_entry(&e.id).unwrap();
+        let ratings = db.shared().unwrap().load_ratings_of_entry(&e.id).unwrap();
         search_engine
             .add_or_update_entry(&e, &e.avg_ratings(&ratings))
             .unwrap();

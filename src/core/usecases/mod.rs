@@ -41,8 +41,8 @@ pub fn load_ratings_with_comments<D: Db>(
     db: &D,
     rating_ids: &[&str],
 ) -> Result<Vec<(Rating, Vec<Comment>)>> {
-    let ratings = db.get_ratings(&rating_ids)?;
-    let results = db.load_comments_for_ratings(ratings)?;
+    let ratings = db.load_ratings(&rating_ids)?;
+    let results = db.zip_ratings_with_comments(ratings)?;
     Ok(results)
 }
 

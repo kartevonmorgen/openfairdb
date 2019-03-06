@@ -53,9 +53,9 @@ pub fn store_new_rating<D: Db>(db: &D, s: Storable) -> Result<(Entry, Vec<Rating
     let Storable(entry, rating, comment) = s;
     debug_assert_eq!(entry.id, rating.entry_id);
     debug_assert_eq!(rating.id, comment.rating_id);
-    db.add_rating_for_entry(rating)?;
+    db.create_rating(rating)?;
     db.create_comment(comment)?;
-    let ratings = db.get_ratings_for_entry(&entry.id)?;
+    let ratings = db.load_ratings_of_entry(&entry.id)?;
     Ok((entry, ratings))
 }
 

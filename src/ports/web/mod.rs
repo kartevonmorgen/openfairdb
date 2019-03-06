@@ -26,7 +26,7 @@ fn index_all_entries<D: EntryGateway + RatingRepository>(
     // loading all entries at once!
     let entries = db.all_entries()?;
     for entry in entries {
-        let ratings = db.get_ratings_for_entry(&entry.id)?;
+        let ratings = db.load_ratings_of_entry(&entry.id)?;
         if let Err(err) =
             entry_indexer.add_or_update_entry(&entry, &entry.avg_ratings(&ratings[..]))
         {

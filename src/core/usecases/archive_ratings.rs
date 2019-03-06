@@ -2,9 +2,10 @@ use crate::core::prelude::*;
 
 use chrono::Utc;
 
-pub fn archive_ratings<D: Db>(db: &D, ids: &[&str]) -> Result<Vec<String>> {
+pub fn archive_ratings<D: Db>(db: &D, ids: &[&str]) -> Result<()> {
     debug!("Archiving ratings {:?}", ids);
     let archived = Utc::now().timestamp() as u64;
-    let entry_ids = db.archive_ratings(ids, archived)?;
-    Ok(entry_ids)
+    db.archive_comments_of_ratings(ids, archived)?;
+    db.archive_ratings(ids, archived)?;
+    Ok(())
 }
