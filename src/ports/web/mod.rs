@@ -39,7 +39,7 @@ fn index_all_entries<D: EntryGateway + RatingRepository>(
     Ok(Json(()))
 }
 
-fn rocket_instance(
+pub(crate) fn rocket_instance(
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
     mounts: Vec<(&str, Vec<Route>)>,

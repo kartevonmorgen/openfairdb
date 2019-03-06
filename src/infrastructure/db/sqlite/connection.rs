@@ -303,9 +303,9 @@ impl EntryGateway for SqliteConnection {
         .set(dsl::archived.eq(Some(archived as i64)))
         .execute(self)?;
         match count {
-            0 => Err(RepoError::NotFound),
-            1 => Ok(()),
-            n if n > 1 => Err(RepoError::TooManyFound),
+            n if n < ids.len() => Err(RepoError::NotFound),
+            n if n == ids.len() => Ok(()),
+            n if n > ids.len() => Err(RepoError::TooManyFound),
             _ => unreachable!(),
         }
     }
@@ -564,9 +564,9 @@ impl EventGateway for SqliteConnection {
         .set(dsl::archived.eq(Some(archived as i64)))
         .execute(self)?;
         match count {
-            _ if count < ids.len() => Err(RepoError::NotFound),
-            _ if count == ids.len() => Ok(()),
-            _ if count > ids.len() => Err(RepoError::TooManyFound),
+            n if n < ids.len() => Err(RepoError::NotFound),
+            n if n == ids.len() => Ok(()),
+            n if n > ids.len() => Err(RepoError::TooManyFound),
             _ => unreachable!(),
         }
     }
@@ -647,9 +647,9 @@ impl CommentGateway for SqliteConnection {
         .set(dsl::archived.eq(Some(archived as i64)))
         .execute(self)?;
         match count {
-            _ if count < ids.len() => Err(RepoError::NotFound),
-            _ if count == ids.len() => Ok(()),
-            _ if count > ids.len() => Err(RepoError::TooManyFound),
+            n if n < ids.len() => Err(RepoError::NotFound),
+            n if n == ids.len() => Ok(()),
+            n if n > ids.len() => Err(RepoError::TooManyFound),
             _ => unreachable!(),
         }
     }
@@ -712,8 +712,9 @@ impl RatingRepository for SqliteConnection {
         .set(dsl::archived.eq(Some(archived as i64)))
         .execute(self)?;
         match count {
-            0 => Err(RepoError::NotFound),
-            1 => Ok(entry_ids),
+            n if n < ids.len() => Err(RepoError::NotFound),
+            n if n == ids.len() => Ok(entry_ids),
+            n if n > ids.len() => Err(RepoError::TooManyFound),
             _ => unreachable!(),
         }
     }
