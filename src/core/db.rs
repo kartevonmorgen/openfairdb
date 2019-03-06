@@ -74,7 +74,8 @@ pub trait RatingRepository {
     fn get_ratings_for_entry(&self, entry_id: &str) -> Result<Vec<Rating>>;
     fn add_rating_for_entry(&self, rating: Rating) -> Result<()>;
 
-    fn archive_ratings(&self, ids: &[&str], archived: u64) -> Result<()>;
+    // Returns the ids of all affected entries
+    fn archive_ratings(&self, ids: &[&str], archived: u64) -> Result<Vec<String>>;
 }
 
 //TODO:

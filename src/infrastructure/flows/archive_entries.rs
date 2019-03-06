@@ -28,7 +28,10 @@ pub fn archive_entries(
         }
     }
     if let Err(err) = indexer.flush() {
-        error!("Failed to finish updating the search index: {}", err);
+        error!(
+            "Failed to finish updating the search index after archiving entries: {}",
+            err
+        );
     }
 
     Ok(())

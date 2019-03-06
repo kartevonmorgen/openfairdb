@@ -696,8 +696,14 @@ impl RatingRepository for SqliteConnection {
         Ok(())
     }
 
-    fn archive_ratings(&self, ids: &[&str], archived: u64) -> Result<()> {
+    fn archive_ratings(&self, ids: &[&str], archived: u64) -> Result<Vec<String>> {
         use self::schema::ratings::dsl;
+        let entry_ids = dsl::ratings
+            .select(dsl::entry_id)
+            .distinct()
+            .filter(dsl::id.eq_any(ids))
+            .filter(dsl::archived.is_null())
+            .load::<String>(self)?;
         let count = diesel::update(
             dsl::ratings
                 .filter(dsl::id.eq_any(ids))
@@ -707,7 +713,7 @@ impl RatingRepository for SqliteConnection {
         .execute(self)?;
         match count {
             0 => Err(RepoError::NotFound),
-            1 => Ok(()),
+            1 => Ok(entry_ids),
             _ => unreachable!(),
         }
     }

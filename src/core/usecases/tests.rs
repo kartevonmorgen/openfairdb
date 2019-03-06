@@ -417,12 +417,16 @@ impl RatingRepository for MockDb {
             .collect())
     }
 
-    fn archive_ratings(&self, ids: &[&str], archived: u64) -> RepoResult<()> {
+    fn archive_ratings(&self, ids: &[&str], archived: u64) -> RepoResult<Vec<String>> {
+        let mut entry_ids = Vec::with_capacity(ids.len());
         for id in ids {
             let mut r = get(&self.ratings.borrow_mut(), id)?;
+            entry_ids.push(r.entry_id);
             r.archived = Some(archived);
         }
-        return Ok(());
+        entry_ids.sort();
+        entry_ids.dedup();
+        return Ok(entry_ids);
     }
 }
 
