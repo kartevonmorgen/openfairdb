@@ -12,8 +12,6 @@ pub mod prelude {
         config::{Config, Environment},
         logger::LoggingLevel,
     };
-    use std::fs;
-    use uuid::Uuid;
 
     pub use crate::core::db::*;
     pub use crate::infrastructure::flows::prelude as flows;
@@ -32,9 +30,7 @@ pub mod prelude {
             .log_level(LoggingLevel::Debug)
             .finalize()
             .unwrap();
-        let uuid = Uuid::new_v4().to_simple_ref().to_string();
-        fs::create_dir_all("test-dbs").unwrap();
-        let connections = sqlite::Connections::init(&format!("./test-dbs/{}", uuid), 1).unwrap();
+        let connections = sqlite::Connections::init(":memory:", 1).unwrap();
         embedded_migrations::run(&*connections.exclusive().unwrap()).unwrap();
         let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
         let rocket = rocket_instance(connections.clone(), search_engine, Some(cfg));
@@ -47,9 +43,7 @@ pub mod prelude {
             .log_level(LoggingLevel::Debug)
             .finalize()
             .unwrap();
-        let uuid = Uuid::new_v4().to_simple_ref().to_string();
-        fs::create_dir_all("test-dbs").unwrap();
-        let connections = sqlite::Connections::init(&format!("./test-dbs/{}", uuid), 1).unwrap();
+        let connections = sqlite::Connections::init(":memory:", 1).unwrap();
         embedded_migrations::run(&*connections.exclusive().unwrap()).unwrap();
         let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
         let rocket = rocket_instance(connections.clone(), search_engine.clone(), Some(cfg));
