@@ -389,7 +389,7 @@ impl EntryGateway for SqliteConnection {
 }
 
 impl EventGateway for SqliteConnection {
-    fn create_event(&mut self, e: Event) -> Result<()> {
+    fn create_event(&self, e: Event) -> Result<()> {
         let tag_rels: Vec<_> = e
             .tags
             .iter()
@@ -505,7 +505,7 @@ impl EventGateway for SqliteConnection {
         Ok(events.into_iter().map(|e| (e, &tag_rels).into()).collect())
     }
 
-    fn update_event(&mut self, event: &Event) -> Result<()> {
+    fn update_event(&self, event: &Event) -> Result<()> {
         let e = models::Event::from(event.clone());
         self.transaction::<_, diesel::result::Error, _>(|| {
             use self::schema::event_tag_relations::dsl as e_t_dsl;
@@ -554,7 +554,7 @@ impl EventGateway for SqliteConnection {
         Ok(())
     }
 
-    fn archive_events(&mut self, ids: &[&str], archived: u64) -> Result<()> {
+    fn archive_events(&self, ids: &[&str], archived: u64) -> Result<()> {
         use self::schema::events::dsl;
         let count = diesel::update(
             dsl::events
@@ -571,7 +571,7 @@ impl EventGateway for SqliteConnection {
         }
     }
 
-    fn delete_event(&mut self, id: &str) -> Result<()> {
+    fn delete_event(&self, id: &str) -> Result<()> {
         use self::schema::events::dsl;
         diesel::delete(dsl::events.filter(dsl::id.eq(id))).execute(self)?;
         Ok(())

@@ -2,11 +2,12 @@ mod add_entry;
 mod add_rating;
 mod archive_comments;
 mod archive_entries;
+mod archive_events;
 mod update_entry;
 
 pub mod prelude {
     pub use super::{
-        add_entry::*, add_entry::*, add_rating::*, archive_comments::*, archive_entries::*, update_entry::*,
+        add_entry::*, add_entry::*, add_rating::*, archive_comments::*, archive_events::*, archive_entries::*, update_entry::*,
     };
 }
 

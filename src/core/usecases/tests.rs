@@ -76,7 +76,7 @@ impl Id for Organization {
 #[derive(Default)]
 pub struct MockDb {
     pub entries: RefCell<Vec<Entry>>,
-    pub events: Vec<Event>,
+    pub events: RefCell<Vec<Event>>,
     pub categories: Vec<Category>,
     pub tags: RefCell<Vec<Tag>>,
     pub users: Vec<User>,
@@ -266,28 +266,28 @@ impl EntryGateway for MockDb {
 }
 
 impl EventGateway for MockDb {
-    fn create_event(&mut self, e: Event) -> RepoResult<()> {
-        create(&mut self.events, e)
+    fn create_event(&self, e: Event) -> RepoResult<()> {
+        create(&mut self.events.borrow_mut(), e)
     }
 
     fn get_event(&self, id: &str) -> RepoResult<Event> {
-        get(&self.events, id)
+        get(&self.events.borrow(), id)
     }
     fn all_events(&self) -> RepoResult<Vec<Event>> {
-        Ok(self.events.clone())
+        Ok(self.events.borrow().clone())
     }
-    fn update_event(&mut self, e: &Event) -> RepoResult<()> {
-        update(&mut self.events, e)
+    fn update_event(&self, e: &Event) -> RepoResult<()> {
+        update(&mut self.events.borrow_mut(), e)
     }
-    fn archive_events(&mut self, ids: &[&str], archived: u64) -> RepoResult<()> {
+    fn archive_events(&self, ids: &[&str], archived: u64) -> RepoResult<()> {
         for id in ids {
-            let mut e = get(&mut self.events, id)?;
+            let mut e = get(&mut self.events.borrow_mut(), id)?;
             e.archived = Some(archived);
         }
         return Ok(());
     }
-    fn delete_event(&mut self, id: &str) -> RepoResult<()> {
-        delete(&mut self.events, id)
+    fn delete_event(&self, id: &str) -> RepoResult<()> {
+        delete(&mut self.events.borrow_mut(), id)
     }
 }
 

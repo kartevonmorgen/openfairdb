@@ -202,7 +202,7 @@ mod tests {
             ];
 
             {
-                let mut db_conn = db.exclusive().unwrap();
+                let db_conn = db.exclusive().unwrap();
                 for e in events {
                     db_conn.create_event(e).unwrap();
                 }
@@ -236,7 +236,7 @@ mod tests {
             }];
 
             {
-                let mut db_conn = db.exclusive().unwrap();
+                let db_conn = db.exclusive().unwrap();
                 for e in events {
                     db_conn.create_event(e).unwrap();
                 }

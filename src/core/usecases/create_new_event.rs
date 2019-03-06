@@ -270,9 +270,9 @@ mod tests {
         let mut mock_db = MockDb::default();
         let id = create_new_event(&mut mock_db, x).unwrap();
         assert!(Uuid::parse_str(&id).is_ok());
-        assert_eq!(mock_db.events.len(), 1);
+        assert_eq!(mock_db.events.borrow().len(), 1);
         assert_eq!(mock_db.tags.borrow().len(), 2);
-        let x = &mock_db.events[0];
+        let x = &mock_db.events.borrow()[0];
         assert_eq!(x.title, "foo");
         assert_eq!(x.start.timestamp(), 9999);
         assert!(x.location.is_none());

@@ -23,12 +23,12 @@ pub trait EntryGateway {
 }
 
 pub trait EventGateway {
-    fn create_event(&mut self, _: Event) -> Result<()>;
+    fn create_event(&self, _: Event) -> Result<()>;
     fn get_event(&self, _: &str) -> Result<Event>;
     fn all_events(&self) -> Result<Vec<Event>>;
-    fn update_event(&mut self, _: &Event) -> Result<()>;
-    fn archive_events(&mut self, ids: &[&str], archived: u64) -> Result<()>;
-    fn delete_event(&mut self, _: &str) -> Result<()>;
+    fn update_event(&self, _: &Event) -> Result<()>;
+    fn archive_events(&self, ids: &[&str], archived: u64) -> Result<()>;
+    fn delete_event(&self, _: &str) -> Result<()>;
     //TODO: fn count_events(&self) -> Result<usize>;
 }
 
