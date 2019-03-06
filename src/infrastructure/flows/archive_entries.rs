@@ -7,15 +7,23 @@ pub fn archive_entries(
     indexer: &mut EntryIndexer,
     ids: &[&str],
 ) -> Result<()> {
+    let mut repo_err = None;
     let connection = connections.exclusive()?;
     connection
         .transaction::<_, diesel::result::Error, _>(|| {
             usecases::archive_entries(&*connection, ids).map_err(|err| {
                 warn!("Failed to archive {} entries: {}", ids.len(), err);
+                repo_err = Some(err);
                 diesel::result::Error::RollbackTransaction
             })
         })
-        .map_err(|err| RepoError::from(err))?;
+        .map_err(|err| {
+            if let Some(repo_err) = repo_err {
+                repo_err
+            } else {
+                RepoError::from(err).into()
+            }
+        })?;
 
     // Remove archived entries from search index
     // TODO: Move to a separate task/thread that doesn't delay this request
@@ -113,7 +121,10 @@ mod tests {
         assert!(!fixture.entry_exists(&entry_ids[2]));
         assert!(fixture.query_entries_by_tag(&entry_tags[2]).is_empty());
 
-        assert!(archive_entries(&fixture, &vec![&*entry_ids[1], &*entry_ids[2]]).is_err());
+        assert_not_found(archive_entries(
+            &fixture,
+            &vec![&*entry_ids[1], &*entry_ids[2]],
+        ));
 
         // No changes, i.e.entry 1 still exists in both database and index
         assert!(!fixture.entry_exists(&entry_ids[0]));

@@ -9,7 +9,7 @@ mod update_entry;
 pub mod prelude {
     pub use super::{
         add_entry::*, add_entry::*, add_rating::*, archive_comments::*, archive_entries::*,
-        archive_events::*, archive_ratings::*, update_entry::*, Result,
+        archive_events::*, archive_ratings::*, update_entry::*,
     };
 }
 
@@ -33,6 +33,8 @@ mod tests {
             infrastructure::{error::AppError, flows::prelude as flows},
             ports::web::api
         };
+
+        use super::super::Result;
 
         pub use rocket::{
             http::{ContentType, Cookie, Status},
@@ -111,6 +113,13 @@ mod tests {
                 };
                 self.query_entries(&query)
             }
+        }
+
+        pub fn assert_not_found<T: std::fmt::Debug>(res: Result<T>) {
+            assert_eq!(
+                RepoError::NotFound.to_string(),
+                res.unwrap_err().to_string()
+            );
         }
 
         pub struct NewEntry {
