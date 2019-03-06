@@ -293,21 +293,52 @@ impl EntryGateway for SqliteConnection {
     }
 
     fn archive_entries(&self, ids: &[&str], archived: u64) -> Result<()> {
-        use self::schema::entries::dsl;
+        // Entry
+        use self::schema::entries::dsl as e_dsl;
         let count = diesel::update(
-            dsl::entries
-                .filter(dsl::id.eq_any(ids))
-                .filter(dsl::current.eq(true))
-                .filter(dsl::archived.is_null()),
+            e_dsl::entries
+                .filter(e_dsl::id.eq_any(ids))
+                .filter(e_dsl::current.eq(true))
+                .filter(e_dsl::archived.is_null()),
         )
-        .set(dsl::archived.eq(Some(archived as i64)))
+        .set(e_dsl::archived.eq(Some(archived as i64)))
         .execute(self)?;
-        match count {
-            n if n < ids.len() => Err(RepoError::NotFound),
-            n if n == ids.len() => Ok(()),
-            n if n > ids.len() => Err(RepoError::TooManyFound),
-            _ => unreachable!(),
+        debug_assert!(count <= ids.len());
+        if count < ids.len() {
+            return Err(RepoError::NotFound);
         }
+        if count > ids.len() {
+            // Should never happen
+            return Err(RepoError::TooManyFound);
+        }
+
+        // Entry -> Rating
+        use self::schema::ratings::dsl as r_dsl;
+        diesel::update(
+            r_dsl::ratings
+                .filter(r_dsl::entry_id.eq_any(ids))
+                .filter(r_dsl::archived.is_null()),
+        )
+        .set(r_dsl::archived.eq(Some(archived as i64)))
+        .execute(self)?;
+
+        // Entry -> Rating -> Comment
+        use self::schema::comments::dsl as c_dsl;
+        diesel::update(
+            c_dsl::comments
+                .filter(
+                    c_dsl::rating_id.eq_any(
+                        r_dsl::ratings
+                            .select(r_dsl::id)
+                            .filter(r_dsl::entry_id.eq_any(ids)),
+                    ),
+                )
+                .filter(c_dsl::archived.is_null()),
+        )
+        .set(c_dsl::archived.eq(Some(archived as i64)))
+        .execute(self)?;
+
+        Ok(())
     }
 
     fn import_multiple_entries(&mut self, new_entries: &[Entry]) -> Result<()> {
@@ -697,26 +728,41 @@ impl RatingRepository for SqliteConnection {
     }
 
     fn archive_ratings(&self, ids: &[&str], archived: u64) -> Result<Vec<String>> {
-        use self::schema::ratings::dsl;
-        let entry_ids = dsl::ratings
-            .select(dsl::entry_id)
+        use self::schema::ratings::dsl as r_dsl;
+        let entry_ids = r_dsl::ratings
+            .select(r_dsl::entry_id)
             .distinct()
-            .filter(dsl::id.eq_any(ids))
-            .filter(dsl::archived.is_null())
+            .filter(r_dsl::id.eq_any(ids))
+            .filter(r_dsl::archived.is_null())
             .load::<String>(self)?;
+        debug_assert!(entry_ids.len() <= ids.len());
         let count = diesel::update(
-            dsl::ratings
-                .filter(dsl::id.eq_any(ids))
-                .filter(dsl::archived.is_null()),
+            r_dsl::ratings
+                .filter(r_dsl::entry_id.eq_any(ids))
+                .filter(r_dsl::archived.is_null()),
         )
-        .set(dsl::archived.eq(Some(archived as i64)))
+        .set(r_dsl::archived.eq(Some(archived as i64)))
         .execute(self)?;
-        match count {
-            n if n < ids.len() => Err(RepoError::NotFound),
-            n if n == ids.len() => Ok(entry_ids),
-            n if n > ids.len() => Err(RepoError::TooManyFound),
-            _ => unreachable!(),
+        debug_assert!(count <= ids.len());
+        if count < ids.len() {
+            return Err(RepoError::NotFound);
         }
+        if count > ids.len() {
+            // Should never happen
+            return Err(RepoError::TooManyFound);
+        }
+
+        // Rating -> Comment
+        use self::schema::comments::dsl as c_dsl;
+        diesel::update(
+            c_dsl::comments
+                .filter(c_dsl::rating_id.eq_any(ids))
+                .filter(c_dsl::archived.is_null()),
+        )
+        .set(c_dsl::archived.eq(Some(archived as i64)))
+        .execute(self)?;
+
+        Ok(entry_ids)
     }
 }
 
