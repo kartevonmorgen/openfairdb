@@ -70,19 +70,19 @@ impl IndexedEntryFields {
         let mut schema_builder = SchemaBuilder::default();
         let fields = Self {
             id: schema_builder.add_text_field("id", id_options),
-            lat: schema_builder.add_i64_field("lat", INT_INDEXED | INT_STORED),
-            lng: schema_builder.add_i64_field("lng", INT_INDEXED | INT_STORED),
+            lat: schema_builder.add_i64_field("lat", INDEXED | STORED),
+            lng: schema_builder.add_i64_field("lng", INDEXED | STORED),
             title: schema_builder.add_text_field("title", text_options.clone()),
             description: schema_builder.add_text_field("description", text_options),
             category: schema_builder.add_text_field("category", category_options.clone()),
             tag: schema_builder.add_text_field("tag", tag_options),
-            ratings_diversity: schema_builder.add_u64_field("ratings_diversity", INT_STORED),
-            ratings_fairness: schema_builder.add_u64_field("ratings_fairness", INT_STORED),
-            ratings_humanity: schema_builder.add_u64_field("ratings_humanity", INT_STORED),
-            ratings_renewable: schema_builder.add_u64_field("ratings_renewable", INT_STORED),
-            ratings_solidarity: schema_builder.add_u64_field("ratings_solidarity", INT_STORED),
-            ratings_transparency: schema_builder.add_u64_field("ratings_transparency", INT_STORED),
-            total_rating: schema_builder.add_u64_field("total_rating", INT_STORED | FAST),
+            ratings_diversity: schema_builder.add_u64_field("ratings_diversity", STORED),
+            ratings_fairness: schema_builder.add_u64_field("ratings_fairness", STORED),
+            ratings_humanity: schema_builder.add_u64_field("ratings_humanity", STORED),
+            ratings_renewable: schema_builder.add_u64_field("ratings_renewable", STORED),
+            ratings_solidarity: schema_builder.add_u64_field("ratings_solidarity", STORED),
+            ratings_transparency: schema_builder.add_u64_field("ratings_transparency", STORED),
+            total_rating: schema_builder.add_u64_field("total_rating", STORED | FAST),
         };
         (fields, schema_builder.build())
     }
