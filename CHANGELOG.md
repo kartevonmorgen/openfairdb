@@ -1,3 +1,7 @@
+## v0.4.5 (2019-03-07)
+- Final and official v0.4.x release due to technical reasons
+- No functional changes since v0.4.4
+
 ## v0.4.4 (2019-02-17)
 - fix: Never resolve the location of an event with an empty event address
 
