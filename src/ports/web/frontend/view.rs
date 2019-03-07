@@ -28,7 +28,7 @@ fn header(email: Option<&str>) -> Markup {
     html! {
     header {
         @if let Some(email) = email {
-            div class="msg" { "Your are logged with " span class="email" { (email) } }
+            div class="msg" { "Your are logged in as " span class="email" { (email) } }
             nav {
                 a href="/" { "search" }
                 a href="dashboard" { "dashboard" }
@@ -57,12 +57,12 @@ pub struct DashBoardPresenter<'a> {
 
 pub fn dashboard(data: DashBoardPresenter) -> Markup {
     page(
-        "Admin dashboard",
+        "Admin Dashboard",
         None,
         html! {
             (header(Some(data.email)))
             main {
-                h3 { "Stats" }
+                h3 { "Database Statistics" }
                 table {
                     tr {
                         td {"Number of Entries"}
@@ -116,7 +116,7 @@ fn leaflet_css_link() -> Markup {
 
 pub fn search_results(search_term: &str, entries: &[IndexedEntry]) -> Markup {
     page(
-        "OpenFariDB Search Results",
+        "OpenFairDB Search Results",
         None,
         html! {
             div class="search" {
@@ -457,7 +457,7 @@ fn map_scripts(pins: &[MapPin]) -> Markup {
 
 pub fn events(events: &[Event]) -> Markup {
     page(
-        "List of events",
+        "List of Events",
         None,
         html! {
             div class="events" {
@@ -484,7 +484,7 @@ pub fn events(events: &[Event]) -> Markup {
                                             }
                                         }
                                         @if let Some(ref o) = e.organizer {
-                                        span class="organizier" { (o) }
+                                        span class="organizer" { (o) }
                                         }
                                     }
                                 }
