@@ -213,7 +213,7 @@ fn post_entry(
     mut search_engine: tantivy::SearchEngine,
     body: Json<usecases::NewEntry>,
 ) -> Result<String> {
-    Ok(Json(flows::add_entry(
+    Ok(Json(flows::create_entry(
         &connections,
         &mut search_engine,
         body.into_inner(),

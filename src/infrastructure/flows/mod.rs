@@ -1,5 +1,5 @@
-mod add_entry;
-mod add_rating;
+mod create_entry;
+mod create_rating;
 mod archive_comments;
 mod archive_entries;
 mod archive_events;
@@ -8,7 +8,7 @@ mod update_entry;
 
 pub mod prelude {
     pub use super::{
-        add_entry::*, add_entry::*, add_rating::*, archive_comments::*, archive_entries::*,
+        create_entry::*, create_rating::*, archive_comments::*, archive_entries::*,
         archive_events::*, archive_ratings::*, update_entry::*,
     };
 }
@@ -81,8 +81,8 @@ mod tests {
                 }
             }
 
-            pub fn add_entry(self: &EnvFixture, new_entry: NewEntry) -> String {
-                flows::add_entry(
+            pub fn create_entry(self: &EnvFixture, new_entry: NewEntry) -> String {
+                flows::create_entry(
                     &self.db_connections,
                     &mut *self.search_engine.borrow_mut(),
                     new_entry.into(),
@@ -102,11 +102,11 @@ mod tests {
                 self.try_get_entry(id).is_some()
             }
 
-            pub fn add_rating(
+            pub fn create_rating(
                 self: &EnvFixture,
                 rate_entry: usecases::RateEntry,
             ) -> (String, String) {
-                flows::add_rating(
+                flows::create_rating(
                     &self.db_connections,
                     &mut *self.search_engine.borrow_mut(),
                     rate_entry,

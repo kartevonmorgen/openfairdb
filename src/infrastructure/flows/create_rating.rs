@@ -2,7 +2,7 @@ use super::*;
 
 use diesel::connection::Connection;
 
-pub fn add_rating(
+pub fn create_rating(
     connections: &sqlite::Connections,
     indexer: &mut EntryIndexer,
     rate_entry: usecases::RateEntry,

@@ -179,7 +179,7 @@ fn get_one_entry() {
         .unwrap()
         .create_entry(e.clone())
         .unwrap();
-    flows::add_rating(
+    flows::create_rating(
         &connections,
         &mut search_engine,
         usecase::RateEntry {
@@ -304,7 +304,7 @@ fn search_with_categories() {
         .unwrap();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
     search_engine.flush().unwrap();
 
@@ -354,7 +354,7 @@ fn search_with_text() {
     let (client, connections, mut search_engine) = setup2();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
     search_engine.flush().unwrap();
 
@@ -387,7 +387,7 @@ fn search_with_city() {
     let (client, connections, mut search_engine) = setup2();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
     search_engine.flush().unwrap();
 
@@ -461,7 +461,7 @@ fn search_with_tags() {
         .unwrap();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
 
     let req = client.get("/search?bbox=-10,-10,10,10&tags=bla-blubb");
@@ -517,7 +517,7 @@ fn search_with_uppercase_tags() {
         .unwrap();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
 
     let req = client.get("/search?bbox=-10,-10,10,10&tags=Foo");
@@ -561,7 +561,7 @@ fn search_with_hashtag() {
         .unwrap();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23foo-bar");
@@ -605,7 +605,7 @@ fn search_with_two_hashtags() {
         .unwrap();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23bla-blubb%20%23foo-bar");
@@ -649,7 +649,7 @@ fn search_with_commata() {
         .unwrap();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23eins%2C%20%23zwei");
@@ -697,7 +697,7 @@ fn search_without_specifying_hashtag_symbol() {
         .unwrap();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
 
     let mut response = client.get("/search?bbox=-10,-10,10,10&text=foo").dispatch();
@@ -837,7 +837,7 @@ fn get_one_rating() {
     let e = Entry::build().id("foo").finish();
     let (client, connections, mut search_engine) = setup2();
     connections.exclusive().unwrap().create_entry(e).unwrap();
-    flows::add_rating(
+    flows::create_rating(
         &connections,
         &mut search_engine,
         usecase::RateEntry {
@@ -876,7 +876,7 @@ fn ratings_with_and_without_source() {
     let (client, connections, mut search_engine) = setup2();
     connections.exclusive().unwrap().create_entry(e1).unwrap();
     connections.exclusive().unwrap().create_entry(e2).unwrap();
-    flows::add_rating(
+    flows::create_rating(
         &connections,
         &mut search_engine,
         usecase::RateEntry {
@@ -890,7 +890,7 @@ fn ratings_with_and_without_source() {
         },
     )
     .unwrap();
-    flows::add_rating(
+    flows::create_rating(
         &connections,
         &mut search_engine,
         usecase::RateEntry {

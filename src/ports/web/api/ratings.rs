@@ -8,7 +8,7 @@ pub fn post_rating(
     mut search_engine: tantivy::SearchEngine,
     data: Json<usecases::RateEntry>,
 ) -> Result<()> {
-    let _ = flows::add_rating(&connections, &mut search_engine, data.into_inner())?;
+    let _ = flows::create_rating(&connections, &mut search_engine, data.into_inner())?;
     Ok(Json(()))
 }
 

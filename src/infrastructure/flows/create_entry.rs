@@ -4,7 +4,7 @@ use crate::core::error::RepoError;
 
 use diesel::Connection;
 
-pub fn add_entry(
+pub fn create_entry(
     connections: &sqlite::Connections,
     indexer: &mut EntryIndexer,
     new_entry: usecases::NewEntry,
