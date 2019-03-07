@@ -461,37 +461,37 @@ pub fn events(events: &[Event]) -> Markup {
         None,
         html! {
             div class="events" {
-          h3{ "Events" }
-          ul class="event-list" {
-              @for e in events{
-                  li{
-                      a href=(format!("/events/{}",e.id)) {
-                          div {
-                              h4 {
-                                  span class="title" { (e.title) }
-                                  " "
-                                  span class="date" {
-                                    (e.start.format("%d.%m.%y"))
-                                  }
-                              }
-                              p {
-                                @if let Some(ref l) = e.location {
-                                    @if let Some(ref a) = l.address {
-                                        @if let Some(ref city) = a.city {
-                                            span class="city" { (city) }
-                                            br;
+                h3 { "Events" }
+                ul class="event-list" {
+                    @for e in events {
+                        li {
+                            a href=(format!("/events/{}", e.id)) {
+                                div {
+                                    h4 {
+                                        span class="title" { (e.title) }
+                                        " "
+                                        span class="date" {
+                                            (e.start.format("%d.%m.%y"))
+                                        }
+                                    }
+                                    p {
+                                        @if let Some(ref l) = e.location {
+                                            @if let Some(ref a) = l.address {
+                                                @if let Some(ref city) = a.city {
+                                                    span class="city" { (city) }
+                                                    br;
+                                                }
+                                            }
+                                        }
+                                        @if let Some(ref o) = e.organizer {
+                                        span class="organizier" { (o) }
                                         }
                                     }
                                 }
-                                @if let Some(ref o) = e.organizer {
-                                   span class="organizier" { (o) }
-                                }
-                              }
-                          }
-                      }
-                  }
-              }
-          }
+                            }
+                        }
+                    }
+                }
             }
         },
     )

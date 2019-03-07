@@ -94,8 +94,6 @@ mod tests {
         logger::LoggingLevel,
         Route,
     };
-    use std::fs;
-    use uuid::Uuid;
 
     pub mod prelude {
         pub use crate::core::db::*;
@@ -119,9 +117,7 @@ mod tests {
             .log_level(LoggingLevel::Debug)
             .finalize()
             .unwrap();
-        let uuid = Uuid::new_v4().to_simple_ref().to_string();
-        fs::create_dir_all("test-dbs").unwrap();
-        let connections = sqlite::Connections::init(&format!("./test-dbs/{}", uuid), 1).unwrap();
+        let connections = sqlite::Connections::init(":memory:", 1).unwrap();
         embedded_migrations::run(&*connections.exclusive().unwrap()).unwrap();
         let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
         let rocket = super::rocket_instance(

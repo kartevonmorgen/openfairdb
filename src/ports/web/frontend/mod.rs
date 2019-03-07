@@ -149,7 +149,10 @@ mod tests {
                     id: "1234".into(),
                     title: "x".into(),
                     description: None,
-                    start: NaiveDateTime::from_timestamp(0, 0),
+                    start: chrono::Utc::now()
+                        .checked_sub_signed(chrono::Duration::hours(2))
+                        .unwrap()
+                        .naive_utc(),
                     end: None,
                     location: None,
                     contact: None,
@@ -163,7 +166,27 @@ mod tests {
                     id: "5678".into(),
                     title: "x".into(),
                     description: None,
-                    start: NaiveDateTime::from_timestamp(0, 0),
+                    start: chrono::Utc::now()
+                        .checked_add_signed(chrono::Duration::days(2))
+                        .unwrap()
+                        .naive_utc(),
+                    end: None,
+                    location: None,
+                    contact: None,
+                    tags: vec!["bla".into()],
+                    homepage: None,
+                    created_by: None,
+                    registration: Some(RegistrationType::Email),
+                    organizer: None,
+                },
+                Event {
+                    id: "0000".into(),
+                    title: "x".into(),
+                    description: None,
+                    start: chrono::Utc::now()
+                        .checked_sub_signed(chrono::Duration::days(2))
+                        .unwrap()
+                        .naive_utc(),
                     end: None,
                     location: None,
                     contact: None,
@@ -187,6 +210,7 @@ mod tests {
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
             assert!(body_str.contains("<li><a href=\"/events/1234\">"));
             assert!(body_str.contains("<li><a href=\"/events/5678\">"));
+            assert!(!body_str.contains("<li><a href=\"/events/0000\">"));
         }
 
         #[test]
