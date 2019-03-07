@@ -235,12 +235,7 @@ impl EntryGateway for MockDb {
             .collect())
     }
     fn count_entries(&self) -> RepoResult<usize> {
-        Ok(self
-            .entries
-            .borrow()
-            .iter()
-            .filter(|e| e.archived.is_none())
-            .count())
+        self.all_entries().map(|v| v.len())
     }
 
     fn update_entry(&self, e: &Entry) -> RepoResult<()> {
@@ -279,6 +274,10 @@ impl EventGateway for MockDb {
             .filter(|e| e.archived.is_none())
             .cloned()
             .collect())
+    }
+
+    fn count_events(&self) -> RepoResult<usize> {
+        self.all_events().map(|v| v.len())
     }
 
     fn update_event(&self, e: &Event) -> RepoResult<()> {
@@ -329,6 +328,10 @@ impl UserGateway for MockDb {
 
     fn all_users(&self) -> RepoResult<Vec<User>> {
         Ok(self.users.clone())
+    }
+
+    fn count_users(&self) -> RepoResult<usize> {
+        self.all_users().map(|v| v.len())
     }
 
     fn delete_user(&mut self, u_id: &str) -> RepoResult<()> {
@@ -504,7 +507,7 @@ impl Db for MockDb {
         Ok(self.tags.borrow().clone())
     }
     fn count_tags(&self) -> RepoResult<usize> {
-        Ok(self.tags.borrow().len())
+        self.all_tags().map(|v| v.len())
     }
 
     fn all_bbox_subscriptions(&self) -> RepoResult<Vec<BboxSubscription>> {

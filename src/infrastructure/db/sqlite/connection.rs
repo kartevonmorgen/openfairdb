@@ -246,12 +246,11 @@ impl EntryGateway for SqliteConnection {
 
     fn count_entries(&self) -> Result<usize> {
         use self::schema::entries::dsl as e_dsl;
-        let count: i64 = e_dsl::entries
+        Ok(e_dsl::entries
             .select(diesel::dsl::count(e_dsl::id))
             .filter(e_dsl::current.eq(true))
             .filter(e_dsl::archived.is_null())
-            .first(self)?;
-        Ok(count as usize)
+            .first::<i64>(self)? as usize)
     }
 
     fn update_entry(&self, entry: &Entry) -> Result<()> {
@@ -509,6 +508,14 @@ impl EventGateway for SqliteConnection {
         Ok(events.into_iter().map(|e| (e, &tag_rels).into()).collect())
     }
 
+    fn count_events(&self) -> Result<usize> {
+        use self::schema::events::dsl as dsl;
+        Ok(dsl::events
+            .select(diesel::dsl::count(dsl::id))
+            .filter(dsl::archived.is_null())
+            .first::<i64>(self)? as usize)
+    }
+
     fn update_event(&self, event: &Event) -> Result<()> {
         let e = models::Event::from(event.clone());
         self.transaction::<_, diesel::result::Error, _>(|| {
@@ -608,6 +615,7 @@ impl UserGateway for SqliteConnection {
         let u: models::User = dsl::users.filter(dsl::email.eq(email)).first(self)?;
         Ok(User::from(u))
     }
+
     fn all_users(&self) -> Result<Vec<User>> {
         use self::schema::users::dsl;
         Ok(dsl::users
@@ -616,6 +624,14 @@ impl UserGateway for SqliteConnection {
             .map(Into::into)
             .collect())
     }
+
+    fn count_users(&self) -> Result<usize> {
+        use self::schema::users::dsl as dsl;
+        Ok(dsl::users
+            .select(diesel::dsl::count(dsl::id))
+            .first::<i64>(self)? as usize)
+    }
+
     fn delete_user(&mut self, user_name: &str) -> Result<()> {
         use self::schema::users::dsl::*;
         diesel::delete(users.find(user_name)).execute(self)?;
@@ -879,8 +895,7 @@ impl Db for SqliteConnection {
     }
     fn count_tags(&self) -> Result<usize> {
         use self::schema::tags::dsl::*;
-        let count: i64 = tags.select(diesel::dsl::count(id)).first(self)?;
-        Ok(count as usize)
+        Ok(tags.select(diesel::dsl::count(id)).first::<i64>(self)? as usize)
     }
 }
 

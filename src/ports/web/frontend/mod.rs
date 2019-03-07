@@ -90,16 +90,19 @@ pub fn get_events(db: sqlite::Connections) -> Result<Markup> {
 
 #[get("/dashboard")]
 pub fn get_dashboard(db: sqlite::Connections, admin: Admin) -> Result<Markup> {
-    let tag_count = db.shared().map_err(RepoError::from)?.count_tags()?;
-    let entry_count = db.shared().map_err(RepoError::from)?.count_entries()?;
-    let user_count = db.shared().map_err(RepoError::from)?.all_users()?.len();
-    let event_count = db.shared().map_err(RepoError::from)?.all_events()?.len();
-    let data = view::DashBoardPresenter {
-        email: &admin.0,
-        entry_count,
-        event_count,
-        tag_count,
-        user_count,
+    let data = {
+        let db = db.shared().map_err(RepoError::from)?;
+        let tag_count = db.count_tags()?;
+        let entry_count = db.count_entries()?;
+        let user_count = db.count_users()?;
+        let event_count = db.count_events()?;
+        view::DashBoardPresenter {
+            email: &admin.0,
+            entry_count,
+            event_count,
+            tag_count,
+            user_count,
+        }
     };
     Ok(view::dashboard(data))
 }

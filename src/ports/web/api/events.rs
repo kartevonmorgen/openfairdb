@@ -1168,14 +1168,14 @@ mod tests {
             };
             db.exclusive().unwrap().create_event(e0.clone()).unwrap();
             db.exclusive().unwrap().create_event(e1.clone()).unwrap();
-            assert_eq!(db.shared().unwrap().all_events().unwrap().len(), 2);
+            assert_eq!(db.shared().unwrap().count_events().unwrap(), 2);
             let res = client
                 .delete("/events/1234")
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
                 .dispatch();
             assert_eq!(res.status(), Status::Ok);
-            assert_eq!(db.shared().unwrap().all_events().unwrap().len(), 1);
+            assert_eq!(db.shared().unwrap().count_events().unwrap(), 1);
         }
     }
 
