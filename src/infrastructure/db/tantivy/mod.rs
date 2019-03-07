@@ -26,6 +26,10 @@ struct IndexedEntryFields {
     lng: Field,
     title: Field,
     description: Field,
+    address_street: Field,
+    address_city: Field,
+    address_zip: Field,
+    address_country: Field,
     category: Field,
     tag: Field,
     ratings_diversity: Field,
@@ -60,6 +64,15 @@ impl IndexedEntryFields {
                     .set_index_option(IndexRecordOption::WithFreqs),
             )
             .set_stored();
+        let address_options = TextOptions::default()
+            .set_indexing_options(
+                TextFieldIndexing::default()
+                    .set_tokenizer(TEXT_TOKENIZER)
+                    .set_index_option(IndexRecordOption::WithFreqs),
+            )
+            // Address fields currently don't need to be stored
+            //.set_stored()
+            ;
         let text_options = TextOptions::default()
             .set_indexing_options(
                 TextFieldIndexing::default()
@@ -73,9 +86,15 @@ impl IndexedEntryFields {
             lat: schema_builder.add_i64_field("lat", INDEXED | STORED),
             lng: schema_builder.add_i64_field("lng", INDEXED | STORED),
             title: schema_builder.add_text_field("title", text_options.clone()),
-            description: schema_builder.add_text_field("description", text_options),
+            description: schema_builder.add_text_field("description", text_options.clone()),
+            address_street: schema_builder
+                .add_text_field("address_street", address_options.clone()),
+            address_city: schema_builder.add_text_field("address_city", address_options.clone()),
+            address_zip: schema_builder.add_text_field("address_zip", address_options.clone()),
+            address_country: schema_builder
+                .add_text_field("address_country", address_options.clone()),
             category: schema_builder.add_text_field("category", category_options.clone()),
-            tag: schema_builder.add_text_field("tag", tag_options),
+            tag: schema_builder.add_text_field("tag", tag_options.clone()),
             ratings_diversity: schema_builder.add_u64_field("ratings_diversity", STORED),
             ratings_fairness: schema_builder.add_u64_field("ratings_fairness", STORED),
             ratings_humanity: schema_builder.add_u64_field("ratings_humanity", STORED),
@@ -172,6 +191,11 @@ impl IndexedEntryFields {
                     entry.ratings.transparency = u64_to_avg_rating(fv.value().u64_value());
                 }
                 fv if fv.field() == self.total_rating => (),
+                // Address fields are currently not stored
+                //fv if fv.field() == self.address_street => (),
+                //fv if fv.field() == self.address_city => (),
+                //fv if fv.field() == self.address_zip => (),
+                //fv if fv.field() == self.address_country => (),
                 fv => {
                     error!("Unexpected field value: {:?}", fv);
                 }
@@ -275,8 +299,17 @@ impl TantivyEntryIndex {
         register_tokenizers(&index);
 
         let writer = index.writer(OVERALL_INDEX_HEAP_SIZE_IN_BYTES)?;
-        let text_query_parser =
-            QueryParser::for_index(&index, vec![fields.title, fields.description]);
+        let text_query_parser = QueryParser::for_index(
+            &index,
+            vec![
+                fields.title,
+                fields.description,
+                fields.address_street,
+                fields.address_city,
+                fields.address_zip,
+                fields.address_country,
+            ],
+        );
         Ok(Self {
             fields,
             index,
@@ -419,6 +452,38 @@ impl EntryIndexer for TantivyEntryIndex {
         );
         doc.add_text(self.fields.title, &entry.title);
         doc.add_text(self.fields.description, &entry.description);
+        if let Some(street) = entry
+            .location
+            .address
+            .as_ref()
+            .and_then(|address| address.street.as_ref())
+        {
+            doc.add_text(self.fields.address_street, street);
+        }
+        if let Some(city) = entry
+            .location
+            .address
+            .as_ref()
+            .and_then(|address| address.city.as_ref())
+        {
+            doc.add_text(self.fields.address_city, city);
+        }
+        if let Some(zip) = entry
+            .location
+            .address
+            .as_ref()
+            .and_then(|address| address.zip.as_ref())
+        {
+            doc.add_text(self.fields.address_zip, zip);
+        }
+        if let Some(country) = entry
+            .location
+            .address
+            .as_ref()
+            .and_then(|address| address.country.as_ref())
+        {
+            doc.add_text(self.fields.address_country, country);
+        }
         for category in &entry.categories {
             doc.add_text(self.fields.category, category);
         }

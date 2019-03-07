@@ -148,16 +148,33 @@ mod tests {
     #[test]
     fn should_archive_entries_with_ratings_and_comments() {
         let fixture = EnvFixture::new();
-        let entry_ids = vec![
-            fixture.add_entry(0.into()),
-            fixture.add_entry(1.into()),
-        ];
+        let entry_ids = vec![fixture.add_entry(0.into()), fixture.add_entry(1.into())];
 
         let rating_comment_ids = vec![
-            fixture.add_rating(new_entry_rating(0, &entry_ids[0], RatingContext::Diversity, RatingValue::new(-1))),
-            fixture.add_rating(new_entry_rating(1, &entry_ids[0], RatingContext::Fairness, RatingValue::new(0))),
-            fixture.add_rating(new_entry_rating(2, &entry_ids[1], RatingContext::Transparency, RatingValue::new(1))),
-            fixture.add_rating(new_entry_rating(3, &entry_ids[1], RatingContext::Renewable, RatingValue::new(2))),
+            fixture.add_rating(new_entry_rating(
+                0,
+                &entry_ids[0],
+                RatingContext::Diversity,
+                RatingValue::new(-1),
+            )),
+            fixture.add_rating(new_entry_rating(
+                1,
+                &entry_ids[0],
+                RatingContext::Fairness,
+                RatingValue::new(0),
+            )),
+            fixture.add_rating(new_entry_rating(
+                2,
+                &entry_ids[1],
+                RatingContext::Transparency,
+                RatingValue::new(1),
+            )),
+            fixture.add_rating(new_entry_rating(
+                3,
+                &entry_ids[1],
+                RatingContext::Renewable,
+                RatingValue::new(2),
+            )),
         ];
 
         for entry_id in &entry_ids {

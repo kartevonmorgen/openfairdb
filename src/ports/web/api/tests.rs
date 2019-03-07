@@ -368,6 +368,39 @@ fn search_with_text() {
     assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
+fn new_entry_with_city(city: &str, latlng: f64) -> usecases::NewEntry {
+    usecases::NewEntry {
+        city: Some(city.into()),
+        lat: latlng,
+        lng: latlng,
+        ..default_new_entry()
+    }
+}
+
+#[test]
+fn search_with_city() {
+    let entries = vec![
+        new_entry_with_city("Stuttgart", 1.0),
+        new_entry_with_city("Mannheim", 2.0),
+        new_entry_with_city("Stuttgart-Möhringen", 3.0),
+    ];
+    let (client, connections, mut search_engine) = setup2();
+    let entry_ids: Vec<_> = entries
+        .into_iter()
+        .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
+        .collect();
+    search_engine.flush().unwrap();
+
+    let req = client.get("/search?bbox=-10,-10,10,10&text=stuttgart");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    test_json(&response);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+}
+
 #[ignore]
 #[bench]
 fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {

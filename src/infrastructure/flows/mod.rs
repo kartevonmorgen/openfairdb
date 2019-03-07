@@ -31,7 +31,7 @@ mod tests {
         }
         pub use crate::{
             infrastructure::{error::AppError, flows::prelude as flows},
-            ports::web::api
+            ports::web::api,
         };
 
         use super::super::Result;
@@ -67,8 +67,12 @@ mod tests {
                 let db_connections = sqlite::Connections::init(&format!(":memory:"), 1).unwrap();
                 embedded_migrations::run(&*db_connections.exclusive().unwrap()).unwrap();
                 let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
-                let rocket =
-                    rocket_instance(db_connections.clone(), search_engine.clone(), vec![("/", api::routes())], Some(cfg));
+                let rocket = rocket_instance(
+                    db_connections.clone(),
+                    search_engine.clone(),
+                    vec![("/", api::routes())],
+                    Some(cfg),
+                );
                 let client = Client::new(rocket).unwrap();
                 Self {
                     client,
@@ -98,7 +102,10 @@ mod tests {
                 self.try_get_entry(id).is_some()
             }
 
-            pub fn add_rating(self: &EnvFixture, rate_entry: usecases::RateEntry) -> (String, String) {
+            pub fn add_rating(
+                self: &EnvFixture,
+                rate_entry: usecases::RateEntry,
+            ) -> (String, String) {
                 flows::add_rating(
                     &self.db_connections,
                     &mut *self.search_engine.borrow_mut(),
@@ -204,7 +211,12 @@ mod tests {
             }
         }
 
-        pub fn new_entry_rating(i: i32, entry_id: &str, context: RatingContext, value: RatingValue) -> usecases::RateEntry {
+        pub fn new_entry_rating(
+            i: i32,
+            entry_id: &str,
+            context: RatingContext,
+            value: RatingValue,
+        ) -> usecases::RateEntry {
             usecases::RateEntry {
                 entry: entry_id.to_owned(),
                 context,

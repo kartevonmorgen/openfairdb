@@ -509,7 +509,7 @@ impl EventGateway for SqliteConnection {
     }
 
     fn count_events(&self) -> Result<usize> {
-        use self::schema::events::dsl as dsl;
+        use self::schema::events::dsl;
         Ok(dsl::events
             .select(diesel::dsl::count(dsl::id))
             .filter(dsl::archived.is_null())
@@ -626,7 +626,7 @@ impl UserGateway for SqliteConnection {
     }
 
     fn count_users(&self) -> Result<usize> {
-        use self::schema::users::dsl as dsl;
+        use self::schema::users::dsl;
         Ok(dsl::users
             .select(diesel::dsl::count(dsl::id))
             .first::<i64>(self)? as usize)
