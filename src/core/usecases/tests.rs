@@ -351,6 +351,26 @@ impl CommentRepository for MockDb {
         create(&mut self.comments.borrow_mut(), c)
     }
 
+    fn load_comment(&self, id: &str) -> RepoResult<Comment> {
+        get(&self.comments.borrow(), id).and_then(|c| {
+            if c.archived.is_none() {
+                Ok(c)
+            } else {
+                Err(RepoError::NotFound)
+            }
+        })
+    }
+
+    fn load_comments(&self, ids: &[&str]) -> RepoResult<Vec<Comment>> {
+        Ok(self
+            .comments
+            .borrow()
+            .iter()
+            .filter(|c| ids.iter().any(|id| &c.id == id) && c.archived.is_none())
+            .cloned()
+            .collect())
+    }
+
     fn load_comments_of_rating(&self, rating_id: &str) -> RepoResult<Vec<Comment>> {
         Ok(self
             .comments

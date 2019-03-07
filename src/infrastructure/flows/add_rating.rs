@@ -6,21 +6,23 @@ pub fn add_rating(
     connections: &sqlite::Connections,
     indexer: &mut EntryIndexer,
     rate_entry: usecases::RateEntry,
-) -> Result<Entry> {
+) -> Result<(String, String)> {
     // Add new rating to existing entry
-    let (entry, ratings) = {
+    let (rating_id, comment_id, entry, ratings) = {
         let connection = connections.exclusive()?;
         let mut prepare_err = None;
         connection
             .transaction::<_, diesel::result::Error, _>(|| {
                 match usecases::prepare_new_rating(&*connection, rate_entry) {
                     Ok(storable) => {
+                        let rating_id = storable.rating_id().to_owned();
+                        let comment_id = storable.comment_id().to_owned();
                         let (entry, ratings) = usecases::store_new_rating(&*connection, storable)
                             .map_err(|err| {
                             warn!("Failed to store new rating for entry: {}", err);
                             diesel::result::Error::RollbackTransaction
                         })?;
-                        Ok((entry, ratings))
+                        Ok((rating_id, comment_id, entry, ratings))
                     }
                     Err(err) => {
                         prepare_err = Some(err);
@@ -47,5 +49,5 @@ pub fn add_rating(
         );
     }
 
-    Ok(entry)
+    Ok((rating_id, comment_id))
 }

@@ -84,7 +84,6 @@ mod tests {
                     new_entry.into(),
                 )
                 .unwrap()
-                .id
             }
 
             pub fn try_get_entry(self: &EnvFixture, id: &str) -> Option<Entry> {
@@ -97,6 +96,39 @@ mod tests {
 
             pub fn entry_exists(self: &EnvFixture, id: &str) -> bool {
                 self.try_get_entry(id).is_some()
+            }
+
+            pub fn add_rating(self: &EnvFixture, rate_entry: usecases::RateEntry) -> (String, String) {
+                flows::add_rating(
+                    &self.db_connections,
+                    &mut *self.search_engine.borrow_mut(),
+                    rate_entry,
+                )
+                .unwrap()
+            }
+
+            pub fn try_get_rating(self: &EnvFixture, id: &str) -> Option<Rating> {
+                match self.db_connections.shared().unwrap().load_rating(id) {
+                    Ok(rating) => Some(rating),
+                    Err(RepoError::NotFound) => None,
+                    x => x.map(|_| None).unwrap(),
+                }
+            }
+
+            pub fn rating_exists(self: &EnvFixture, id: &str) -> bool {
+                self.try_get_rating(id).is_some()
+            }
+
+            pub fn try_get_comment(self: &EnvFixture, id: &str) -> Option<Comment> {
+                match self.db_connections.shared().unwrap().load_comment(id) {
+                    Ok(comment) => Some(comment),
+                    Err(RepoError::NotFound) => None,
+                    x => x.map(|_| None).unwrap(),
+                }
+            }
+
+            pub fn comment_exists(self: &EnvFixture, id: &str) -> bool {
+                self.try_get_comment(id).is_some()
             }
 
             pub fn query_entries(self: &EnvFixture, query: &EntryIndexQuery) -> Vec<IndexedEntry> {
@@ -169,6 +201,18 @@ mod tests {
                     image_url: None,
                     image_link_url: None,
                 }
+            }
+        }
+
+        pub fn new_entry_rating(i: i32, entry_id: &str, context: RatingContext, value: RatingValue) -> usecases::RateEntry {
+            usecases::RateEntry {
+                entry: entry_id.to_owned(),
+                context,
+                value,
+                title: format!("title_{}", i),
+                comment: format!("comment_{}", i),
+                source: None,
+                user: None,
             }
         }
     }

@@ -713,6 +713,28 @@ impl CommentRepository for SqliteConnection {
         Ok(())
     }
 
+    fn load_comment(&self, id: &str) -> Result<Comment> {
+        use self::schema::comments::dsl;
+        Ok(dsl::comments
+            .filter(dsl::id.eq(id))
+            .filter(dsl::archived.is_null())
+            .first::<models::Comment>(self)?
+            .into())
+    }
+
+    fn load_comments(&self, ids: &[&str]) -> Result<Vec<Comment>> {
+        use self::schema::comments::dsl;
+        // TODO: Split loading into chunks of fixed size
+        info!("Loading multiple ({}) comments at once", ids.len());
+        Ok(dsl::comments
+            .filter(dsl::id.eq_any(ids))
+            .filter(dsl::archived.is_null())
+            .load::<models::Comment>(self)?
+            .into_iter()
+            .map(Into::into)
+            .collect())
+    }
+
     fn load_comments_of_rating(&self, rating_id: &str) -> Result<Vec<Comment>> {
         use self::schema::comments::dsl;
         Ok(dsl::comments

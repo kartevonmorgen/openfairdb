@@ -17,6 +17,18 @@ pub struct RateEntry {
 #[derive(Debug, Clone)]
 pub struct Storable(Entry, Rating, Comment);
 
+impl Storable {
+    pub fn entry_id(&self) -> &str {
+        &self.0.id
+    }
+    pub fn rating_id(&self) -> &str {
+        &self.1.id
+    }
+    pub fn comment_id(&self) -> &str {
+        &self.2.id
+    }
+}
+
 pub fn prepare_new_rating<D: Db>(db: &D, r: RateEntry) -> Result<Storable> {
     if r.comment.len() < 1 {
         return Err(Error::Parameter(ParameterError::EmptyComment));
@@ -44,7 +56,7 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: RateEntry) -> Result<Storable> {
         created: now,
         archived: None,
         text: r.comment,
-        rating_id,
+        rating_id: rating_id.clone(),
     };
     Ok(Storable(entry, rating, comment))
 }

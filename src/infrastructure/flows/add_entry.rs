@@ -8,7 +8,7 @@ pub fn add_entry(
     connections: &sqlite::Connections,
     indexer: &mut EntryIndexer,
     new_entry: usecases::NewEntry,
-) -> Result<Entry> {
+) -> Result<String> {
     // Create and add new entry
     let (entry, ratings) = {
         let connection = connections.exclusive()?;
@@ -55,7 +55,7 @@ pub fn add_entry(
         );
     }
 
-    Ok(entry)
+    Ok(entry.id)
 }
 
 fn notify_entry_added(connections: &sqlite::Connections, entry: &Entry) -> Result<()> {

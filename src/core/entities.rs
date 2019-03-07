@@ -150,6 +150,12 @@ pub enum RatingContext {
 pub struct RatingValue(i8);
 
 impl RatingValue {
+    pub fn new<I: Into<i8>>(val: I) -> Self {
+        let new = Self(val.into());
+        debug_assert!(new.is_valid());
+        new
+    }
+
     pub const fn min() -> Self {
         Self(-1)
     }

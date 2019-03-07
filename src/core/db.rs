@@ -46,6 +46,8 @@ pub trait CommentRepository {
     fn create_comment(&self, _: Comment) -> Result<()>;
 
     // Only unarchived comments
+    fn load_comment(&self, id: &str) -> Result<Comment>;
+    fn load_comments(&self, id: &[&str]) -> Result<Vec<Comment>>;
     fn load_comments_of_rating(&self, rating_id: &str) -> Result<Vec<Comment>>;
 
     // Only unarchived comments (even if the rating has already been archived)

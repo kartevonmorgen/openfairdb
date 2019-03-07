@@ -214,7 +214,7 @@ fn post_entry(
     body: Json<usecases::NewEntry>,
 ) -> Result<String> {
     Ok(Json(
-        flows::add_entry(&connections, &mut search_engine, body.into_inner())?.id,
+        flows::add_entry(&connections, &mut search_engine, body.into_inner())?,
     ))
 }
 

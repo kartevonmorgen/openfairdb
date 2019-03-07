@@ -29,6 +29,12 @@ pub struct NewEntry {
 #[derive(Debug, Clone)]
 pub struct Storable(Entry);
 
+impl Storable {
+    pub fn entry_id(&self) -> &str {
+        &self.0.id
+    }
+}
+
 pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
     let NewEntry {
         title,

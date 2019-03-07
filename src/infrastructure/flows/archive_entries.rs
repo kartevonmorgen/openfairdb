@@ -144,4 +144,43 @@ mod tests {
         assert!(!fixture.entry_exists(&entry_ids[2]));
         assert!(fixture.query_entries_by_tag(&entry_tags[2]).is_empty());
     }
+
+    #[test]
+    fn should_archive_entries_with_ratings_and_comments() {
+        let fixture = EnvFixture::new();
+        let entry_ids = vec![
+            fixture.add_entry(0.into()),
+            fixture.add_entry(1.into()),
+        ];
+
+        let rating_comment_ids = vec![
+            fixture.add_rating(new_entry_rating(0, &entry_ids[0], RatingContext::Diversity, RatingValue::new(-1))),
+            fixture.add_rating(new_entry_rating(1, &entry_ids[0], RatingContext::Fairness, RatingValue::new(0))),
+            fixture.add_rating(new_entry_rating(2, &entry_ids[1], RatingContext::Transparency, RatingValue::new(1))),
+            fixture.add_rating(new_entry_rating(3, &entry_ids[1], RatingContext::Renewable, RatingValue::new(2))),
+        ];
+
+        for entry_id in &entry_ids {
+            assert!(fixture.entry_exists(entry_id));
+        }
+        for (rating_id, comment_id) in &rating_comment_ids {
+            assert!(fixture.rating_exists(rating_id));
+            assert!(fixture.comment_exists(comment_id));
+        }
+
+        assert!(archive_entries(&fixture, &vec![&*entry_ids[0]]).is_ok());
+
+        assert!(!fixture.entry_exists(&entry_ids[0]));
+        assert!(fixture.entry_exists(&entry_ids[1]));
+
+        assert!(!fixture.rating_exists(&rating_comment_ids[0].0));
+        assert!(!fixture.rating_exists(&rating_comment_ids[1].0));
+        assert!(fixture.rating_exists(&rating_comment_ids[2].0));
+        assert!(fixture.rating_exists(&rating_comment_ids[3].0));
+
+        assert!(!fixture.comment_exists(&rating_comment_ids[0].1));
+        assert!(!fixture.comment_exists(&rating_comment_ids[1].1));
+        assert!(fixture.comment_exists(&rating_comment_ids[2].1));
+        assert!(fixture.comment_exists(&rating_comment_ids[3].1));
+    }
 }

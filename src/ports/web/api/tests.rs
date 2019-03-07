@@ -302,7 +302,7 @@ fn search_with_categories() {
             name: "bar".into(),
         })
         .unwrap();
-    let entries: Vec<_> = entries
+    let entry_ids: Vec<_> = entries
         .into_iter()
         .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
@@ -313,25 +313,25 @@ fn search_with_categories() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entries[0].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[1].id)));
-    assert!(!body_str.contains(&format!("\"{}\"", entries[2].id)));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
 
     let req = client.get("/search?bbox=-10,-10,10,10&categories=bar&limit=1");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entries[0].id)));
-    assert!(!body_str.contains(&format!("\"{}\"", entries[1].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[2].id)));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
 
     let req = client.get("/search?bbox=-10,-10,10,10&categories=foo,bar");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entries[0].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[1].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[2].id)));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
 fn new_entry_with_text(title: &str, description: &str, latlng: f64) -> usecases::NewEntry {
@@ -352,7 +352,7 @@ fn search_with_text() {
         new_entry_with_text("baZ", "blub", 3.0),
     ];
     let (client, connections, mut search_engine) = setup2();
-    let entries: Vec<_> = entries
+    let entry_ids: Vec<_> = entries
         .into_iter()
         .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
@@ -363,9 +363,9 @@ fn search_with_text() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entries[0].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[1].id)));
-    assert!(!body_str.contains(&format!("\"{}\"", entries[2].id)));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
 #[ignore]
@@ -426,7 +426,7 @@ fn search_with_tags() {
             id: "bla-blubb".into(),
         })
         .unwrap();
-    let entries: Vec<_> = entries
+    let entry_ids: Vec<_> = entries
         .into_iter()
         .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
@@ -438,16 +438,16 @@ fn search_with_tags() {
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains(&format!(
         "\"visible\":[{{\"id\":\"{}\",\"lat\":0.0,\"lng\":0.0,\"title\":\"\",\"description\":\"\",\"categories\":[\"foo\"],\"tags\":[\"bla-blubb\",\"foo-bar\"],\"ratings\":{{\"total\":0.0,\"diversity\":0.0,\"fairness\":0.0,\"humanity\":0.0,\"renewable\":0.0,\"solidarity\":0.0,\"transparency\":0.0}}}}]",
-        entries[1].id,
+        entry_ids[1],
     )));
 
     let req = client.get("/search?bbox=-10,-10,10,10&tags=foo-bar");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entries[0].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[1].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[2].id)));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
 #[test]
@@ -482,7 +482,7 @@ fn search_with_uppercase_tags() {
         .unwrap()
         .create_tag_if_it_does_not_exist(&Tag { id: "baz".into() })
         .unwrap();
-    let entries: Vec<_> = entries
+    let entry_ids: Vec<_> = entries
         .into_iter()
         .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
@@ -491,9 +491,9 @@ fn search_with_uppercase_tags() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entries[0].id)));
-    assert!(!body_str.contains(&format!("\"{}\"", entries[1].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[2].id)));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
 #[test]
@@ -526,7 +526,7 @@ fn search_with_hashtag() {
             id: "foo-bar".into(),
         })
         .unwrap();
-    let entries: Vec<_> = entries
+    let entry_ids: Vec<_> = entries
         .into_iter()
         .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
@@ -535,9 +535,9 @@ fn search_with_hashtag() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entries[0].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[1].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[2].id)));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
 #[test]
@@ -570,7 +570,7 @@ fn search_with_two_hashtags() {
             id: "foo-bar".into(),
         })
         .unwrap();
-    let entries: Vec<_> = entries
+    let entry_ids: Vec<_> = entries
         .into_iter()
         .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
@@ -579,9 +579,9 @@ fn search_with_two_hashtags() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entries[0].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[1].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[2].id)));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
 #[test]
@@ -614,7 +614,7 @@ fn search_with_commata() {
         .unwrap()
         .create_tag_if_it_does_not_exist(&Tag { id: "zwei".into() })
         .unwrap();
-    let entries: Vec<_> = entries
+    let entry_ids: Vec<_> = entries
         .into_iter()
         .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
@@ -623,10 +623,10 @@ fn search_with_commata() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entries[0].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[1].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[2].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[3].id)));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[3])));
 }
 
 #[test]
@@ -662,7 +662,7 @@ fn search_without_specifying_hashtag_symbol() {
             id: "foo-bar".into(),
         })
         .unwrap();
-    let entries: Vec<_> = entries
+    let entry_ids: Vec<_> = entries
         .into_iter()
         .map(|e| flows::add_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
@@ -670,18 +670,18 @@ fn search_without_specifying_hashtag_symbol() {
     let mut response = client.get("/search?bbox=-10,-10,10,10&text=foo").dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entries[0].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[1].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[2].id)));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
 
     let mut response = client
         .get("/search?bbox=-10,-10,10,10&text=%23foo")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entries[0].id)));
-    assert!(!body_str.contains(&format!("\"{}\"", entries[1].id)));
-    assert!(!body_str.contains(&format!("\"{}\"", entries[2].id)));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
 
     // Text "foo-bar" is tokenized into "foo" and "bar"
     let mut response = client
@@ -689,36 +689,36 @@ fn search_without_specifying_hashtag_symbol() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entries[0].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[1].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[2].id)));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
 
     let mut response = client
         .get("/search?bbox=-10,-10,10,10&text=%23foo-bar")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entries[0].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[1].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[2].id)));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
 
     let mut response = client
         .get("/search?bbox=-10,-10,10,10&text=%23bla-blubb")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entries[0].id)));
-    assert!(body_str.contains(&format!("\"{}\"", entries[1].id)));
-    assert!(!body_str.contains(&format!("\"{}\"", entries[2].id)));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
 
     let mut response = client
         .get("/search?bbox=-10,-10,10,10&text=bla-blubb")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entries[0].id)));
-    assert!(!body_str.contains(&format!("\"{}\"", entries[1].id)));
-    assert!(!body_str.contains(&format!("\"{}\"", entries[2].id)));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
 #[test]
