@@ -1,15 +1,15 @@
-mod create_entry;
-mod create_rating;
 mod archive_comments;
 mod archive_entries;
 mod archive_events;
 mod archive_ratings;
+mod create_entry;
+mod create_rating;
 mod update_entry;
 
 pub mod prelude {
     pub use super::{
-        create_entry::*, create_rating::*, archive_comments::*, archive_entries::*,
-        archive_events::*, archive_ratings::*, update_entry::*,
+        archive_comments::*, archive_entries::*, archive_events::*, archive_ratings::*,
+        create_entry::*, create_rating::*, update_entry::*,
     };
 }
 

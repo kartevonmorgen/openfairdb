@@ -148,7 +148,10 @@ mod tests {
     #[test]
     fn should_archive_entries_with_ratings_and_comments() {
         let fixture = EnvFixture::new();
-        let entry_ids = vec![fixture.create_entry(0.into()), fixture.create_entry(1.into())];
+        let entry_ids = vec![
+            fixture.create_entry(0.into()),
+            fixture.create_entry(1.into()),
+        ];
 
         let rating_comment_ids = vec![
             fixture.create_rating(new_entry_rating(
