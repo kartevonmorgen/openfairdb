@@ -1,3 +1,7 @@
+## v0.5.1-dev (2019-mm-dd)
+- new(web): Add a basic admin frontend
+- new(web): Archive events/entries/ratings/comments
+
 ## v0.5.0 (2019-03-04)
 - new(web): Return additional properties of entries in search results
 - new(web): Limit max. number of search results
