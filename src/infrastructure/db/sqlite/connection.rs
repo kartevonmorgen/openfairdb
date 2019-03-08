@@ -693,7 +693,7 @@ impl RatingRepository for SqliteConnection {
         use self::schema::ratings::dsl as r_dsl;
         let count = diesel::update(
             r_dsl::ratings
-                .filter(r_dsl::entry_id.eq_any(ids))
+                .filter(r_dsl::id.eq_any(ids))
                 .filter(r_dsl::archived.is_null()),
         )
         .set(r_dsl::archived.eq(Some(archived as i64)))
