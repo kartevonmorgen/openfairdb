@@ -77,3 +77,129 @@ pub fn archive_ratings(
     post_archive_ratings(connections, indexer, ids)?;
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::super::tests::prelude::*;
+
+    fn archive_ratings(fixture: &EnvFixture, ids: &[&str]) -> super::Result<()> {
+        super::archive_ratings(
+            &fixture.db_connections,
+            &mut *fixture.search_engine.borrow_mut(),
+            ids,
+        )
+    }
+
+    #[test]
+    fn should_archive_multiple_ratings_only_once() {
+        let fixture = EnvFixture::new();
+
+        let entry_ids = vec![
+            fixture.create_entry(0.into()),
+            fixture.create_entry(1.into()),
+        ];
+        let rating_comment_ids = vec![
+            fixture.create_rating(new_entry_rating(
+                0,
+                &entry_ids[0],
+                RatingContext::Diversity,
+                RatingValue::new(-1),
+            )),
+            fixture.create_rating(new_entry_rating(
+                1,
+                &entry_ids[0],
+                RatingContext::Fairness,
+                RatingValue::new(0),
+            )),
+            fixture.create_rating(new_entry_rating(
+                2,
+                &entry_ids[1],
+                RatingContext::Transparency,
+                RatingValue::new(1),
+            )),
+            fixture.create_rating(new_entry_rating(
+                3,
+                &entry_ids[1],
+                RatingContext::Renewable,
+                RatingValue::new(2),
+            )),
+        ];
+
+        assert!(fixture.entry_exists(&entry_ids[0]));
+        assert!(fixture.entry_exists(&entry_ids[1]));
+
+        assert!(fixture.rating_exists(&rating_comment_ids[0].0));
+        assert!(fixture.rating_exists(&rating_comment_ids[1].0));
+        assert!(fixture.rating_exists(&rating_comment_ids[2].0));
+        assert!(fixture.rating_exists(&rating_comment_ids[3].0));
+
+        assert!(fixture.comment_exists(&rating_comment_ids[0].1));
+        assert!(fixture.comment_exists(&rating_comment_ids[1].1));
+        assert!(fixture.comment_exists(&rating_comment_ids[2].1));
+        assert!(fixture.comment_exists(&rating_comment_ids[3].1));
+
+        // Archive ratings 1 and 2
+        assert!(archive_ratings(
+            &fixture,
+            &vec![&*rating_comment_ids[1].0, &*rating_comment_ids[2].0]
+        )
+        .is_ok());
+
+        // Entries still exist
+        assert!(fixture.entry_exists(&entry_ids[0]));
+        assert!(fixture.entry_exists(&entry_ids[1]));
+
+        // Ratings 1 and 2 disappeared
+        assert!(fixture.rating_exists(&rating_comment_ids[0].0));
+        assert!(!fixture.rating_exists(&rating_comment_ids[1].0));
+        assert!(!fixture.rating_exists(&rating_comment_ids[2].0));
+        assert!(fixture.rating_exists(&rating_comment_ids[3].0));
+
+        // Comments for ratings 1 and 2 disappeared
+        assert!(fixture.comment_exists(&rating_comment_ids[0].1));
+        assert!(!fixture.comment_exists(&rating_comment_ids[1].1));
+        assert!(!fixture.comment_exists(&rating_comment_ids[2].1));
+        assert!(fixture.comment_exists(&rating_comment_ids[3].1));
+
+        // Try to archive ratings 0 and 1 (already archived)
+        assert_not_found(archive_ratings(
+            &fixture,
+            &vec![&*rating_comment_ids[0].0, &*rating_comment_ids[1].0],
+        ));
+
+        // No changes due to rollback
+        assert!(fixture.entry_exists(&entry_ids[0]));
+        assert!(fixture.entry_exists(&entry_ids[1]));
+        assert!(fixture.rating_exists(&rating_comment_ids[0].0));
+        assert!(!fixture.rating_exists(&rating_comment_ids[1].0));
+        assert!(!fixture.rating_exists(&rating_comment_ids[2].0));
+        assert!(fixture.rating_exists(&rating_comment_ids[3].0));
+        assert!(fixture.comment_exists(&rating_comment_ids[0].1));
+        assert!(!fixture.comment_exists(&rating_comment_ids[1].1));
+        assert!(!fixture.comment_exists(&rating_comment_ids[2].1));
+        assert!(fixture.comment_exists(&rating_comment_ids[3].1));
+
+        // Archive remaining ratings
+        assert!(archive_ratings(
+            &fixture,
+            &vec![&*rating_comment_ids[0].0, &*rating_comment_ids[3].0]
+        )
+        .is_ok());
+
+        // Entries still exist
+        assert!(fixture.entry_exists(&entry_ids[0]));
+        assert!(fixture.entry_exists(&entry_ids[1]));
+
+        // All ratings disappeared
+        assert!(!fixture.rating_exists(&rating_comment_ids[0].0));
+        assert!(!fixture.rating_exists(&rating_comment_ids[1].0));
+        assert!(!fixture.rating_exists(&rating_comment_ids[2].0));
+        assert!(!fixture.rating_exists(&rating_comment_ids[3].0));
+
+        // All comments disappeared
+        assert!(!fixture.comment_exists(&rating_comment_ids[0].1));
+        assert!(!fixture.comment_exists(&rating_comment_ids[1].1));
+        assert!(!fixture.comment_exists(&rating_comment_ids[2].1));
+        assert!(!fixture.comment_exists(&rating_comment_ids[3].1));
+    }
+}
