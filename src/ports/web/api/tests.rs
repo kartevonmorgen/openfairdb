@@ -265,21 +265,21 @@ fn default_new_entry() -> usecases::NewEntry {
     }
 }
 
-fn new_entry_with_category(category: &str, latlng: f64) -> usecases::NewEntry {
+fn new_entry_with_category(category: &str, lat: f64, lng: f64) -> usecases::NewEntry {
     usecases::NewEntry {
         categories: vec![category.into()],
-        lat: latlng,
-        lng: latlng,
+        lat: lat,
+        lng: lng,
         ..default_new_entry()
     }
 }
 
 #[test]
-fn search_with_categories() {
+fn search_with_categories_and_bbox() {
     let entries = vec![
-        new_entry_with_category("foo", 1.0),
-        new_entry_with_category("foo", 2.0),
-        new_entry_with_category("bar", 3.0),
+        new_entry_with_category("foo", 1.0, 1.0),
+        new_entry_with_category("foo", 2.0, 2.0),
+        new_entry_with_category("bar", 3.0, 3.0),
     ];
     let (client, connections, mut search_engine) = setup2();
     connections
@@ -308,7 +308,7 @@ fn search_with_categories() {
         .collect();
     search_engine.flush().unwrap();
 
-    let req = client.get("/search?bbox=-10,-10,10,10&categories=foo&limit=2");
+    let req = client.get("/search?bbox=-10,-10,10,10&categories=foo");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
@@ -317,7 +317,16 @@ fn search_with_categories() {
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
 
-    let req = client.get("/search?bbox=-10,-10,10,10&categories=bar&limit=1");
+    let req = client.get("/search?bbox=1.8,0.5,3.0,3.0&categories=foo");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    test_json(&response);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+
+    let req = client.get("/search?bbox=-10,-10,10,10&categories=bar");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
@@ -332,14 +341,22 @@ fn search_with_categories() {
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+
+    let req = client.get("/search?bbox=0.9,0.5,2.5,2.0&categories=foo,bar");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
-fn new_entry_with_text(title: &str, description: &str, latlng: f64) -> usecases::NewEntry {
+fn new_entry_with_text(title: &str, description: &str, lat: f64, lng: f64) -> usecases::NewEntry {
     usecases::NewEntry {
         title: title.into(),
         description: description.into(),
-        lat: latlng,
-        lng: latlng,
+        lat: lat,
+        lng: lng,
         ..default_new_entry()
     }
 }
@@ -347,9 +364,9 @@ fn new_entry_with_text(title: &str, description: &str, latlng: f64) -> usecases:
 #[test]
 fn search_with_text() {
     let entries = vec![
-        new_entry_with_text("Foo", "bla", 1.0),
-        new_entry_with_text("bar", "foo", 2.0),
-        new_entry_with_text("baZ", "blub", 3.0),
+        new_entry_with_text("Foo", "bla", 1.0, 1.0),
+        new_entry_with_text("bar", "foo", 2.0, 2.0),
+        new_entry_with_text("baZ", "blub", 3.0, 3.0),
     ];
     let (client, connections, mut search_engine) = setup2();
     let entry_ids: Vec<_> = entries
@@ -358,6 +375,7 @@ fn search_with_text() {
         .collect();
     search_engine.flush().unwrap();
 
+    // Search case insensitive "Foo" and "foo"
     let req = client.get("/search?bbox=-10,-10,10,10&text=Foo");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -366,6 +384,50 @@ fn search_with_text() {
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+
+    // Search case insensitive "Foo" and "foo" with bbox
+    let req = client.get("/search?bbox=1.8,0.5,3.0,3.0&text=Foo");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    test_json(&response);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+
+    // Search with whitespace
+    let req = client.get("/search?bbox=-10,-10,10,10&text=blub%20foo");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    test_json(&response);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+
+    // Search with whitespace and bbox
+    let req = client.get("/search?bbox=0.9,0.5,2.5,2.0&text=blub%20foo");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    test_json(&response);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+
+    // Search with punctuation
+    // TODO: Ignore punctuation in query text and make this test pass
+    // See also: https://github.com/slowtec/openfairdb/issues/82
+    /*
+    let req = client.get("/search?bbox=-10,-10,10,10&text=blub,Foo");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    test_json(&response);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    */
 }
 
 fn new_entry_with_city(city: &str, latlng: f64) -> usecases::NewEntry {
