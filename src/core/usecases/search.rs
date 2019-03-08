@@ -17,15 +17,9 @@ pub fn search(
     limit: usize,
 ) -> Result<(Vec<IndexedEntry>, Vec<IndexedEntry>)> {
     let visible_bbox: MapBbox = req.bbox;
-    let index_bbox =
-        if req.text.as_ref().map(String::is_empty).unwrap_or(true) && req.tags.is_empty() {
-            Some(filter::extend_bbox(&visible_bbox))
-        } else {
-            None
-        };
 
     let index_query = EntryIndexQuery {
-        bbox: index_bbox.map(Into::into),
+        bbox: Some(filter::extend_bbox(&visible_bbox)),
         categories: req.categories,
         ids: req.ids,
         tags: req.tags,
