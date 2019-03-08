@@ -323,7 +323,7 @@ impl TantivyEntryIndex {
 
         if !query.ids.is_empty() {
             let ids_query: Box<Query> = if query.ids.len() > 1 {
-                // Multiple ids
+                debug!("Query multiple ids: {:?}", query.ids);
                 let mut id_queries: Vec<(Occur, Box<Query>)> = Vec::with_capacity(query.ids.len());
                 for id in &query.ids {
                     debug_assert!(!id.trim().is_empty());
@@ -333,8 +333,8 @@ impl TantivyEntryIndex {
                 }
                 Box::new(BooleanQuery::from(id_queries))
             } else {
-                // Single id
                 let id = &query.ids[0];
+                debug!("Query single id: {:?}", id);
                 debug_assert!(!id.trim().is_empty());
                 let id_term = Term::from_field_text(self.fields.id, &id);
                 Box::new(TermQuery::new(id_term, IndexRecordOption::Basic))
@@ -344,6 +344,7 @@ impl TantivyEntryIndex {
 
         // Bbox
         if let Some(ref bbox) = query.bbox {
+            debug!("Query bbox: {}", bbox);
             debug_assert!(bbox.is_valid());
             debug_assert!(!bbox.is_empty());
             let lat_query = RangeQuery::new_i64_bounds(
@@ -373,6 +374,7 @@ impl TantivyEntryIndex {
 
         // Text
         if let Some(ref text) = query.text {
+            debug!("Query text: {}", text);
             debug_assert!(!text.trim().is_empty());
             match self.text_query_parser.parse_query(&text.to_lowercase()) {
                 Ok(query) => {
@@ -387,7 +389,7 @@ impl TantivyEntryIndex {
         // Categories
         if !query.categories.is_empty() {
             let categories_query: Box<Query> = if query.categories.len() > 1 {
-                // Multiple categories
+                debug!("Query multiple categories: {:?}", query.categories);
                 let mut category_queries: Vec<(Occur, Box<Query>)> =
                     Vec::with_capacity(query.categories.len());
                 for category in &query.categories {
@@ -399,8 +401,8 @@ impl TantivyEntryIndex {
                 }
                 Box::new(BooleanQuery::from(category_queries))
             } else {
-                // Single category
                 let category = &query.categories[0];
+                debug!("Query single category: {}", category);
                 debug_assert!(!category.trim().is_empty());
                 let category_term =
                     Term::from_field_text(self.fields.category, &category.to_lowercase());
@@ -412,7 +414,7 @@ impl TantivyEntryIndex {
         // Tags
         if !query.tags.is_empty() {
             let tags_query: Box<Query> = if query.tags.len() > 1 {
-                // Multiple tags
+                debug!("Query multiple tags: {:?}", query.categories);
                 let mut tag_queries: Vec<(Occur, Box<Query>)> =
                     Vec::with_capacity(query.categories.len());
                 for tag in &query.tags {
@@ -423,8 +425,8 @@ impl TantivyEntryIndex {
                 }
                 Box::new(BooleanQuery::from(tag_queries))
             } else {
-                // Single tag
                 let tag = &query.tags[0];
+                debug!("Query single tag: {}", tag);
                 debug_assert!(!tag.trim().is_empty());
                 let tag_term = Term::from_field_text(self.fields.tag, &tag.to_lowercase());
                 Box::new(TermQuery::new(tag_term, IndexRecordOption::Basic))
