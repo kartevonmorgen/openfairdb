@@ -1,86 +1,31 @@
 use crate::core::prelude::*;
-use maud::{html, Markup, DOCTYPE};
+use maud::{html, Markup};
 use rocket::request::FlashMessage;
-use std::collections::HashMap;
 
 const LEAFLET_CSS_URL: &str = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.4.0/leaflet.css";
 const LEAFLET_CSS_SHA512: &str="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA==";
 const LEAFLET_JS_URL: &str = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.4.0/leaflet.js";
 const LEAFLET_JS_SHA512 : &str="sha512-QVftwZFqvtRNi0ZyCtsznlKSWOStnDORoefr1enyq5mVL4tmKB3S/EnC3rRJcxCPavG10IcrVGSmPh6Qw5lwrg==";
-const MAIN_CSS_URL: &str = "/main.css";
 const MAP_JS_URL: &str = "/map.js";
+
+mod dashboard;
+mod entry;
+mod page;
+
+pub use dashboard::*;
+pub use entry::*;
+use page::*;
 
 pub fn index(email: Option<&str>) -> Markup {
     page(
         "OpenFairDB Search",
+        email,
+        None,
         None,
         html! {
-            (header(email))
             div class="search" {
                 h1 {"OpenFairDB Search"}
                 (global_search_form(None))
-            }
-        },
-    )
-}
-
-fn header(email: Option<&str>) -> Markup {
-    html! {
-    header {
-        @if let Some(email) = email {
-            div class="msg" { "Your are logged in as " span class="email" { (email) } }
-            nav {
-                a href="/" { "search" }
-                a href="dashboard" { "dashboard" }
-                form class="logout" action="logout" method ="POST" {
-                    input type="submit" value="logout";
-                }
-            }
-        }
-        @ else {
-            nav {
-                a href="login"  { "login" }
-                a href="register" { "register" }
-            }
-        }
-    }
-    }
-}
-
-pub struct DashBoardPresenter<'a> {
-    pub email: &'a str,
-    pub entry_count: usize,
-    pub event_count: usize,
-    pub tag_count: usize,
-    pub user_count: usize,
-}
-
-pub fn dashboard(data: DashBoardPresenter) -> Markup {
-    page(
-        "Admin Dashboard",
-        None,
-        html! {
-            (header(Some(data.email)))
-            main {
-                h3 { "Database Statistics" }
-                table {
-                    tr {
-                        td {"Number of Entries"}
-                        td {(data.entry_count)}
-                    }
-                    tr {
-                        td {"Number of Events"}
-                        td {(data.event_count)}
-                    }
-                    tr {
-                        td {"Number of Users"}
-                        td {(data.user_count)}
-                    }
-                    tr {
-                        td {"Number of Tags"}
-                        td {(data.tag_count)}
-                    }
-                }
             }
         },
     )
@@ -114,9 +59,11 @@ fn leaflet_css_link() -> Markup {
     }
 }
 
-pub fn search_results(search_term: &str, entries: &[IndexedEntry]) -> Markup {
+pub fn search_results(email: Option<&str>, search_term: &str, entries: &[IndexedEntry]) -> Markup {
     page(
         "OpenFairDB Search Results",
+        email,
+        None,
         None,
         html! {
             div class="search" {
@@ -156,123 +103,6 @@ fn entry_result(e: &IndexedEntry) -> Markup {
     }
 }
 
-type Ratings = Vec<(Rating, Vec<Comment>)>;
-
-pub struct EntryPresenter {
-    pub entry: Entry,
-    pub ratings: HashMap<RatingContext, Ratings>,
-}
-
-impl From<(Entry, Vec<(Rating, Vec<Comment>)>)> for EntryPresenter {
-    fn from((entry, rtngs): (Entry, Vec<(Rating, Vec<Comment>)>)) -> EntryPresenter {
-        let mut ratings: HashMap<RatingContext, Ratings> = HashMap::new();
-
-        for (r, comments) in rtngs {
-            if let Some(x) = ratings.get_mut(&r.context) {
-                x.push((r, comments));
-            } else {
-                ratings.insert(r.context, vec![(r, comments)]);
-            }
-        }
-
-        EntryPresenter { entry, ratings }
-    }
-}
-
-pub fn entry(e: EntryPresenter) -> Markup {
-    page(
-        &format!("{} | OpenFairDB", e.entry.title),
-        Some(leaflet_css_link()),
-        entry_detail(e),
-    )
-}
-
-fn entry_detail(e: EntryPresenter) -> Markup {
-    html! {
-        h3 { (e.entry.title) }
-        p {(e.entry.description)}
-        p {
-            table {
-                @if let Some(ref h) = e.entry.homepage {
-                    tr {
-                        td { "Homepage" }
-                        td { a href=(h) { (h) } }
-                    }
-                }
-                @if let Some(ref c) = e.entry.contact {
-                    @if let Some(ref m) = c.email {
-                        tr {
-                            td { "eMail" }
-                            td { a href=(format!("mailto:{}",m)) { (m) } }
-                        }
-                    }
-                    @if let Some(ref t) = c.telephone {
-                        tr {
-                            td { "Telephone" }
-                            td { a href=(format!("tel:{}",t)) { (t) } }
-                        }
-                    }
-                }
-                @if let Some(ref a) = e.entry.location.address {
-                    @if !a.is_empty() {
-                        tr {
-                            td { "Address" }
-                            td { (address_to_html(&a)) }
-                        }
-                    }
-                }
-            }
-        }
-        p {
-            ul {
-                @for t in &e.entry.tags{
-                    li{ (format!("#{}", t)) }
-                }
-            }
-        }
-        h3 { "Ratings" }
-
-        @for (ctx, ratings) in e.ratings {
-            h4 { (format!("{:?}",ctx)) }
-            ul {
-                @for (r,comments) in ratings {
-                    li {
-                        (rating(&r, &comments))
-                    }
-                }
-            }
-        }
-        div id="map" style="height:300px;" { }
-        (map_scripts(&[e.entry.into()]))
-    }
-}
-
-fn rating(r: &Rating, comments: &[Comment]) -> Markup {
-    html! {
-      h5 { (r.title) " " span { (format!("({})",i8::from(r.value))) } }
-      // TODO:
-      // form action = "/rating/delete" method = "POST" {
-      //     input type="hidden" name="id" value=(r.id);
-      //     input type="submit" value="delete rating";
-      // }
-      @if let Some(ref src) = r.source {
-          p { (format!("source: {}",src)) }
-      }
-      ul {
-          @for c in comments {
-              li {
-                  p { (c.text) }
-                  // TODO:
-                  // form action = "/comments/delete" method = "POST" {
-                  //     input type="hidden" name="id" value=(c.id);
-                  //     input type="submit" value="delete comment";
-                  // }
-              }
-          }
-      }
-    }
-}
-
 fn address_to_html(addr: &Address) -> Markup {
     html! {
         @if let Some(ref s) = addr.street {
@@ -290,9 +120,11 @@ fn address_to_html(addr: &Address) -> Markup {
     }
 }
 
-pub fn event(ev: Event) -> Markup {
+pub fn event(email: Option<&str>, ev: Event) -> Markup {
     page(
         &ev.title,
+        email,
+        None,
         Some(html! {
             link
                 rel="stylesheet"
@@ -459,6 +291,8 @@ pub fn events(events: &[Event]) -> Markup {
     page(
         "List of Events",
         None,
+        None,
+        None,
         html! {
             div class="events" {
                 h3 { "Events" }
@@ -498,10 +332,11 @@ pub fn events(events: &[Event]) -> Markup {
 }
 
 pub fn login(flash: Option<FlashMessage>) -> Markup {
-    flash_page(
+    page(
         "Login",
         None,
         flash,
+        None,
         html! {
           form class="login" action="login" method="POST" {
               fieldset{
@@ -525,10 +360,11 @@ pub fn login(flash: Option<FlashMessage>) -> Markup {
 }
 
 pub fn register(flash: Option<FlashMessage>) -> Markup {
-    flash_page(
+    page(
         "Register",
         None,
         flash,
+        None,
         html! {
           form class="register" action="register" method="POST" {
               fieldset{
@@ -549,48 +385,4 @@ pub fn register(flash: Option<FlashMessage>) -> Markup {
           }
         },
     )
-}
-
-fn flash_msg(flash: Option<FlashMessage>) -> Markup {
-    html! {
-        @if let Some(msg) = flash {
-            div class=(format!("flash {}", msg.name())) {
-                (msg.msg())
-            }
-        }
-    }
-}
-
-fn flash_page(
-    title: &str,
-    h: Option<Markup>,
-    flash: Option<FlashMessage>,
-    content: Markup,
-) -> Markup {
-    page(
-        title,
-        h,
-        html! {
-          (flash_msg(flash))
-          (content)
-        },
-    )
-}
-
-fn page(title: &str, h: Option<Markup>, content: Markup) -> Markup {
-    html! {
-        (DOCTYPE)
-        head{
-            meta charset="utf-8";
-            meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no";
-            title {(title)}
-            link rel="stylesheet" href=(MAIN_CSS_URL);
-            @if let Some(h) = h {
-               (h)
-            }
-        }
-        body{
-            (content)
-        }
-    }
 }

@@ -88,12 +88,12 @@ pub fn post_logout(mut cookies: Cookies) -> Flash<Redirect> {
 }
 
 #[cfg(test)]
-mod tests {
+pub mod tests {
     use super::*;
-    use crate::ports::web::tests::prelude::*;
+    use crate::ports::web::{self, tests::prelude::*};
 
     fn setup() -> (Client, Connections) {
-        let (client, db, _) = crate::ports::web::tests::setup(vec![("/", super::super::routes())]);
+        let (client, db, _) = web::tests::setup(vec![("/", super::super::routes())]);
         (client, db)
     }
 
@@ -107,7 +107,7 @@ mod tests {
         cookie.map(|c| c.into_owned())
     }
 
-    fn register_user(pool: Connections, email: &str, pw: &str, confirmed: bool) {
+    pub fn register_user(pool: &Connections, email: &str, pw: &str, confirmed: bool) {
         let mut db = pool.exclusive().unwrap();
         usecases::create_new_user(
             &mut *db,
@@ -137,7 +137,7 @@ mod tests {
     #[test]
     fn post_login_fails() {
         let (client, pool) = setup();
-        register_user(pool, "foo@bar.com", "baz", true);
+        register_user(&pool, "foo@bar.com", "baz", true);
         let res = client
             .post("/login")
             .header(ContentType::Form)
@@ -156,7 +156,7 @@ mod tests {
     #[test]
     fn post_login_sucess() {
         let (client, pool) = setup();
-        register_user(pool, "foo@bar.com", "baz", true);
+        register_user(&pool, "foo@bar.com", "baz", true);
         let res = client
             .post("/login")
             .header(ContentType::Form)

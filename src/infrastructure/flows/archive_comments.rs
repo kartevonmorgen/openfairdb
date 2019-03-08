@@ -27,10 +27,7 @@ mod tests {
     use super::super::tests::prelude::*;
 
     fn archive_comments(fixture: &EnvFixture, ids: &[&str]) -> super::Result<()> {
-        super::archive_comments(
-            &fixture.db_connections,
-            ids,
-        )
+        super::archive_comments(&fixture.db_connections, ids)
     }
 
     #[test]

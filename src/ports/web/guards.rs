@@ -93,15 +93,17 @@ impl<'a, 'r> FromRequest<'a, 'r> for Admin {
             .get_private(COOKIE_USER_ACCESS_LEVEL)
             .and_then(|cookie| cookie.value().parse().ok())
             .and_then(Role::from_usize);
+
         match (user, role) {
             (Some(user), Some(role)) => {
                 if role == Role::Admin {
-                    Outcome::Success(Admin(user.0))
+                    Some(Admin(user.0))
                 } else {
-                    Outcome::Failure((Status::Unauthorized, ()))
+                    return Outcome::Failure((Status::Unauthorized, ()));
                 }
             }
-            _ => Outcome::Failure((Status::Unauthorized, ())),
+            _ => None,
         }
+        .or_forward(())
     }
 }

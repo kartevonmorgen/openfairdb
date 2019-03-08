@@ -57,6 +57,9 @@ quick_error! {
         String(err: ::std::string::FromUtf8Error){
             from()
         }
+        Str(err: ::std::str::Utf8Error){
+            from()
+        }
         Csv(err: ::csv::Error){
             from()
         }
