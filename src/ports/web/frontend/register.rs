@@ -1,7 +1,9 @@
 use super::login::LoginCredentials;
 use super::view;
 use crate::{
+    adapters::user_communication,
     core::{prelude::*, usecases},
+    infrastructure::notify,
     ports::web::sqlite::Connections,
 };
 use maud::Markup;
@@ -43,9 +45,17 @@ pub fn post_register(
                     Err(Flash::error(Redirect::to(uri!(get_register)), msg))
                 }
                 Ok(_) => {
-                    if let Ok(u) = db.get_user_by_email(&credentials.email) {
-                        debug!("Created user with ID = {}", u.id);
+                    if let Ok(user) = db.get_user_by_email(&credentials.email) {
+                        debug!("Created user with ID = {}", user.id);
+
+                        //TODO: move this to a better place
+                        let subject = "Karte von morgen: bitte bestätige deine Email-Adresse";
+                        let url = format!("https://openfairdb.org/register/confirm/{}", user.id);
+                        let body = user_communication::email_confirmation_email(&url);
+                        #[cfg(feature = "email")]
+                        notify::send_mails(&[credentials.email], subject, &body);
                     }
+
                     let msg = "Registered sucessfully. Please confirm your email address.";
                     Ok(Flash::success(
                         Redirect::to(uri!(super::login::get_login)),

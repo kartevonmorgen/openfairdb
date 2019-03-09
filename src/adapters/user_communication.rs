@@ -1,9 +1,9 @@
 use crate::core::entities::*;
 
-pub fn email_confirmation_email(u_id: &str) -> String {
+pub fn email_confirmation_email(url: &str) -> String {
     format!(
-        "Na du Weltverbesserer*,\nwir freuen uns dass du bei der Karte von morgen mit dabei bist!\n\nBitte bestätige deine Email-Adresse hier:\nhttps://kartevonmorgen.org/#/?confirm_email={}.\n\neuphorische Grüße\ndas Karte von morgen-Team",
-        u_id
+        "Na du Weltverbesserer*,\nwir freuen uns dass du bei der Karte von morgen mit dabei bist!\n\nBitte bestätige deine Email-Adresse hier:\n{}\n\neuphorische Grüße\ndas Karte von morgen-Team",
+        url
     )
 }
 
