@@ -16,6 +16,7 @@ use rocket::{
 };
 
 mod login;
+mod password;
 mod register;
 mod view;
 
@@ -192,7 +193,11 @@ pub fn routes() -> Vec<Route> {
         login::post_logout,
         register::get_register,
         register::post_register,
-        register::get_email_confirmation
+        register::get_email_confirmation,
+        password::get_request_new_pw,
+        password::post_request_new_pw,
+        password::get_reset_pw,
+        password::post_reset_pw
     ]
 }
 

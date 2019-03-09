@@ -345,7 +345,7 @@ pub fn login(flash: Option<FlashMessage>) -> Markup {
                     br;
                     input type="email" name="email" placeholder="eMail address";
                 }
-                    br;
+                br;
                 label{
                     "Password:"
                     br;
@@ -373,7 +373,7 @@ pub fn register(flash: Option<FlashMessage>) -> Markup {
                     br;
                     input type="email" name="email" placeholder="eMail address";
                 }
-                    br;
+                br;
                 label{
                     "Password:"
                     br;
@@ -381,6 +381,51 @@ pub fn register(flash: Option<FlashMessage>) -> Markup {
                 }
                 br;
                 input type="submit" value="register";
+              }
+          }
+        },
+    )
+}
+
+pub fn request_new_pw(flash: Option<FlashMessage>) -> Markup {
+    page(
+        "Request new password",
+        None,
+        flash,
+        None,
+        html! {
+          form class="reset-pw" action="/users/actions/request-new-password" method="POST" {
+              fieldset{
+                label {
+                    "eMail:"
+                    br;
+                    input type="email" name="email" placeholder="eMail address";
+                }
+                br;
+                input type="submit" value="reset";
+              }
+          }
+        },
+    )
+}
+
+pub fn reset_pw(flash: Option<FlashMessage>, nonce: &str) -> Markup {
+    page(
+        "Reset password",
+        None,
+        flash,
+        None,
+        html! {
+          form class="reset-pw" action="/users/actions/reset-password" method="POST" {
+              fieldset{
+                label {
+                    "New password:"
+                    br;
+                    input type="password" name="password" placeholder="New password";
+                    input type="hidden" name="nonce" value=(nonce);
+                }
+                br;
+                input type="submit" value="set new password";
               }
           }
         },
