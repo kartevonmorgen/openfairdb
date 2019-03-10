@@ -4,7 +4,7 @@ use crate::core::entities::*;
 pub struct CsvRecord {
     pub id: String,
     pub osm_node: Option<u64>,
-    pub created: u64,
+    pub created: i64,
     pub version: u64,
     pub title: String,
     pub description: String,
@@ -58,7 +58,7 @@ impl From<(Entry, Vec<Category>, AvgRatingValue)> for CsvRecord {
         CsvRecord {
             id,
             osm_node: osm_node.map(|x| x as u64),
-            created: created as u64,
+            created: created.into(),
             version: version as u64,
             title,
             description,

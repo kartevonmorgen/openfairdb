@@ -2,7 +2,6 @@ use crate::core::{
     prelude::*,
     util::{parse::parse_url_param, validate::Validate},
 };
-use chrono::*;
 use uuid::Uuid;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -74,7 +73,7 @@ pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
     } else {
         None
     };
-    let created = Utc::now().timestamp() as u64;
+    let created = Timestamp::now();
     let new_id = Uuid::new_v4().to_simple_ref().to_string();
     let id = new_id.clone();
     let homepage = e.homepage.map(|ref url| parse_url_param(url)).transpose()?;
@@ -149,7 +148,7 @@ mod tests {
             image_link_url: None,
         };
         let mock_db = MockDb::default();
-        let now = Utc::now();
+        let now = Timestamp::now();
         let e = prepare_new_entry(&mock_db, x).unwrap();
         let (e, initial_ratings) = store_new_entry(&mock_db, e).unwrap();
         assert!(initial_ratings.is_empty());
@@ -159,7 +158,7 @@ mod tests {
         assert_eq!(x.title, "foo");
         assert_eq!(x.description, "bar");
         assert_eq!(x.version, 0);
-        assert!(x.created as i64 >= now.timestamp());
+        assert!(x.created >= now);
         assert_eq!(None, x.archived);
         assert!(Uuid::parse_str(&x.id).is_ok());
         assert_eq!(x.id, e.id);

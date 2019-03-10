@@ -1,5 +1,4 @@
 use crate::core::prelude::*;
-use chrono::*;
 use uuid::Uuid;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -36,7 +35,7 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: RateEntry) -> Result<Storable> {
     if !r.value.is_valid() {
         return Err(Error::Parameter(ParameterError::RatingValue));
     }
-    let now = Utc::now().timestamp() as u64;
+    let now = Timestamp::now();
     let rating_id = Uuid::new_v4().to_simple_ref().to_string();
     let comment_id = Uuid::new_v4().to_simple_ref().to_string();
     let entry = db.get_entry(&r.entry)?;

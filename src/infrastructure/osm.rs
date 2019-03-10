@@ -10,7 +10,6 @@ use std::{
     result,
 };
 
-use chrono::prelude::*;
 use serde_json;
 use uuid::Uuid;
 
@@ -112,7 +111,7 @@ fn map_osm_to_ofdb_entry(osm: &OsmEntry) -> Result<Entry> {
     let pos = MapPoint::try_from_lat_lng_deg(osm.lat, osm.lon).unwrap_or_default();
 
     let version = 0;
-    let created = Utc::now().timestamp() as u64;
+    let created = Timestamp::now();
     let archived = None;
     let house_nr = osm.tags.get("addr:housenumber").cloned();
     let street = osm.tags.get("addr:street").cloned();

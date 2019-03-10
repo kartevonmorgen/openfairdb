@@ -246,7 +246,7 @@ impl EntryGateway for MockDb {
         unimplemented!();
     }
 
-    fn archive_entries(&self, _ids: &[&str], _archived: u64) -> RepoResult<usize> {
+    fn archive_entries(&self, _ids: &[&str], _archived: Timestamp) -> RepoResult<usize> {
         unimplemented!();
     }
 }
@@ -284,7 +284,7 @@ impl EventGateway for MockDb {
         update(&mut self.events.borrow_mut(), e)
     }
 
-    fn archive_events(&self, _ids: &[&str], _archived: u64) -> RepoResult<usize> {
+    fn archive_events(&self, _ids: &[&str], _archived: Timestamp) -> RepoResult<usize> {
         unimplemented!();
     }
 
@@ -381,20 +381,20 @@ impl CommentRepository for MockDb {
             .collect())
     }
 
-    fn archive_comments(&self, _ids: &[&str], _archived: u64) -> RepoResult<usize> {
+    fn archive_comments(&self, _ids: &[&str], _archived: Timestamp) -> RepoResult<usize> {
         unimplemented!();
     }
     fn archive_comments_of_ratings(
         &self,
         _rating_ids: &[&str],
-        _archived: u64,
+        _archived: Timestamp,
     ) -> RepoResult<usize> {
         unimplemented!();
     }
     fn archive_comments_of_entries(
         &self,
         _entry_ids: &[&str],
-        _archived: u64,
+        _archived: Timestamp,
     ) -> RepoResult<usize> {
         unimplemented!();
     }
@@ -459,10 +459,14 @@ impl RatingRepository for MockDb {
     fn load_entry_ids_of_ratings(&self, _ids: &[&str]) -> RepoResult<Vec<String>> {
         unimplemented!();
     }
-    fn archive_ratings(&self, _ids: &[&str], _archived: u64) -> RepoResult<usize> {
+    fn archive_ratings(&self, _ids: &[&str], _archived: Timestamp) -> RepoResult<usize> {
         unimplemented!();
     }
-    fn archive_ratings_of_entries(&self, _entry_ids: &[&str], _archived: u64) -> RepoResult<usize> {
+    fn archive_ratings_of_entries(
+        &self,
+        _entry_ids: &[&str],
+        _archived: Timestamp,
+    ) -> RepoResult<usize> {
         unimplemented!();
     }
 }

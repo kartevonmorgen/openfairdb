@@ -87,8 +87,8 @@ fn load_entry(conn: &SqliteConnection, entry: models::Entry) -> Result<Entry> {
     Ok(Entry {
         id,
         osm_node: osm_node.map(|x| x as u64),
-        created: created as u64,
-        archived: archived.map(|x| x as u64),
+        created: created.into(),
+        archived: archived.map(Into::into),
         version: version as u64,
         title,
         description,
@@ -291,7 +291,7 @@ impl EntryGateway for SqliteConnection {
         Ok(())
     }
 
-    fn archive_entries(&self, ids: &[&str], archived: u64) -> Result<usize> {
+    fn archive_entries(&self, ids: &[&str], archived: Timestamp) -> Result<usize> {
         // Entry
         use self::schema::entries::dsl as e_dsl;
         let count = diesel::update(
@@ -300,7 +300,7 @@ impl EntryGateway for SqliteConnection {
                 .filter(e_dsl::current.eq(true))
                 .filter(e_dsl::archived.is_null()),
         )
-        .set(e_dsl::archived.eq(Some(archived as i64)))
+        .set(e_dsl::archived.eq(Some(i64::from(archived))))
         .execute(self)?;
         debug_assert!(count <= ids.len());
         if count < ids.len() {
@@ -496,7 +496,7 @@ impl EventGateway for SqliteConnection {
             created_by,
             registration,
             organizer,
-            archived: archived.map(|x| x as u64),
+            archived: archived.map(Into::into),
         })
     }
 
@@ -565,14 +565,14 @@ impl EventGateway for SqliteConnection {
         Ok(())
     }
 
-    fn archive_events(&self, ids: &[&str], archived: u64) -> Result<usize> {
+    fn archive_events(&self, ids: &[&str], archived: Timestamp) -> Result<usize> {
         use self::schema::events::dsl;
         let count = diesel::update(
             dsl::events
                 .filter(dsl::id.eq_any(ids))
                 .filter(dsl::archived.is_null()),
         )
-        .set(dsl::archived.eq(Some(archived as i64)))
+        .set(dsl::archived.eq(Some(i64::from(archived))))
         .execute(self)?;
         debug_assert!(count <= ids.len());
         if count < ids.len() {
@@ -689,14 +689,14 @@ impl RatingRepository for SqliteConnection {
             .load::<String>(self)?)
     }
 
-    fn archive_ratings(&self, ids: &[&str], archived: u64) -> Result<usize> {
+    fn archive_ratings(&self, ids: &[&str], archived: Timestamp) -> Result<usize> {
         use self::schema::ratings::dsl as r_dsl;
         let count = diesel::update(
             r_dsl::ratings
                 .filter(r_dsl::id.eq_any(ids))
                 .filter(r_dsl::archived.is_null()),
         )
-        .set(r_dsl::archived.eq(Some(archived as i64)))
+        .set(r_dsl::archived.eq(Some(i64::from(archived))))
         .execute(self)?;
         debug_assert!(count <= ids.len());
         if count < ids.len() {
@@ -709,14 +709,14 @@ impl RatingRepository for SqliteConnection {
         Ok(count)
     }
 
-    fn archive_ratings_of_entries(&self, entry_ids: &[&str], archived: u64) -> Result<usize> {
+    fn archive_ratings_of_entries(&self, entry_ids: &[&str], archived: Timestamp) -> Result<usize> {
         use self::schema::ratings::dsl;
         Ok(diesel::update(
             dsl::ratings
                 .filter(dsl::entry_id.eq_any(entry_ids))
                 .filter(dsl::archived.is_null()),
         )
-        .set(dsl::archived.eq(Some(archived as i64)))
+        .set(dsl::archived.eq(Some(i64::from(archived))))
         .execute(self)?)
     }
 }
@@ -762,14 +762,14 @@ impl CommentRepository for SqliteConnection {
             .collect())
     }
 
-    fn archive_comments(&self, ids: &[&str], archived: u64) -> Result<usize> {
+    fn archive_comments(&self, ids: &[&str], archived: Timestamp) -> Result<usize> {
         use self::schema::comments::dsl;
         let count = diesel::update(
             dsl::comments
                 .filter(dsl::id.eq_any(ids))
                 .filter(dsl::archived.is_null()),
         )
-        .set(dsl::archived.eq(Some(archived as i64)))
+        .set(dsl::archived.eq(Some(i64::from(archived))))
         .execute(self)?;
         debug_assert!(count <= ids.len());
         if count < ids.len() {
@@ -781,18 +781,26 @@ impl CommentRepository for SqliteConnection {
         Ok(count)
     }
 
-    fn archive_comments_of_ratings(&self, rating_ids: &[&str], archived: u64) -> Result<usize> {
+    fn archive_comments_of_ratings(
+        &self,
+        rating_ids: &[&str],
+        archived: Timestamp,
+    ) -> Result<usize> {
         use self::schema::comments::dsl;
         Ok(diesel::update(
             dsl::comments
                 .filter(dsl::rating_id.eq_any(rating_ids))
                 .filter(dsl::archived.is_null()),
         )
-        .set(dsl::archived.eq(Some(archived as i64)))
+        .set(dsl::archived.eq(Some(i64::from(archived))))
         .execute(self)?)
     }
 
-    fn archive_comments_of_entries(&self, entry_ids: &[&str], archived: u64) -> Result<usize> {
+    fn archive_comments_of_entries(
+        &self,
+        entry_ids: &[&str],
+        archived: Timestamp,
+    ) -> Result<usize> {
         use self::schema::comments::dsl as c_dsl;
         use self::schema::ratings::dsl as r_dsl;
         Ok(diesel::update(
@@ -806,7 +814,7 @@ impl CommentRepository for SqliteConnection {
                 )
                 .filter(c_dsl::archived.is_null()),
         )
-        .set(c_dsl::archived.eq(Some(archived as i64)))
+        .set(c_dsl::archived.eq(Some(i64::from(archived))))
         .execute(self)?)
     }
 }

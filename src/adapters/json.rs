@@ -4,7 +4,7 @@ use crate::core::{db::IndexedEntry, entities as e, util::geo::MapPoint};
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Entry {
     pub id             : String,
-    pub created        : u64,
+    pub created        : i64,
     pub version        : u64,
     pub title          : String,
     pub description    : String,
@@ -148,7 +148,7 @@ impl From<Coordinate> for MapPoint {
 pub struct Rating {
     pub id: String,
     pub title: String,
-    pub created: u64,
+    pub created: i64,
     pub value: e::RatingValue,
     pub context: e::RatingContext,
     pub comments: Vec<Comment>,
@@ -158,7 +158,7 @@ pub struct Rating {
 #[derive(Serialize, Deserialize)]
 pub struct Comment {
     pub id: String,
-    pub created: u64,
+    pub created: i64,
     pub text: String,
 }
 
@@ -262,7 +262,7 @@ impl Entry {
 
         Entry {
             id,
-            created,
+            created: created.into(),
             version,
             title,
             description,
