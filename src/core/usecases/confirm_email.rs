@@ -1,6 +1,6 @@
 use crate::core::prelude::*;
 
-pub fn confirm_email_address(db: &mut Db, u_id: &str) -> Result<()> {
+pub fn confirm_email_address(db: &Db, u_id: &str) -> Result<()> {
     //TODO: use username instead of user ID
     let mut u = db
         .all_users()?
@@ -21,16 +21,16 @@ mod tests {
     #[test]
     fn confirm_email_of_existing_user() {
         let mut db = MockDb::default();
-        db.users = vec![User {
+        db.users.borrow_mut().push(User {
             id: "1".into(),
             username: "a".into(),
-            password: "a".into(),
+            password: "secret".parse::<Password>().unwrap(),
             email: "a@foo.bar".into(),
             email_confirmed: false,
             role: Role::Guest,
-        }];
+        });
         assert!(confirm_email_address(&mut db, "1").is_ok());
-        assert_eq!(db.users[0].email_confirmed, true);
-        assert_eq!(db.users[0].role, Role::User);
+        assert_eq!(db.users.borrow()[0].email_confirmed, true);
+        assert_eq!(db.users.borrow()[0].role, Role::User);
     }
 }

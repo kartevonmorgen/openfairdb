@@ -1,6 +1,9 @@
 use chrono::prelude::*;
 
-use crate::core::util::geo::{MapBbox, MapPoint};
+use crate::core::util::{
+    geo::{MapBbox, MapPoint},
+    password::Password,
+};
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Debug, Clone, PartialEq)]
@@ -104,7 +107,7 @@ pub struct Tag {
 pub struct User {
     pub id              : String, // TODO: remove
     pub username        : String,
-    pub password        : String,
+    pub password        : Password,
     pub email           : String,
     pub email_confirmed : bool,
     pub role            : Role,

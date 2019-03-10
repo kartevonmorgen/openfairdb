@@ -13,7 +13,10 @@ pub mod prelude {
     pub use super::entities::*;
     pub use super::error::*;
     pub use super::repositories::*;
-    pub use super::util::geo::{Distance, LatCoord, LngCoord, MapPoint};
+    pub use super::util::{
+        geo::{Distance, LatCoord, LngCoord, MapPoint},
+        password::Password,
+    };
 
     pub type Result<T> = result::Result<T, super::error::Error>;
 }

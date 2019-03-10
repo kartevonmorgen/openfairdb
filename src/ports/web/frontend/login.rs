@@ -137,7 +137,7 @@ pub mod tests {
     #[test]
     fn post_login_fails() {
         let (client, pool) = setup();
-        register_user(&pool, "foo@bar.com", "baz", true);
+        register_user(&pool, "foo@bar.com", "bazbaz", true);
         let res = client
             .post("/login")
             .header(ContentType::Form)
@@ -156,11 +156,11 @@ pub mod tests {
     #[test]
     fn post_login_sucess() {
         let (client, pool) = setup();
-        register_user(&pool, "foo@bar.com", "baz", true);
+        register_user(&pool, "foo@bar.com", "baz baz", true);
         let res = client
             .post("/login")
             .header(ContentType::Form)
-            .body(format!("email=foo%40bar.com&password=baz"))
+            .body(format!("email=foo%40bar.com&password=baz baz"))
             .dispatch();
         assert_eq!(res.status(), Status::SeeOther);
         assert!(user_id_cookie(&res).is_some());
