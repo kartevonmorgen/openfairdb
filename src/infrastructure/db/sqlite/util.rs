@@ -390,7 +390,7 @@ impl From<User> for e::User {
         e::User {
             id,
             username,
-            password,
+            password: password.into(),
             email,
             email_confirmed,
             role: e::Role::from_i16(role).unwrap_or_else(|| {
@@ -419,7 +419,7 @@ impl From<e::User> for User {
         User {
             id,
             username,
-            password,
+            password: password.into(),
             email,
             email_confirmed,
             role: role.to_i16().unwrap_or_else(|| {

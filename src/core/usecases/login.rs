@@ -1,5 +1,4 @@
 use crate::core::prelude::*;
-use pwhash::bcrypt;
 
 //TODO: remove and use Credentials instead
 #[derive(Deserialize, Debug, Clone)]
@@ -17,7 +16,7 @@ pub struct Credentials<'a> {
 pub fn login_with_username<D: Db>(db: &D, login: &Login) -> Result<String> {
     match db.get_user(&login.username) {
         Ok(u) => {
-            if bcrypt::verify(&login.password, &u.password) {
+            if u.password.verify(&login.password) {
                 if u.email_confirmed {
                     Ok(login.username.clone())
                 } else {
@@ -37,7 +36,7 @@ pub fn login_with_username<D: Db>(db: &D, login: &Login) -> Result<String> {
 pub fn login_with_email<D: Db>(db: &D, login: &Credentials) -> Result<Role> {
     match db.get_user_by_email(&login.email) {
         Ok(u) => {
-            if bcrypt::verify(&login.password, &u.password) {
+            if u.password.verify(&login.password) {
                 if u.email_confirmed {
                     Ok(u.role)
                 } else {

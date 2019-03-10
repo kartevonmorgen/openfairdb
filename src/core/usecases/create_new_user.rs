@@ -1,7 +1,6 @@
 use super::super::util::validate;
 use crate::core::prelude::*;
 use passwords::PasswordGenerator;
-use pwhash::bcrypt;
 use slug::slugify;
 use uuid::Uuid;
 
@@ -14,7 +13,7 @@ pub struct NewUser {
 
 pub fn create_new_user<D: UserGateway>(db: &mut D, u: NewUser) -> Result<()> {
     validate::username(&u.username)?;
-    validate::password(&u.password)?;
+    let password = u.password.parse::<Password>()?;
     validate::email(&u.email)?;
     if db.get_user(&u.username).is_ok() {
         return Err(Error::Parameter(ParameterError::UserExists));
@@ -22,7 +21,7 @@ pub fn create_new_user<D: UserGateway>(db: &mut D, u: NewUser) -> Result<()> {
     let new_user = User {
         id: Uuid::new_v4().to_simple_ref().to_string(),
         username: u.username,
-        password: bcrypt::hash(&u.password)?,
+        password,
         email: u.email,
         email_confirmed: false,
         role: Role::Guest,
@@ -84,13 +83,13 @@ mod tests {
         let mut db = MockDb::default();
         let u = NewUser {
             username: "foo".into(),
-            password: "bar".into(),
+            password: "secret1".into(),
             email: "foo@bar.de".into(),
         };
         assert!(create_new_user(&mut db, u).is_ok());
         let u = NewUser {
             username: "baz".into(),
-            password: "bar".into(),
+            password: "secret2".into(),
             email: "baz@bar.de".into(),
         };
         assert!(create_new_user(&mut db, u).is_ok());
@@ -106,19 +105,31 @@ mod tests {
         let mut db = MockDb::default();
         let u = NewUser {
             username: "".into(),
-            password: "bar".into(),
+            password: "secret".into(),
             email: "foo@baz.io".into(),
         };
         assert!(create_new_user(&mut db, u).is_err());
         let u = NewUser {
-            username: "also&invalid".into(),
-            password: "bar".into(),
+            username: "invalid&username".into(),
+            password: "secret".into(),
             email: "foo@baz.io".into(),
         };
         assert!(create_new_user(&mut db, u).is_err());
         let u = NewUser {
-            username: "thisisvalid".into(),
-            password: "very_secret".into(),
+            username: "invalid_username".into(),
+            password: "secret".into(),
+            email: "foo@baz.io".into(),
+        };
+        assert!(create_new_user(&mut db, u).is_err());
+        let u = NewUser {
+            username: "invalid username".into(),
+            password: "secret".into(),
+            email: "foo@baz.io".into(),
+        };
+        assert!(create_new_user(&mut db, u).is_err());
+        let u = NewUser {
+            username: "0validusername12".into(),
+            password: "very secret".into(),
             email: "foo@baz.io".into(),
         };
         assert!(create_new_user(&mut db, u).is_ok());
@@ -129,19 +140,13 @@ mod tests {
         let mut db = MockDb::default();
         let u = NewUser {
             username: "user".into(),
-            password: "".into(),
+            password: "hello".into(),
             email: "foo@baz.io".into(),
         };
         assert!(create_new_user(&mut db, u).is_err());
         let u = NewUser {
             username: "user".into(),
-            password: "not valid".into(),
-            email: "foo@baz.io".into(),
-        };
-        assert!(create_new_user(&mut db, u).is_err());
-        let u = NewUser {
-            username: "user".into(),
-            password: "validpass".into(),
+            password: "valid pass".into(),
             email: "foo@baz.io".into(),
         };
         assert!(create_new_user(&mut db, u).is_ok());
@@ -152,19 +157,19 @@ mod tests {
         let mut db = MockDb::default();
         let u = NewUser {
             username: "user".into(),
-            password: "pass".into(),
+            password: "secret".into(),
             email: "".into(),
         };
         assert!(create_new_user(&mut db, u).is_err());
         let u = NewUser {
             username: "user".into(),
-            password: "pass".into(),
+            password: "secret".into(),
             email: "fooo@".into(),
         };
         assert!(create_new_user(&mut db, u).is_err());
         let u = NewUser {
             username: "user".into(),
-            password: "pass".into(),
+            password: "secret".into(),
             email: "fooo@bar.io".into(),
         };
         assert!(create_new_user(&mut db, u).is_ok());
@@ -173,17 +178,17 @@ mod tests {
     #[test]
     fn create_user_with_existing_username() {
         let mut db = MockDb::default();
-        db.users = vec![User {
+        db.users.borrow_mut().push(User {
             id: "123".into(),
             username: "foo".into(),
-            password: "bar".into(),
+            password: "secret".parse::<Password>().unwrap(),
             email: "baz@foo.bar".into(),
             email_confirmed: true,
             role: Role::Guest,
-        }];
+        });
         let u = NewUser {
             username: "foo".into(),
-            password: "pass".into(),
+            password: "secret".into(),
             email: "user@server.tld".into(),
         };
         match create_new_user(&mut db, u).err().unwrap() {
@@ -204,11 +209,11 @@ mod tests {
         let mut db = MockDb::default();
         let u = NewUser {
             username: "user".into(),
-            password: "pass".into(),
+            password: "secret".into(),
             email: "foo@bar.io".into(),
         };
         assert!(create_new_user(&mut db, u).is_ok());
-        assert_eq!(db.users[0].email_confirmed, false);
+        assert_eq!(db.users.borrow()[0].email_confirmed, false);
     }
 
     #[test]
@@ -216,12 +221,12 @@ mod tests {
         let mut db = MockDb::default();
         let u = NewUser {
             username: "user".into(),
-            password: "pass".into(),
+            password: "secret".into(),
             email: "foo@bar.io".into(),
         };
         assert!(create_new_user(&mut db, u).is_ok());
-        assert!(db.users[0].password != "pass");
-        assert!(bcrypt::verify("pass", &db.users[0].password));
+        assert!(&*db.users.borrow()[0].password != "secret");
+        assert!(db.users.borrow()[0].password.verify("secret"));
     }
 
     #[test]

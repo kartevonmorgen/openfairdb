@@ -29,12 +29,14 @@ mod search;
 pub mod tests;
 mod update_entry;
 mod update_event;
+mod verify_email_and_reset_password;
 
 pub use self::{
     archive_comments::*, archive_entries::*, archive_events::*, archive_ratings::*,
     confirm_email::*, create_new_entry::*, create_new_event::*, create_new_user::*,
     delete_event::*, find_duplicates::*, indexing::*, login::*, query_events::*, rate_entry::*,
     register::*, search::*, update_entry::*, update_event::*,
+    verify_email_and_reset_password::*,
 };
 
 pub fn load_ratings_with_comments<D: Db>(

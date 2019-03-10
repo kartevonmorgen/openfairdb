@@ -347,7 +347,7 @@ mod tests {
                 id: "x".into(),
                 username: "foo".into(),
                 email: "fooo@bar.tld".into(),
-                password: "secret".into(),
+                password: "secret".parse::<Password>().unwrap(),
                 email_confirmed: true,
                 role: Role::User,
             })
