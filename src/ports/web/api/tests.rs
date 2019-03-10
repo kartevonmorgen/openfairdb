@@ -1290,7 +1290,7 @@ fn export_csv() {
     ];
     entries[0].location.address = Some(Address::build().street("street1").finish());
     entries[0].osm_node = Some(1);
-    entries[0].created = 2;
+    entries[0].created = 2.into();
     entries[0].location.address = Some(
         Address::build()
             .street("street1")
@@ -1338,7 +1338,7 @@ fn export_csv() {
         .create_rating(Rating {
             id: "123".into(),
             entry_id: "entry1".into(),
-            created: 123,
+            created: 123.into(),
             archived: None,
             title: "rating1".into(),
             value: RatingValue::from(2),
@@ -1351,7 +1351,7 @@ fn export_csv() {
         .create_rating(Rating {
             id: "345".into(),
             entry_id: "entry1".into(),
-            created: 123,
+            created: 123.into(),
             archived: None,
             title: "rating2".into(),
             value: RatingValue::from(1),

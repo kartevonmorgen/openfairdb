@@ -2,7 +2,10 @@ use super::{
     entities::*,
     error::RepoError,
     repositories::*,
-    util::geo::{MapBbox, MapPoint},
+    util::{
+        geo::{MapBbox, MapPoint},
+        time::Timestamp,
+    },
 };
 
 use failure::Fallible;
@@ -19,7 +22,7 @@ pub trait EntryGateway {
     fn create_entry(&self, _: Entry) -> Result<()>;
     fn update_entry(&self, _: &Entry) -> Result<()>;
     fn import_multiple_entries(&mut self, _: &[Entry]) -> Result<()>;
-    fn archive_entries(&self, ids: &[&str], archived: u64) -> Result<usize>;
+    fn archive_entries(&self, ids: &[&str], archived: Timestamp) -> Result<usize>;
 }
 
 pub trait EventGateway {
@@ -27,7 +30,7 @@ pub trait EventGateway {
     fn get_event(&self, _: &str) -> Result<Event>;
     fn all_events(&self) -> Result<Vec<Event>>;
     fn update_event(&self, _: &Event) -> Result<()>;
-    fn archive_events(&self, ids: &[&str], archived: u64) -> Result<usize>;
+    fn archive_events(&self, ids: &[&str], archived: Timestamp) -> Result<usize>;
     fn delete_event(&self, _: &str) -> Result<()>;
     fn count_events(&self) -> Result<usize>;
 }

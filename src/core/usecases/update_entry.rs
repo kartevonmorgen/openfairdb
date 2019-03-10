@@ -2,7 +2,6 @@ use crate::core::{
     prelude::*,
     util::{parse::parse_url_param, validate::Validate},
 };
-use chrono::*;
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -75,7 +74,7 @@ pub fn prepare_updated_entry<D: Db>(db: &D, id: String, e: UpdateEntry) -> Resul
     let e = Entry {
         id,
         osm_node: None,
-        created: Utc::now().timestamp() as u64,
+        created: Timestamp::now(),
         archived: None,
         version,
         title,
@@ -152,7 +151,7 @@ mod tests {
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![old].into();
-        let now = Utc::now();
+        let now = Timestamp::now();
         let e = prepare_updated_entry(&mock_db, id.clone(), new).unwrap();
         assert!(store_updated_entry(&mock_db, e).is_ok());
         assert_eq!(mock_db.entries.borrow().len(), 1);
@@ -169,7 +168,7 @@ mod tests {
         );
         assert_eq!("bar", x.description);
         assert_eq!(2, x.version);
-        assert!(x.created as i64 >= now.timestamp());
+        assert!(x.created >= now);
         assert_eq!(None, x.archived);
         assert!(Uuid::parse_str(&x.id).is_ok());
         assert_eq!("https://www.img2/", x.image_url.as_ref().unwrap());

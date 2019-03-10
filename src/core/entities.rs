@@ -3,6 +3,7 @@ use chrono::prelude::*;
 use crate::core::util::{
     geo::{MapBbox, MapPoint},
     password::Password,
+    time::Timestamp,
 };
 
 #[cfg_attr(rustfmt, rustfmt_skip)]
@@ -10,8 +11,8 @@ use crate::core::util::{
 pub struct Entry {
     pub id             : String,
     pub osm_node       : Option<u64>,
-    pub created        : u64,
-    pub archived       : Option<u64>,
+    pub created        : Timestamp,
+    pub archived       : Option<Timestamp>,
     pub version        : u64,
     pub title          : String,
     pub description    : String,
@@ -78,7 +79,7 @@ pub struct Event {
     pub created_by   : Option<String>,
     pub registration : Option<RegistrationType>,
     pub organizer    : Option<String>,
-    pub archived     : Option<u64>,
+    pub archived     : Option<Timestamp>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -92,7 +93,7 @@ pub enum RegistrationType {
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Category {
     pub id      : String,
-    pub created : u64,
+    pub created : i64,
     pub version : u64,
     pub name    : String
 }
@@ -132,8 +133,8 @@ impl Default for Role {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Comment {
     pub id        : String,
-    pub created   : u64,
-    pub archived  : Option<u64>,
+    pub created   : Timestamp,
+    pub archived  : Option<Timestamp>,
     pub text      : String,
     pub rating_id : String,
 }
@@ -358,8 +359,8 @@ impl std::ops::AddAssign<(RatingContext, RatingValue)> for AvgRatingsBuilder {
 pub struct Rating {
     pub id       : String,
     pub entry_id : String,
-    pub created  : u64,
-    pub archived : Option<u64>,
+    pub created  : Timestamp,
+    pub archived : Option<Timestamp>,
     pub title    : String,
     pub value    : RatingValue,
     pub context  : RatingContext,
@@ -454,7 +455,7 @@ pub mod entry_builder {
                 entry: Entry {
                     id: Uuid::new_v4().to_simple_ref().to_string(),
                     osm_node: None,
-                    created: 0,
+                    created: 0.into(),
                     archived: None,
                     version: 0,
                     title: "".into(),

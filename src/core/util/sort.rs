@@ -34,7 +34,7 @@ pub mod tests {
         Rating {
             id: id.into(),
             entry_id: entry_id.into(),
-            created: 0,
+            created: Timestamp::now(),
             archived: None,
             title: "blubb".into(),
             value: value.into(),
@@ -113,7 +113,7 @@ pub mod tests {
             .map(|_| Rating {
                 id: Uuid::new_v4().to_simple_ref().to_string(),
                 entry_id: id.into(),
-                created: 0,
+                created: Timestamp::now(),
                 archived: None,
                 title: "".into(),
                 value: 2.into(),

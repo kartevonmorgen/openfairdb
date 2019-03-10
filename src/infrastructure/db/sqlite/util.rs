@@ -49,8 +49,8 @@ impl From<e::Entry> for Entry {
         Entry {
             id,
             osm_node: osm_node.map(|x| x as i64),
-            created: created as i64,
-            archived: archived.map(|x| x as i64),
+            created: created.into(),
+            archived: archived.map(Into::into),
             version: version as i64,
             current: true,
             title,
@@ -184,7 +184,7 @@ impl From<e::Event> for Event {
             created_by,
             registration,
             organizer,
-            archived: archived.map(|x| x as i64),
+            archived: archived.map(Into::into),
         }
     }
 }
@@ -234,8 +234,8 @@ impl From<(Entry, Vec<String>, Vec<String>)> for e::Entry {
         e::Entry {
             id,
             osm_node: e.osm_node.map(|x| x as u64),
-            created: created as u64,
-            archived: archived.map(|x| x as u64),
+            created: created.into(),
+            archived: archived.map(Into::into),
             version: version as u64,
             title,
             description,
@@ -325,7 +325,7 @@ impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
             created_by,
             registration,
             organizer,
-            archived: archived.map(|x| x as u64),
+            archived: archived.map(Into::into),
         }
     }
 }
@@ -341,7 +341,7 @@ impl From<Category> for e::Category {
         e::Category {
             id,
             name,
-            created: created as u64,
+            created: created.into(),
             version: version as u64,
         }
     }
@@ -358,7 +358,7 @@ impl From<e::Category> for Category {
         Category {
             id,
             name,
-            created: created as i64,
+            created: created.into(),
             version: version as i64,
         }
     }
@@ -441,8 +441,8 @@ impl From<Comment> for e::Comment {
         } = c;
         e::Comment {
             id,
-            created: created as u64,
-            archived: archived.map(|x| x as u64),
+            created: created.into(),
+            archived: archived.map(Into::into),
             text,
             rating_id,
         }
@@ -460,8 +460,8 @@ impl From<e::Comment> for Comment {
         } = c;
         Comment {
             id,
-            created: created as i64,
-            archived: archived.map(|x| x as i64),
+            created: created.into(),
+            archived: archived.map(Into::into),
             text,
             rating_id,
         }
@@ -483,8 +483,8 @@ impl From<Rating> for e::Rating {
         e::Rating {
             id,
             entry_id,
-            created: created as u64,
-            archived: archived.map(|x| x as u64),
+            created: created.into(),
+            archived: archived.map(Into::into),
             title,
             value: (value as i8).into(),
             context: context.parse().unwrap(),
@@ -507,8 +507,8 @@ impl From<e::Rating> for Rating {
         } = r;
         Rating {
             id,
-            created: created as i64,
-            archived: archived.map(|x| x as i64),
+            created: created.into(),
+            archived: archived.map(Into::into),
             title,
             value: i8::from(value).into(),
             context: context.into(),

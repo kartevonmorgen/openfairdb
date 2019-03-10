@@ -16,6 +16,7 @@ pub mod prelude {
     pub use super::util::{
         geo::{Distance, LatCoord, LngCoord, MapPoint},
         password::Password,
+        time::Timestamp,
     };
 
     pub type Result<T> = result::Result<T, super::error::Error>;

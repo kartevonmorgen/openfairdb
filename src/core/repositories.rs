@@ -4,7 +4,11 @@
 // by their id and never modified or loaded by another
 // repository.
 
-use super::{entities::*, error::RepoError};
+use super::{
+    entities::*,
+    error::RepoError,
+    util::time::Timestamp,
+};
 
 type Result<T> = std::result::Result<T, RepoError>;
 
@@ -30,9 +34,9 @@ pub trait CommentRepository {
         Ok(results)
     }
 
-    fn archive_comments(&self, ids: &[&str], archived: u64) -> Result<usize>;
-    fn archive_comments_of_ratings(&self, rating_ids: &[&str], archived: u64) -> Result<usize>;
-    fn archive_comments_of_entries(&self, entry_ids: &[&str], archived: u64) -> Result<usize>;
+    fn archive_comments(&self, ids: &[&str], archived: Timestamp) -> Result<usize>;
+    fn archive_comments_of_ratings(&self, rating_ids: &[&str], archived: Timestamp) -> Result<usize>;
+    fn archive_comments_of_entries(&self, entry_ids: &[&str], archived: Timestamp) -> Result<usize>;
 }
 
 pub trait RatingRepository {
@@ -43,8 +47,8 @@ pub trait RatingRepository {
     fn load_ratings(&self, ids: &[&str]) -> Result<Vec<Rating>>;
     fn load_ratings_of_entry(&self, entry_id: &str) -> Result<Vec<Rating>>;
 
-    fn archive_ratings(&self, ids: &[&str], archived: u64) -> Result<usize>;
-    fn archive_ratings_of_entries(&self, entry_ids: &[&str], archived: u64) -> Result<usize>;
+    fn archive_ratings(&self, ids: &[&str], archived: Timestamp) -> Result<usize>;
+    fn archive_ratings_of_entries(&self, entry_ids: &[&str], archived: Timestamp) -> Result<usize>;
 
     fn load_entry_ids_of_ratings(&self, ids: &[&str]) -> Result<Vec<String>>;
 }
