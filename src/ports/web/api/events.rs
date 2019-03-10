@@ -738,7 +738,7 @@ mod tests {
                     .create_user(User {
                         id: i.to_string(),
                         username,
-                        password: "secret".into(),
+                        password: "secret".parse::<Password>().unwrap(),
                         email: m.into(),
                         email_confirmed: true,
                         role: Role::default(),

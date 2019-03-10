@@ -4,7 +4,6 @@ use crate::{
     core::{usecases as usecase, util::sort::Rated},
     test::Bencher,
 };
-use pwhash::bcrypt;
 
 pub mod prelude {
     pub use crate::core::db::*;
@@ -861,12 +860,12 @@ fn create_new_user() {
     let req = client
         .post("/users")
         .header(ContentType::JSON)
-        .body(r#"{"username":"foo","email":"foo@bar.com","password":"bar"}"#);
+        .body(r#"{"username":"foo","email":"foo@bar.com","password":"foo bar"}"#);
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let u = db.exclusive().unwrap().get_user("foo").unwrap();
     assert_eq!(u.username, "foo");
-    assert!(bcrypt::verify("bar", &u.password));
+    assert!(u.password.verify("foo bar"));
     test_json(&response);
 }
 
@@ -1000,13 +999,13 @@ fn user_id_cookie(response: &Response) -> Option<Cookie<'static>> {
 fn post_user() {
     let (client, _) = setup();
     let req1 = client.post("/users").header(ContentType::JSON).body(
-        r#"{"username": "foo12341234", "email": "123412341234foo@bar.de", "password": "bar"}"#,
+        r#"{"username": "foo12341234", "email": "123412341234foo@bar.de", "password": "foo bar"}"#,
     );
     let response1 = req1.dispatch();
     assert_eq!(response1.status(), Status::Ok);
 
     let req2 = client.post("/users").header(ContentType::JSON).body(
-        r#"{"username": "baz14234134", "email": "123412341234baz@bar.de", "password": "bar"}"#,
+        r#"{"username": "baz14234134", "email": "123412341234baz@bar.de", "password": "baz bar"}"#,
     );
     let response2 = req2.dispatch();
     assert_eq!(response2.status(), Status::Ok);
@@ -1033,7 +1032,7 @@ fn login_with_valid_credentials() {
     let users = vec![User {
         id: "123".into(),
         username: "foo".into(),
-        password: bcrypt::hash("bar").unwrap(),
+        password: "secret".parse::<Password>().unwrap(),
         email: "foo@bar".into(),
         email_confirmed: true,
         role: Role::Guest,
@@ -1044,7 +1043,7 @@ fn login_with_valid_credentials() {
     let response = client
         .post("/login")
         .header(ContentType::JSON)
-        .body(r#"{"username": "foo", "password": "bar"}"#)
+        .body(r#"{"username": "foo", "password": "secret"}"#)
         .dispatch();
     let cookie = user_id_cookie(&response).unwrap();
     assert_eq!(response.status(), Status::Ok);
@@ -1057,7 +1056,7 @@ fn login_logout_succeeds() {
     let users = vec![User {
         id: "123".into(),
         username: "foo".into(),
-        password: bcrypt::hash("bar").unwrap(),
+        password: "secret".parse::<Password>().unwrap(),
         email: "foo@bar".into(),
         email_confirmed: true,
         role: Role::Guest,
@@ -1070,7 +1069,7 @@ fn login_logout_succeeds() {
     let response = client
         .post("/login")
         .header(ContentType::JSON)
-        .body(r#"{"username": "foo", "password": "bar"}"#)
+        .body(r#"{"username": "foo", "password": "secret"}"#)
         .dispatch();
     let cookie = user_id_cookie(&response).expect("login cookie");
 
@@ -1092,7 +1091,7 @@ fn get_user() {
         User {
             id: "123".into(),
             username: "a".into(),
-            password: bcrypt::hash("a").unwrap(),
+            password: "secret1".parse::<Password>().unwrap(),
             email: "a@bar".into(),
             email_confirmed: true,
             role: Role::Guest,
@@ -1100,7 +1099,7 @@ fn get_user() {
         User {
             id: "123".into(),
             username: "b".into(),
-            password: bcrypt::hash("b").unwrap(),
+            password: "secret2".parse::<Password>().unwrap(),
             email: "b@bar".into(),
             email_confirmed: true,
             role: Role::Guest,
@@ -1112,7 +1111,7 @@ fn get_user() {
     let response = client
         .post("/login")
         .header(ContentType::JSON)
-        .body(r#"{"username": "a", "password": "a"}"#)
+        .body(r#"{"username": "a", "password": "secret1"}"#)
         .dispatch();
 
     let cookie = user_id_cookie(&response).unwrap();
@@ -1143,7 +1142,7 @@ fn confirm_email_address() {
     let users = vec![User {
         id: "123".into(),
         username: "foo".into(),
-        password: bcrypt::hash("bar").unwrap(),
+        password: "secret".parse::<Password>().unwrap(),
         email: "a@bar.de".into(),
         email_confirmed: false,
         role: Role::Guest,
@@ -1155,7 +1154,7 @@ fn confirm_email_address() {
     let response = client
         .post("/login")
         .header(ContentType::JSON)
-        .body(r#"{"username": "foo", "password": "bar"}"#)
+        .body(r#"{"username": "foo", "password": "secret"}"#)
         .dispatch();
 
     assert_eq!(response.status(), Status::Forbidden);
@@ -1178,7 +1177,7 @@ fn confirm_email_address() {
     let response = client
         .post("/login")
         .header(ContentType::JSON)
-        .body(r#"{"username": "foo", "password": "bar"}"#)
+        .body(r#"{"username": "foo", "password": "secret"}"#)
         .dispatch();
     let cookie: Cookie = response
         .headers()
@@ -1203,7 +1202,7 @@ fn send_confirmation_email() {
     let users = vec![User {
         id: "123".into(),
         username: "foo".into(),
-        password: bcrypt::hash("bar").unwrap(),
+        password: "secret".parse::<Password>().unwrap(),
         email: "a@bar.de".into(),
         email_confirmed: false,
         role: Role::Guest,
@@ -1226,7 +1225,7 @@ fn subscribe_to_bbox() {
     let users = vec![User {
         id: "123".into(),
         username: "foo".into(),
-        password: bcrypt::hash("bar").unwrap(),
+        password: "secret".parse::<Password>().unwrap(),
         email: "foo@bar".into(),
         email_confirmed: true,
         role: Role::Guest,
@@ -1237,7 +1236,7 @@ fn subscribe_to_bbox() {
     let response = client
         .post("/login")
         .header(ContentType::JSON)
-        .body(r#"{"username": "foo", "password": "bar"}"#)
+        .body(r#"{"username": "foo", "password": "secret"}"#)
         .dispatch();
     let cookie = user_id_cookie(&response).unwrap();
     let response = client

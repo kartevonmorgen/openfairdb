@@ -403,7 +403,7 @@ mod tests {
         fn get_entry_details_as_admin() {
             let (client, db, mut search) = setup();
             let (id, _, _) = create_entry_with_rating(&db, &mut search);
-            super::super::login::tests::register_user(&db, "foo@bar.com", "baz", true);
+            super::super::login::tests::register_user(&db, "foo@bar.com", "bazbaz", true);
             let mut user = db
                 .shared()
                 .unwrap()
@@ -414,7 +414,7 @@ mod tests {
             let login_res = client
                 .post("/login")
                 .header(ContentType::Form)
-                .body("email=foo%40bar.com&password=baz")
+                .body("email=foo%40bar.com&password=bazbaz")
                 .dispatch();
             let mut res = client.get(format!("/entries/{}", id)).dispatch();
             assert_eq!(res.status(), Status::Ok);

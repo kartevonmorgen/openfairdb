@@ -79,7 +79,7 @@ pub struct MockDb {
     pub events: RefCell<Vec<Event>>,
     pub categories: Vec<Category>,
     pub tags: RefCell<Vec<Tag>>,
-    pub users: Vec<User>,
+    pub users: RefCell<Vec<User>>,
     pub ratings: RefCell<Vec<Rating>>,
     pub comments: RefCell<Vec<Comment>>,
     pub bbox_subscriptions: Vec<BboxSubscription>,
@@ -294,13 +294,14 @@ impl EventGateway for MockDb {
 }
 
 impl UserGateway for MockDb {
-    fn create_user(&mut self, u: User) -> RepoResult<()> {
-        create(&mut self.users, u)
+    fn create_user(&self, u: User) -> RepoResult<()> {
+        create(&mut self.users.borrow_mut(), u)
     }
 
     fn get_user(&self, username: &str) -> RepoResult<User> {
         let users: &Vec<User> = &self
             .users
+            .borrow()
             .iter()
             .filter(|u| u.username == username)
             .cloned()
@@ -315,6 +316,7 @@ impl UserGateway for MockDb {
     fn get_user_by_email(&self, email: &str) -> RepoResult<User> {
         let users: &Vec<User> = &self
             .users
+            .borrow()
             .iter()
             .filter(|u| u.email == email)
             .cloned()
@@ -327,25 +329,20 @@ impl UserGateway for MockDb {
     }
 
     fn all_users(&self) -> RepoResult<Vec<User>> {
-        Ok(self.users.clone())
+        Ok(self.users.borrow().clone())
     }
 
     fn count_users(&self) -> RepoResult<usize> {
         self.all_users().map(|v| v.len())
     }
 
-    fn delete_user(&mut self, u_id: &str) -> RepoResult<()> {
-        self.users = self
-            .users
-            .clone()
-            .into_iter()
-            .filter(|u| u.id != u_id)
-            .collect();
+    fn delete_user(&self, u_id: &str) -> RepoResult<()> {
+        self.users.borrow_mut().retain(|u| u.id != u_id);
         Ok(())
     }
 
-    fn update_user(&mut self, u: &User) -> RepoResult<()> {
-        update(&mut self.users, u)
+    fn update_user(&self, u: &User) -> RepoResult<()> {
+        update(&mut self.users.borrow_mut(), u)
     }
 }
 
@@ -530,25 +527,23 @@ mod tests {
     use chrono::prelude::*;
     #[test]
     fn receive_different_user() {
-        let mut db = MockDb::default();
-        db.users = vec![
-            User {
-                id: "1".into(),
-                username: "a".into(),
-                password: "a".into(),
-                email: "a@foo.bar".into(),
-                email_confirmed: true,
-                role: Role::Guest,
-            },
-            User {
-                id: "2".into(),
-                username: "b".into(),
-                password: "b".into(),
-                email: "b@foo.bar".into(),
-                email_confirmed: true,
-                role: Role::Guest,
-            },
-        ];
+        let db = MockDb::default();
+        db.users.borrow_mut().push(User {
+            id: "1".into(),
+            username: "a".into(),
+            password: "secret".parse::<Password>().unwrap(),
+            email: "a@foo.bar".into(),
+            email_confirmed: true,
+            role: Role::Guest,
+        });
+        db.users.borrow_mut().push(User {
+            id: "2".into(),
+            username: "b".into(),
+            password: "secret".parse::<Password>().unwrap(),
+            email: "b@foo.bar".into(),
+            email_confirmed: true,
+            role: Role::Guest,
+        });
         assert!(get_user(&db, "a", "b").is_err());
         assert!(get_user(&db, "a", "a").is_ok());
     }
@@ -566,7 +561,7 @@ mod tests {
             .create_user(User {
                 id: "123".into(),
                 username: username.into(),
-                password: username.into(),
+                password: "secret".parse::<Password>().unwrap(),
                 email: "abc@abc.de".into(),
                 email_confirmed: true,
                 role: Role::Guest,
@@ -600,7 +595,7 @@ mod tests {
             .create_user(User {
                 id: "123".into(),
                 username: username.into(),
-                password: username.into(),
+                password: "secret".parse::<Password>().unwrap(),
                 email: "abc@abc.de".into(),
                 email_confirmed: true,
                 role: Role::Guest,
@@ -650,7 +645,7 @@ mod tests {
             .create_user(User {
                 id: user1.into(),
                 username: user1.into(),
-                password: user1.into(),
+                password: "secret1".parse::<Password>().unwrap(),
                 email: "abc@abc.de".into(),
                 email_confirmed: true,
                 role: Role::Guest,
@@ -670,7 +665,7 @@ mod tests {
             .create_user(User {
                 id: user2.into(),
                 username: user2.into(),
-                password: user2.into(),
+                password: "secret2".parse::<Password>().unwrap(),
                 email: "abc@abc.de".into(),
                 email_confirmed: true,
                 role: Role::Guest,
@@ -702,7 +697,7 @@ mod tests {
         db.create_user(User {
             id: u_id.clone(),
             username: username.into(),
-            password: "123".into(),
+            password: "secret".parse::<Password>().unwrap(),
             email: "abc@abc.de".into(),
             email_confirmed: true,
             role: Role::Guest,
@@ -732,7 +727,7 @@ mod tests {
             .create_user(User {
                 id: u_id.clone(),
                 username: username.clone(),
-                password: username,
+                password: "secret".parse::<Password>().unwrap(),
                 email: "abc@abc.de".into(),
                 email_confirmed: true,
                 role: Role::Guest,
@@ -744,16 +739,16 @@ mod tests {
             .create_user(User {
                 id: u_id.clone(),
                 username: username.clone(),
-                password: username,
+                password: "secret".parse::<Password>().unwrap(),
                 email: "abcd@abcd.de".into(),
                 email_confirmed: true,
                 role: Role::Guest,
             })
             .is_ok());
-        assert_eq!(db.users.len(), 2);
+        assert_eq!(db.count_users().unwrap(), 2);
 
         assert!(usecases::delete_user(&mut db, "1", "1").is_ok());
-        assert_eq!(db.users.len(), 1);
+        assert_eq!(db.count_users().unwrap(), 1);
     }
 
     #[test]
@@ -762,7 +757,7 @@ mod tests {
         db.create_user(User {
             id: "x".into(),
             username: "user".into(),
-            password: "pw".into(),
+            password: "secret".parse::<Password>().unwrap(),
             email: "abc@abc.de".into(),
             email_confirmed: true,
             role: Role::Guest,

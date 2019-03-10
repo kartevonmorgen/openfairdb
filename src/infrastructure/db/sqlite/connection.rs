@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::core::{prelude::*, util::geo::MapPoint};
+use crate::core::prelude::*;
 use chrono::prelude::*;
 use diesel::{
     self,
@@ -592,13 +592,13 @@ impl EventGateway for SqliteConnection {
 }
 
 impl UserGateway for SqliteConnection {
-    fn create_user(&mut self, u: User) -> Result<()> {
+    fn create_user(&self, u: User) -> Result<()> {
         diesel::insert_into(schema::users::table)
             .values(&models::User::from(u))
             .execute(self)?;
         Ok(())
     }
-    fn update_user(&mut self, u: &User) -> Result<()> {
+    fn update_user(&self, u: &User) -> Result<()> {
         use self::schema::users::dsl;
         let user = models::User::from(u.clone());
         diesel::update(dsl::users.filter(dsl::id.eq(&u.id)))
@@ -632,7 +632,7 @@ impl UserGateway for SqliteConnection {
             .first::<i64>(self)? as usize)
     }
 
-    fn delete_user(&mut self, user_name: &str) -> Result<()> {
+    fn delete_user(&self, user_name: &str) -> Result<()> {
         use self::schema::users::dsl::*;
         diesel::delete(users.find(user_name)).execute(self)?;
         Ok(())
