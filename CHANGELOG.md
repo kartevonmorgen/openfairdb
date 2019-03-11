@@ -1,4 +1,4 @@
-## v0.5.1-dev (2019-mm-dd)
+## v0.5.1 (2019-03-11)
 
 - new(web): Add a basic admin frontend
 - new(web): Include address fields for searching entries
