@@ -1,6 +1,6 @@
 use crate::core::{db::IndexedEntry, entities as e, util::geo::MapPoint};
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Entry {
     pub id             : String,

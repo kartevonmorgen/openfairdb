@@ -4,7 +4,7 @@ use crate::core::{
 };
 use uuid::Uuid;
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Deserialize, Debug, Clone)]
 pub struct NewEntry {
     pub title          : String,
@@ -128,7 +128,7 @@ mod tests {
 
     #[test]
     fn create_new_valid_entry() {
-        #[cfg_attr(rustfmt, rustfmt_skip)]
+        #[rustfmt::skip]
         let x = NewEntry {
             title       : "foo".into(),
             description : "bar".into(),
@@ -166,7 +166,7 @@ mod tests {
 
     #[test]
     fn create_entry_with_invalid_email() {
-        #[cfg_attr(rustfmt, rustfmt_skip)]
+        #[rustfmt::skip]
         let x = NewEntry {
             title       : "foo".into(),
             description : "bar".into(),
@@ -191,7 +191,7 @@ mod tests {
 
     #[test]
     fn add_new_valid_entry_with_tags() {
-        #[cfg_attr(rustfmt, rustfmt_skip)]
+        #[rustfmt::skip]
         let x = NewEntry {
             title       : "foo".into(),
             description : "bar".into(),

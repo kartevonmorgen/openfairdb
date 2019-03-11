@@ -1,7 +1,7 @@
 use crate::core::prelude::*;
 use crate::core::util::{filter, geo::MapBbox};
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Debug, Clone)]
 pub struct SearchRequest<'a, 'b> {
     pub bbox          : MapBbox,

@@ -10,7 +10,7 @@ use chrono::prelude::*;
 use std::str::FromStr;
 use uuid::Uuid;
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Deserialize, Debug, Clone)]
 pub struct NewEvent {
     pub title        : String,
@@ -246,7 +246,7 @@ mod tests {
 
     #[test]
     fn create_new_valid_event() {
-        #[cfg_attr(rustfmt, rustfmt_skip)]
+        #[rustfmt::skip]
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),
@@ -283,7 +283,7 @@ mod tests {
 
     #[test]
     fn create_event_with_invalid_email() {
-        #[cfg_attr(rustfmt, rustfmt_skip)]
+        #[rustfmt::skip]
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),
@@ -310,7 +310,7 @@ mod tests {
 
     #[test]
     fn create_event_with_valid_non_existing_creator_email() {
-        #[cfg_attr(rustfmt, rustfmt_skip)]
+        #[rustfmt::skip]
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),
@@ -354,7 +354,7 @@ mod tests {
             .unwrap();
         let users = mock_db.all_users().unwrap();
         assert_eq!(users.len(), 1);
-        #[cfg_attr(rustfmt, rustfmt_skip)]
+        #[rustfmt::skip]
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),

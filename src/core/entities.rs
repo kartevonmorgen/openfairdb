@@ -6,7 +6,7 @@ use crate::core::util::{
     time::Timestamp,
 };
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
     pub id             : String,
@@ -26,14 +26,14 @@ pub struct Entry {
     pub image_link_url : Option<String>,
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Location {
     pub pos:      MapPoint,
     pub address : Option<Address>
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq,Default)]
 pub struct Address {
     pub street  : Option<String>,
@@ -51,7 +51,7 @@ impl Address {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Contact {
     pub email     : Option<String>,
@@ -64,7 +64,7 @@ impl Contact {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Event {
     pub id           : String,
@@ -89,7 +89,7 @@ pub enum RegistrationType {
     Homepage,
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Category {
     pub id      : String,
@@ -103,7 +103,7 @@ pub struct Tag {
     pub id: String,
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct User {
     pub id              : String, // TODO: remove
@@ -114,7 +114,7 @@ pub struct User {
     pub role            : Role,
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Debug, Clone, Copy, PartialEq, FromPrimitive, ToPrimitive)]
 pub enum Role {
     Guest = 0,
@@ -129,7 +129,7 @@ impl Default for Role {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Comment {
     pub id        : String,
@@ -354,7 +354,7 @@ impl std::ops::AddAssign<(RatingContext, RatingValue)> for AvgRatingsBuilder {
     }
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Rating {
     pub id       : String,
@@ -367,7 +367,7 @@ pub struct Rating {
     pub source   : Option<String>,
 }
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct BboxSubscription {
     pub id       : String,

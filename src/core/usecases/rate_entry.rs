@@ -1,7 +1,7 @@
 use crate::core::prelude::*;
 use uuid::Uuid;
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Deserialize, Debug, Clone)]
 pub struct RateEntry {
     pub entry   : String,

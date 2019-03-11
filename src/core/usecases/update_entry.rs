@@ -3,7 +3,7 @@ use crate::core::{
     util::{parse::parse_url_param, validate::Validate},
 };
 
-#[cfg_attr(rustfmt, rustfmt_skip)]
+#[rustfmt::skip]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateEntry {
     pub osm_node       : Option<u64>,
@@ -129,7 +129,7 @@ mod tests {
             .license(Some("CC0-1.0"))
             .finish();
 
-        #[cfg_attr(rustfmt, rustfmt_skip)]
+        #[rustfmt::skip]
         let new = UpdateEntry {
             osm_node    :  None,
             version     : 2,
@@ -185,7 +185,7 @@ mod tests {
             .description("bar")
             .finish();
 
-        #[cfg_attr(rustfmt, rustfmt_skip)]
+        #[rustfmt::skip]
         let new = UpdateEntry {
             osm_node    : None,
             version     : 3,
@@ -226,7 +226,7 @@ mod tests {
     #[test]
     fn update_non_existing_entry() {
         let id = Uuid::new_v4().to_simple_ref().to_string();
-        #[cfg_attr(rustfmt, rustfmt_skip)]
+        #[rustfmt::skip]
         let new = UpdateEntry {
             osm_node    : None,
             version     : 4,
@@ -273,7 +273,7 @@ mod tests {
             .tags(vec!["bio", "fair"])
             .license(Some("CC0-1.0"))
             .finish();
-        #[cfg_attr(rustfmt, rustfmt_skip)]
+        #[rustfmt::skip]
         let new = UpdateEntry {
             osm_node    :  None,
             version     : 2,
