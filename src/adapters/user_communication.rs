@@ -1,21 +1,41 @@
-use crate::core::entities::*;
+use crate::core::prelude::*;
 
-pub fn email_confirmation_email(url: &str) -> String {
-    format!(
-        "Na du Weltverbesserer*,\nwir freuen uns dass du bei der Karte von morgen mit dabei bist!\n\nBitte bestätige deine Email-Adresse hier:\n{}\n\neuphorische Grüße\ndas Karte von morgen-Team",
-        url
-    )
+pub struct EmailContent {
+    pub subject: String,
+    pub body: String,
 }
 
-pub fn new_entry_email(e: &Entry, category_names: &[String]) -> String {
+pub fn user_registration_email(url: &str) -> EmailContent {
+    let subject = "Karte von morgen: Bitte bestätige deine Email-Adresse".into();
+    let body = format!(
+        "Na du Weltverbesserer*,\nwir freuen uns dass du bei der Karte von morgen mit dabei bist!\n\nBitte bestätige deine Email-Adresse hier:\n{}\n\neuphorische Grüße\ndas Karte von morgen-Team",
+        url
+    );
+    EmailContent {
+        subject,
+        body,
+    }
+}
+
+pub fn entry_added_email(e: &Entry, category_names: &[String]) -> EmailContent {
+    let subject = format!("Karte von morgen - neuer Eintrag: {}", e.title);
     let intro_sentence = "ein neuer Eintrag auf der Karte von morgen wurde erstellt";
-    entry_email(&e, category_names, &e.tags, intro_sentence)
+    let body = entry_email(&e, category_names, &e.tags, intro_sentence);
+    EmailContent {
+        subject,
+        body,
+    }
 }
 
 //TODO: calc diff
-pub fn changed_entry_email(e: &Entry, category_names: &[String]) -> String {
+pub fn entry_changed_email(e: &Entry, category_names: &[String]) -> EmailContent {
+    let subject = format!("Karte von morgen - Eintrag verändert: {}", e.title);
     let intro_sentence = "folgender Eintrag der Karte von morgen wurde verändert";
-    entry_email(&e, category_names, &e.tags, intro_sentence)
+    let body = entry_email(&e, category_names, &e.tags, intro_sentence);
+    EmailContent {
+        subject,
+        body,
+    }
 }
 
 pub fn entry_email(
