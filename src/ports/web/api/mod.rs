@@ -1,6 +1,6 @@
 use super::{guards::*, util};
 use crate::{
-    adapters::{self, json, user_communication},
+    adapters::{self, json},
     core::{
         prelude::*,
         usecases::{self, DuplicateType},

@@ -8,12 +8,8 @@ pub fn post_user(db: sqlite::Connections, u: Json<usecases::NewUser>) -> Result<
         usecases::create_new_user(&mut *db, new_user.clone())?;
         db.get_user(&new_user.username)?
     };
-    let subject = "Karte von morgen: bitte bestätige deine Email-Adresse";
-    let url = format!("https://kartevonmorgen.org/#/?confirm_email={}", user.id);
-    let body = user_communication::email_confirmation_email(&url);
 
-    #[cfg(feature = "email")]
-    notify::send_mails(&[user.email], subject, &body);
+    notify::user_registered_kvm(&user);
 
     Ok(Json(()))
 }

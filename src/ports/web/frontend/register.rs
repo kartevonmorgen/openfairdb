@@ -1,7 +1,6 @@
 use super::login::LoginCredentials;
 use super::view;
 use crate::{
-    adapters::user_communication,
     core::{prelude::*, usecases},
     infrastructure::notify,
     ports::web::sqlite::Connections,
@@ -48,12 +47,8 @@ pub fn post_register(
                     if let Ok(user) = db.get_user_by_email(&credentials.email) {
                         debug!("Created user with ID = {}", user.id);
 
-                        //TODO: move this to a better place
-                        let subject = "Karte von morgen: bitte bestätige deine Email-Adresse";
-                        let url = format!("https://openfairdb.org/register/confirm/{}", user.id);
-                        let body = user_communication::email_confirmation_email(&url);
-                        #[cfg(feature = "email")]
-                        notify::send_mails(&[credentials.email], subject, &body);
+                        debug_assert_eq!(user.email, credentials.email);
+                        notify::user_registered_ofdb(&user);
                     }
 
                     let msg = "Registered sucessfully. Please confirm your email address.";

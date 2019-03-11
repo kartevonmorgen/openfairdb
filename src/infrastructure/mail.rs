@@ -71,7 +71,7 @@ fn encode_header_field(name: &str, input: &str) -> String {
     encoded_output
 }
 
-pub fn create(to: &[String], subject: &str, body: &str) -> Result<String> {
+pub fn compose(to: &[&str], subject: &str, body: &str) -> Result<String> {
     let to: Vec<_> = to.iter().filter(|m| is_valid_email(m)).cloned().collect();
 
     if to.is_empty() {
@@ -130,7 +130,7 @@ mod tests {
 
     #[test]
     fn create_simple_mail() {
-        let mail = create(
+        let mail = compose(
             &vec!["mail@test.org".into()],
             "My veeeeerrrrryyyyy looooonnnnnggggg Subject with äöüÄÖÜß Umlaute and even more characters that are distributed onto multiple lines",
             "Hello Mail",
@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn check_addresses() {
-        assert!(create(&vec![], "foo", "bar").is_err());
-        assert!(create(&vec!["not-valid".into()], "foo", "bar").is_err());
+        assert!(compose(&vec![], "foo", "bar").is_err());
+        assert!(compose(&vec!["not-valid".into()], "foo", "bar").is_err());
     }
 }
