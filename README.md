@@ -52,11 +52,11 @@ For the following requests one must be logged in:
 ## Quick start
 
 Download the latest build
-[openfairdb-x86_64-linux-v0.3.7.tar.gz](https://github.com/slowtec/openfairdb/releases/download/v0.3.7/openfairdb-x86_64-linux-v0.3.7.tar.gz),
+[openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz](https://github.com/slowtec/openfairdb/releases/download/v0.5.1/openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz),
 unpack and start it:
 
-    wget https://github.com/slowtec/openfairdb/releases/download/v0.3.7/openfairdb-x86_64-linux-v0.3.7.tar.gz
-    tar xzf openfairdb-x86_64-linux-v0.3.7.tar.gz
+    wget https://github.com/slowtec/openfairdb/releases/download/v0.5.1/openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz
+    tar xJf openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz
     ./openfairdb
 
 ## Build
