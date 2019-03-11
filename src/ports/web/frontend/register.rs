@@ -77,9 +77,9 @@ pub fn get_email_confirmation(
             Redirect::to(uri!(get_email_confirmation: user_id)),
             "We are so sorry! An internal server error has occurred. Please try again later.",
         )),
-        Ok(mut db) => {
+        Ok(db) => {
             let u_id = user_id.as_str();
-            match usecases::confirm_email_address(&mut *db, &u_id) {
+            match usecases::confirm_email_address(&*db, &u_id) {
                 Ok(_) => Ok(Flash::success(
                     Redirect::to(uri!(super::login::get_login)),
                     "Your email address is now confirmed :)",

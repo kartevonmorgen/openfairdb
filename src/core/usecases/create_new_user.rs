@@ -58,7 +58,7 @@ pub fn create_user_from_email<D: Db>(db: &mut D, email: &str) -> Result<String> 
         None => {
             let generated_username = generate_username_from_email(&email);
             let username = generated_username.clone();
-            let password = PW_GEN.generate_one().map_err(|e| e.to_string())?;
+            let password = PW_GEN.generate_one().map_err(ToString::to_string)?;
             let u = NewUser {
                 username,
                 password,

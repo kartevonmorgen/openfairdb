@@ -164,7 +164,7 @@ impl From<e::Event> for Event {
             (None, None)
         };
 
-        let registration = registration.map(|x| x.into());
+        let registration = registration.map(Into::into);
 
         Event {
             id,
@@ -310,7 +310,7 @@ impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
             None
         };
 
-        let registration = registration.map(|x| x.into());
+        let registration = registration.map(Into::into);
 
         e::Event {
             id,
@@ -341,7 +341,7 @@ impl From<Category> for e::Category {
         e::Category {
             id,
             name,
-            created: created.into(),
+            created,
             version: version as u64,
         }
     }
@@ -358,7 +358,7 @@ impl From<e::Category> for Category {
         Category {
             id,
             name,
-            created: created.into(),
+            created,
             version: version as i64,
         }
     }

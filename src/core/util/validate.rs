@@ -142,7 +142,7 @@ impl AutoCorrect for Location {
     fn auto_correct(mut self) -> Self {
         self.address = self
             .address
-            .map(|a| a.auto_correct())
+            .map(AutoCorrect::auto_correct)
             .filter(|a| !a.is_empty());
         self
     }

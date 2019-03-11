@@ -27,12 +27,10 @@ pub fn extend_bbox(bbox: &MapBbox) -> MapBbox {
             south_west_lng_deg = LngCoord::min().to_deg();
             north_east_lng_deg = LngCoord::max().to_deg();
         }
-    } else {
-        if south_west_lng_deg < north_east_lng_deg {
-            // overflow after wrap around (boundaries switched) -> maximize
-            south_west_lng_deg = LngCoord::min().to_deg();
-            north_east_lng_deg = LngCoord::max().to_deg();
-        }
+    } else if south_west_lng_deg < north_east_lng_deg {
+        // overflow after wrap around (boundaries switched) -> maximize
+        south_west_lng_deg = LngCoord::min().to_deg();
+        north_east_lng_deg = LngCoord::max().to_deg();
     }
     let extended_bbox = MapBbox::new(
         MapPoint::from_lat_lng_deg(south_west_lat_deg, south_west_lng_deg),
@@ -48,14 +46,14 @@ pub trait InBBox {
 
 impl InBBox for Entry {
     fn in_bbox(&self, bbox: &MapBbox) -> bool {
-        bbox.contains_point(&self.location.pos)
+        bbox.contains_point(self.location.pos)
     }
 }
 
 impl InBBox for Event {
     fn in_bbox(&self, bbox: &MapBbox) -> bool {
         if let Some(ref location) = self.location {
-            bbox.contains_point(&location.pos)
+            bbox.contains_point(location.pos)
         } else {
             false
         }

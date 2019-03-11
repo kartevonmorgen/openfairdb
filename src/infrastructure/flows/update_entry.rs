@@ -63,7 +63,7 @@ fn notify_entry_updated(connections: &sqlite::Connections, entry: &Entry) -> Res
     let (email_addresses, all_categories) = {
         let connection = connections.shared()?;
         let email_addresses =
-            usecases::email_addresses_by_coordinate(&*connection, &entry.location.pos)?;
+            usecases::email_addresses_by_coordinate(&*connection, entry.location.pos)?;
         let all_categories = connection.all_categories()?;
         (email_addresses, all_categories)
     };

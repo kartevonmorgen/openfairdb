@@ -29,7 +29,7 @@ impl Storable {
 }
 
 pub fn prepare_new_rating<D: Db>(db: &D, r: RateEntry) -> Result<Storable> {
-    if r.comment.len() < 1 {
+    if r.comment.is_empty() {
         return Err(Error::Parameter(ParameterError::EmptyComment));
     }
     if !r.value.is_valid() {

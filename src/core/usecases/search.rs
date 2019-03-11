@@ -32,7 +32,7 @@ pub fn search(
 
     let (visible_entries, invisible_entries): (Vec<_>, Vec<_>) = entries
         .into_iter()
-        .partition(|e| visible_bbox.contains_point(&e.pos));
+        .partition(|e| visible_bbox.contains_point(e.pos));
 
     Ok((visible_entries, invisible_entries))
 }

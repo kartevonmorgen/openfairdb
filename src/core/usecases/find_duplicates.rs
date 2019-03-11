@@ -14,10 +14,8 @@ pub fn find_duplicates(
     all_entries: &[Entry],
 ) -> Vec<(String, String, DuplicateType)> {
     let mut duplicates = Vec::new();
-    for i in 0..entries.len() {
-        for j in 0..all_entries.len() {
-            let e1 = &entries[i];
-            let e2 = &all_entries[j];
+    for e1 in &entries[..] {
+        for e2 in &all_entries[..] {
             if e1.id >= e2.id {
                 continue;
             }
@@ -43,7 +41,7 @@ fn is_duplicate(e1: &Entry, e2: &Entry) -> Option<DuplicateType> {
 }
 
 fn in_close_proximity(e1: &Entry, e2: &Entry, max_dist: Distance) -> bool {
-    if let Some(dist) = MapPoint::distance(&e1.location.pos, &e2.location.pos) {
+    if let Some(dist) = MapPoint::distance(e1.location.pos, e2.location.pos) {
         return dist <= max_dist;
     }
     false

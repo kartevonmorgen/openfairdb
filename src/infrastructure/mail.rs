@@ -27,7 +27,7 @@ fn encode_header_field_partially(input: &str, encoded_max_len: usize) -> (String
         debug_assert!(input_max_len >= input.len() || input.is_char_boundary(input_max_len));
         let mut input_len = input_min_len + (input_max_len - input_min_len) / 2;
         while !input.is_char_boundary(input_len) {
-            input_len = input_len - 1;
+            input_len -= 1;
         }
         let encoded = format!(
             "=?UTF-8?Q?{}?=",
@@ -66,17 +66,13 @@ fn encode_header_field(name: &str, input: &str) -> String {
         debug_assert!(!encoded_part.is_empty());
         debug_assert!(input_part_len > 0);
         encoded_output.push_str(&encoded_part);
-        input_len = input_len + input_part_len;
+        input_len += input_part_len;
     }
     encoded_output
 }
 
 pub fn create(to: &[String], subject: &str, body: &str) -> Result<String> {
-    let to: Vec<_> = to
-        .into_iter()
-        .filter(|m| is_valid_email(m))
-        .cloned()
-        .collect();
+    let to: Vec<_> = to.iter().filter(|m| is_valid_email(m)).cloned().collect();
 
     if to.is_empty() {
         return Err(Error::new(

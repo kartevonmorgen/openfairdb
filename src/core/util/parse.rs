@@ -18,7 +18,7 @@ pub fn parse_lazy_url(url: &str) -> Result<Url, ParseError> {
 
 pub fn parse_url_param(url: &str) -> Result<String, ParameterError> {
     parse_lazy_url(url)
-        .map(|url| url.into_string())
+        .map(Url::into_string)
         .map_err(|_| ParameterError::Url)
 }
 

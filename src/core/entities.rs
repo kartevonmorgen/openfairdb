@@ -191,7 +191,7 @@ impl From<RatingValue> for i8 {
 
 impl From<RatingValue> for f64 {
     fn from(from: RatingValue) -> Self {
-        from.0 as f64
+        f64::from(from.0)
     }
 }
 

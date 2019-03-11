@@ -16,7 +16,7 @@ lazy_static! {
 
 fn address_to_forward_query_string(addr: &Address) -> String {
     let addr_parts = [&addr.street, &addr.zip, &addr.city, &addr.country];
-    addr_parts.into_iter().filter_map(|x| x.as_ref()).join(",")
+    addr_parts.iter().filter_map(|x| x.as_ref()).join(",")
 }
 
 fn oc_resolve_address_lat_lng(oc_api_key: String, addr: &Address) -> Option<(f64, f64)> {

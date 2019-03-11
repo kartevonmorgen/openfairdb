@@ -143,7 +143,7 @@ pub fn event(email: Option<&str>, ev: Event) -> Markup {
                     }
             }
             h4 { "Beschreibung" }
-            p{ (ev.description.unwrap_or("".to_string())) }
+            p{ (ev.description.unwrap_or_default()) }
 
             @if let Some(ref location) = ev.location{
                     h4{ "Ort" }
@@ -268,7 +268,7 @@ fn map_scripts(pins: &[MapPin]) -> Markup {
 
     let pins: String = pins
         .iter()
-        .map(|p| p.to_js_object_string())
+        .map(MapPin::to_js_object_string)
         .collect::<Vec<_>>()
         .join(",");
 

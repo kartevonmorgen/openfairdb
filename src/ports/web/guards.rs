@@ -20,7 +20,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for Bearer {
     fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, ()> {
         match request.headers().get_one("Authorization") {
             Some(auth) => {
-                let x: Vec<_> = auth.split(" ").collect();
+                let x: Vec<_> = auth.split(' ').collect();
                 if x.len() != 2 {
                     return Outcome::Failure((Status::Unauthorized, ()));
                 }
@@ -71,7 +71,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for Account {
             .cookies()
             .get_private(COOKIE_EMAIL_KEY)
             .and_then(|cookie| cookie.value().parse().ok())
-            .map(|email| Account(email))
+            .map(Account)
             .or_forward(())
     }
 }

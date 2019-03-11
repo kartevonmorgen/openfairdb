@@ -711,13 +711,13 @@ mod tests {
         usecases::subscribe_to_bbox(bbox_new, username, &mut db).unwrap();
 
         let email_addresses =
-            usecases::email_addresses_by_coordinate(&db, &MapPoint::from_lat_lng_deg(5.0, 5.0))
+            usecases::email_addresses_by_coordinate(&db, MapPoint::from_lat_lng_deg(5.0, 5.0))
                 .unwrap();
         assert_eq!(email_addresses.len(), 1);
         assert_eq!(email_addresses[0], "abc@abc.de");
 
         let no_email_addresses =
-            usecases::email_addresses_by_coordinate(&db, &MapPoint::from_lat_lng_deg(20.0, 20.0))
+            usecases::email_addresses_by_coordinate(&db, MapPoint::from_lat_lng_deg(20.0, 20.0))
                 .unwrap();
         assert_eq!(no_email_addresses.len(), 0);
     }

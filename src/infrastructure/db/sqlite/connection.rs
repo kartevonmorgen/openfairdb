@@ -315,7 +315,7 @@ impl EntryGateway for SqliteConnection {
 
     fn import_multiple_entries(&mut self, new_entries: &[Entry]) -> Result<()> {
         let imports: Vec<_> = new_entries
-            .into_iter()
+            .iter()
             .map(|e| {
                 let new_entry = models::Entry::from(e.clone());
                 let cat_rels: Vec<_> = e
@@ -481,7 +481,7 @@ impl EventGateway for SqliteConnection {
             None
         };
 
-        let registration = registration.map(|x| x.into());
+        let registration = registration.map(Into::into);
 
         Ok(Event {
             id,

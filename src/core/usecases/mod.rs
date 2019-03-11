@@ -113,11 +113,11 @@ pub fn unsubscribe_all_bboxes_by_username(db: &mut Db, username: &str) -> Result
     Ok(())
 }
 
-pub fn bbox_subscriptions_by_coordinate(db: &Db, pos: &MapPoint) -> Result<Vec<BboxSubscription>> {
+pub fn bbox_subscriptions_by_coordinate(db: &Db, pos: MapPoint) -> Result<Vec<BboxSubscription>> {
     Ok(db
         .all_bbox_subscriptions()?
         .into_iter()
-        .filter(|s| s.bbox.contains_point(&pos))
+        .filter(|s| s.bbox.contains_point(pos))
         .collect())
 }
 
@@ -137,7 +137,7 @@ pub fn email_addresses_from_subscriptions(
     Ok(addresses)
 }
 
-pub fn email_addresses_by_coordinate(db: &Db, pos: &MapPoint) -> Result<Vec<String>> {
+pub fn email_addresses_by_coordinate(db: &Db, pos: MapPoint) -> Result<Vec<String>> {
     let subs = bbox_subscriptions_by_coordinate(db, pos)?;
     let addresses = email_addresses_from_subscriptions(db, &subs)?;
     Ok(addresses)
@@ -152,7 +152,7 @@ pub fn prepare_tag_list(tags: Vec<String>) -> Vec<String> {
             t => Some(t.to_owned()),
         })
         // Split and recollect
-        .map(|t| t.split(" ").map(|x| x.to_owned()).collect::<Vec<_>>())
+        .map(|t| t.split(' ').map(ToOwned::to_owned).collect::<Vec<_>>())
         .flatten()
         // Remove reserved character
         .map(|t| t.replace("#", ""))

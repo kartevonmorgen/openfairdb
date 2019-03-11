@@ -47,12 +47,10 @@ impl std::cmp::PartialOrd for GeoCoord {
     fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
         if self == other {
             Some(std::cmp::Ordering::Equal)
+        } else if self.is_valid() && other.is_valid() {
+            Some(self.to_raw().cmp(&other.to_raw()))
         } else {
-            if self.is_valid() && other.is_valid() {
-                Some(self.to_raw().cmp(&other.to_raw()))
-            } else {
-                None
-            }
+            None
         }
     }
 }
@@ -348,7 +346,7 @@ impl MapPoint {
     /// of the earth using a special case of the Vincenty
     /// formula for numerical accuracy.
     /// Reference: https://en.wikipedia.org/wiki/Great-circle_distance
-    pub fn distance(p1: &MapPoint, p2: &MapPoint) -> Option<Distance> {
+    pub fn distance(p1: MapPoint, p2: MapPoint) -> Option<Distance> {
         if !p1.is_valid() || !p2.is_valid() {
             return None;
         }
@@ -403,7 +401,7 @@ impl MapBbox {
         self.sw.lat() >= self.ne.lat() || self.sw.lng() == self.ne.lng()
     }
 
-    pub fn contains_point(&self, pt: &MapPoint) -> bool {
+    pub fn contains_point(&self, pt: MapPoint) -> bool {
         debug_assert!(self.is_valid());
         debug_assert!(pt.is_valid());
         if pt.lat() < self.sw.lat() || pt.lat() > self.ne.lat() {
@@ -513,14 +511,14 @@ mod tests {
     #[test]
     fn no_distance() {
         let p1 = MapPoint::from_lat_lng_deg(0.0, 0.0);
-        assert_eq!(MapPoint::distance(&p1, &p1).unwrap().to_meters(), 0.0);
+        assert_eq!(MapPoint::distance(p1, p1).unwrap().to_meters(), 0.0);
 
         let p2 = MapPoint::from_lat_lng_deg(-25.0, 55.0);
-        assert_eq!(MapPoint::distance(&p2, &p2).unwrap().to_meters(), 0.0);
+        assert_eq!(MapPoint::distance(p2, p2).unwrap().to_meters(), 0.0);
 
         let p1 = MapPoint::from_lat_lng_deg(-15.0, -180.0);
         let p2 = MapPoint::from_lat_lng_deg(-15.0, 180.0);
-        assert!(MapPoint::distance(&p1, &p2).unwrap().to_meters() < 0.000001);
+        assert!(MapPoint::distance(p1, p2).unwrap().to_meters() < 0.000001);
     }
 
     #[test]
@@ -528,19 +526,19 @@ mod tests {
         let stuttgart = MapPoint::from_lat_lng_deg(48.7755, 9.1827);
         let mannheim = MapPoint::from_lat_lng_deg(49.4836, 8.4630);
         assert!(
-            MapPoint::distance(&stuttgart, &mannheim).unwrap() > Distance::from_meters(94_000.0)
+            MapPoint::distance(stuttgart, mannheim).unwrap() > Distance::from_meters(94_000.0)
         );
         assert!(
-            MapPoint::distance(&stuttgart, &mannheim).unwrap() < Distance::from_meters(95_000.0)
+            MapPoint::distance(stuttgart, mannheim).unwrap() < Distance::from_meters(95_000.0)
         );
 
         let new_york = MapPoint::from_lat_lng_deg(40.714268, -74.005974);
         let sidney = MapPoint::from_lat_lng_deg(-33.867138, 151.207108);
         assert!(
-            MapPoint::distance(&new_york, &sidney).unwrap() > Distance::from_meters(15_985_000.0)
+            MapPoint::distance(new_york, sidney).unwrap() > Distance::from_meters(15_985_000.0)
         );
         assert!(
-            MapPoint::distance(&new_york, &sidney).unwrap() < Distance::from_meters(15_995_000.0)
+            MapPoint::distance(new_york, sidney).unwrap() < Distance::from_meters(15_995_000.0)
         );
     }
 
@@ -549,8 +547,8 @@ mod tests {
         let a = MapPoint::from_lat_lng_deg(80.0, 0.0);
         let b = MapPoint::from_lat_lng_deg(90.0, 20.0);
         assert_eq!(
-            MapPoint::distance(&a, &b).unwrap(),
-            MapPoint::distance(&b, &a).unwrap()
+            MapPoint::distance(a, b).unwrap(),
+            MapPoint::distance(b, a).unwrap()
         );
     }
 
@@ -558,22 +556,22 @@ mod tests {
     fn distance_with_invalid_coordinates() {
         let a = MapPoint::new(LatCoord::from_deg(10.0), Default::default());
         let b = MapPoint::from_lat_lng_deg(20.0, 20.0);
-        assert_eq!(None, MapPoint::distance(&a, &b));
+        assert_eq!(None, MapPoint::distance(a, b));
     }
 
     #[test]
     fn positive_distance_regressions() {
         let p1 = MapPoint::from_lat_lng_deg(-81.2281041784343, 77.75747775927069);
         let p2 = MapPoint::from_lat_lng_deg(40.92116510538438, -93.33303223984923);
-        assert!(MapPoint::distance(&p1, &p2).unwrap().to_meters() >= 0.0);
+        assert!(MapPoint::distance(p1, p2).unwrap().to_meters() >= 0.0);
 
         let p1 = MapPoint::from_lat_lng_deg(67.01568147028595, 122.10276824520099);
         let p2 = MapPoint::from_lat_lng_deg(-87.84709362678561, 132.71691422570353);
-        assert!(MapPoint::distance(&p1, &p2).unwrap().to_meters() >= 0.0);
+        assert!(MapPoint::distance(p1, p2).unwrap().to_meters() >= 0.0);
 
         let p1 = MapPoint::from_lat_lng_deg(-37.44489137895633, -124.46758920534867);
         let p2 = MapPoint::from_lat_lng_deg(29.29724492099939, 0.03218860366949281);
-        assert!(MapPoint::distance(&p1, &p2).unwrap().to_meters() >= 0.0);
+        assert!(MapPoint::distance(p1, p2).unwrap().to_meters() >= 0.0);
     }
 
     #[test]
@@ -581,36 +579,36 @@ mod tests {
         let sw = MapPoint::from_lat_lng_deg(-25.0, -20.0);
         let ne = MapPoint::from_lat_lng_deg(25.0, 30.0);
         let bbox = MapBbox::new(sw, ne);
-        assert!(bbox.contains_point(&MapPoint::from_lat_lng_deg(-10.0, -15.0)));
-        assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(-26.0, -15.0)));
-        assert!(bbox.contains_point(&MapPoint::from_lat_lng_deg(10.0, 20.0)));
-        assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(26.0, 20.0)));
-        assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(-10.0, -21.0)));
-        assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(10.0, 31.0)));
+        assert!(bbox.contains_point(MapPoint::from_lat_lng_deg(-10.0, -15.0)));
+        assert!(!bbox.contains_point(MapPoint::from_lat_lng_deg(-26.0, -15.0)));
+        assert!(bbox.contains_point(MapPoint::from_lat_lng_deg(10.0, 20.0)));
+        assert!(!bbox.contains_point(MapPoint::from_lat_lng_deg(26.0, 20.0)));
+        assert!(!bbox.contains_point(MapPoint::from_lat_lng_deg(-10.0, -21.0)));
+        assert!(!bbox.contains_point(MapPoint::from_lat_lng_deg(10.0, 31.0)));
 
         let sw = MapPoint::from_lat_lng_deg(-25.0, 175.0);
         let ne = MapPoint::from_lat_lng_deg(25.0, -175.0);
         let bbox = MapBbox::new(sw, ne);
-        assert!(bbox.contains_point(&MapPoint::from_lat_lng_deg(-10.0, 177.0)));
-        assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(-26.0, 177.0)));
-        assert!(bbox.contains_point(&MapPoint::from_lat_lng_deg(10.0, -177.0)));
-        assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(26.0, 177.0)));
-        assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(-10.0, 174.0)));
-        assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(10.0, -174.0)));
+        assert!(bbox.contains_point(MapPoint::from_lat_lng_deg(-10.0, 177.0)));
+        assert!(!bbox.contains_point(MapPoint::from_lat_lng_deg(-26.0, 177.0)));
+        assert!(bbox.contains_point(MapPoint::from_lat_lng_deg(10.0, -177.0)));
+        assert!(!bbox.contains_point(MapPoint::from_lat_lng_deg(26.0, 177.0)));
+        assert!(!bbox.contains_point(MapPoint::from_lat_lng_deg(-10.0, 174.0)));
+        assert!(!bbox.contains_point(MapPoint::from_lat_lng_deg(10.0, -174.0)));
 
         let sw = MapPoint::from_lat_lng_deg(-25.0, 30.0);
         let ne = MapPoint::from_lat_lng_deg(25.0, 10.0);
         let bbox = MapBbox::new(sw, ne);
-        assert!(bbox.contains_point(&MapPoint::from_lat_lng_deg(-10.0, 5.0)));
-        assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(-26.0, 5.0)));
-        assert!(bbox.contains_point(&MapPoint::from_lat_lng_deg(10.0, 35.0)));
-        assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(26.0, 35.0)));
-        assert!(bbox.contains_point(&MapPoint::from_lat_lng_deg(10.0, 180.0)));
-        assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(26.0, 180.0)));
-        assert!(bbox.contains_point(&MapPoint::from_lat_lng_deg(10.0, -180.0)));
-        assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(26.0, -180.0)));
-        assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(-10.0, 11.0)));
-        assert!(!bbox.contains_point(&MapPoint::from_lat_lng_deg(10.0, 29.0)));
+        assert!(bbox.contains_point(MapPoint::from_lat_lng_deg(-10.0, 5.0)));
+        assert!(!bbox.contains_point(MapPoint::from_lat_lng_deg(-26.0, 5.0)));
+        assert!(bbox.contains_point(MapPoint::from_lat_lng_deg(10.0, 35.0)));
+        assert!(!bbox.contains_point(MapPoint::from_lat_lng_deg(26.0, 35.0)));
+        assert!(bbox.contains_point(MapPoint::from_lat_lng_deg(10.0, 180.0)));
+        assert!(!bbox.contains_point(MapPoint::from_lat_lng_deg(26.0, 180.0)));
+        assert!(bbox.contains_point(MapPoint::from_lat_lng_deg(10.0, -180.0)));
+        assert!(!bbox.contains_point(MapPoint::from_lat_lng_deg(26.0, -180.0)));
+        assert!(!bbox.contains_point(MapPoint::from_lat_lng_deg(-10.0, 11.0)));
+        assert!(!bbox.contains_point(MapPoint::from_lat_lng_deg(10.0, 29.0)));
 
         let bbox1 = MapBbox::new(
             MapPoint::from_lat_lng_deg(0.0, 0.0),
@@ -638,25 +636,25 @@ mod tests {
         let lat4 = 5.0;
         let lng4 = -5.0;
 
-        assert!(bbox1.contains_point(&MapPoint::from_lat_lng_deg(lat1, lng1)));
-        assert!(!bbox2.contains_point(&MapPoint::from_lat_lng_deg(lat1, lng1)));
-        assert!(!bbox3.contains_point(&MapPoint::from_lat_lng_deg(lat1, lng1)));
-        assert!(!bbox4.contains_point(&MapPoint::from_lat_lng_deg(lat1, lng1)));
+        assert!(bbox1.contains_point(MapPoint::from_lat_lng_deg(lat1, lng1)));
+        assert!(!bbox2.contains_point(MapPoint::from_lat_lng_deg(lat1, lng1)));
+        assert!(!bbox3.contains_point(MapPoint::from_lat_lng_deg(lat1, lng1)));
+        assert!(!bbox4.contains_point(MapPoint::from_lat_lng_deg(lat1, lng1)));
 
-        assert!(!bbox1.contains_point(&MapPoint::from_lat_lng_deg(lat2, lng2)));
-        assert!(bbox2.contains_point(&MapPoint::from_lat_lng_deg(lat2, lng2)));
-        assert!(!bbox3.contains_point(&MapPoint::from_lat_lng_deg(lat2, lng2)));
-        assert!(!bbox4.contains_point(&MapPoint::from_lat_lng_deg(lat2, lng2)));
+        assert!(!bbox1.contains_point(MapPoint::from_lat_lng_deg(lat2, lng2)));
+        assert!(bbox2.contains_point(MapPoint::from_lat_lng_deg(lat2, lng2)));
+        assert!(!bbox3.contains_point(MapPoint::from_lat_lng_deg(lat2, lng2)));
+        assert!(!bbox4.contains_point(MapPoint::from_lat_lng_deg(lat2, lng2)));
 
-        assert!(!bbox1.contains_point(&MapPoint::from_lat_lng_deg(lat3, lng3)));
-        assert!(!bbox2.contains_point(&MapPoint::from_lat_lng_deg(lat3, lng3)));
-        assert!(bbox3.contains_point(&MapPoint::from_lat_lng_deg(lat3, lng3)));
-        assert!(!bbox4.contains_point(&MapPoint::from_lat_lng_deg(lat3, lng3)));
+        assert!(!bbox1.contains_point(MapPoint::from_lat_lng_deg(lat3, lng3)));
+        assert!(!bbox2.contains_point(MapPoint::from_lat_lng_deg(lat3, lng3)));
+        assert!(bbox3.contains_point(MapPoint::from_lat_lng_deg(lat3, lng3)));
+        assert!(!bbox4.contains_point(MapPoint::from_lat_lng_deg(lat3, lng3)));
 
-        assert!(!bbox1.contains_point(&MapPoint::from_lat_lng_deg(lat4, lng4)));
-        assert!(!bbox2.contains_point(&MapPoint::from_lat_lng_deg(lat4, lng4)));
-        assert!(!bbox3.contains_point(&MapPoint::from_lat_lng_deg(lat4, lng4)));
-        assert!(bbox4.contains_point(&MapPoint::from_lat_lng_deg(lat4, lng4)));
+        assert!(!bbox1.contains_point(MapPoint::from_lat_lng_deg(lat4, lng4)));
+        assert!(!bbox2.contains_point(MapPoint::from_lat_lng_deg(lat4, lng4)));
+        assert!(!bbox3.contains_point(MapPoint::from_lat_lng_deg(lat4, lng4)));
+        assert!(bbox4.contains_point(MapPoint::from_lat_lng_deg(lat4, lng4)));
     }
 
     use crate::test::Bencher;
@@ -675,7 +673,7 @@ mod tests {
             for _ in 0..100_000 {
                 let p1 = random_map_point(&mut rng);
                 let p2 = random_map_point(&mut rng);
-                let d = MapPoint::distance(&p1, &p2);
+                let d = MapPoint::distance(p1, p2);
                 assert!(d.unwrap().to_meters() >= 0.0);
             }
         });

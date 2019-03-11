@@ -153,7 +153,7 @@ fn logout(mut cookies: Cookies) -> Result<()> {
 #[post("/confirm-email-address", format = "application/json", data = "<user>")]
 fn confirm_email_address(db: sqlite::Connections, user: Json<UserId>) -> Result<()> {
     let u_id = user.into_inner().u_id;
-    usecases::confirm_email_address(&mut *db.exclusive()?, &u_id)?;
+    usecases::confirm_email_address(&*db.exclusive()?, &u_id)?;
     Ok(Json(()))
 }
 
@@ -269,7 +269,7 @@ struct CsvExport {
 // TODO: CSV export should only be permitted with a valid API key!
 // https://github.com/slowtec/openfairdb/issues/147
 #[get("/export/entries.csv?<export..>")]
-fn csv_export<'a>(
+fn csv_export(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     export: Form<CsvExport>,

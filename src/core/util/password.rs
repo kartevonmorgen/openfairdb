@@ -8,7 +8,7 @@ pub struct Password(String);
 
 impl Password {
     pub const fn min_len() -> usize {
-        return 6;
+        6
     }
 
     pub fn verify(&self, password: &str) -> bool {
@@ -18,7 +18,7 @@ impl Password {
 
 impl From<String> for Password {
     fn from(from: String) -> Self {
-        Self(from.into())
+        Self(from)
     }
 }
 
