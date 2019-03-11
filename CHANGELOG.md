@@ -3,6 +3,9 @@
 - new(web): Add a basic admin frontend
 - new(web): Include address fields for searching entries
 - new(web): Archive events/entries/ratings/comments (admin only)
+- fix(db):  Send registration e-mail
+- fix(db):  Apply bounding box filter when searching
+- chore(db): Type safe handling of passwords and timestamps
 
 ## v0.4.5 (2019-03-07)
 
