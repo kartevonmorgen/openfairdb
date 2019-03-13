@@ -57,6 +57,8 @@ pub fn routes() -> Vec<Route> {
         events::put_event_with_token,
         events::delete_event,
         events::delete_event_with_token,
+        users::post_request_password_reset,
+        users::post_reset_password,
         users::post_user,
         ratings::post_rating,
         ratings::load_rating,

@@ -15,10 +15,12 @@ mod archive_events;
 mod archive_ratings;
 mod change_user_role;
 mod confirm_email;
+mod confirm_email_and_reset_password;
 mod create_new_entry;
 mod create_new_event;
 pub mod create_new_user;
 mod delete_event;
+mod email_token_credentials;
 mod find_duplicates;
 mod indexing;
 mod login;
@@ -33,9 +35,10 @@ mod update_event;
 
 pub use self::{
     archive_comments::*, archive_entries::*, archive_events::*, archive_ratings::*,
-    change_user_role::*, confirm_email::*, create_new_entry::*, create_new_event::*,
-    create_new_user::*, delete_event::*, find_duplicates::*, indexing::*, login::*,
-    query_events::*, rate_entry::*, register::*, search::*, update_entry::*, update_event::*,
+    change_user_role::*, confirm_email::*, confirm_email_and_reset_password::*,
+    create_new_entry::*, create_new_event::*, create_new_user::*, delete_event::*,
+    email_token_credentials::*, find_duplicates::*, indexing::*, login::*, query_events::*,
+    rate_entry::*, register::*, search::*, update_entry::*, update_event::*,
 };
 
 pub fn load_ratings_with_comments<D: Db>(

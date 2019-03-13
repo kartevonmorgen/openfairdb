@@ -1,5 +1,10 @@
 use super::schema::*;
 
+use crate::core::{
+    entities,
+    util::{nonce::Nonce, rowid::RowId},
+};
+
 #[derive(Queryable, Insertable)]
 #[table_name = "entries"]
 pub struct Entry {
@@ -170,4 +175,57 @@ pub struct BboxSubscription {
     pub north_east_lat: f64,
     pub north_east_lng: f64,
     pub username: String,
+}
+
+#[derive(Queryable)]
+pub struct EmailTokenCredentials {
+    pub id: i64,
+    pub expires_at: i64,
+    pub username: String,
+    pub email: String,
+    pub nonce: String,
+}
+
+impl From<EmailTokenCredentials> for entities::EmailTokenCredentials {
+    fn from(from: EmailTokenCredentials) -> Self {
+        Self {
+            expires_at: from.expires_at.into(),
+            username: from.username,
+            token: entities::EmailToken {
+                email: from.email,
+                nonce: from.nonce.parse::<Nonce>().unwrap_or_default(),
+            },
+        }
+    }
+}
+
+impl From<EmailTokenCredentials> for (RowId, entities::EmailTokenCredentials) {
+    fn from(from: EmailTokenCredentials) -> Self {
+        let rowid = from.id.into();
+        let entity = from.into();
+        (rowid, entity)
+    }
+}
+
+#[derive(Insertable, AsChangeset)]
+#[table_name = "email_token_credentials"]
+pub struct NewEmailTokenCredentials<'a, 'b> {
+    pub expires_at: i64,
+    pub username: &'a str,
+    pub email: &'b str,
+    pub nonce: String,
+}
+
+impl<'a, 'b, 'x> From<&'x entities::EmailTokenCredentials> for NewEmailTokenCredentials<'a, 'b>
+where
+    'x: 'a + 'b,
+{
+    fn from(from: &'x entities::EmailTokenCredentials) -> Self {
+        Self {
+            expires_at: from.expires_at.into(),
+            username: &from.username,
+            email: &from.token.email,
+            nonce: from.token.nonce.to_string(),
+        }
+    }
 }

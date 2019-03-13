@@ -94,3 +94,20 @@ pub fn user_registered(user: &User, url: &str) {
         compose_and_send_email(&user.email, &content.subject, &content.body);
     }
 }
+
+pub fn user_password_reset_requested(token: &EmailToken) {
+    let url = format!(
+        "https://kartevonmorgen.org/#/?reset_password={}",
+        token.encode_to_string()
+    );
+    let content = user_communication::user_password_reset_email(&url);
+
+    #[cfg(feature = "email")]
+    {
+        info!(
+            "Sending e-mail to {} after password reset requested",
+            token.email
+        );
+        compose_and_send_emails(&[token.email.to_owned()], &content.subject, &content.body);
+    }
+}

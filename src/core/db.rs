@@ -64,6 +64,7 @@ pub trait Db:
     + OrganizationGateway
     + CommentRepository
     + RatingRepository
+    + EmailTokenCredentialsRepository
 {
     fn create_tag_if_it_does_not_exist(&self, _: &Tag) -> Result<()>;
     fn create_category_if_it_does_not_exist(&mut self, _: &Category) -> Result<()>;

@@ -137,6 +137,16 @@ table! {
 }
 
 table! {
+    email_token_credentials (id) {
+        id -> BigInt,
+        expires_at -> BigInt,
+        username -> Text,
+        email -> Text,
+        nonce -> Text,
+    }
+}
+
+table! {
     organizations (id) {
         id -> Text,
         name -> Text,
@@ -153,6 +163,7 @@ joinable!(event_tag_relations -> tags (tag_id));
 joinable!(events -> users (created_by));
 joinable!(org_tag_relations -> organizations (org_id));
 joinable!(org_tag_relations -> tags (tag_id));
+joinable!(email_token_credentials -> users (username));
 
 allow_tables_to_appear_in_same_query!(
     bbox_subscriptions,
@@ -168,4 +179,5 @@ allow_tables_to_appear_in_same_query!(
     ratings,
     tags,
     users,
+    email_token_credentials,
 );

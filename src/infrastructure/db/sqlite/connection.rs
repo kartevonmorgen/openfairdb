@@ -972,3 +972,52 @@ impl OrganizationGateway for SqliteConnection {
         Ok(tags)
     }
 }
+
+impl EmailTokenCredentialsRepository for SqliteConnection {
+    fn replace_email_token_credentials(
+        &self,
+        email_token_credentials: EmailTokenCredentials,
+    ) -> Result<EmailTokenCredentials> {
+        use self::schema::email_token_credentials::dsl;
+        let model = models::NewEmailTokenCredentials::from(&email_token_credentials);
+        // Insert...
+        if let 0 = diesel::insert_into(schema::email_token_credentials::table)
+            .values(&model)
+            .execute(self)?
+        {
+            // ...or update
+            diesel::update(schema::email_token_credentials::table)
+                .filter(dsl::username.eq(&model.username))
+                .set(&model)
+                .execute(self)?;
+        }
+        Ok(email_token_credentials)
+    }
+
+    fn consume_email_token_credentials(
+        &self,
+        email_or_username: &str,
+        token: &EmailToken,
+    ) -> Result<EmailTokenCredentials> {
+        use self::schema::email_token_credentials::dsl;
+        let model = dsl::email_token_credentials
+            .filter(dsl::nonce.eq(token.nonce.to_string()))
+            .filter(dsl::email.eq(token.email.to_string()))
+            .filter(
+                dsl::username
+                    .eq(email_or_username)
+                    .or(dsl::email.eq(email_or_username)),
+            )
+            .first::<models::EmailTokenCredentials>(self)?;
+        diesel::delete(dsl::email_token_credentials.filter(dsl::id.eq(model.id))).execute(self)?;
+        Ok(model.into())
+    }
+
+    fn discard_expired_email_token_credentials(&self, expired_before: Timestamp) -> Result<usize> {
+        use self::schema::email_token_credentials::dsl;
+        Ok(diesel::delete(
+            dsl::email_token_credentials.filter(dsl::expires_at.lt::<i64>(expired_before.into())),
+        )
+        .execute(self)?)
+    }
+}

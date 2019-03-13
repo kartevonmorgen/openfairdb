@@ -79,6 +79,12 @@ quick_error! {
         Role{
             description("Invalid role")
         }
+        TokenExpired{
+            description("Token expired")
+        }
+        InvalidNonce{
+            description("Invalid nonce")
+        }
     }
 }
 

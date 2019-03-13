@@ -1,5 +1,5 @@
 use crate::{
-    core::{db::EntryIndexer, prelude::*, util::sort::Rated},
+    core::{db::EntryIndexer, prelude::*, usecases, util::sort::Rated},
     infrastructure::error::AppError,
 };
 use rocket::{config::Config, Rocket, Route};
@@ -46,6 +46,9 @@ pub(crate) fn rocket_instance(
 ) -> Rocket {
     info!("Indexing all entries...");
     index_all_entries(&*connections.exclusive().unwrap(), &mut search_engine).unwrap();
+
+    info!("Discarding expired user e-mail nonces...");
+    usecases::discard_expired_email_token_credentials(&*connections.exclusive().unwrap()).unwrap();
 
     info!("Initialization finished");
     let r = match cfg {

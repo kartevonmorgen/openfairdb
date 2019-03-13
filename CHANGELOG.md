@@ -1,3 +1,8 @@
+## v0.5.5 (unreleased)
+
+- new(web): Reset passwords by e-mail
+- new(web): Extended admin frontend
+
 ## v0.5.4 (2019-05-20)
 
 - new(web): Added admin interface for archiving comments and ratings

@@ -15,7 +15,9 @@ pub mod prelude {
     pub use super::repositories::*;
     pub use super::util::{
         geo::{Distance, LatCoord, LngCoord, MapPoint},
+        nonce::Nonce,
         password::Password,
+        rowid::RowId,
         time::Timestamp,
     };
 

@@ -11,7 +11,7 @@ pub struct NewUser {
     pub email: String,
 }
 
-pub fn create_new_user<D: UserGateway>(db: &mut D, u: NewUser) -> Result<()> {
+pub fn create_new_user<D: UserGateway>(db: &D, u: NewUser) -> Result<()> {
     validate::username(&u.username)?;
     let password = u.password.parse::<Password>()?;
     validate::email(&u.email)?;
@@ -51,7 +51,7 @@ pub fn generate_username_from_email(email: &str) -> String {
     generated_username
 }
 
-pub fn create_user_from_email<D: Db>(db: &mut D, email: &str) -> Result<String> {
+pub fn create_user_from_email<D: Db>(db: &D, email: &str) -> Result<String> {
     let users: Vec<_> = db.all_users()?;
     let username = match users.iter().find(|u| u.email == email) {
         Some(u) => u.username.clone(),
