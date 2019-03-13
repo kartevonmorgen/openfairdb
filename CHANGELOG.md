@@ -1,3 +1,8 @@
+## v0.5.2-dev (2019-mm-dd)
+
+- new(web): Extended admin frontend
+- new(web): Reset passwords by e-mail
+
 ## v0.5.1 (2019-03-11)
 
 - new(web): Add a basic admin frontend
