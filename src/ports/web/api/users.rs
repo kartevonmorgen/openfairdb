@@ -14,6 +14,41 @@ pub fn post_user(db: sqlite::Connections, u: Json<usecases::NewUser>) -> Result<
     Ok(Json(()))
 }
 
+#[post(
+    "/users/request_password_reset",
+    format = "application/json",
+    data = "<data>"
+)]
+pub fn post_request_password_reset(
+    connections: sqlite::Connections,
+    data: Json<json::RequestPasswordReset>,
+) -> Result<()> {
+    let req = data.into_inner();
+
+    flows::request_password_reset(&connections, &req.email_or_username)?;
+
+    Ok(Json(()))
+}
+
+#[post("/users/reset_password", format = "application/json", data = "<data>")]
+pub fn post_reset_password(
+    connections: sqlite::Connections,
+    data: Json<json::ResetPassword>,
+) -> Result<()> {
+    let req = data.into_inner();
+
+    let token = EmailToken::decode_from_str(&req.token)?;
+    let new_password = req.new_password.parse::<Password>()?;
+    flows::reset_password_with_email_token(
+        &connections,
+        &req.email_or_username,
+        token,
+        new_password,
+    )?;
+
+    Ok(Json(()))
+}
+
 #[delete("/users/<u_id>")]
 pub fn delete_user(db: sqlite::Connections, user: Login, u_id: String) -> Result<()> {
     usecases::delete_user(&mut *db.exclusive()?, &user.0, &u_id)?;

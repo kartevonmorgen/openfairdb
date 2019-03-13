@@ -1,5 +1,8 @@
 ## v0.5.3-dev (2019-mm-dd)
 
+- new(web): Extended admin frontend
+- new(web): Reset passwords by e-mail
+
 ## v0.5.2 (2019-03-18)
 
 - fix(db): Retarget entry search and optimize tag lookup

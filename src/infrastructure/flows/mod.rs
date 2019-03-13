@@ -4,12 +4,13 @@ mod archive_events;
 mod archive_ratings;
 mod create_entry;
 mod create_rating;
+mod reset_password;
 mod update_entry;
 
 pub mod prelude {
     pub use super::{
         archive_comments::*, archive_entries::*, archive_events::*, archive_ratings::*,
-        create_entry::*, create_rating::*, update_entry::*,
+        create_entry::*, create_rating::*, reset_password::*, update_entry::*,
     };
 }
 
@@ -151,6 +152,11 @@ mod tests {
                     ..Default::default()
                 };
                 self.query_entries(&query)
+            }
+
+            pub fn create_user_from_email(self: &EnvFixture, email: &str) -> String {
+                usecases::create_user_from_email(&*self.db_connections.exclusive().unwrap(), email)
+                    .unwrap()
             }
         }
 

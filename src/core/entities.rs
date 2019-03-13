@@ -1,10 +1,12 @@
-use chrono::prelude::*;
-
 use crate::core::util::{
     geo::{MapBbox, MapPoint},
+    nonce::Nonce,
     password::Password,
     time::Timestamp,
 };
+
+use chrono::prelude::*;
+use failure::{bail, format_err, Fallible};
 
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
@@ -381,6 +383,50 @@ pub struct Organization {
     pub name: String,
     pub owned_tags: Vec<String>,
     pub api_token: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EmailTokenCredentials {
+    pub expires_at: Timestamp,
+    pub username: String,
+    pub token: EmailToken,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct EmailToken {
+    pub email: String,
+    pub nonce: Nonce,
+}
+
+impl EmailToken {
+    pub fn encode_to_string(&self) -> String {
+        let nonce = self.nonce.to_string();
+        debug_assert_eq!(Nonce::STR_LEN, nonce.len());
+        let mut concat = String::with_capacity(self.email.len() + nonce.len());
+        concat += &self.email;
+        concat += &nonce;
+        bs58::encode(concat).into_string()
+    }
+
+    pub fn decode_from_str(encoded: &str) -> Fallible<EmailToken> {
+        let decoded = bs58::decode(encoded).into_vec()?;
+        let mut concat = String::from_utf8(decoded)?;
+        if concat.len() <= Nonce::STR_LEN {
+            bail!(
+                "Invalid token - too short: {} <= {}",
+                concat.len(),
+                Nonce::STR_LEN
+            );
+        }
+        let email_len = concat.len() - Nonce::STR_LEN;
+        let nonce_slice: &str = &concat[email_len..];
+        let nonce = nonce_slice
+            .parse::<Nonce>()
+            .map_err(|err| format_err!("Failed to parse nonce from '{}': {}", nonce_slice, err))?;
+        concat.truncate(email_len);
+        let email = concat;
+        Ok(Self { email, nonce })
+    }
 }
 
 #[cfg(test)]

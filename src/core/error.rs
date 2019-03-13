@@ -73,6 +73,12 @@ quick_error! {
         InvalidLimit{
             description("Invalid limit")
         }
+        TokenExpired{
+            description("Token expired")
+        }
+        InvalidNonce{
+            description("Invalid nonce")
+        }
     }
 }
 

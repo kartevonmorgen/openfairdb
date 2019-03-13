@@ -78,6 +78,68 @@ pub struct MockDb {
     pub comments: RefCell<Vec<Comment>>,
     pub bbox_subscriptions: Vec<BboxSubscription>,
     pub orgs: Vec<Organization>,
+    pub email_token_credentialss: RefCell<Vec<EmailTokenCredentials>>,
+}
+
+impl EmailTokenCredentialsRepository for MockDb {
+    fn replace_email_token_credentials(
+        &self,
+        email_token_credentials: EmailTokenCredentials,
+    ) -> RepoResult<EmailTokenCredentials> {
+        for x in &mut self.email_token_credentialss.borrow_mut().iter_mut() {
+            if x.username == email_token_credentials.username {
+                *x = email_token_credentials.clone();
+                return Ok(email_token_credentials);
+            }
+        }
+        self.email_token_credentialss
+            .borrow_mut()
+            .push(email_token_credentials.clone());
+        Ok(email_token_credentials)
+    }
+
+    fn consume_email_token_credentials(
+        &self,
+        email_or_username: &str,
+        token: &EmailToken,
+    ) -> RepoResult<EmailTokenCredentials> {
+        if let Some(index) = self
+            .email_token_credentialss
+            .borrow()
+            .iter()
+            .enumerate()
+            .find_map(|(i, x)| {
+                if (x.username == email_or_username || x.token.email == email_or_username)
+                    && x.token.email == token.email
+                    && x.token.nonce == token.nonce
+                {
+                    Some(i)
+                } else {
+                    None
+                }
+            })
+        {
+            Ok(self
+                .email_token_credentialss
+                .borrow_mut()
+                .swap_remove(index))
+        } else {
+            return Err(RepoError::NotFound);
+        }
+    }
+
+    fn discard_expired_email_token_credentials(
+        &self,
+        expired_before: Timestamp,
+    ) -> RepoResult<usize> {
+        let len_before = self.email_token_credentialss.borrow().len();
+        self.email_token_credentialss
+            .borrow_mut()
+            .retain(|x| x.expires_at >= expired_before);
+        let len_after = self.email_token_credentialss.borrow().len();
+        debug_assert!(len_before >= len_after);
+        Ok(len_before - len_after)
+    }
 }
 
 impl EntryIndexer for MockDb {

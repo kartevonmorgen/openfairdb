@@ -284,3 +284,15 @@ impl Entry {
         }
     }
 }
+
+#[derive(Deserialize)]
+pub struct RequestPasswordReset {
+    pub email_or_username: String,
+}
+
+#[derive(Deserialize)]
+pub struct ResetPassword {
+    pub email_or_username: String,
+    pub token: String,
+    pub new_password: String,
+}
