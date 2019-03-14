@@ -321,11 +321,10 @@ impl UserGateway for MockDb {
             .filter(|u| u.email == email)
             .cloned()
             .collect();
-        if users.len() > 0 {
-            Ok(users)
-        } else {
-            Err(RepoError::NotFound)
+        if users.is_empty() {
+            return Err(RepoError::NotFound);
         }
+        Ok(users)
     }
 
     fn all_users(&self) -> RepoResult<Vec<User>> {

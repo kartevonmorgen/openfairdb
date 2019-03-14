@@ -615,6 +615,9 @@ impl UserGateway for SqliteConnection {
         let users = dsl::users
             .filter(dsl::email.eq(email))
             .load::<models::User>(self)?;
+        if users.is_empty() {
+            return Err(RepoError::NotFound);
+        }
         Ok(users.into_iter().map(User::from).collect())
     }
 
