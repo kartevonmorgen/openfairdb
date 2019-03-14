@@ -407,7 +407,10 @@ mod tests {
             let mut user = db
                 .shared()
                 .unwrap()
-                .get_user_by_email("foo@bar.com")
+                .get_users_by_email("foo@bar.com")
+                .unwrap()
+                .into_iter()
+                .next()
                 .unwrap();
             user.role = Role::Admin;
             db.exclusive().unwrap().update_user(&user).unwrap();

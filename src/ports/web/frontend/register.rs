@@ -44,22 +44,35 @@ pub fn post_register(
                     };
                     Err(Flash::error(Redirect::to(uri!(get_register)), msg))
                 }
-                Ok(_) => {
-                    if let Ok(user) = db.get_user_by_email(&credentials.email) {
-                        debug!("Created user with ID = {}", user.id);
+                Ok(username) => {
+                    if let Ok(users) = db.get_users_by_email(&credentials.email) {
+                        for user in users {
+                            if user.username == username {
+                                debug!("Created user with ID = {}", user.id);
 
-                        //TODO: move this to a better place
-                        let subject = "Karte von morgen: bitte bestätige deine Email-Adresse";
-                        let url = format!("https://openfairdb.org/register/confirm/{}", user.id);
-                        let body = user_communication::email_confirmation_email(&url);
-                        #[cfg(feature = "email")]
-                        notify::send_mails(&[credentials.email], subject, &body);
+                                //TODO: move this to a better place
+                                let subject =
+                                    "Karte von morgen: bitte bestätige deine Email-Adresse";
+                                let url =
+                                    format!("https://openfairdb.org/register/confirm/{}", user.id);
+                                let body = user_communication::email_confirmation_email(&url);
+                                #[cfg(feature = "email")]
+                                notify::send_mails(&[credentials.email], subject, &body);
+
+                                let msg =
+                                    "Registered sucessfully. Please confirm your email address.";
+                                return Ok(Flash::success(
+                                    Redirect::to(uri!(super::login::get_login)),
+                                    msg,
+                                ));
+                            } else {
+                                warn!("Found user {} with same e-mail address", user.username);
+                            }
+                        }
                     }
-
-                    let msg = "Registered sucessfully. Please confirm your email address.";
-                    Ok(Flash::success(
-                        Redirect::to(uri!(super::login::get_login)),
-                        msg,
+                    Err(Flash::error(
+                        Redirect::to(uri!(get_register)),
+                        "We are so sorry, something went wrong :(",
                     ))
                 }
             }

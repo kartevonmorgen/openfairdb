@@ -313,8 +313,8 @@ impl UserGateway for MockDb {
         }
     }
 
-    fn get_user_by_email(&self, email: &str) -> RepoResult<User> {
-        let users: &Vec<User> = &self
+    fn get_users_by_email(&self, email: &str) -> RepoResult<Vec<User>> {
+        let users: Vec<_> = self
             .users
             .borrow()
             .iter()
@@ -322,7 +322,7 @@ impl UserGateway for MockDb {
             .cloned()
             .collect();
         if users.len() > 0 {
-            Ok(users[0].clone())
+            Ok(users)
         } else {
             Err(RepoError::NotFound)
         }

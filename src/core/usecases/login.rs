@@ -34,17 +34,18 @@ pub fn login_with_username<D: Db>(db: &D, login: &Login) -> Result<String> {
 }
 
 pub fn login_with_email<D: Db>(db: &D, login: &Credentials) -> Result<Role> {
-    match db.get_user_by_email(&login.email) {
-        Ok(u) => {
-            if u.password.verify(&login.password) {
-                if u.email_confirmed {
-                    Ok(u.role)
-                } else {
-                    Err(Error::Parameter(ParameterError::EmailNotConfirmed))
+    match db.get_users_by_email(&login.email) {
+        Ok(users) => {
+            for u in users {
+                if u.password.verify(&login.password) {
+                    if u.email_confirmed {
+                        return Ok(u.role);
+                    } else {
+                        return Err(Error::Parameter(ParameterError::EmailNotConfirmed));
+                    }
                 }
-            } else {
-                Err(Error::Parameter(ParameterError::Credentials))
             }
+            Err(Error::Parameter(ParameterError::Credentials))
         }
         Err(err) => match err {
             RepoError::NotFound => Err(Error::Parameter(ParameterError::Credentials)),

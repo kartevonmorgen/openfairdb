@@ -610,10 +610,12 @@ impl UserGateway for SqliteConnection {
         use self::schema::users::dsl::users;
         Ok(users.find(username).first::<models::User>(self)?.into())
     }
-    fn get_user_by_email(&self, email: &str) -> Result<User> {
+    fn get_users_by_email(&self, email: &str) -> Result<Vec<User>> {
         use self::schema::users::dsl;
-        let u: models::User = dsl::users.filter(dsl::email.eq(email)).first(self)?;
-        Ok(User::from(u))
+        let users = dsl::users
+            .filter(dsl::email.eq(email))
+            .load::<models::User>(self)?;
+        Ok(users.into_iter().map(User::from).collect())
     }
 
     fn all_users(&self) -> Result<Vec<User>> {

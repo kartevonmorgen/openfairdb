@@ -525,12 +525,8 @@ mod tests {
     fn real_distance() {
         let stuttgart = MapPoint::from_lat_lng_deg(48.7755, 9.1827);
         let mannheim = MapPoint::from_lat_lng_deg(49.4836, 8.4630);
-        assert!(
-            MapPoint::distance(stuttgart, mannheim).unwrap() > Distance::from_meters(94_000.0)
-        );
-        assert!(
-            MapPoint::distance(stuttgart, mannheim).unwrap() < Distance::from_meters(95_000.0)
-        );
+        assert!(MapPoint::distance(stuttgart, mannheim).unwrap() > Distance::from_meters(94_000.0));
+        assert!(MapPoint::distance(stuttgart, mannheim).unwrap() < Distance::from_meters(95_000.0));
 
         let new_york = MapPoint::from_lat_lng_deg(40.714268, -74.005974);
         let sidney = MapPoint::from_lat_lng_deg(-33.867138, 151.207108);
