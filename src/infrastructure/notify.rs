@@ -47,13 +47,16 @@ pub fn entry_added(email_addresses: &[String], entry: &Entry, all_categories: Ve
 
     #[cfg(feature = "email")]
     {
-        info!("Sending e-mails to {} recipients after new entry {} added", email_addresses.len(), entry.id);
+        info!(
+            "Sending e-mails to {} recipients after new entry {} added",
+            email_addresses.len(),
+            entry.id
+        );
         compose_and_send_emails(email_addresses, &content.subject, &content.body);
     }
 }
 
 pub fn entry_updated(email_addresses: &[String], entry: &Entry, all_categories: Vec<Category>) {
-
     let category_names: Vec<String> = all_categories
         .into_iter()
         .filter(|c| entry.categories.iter().any(|c_id| &c.id == c_id))
@@ -63,7 +66,11 @@ pub fn entry_updated(email_addresses: &[String], entry: &Entry, all_categories: 
 
     #[cfg(feature = "email")]
     {
-        info!("Sending e-mails to {} recipients after entry {} updated", email_addresses.len(), entry.id);
+        info!(
+            "Sending e-mails to {} recipients after entry {} updated",
+            email_addresses.len(),
+            entry.id
+        );
         compose_and_send_emails(email_addresses, &content.subject, &content.body);
     }
 }

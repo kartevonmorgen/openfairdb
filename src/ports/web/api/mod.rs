@@ -1,10 +1,11 @@
-use super::{guards::*, util};
+use super::guards::*;
+
 use crate::{
     adapters::{self, json},
     core::{
         prelude::*,
         usecases::{self, DuplicateType},
-        util::geo,
+        util::{self, geo},
     },
     infrastructure::{
         db::{sqlite, tantivy},
@@ -283,9 +284,9 @@ fn csv_export(
 
     let req = usecases::SearchRequest {
         bbox,
-        categories: vec![],
         ids: vec![],
-        tags: vec![],
+        categories: vec![],
+        hash_tags: vec![],
         text: None,
     };
 

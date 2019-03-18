@@ -1,14 +1,14 @@
 use crate::core::prelude::*;
-use crate::core::util::{filter, geo::MapBbox};
+use crate::core::util::{self, filter, geo::MapBbox};
 
 #[rustfmt::skip]
 #[derive(Debug, Clone)]
-pub struct SearchRequest<'a, 'b> {
-    pub bbox          : MapBbox,
-    pub categories    : Vec<&'a str>,
-    pub ids           : Vec<&'b str>,
-    pub tags          : Vec<String>,
-    pub text          : Option<String>,
+pub struct SearchRequest<'a, 'b, 'c, 'd> {
+    pub bbox       : MapBbox,
+    pub ids        : Vec<&'b str>,
+    pub categories : Vec<&'a str>,
+    pub hash_tags  : Vec<&'c str>,
+    pub text       : Option<&'d str>,
 }
 
 pub fn search(
@@ -18,12 +18,33 @@ pub fn search(
 ) -> Result<(Vec<IndexedEntry>, Vec<IndexedEntry>)> {
     let visible_bbox: MapBbox = req.bbox;
 
+    let mut hash_tags = req.text.map(util::extract_hash_tags).unwrap_or_default();
+    hash_tags.reserve(hash_tags.len() + req.hash_tags.len());
+    for hashtag in req.hash_tags {
+        hash_tags.push(hashtag.to_owned());
+    }
+
+    let text = req.text.map(util::remove_hash_tags).and_then(|text| {
+        if text.trim().is_empty() {
+            None
+        } else {
+            Some(text)
+        }
+    });
+
+    let text_tags = text
+        .as_ref()
+        .map(String::as_str)
+        .map(filter::split_text_to_words)
+        .unwrap_or_default();
+
     let index_query = EntryIndexQuery {
         bbox: Some(filter::extend_bbox(&visible_bbox)),
         categories: req.categories,
         ids: req.ids,
-        tags: req.tags,
-        text: req.text,
+        hash_tags,
+        text_tags,
+        text,
     };
 
     let entries = index
@@ -76,7 +97,7 @@ mod tests {
             ),
             categories: vec![],
             ids: vec![],
-            tags: vec![],
+            hashtags: vec![],
             text: None,
         };
 
@@ -97,7 +118,7 @@ mod tests {
             ),
             categories: vec![],
             ids: vec![],
-            tags: vec![],
+            hashtags: vec![],
             text: None,
         };
 

@@ -65,11 +65,13 @@ pub fn entries_by_category_ids<'a, 'b>(ids: &'a [&'b str]) -> impl Fn(&Entry) ->
     move |e| ids.iter().any(|c| e.categories.iter().any(|x| x == c))
 }
 
-#[cfg(test)]
-fn to_words(txt: &str) -> Vec<String> {
+pub fn split_text_to_words(txt: &str) -> Vec<String> {
     txt.to_lowercase()
-        .split(',')
-        .map(|x| x.to_string())
+        .split(|c| match c {
+            ' ' | ',' | '.' | ';' => true,
+            _ => false,
+        })
+        .map(|x| x.trim().to_string())
         .collect()
 }
 
@@ -78,7 +80,7 @@ fn entries_by_tags_and_search_text<'a>(
     text: &'a str,
     tags: &'a [String],
 ) -> impl Fn(&Entry) -> bool + 'a {
-    let words = to_words(text);
+    let words = split_text_to_words(text);
     move |entry| {
         tags.iter()
             .map(|t| t.to_lowercase())
@@ -107,7 +109,7 @@ pub fn entries_by_tags_or_search_text<'a>(
 
 #[cfg(test)]
 fn entries_by_search_text<'a>(text: &'a str) -> impl Fn(&Entry) -> bool + 'a {
-    let words = to_words(text);
+    let words = split_text_to_words(text);
     move |entry| {
         ((!text.is_empty()
             && words.iter().any(|word| {

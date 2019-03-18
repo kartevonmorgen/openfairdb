@@ -1,4 +1,5 @@
-use super::{util::*, *};
+use super::*;
+
 use crate::{
     adapters::json,
     core::{usecases as usecase, util::sort::Rated},
@@ -375,7 +376,10 @@ fn search_with_text() {
     search_engine.flush().unwrap();
 
     // Search case insensitive "Foo" and "foo"
-    let req = client.get("/search?bbox=-10,-10,10,10&text=Foo");
+    // Limit is required, because all entries match the query and their
+    // rating is equal. The match score is currently not considered when
+    // ordering the results!
+    let req = client.get("/search?bbox=-10,-10,10,10&text=Foo&limit=2");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
@@ -452,7 +456,10 @@ fn search_with_city() {
         .collect();
     search_engine.flush().unwrap();
 
-    let req = client.get("/search?bbox=-10,-10,10,10&text=stuttgart");
+    // Limit is required, because all entries match the query and their
+    // rating is equal. The match score is currently not considered when
+    // ordering the results!
+    let req = client.get("/search?bbox=-10,-10,10,10&text=stuttgart&limit=2");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
@@ -675,7 +682,7 @@ fn search_with_two_hashtags() {
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
 }
 
 #[test]
@@ -693,7 +700,13 @@ fn search_with_commata() {
             ..default_new_entry()
         },
         usecases::NewEntry {
-            tags: vec!["eins".to_string(), "zwei".to_string()],
+            title: "eins".to_string(),
+            tags: vec!["zwei".to_string()],
+            ..default_new_entry()
+        },
+        usecases::NewEntry {
+            title: "eins".to_string(),
+            description: "zwei".to_string(),
             ..default_new_entry()
         },
     ];
@@ -713,7 +726,33 @@ fn search_with_commata() {
         .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
         .collect();
 
+    // With hashtag symbol '#' -> all hashtags are mandatory
+    // #eins + #zwei
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23eins%2C%20%23zwei");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[3])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[4])));
+
+    // Without hashtag symbol '#' -> tags are optional
+    // eins + #zwei
+    let req = client.get("/search?bbox=-10,-10,10,10&text=eins%2C%20%23zwei");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[3])));
+    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[4])));
+
+    // Without hashtag symbol '#' -> tags are optional
+    // eins + zwei
+    let req = client.get("/search?bbox=-10,-10,10,10&text=eins%2C%20zwei");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
@@ -721,6 +760,7 @@ fn search_with_commata() {
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[3])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[4])));
 }
 
 #[test]
@@ -811,47 +851,8 @@ fn search_without_specifying_hashtag_symbol() {
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
-}
-
-#[test]
-fn split_ids_test() {
-    assert_eq!(split_ids("abc"), vec!["abc"]);
-    assert_eq!(split_ids("a, b,c"), vec!["a", "b", "c"]);
-    assert_eq!(split_ids("\t").len(), 0);
-    assert_eq!(split_ids("abc, ,d,"), vec!["abc", "d"]);
-}
-
-#[test]
-fn extract_single_hash_tag_from_text() {
-    assert_eq!(extract_hash_tags("none").len(), 0);
-    assert_eq!(extract_hash_tags("#").len(), 0);
-    assert_eq!(extract_hash_tags("foo #bar none"), vec!["bar".to_string()]);
-    assert_eq!(extract_hash_tags("foo #bar,none"), vec!["bar".to_string()]);
-    assert_eq!(extract_hash_tags("foo#bar,none"), vec!["bar".to_string()]);
-    assert_eq!(
-        extract_hash_tags("foo#bar none#baz"),
-        vec!["bar".to_string(), "baz".to_string()]
-    );
-    assert_eq!(
-        extract_hash_tags("#bar#baz"),
-        vec!["bar".to_string(), "baz".to_string()]
-    );
-    assert_eq!(
-        extract_hash_tags("#a-long-tag#baz"),
-        vec!["a-long-tag".to_string(), "baz".to_string()]
-    );
-    assert_eq!(extract_hash_tags("#-").len(), 0);
-    assert_eq!(extract_hash_tags("#tag-"), vec!["tag".to_string()]);
-}
-
-#[test]
-fn remove_hash_tag_from_text() {
-    assert_eq!(remove_hash_tags("some #tag"), "some");
-    assert_eq!(remove_hash_tags("some#tag"), "some");
-    assert_eq!(remove_hash_tags("#tag"), "");
-    assert_eq!(remove_hash_tags("some #text with #tags"), "some with");
 }
 
 #[test]

@@ -92,7 +92,8 @@ pub struct EntryIndexQuery<'a, 'b> {
     pub bbox: Option<MapBbox>,
     pub categories: Vec<&'a str>,
     pub ids: Vec<&'b str>,
-    pub tags: Vec<String>,
+    pub hash_tags: Vec<String>,
+    pub text_tags: Vec<String>,
     pub text: Option<String>,
 }
 

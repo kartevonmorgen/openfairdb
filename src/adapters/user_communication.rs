@@ -11,20 +11,14 @@ pub fn user_registration_email(url: &str) -> EmailContent {
         "Na du Weltverbesserer*,\nwir freuen uns dass du bei der Karte von morgen mit dabei bist!\n\nBitte bestätige deine Email-Adresse hier:\n{}\n\neuphorische Grüße\ndas Karte von morgen-Team",
         url
     );
-    EmailContent {
-        subject,
-        body,
-    }
+    EmailContent { subject, body }
 }
 
 pub fn entry_added_email(e: &Entry, category_names: &[String]) -> EmailContent {
     let subject = format!("Karte von morgen - neuer Eintrag: {}", e.title);
     let intro_sentence = "ein neuer Eintrag auf der Karte von morgen wurde erstellt";
     let body = entry_email(&e, category_names, &e.tags, intro_sentence);
-    EmailContent {
-        subject,
-        body,
-    }
+    EmailContent { subject, body }
 }
 
 //TODO: calc diff
@@ -32,10 +26,7 @@ pub fn entry_changed_email(e: &Entry, category_names: &[String]) -> EmailContent
     let subject = format!("Karte von morgen - Eintrag verändert: {}", e.title);
     let intro_sentence = "folgender Eintrag der Karte von morgen wurde verändert";
     let body = entry_email(&e, category_names, &e.tags, intro_sentence);
-    EmailContent {
-        subject,
-        body,
-    }
+    EmailContent { subject, body }
 }
 
 pub fn entry_email(

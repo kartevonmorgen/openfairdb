@@ -372,20 +372,6 @@ impl TantivyEntryIndex {
             }
         }
 
-        // Text
-        if let Some(ref text) = query.text {
-            debug!("Query text: {}", text);
-            debug_assert!(!text.trim().is_empty());
-            match self.text_query_parser.parse_query(&text.to_lowercase()) {
-                Ok(query) => {
-                    sub_queries.push((Occur::Must, Box::new(query)));
-                }
-                Err(err) => {
-                    warn!("Failed to parse query text '{}': {:?}", text, err);
-                }
-            }
-        }
-
         // Categories
         if !query.categories.is_empty() {
             let categories_query: Box<Query> = if query.categories.len() > 1 {
@@ -411,27 +397,50 @@ impl TantivyEntryIndex {
             sub_queries.push((Occur::Must, categories_query));
         }
 
-        // Tags
-        if !query.tags.is_empty() {
-            let tags_query: Box<Query> = if query.tags.len() > 1 {
-                debug!("Query multiple tags: {:?}", query.categories);
-                let mut tag_queries: Vec<(Occur, Box<Query>)> =
-                    Vec::with_capacity(query.categories.len());
-                for tag in &query.tags {
-                    debug_assert!(!tag.trim().is_empty());
-                    let tag_term = Term::from_field_text(self.fields.tag, &tag.to_lowercase());
-                    let tag_query = TermQuery::new(tag_term, IndexRecordOption::Basic);
-                    tag_queries.push((Occur::Should, Box::new(tag_query)));
+        // Hash tags (mandatory)
+        for tag in &query.hash_tags {
+            debug!("Query hash tag (mandatory): {}", tag);
+            debug_assert!(!tag.trim().is_empty());
+            let tag_term = Term::from_field_text(self.fields.tag, &tag.to_lowercase());
+            let tag_query = TermQuery::new(tag_term, IndexRecordOption::Basic);
+            sub_queries.push((Occur::Must, Box::new(tag_query)));
+        }
+
+        let mut text_and_tags_queries: Vec<(Occur, Box<Query>)> =
+            Vec::with_capacity(1 + query.text_tags.len());
+
+        // Text
+        if let Some(text) = &query.text {
+            debug!("Query text: {}", text);
+            debug_assert!(!text.trim().is_empty());
+            match self.text_query_parser.parse_query(&text.to_lowercase()) {
+                Ok(text_query) => {
+                    if query.hash_tags.is_empty() && query.text_tags.is_empty() {
+                        sub_queries.push((Occur::Must, Box::new(text_query)));
+                    } else {
+                        text_and_tags_queries.push((Occur::Should, Box::new(text_query)));
+                    }
                 }
-                Box::new(BooleanQuery::from(tag_queries))
-            } else {
-                let tag = &query.tags[0];
-                debug!("Query single tag: {}", tag);
-                debug_assert!(!tag.trim().is_empty());
-                let tag_term = Term::from_field_text(self.fields.tag, &tag.to_lowercase());
-                Box::new(TermQuery::new(tag_term, IndexRecordOption::Basic))
-            };
-            sub_queries.push((Occur::Must, tags_query));
+                Err(err) => {
+                    warn!("Failed to parse query text '{}': {:?}", text, err);
+                }
+            }
+        }
+
+        // Text tags (optional)
+        for tag in &query.text_tags {
+            debug!("Query text tag (optional): {}", tag);
+            debug_assert!(!tag.trim().is_empty());
+            let tag_term = Term::from_field_text(self.fields.tag, &tag.to_lowercase());
+            let tag_query = TermQuery::new(tag_term, IndexRecordOption::Basic);
+            text_and_tags_queries.push((Occur::Should, Box::new(tag_query)));
+        }
+
+        if !text_and_tags_queries.is_empty() {
+            sub_queries.push((
+                Occur::Must,
+                Box::new(BooleanQuery::from(text_and_tags_queries)),
+            ));
         }
 
         BooleanQuery::from(sub_queries)

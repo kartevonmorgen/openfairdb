@@ -1,7 +1,10 @@
-use super::super::util;
 use crate::{
     adapters::json,
-    core::{prelude::*, usecases, util::geo},
+    core::{
+        prelude::*,
+        usecases,
+        util::{self, geo},
+    },
     infrastructure::{db::tantivy, error::AppError},
 };
 
@@ -41,45 +44,29 @@ pub fn get_search(
         .as_ref()
         .map(String::as_str)
         .map(util::split_ids)
-        .unwrap_or_else(|| vec![]);
+        .unwrap_or_default();
 
     let categories = search
         .categories
         .as_ref()
         .map(String::as_str)
         .map(util::split_ids)
-        .unwrap_or_else(|| vec![]);
+        .unwrap_or_default();
 
-    let mut tags = search
-        .text
+    let hash_tags = search
+        .tags
         .as_ref()
         .map(String::as_str)
-        .map(util::extract_hash_tags)
-        .unwrap_or_else(|| vec![]);
-    if let Some(ref tags_str) = search.tags {
-        for t in util::split_ids(tags_str) {
-            tags.push(t.to_owned());
-        }
-    }
+        .map(util::split_ids)
+        .unwrap_or_default();
 
-    let text = search
-        .text
-        .as_ref()
-        .map(String::as_str)
-        .map(util::remove_hash_tags)
-        .and_then(|text| {
-            if text.trim().is_empty() {
-                None
-            } else {
-                Some(text)
-            }
-        });
+    let text = search.text.as_ref().map(String::as_str);
 
     let req = usecases::SearchRequest {
         bbox,
-        categories,
         ids,
-        tags,
+        categories,
+        hash_tags,
         text,
     };
 

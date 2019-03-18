@@ -59,8 +59,7 @@ pub fn get_main_css() -> Css<&'static str> {
 #[get("/events/<id>")]
 pub fn get_event(db: sqlite::Connections, id: &RawStr) -> Result<Markup> {
     let mut ev = usecases::get_event(&*db.shared()?, &id)?;
-    // TODO:
-    // Make sure within usecase that the creator email
+    // TODO:Make sure within usecase that the creator email
     // is not shown to unregistered users
     ev.created_by = None;
     Ok(view::event(None, ev))

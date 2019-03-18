@@ -1,15 +1,15 @@
 ## v0.5.2-dev (2019-mm-dd)
 
 - new(web): Extended admin frontend
-- new(web): Reset passwords by e-mail
+- fix(db): Retarget entry search and optimize tag lookup
 
 ## v0.5.1 (2019-03-11)
 
 - new(web): Add a basic admin frontend
 - new(web): Include address fields for searching entries
 - new(web): Archive events/entries/ratings/comments (admin only)
-- fix(db):  Send registration e-mail
-- fix(db):  Apply bounding box filter when searching
+- fix(db): Send registration e-mail
+- fix(db): Apply bounding box filter when searching
 - chore(db): Type safe handling of passwords and timestamps
 
 ## v0.4.5 (2019-03-07)

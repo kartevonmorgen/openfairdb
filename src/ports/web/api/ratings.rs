@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::infrastructure::flows::prelude as flows;
+use crate::{core::util, infrastructure::flows::prelude as flows};
 
 #[post("/ratings", format = "application/json", data = "<data>")]
 pub fn post_rating(

@@ -147,7 +147,7 @@ mod tests {
 
             pub fn query_entries_by_tag(self: &EnvFixture, tag: &str) -> Vec<IndexedEntry> {
                 let query = EntryIndexQuery {
-                    tags: vec![tag.into()],
+                    hash_tags: vec![tag.into()],
                     ..Default::default()
                 };
                 self.query_entries(&query)

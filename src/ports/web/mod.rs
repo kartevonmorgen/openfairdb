@@ -14,7 +14,6 @@ mod guards;
 mod mockdb;
 mod sqlite;
 mod tantivy;
-mod util;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
