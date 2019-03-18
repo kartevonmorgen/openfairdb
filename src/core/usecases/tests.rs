@@ -1,14 +1,8 @@
 use super::*;
 
-use crate::core::{
-    usecases,
-    util::{
-        filter::{self, InBBox},
-        geo,
-    },
-};
+use crate::core::{usecases, util::geo};
 
-use failure::{format_err, Fallible};
+use failure::Fallible;
 use std::{cell::RefCell, result};
 
 //TODO: move tests to corresponding usecase
@@ -86,18 +80,6 @@ pub struct MockDb {
     pub orgs: Vec<Organization>,
 }
 
-impl MockDb {
-    pub fn get_entries_by_bbox(&self, bbox: &geo::MapBbox) -> RepoResult<Vec<Entry>> {
-        Ok(self
-            .entries
-            .borrow()
-            .iter()
-            .filter(|e| e.in_bbox(bbox))
-            .cloned()
-            .collect())
-    }
-}
-
 impl EntryIndexer for MockDb {
     fn add_or_update_entry(&mut self, entry: &Entry, _ratings: &AvgRatings) -> Fallible<()> {
         // Nothing to do, the entry has already been stored
@@ -121,51 +103,12 @@ impl EntryIndexer for MockDb {
 }
 
 impl EntryIndex for MockDb {
-    fn query_entries(&self, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<IndexedEntry>> {
-        let mut entries = if let Some(ref bbox) = query.bbox {
-            self.get_entries_by_bbox(&bbox)
-        } else {
-            self.all_entries()
-        }
-        .map_err(|err| format_err!("{}", err))?;
-
-        if !query.ids.is_empty() {
-            entries = entries
-                .into_iter()
-                .filter(|e| query.ids.iter().any(|id| &e.id == id))
-                .collect();
-        }
-
-        if !query.categories.is_empty() {
-            entries = entries
-                .into_iter()
-                .filter(filter::entries_by_category_ids(&query.categories))
-                .collect();
-        }
-
-        let indexed_entries = entries
-            .into_iter()
-            .take(limit)
-            .filter(&*filter::entries_by_tags_or_search_text(
-                query.text.as_ref().map(String::as_str).unwrap_or(""),
-                &query.tags,
-            ))
-            .map(|e| IndexedEntry {
-                id: e.id,
-                pos: e.location.pos,
-                title: e.title,
-                description: e.description,
-                categories: e.categories,
-                tags: e.tags,
-                ratings: Default::default(),
-            })
-            /*id: e.id,
-            title: e.title,
-            description: e.description,
-            categories: e.categories,*/
-            .collect();
-
-        Ok(indexed_entries)
+    fn query_entries(
+        &self,
+        _query: &EntryIndexQuery,
+        _limit: usize,
+    ) -> Fallible<Vec<IndexedEntry>> {
+        unimplemented!();
     }
 }
 
