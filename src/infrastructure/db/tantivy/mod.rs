@@ -15,8 +15,7 @@ use tantivy::{
     query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
     schema::*,
     tokenizer::{LowerCaser, RawTokenizer, Tokenizer},
-    DocAddress, Document, Index, IndexWriter, IndexReader,
-    ReloadPolicy,
+    DocAddress, Document, Index, IndexReader, IndexWriter, ReloadPolicy,
 };
 
 const OVERALL_INDEX_HEAP_SIZE_IN_BYTES: usize = 50_000_000;
@@ -305,9 +304,9 @@ impl TantivyEntryIndex {
         // Otherwise ReloadPolicy::OnCommit will delay the changes and
         // many tests would fail without modification.
         let index_reader = index
-                .reader_builder()
-                .reload_policy(ReloadPolicy::Manual)
-                .try_into()?;
+            .reader_builder()
+            .reload_policy(ReloadPolicy::Manual)
+            .try_into()?;
         let index_writer = index.writer(OVERALL_INDEX_HEAP_SIZE_IN_BYTES)?;
         let text_query_parser = QueryParser::for_index(
             &index,
