@@ -15,7 +15,8 @@ use tantivy::{
     query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
     schema::*,
     tokenizer::{LowerCaser, RawTokenizer, Tokenizer},
-    DocAddress, Document, Index, IndexWriter,
+    DocAddress, Document, Index, IndexWriter, IndexReader,
+    ReloadPolicy,
 };
 
 const OVERALL_INDEX_HEAP_SIZE_IN_BYTES: usize = 50_000_000;
@@ -213,7 +214,8 @@ impl IndexedEntryFields {
 pub(crate) struct TantivyEntryIndex {
     fields: IndexedEntryFields,
     index: Index,
-    writer: IndexWriter,
+    index_reader: IndexReader,
+    index_writer: IndexWriter,
     text_query_parser: QueryParser,
 }
 
@@ -298,7 +300,15 @@ impl TantivyEntryIndex {
 
         register_tokenizers(&index);
 
-        let writer = index.writer(OVERALL_INDEX_HEAP_SIZE_IN_BYTES)?;
+        // Prfere to manually reload the index reader during `flush()`
+        // to ensure that all committed changes become visible immediately.
+        // Otherwise ReloadPolicy::OnCommit will delay the changes and
+        // many tests would fail without modification.
+        let index_reader = index
+                .reader_builder()
+                .reload_policy(ReloadPolicy::Manual)
+                .try_into()?;
+        let index_writer = index.writer(OVERALL_INDEX_HEAP_SIZE_IN_BYTES)?;
         let text_query_parser = QueryParser::for_index(
             &index,
             vec![
@@ -313,7 +323,8 @@ impl TantivyEntryIndex {
         Ok(Self {
             fields,
             index,
-            writer,
+            index_reader,
+            index_writer,
             text_query_parser,
         })
     }
@@ -450,7 +461,7 @@ impl TantivyEntryIndex {
 impl EntryIndexer for TantivyEntryIndex {
     fn add_or_update_entry(&mut self, entry: &Entry, ratings: &AvgRatings) -> Fallible<()> {
         let id_term = Term::from_field_text(self.fields.id, &entry.id);
-        self.writer.delete_term(id_term);
+        self.index_writer.delete_term(id_term);
         let mut doc = Document::default();
         doc.add_text(self.fields.id, &entry.id);
         doc.add_i64(
@@ -526,19 +537,21 @@ impl EntryIndexer for TantivyEntryIndex {
             self.fields.ratings_transparency,
             avg_rating_to_u64(ratings.transparency),
         );
-        self.writer.add_document(doc);
+        self.index_writer.add_document(doc);
         Ok(())
     }
 
     fn remove_entry_by_id(&mut self, id: &str) -> Fallible<()> {
         let id_term = Term::from_field_text(self.fields.id, id);
-        self.writer.delete_term(id_term);
+        self.index_writer.delete_term(id_term);
         Ok(())
     }
 
     fn flush(&mut self) -> Fallible<()> {
-        self.writer.commit()?;
-        self.index.load_searchers()?;
+        self.index_writer.commit()?;
+        // Manually reload the reader to ensure that all committed changes
+        // become visible immediately.
+        self.index_reader.reload()?;
         Ok(())
     }
 }
@@ -549,7 +562,7 @@ impl EntryIndex for TantivyEntryIndex {
             bail!("Invalid limit: {}", limit);
         }
 
-        let searcher = self.index.searcher();
+        let searcher = self.index_reader.searcher();
         // TODO (2019-02-26): Ideally we would like to order the results by
         // (score * rating) instead of only (rating). Currently Tantivy doesn't
         // support this kind of collector.

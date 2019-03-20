@@ -43,7 +43,7 @@ rocket_contrib = "*"
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 slug = "*"
-tantivy = "0.9.0-dev"
+tantivy = "0.9"
 toml = "*"
 url = "*"
 uuid = { version = "*", features = ["v4"] }
