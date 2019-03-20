@@ -300,7 +300,7 @@ impl TantivyEntryIndex {
 
         register_tokenizers(&index);
 
-        // Prfere to manually reload the index reader during `flush()`
+        // Prefer to manually reload the index reader during `flush()`
         // to ensure that all committed changes become visible immediately.
         // Otherwise ReloadPolicy::OnCommit will delay the changes and
         // many tests would fail without modification.

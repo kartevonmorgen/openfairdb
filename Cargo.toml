@@ -10,7 +10,6 @@ edition = "2018"
 
 [patch.crates-io]
 geocoding = { git = "https://github.com/georust/geocoding" }
-tantivy = { git = "https://github.com/tantivy-search/tantivy" }
 
 [dependencies]
 chrono = "*"
