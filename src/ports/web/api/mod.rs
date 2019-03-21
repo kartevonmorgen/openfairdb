@@ -27,7 +27,7 @@ use rocket_contrib::json::Json;
 use std::result;
 
 mod count;
-mod events;
+pub mod events;
 pub mod geocoding;
 mod ratings;
 mod search;

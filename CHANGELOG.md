@@ -1,5 +1,7 @@
 ## v0.5.3-dev (2019-mm-dd)
 
+- new(web): make events queryable in the frontend
+
 ## v0.5.2 (2019-03-18)
 
 - fix(db): Retarget entry search and optimize tag lookup

@@ -86,11 +86,11 @@ pub fn put_event_with_token(
 
 #[derive(Clone, Default)]
 pub struct EventQuery {
-    tags: Option<Vec<String>>,
-    created_by: Option<String>,
-    bbox: Option<MapBbox>,
-    start_min: Option<i64>,
-    start_max: Option<i64>,
+    pub tags: Option<Vec<String>>,
+    pub created_by: Option<String>,
+    pub bbox: Option<MapBbox>,
+    pub start_min: Option<i64>,
+    pub start_max: Option<i64>,
 }
 
 impl<'q> FromQuery<'q> for EventQuery {

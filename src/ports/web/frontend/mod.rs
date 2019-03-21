@@ -1,8 +1,9 @@
 use crate::{
     core::{prelude::*, usecases},
     infrastructure::{db::sqlite, error::*, flows::prelude::*},
-    ports::web::{guards::*, tantivy::SearchEngine},
+    ports::web::{api::events::EventQuery, guards::*, tantivy::SearchEngine},
 };
+use chrono::NaiveDateTime;
 use maud::Markup;
 use rocket::{
     self,
@@ -93,19 +94,32 @@ pub fn get_entry(pool: sqlite::Connections, id: &RawStr) -> Result<Markup> {
     Ok(view::entry(None, (e, ratings).into()))
 }
 
-#[get("/events")]
-pub fn get_events(db: sqlite::Connections) -> Result<Markup> {
-    let yesterday = chrono::Utc::now()
-        .checked_sub_signed(chrono::Duration::days(1))
-        .unwrap()
-        .naive_utc();
-    let mut events: Vec<_> = db
-        .shared()?
-        .all_events()?
-        .into_iter()
-        .filter(|e| e.start > yesterday)
-        .collect();
-    events.sort_by(|a, b| a.start.cmp(&b.start));
+#[get("/events?<query..>")]
+pub fn get_events(db: sqlite::Connections, query: EventQuery) -> Result<Markup> {
+    if query.created_by.is_some() {
+        return Err(Error::Parameter(ParameterError::Unauthorized).into());
+    }
+
+    let start_min = query
+        .start_min
+        .map(|x| NaiveDateTime::from_timestamp(x, 0))
+        .unwrap_or_else(|| {
+            chrono::Utc::now()
+                .checked_sub_signed(chrono::Duration::days(1))
+                .unwrap()
+                .naive_utc()
+        });
+
+    let events = usecases::query_events(
+        &*db.shared()?,
+        query.tags,
+        query.bbox,
+        Some(start_min),
+        query.start_max.map(|x| NaiveDateTime::from_timestamp(x, 0)),
+        query.created_by,
+        None,
+    )?;
+
     Ok(view::events(&events))
 }
 
@@ -200,7 +214,6 @@ mod tests {
     use super::*;
     use crate::infrastructure::db::tantivy;
     use crate::ports::web::tests::prelude::*;
-    use chrono::*;
 
     fn setup() -> (
         rocket::local::Client,
@@ -285,6 +298,82 @@ mod tests {
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
             assert!(body_str.contains("<li><a href=\"/events/1234\">"));
             assert!(body_str.contains("<li><a href=\"/events/5678\">"));
+            assert!(!body_str.contains("<li><a href=\"/events/0000\">"));
+        }
+
+        #[test]
+        fn get_a_list_of_events_filtered_by_tags() {
+            let (client, db, _) = setup();
+            let events = vec![
+                Event {
+                    id: "1234".into(),
+                    title: "x".into(),
+                    description: None,
+                    start: chrono::Utc::now()
+                        .checked_sub_signed(chrono::Duration::hours(2))
+                        .unwrap()
+                        .naive_utc(),
+                    end: None,
+                    location: None,
+                    contact: None,
+                    tags: vec!["bla".into()],
+                    homepage: None,
+                    created_by: None,
+                    registration: Some(RegistrationType::Email),
+                    organizer: None,
+                    archived: None,
+                },
+                Event {
+                    id: "5678".into(),
+                    title: "x".into(),
+                    description: None,
+                    start: chrono::Utc::now()
+                        .checked_add_signed(chrono::Duration::days(2))
+                        .unwrap()
+                        .naive_utc(),
+                    end: None,
+                    location: None,
+                    contact: None,
+                    tags: vec!["bli".into()],
+                    homepage: None,
+                    created_by: None,
+                    registration: Some(RegistrationType::Email),
+                    organizer: None,
+                    archived: None,
+                },
+                Event {
+                    id: "0000".into(),
+                    title: "x".into(),
+                    description: None,
+                    start: chrono::Utc::now()
+                        .checked_sub_signed(chrono::Duration::days(2))
+                        .unwrap()
+                        .naive_utc(),
+                    end: None,
+                    location: None,
+                    contact: None,
+                    tags: vec!["blub".into()],
+                    homepage: None,
+                    created_by: None,
+                    registration: Some(RegistrationType::Email),
+                    organizer: None,
+                    archived: None,
+                },
+            ];
+
+            {
+                let db_conn = db.exclusive().unwrap();
+                for e in events {
+                    db_conn.create_event(e).unwrap();
+                }
+            }
+
+            let mut res = client.get("/events?tag=blub&tag=bli").dispatch();
+            assert_eq!(res.status(), Status::Ok);
+            let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+            assert!(!body_str.contains("<li><a href=\"/events/1234\">"));
+            assert!(body_str.contains("<li><a href=\"/events/5678\">"));
+            // '0000' has "blub" but its too old
             assert!(!body_str.contains("<li><a href=\"/events/0000\">"));
         }
 
