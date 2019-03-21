@@ -57,15 +57,6 @@ pub fn get_main_css() -> Css<&'static str> {
     Css(MAIN_CSS)
 }
 
-#[get("/events/<id>")]
-pub fn get_event(db: sqlite::Connections, id: &RawStr) -> Result<Markup> {
-    let mut ev = usecases::get_event(&*db.shared()?, &id)?;
-    // TODO:Make sure within usecase that the creator email
-    // is not shown to unregistered users
-    ev.created_by = None;
-    Ok(view::event(None, ev))
-}
-
 #[get("/entries/<id>")]
 pub fn get_entry_admin(pool: sqlite::Connections, id: &RawStr, admin: Admin) -> Result<Markup> {
     //TODO: dry out
@@ -92,6 +83,15 @@ pub fn get_entry(pool: sqlite::Connections, id: &RawStr) -> Result<Markup> {
         (e, ratings_with_comments)
     };
     Ok(view::entry(None, (e, ratings).into()))
+}
+
+#[get("/events/<id>")]
+pub fn get_event(db: sqlite::Connections, id: &RawStr) -> Result<Markup> {
+    let mut ev = usecases::get_event(&*db.shared()?, &id)?;
+    // TODO:Make sure within usecase that the creator email
+    // is not shown to unregistered users
+    ev.created_by = None;
+    Ok(view::event(None, ev))
 }
 
 #[get("/events?<query..>")]
@@ -407,7 +407,7 @@ mod tests {
             assert_eq!(res.status(), Status::Ok);
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
             assert!(body_str.contains("<h2>A great event</h2>"));
-            assert!(body_str.contains("<p>Foo bar baz</p>"));
+            assert!(body_str.contains("Foo bar baz</p>"));
         }
 
     }

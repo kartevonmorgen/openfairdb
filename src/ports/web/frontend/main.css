@@ -102,6 +102,16 @@ fieldset {
   color: #000;
 }
 
+.events {
+  max-width: 30em;
+  float: left;
+  min-width: 15em;
+}
+
+.events .no-results {
+  padding: 1em;
+}
+
 .events h3 {
   text-align: center;
   color: #fff;
@@ -144,8 +154,59 @@ fieldset {
   margin-top: 0;
   margin-bottom: 0;
 }
+
 .event-list li a h4 span.date {
   float: right;
   font-weight: normal;
+}
 
+.details {
+  float: left;
+  padding: 1.8em;
+  max-width: 20em;
+}
+
+.details, .events  {
+  border-right: 1px solid #bbb;
+}
+
+.details a {
+  color: #111;
+  text-decoration: none;
+}
+
+.details h2, h3, h4 {
+  color: #444;
+  margin-top: 0.60em;
+  margin-bottom: 0.2em;
+}
+.details p {
+  margin-top: 0.3em;
+  margin-bottom: 0.3em;
+}
+.details .time {
+  margin-top: 0.1em;
+}
+
+.details .description {
+  color: #666;
+  margin-top: 0.8em;
+  margin-bottom: 0.8em;
+}
+
+.details.event .entity-type{
+  color: rgb(229, 98, 146);
+}
+
+.details ul.tags {
+  font-size: 0.8em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: #ddd;
+  padding:0.2em;
+  padding-left:0.4em;
+  padding-right:0.4em;
+  border-radius: 0.4em;
+  color: #333;
 }

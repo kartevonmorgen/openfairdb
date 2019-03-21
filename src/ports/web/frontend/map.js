@@ -26,13 +26,13 @@
 
   ready(["OFDB_MAP_PINS", "OFDB_MAP_ZOOM", "OFDB_MAP_CENTER", "L"],
     function(pins, zoom, center, L){
-    if (pins.length > 0){
       var map = L.map('map').setView(center,zoom);
       L.tileLayer(TILES, { attribution: 'slowtec GmbH', maxZoom: 18 }).addTo(map);
-      for(var i=0;i<pins.length;i++) {
-        var pin = pins[i];
-        L.marker([pin.lat,pin.lng]).addTo(map);
+      if (pins.length > 0){
+        for(var i=0;i<pins.length;i++) {
+          var pin = pins[i];
+          L.marker([pin.lat,pin.lng]).addTo(map);
+        }
       }
-    }
-  });
+    });
 })();
