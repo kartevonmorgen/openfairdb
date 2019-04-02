@@ -35,7 +35,6 @@ passwords = "*"
 pwhash = "*"
 quick-error = "*"
 quoted_printable = { version = "*", optional = true }
-rand = "*"
 regex = "*"
 rocket = "*"
 rocket_contrib = "*"
