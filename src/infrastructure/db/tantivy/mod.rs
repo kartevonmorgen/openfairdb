@@ -352,9 +352,9 @@ impl TantivyEntryIndex {
             sub_queries.push((Occur::Must, ids_query));
         }
 
-        // Bbox
-        if let Some(ref bbox) = query.bbox {
-            debug!("Query bbox: {}", bbox);
+        // Bbox (include)
+        if let Some(ref bbox) = query.include_bbox {
+            debug!("Query bbox (include): {}", bbox);
             debug_assert!(bbox.is_valid());
             debug_assert!(!bbox.is_empty());
             let lat_query = RangeQuery::new_i64_bounds(
@@ -362,7 +362,9 @@ impl TantivyEntryIndex {
                 Bound::Included(i64::from(bbox.south_west().lat().to_raw())),
                 Bound::Included(i64::from(bbox.north_east().lat().to_raw())),
             );
+            // Latitude query: Always inclusive
             sub_queries.push((Occur::Must, Box::new(lat_query)));
+            // Longitude query: Either inclusive or exclusive (wrap around)
             if bbox.south_west().lng() <= bbox.north_east().lng() {
                 // regular (inclusive)
                 let lng_query = RangeQuery::new_i64_bounds(
@@ -379,6 +381,38 @@ impl TantivyEntryIndex {
                     Bound::Excluded(i64::from(bbox.south_west().lng().to_raw())),
                 );
                 sub_queries.push((Occur::MustNot, Box::new(lng_query)));
+            }
+        }
+
+        // Inverse Bbox (exclude)
+        if let Some(ref bbox) = query.exclude_bbox {
+            debug!("Query bbox (exclude): {}", bbox);
+            debug_assert!(bbox.is_valid());
+            debug_assert!(!bbox.is_empty());
+            let lat_query = RangeQuery::new_i64_bounds(
+                self.fields.lat,
+                Bound::Included(i64::from(bbox.south_west().lat().to_raw())),
+                Bound::Included(i64::from(bbox.north_east().lat().to_raw())),
+            );
+            // Latitude query: Always exclusive
+            sub_queries.push((Occur::MustNot, Box::new(lat_query)));
+            // Longitude query: Either exclusive or inclusive (wrap around)
+            if bbox.south_west().lng() <= bbox.north_east().lng() {
+                // regular (exclusive)
+                let lng_query = RangeQuery::new_i64_bounds(
+                    self.fields.lng,
+                    Bound::Included(i64::from(bbox.south_west().lng().to_raw())),
+                    Bound::Included(i64::from(bbox.north_east().lng().to_raw())),
+                );
+                sub_queries.push((Occur::MustNot, Box::new(lng_query)));
+            } else {
+                // inverse (inclusive)
+                let lng_query = RangeQuery::new_i64_bounds(
+                    self.fields.lng,
+                    Bound::Excluded(i64::from(bbox.north_east().lng().to_raw())),
+                    Bound::Excluded(i64::from(bbox.south_west().lng().to_raw())),
+                );
+                sub_queries.push((Occur::Must, Box::new(lng_query)));
             }
         }
 

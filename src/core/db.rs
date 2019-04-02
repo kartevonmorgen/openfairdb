@@ -89,7 +89,8 @@ pub struct IndexedEntry {
 
 #[derive(Debug, Default, Clone)]
 pub struct EntryIndexQuery<'a, 'b> {
-    pub bbox: Option<MapBbox>,
+    pub include_bbox: Option<MapBbox>,
+    pub exclude_bbox: Option<MapBbox>,
     pub categories: Vec<&'a str>,
     pub ids: Vec<&'b str>,
     pub hash_tags: Vec<String>,

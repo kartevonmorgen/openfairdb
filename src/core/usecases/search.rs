@@ -38,8 +38,9 @@ pub fn search(
         .map(filter::split_text_to_words)
         .unwrap_or_default();
 
-    let index_query = EntryIndexQuery {
-        bbox: Some(filter::extend_bbox(&visible_bbox)),
+    let visible_entries_query = EntryIndexQuery {
+        include_bbox: Some(visible_bbox),
+        exclude_bbox: None,
         categories: req.categories,
         ids: req.ids,
         hash_tags,
@@ -47,13 +48,32 @@ pub fn search(
         text,
     };
 
-    let entries = index
-        .query_entries(&index_query, limit)
+    // 1st query: Search for visible results only
+    // This is required to reliably retrieve all available results!
+    // See also: https://github.com/slowtec/openfairdb/issues/183
+    let visible_entries = index
+        .query_entries(&visible_entries_query, limit)
         .map_err(|err| RepoError::Other(Box::new(err.compat())))?;
+    debug_assert!(visible_entries
+        .iter()
+        .all(|e| visible_bbox.contains_point(e.pos)));
 
-    let (visible_entries, invisible_entries): (Vec<_>, Vec<_>) = entries
-        .into_iter()
-        .partition(|e| visible_bbox.contains_point(e.pos));
+    // 2nd query: Search for remaining invisible results
+    let invisible_entries = if visible_entries.len() < limit {
+        let invisible_entries_query = EntryIndexQuery {
+            include_bbox: Some(filter::extend_bbox(&visible_bbox)),
+            exclude_bbox: visible_entries_query.include_bbox,
+            ..visible_entries_query
+        };
+        index
+            .query_entries(&invisible_entries_query, limit - visible_entries.len())
+            .map_err(|err| RepoError::Other(Box::new(err.compat())))?
+    } else {
+        vec![]
+    };
+    debug_assert!(!invisible_entries
+        .iter()
+        .any(|e| visible_bbox.contains_point(e.pos)));
 
     Ok((visible_entries, invisible_entries))
 }
