@@ -1,6 +1,7 @@
-## v0.5.3-dev (2019-mm-dd)
+## v0.5.3 (2019-04-02)
 
-- new(web): make events queryable in the frontend
+- new(web): Make events queryable in the frontend
+- fix(db): Fix incomplete visible search results
 
 ## v0.5.2 (2019-03-18)
 
