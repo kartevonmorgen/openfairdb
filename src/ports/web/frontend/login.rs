@@ -5,7 +5,6 @@ use crate::{
     ports::web::sqlite::Connections,
 };
 use maud::Markup;
-use num_traits::ToPrimitive;
 use rocket::{
     self,
     http::{Cookie, Cookies},
@@ -65,12 +64,8 @@ pub fn post_login(
                     };
                     Err(Flash::error(Redirect::to(uri!(get_login)), msg))
                 }
-                Ok(role) => {
+                Ok(_) => {
                     cookies.add_private(Cookie::new(COOKIE_EMAIL_KEY, credentials.email));
-                    cookies.add_private(Cookie::new(
-                        super::super::guards::COOKIE_USER_ACCESS_LEVEL,
-                        role.to_usize().unwrap().to_string(),
-                    ));
                     Ok(Redirect::to(uri!(super::get_index)))
                 }
             }

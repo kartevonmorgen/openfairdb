@@ -2,12 +2,17 @@ use super::*;
 
 use diesel::connection::Connection;
 
-pub fn exec_archive_ratings(connections: &sqlite::Connections, ids: &[&str]) -> Result<()> {
+pub fn exec_archive_ratings(
+    connections: &sqlite::Connections,
+    account_email: &str,
+    ids: &[&str],
+) -> Result<()> {
+    //TODO: check if user is allowed to archive the ratings
     let mut repo_err = None;
     let connection = connections.exclusive()?;
     Ok(connection
         .transaction::<_, diesel::result::Error, _>(|| {
-            usecases::archive_ratings(&*connection, ids).map_err(|err| {
+            usecases::archive_ratings(&*connection, account_email, ids).map_err(|err| {
                 warn!("Failed to archive {} ratings: {}", ids.len(), err);
                 repo_err = Some(err);
                 diesel::result::Error::RollbackTransaction
@@ -71,9 +76,10 @@ pub fn post_archive_ratings(
 pub fn archive_ratings(
     connections: &sqlite::Connections,
     indexer: &mut EntryIndexer,
+    account_email: &str,
     ids: &[&str],
 ) -> Result<()> {
-    exec_archive_ratings(connections, ids)?;
+    exec_archive_ratings(connections, account_email, ids)?;
     post_archive_ratings(connections, indexer, ids)?;
     Ok(())
 }
@@ -86,6 +92,7 @@ mod tests {
         super::archive_ratings(
             &fixture.db_connections,
             &mut *fixture.search_engine.borrow_mut(),
+            "scout@foo.tld",
             ids,
         )
     }
@@ -93,6 +100,15 @@ mod tests {
     #[test]
     fn should_archive_multiple_ratings_only_once() {
         let fixture = EnvFixture::new();
+
+        fixture.create_user(
+            usecases::NewUser {
+                email: "scout@foo.tld".into(),
+                password: "123456".into(),
+                username: "foo".into(),
+            },
+            Some(Role::Scout),
+        );
 
         let entry_ids = vec![
             fixture.create_entry(0.into()),

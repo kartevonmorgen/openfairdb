@@ -1,5 +1,3 @@
-use crate::core::entities::Role;
-use num_traits::FromPrimitive;
 use rocket::{
     self,
     http::Status,
@@ -10,7 +8,6 @@ use rocket::{
 
 pub const COOKIE_EMAIL_KEY: &str = "ofdb-user-email";
 pub const COOKIE_USER_KEY: &str = "user_id";
-pub const COOKIE_USER_ACCESS_LEVEL: &str = "ofdb-user-access-level";
 
 #[derive(Debug)]
 pub struct Bearer(pub String);
@@ -73,37 +70,5 @@ impl<'a, 'r> FromRequest<'a, 'r> for Account {
             .and_then(|cookie| cookie.value().parse().ok())
             .map(Account)
             .or_forward(())
-    }
-}
-
-#[derive(Debug)]
-pub struct Admin(pub String);
-
-impl<'a, 'r> FromRequest<'a, 'r> for Admin {
-    type Error = ();
-
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Admin, ()> {
-        let user = request
-            .cookies()
-            .get_private(COOKIE_EMAIL_KEY)
-            .and_then(|cookie| cookie.value().parse().ok())
-            .map(Account);
-        let role = request
-            .cookies()
-            .get_private(COOKIE_USER_ACCESS_LEVEL)
-            .and_then(|cookie| cookie.value().parse().ok())
-            .and_then(Role::from_usize);
-
-        match (user, role) {
-            (Some(user), Some(role)) => {
-                if role == Role::Admin {
-                    Some(Admin(user.0))
-                } else {
-                    return Outcome::Failure((Status::Unauthorized, ()));
-                }
-            }
-            _ => None,
-        }
-        .or_forward(())
     }
 }

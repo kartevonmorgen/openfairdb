@@ -2,6 +2,7 @@ mod archive_comments;
 mod archive_entries;
 mod archive_events;
 mod archive_ratings;
+mod change_user_role;
 mod create_entry;
 mod create_rating;
 mod update_entry;
@@ -9,14 +10,13 @@ mod update_entry;
 pub mod prelude {
     pub use super::{
         archive_comments::*, archive_entries::*, archive_events::*, archive_ratings::*,
-        create_entry::*, create_rating::*, update_entry::*,
+        change_user_role::*, create_entry::*, create_rating::*, update_entry::*,
     };
 }
 
 pub type Result<T> = std::result::Result<T, error::AppError>;
 
 pub(crate) use super::{db::sqlite, error, notify};
-
 pub(crate) use crate::core::{prelude::*, usecases};
 
 #[cfg(test)]
@@ -88,6 +88,34 @@ mod tests {
                     new_entry.into(),
                 )
                 .unwrap()
+            }
+
+            pub fn create_user(self: &EnvFixture, new_user: usecases::NewUser, role: Option<Role>) {
+                let email = {
+                    let mut db = self.db_connections.exclusive().unwrap();
+                    let email = new_user.email.clone();
+                    usecases::create_new_user(&mut *db, new_user).unwrap();
+                    email
+                };
+                if let Some(role) = role {
+                    let mut u = self.try_get_user(&email).unwrap();
+                    u.role = role;
+                    let db = self.db_connections.exclusive().unwrap();
+                    db.update_user(&u).unwrap();
+                }
+            }
+
+            pub fn try_get_user(self: &EnvFixture, email: &str) -> Option<User> {
+                match self
+                    .db_connections
+                    .shared()
+                    .unwrap()
+                    .get_users_by_email(email)
+                {
+                    Ok(users) => users.first().cloned(),
+                    Err(RepoError::NotFound) => None,
+                    x => x.map(|_| None).unwrap(),
+                }
             }
 
             pub fn try_get_entry(self: &EnvFixture, id: &str) -> Option<Entry> {
