@@ -32,7 +32,10 @@ quick_error! {
             description("Invalid username")
         }
         UserExists{
-            description("The user already exits")
+            description("The user already exists")
+        }
+        UserDoesNotExist{
+            description("The user does not exist")
         }
         Password{
             description("Invalid password")
@@ -72,6 +75,9 @@ quick_error! {
         }
         InvalidLimit{
             description("Invalid limit")
+        }
+        Role{
+            description("Invalid role")
         }
     }
 }

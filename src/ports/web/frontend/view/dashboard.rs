@@ -1,22 +1,23 @@
 use super::page;
+use crate::core::entities::*;
 use maud::{html, Markup};
 
-pub struct DashBoardPresenter<'a> {
-    pub email: &'a str,
+pub struct DashBoardPresenter {
+    pub user: User,
     pub entry_count: usize,
     pub event_count: usize,
     pub tag_count: usize,
     pub user_count: usize,
 }
 
-pub fn dashboard(email: Option<&str>, data: DashBoardPresenter) -> Markup {
+pub fn dashboard(data: DashBoardPresenter) -> Markup {
     page(
         "Admin Dashboard",
-        email,
+        Some(&data.user.email),
         None,
         None,
         html! {
-            main {
+            main class="dashboard" {
                 h3 { "Database Statistics" }
                 table {
                     tr {
@@ -36,6 +37,8 @@ pub fn dashboard(email: Option<&str>, data: DashBoardPresenter) -> Markup {
                         td {(data.tag_count)}
                     }
                 }
+                h3 { "User Management" }
+                (super::search_users_form())
             }
         },
     )

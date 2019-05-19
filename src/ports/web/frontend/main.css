@@ -53,6 +53,12 @@ header nav a:hover {
   color: #5f5;
 }
 
+main {
+  max-width: 98%;
+  margin: auto;
+  margin-top: 1em;
+}
+
 .search h1 {
   text-align: center;
 }

@@ -1,5 +1,6 @@
 use crate::core::prelude::*;
 use maud::{html, Markup};
+use num_traits::ToPrimitive;
 use rocket::request::FlashMessage;
 
 const LEAFLET_CSS_URL: &str = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.4.0/leaflet.css";
@@ -406,4 +407,68 @@ pub fn register(flash: Option<FlashMessage>) -> Markup {
           }
         },
     )
+}
+
+pub fn user_search_result(admin_email: &str, users: &[User]) -> Markup {
+    page(
+        "Users",
+        Some(admin_email),
+        None,
+        None,
+        html! {
+            main {
+                h3 { "Users" }
+                (search_users_form())
+                @if users.is_empty() {
+                    "No users were found :("
+                } @else {
+                    table {
+                        thead {
+                            tr {
+                              th { "Username"        }
+                              th { "eMail"           }
+                              th { "eMail confirmed" }
+                              th { "Role"            }
+                              th { "Modify role"            }
+                            }
+                        }
+                        tbody {
+                            @for u in users {
+                                tr {
+                                    td { (u.username) }
+                                    td { (u.email) }
+                                    td { (if u.email_confirmed{"yes"}else{"no"}) }
+                                    td { (format!("{:?}",u.role)) }
+                                    td {
+                                        @if u.email != admin_email {
+                                            form action="change-user-role" method="POST" {
+                                                select name = "role" required? {
+                                                    option value="-1" {"-- please select --"}
+                                                    option value=(Role::Guest.to_u8().unwrap()) { "Guest" }
+                                                    option value=(Role::User.to_u8().unwrap())  { "User" }
+                                                    option value=(Role::Scout.to_u8().unwrap()) { "Scout" }
+                                                }
+                                                input type="hidden" name="email" value=(u.email);
+                                                input type="submit" value="change";
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+    )
+}
+
+pub fn search_users_form() -> Markup {
+    html! {
+        form action="search-users" method="GET" {
+            input type="email" name="email" placeholder="email address";
+            br;
+            input type="submit" value="search";
+        }
+    }
 }

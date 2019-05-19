@@ -115,7 +115,7 @@ pub struct User {
 }
 
 #[rustfmt::skip]
-#[derive(Debug, Clone, Copy, PartialEq, FromPrimitive, ToPrimitive)]
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd, FromPrimitive, ToPrimitive)]
 pub enum Role {
     Guest = 0,
     User  = 1,

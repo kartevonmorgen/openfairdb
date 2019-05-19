@@ -1,13 +1,17 @@
 use super::*;
-
 use diesel::connection::Connection;
 
-pub fn archive_comments(connections: &sqlite::Connections, ids: &[&str]) -> Result<()> {
+pub fn archive_comments(
+    connections: &sqlite::Connections,
+    account_email: &str,
+    ids: &[&str],
+) -> Result<()> {
+    //TODO: check if user is allowed to archive the comments
     let mut repo_err = None;
     let connection = connections.exclusive()?;
     Ok(connection
         .transaction::<_, diesel::result::Error, _>(|| {
-            usecases::archive_comments(&*connection, ids).map_err(|err| {
+            usecases::archive_comments(&*connection, account_email, ids).map_err(|err| {
                 warn!("Failed to archive {} comments: {}", ids.len(), err);
                 repo_err = Some(err);
                 diesel::result::Error::RollbackTransaction
@@ -26,13 +30,26 @@ pub fn archive_comments(connections: &sqlite::Connections, ids: &[&str]) -> Resu
 mod tests {
     use super::super::tests::prelude::*;
 
-    fn archive_comments(fixture: &EnvFixture, ids: &[&str]) -> super::Result<()> {
-        super::archive_comments(&fixture.db_connections, ids)
+    fn archive_comments(
+        fixture: &EnvFixture,
+        account_email: &str,
+        ids: &[&str],
+    ) -> super::Result<()> {
+        super::archive_comments(&fixture.db_connections, account_email, ids)
     }
 
     #[test]
     fn should_archive_multiple_comments_only_once() {
         let fixture = EnvFixture::new();
+
+        fixture.create_user(
+            usecases::NewUser {
+                email: "scout@foo.tld".into(),
+                password: "123456".into(),
+                username: "foo".into(),
+            },
+            Some(Role::Scout),
+        );
 
         let entry_ids = vec![
             fixture.create_entry(0.into()),
@@ -80,6 +97,7 @@ mod tests {
         // Archive comments 1 and 2
         assert!(archive_comments(
             &fixture,
+            "scout@foo.tld",
             &vec![&*rating_comment_ids[1].1, &*rating_comment_ids[2].1]
         )
         .is_ok());
@@ -101,6 +119,7 @@ mod tests {
         // Try to archive comments 0 and 1 (already archived)
         assert_not_found(archive_comments(
             &fixture,
+            "scout@foo.tld",
             &vec![&*rating_comment_ids[0].1, &*rating_comment_ids[1].1],
         ));
 
@@ -119,6 +138,7 @@ mod tests {
         // Archive remaining comments
         assert!(archive_comments(
             &fixture,
+            "scout@foo.tld",
             &vec![&*rating_comment_ids[0].1, &*rating_comment_ids[3].1]
         )
         .is_ok());
