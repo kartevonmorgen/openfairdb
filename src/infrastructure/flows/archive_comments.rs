@@ -6,7 +6,6 @@ pub fn archive_comments(
     account_email: &str,
     ids: &[&str],
 ) -> Result<()> {
-    //TODO: check if user is allowed to archive the comments
     let mut repo_err = None;
     let connection = connections.exclusive()?;
     Ok(connection
