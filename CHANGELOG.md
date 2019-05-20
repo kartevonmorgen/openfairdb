@@ -1,3 +1,8 @@
+## v0.5.4 (2019-05-20)
+
+- new(web): Added admin interface for archiving comments and ratings
+- new(web): Added admin interface for assigning user roles
+
 ## v0.5.3 (2019-04-02)
 
 - new(web): Make events queryable in the frontend

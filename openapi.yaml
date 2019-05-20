@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: OpenFairDB API
-  version: 0.5.1-dev
+  version: 0.5.4
   contact:
     name: slowtec GmbH
     url: 'https://slowtec.de'
@@ -26,10 +26,10 @@ paths:
           schema:
             type: string
           description: |
-             Comma-separated list if category identifiers.
-             We currently use the following two:
-             - Initiative (non-commercial): `2cd00bebec0c48ba9db761da48678134`
-             - Company (commercial): `77b3c33a92554bcf8e8c2c86cedd6f6f`
+            Comma-separated list if category identifiers.
+            We currently use the following two:
+            - Initiative (non-commercial): `2cd00bebec0c48ba9db761da48678134`
+            - Company (commercial): `77b3c33a92554bcf8e8c2c86cedd6f6f`
         - name: ids
           description: Comma-separated list of entry identifiers
           in: query
@@ -613,9 +613,9 @@ components:
         title: A great event
         start: 1547403505
         created_by: testuser@example.com
-        telephone: "0123456789"
+        telephone: '0123456789'
         tags: [awesome, organic]
-        registration: "telephone"
+        registration: 'telephone'
     UnixTime:
       type: integer
       format: int64
@@ -628,7 +628,7 @@ components:
       description: Bounding Box
       schema:
         type: string
-        example: "42.27,-7.97,52.58,38.25"
+        example: '42.27,-7.97,52.58,38.25'
   securitySchemes:
     bearerAuth:
       type: http
