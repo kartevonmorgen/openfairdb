@@ -22,7 +22,7 @@ pub fn exec_archive_entries(connections: &sqlite::Connections, ids: &[&str]) -> 
         })?)
 }
 
-pub fn post_archive_entries(indexer: &mut EntryIndexer, ids: &[&str]) -> Result<()> {
+pub fn post_archive_entries(indexer: &mut dyn EntryIndexer, ids: &[&str]) -> Result<()> {
     // Remove archived entries from search index
     // TODO: Move to a separate task/thread that doesn't delay this request
     for id in ids {
@@ -44,7 +44,7 @@ pub fn post_archive_entries(indexer: &mut EntryIndexer, ids: &[&str]) -> Result<
 
 pub fn archive_entries(
     connections: &sqlite::Connections,
-    indexer: &mut EntryIndexer,
+    indexer: &mut dyn EntryIndexer,
     ids: &[&str],
 ) -> Result<()> {
     exec_archive_entries(connections, ids)?;

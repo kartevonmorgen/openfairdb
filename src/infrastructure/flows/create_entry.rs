@@ -6,7 +6,7 @@ use diesel::Connection;
 
 pub fn create_entry(
     connections: &sqlite::Connections,
-    indexer: &mut EntryIndexer,
+    indexer: &mut dyn EntryIndexer,
     new_entry: usecases::NewEntry,
 ) -> Result<String> {
     // Create and add new entry

@@ -67,4 +67,10 @@ pub trait EmailTokenCredentialsRepository {
     ) -> Result<EmailTokenCredentials>;
 
     fn discard_expired_email_token_credentials(&self, expired_before: Timestamp) -> Result<usize>;
+
+    #[cfg(test)]
+    fn get_email_token_credentials_by_email_or_username(
+        &self,
+        email_or_username: &str,
+    ) -> Result<EmailTokenCredentials>;
 }

@@ -95,12 +95,12 @@ pub fn user_registered(user: &User, url: &str) {
     }
 }
 
-pub fn user_password_reset_requested(token: &EmailToken) {
+pub fn user_reset_password_requested(token: &EmailToken) {
     let url = format!(
-        "https://kartevonmorgen.org/#/?reset_password={}",
+        "https://openfairdb.org/reset-password?token={}",
         token.encode_to_string()
     );
-    let content = user_communication::user_password_reset_email(&url);
+    let content = user_communication::user_reset_password_email(&url);
 
     #[cfg(feature = "email")]
     {

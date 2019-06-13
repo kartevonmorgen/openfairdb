@@ -71,7 +71,7 @@ pub fn get_event<D: Db>(db: &D, id: &str) -> Result<Event> {
     Ok(e)
 }
 
-pub fn delete_user(db: &mut Db, login_id: &str, u_id: &str) -> Result<()> {
+pub fn delete_user(db: &mut dyn Db, login_id: &str, u_id: &str) -> Result<()> {
     if login_id != u_id {
         return Err(Error::Parameter(ParameterError::Forbidden));
     }
@@ -79,7 +79,7 @@ pub fn delete_user(db: &mut Db, login_id: &str, u_id: &str) -> Result<()> {
     Ok(())
 }
 
-pub fn subscribe_to_bbox(bbox: MapBbox, username: &str, db: &mut Db) -> Result<()> {
+pub fn subscribe_to_bbox(bbox: MapBbox, username: &str, db: &mut dyn Db) -> Result<()> {
     validate::bbox(&bbox)?;
 
     // TODO: support multiple subscriptions in KVM (frontend)
@@ -96,7 +96,7 @@ pub fn subscribe_to_bbox(bbox: MapBbox, username: &str, db: &mut Db) -> Result<(
     Ok(())
 }
 
-pub fn get_bbox_subscriptions(username: &str, db: &Db) -> Result<Vec<BboxSubscription>> {
+pub fn get_bbox_subscriptions(username: &str, db: &dyn Db) -> Result<Vec<BboxSubscription>> {
     Ok(db
         .all_bbox_subscriptions()?
         .into_iter()
@@ -104,7 +104,7 @@ pub fn get_bbox_subscriptions(username: &str, db: &Db) -> Result<Vec<BboxSubscri
         .collect())
 }
 
-pub fn unsubscribe_all_bboxes_by_username(db: &mut Db, username: &str) -> Result<()> {
+pub fn unsubscribe_all_bboxes_by_username(db: &mut dyn Db, username: &str) -> Result<()> {
     let user_subscriptions: Vec<_> = db
         .all_bbox_subscriptions()?
         .into_iter()
@@ -117,7 +117,10 @@ pub fn unsubscribe_all_bboxes_by_username(db: &mut Db, username: &str) -> Result
     Ok(())
 }
 
-pub fn bbox_subscriptions_by_coordinate(db: &Db, pos: MapPoint) -> Result<Vec<BboxSubscription>> {
+pub fn bbox_subscriptions_by_coordinate(
+    db: &dyn Db,
+    pos: MapPoint,
+) -> Result<Vec<BboxSubscription>> {
     Ok(db
         .all_bbox_subscriptions()?
         .into_iter()
@@ -126,7 +129,7 @@ pub fn bbox_subscriptions_by_coordinate(db: &Db, pos: MapPoint) -> Result<Vec<Bb
 }
 
 pub fn email_addresses_from_subscriptions(
-    db: &Db,
+    db: &dyn Db,
     subs: &[BboxSubscription],
 ) -> Result<Vec<String>> {
     let usernames: Vec<_> = subs.iter().map(|s| &s.username).collect();
@@ -141,7 +144,7 @@ pub fn email_addresses_from_subscriptions(
     Ok(addresses)
 }
 
-pub fn email_addresses_by_coordinate(db: &Db, pos: MapPoint) -> Result<Vec<String>> {
+pub fn email_addresses_by_coordinate(db: &dyn Db, pos: MapPoint) -> Result<Vec<String>> {
     let subs = bbox_subscriptions_by_coordinate(db, pos)?;
     let addresses = email_addresses_from_subscriptions(db, &subs)?;
     Ok(addresses)

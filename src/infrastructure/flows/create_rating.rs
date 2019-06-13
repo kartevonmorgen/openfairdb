@@ -4,7 +4,7 @@ use diesel::connection::Connection;
 
 pub fn create_rating(
     connections: &sqlite::Connections,
-    indexer: &mut EntryIndexer,
+    indexer: &mut dyn EntryIndexer,
     rate_entry: usecases::RateEntry,
 ) -> Result<(String, String)> {
     // Add new rating to existing entry

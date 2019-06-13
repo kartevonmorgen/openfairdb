@@ -329,12 +329,13 @@ impl TantivyEntryIndex {
     }
 
     fn build_query(&self, query: &EntryIndexQuery) -> BooleanQuery {
-        let mut sub_queries: Vec<(Occur, Box<Query>)> = Vec::with_capacity(1 + 2 + 1 + 1 + 1);
+        let mut sub_queries: Vec<(Occur, Box<dyn Query>)> = Vec::with_capacity(1 + 2 + 1 + 1 + 1);
 
         if !query.ids.is_empty() {
-            let ids_query: Box<Query> = if query.ids.len() > 1 {
+            let ids_query: Box<dyn Query> = if query.ids.len() > 1 {
                 debug!("Query multiple ids: {:?}", query.ids);
-                let mut id_queries: Vec<(Occur, Box<Query>)> = Vec::with_capacity(query.ids.len());
+                let mut id_queries: Vec<(Occur, Box<dyn Query>)> =
+                    Vec::with_capacity(query.ids.len());
                 for id in &query.ids {
                     debug_assert!(!id.trim().is_empty());
                     let id_term = Term::from_field_text(self.fields.id, id);
@@ -418,9 +419,9 @@ impl TantivyEntryIndex {
 
         // Categories
         if !query.categories.is_empty() {
-            let categories_query: Box<Query> = if query.categories.len() > 1 {
+            let categories_query: Box<dyn Query> = if query.categories.len() > 1 {
                 debug!("Query multiple categories: {:?}", query.categories);
-                let mut category_queries: Vec<(Occur, Box<Query>)> =
+                let mut category_queries: Vec<(Occur, Box<dyn Query>)> =
                     Vec::with_capacity(query.categories.len());
                 for category in &query.categories {
                     debug_assert!(!category.trim().is_empty());
@@ -450,7 +451,7 @@ impl TantivyEntryIndex {
             sub_queries.push((Occur::Must, Box::new(tag_query)));
         }
 
-        let mut text_and_tags_queries: Vec<(Occur, Box<Query>)> =
+        let mut text_and_tags_queries: Vec<(Occur, Box<dyn Query>)> =
             Vec::with_capacity(1 + query.text_tags.len());
 
         // Text

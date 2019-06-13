@@ -40,7 +40,7 @@ quick_error! {
             cause(err)
             description(err.description())
         }
-        Other(err: Box<error::Error + Send + Sync>){
+        Other(err: Box<dyn error::Error + Send + Sync>){
             from()
             description(err.description())
             from(err: io::Error) -> (Box::new(err))

@@ -15,7 +15,7 @@ pub fn post_user(db: sqlite::Connections, u: Json<usecases::NewUser>) -> Result<
 }
 
 #[post(
-    "/users/request_password_reset",
+    "/users/reset-password-request",
     format = "application/json",
     data = "<data>"
 )]
@@ -25,12 +25,12 @@ pub fn post_request_password_reset(
 ) -> Result<()> {
     let req = data.into_inner();
 
-    flows::request_password_reset(&connections, &req.email_or_username)?;
+    flows::reset_password_request(&connections, &req.email_or_username)?;
 
     Ok(Json(()))
 }
 
-#[post("/users/reset_password", format = "application/json", data = "<data>")]
+#[post("/users/reset-password", format = "application/json", data = "<data>")]
 pub fn post_reset_password(
     connections: sqlite::Connections,
     data: Json<json::ResetPassword>,

@@ -1020,4 +1020,20 @@ impl EmailTokenCredentialsRepository for SqliteConnection {
         )
         .execute(self)?)
     }
+
+    #[cfg(test)]
+    fn get_email_token_credentials_by_email_or_username(
+        &self,
+        email_or_username: &str,
+    ) -> Result<EmailTokenCredentials> {
+        use self::schema::email_token_credentials::dsl;
+        let model = dsl::email_token_credentials
+            .filter(
+                dsl::username
+                    .eq(email_or_username)
+                    .or(dsl::email.eq(email_or_username)),
+            )
+            .first::<models::EmailTokenCredentials>(self)?;
+        Ok(model.into())
+    }
 }

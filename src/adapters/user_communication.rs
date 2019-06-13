@@ -14,7 +14,7 @@ pub fn user_registration_email(url: &str) -> EmailContent {
     EmailContent { subject, body }
 }
 
-pub fn user_password_reset_email(url: &str) -> EmailContent {
+pub fn user_reset_password_email(url: &str) -> EmailContent {
     let subject = "Karte von morgen: Passwort zurücksetzen".into();
     let body = format!(
         "Na du Weltverbesserer*,\nhast Du uns kürzlich gebeten Dein Passwort zurücksetzen?\n\nBitte folge zur Eingabe eines neuen Passworts diesem Link:\n{}\n\neuphorische Grüße\ndas Karte von morgen-Team",

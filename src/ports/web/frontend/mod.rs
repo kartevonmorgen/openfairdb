@@ -22,6 +22,7 @@ use rocket::{
 };
 
 mod login;
+mod password;
 mod register;
 #[cfg(test)]
 mod tests;
@@ -267,6 +268,9 @@ pub fn routes() -> Vec<Route> {
         login::post_logout,
         register::get_register,
         register::post_register,
-        register::get_email_confirmation
+        register::get_email_confirmation,
+        password::get_reset_password,
+        password::post_reset_password_request,
+        password::post_reset_password,
     ]
 }

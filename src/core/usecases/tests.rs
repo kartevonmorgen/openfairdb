@@ -140,6 +140,14 @@ impl EmailTokenCredentialsRepository for MockDb {
         debug_assert!(len_before >= len_after);
         Ok(len_before - len_after)
     }
+
+    #[cfg(test)]
+    fn get_email_token_credentials_by_email_or_username(
+        &self,
+        _email_or_username: &str,
+    ) -> RepoResult<EmailTokenCredentials> {
+        unimplemented!()
+    }
 }
 
 impl EntryIndexer for MockDb {

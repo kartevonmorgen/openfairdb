@@ -12,7 +12,7 @@ pub struct SearchRequest<'a, 'b, 'c, 'd> {
 }
 
 pub fn search(
-    index: &EntryIndex,
+    index: &dyn EntryIndex,
     req: SearchRequest,
     limit: usize,
 ) -> Result<(Vec<IndexedEntry>, Vec<IndexedEntry>)> {
@@ -83,7 +83,7 @@ pub fn search(
 /// of only one single search input.
 /// So here we don't care about tags, categories etc.
 /// We also ignore the rating of an entry for now.
-pub fn global_search(index: &EntryIndex, txt: &str, limit: usize) -> Result<Vec<IndexedEntry>> {
+pub fn global_search(index: &dyn EntryIndex, txt: &str, limit: usize) -> Result<Vec<IndexedEntry>> {
     let index_query = EntryIndexQuery {
         text: Some(txt.into()),
         ..Default::default()

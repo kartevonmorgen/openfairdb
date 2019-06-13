@@ -1,6 +1,6 @@
 use crate::core::prelude::*;
 
-pub fn confirm_email_address(db: &Db, u_id: &str) -> Result<()> {
+pub fn confirm_email_address(db: &dyn Db, u_id: &str) -> Result<()> {
     //TODO: use username instead of user ID
     let mut u = db
         .all_users()?

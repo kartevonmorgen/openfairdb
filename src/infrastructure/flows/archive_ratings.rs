@@ -29,7 +29,7 @@ pub fn exec_archive_ratings(
 
 pub fn post_archive_ratings(
     connections: &sqlite::Connections,
-    indexer: &mut EntryIndexer,
+    indexer: &mut dyn EntryIndexer,
     ids: &[&str],
 ) -> Result<()> {
     let connection = connections.shared()?;
@@ -75,7 +75,7 @@ pub fn post_archive_ratings(
 
 pub fn archive_ratings(
     connections: &sqlite::Connections,
-    indexer: &mut EntryIndexer,
+    indexer: &mut dyn EntryIndexer,
     account_email: &str,
     ids: &[&str],
 ) -> Result<()> {

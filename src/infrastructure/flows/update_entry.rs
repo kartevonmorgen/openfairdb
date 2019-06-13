@@ -4,7 +4,7 @@ use diesel::connection::Connection;
 
 pub fn update_entry(
     connections: &sqlite::Connections,
-    indexer: &mut EntryIndexer,
+    indexer: &mut dyn EntryIndexer,
     id: String,
     update_entry: usecases::UpdateEntry,
 ) -> Result<Entry> {

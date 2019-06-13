@@ -1,8 +1,7 @@
 use super::login::tests::register_user;
 use super::*;
 use crate::{
-    core::usecases,
-    infrastructure::{db::sqlite::Connections, db::tantivy, flows},
+    infrastructure::{db::sqlite::Connections, db::tantivy},
     ports::web::tests::prelude::*,
 };
 
@@ -342,7 +341,7 @@ mod entry {
         let (client, db, mut search) = setup();
         create_user(&db, "foo", Role::Admin);
         login_user(&client, "foo");
-        let (e_id, r_id, c_id) = create_entry_with_rating(&db, &mut search);
+        let (e_id, _, c_id) = create_entry_with_rating(&db, &mut search);
         let comment = db.shared().unwrap().load_comment(&c_id).unwrap();
         assert!(comment.archived.is_none());
         let res = client
@@ -364,7 +363,7 @@ mod entry {
         let (client, db, mut search) = setup();
         create_user(&db, "foo", Role::Scout);
         login_user(&client, "foo");
-        let (e_id, r_id, c_id) = create_entry_with_rating(&db, &mut search);
+        let (e_id, _, c_id) = create_entry_with_rating(&db, &mut search);
         let comment = db.shared().unwrap().load_comment(&c_id).unwrap();
         assert!(comment.archived.is_none());
         let res = client
@@ -384,7 +383,7 @@ mod entry {
     #[test]
     fn archive_comment_as_guest() {
         let (client, db, mut search) = setup();
-        let (e_id, r_id, c_id) = create_entry_with_rating(&db, &mut search);
+        let (e_id, _, c_id) = create_entry_with_rating(&db, &mut search);
         let res = client
             .post("/comments/actions/archive")
             .header(ContentType::Form)
@@ -398,7 +397,7 @@ mod entry {
     #[test]
     fn archive_rating_as_guest() {
         let (client, db, mut search) = setup();
-        let (e_id, r_id, c_id) = create_entry_with_rating(&db, &mut search);
+        let (e_id, r_id, _) = create_entry_with_rating(&db, &mut search);
         let res = client
             .post("/ratings/actions/archive")
             .header(ContentType::Form)
@@ -429,5 +428,118 @@ mod admin {
         assert_eq!(login_res.status(), Status::SeeOther);
         let user = get_user(&db, "user");
         assert_eq!(user.role, Role::Scout);
+    }
+}
+
+mod pw_reset {
+    use super::*;
+
+    #[test]
+    fn reset_password() {
+        let (client, db, _) = setup();
+        register_user(&db, "user@example.com", "secret", true);
+
+        // User opens the form to request a new password
+        let mut res = client.get("/reset-password").dispatch();
+        assert_eq!(res.status(), Status::Ok);
+        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        assert!(body_str.contains("<form"));
+        assert!(body_str.contains("action=\"/users/actions/reset-password-request\""));
+        assert!(body_str.contains("name=\"email_or_username\""));
+        assert!(body_str.contains("type=\"submit\""));
+
+        // User sends the request
+        let res = client
+            .post("/users/actions/reset-password-request")
+            .header(ContentType::Form)
+            .body("email_or_username=user%40example.com")
+            .dispatch();
+        assert_eq!(res.status(), Status::SeeOther);
+        let h = res
+            .headers()
+            .iter()
+            .find(|h| h.name.as_str() == "Location")
+            .unwrap();
+        assert_eq!(h.value, "/reset-password?success=true");
+
+        // User gets a sucess message
+        let mut res = client.get("/reset-password?success=true").dispatch();
+        assert_eq!(res.status(), Status::Ok);
+        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        assert!(body_str.contains("success"));
+
+        // User gets an email with the corresponding token
+        let token = db
+            .shared()
+            .unwrap()
+            .get_email_token_credentials_by_email_or_username("user@example.com")
+            .unwrap()
+            .token
+            .encode_to_string();
+
+        // User opens the link
+        let mut res = client
+            .get(format!("/reset-password?token={}", token))
+            .dispatch();
+        assert_eq!(res.status(), Status::Ok);
+        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        assert!(body_str.contains("<form"));
+        assert!(body_str.contains("action=\"/users/actions/reset-password\""));
+        assert!(body_str.contains("name=\"email_or_username\""));
+        assert!(body_str.contains("name=\"new_password\""));
+        assert!(body_str.contains("name=\"new_password_repeated\""));
+        assert!(body_str.contains("name=\"token\""));
+        assert!(body_str.contains("type=\"submit\""));
+
+        // User send the new password to the server
+        let res = client
+            .post("/users/actions/reset-password")
+            .header(ContentType::Form)
+            .body(format!("email_or_username=user%40example.com&new_password=12345678&new_password_repeated=12345678&token={}", token))
+            .dispatch();
+        assert_eq!(res.status(), Status::SeeOther);
+        let h = res
+            .headers()
+            .iter()
+            .find(|h| h.name.as_str() == "Location")
+            .unwrap();
+        assert_eq!(
+            h.value,
+            format!("/reset-password?token={}&success=true", token)
+        );
+        let mut res = client
+            .get(format!("/reset-password?token={}&success=true", token))
+            .dispatch();
+        assert_eq!(res.status(), Status::Ok);
+        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        assert!(body_str.contains("success"));
+
+        // User can't login with old password
+        let res = client
+            .post("/login")
+            .header(ContentType::Form)
+            .body("email=user%40example.com&password=secret")
+            .dispatch();
+        assert_eq!(res.status(), Status::SeeOther);
+        let h = res
+            .headers()
+            .iter()
+            .find(|h| h.name.as_str() == "Location")
+            .unwrap();
+        assert_eq!(h.value, "/login");
+
+        // User can login with the new password
+        let res = client
+            .post("/login")
+            .header(ContentType::Form)
+            .body("email=user%40example.com&password=12345678")
+            .dispatch();
+        assert_eq!(res.status(), Status::SeeOther);
+        let h = res
+            .headers()
+            .iter()
+            .find(|h| h.name.as_str() == "Location")
+            .unwrap();
+        assert_eq!(h.value, "/");
     }
 }

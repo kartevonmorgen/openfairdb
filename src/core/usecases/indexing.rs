@@ -3,7 +3,7 @@ use crate::core::{prelude::*, util::sort::Rated};
 use failure::Fallible;
 
 pub fn index_entry(
-    indexer: &mut EntryIndexer,
+    indexer: &mut dyn EntryIndexer,
     entry: &Entry,
     ratings: &[Rating],
 ) -> Fallible<AvgRatings> {
@@ -12,7 +12,7 @@ pub fn index_entry(
     Ok(avg_ratings)
 }
 
-pub fn unindex_entry(indexer: &mut EntryIndexer, entry_id: &str) -> Fallible<()> {
+pub fn unindex_entry(indexer: &mut dyn EntryIndexer, entry_id: &str) -> Fallible<()> {
     indexer.remove_entry_by_id(entry_id)?;
     Ok(())
 }

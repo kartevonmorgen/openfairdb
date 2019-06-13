@@ -56,7 +56,7 @@ fn refresh_email_token_credentials(
         .map_err(|err| rollback_err.unwrap_or_else(|| Error::from(RepoError::from(err))))?)
 }
 
-pub fn request_password_reset(
+pub fn reset_password_request(
     connections: &sqlite::Connections,
     email_or_username: &str,
 ) -> Result<Vec<EmailToken>> {
@@ -75,7 +75,7 @@ pub fn request_password_reset(
     let mut tokens = Vec::with_capacity(users.len());
     for user in &users {
         let credentials = refresh_email_token_credentials(&connections, &user)?;
-        notify::user_password_reset_requested(&credentials.token);
+        notify::user_reset_password_requested(&credentials.token);
         tokens.push(credentials.token);
     }
 
@@ -137,11 +137,11 @@ pub fn reset_password_with_email_token(
 mod tests {
     use super::super::tests::prelude::*;
 
-    fn request_password_reset(
+    fn reset_password_request(
         fixture: &EnvFixture,
         email_or_username: &str,
     ) -> super::Result<Vec<EmailToken>> {
-        super::request_password_reset(&fixture.db_connections, email_or_username)
+        super::reset_password_request(&fixture.db_connections, email_or_username)
     }
 
     fn reset_password_with_email_token(
@@ -191,7 +191,7 @@ mod tests {
         .is_err());
 
         // Request and reset password for user 1 (by email)
-        let tokens = request_password_reset(&fixture, email1).unwrap();
+        let tokens = reset_password_request(&fixture, email1).unwrap();
         assert_eq!(1, tokens.len());
         let token1 = tokens.into_iter().next().unwrap();
         assert_eq!(email1, token1.email);
@@ -233,7 +233,7 @@ mod tests {
         .is_err());
 
         // Request and reset password for user 2 (by username)
-        let tokens = request_password_reset(&fixture, &username2).unwrap();
+        let tokens = reset_password_request(&fixture, &username2).unwrap();
         assert_eq!(1, tokens.len());
         let token2 = tokens.into_iter().next().unwrap();
         assert_eq!(email2, token2.email);

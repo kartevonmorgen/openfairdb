@@ -1,7 +1,6 @@
 use crate::core::prelude::*;
 use maud::{html, Markup};
 use num_traits::ToPrimitive;
-use rocket::request::FlashMessage;
 
 const LEAFLET_CSS_URL: &str = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.4.0/leaflet.css";
 const LEAFLET_CSS_SHA512: &str="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA==";
@@ -11,11 +10,17 @@ const MAP_JS_URL: &str = "/map.js";
 
 mod dashboard;
 mod entry;
+mod login;
 mod page;
+mod password;
+mod register;
 
 pub use dashboard::*;
 pub use entry::*;
+pub use login::*;
 use page::*;
+pub use password::*;
+pub use register::*;
 
 pub fn index(email: Option<&str>) -> Markup {
     page(
@@ -349,62 +354,6 @@ pub fn events(events: &[Event]) -> Markup {
             }
             div id="map" style="height:100vh;" { }
             (map_scripts(&locations))
-        },
-    )
-}
-
-pub fn login(flash: Option<FlashMessage>) -> Markup {
-    page(
-        "Login",
-        None,
-        flash,
-        None,
-        html! {
-          form class="login" action="login" method="POST" {
-              fieldset{
-                label {
-                    "eMail:"
-                    br;
-                    input type="email" name="email" placeholder="eMail address";
-                }
-                    br;
-                label{
-                    "Password:"
-                    br;
-                    input type="password" name="password" placeholder="Password";
-                }
-                br;
-                input type="submit" value="login";
-              }
-          }
-        },
-    )
-}
-
-pub fn register(flash: Option<FlashMessage>) -> Markup {
-    page(
-        "Register",
-        None,
-        flash,
-        None,
-        html! {
-          form class="register" action="register" method="POST" {
-              fieldset{
-                label {
-                    "eMail:"
-                    br;
-                    input type="email" name="email" placeholder="eMail address";
-                }
-                    br;
-                label{
-                    "Password:"
-                    br;
-                    input type="password" name="password" placeholder="Password";
-                }
-                br;
-                input type="submit" value="register";
-              }
-          }
         },
     )
 }

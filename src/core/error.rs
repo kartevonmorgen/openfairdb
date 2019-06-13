@@ -110,7 +110,7 @@ quick_error! {
             cause(err)
             description(err.description())
         }
-        Other(err: Box<error::Error>){
+        Other(err: Box<dyn error::Error>){
             description(err.description())
         }
     }
