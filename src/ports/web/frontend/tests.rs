@@ -1,6 +1,10 @@
+use super::login::tests::register_user;
 use super::*;
-use crate::infrastructure::db::tantivy;
-use crate::ports::web::tests::prelude::*;
+use crate::{
+    core::usecases,
+    infrastructure::{db::sqlite::Connections, db::tantivy, flows},
+    ports::web::tests::prelude::*,
+};
 
 fn setup() -> (
     rocket::local::Client,
@@ -8,6 +12,33 @@ fn setup() -> (
     tantivy::SearchEngine,
 ) {
     crate::ports::web::tests::setup(vec![("/", super::routes())])
+}
+
+fn create_user(pool: &Connections, name: &str, role: Role) {
+    let email = format!("{}@example.com", name);
+    register_user(&pool, &email, "secret", true);
+    let mut user = get_user(pool, name);
+    user.role = role;
+    pool.exclusive().unwrap().update_user(&user).unwrap();
+}
+
+fn get_user(pool: &Connections, name: &str) -> User {
+    let email = format!("{}@example.com", name);
+    pool.shared()
+        .unwrap()
+        .get_users_by_email(&email)
+        .unwrap()
+        .into_iter()
+        .next()
+        .unwrap()
+}
+
+fn login_user(client: &Client, name: &str) {
+    client
+        .post("/login")
+        .header(ContentType::Form)
+        .body(format!("email={}%40example.com&password=secret", name))
+        .dispatch();
 }
 
 mod events {
@@ -278,22 +309,8 @@ mod entry {
     fn get_entry_details_as_admin() {
         let (client, db, mut search) = setup();
         let (id, _, _) = create_entry_with_rating(&db, &mut search);
-        super::super::login::tests::register_user(&db, "foo@bar.com", "bazbaz", true);
-        let mut user = db
-            .shared()
-            .unwrap()
-            .get_users_by_email("foo@bar.com")
-            .unwrap()
-            .into_iter()
-            .next()
-            .unwrap();
-        user.role = Role::Admin;
-        db.exclusive().unwrap().update_user(&user).unwrap();
-        let login_res = client
-            .post("/login")
-            .header(ContentType::Form)
-            .body("email=foo%40bar.com&password=bazbaz")
-            .dispatch();
+        create_user(&db, "foo", Role::Admin);
+        login_user(&client, "foo");
         let mut res = client.get(format!("/entries/{}", id)).dispatch();
         assert_eq!(res.status(), Status::Ok);
         let body_str = res.body().and_then(|b| b.into_string()).unwrap();
@@ -302,6 +319,66 @@ mod entry {
             body_str.contains("action=\"/comments/actions/archive\""),
             true
         );
+    }
+
+    #[test]
+    fn get_entry_details_as_scout() {
+        let (client, db, mut search) = setup();
+        let (id, _, _) = create_entry_with_rating(&db, &mut search);
+        create_user(&db, "foo", Role::Scout);
+        login_user(&client, "foo");
+        let mut res = client.get(format!("/entries/{}", id)).dispatch();
+        assert_eq!(res.status(), Status::Ok);
+        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        assert_eq!(body_str.contains("<form"), true);
+        assert_eq!(
+            body_str.contains("action=\"/comments/actions/archive\""),
+            true
+        );
+    }
+
+    #[test]
+    fn archive_comment_as_admin() {
+        let (client, db, mut search) = setup();
+        create_user(&db, "foo", Role::Admin);
+        login_user(&client, "foo");
+        let (e_id, r_id, c_id) = create_entry_with_rating(&db, &mut search);
+        let comment = db.shared().unwrap().load_comment(&c_id).unwrap();
+        assert!(comment.archived.is_none());
+        let res = client
+            .post("/comments/actions/archive")
+            .header(ContentType::Form)
+            .body(format!("ids={}&entry_id={}", c_id, e_id))
+            .dispatch();
+        assert_eq!(res.status(), Status::SeeOther);
+        //TODO: archived comments should be loaded too.
+        let err = db.shared().unwrap().load_comment(&c_id).err().unwrap();
+        match err {
+            RepoError::NotFound => {}
+            _ => panic!("Expected {}", RepoError::NotFound),
+        }
+    }
+
+    #[test]
+    fn archive_comment_as_scout() {
+        let (client, db, mut search) = setup();
+        create_user(&db, "foo", Role::Scout);
+        login_user(&client, "foo");
+        let (e_id, r_id, c_id) = create_entry_with_rating(&db, &mut search);
+        let comment = db.shared().unwrap().load_comment(&c_id).unwrap();
+        assert!(comment.archived.is_none());
+        let res = client
+            .post("/comments/actions/archive")
+            .header(ContentType::Form)
+            .body(format!("ids={}&entry_id={}", c_id, e_id))
+            .dispatch();
+        assert_eq!(res.status(), Status::SeeOther);
+        //TODO: archived comments should be loaded too.
+        let err = db.shared().unwrap().load_comment(&c_id).err().unwrap();
+        match err {
+            RepoError::NotFound => {}
+            _ => panic!("Expected {}", RepoError::NotFound),
+        }
     }
 
     #[test]
@@ -314,6 +391,8 @@ mod entry {
             .body(format!("ids={}&entry_id={}", c_id, e_id))
             .dispatch();
         assert_eq!(res.status(), Status::NotFound);
+        let comment = db.shared().unwrap().load_comment(&c_id).unwrap();
+        assert!(comment.archived.is_none());
     }
 
     #[test]
@@ -331,59 +410,24 @@ mod entry {
 
 mod admin {
     use super::*;
-    use crate::core::usecases;
-    use crate::infrastructure::flows;
 
     #[test]
     fn change_user_role() {
-        let (client, db, mut search) = setup();
-        super::super::login::tests::register_user(&db, "admin@example.com", "secret", true);
-        super::super::login::tests::register_user(&db, "user@example.com", "secret", true);
-        let mut admin = db
-            .shared()
-            .unwrap()
-            .get_users_by_email("admin@example.com")
-            .unwrap()
-            .into_iter()
-            .next()
-            .unwrap();
-        admin.role = Role::Admin;
-        db.exclusive().unwrap().update_user(&admin).unwrap();
-        {
-            let db = db.shared().unwrap();
-            let user = db
-                .get_users_by_email("user@example.com")
-                .unwrap()
-                .into_iter()
-                .next()
-                .unwrap();
-            let admin = db
-                .get_users_by_email("admin@example.com")
-                .unwrap()
-                .into_iter()
-                .next()
-                .unwrap();
-            assert_eq!(admin.role, Role::Admin);
-            assert_eq!(user.role, Role::User);
-        }
-        let login_res = client
-            .post("/login")
-            .header(ContentType::Form)
-            .body("email=admin%40example.com&password=secret")
-            .dispatch();
+        let (client, db, _) = setup();
+        create_user(&db, "admin", Role::Admin);
+        create_user(&db, "user", Role::User);
+        let user = get_user(&db, "user");
+        let admin = get_user(&db, "admin");
+        assert_eq!(admin.role, Role::Admin);
+        assert_eq!(user.role, Role::User);
+        login_user(&client, "admin");
         let login_res = client
             .post("/change-user-role")
             .header(ContentType::Form)
             .body("email=user%40example.com&role=2")
             .dispatch();
-        let user = db
-            .shared()
-            .unwrap()
-            .get_users_by_email("user@example.com")
-            .unwrap()
-            .into_iter()
-            .next()
-            .unwrap();
+        assert_eq!(login_res.status(), Status::SeeOther);
+        let user = get_user(&db, "user");
         assert_eq!(user.role, Role::Scout);
     }
 }

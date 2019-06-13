@@ -15,7 +15,7 @@ impl From<(Entry, Vec<(Rating, Vec<Comment>)>, Role)> for EntryPresenter {
     fn from((entry, rtngs, role): (Entry, Vec<(Rating, Vec<Comment>)>, Role)) -> EntryPresenter {
         let mut p: EntryPresenter = (entry, rtngs).into();
         p.allow_archiving = match role {
-            Role::Admin => true,
+            Role::Admin | Role::Scout => true,
             _ => false,
         };
         p
