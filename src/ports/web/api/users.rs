@@ -63,48 +63,45 @@ pub fn get_user(db: sqlite::Connections, user: Login, username: String) -> Resul
 
 #[cfg(test)]
 mod tests {
-    use crate::ports::web::{
-        api::tests::prelude::*,
-        tests::register_user
-    };
     use super::*;
+    use crate::ports::web::{api::tests::prelude::*, tests::register_user};
 
     #[test]
     fn reset_password() {
         let (client, db) = setup();
         register_user(&db, "user@example.com", "secret", true);
 
-       // User sends the request
-       let res = client
-           .post("/users/reset-password-request")
-           .header(ContentType::JSON)
-           .body(r#"{"email_or_username":"user@example.com"}"#)
-           .dispatch();
-       assert_eq!(res.status(), Status::Ok);
+        // User sends the request
+        let res = client
+            .post("/users/reset-password-request")
+            .header(ContentType::JSON)
+            .body(r#"{"email_or_username":"user@example.com"}"#)
+            .dispatch();
+        assert_eq!(res.status(), Status::Ok);
 
-       // User gets an email with the corresponding token
-       let token = db
-           .shared()
-           .unwrap()
-           .get_email_token_credentials_by_email_or_username("user@example.com")
-           .unwrap()
-           .token
-           .encode_to_string();
+        // User gets an email with the corresponding token
+        let token = db
+            .shared()
+            .unwrap()
+            .get_email_token_credentials_by_email_or_username("user@example.com")
+            .unwrap()
+            .token
+            .encode_to_string();
 
-       // User send the new password to the server
-       let res = client
+        // User send the new password to the server
+        let res = client
            .post("/users/reset-password")
            .header(ContentType::JSON)
            .body(format!(r#"{{"email_or_username":"user@example.com","token":"{}","new_password":"12345678"}}"#, token))
             .dispatch();
-       assert_eq!(res.status(), Status::Ok);
+        assert_eq!(res.status(), Status::Ok);
 
-       // User can't login with old password
-       let res = client
-           .post("/login")
-           .header(ContentType::JSON)
-           .body(r#"{"username":"userexamplecom","password":"secret"}"#)
-           .dispatch();
+        // User can't login with old password
+        let res = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(r#"{"username":"userexamplecom","password":"secret"}"#)
+            .dispatch();
         assert_eq!(res.status(), Status::Unauthorized);
 
         // User can login with the new password

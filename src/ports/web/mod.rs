@@ -89,8 +89,8 @@ pub fn run(
 
 #[cfg(test)]
 mod tests {
+    use crate::core::{prelude::*, usecases};
     use crate::infrastructure::db::{sqlite, tantivy};
-    use crate::{ core::{prelude::*, usecases}};
     use rocket::{
         config::{Config, Environment},
         local::Client,

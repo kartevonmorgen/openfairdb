@@ -35,7 +35,7 @@ pub fn get_login_user(_account: Account) -> Redirect {
 
 #[get("/login", rank = 2)]
 pub fn get_login(flash: Option<FlashMessage>) -> Markup {
-    view::login(flash)
+    view::login(flash, "/reset-password")
 }
 
 #[post("/login", data = "<credentials>")]
@@ -85,9 +85,10 @@ pub fn post_logout(mut cookies: Cookies) -> Flash<Redirect> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::ports::web::{self, tests::{prelude::*,
-    register_user,
-    }};
+    use crate::ports::web::{
+        self,
+        tests::{prelude::*, register_user},
+    };
 
     fn setup() -> (Client, Connections) {
         let (client, db, _) = web::tests::setup(vec![("/", super::super::routes())]);

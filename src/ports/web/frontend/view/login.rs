@@ -2,7 +2,7 @@ use super::page::*;
 use maud::{html, Markup};
 use rocket::request::FlashMessage;
 
-pub fn login(flash: Option<FlashMessage>) -> Markup {
+pub fn login(flash: Option<FlashMessage>, reset_pw_link: &str) -> Markup {
     page(
         "Login",
         None,
@@ -24,7 +24,11 @@ pub fn login(flash: Option<FlashMessage>) -> Markup {
                 }
                 br;
                 input type="submit" value="login";
-                a href="/password_reset_request" { "reset password" }
+                p {
+                    "Did you forget your password? Don't worry you can "
+                    a href=(reset_pw_link) { "reset your password" }
+                    " :-)"
+                }
               }
           }
         },
