@@ -1,5 +1,6 @@
-## v0.5.5 (unreleased)
+## v0.5.5 (2019-06-14)
 
+- fix(frontend): show archive buttons to scouts
 - new(web): Reset passwords by e-mail
 - new(web): Extended admin frontend
 
@@ -7,6 +8,7 @@
 
 - new(web): Added admin interface for archiving comments and ratings
 - new(web): Added admin interface for assigning user roles
+- chore(web): update rocket: v0.4.0 -> v0.4.1
 
 ## v0.5.3 (2019-04-02)
 
