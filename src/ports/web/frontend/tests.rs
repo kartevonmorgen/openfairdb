@@ -1,8 +1,7 @@
-use super::login::tests::register_user;
 use super::*;
 use crate::{
     infrastructure::{db::sqlite::Connections, db::tantivy},
-    ports::web::tests::prelude::*,
+    ports::web::tests::{prelude::*, register_user},
 };
 
 fn setup() -> (

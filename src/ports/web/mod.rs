@@ -90,6 +90,7 @@ pub fn run(
 #[cfg(test)]
 mod tests {
     use crate::infrastructure::db::{sqlite, tantivy};
+    use crate::{ core::{prelude::*, usecases}};
     use rocket::{
         config::{Config, Environment},
         local::Client,
@@ -130,5 +131,27 @@ mod tests {
         );
         let client = Client::new(rocket).unwrap();
         (client, connections, search_engine)
+    }
+
+    pub fn register_user(pool: &sqlite::Connections, email: &str, pw: &str, confirmed: bool) {
+        let mut db = pool.exclusive().unwrap();
+        let username = email.replace("@", "").replace(".", "");
+        usecases::create_new_user(
+            &mut *db,
+            usecases::NewUser {
+                username: username.clone(),
+                email: email.into(),
+                password: pw.into(),
+            },
+        )
+        .unwrap();
+        if confirmed {
+            let users = db.get_users_by_email(email).unwrap();
+            for u in users {
+                if u.username == username {
+                    usecases::confirm_email_address(&mut *db, &u.id).unwrap();
+                }
+            }
+        }
     }
 }

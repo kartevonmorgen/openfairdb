@@ -85,7 +85,9 @@ pub fn post_logout(mut cookies: Cookies) -> Flash<Redirect> {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::ports::web::{self, tests::prelude::*};
+    use crate::ports::web::{self, tests::{prelude::*,
+    register_user,
+    }};
 
     fn setup() -> (Client, Connections) {
         let (client, db, _) = web::tests::setup(vec![("/", super::super::routes())]);
@@ -100,28 +102,6 @@ pub mod tests {
             .nth(0)
             .and_then(|val| Cookie::parse_encoded(val).ok());
         cookie.map(|c| c.into_owned())
-    }
-
-    pub fn register_user(pool: &Connections, email: &str, pw: &str, confirmed: bool) {
-        let mut db = pool.exclusive().unwrap();
-        let username = email.replace("@", "").replace(".", "");
-        usecases::create_new_user(
-            &mut *db,
-            usecases::NewUser {
-                username: username.clone(),
-                email: email.into(),
-                password: pw.into(),
-            },
-        )
-        .unwrap();
-        if confirmed {
-            let users = db.get_users_by_email(email).unwrap();
-            for u in users {
-                if u.username == username {
-                    usecases::confirm_email_address(&mut *db, &u.id).unwrap();
-                }
-            }
-        }
     }
 
     #[test]

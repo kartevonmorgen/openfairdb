@@ -306,6 +306,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/User'
+  '/users/reset-password-request':
+    post:
+      summary: Request a password reset
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email_or_username:
+                  type: string
+      responses:
+        '200':
+           description: Sucessfull response
+  '/users/reset-password':
+    post:
+      summary: Request a users password
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email_or_username:
+                  type: string
+                token:
+                  type: string
+                new_password:
+                  type: string
+      responses:
+        '200':
+           description: Sucessfull response
   /tags:
     get:
       summary: Get tags
