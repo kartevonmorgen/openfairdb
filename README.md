@@ -55,9 +55,11 @@ Download the latest build
 [openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz](https://github.com/slowtec/openfairdb/releases/download/v0.5.1/openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz),
 unpack and start it:
 
-    wget https://github.com/slowtec/openfairdb/releases/download/v0.5.1/openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz
-    tar xJf openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz
-    ./openfairdb
+```sh
+wget https://github.com/slowtec/openfairdb/releases/download/v0.5.1/openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz
+tar xJf openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz
+RUST_LOG=info ./openfairdb
+```
 
 ## Build
 
@@ -70,35 +72,27 @@ Requirements:
 
 If you're using Ubuntu 16.04 LTS you can run
 
-```
+```sh
 sudo apt-get install curl libssl-dev gcc
 curl https://sh.rustup.rs -sSf | sh
-rustup install nightly
-rustup default nightly
 ```
 
-On windows you can download the installer from [rustup.rs](https://rustup.rs).
+On Windows you can download the installer from [rustup.rs](https://rustup.rs).
 (But don't forget to install a
 [C++ toolchain](http://landinghub.visualstudio.com/visual-cpp-build-tools) first).
-
-Installing a specific nightly version with `rustup` (e.g. `2018-01-04`) is easy:
-
-```
-rustup default nightly-2018-01-04
-```
 
 ### Installing SQLite & Diesel
 
 On Ubuntu:
 
-```
+```sh
 sudo apt-get install sqlite3 libsqlite3-dev
 cargo install diesel_cli --no-default-features --features sqlite
 ```
 
 ### Compile & Run
 
-```
+```sh
 git clone https://github.com/slowtec/openfairdb
 cd openfairdb/
 diesel migration run
@@ -106,47 +100,70 @@ cargo build
 ./target/debug/openfairdb
 ```
 
+The required Rust toolchain and version is defined in *rustc-toolchain* and
+will be installed by *Cargo* on demand when building the project.
+
 On NixOS you can build the project with:
 
-```
+```sh
 nix-build -E '(import <nixpkgs>{}).callPackage ./default.nix {}'
 ```
 
-### Docker Build
-
-The bundled Makefile can be used to build a static executable without installing any dependencies locally.
-
-Depending on the permissions of your local Docker installation you may need to use `sudo` for the invocation of `make`.
-
-#### Pull Build Image
-
-The build requires the [muslrust](https://hub.docker.com/r/clux/muslrust/tags/) Docker image with the corresponding Rust toolchain:
-
-```sh
-make -f Makefile.x86_64-unknown-linux-musl pre-build
-```
-
-This command has to be executed at least once and can be repeated for updating the `muslrust` build image.
-
-#### Execute Build
-
-Use the following command from the project directory to start the build:
-
-```sh
-make -f Makefile.x86_64-unknown-linux-musl
-```
-
-The source folder is copied into `/tmp` and mounted as a volume into the Docker container. The Cargo cache is also stored in `/tmp` and reused on subsequent invocations.
-
-The resulting executable is copied into the folder `bin/x86_64-unknown-linux-musl` after the build has completed successfully.
-
 ## Logging
 
-    RUST_LOG=debug ./target/debug/openfairdb
+```sh
+RUST_LOG=debug ./target/debug/openfairdb
+```
 
 If you want to get stacktraces on panics use
 
-    export RUST_BACKTRACE=1
+```sh
+export RUST_BACKTRACE=1
+```
+
+### Docker
+
+#### Build the image
+
+Build and tag the Docker image:
+
+```sh
+docker build -t openfairdb:latest .
+```
+
+The image is created `FROM scratch` and does not provide any user environment or shell.
+
+#### Run the container
+
+The executable in the container is controlled by the following environment variables:
+
+- RUST_LOG: Log level (trace, debug, info, warn, error)
+- DATABASE_URL: Database file path
+
+The database file must be placed in a volume outside of the container. For
+this purpose the image defines the mountpoint */volume* where an external volume
+from the host can be mounted.
+
+The container exposes the port 8080 for publishing to the host.
+
+Example:
+
+```sh
+docker run --rm \
+    -p 6767:8080 \
+    -e RUST_LOG="info" \
+    -e DATABASE_URL="/volume/openfairdb.sqlite" \
+    -v "/var/openfairdb":/volume:Z \
+    openfairdb:latest
+```
+
+#### Extract the static executable
+
+The resulting Docker image contains a static executable that can be extracted from any container instance:
+
+```sh
+docker cp <container id>:openfairdb .
+```
 
 ## DB Backups
 
