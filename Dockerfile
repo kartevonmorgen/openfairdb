@@ -21,13 +21,11 @@ COPY [ \
     "Cargo.toml", \
     "Cargo.lock", \
     "./" ]
-RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --bin ${BUILD_BIN}
+RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET}
 # Delete all build artefacts that must(!) not be cached
-RUN rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/${BUILD_BIN}*
-RUN rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/${BUILD_BIN}*
-RUN rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/${BUILD_BIN}*
-
-WORKDIR ${WORKDIR_ROOT}/${PROJECT_NAME}
+RUN rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/${PROJECT_NAME}*
+RUN rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/${PROJECT_NAME}*
+RUN rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/${PROJECT_NAME}*
 
 # Copy all project (re-)sources the are required for building
 COPY [ \
@@ -57,7 +55,9 @@ ARG EXPOSE_PORT=8080
 FROM scratch
 
 # Copy the statically-linked executable into the minimal scratch image
-COPY --from=build ${WORKDIR_ROOT}/${PROJECT_NAME}/target/${BUILD_TARGET}/${BUILD_MODE}/${BUILD_BIN} ./
+COPY --from=build [ \
+    "${WORKDIR_ROOT}/${PROJECT_NAME}/target/${BUILD_TARGET}/${BUILD_MODE}/${BUILD_BIN}", \
+    "./" ]
 
 EXPOSE ${EXPOSE_PORT}
 
