@@ -601,7 +601,7 @@ impl EntryIndex for TantivyEntryIndex {
         // (score * rating) instead of only (rating). Currently Tantivy doesn't
         // support this kind of collector.
         // See also: https://github.com/slowtec/openfairdb/issues/186
-        let collector = TopDocs::with_limit(limit).order_by_field(self.fields.total_rating);
+        let collector = TopDocs::with_limit(limit).order_by_u64_field(self.fields.total_rating);
         let top_docs_by_rating: Vec<(u64, DocAddress)> =
             searcher.search(&self.build_query(query), &collector)?;
         let mut entries = Vec::with_capacity(top_docs_by_rating.len());
