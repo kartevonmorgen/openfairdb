@@ -15,7 +15,8 @@ use tantivy::{
     query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
     schema::*,
     tokenizer::{LowerCaser, RawTokenizer, Tokenizer},
-    DocAddress, Document, Index, IndexReader, IndexWriter, ReloadPolicy,
+    DocAddress, DocId, Document, Index, IndexReader, IndexWriter, ReloadPolicy, Score,
+    SegmentReader,
 };
 
 const OVERALL_INDEX_HEAP_SIZE_IN_BYTES: usize = 50_000_000;
@@ -597,15 +598,36 @@ impl EntryIndex for TantivyEntryIndex {
         }
 
         let searcher = self.index_reader.searcher();
-        // TODO (2019-02-26): Ideally we would like to order the results by
-        // (score * rating) instead of only (rating). Currently Tantivy doesn't
-        // support this kind of collector.
-        // See also: https://github.com/slowtec/openfairdb/issues/186
-        let collector = TopDocs::with_limit(limit).order_by_u64_field(self.fields.total_rating);
-        let top_docs_by_rating: Vec<(u64, DocAddress)> =
+        let collector = {
+            let total_rating_field = self.fields.total_rating;
+            TopDocs::with_limit(limit).tweak_score(move |segment_reader: &SegmentReader| {
+                let total_rating_reader = segment_reader
+                    .fast_fields()
+                    .u64(total_rating_field)
+                    .unwrap();
+
+                move |doc: DocId, original_score: Score| {
+                    let total_rating = f64::from(u64_to_avg_rating(total_rating_reader.get(doc)));
+                    let boost_factor = if total_rating < f64::from(AvgRatingValue::default()) {
+                        // Negative ratings result in a boost factor < 1
+                        (total_rating - f64::from(AvgRatingValue::min()))
+                            / (f64::from(AvgRatingValue::default())
+                                - f64::from(AvgRatingValue::min()))
+                    } else {
+                        // Default rating results in a boost factor of 1
+                        // Positive ratings result in a boost factor > 1
+                        (2.0 + (f64::from(AvgRatingValue::max())
+                            - f64::from(AvgRatingValue::default())))
+                        .log2()
+                    };
+                    original_score * (boost_factor as f32)
+                }
+            })
+        };
+        let top_docs_by_rating: Vec<(_, DocAddress)> =
             searcher.search(&self.build_query(query), &collector)?;
         let mut entries = Vec::with_capacity(top_docs_by_rating.len());
-        for (_total_rating, doc_addr) in top_docs_by_rating {
+        for (_, doc_addr) in top_docs_by_rating {
             match searcher.doc(doc_addr) {
                 Ok(ref doc) => {
                     entries.push(self.fields.read_document(doc));
