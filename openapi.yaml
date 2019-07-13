@@ -45,10 +45,11 @@ paths:
           schema:
             type: string
         - name: limit
-          description: Maximum number of entries that should be returned. The (implicit) upper bound for all requests is 100!
+          description: Maximum number of entries that should be returned. The upper bound for all requests is 250!
           in: query
           schema:
             type: integer
+            default: 100
       responses:
         '200':
           description: Successful response
