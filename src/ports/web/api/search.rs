@@ -25,7 +25,8 @@ pub struct SearchQuery {
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
-const MAX_RESULTS: usize = 100;
+const DEFAULT_RESULT_LIMIT: usize = 100;
+const MAX_RESULT_LIMIT: usize = 250;
 
 #[get("/search?<search..>")]
 pub fn get_search(
@@ -71,12 +72,12 @@ pub fn get_search(
     };
 
     let search_limit = if let Some(limit) = search.limit {
-        if limit > MAX_RESULTS {
+        if limit > MAX_RESULT_LIMIT {
             info!(
                 "Requested limit {} exceeds maximum limit {} for search results",
-                limit, MAX_RESULTS
+                limit, MAX_RESULT_LIMIT
             );
-            MAX_RESULTS
+            MAX_RESULT_LIMIT
         } else if limit <= 0 {
             warn!("Invalid search limit: {}", limit);
             return Err(AppError::Business(Error::Parameter(
@@ -87,10 +88,10 @@ pub fn get_search(
         }
     } else {
         info!(
-            "No limit requested - Using maximum limit {} for search results",
-            MAX_RESULTS
+            "No limit requested - Using default limit {} for search results",
+            DEFAULT_RESULT_LIMIT
         );
-        MAX_RESULTS
+        DEFAULT_RESULT_LIMIT
     };
 
     let (visible, invisible) = usecases::search(&search_engine, req, search_limit)?;
