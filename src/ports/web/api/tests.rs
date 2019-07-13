@@ -1380,7 +1380,8 @@ fn export_csv() {
         }
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert_eq!(body_str, format!("id,osm_node,created,version,title,description,lat,lng,street,zip,city,country,homepage,categories,tags,license,avg_rating\n\
-        entry1,1,2,3,title1,desc1,{lat1},{lng1},street1,zip1,city1,country1,homepage1,\"cat1,cat2\",\"bla,bli\",license1,0.25\n\
-        entry2,,0,0,,,0.0,0.0,,,,,,cat1,,,0.0\n", lat1 = LatCoord::from_deg(0.1).to_deg(), lng1 = LngCoord::from_deg(0.2).to_deg()));
+    assert!(body_str.starts_with("id,osm_node,created,version,title,description,lat,lng,street,zip,city,country,homepage,categories,tags,license,avg_rating\n"));
+    assert!(body_str.contains(&format!("entry1,1,2,3,title1,desc1,{lat},{lng},street1,zip1,city1,country1,homepage1,\"cat1,cat2\",\"bla,bli\",license1,0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg())));
+    assert!(body_str.contains("entry2,,0,0,,,0.0,0.0,,,,,,cat1,,,0.0\n"));
+    assert!(!body_str.contains("entry3"));
 }
