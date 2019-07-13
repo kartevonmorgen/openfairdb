@@ -213,7 +213,6 @@ impl IndexedEntryFields {
 
 pub(crate) struct TantivyEntryIndex {
     fields: IndexedEntryFields,
-    index: Index,
     index_reader: IndexReader,
     index_writer: IndexWriter,
     text_query_parser: QueryParser,
@@ -322,7 +321,6 @@ impl TantivyEntryIndex {
         );
         Ok(Self {
             fields,
-            index,
             index_reader,
             index_writer,
             text_query_parser,
