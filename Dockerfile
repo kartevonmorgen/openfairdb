@@ -28,6 +28,8 @@ ARG BUILD_BIN
 ARG BUILD_MODE
 ARG BUILD_TARGET
 
+WORKDIR ${WORKDIR_ROOT}
+
 # Docker build cache: Create and build an empty dummy project with all
 # external dependencies to avoid redownloading them on subsequent builds
 # if unchanged.
