@@ -21,7 +21,12 @@ ARG BUILD_TARGET=x86_64-unknown-linux-musl
 # 1st Build Stage
 FROM clux/muslrust:nightly-2019-07-08 AS build
 
-WORKDIR ${WORKDIR_ROOT}
+# Import global ARGs
+ARG WORKDIR_ROOT
+ARG PROJECT_NAME
+ARG BUILD_BIN
+ARG BUILD_MODE
+ARG BUILD_TARGET
 
 # Docker build cache: Create and build an empty dummy project with all
 # external dependencies to avoid redownloading them on subsequent builds
