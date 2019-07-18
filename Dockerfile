@@ -10,11 +10,11 @@ ARG WORKDIR_ROOT=/usr/src
 
 ARG PROJECT_NAME=openfairdb
 
-ARG BUILD_BIN=${PROJECT_NAME}
+ARG BUILD_TARGET=x86_64-unknown-linux-musl
 
 ARG BUILD_MODE=release
 
-ARG BUILD_TARGET=x86_64-unknown-linux-musl
+ARG BUILD_BIN=${PROJECT_NAME}
 
 
 ###############################################################################
@@ -24,9 +24,9 @@ FROM clux/muslrust:nightly-2019-07-08 AS build
 # Import global ARGs
 ARG WORKDIR_ROOT
 ARG PROJECT_NAME
-ARG BUILD_BIN
-ARG BUILD_MODE
 ARG BUILD_TARGET
+ARG BUILD_MODE
+ARG BUILD_BIN
 
 WORKDIR ${WORKDIR_ROOT}
 
@@ -39,7 +39,7 @@ COPY [ \
     "Cargo.toml", \
     "Cargo.lock", \
     "./" ]
-# Build the dummy project, then delete all build artefacts that must(!) not be cached
+# Build the dummy project(s), then delete all build artefacts that must(!) not be cached
 RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --all \
     && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/${PROJECT_NAME}* \
@@ -59,8 +59,10 @@ COPY [ \
     "./openapi.yaml", \
     "./" ]
 
-# Build the actual project
-RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --bin ${BUILD_BIN} \
+# Test and build the actual project
+RUN cargo test --${BUILD_MODE} --target ${BUILD_TARGET} --all \
+    && \
+    cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --bin ${BUILD_BIN} \
     && \
     strip ./target/${BUILD_TARGET}/${BUILD_MODE}/${BUILD_BIN}
 
@@ -72,9 +74,9 @@ FROM scratch
 # Import global ARGs
 ARG WORKDIR_ROOT
 ARG PROJECT_NAME
-ARG BUILD_BIN
-ARG BUILD_MODE
 ARG BUILD_TARGET
+ARG BUILD_MODE
+ARG BUILD_BIN
 
 ARG DATA_VOLUME="/volume"
 
