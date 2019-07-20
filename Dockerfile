@@ -48,7 +48,7 @@ RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --all \
     && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/${PROJECT_NAME}*
 
-# Copy all project (re-)sources the are required for building
+# Copy all project (re-)sources that are required for building
 COPY [ \
     "./migrations", \
     "./migrations/" ]
@@ -85,7 +85,7 @@ ARG EXPOSE_PORT=8080
 # Copy the statically-linked executable into the minimal scratch image
 COPY --from=build [ \
     "${WORKDIR_ROOT}/${PROJECT_NAME}/target/${BUILD_TARGET}/${BUILD_MODE}/${BUILD_BIN}", \
-    "./" ]
+    "./entrypoint" ]
 
 EXPOSE ${EXPOSE_PORT}
 
@@ -94,4 +94,4 @@ VOLUME [ ${DATA_VOLUME} ]
 # Bind the exposed port to Rocket that is used as the web framework
 ENV ROCKET_PORT ${EXPOSE_PORT}
 
-CMD [ "./${BUILD_BIN}" ]
+ENTRYPOINT [ "./entrypoint" ]
