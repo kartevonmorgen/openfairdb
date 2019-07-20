@@ -1,20 +1,36 @@
 image: docker:18
 
+stages:
+  - build
+
 services:
   - docker:dind
 
 variables:
   GIT_DEPTH: 1
   DOCKER_DRIVER: overlay2
-  CONTAINER_IMAGE: $CI_REGISTRY/$CI_PROJECT_PATH
 
 before_script:
   - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
 
+build-tags:
+  stage: build
+  script:
+    - docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_BEFORE_SHA || true
+    - docker pull $CI_REGISTRY_IMAGE:latest-build || true
+    - docker build --cache-from $CI_REGISTRY_IMAGE:$CI_COMMIT_BEFORE_SHA --cache-from $CI_REGISTRY_IMAGE:latest-build --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG --tag $CI_REGISTRY_IMAGE:latest-build .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_TAG
+    - docker push $CI_REGISTRY_IMAGE:latest-build
+  only:
+    - tags
+
 build:
   stage: build
   script:
-    - docker pull $CONTAINER_IMAGE:latest || true
-    - docker build --cache-from $CONTAINER_IMAGE:latest --tag $CONTAINER_IMAGE:$CI_COMMIT_SHA --tag $CONTAINER_IMAGE:latest .
-    - docker push $CONTAINER_IMAGE:$CI_COMMIT_SHA
-    - docker push $CONTAINER_IMAGE:latest
+    - docker pull $CI_REGISTRY_IMAGE:$CI_COMMIT_BEFORE_SHA || true
+    - docker docker pull $CI_REGISTRY_IMAGE:latest-build || true
+    - docker build --cache-from $CI_REGISTRY_IMAGE:$CI_COMMIT_BEFORE_SHA --cache-from $CI_REGISTRY_IMAGE:latest-build --tag $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA --tag $CI_REGISTRY_IMAGE:latest-build .
+    - docker push $CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+    - docker push $CI_REGISTRY_IMAGE:latest-build
+  except:
+    - tags
