@@ -152,6 +152,13 @@ pub enum RatingContext {
     Solidarity,
 }
 
+impl RatingContext {
+    // The number of different contexts, i.e. the number of enum variants
+    pub const fn total_count() -> u8 {
+        6
+    }
+}
+
 #[derive(Debug, Default, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RatingValue(i8);
 
@@ -310,8 +317,8 @@ impl AvgRatings {
             + self.renewable
             + self.solidarity
             + self.transparency)
-            / 6.0)
-            .clamp()
+            / f64::from(RatingContext::total_count()))
+        .clamp()
     }
 }
 
