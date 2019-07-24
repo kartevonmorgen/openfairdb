@@ -1,3 +1,11 @@
+# Changelog
+
+## v0.5.6 (2019-07-24)
+
+- new(deploy): Multi-stage Docker build
+- fix(db): Improved scoring of search results
+- fix(db): Increased maximum number of search results from 100 to 250
+
 ## v0.5.5 (2019-06-14)
 
 - fix(frontend): show archive buttons to scouts
