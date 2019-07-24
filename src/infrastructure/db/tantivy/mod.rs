@@ -1,6 +1,6 @@
 use crate::core::{
     db::{EntryIndex, EntryIndexQuery, EntryIndexer, IndexedEntry},
-    entities::{AvgRatingValue, AvgRatings, Entry},
+    entities::{AvgRatingValue, AvgRatings, Entry, RatingContext},
     util::geo::{LatCoord, LngCoord, MapPoint, RawCoord},
 };
 
@@ -15,8 +15,7 @@ use tantivy::{
     query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
     schema::*,
     tokenizer::{LowerCaser, RawTokenizer, Tokenizer},
-    DocAddress, DocId, Document, Index, IndexReader, IndexWriter, ReloadPolicy, Score,
-    SegmentReader,
+    DocId, Document, Index, IndexReader, IndexWriter, ReloadPolicy, Score, SegmentReader,
 };
 
 const OVERALL_INDEX_HEAP_SIZE_IN_BYTES: usize = 50_000_000;
@@ -276,6 +275,12 @@ fn u64_to_avg_rating(val: u64) -> AvgRatingValue {
     .into()
 }
 
+#[derive(Copy, Clone, Debug)]
+enum TopDocsMode {
+    Rating,
+    ScoreBoostedByRating,
+}
+
 impl TantivyEntryIndex {
     pub fn create_in_ram() -> Fallible<Self> {
         let no_path: Option<&Path> = None;
@@ -327,7 +332,7 @@ impl TantivyEntryIndex {
         })
     }
 
-    fn build_query(&self, query: &EntryIndexQuery) -> BooleanQuery {
+    fn build_query(&self, query: &EntryIndexQuery) -> (BooleanQuery, TopDocsMode) {
         let mut sub_queries: Vec<(Occur, Box<dyn Query>)> = Vec::with_capacity(1 + 2 + 1 + 1 + 1);
 
         if !query.ids.is_empty() {
@@ -480,14 +485,19 @@ impl TantivyEntryIndex {
             text_and_tags_queries.push((Occur::Should, Box::new(tag_query)));
         }
 
-        if !text_and_tags_queries.is_empty() {
+        // Boosting the score by the rating does only make sense if the
+        // query actually contains search terms or tags. Otherwise the
+        // results are sorted only by their rating, e.g. if the query
+        // contains just the bounding box or ids.
+        if text_and_tags_queries.is_empty() {
+            (sub_queries.into(), TopDocsMode::Rating)
+        } else {
             sub_queries.push((
                 Occur::Must,
                 Box::new(BooleanQuery::from(text_and_tags_queries)),
             ));
+            (sub_queries.into(), TopDocsMode::ScoreBoostedByRating)
         }
-
-        BooleanQuery::from(sub_queries)
     }
 }
 
@@ -595,47 +605,79 @@ impl EntryIndex for TantivyEntryIndex {
             bail!("Invalid limit: {}", limit);
         }
 
+        let (search_query, top_docs_mode) = self.build_query(query);
         let searcher = self.index_reader.searcher();
-        let collector = {
-            let total_rating_field = self.fields.total_rating;
-            TopDocs::with_limit(limit).tweak_score(move |segment_reader: &SegmentReader| {
-                let total_rating_reader = segment_reader
-                    .fast_fields()
-                    .u64(total_rating_field)
-                    .unwrap();
+        // TODO: Try to combine redundant code from different search strategies
+        match top_docs_mode {
+            TopDocsMode::Rating => {
+                let collector =
+                    TopDocs::with_limit(limit).order_by_u64_field(self.fields.total_rating);
+                searcher.search(&search_query, &collector)?;
+                let top_docs = searcher.search(&search_query, &collector)?;
+                let mut entries = Vec::with_capacity(top_docs.len());
+                for (_, doc_addr) in top_docs {
+                    match searcher.doc(doc_addr) {
+                        Ok(ref doc) => {
+                            entries.push(self.fields.read_document(doc));
+                        }
+                        Err(err) => {
+                            warn!("Failed to load document {:?}: {}", doc_addr, err);
+                        }
+                    }
+                }
+                Ok(entries)
+            }
+            TopDocsMode::ScoreBoostedByRating => {
+                let collector = {
+                    let total_rating_field = self.fields.total_rating;
+                    TopDocs::with_limit(limit).tweak_score(move |segment_reader: &SegmentReader| {
+                        let total_rating_reader = segment_reader
+                            .fast_fields()
+                            .u64(total_rating_field)
+                            .unwrap();
 
-                move |doc: DocId, original_score: Score| {
-                    let total_rating = f64::from(u64_to_avg_rating(total_rating_reader.get(doc)));
-                    let boost_factor = if total_rating < f64::from(AvgRatingValue::default()) {
-                        // Negative ratings result in a boost factor < 1
-                        (total_rating - f64::from(AvgRatingValue::min()))
-                            / (f64::from(AvgRatingValue::default())
-                                - f64::from(AvgRatingValue::min()))
-                    } else {
-                        // Default rating results in a boost factor of 1
-                        // Positive ratings result in a boost factor > 1
-                        (2.0 + (f64::from(AvgRatingValue::max())
-                            - f64::from(AvgRatingValue::default())))
-                        .log2()
-                    };
-                    original_score * (boost_factor as f32)
+                        move |doc: DocId, original_score: Score| {
+                            let total_rating =
+                                f64::from(u64_to_avg_rating(total_rating_reader.get(doc)));
+                            let boost_factor =
+                                if total_rating < f64::from(AvgRatingValue::default()) {
+                                    // Negative ratings result in a boost factor < 1
+                                    (total_rating - f64::from(AvgRatingValue::min()))
+                                        / (f64::from(AvgRatingValue::default())
+                                            - f64::from(AvgRatingValue::min()))
+                                } else {
+                                    // Default rating results in a boost factor of 1
+                                    // Positive ratings result in a boost factor > 1
+                                    // The total rating is scaled by the number of different rating context
+                                    // variants to achieve better results by emphasizing the rating factor.
+                                    1.0 + f64::from(RatingContext::total_count())
+                                        * (f64::from(total_rating)
+                                            - f64::from(AvgRatingValue::default()))
+                                };
+                            // Transform the original score by log2() to narrow the range. Otherwise
+                            // the rating boost factor is not powerful enough to promote highly
+                            // rated entries over entries that received a much higher score.
+                            debug_assert!(original_score >= 0.0);
+                            let unboosted_score = (1.0 + original_score).log2();
+                            unboosted_score * (boost_factor as f32)
+                        }
+                    })
+                };
+                let top_docs = searcher.search(&search_query, &collector)?;
+                let mut entries = Vec::with_capacity(top_docs.len());
+                for (_, doc_addr) in top_docs {
+                    match searcher.doc(doc_addr) {
+                        Ok(ref doc) => {
+                            entries.push(self.fields.read_document(doc));
+                        }
+                        Err(err) => {
+                            warn!("Failed to load document {:?}: {}", doc_addr, err);
+                        }
+                    }
                 }
-            })
-        };
-        let top_docs_by_rating: Vec<(_, DocAddress)> =
-            searcher.search(&self.build_query(query), &collector)?;
-        let mut entries = Vec::with_capacity(top_docs_by_rating.len());
-        for (_, doc_addr) in top_docs_by_rating {
-            match searcher.doc(doc_addr) {
-                Ok(ref doc) => {
-                    entries.push(self.fields.read_document(doc));
-                }
-                Err(err) => {
-                    warn!("Failed to load document {:?}: {}", doc_addr, err);
-                }
+                Ok(entries)
             }
         }
-        Ok(entries)
     }
 }
 
