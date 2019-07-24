@@ -17,7 +17,7 @@ stdenv.mkDerivation rec {
 
   meta = with stdenv.lib; {
     description = "Mapping for Good";
-    homepage = http://www.openfairdb.org;
+    homepage = https://openfairdb.org;
     license = with licenses; [ agpl3 ];
     maintainers = [ maintainers.flosse ];
   };
