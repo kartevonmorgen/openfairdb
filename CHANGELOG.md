@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.7 (2019-07-24)
+
+- fix(db): Adjust scoring of search results
+
 ## v0.5.6 (2019-07-24)
 
 - new(deploy): Multi-stage Docker build

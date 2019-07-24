@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: OpenFairDB API
-  version: 0.5.6
+  version: 0.5.7
   contact:
     name: slowtec GmbH
     url: 'https://slowtec.de'
