@@ -244,6 +244,97 @@ impl EntryGateway for SqliteConnection {
         Ok(res_entries)
     }
 
+    fn recently_changed_entries(
+        &self,
+        since: Timestamp,
+        offset: Option<u64>,
+        limit: Option<u64>,
+    ) -> Result<Vec<Entry>> {
+        use self::schema::{
+            entries::dsl as e_dsl, entry_category_relations::dsl as e_c_dsl,
+            entry_tag_relations::dsl as e_t_dsl,
+        };
+        // TODO: Don't load all table contents into memory at once!
+        // We only need to iterator over the sorted rows of the results.
+        // Unfortunately Diesel does not offer a Cursor API.
+        let changed_expr =
+            diesel::dsl::sql::<diesel::sql_types::BigInt>("COALESCE(archived, created)");
+        let mut query = e_dsl::entries
+            .filter(e_dsl::current.eq(true))
+            .filter(changed_expr.clone().ge(i64::from(since)))
+            .order_by(changed_expr.clone().desc())
+            .order_by(e_dsl::id) // disambiguation if time stamps are equal
+            .into_boxed();
+        let offset = offset.unwrap_or(0);
+        if offset > 0 {
+            query = query.offset(offset as i64);
+        }
+        if let Some(limit) = limit {
+            query = query.limit(limit as i64);
+        }
+        let entries: Vec<models::Entry> = query.load(self)?;
+        let mut cat_rels = e_c_dsl::entry_category_relations
+            .order_by(e_c_dsl::entry_id)
+            .load(self)?
+            .into_iter()
+            .peekable();
+        let mut tag_rels = e_t_dsl::entry_tag_relations
+            .order_by(e_t_dsl::entry_id)
+            .load(self)?
+            .into_iter()
+            .peekable();
+        let mut res_entries = Vec::with_capacity(entries.len());
+        // All results are sorted by entry id and we only need to iterate
+        // once through the results to pick up the categories and tags of
+        // each entry.
+        for entry in entries.into_iter() {
+            let mut categories = Vec::with_capacity(10);
+            let mut tags = Vec::with_capacity(100);
+            // Skip orphaned/deleted relations for which no current entry exists
+            while let Some(true) = cat_rels
+                .peek()
+                .map(|ec: &models::EntryCategoryRelation| ec.entry_id < entry.id)
+            {
+                let _ = cat_rels.next();
+            }
+            while let Some(true) = tag_rels
+                .peek()
+                .map(|et: &models::EntryTagRelation| et.entry_id < entry.id)
+            {
+                let _ = tag_rels.next();
+            }
+            // Collect categories of the current entry
+            while let Some(true) = cat_rels
+                .peek()
+                .map(|ec: &models::EntryCategoryRelation| ec.entry_id == entry.id)
+            {
+                let cat_rel = cat_rels.next().unwrap();
+                if cat_rel.entry_version != entry.version {
+                    // Skip category relation with outdated version
+                    debug_assert!(cat_rel.entry_version < entry.version);
+                } else {
+                    categories.push(cat_rel.category_id);
+                }
+            }
+            // Collect tags of entry
+            while let Some(true) = tag_rels
+                .peek()
+                .map(|et: &models::EntryTagRelation| et.entry_id == entry.id)
+            {
+                let tag_rel = tag_rels.next().unwrap();
+                if tag_rel.entry_version != entry.version {
+                    // Skip tag relation with outdated version
+                    debug_assert!(tag_rel.entry_version < entry.version);
+                } else {
+                    tags.push(tag_rel.tag_id);
+                }
+            }
+            // Convert into result entry
+            res_entries.push((entry, categories, tags).into());
+        }
+        Ok(res_entries)
+    }
+
     fn count_entries(&self) -> Result<usize> {
         use self::schema::entries::dsl as e_dsl;
         Ok(e_dsl::entries

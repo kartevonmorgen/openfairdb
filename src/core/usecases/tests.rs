@@ -247,6 +247,14 @@ impl EntryGateway for MockDb {
             .cloned()
             .collect())
     }
+    fn recently_changed_entries(
+        &self,
+        _since: Timestamp,
+        offset: Option<u64>,
+        limit: Option<u64>,
+    ) -> RepoResult<Vec<Entry>> {
+        unimplemented!();
+    }
     fn count_entries(&self) -> RepoResult<usize> {
         self.all_entries().map(|v| v.len())
     }

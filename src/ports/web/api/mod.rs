@@ -69,6 +69,7 @@ pub fn routes() -> Vec<Route> {
         get_tags,
         search::get_search,
         get_duplicates,
+        get_recently_changed_entries,
         count::get_count_entries,
         count::get_count_tags,
         get_version,
@@ -98,6 +99,34 @@ fn get_entry(db: sqlite::Connections, ids: String) -> Result<Vec<json::Entry>> {
             results.push(json::Entry::from_entry_with_ratings(e, r));
         }
         results
+    };
+    Ok(Json(results))
+}
+
+#[get("/entries/recently-changed?<since>&<with_ratings>&<offset>&<limit>")]
+fn get_recently_changed_entries(
+    db: sqlite::Connections,
+    since: i64,
+    with_ratings: Option<bool>,
+    offset: Option<u64>,
+    limit: Option<u64>,
+) -> Result<Vec<json::Entry>> {
+    let results = {
+        let db = db.shared()?;
+        let entries = db.recently_changed_entries(since.into(), offset, limit)?;
+        if with_ratings.unwrap_or(false) {
+            let mut results = Vec::with_capacity(entries.len());
+            for e in entries.into_iter() {
+                let r = db.load_ratings_of_entry(&e.id)?;
+                results.push(json::Entry::from_entry_with_ratings(e, r));
+            }
+            results
+        } else {
+            entries
+                .into_iter()
+                .map(|e| json::Entry::from_entry_with_ratings(e, vec![]))
+                .collect()
+        }
     };
     Ok(Json(results))
 }
