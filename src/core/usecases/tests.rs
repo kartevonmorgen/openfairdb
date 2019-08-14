@@ -250,8 +250,8 @@ impl EntryGateway for MockDb {
     fn recently_changed_entries(
         &self,
         _since: Timestamp,
-        offset: Option<u64>,
-        limit: Option<u64>,
+        _offset: Option<u64>,
+        _limit: Option<u64>,
     ) -> RepoResult<Vec<Entry>> {
         unimplemented!();
     }

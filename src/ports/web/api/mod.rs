@@ -105,18 +105,33 @@ fn get_entry(db: sqlite::Connections, ids: String) -> Result<Vec<json::Entry>> {
 
 // Limit the total number of recently changed entries to avoid cloning
 // the whole database!!
-const MAX_ENTRIES_RECECENTLY_CHANGED: u64 = 1000;
+
+const ENTRIES_RECECENTLY_CHANGED_MAX_COUNT: u64 = 1000;
+
+const ENTRIES_RECECENTLY_CHANGED_MAX_AGE_IN_DAYS: i64 = 100;
+
+const SECONDS_PER_DAY: i64 = 24 * 60 * 60;
 
 #[get("/entries/recently-changed?<since>&<with_ratings>&<offset>&<limit>")]
 fn get_recently_changed_entries(
     db: sqlite::Connections,
-    since: i64,
+    mut since: i64,
     with_ratings: Option<bool>,
     offset: Option<u64>,
     mut limit: Option<u64>,
 ) -> Result<Vec<json::Entry>> {
     let results = {
         let db = db.shared()?;
+        let since_min = i64::from(Timestamp::now())
+            - ENTRIES_RECECENTLY_CHANGED_MAX_AGE_IN_DAYS * SECONDS_PER_DAY;
+        if since < since_min {
+            log::warn!(
+                "Maximum available age of recently changed entries exceeded: {} < {}",
+                since,
+                since_min
+            );
+            since = since_min;
+        }
         let mut total_count = 0;
         if let Some(offset) = offset {
             total_count += offset;
@@ -124,12 +139,19 @@ fn get_recently_changed_entries(
         if let Some(limit) = limit {
             total_count += limit;
         }
-        if total_count > MAX_ENTRIES_RECECENTLY_CHANGED {
-            log::warn!("Only the latest {} recently changed entries are available", MAX_ENTRIES_RECECENTLY_CHANGED);
+        if total_count > ENTRIES_RECECENTLY_CHANGED_MAX_COUNT {
+            log::warn!(
+                "Maximum available number of recently changed entries exceeded: {} > {}",
+                total_count,
+                ENTRIES_RECECENTLY_CHANGED_MAX_COUNT
+            );
             if let Some(offset) = offset {
-                limit = Some(MAX_ENTRIES_RECECENTLY_CHANGED - offset.min(MAX_ENTRIES_RECECENTLY_CHANGED));
+                limit = Some(
+                    ENTRIES_RECECENTLY_CHANGED_MAX_COUNT
+                        - offset.min(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT),
+                );
             } else {
-                limit = Some(MAX_ENTRIES_RECECENTLY_CHANGED);
+                limit = Some(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT);
             }
         }
         let entries = db.recently_changed_entries(since.into(), offset, limit)?;
