@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.9 (2019-08-14)
+
+- fix(db): Fix maximum number of recently changed entries that are returned
+
 ## v0.5.8 (2019-08-14)
 
 - new(web): New endpoint /entries/recently-changed for retrieving recent changes

@@ -136,9 +136,7 @@ fn get_recently_changed_entries(
         if let Some(offset) = offset {
             total_count += offset;
         }
-        if let Some(limit) = limit {
-            total_count += limit;
-        }
+        total_count += limit.unwrap_or(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT);
         if total_count > ENTRIES_RECECENTLY_CHANGED_MAX_COUNT {
             log::warn!(
                 "Maximum available number of recently changed entries exceeded: {} > {}",
