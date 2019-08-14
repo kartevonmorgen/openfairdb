@@ -103,16 +103,35 @@ fn get_entry(db: sqlite::Connections, ids: String) -> Result<Vec<json::Entry>> {
     Ok(Json(results))
 }
 
+// Limit the total number of recently changed entries to avoid cloning
+// the whole database!!
+const MAX_ENTRIES_RECECENTLY_CHANGED: u64 = 1000;
+
 #[get("/entries/recently-changed?<since>&<with_ratings>&<offset>&<limit>")]
 fn get_recently_changed_entries(
     db: sqlite::Connections,
     since: i64,
     with_ratings: Option<bool>,
     offset: Option<u64>,
-    limit: Option<u64>,
+    mut limit: Option<u64>,
 ) -> Result<Vec<json::Entry>> {
     let results = {
         let db = db.shared()?;
+        let mut total_count = 0;
+        if let Some(offset) = offset {
+            total_count += offset;
+        }
+        if let Some(limit) = limit {
+            total_count += limit;
+        }
+        if total_count > MAX_ENTRIES_RECECENTLY_CHANGED {
+            log::warn!("Only the latest {} recently changed entries are available", MAX_ENTRIES_RECECENTLY_CHANGED);
+            if let Some(offset) = offset {
+                limit = Some(MAX_ENTRIES_RECECENTLY_CHANGED - offset.min(MAX_ENTRIES_RECECENTLY_CHANGED));
+            } else {
+                limit = Some(MAX_ENTRIES_RECECENTLY_CHANGED);
+            }
+        }
         let entries = db.recently_changed_entries(since.into(), offset, limit)?;
         if with_ratings.unwrap_or(false) {
             let mut results = Vec::with_capacity(entries.len());
