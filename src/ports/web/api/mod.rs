@@ -151,7 +151,10 @@ fn get_recently_changed_entries(
             } else {
                 limit = Some(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT);
             }
+        } else {
+            limit = Some(limit.unwrap_or(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT - offset.unwrap_or(0)));
         }
+        debug_assert!(limit.is_some());
         let entries = db.recently_changed_entries(since.into(), offset, limit)?;
         if with_ratings.unwrap_or(false) {
             let mut results = Vec::with_capacity(entries.len());

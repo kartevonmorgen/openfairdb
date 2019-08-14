@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: OpenFairDB API
-  version: 0.5.9
+  version: 0.5.10
   contact:
     name: slowtec GmbH
     url: 'https://slowtec.de'
@@ -93,7 +93,10 @@ paths:
 
   '/entries/recently-changed':
     get:
-      summary: Get recently changed entries that have been created/updated/archived between since and now
+      summary: |
+        Get recently changed entries that have been created/updated/archived between since and now.
+        Limitation: Only the most recent 1000 entries are returned and the change history is
+        restricted to the last 100 days.
       tags:
         - Entries
       parameters:

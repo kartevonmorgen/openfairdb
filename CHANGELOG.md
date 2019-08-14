@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.10 (2019-08-15)
+
+- fix(db): Fix result limitation (again)
+
 ## v0.5.9 (2019-08-14)
 
 - fix(db): Fix maximum number of recently changed entries that are returned
