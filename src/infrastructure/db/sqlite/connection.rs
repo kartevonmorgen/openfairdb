@@ -599,6 +599,24 @@ impl EventGateway for SqliteConnection {
         Ok(events.into_iter().map(|e| (e, &tag_rels).into()).collect())
     }
 
+    fn get_events(
+        &self,
+        start_min: Option<Timestamp>,
+        start_max: Option<Timestamp>,
+    ) -> Result<Vec<Event>> {
+        use self::schema::{event_tag_relations::dsl as e_t_dsl, events::dsl as e_dsl};
+        let mut query = e_dsl::events.filter(e_dsl::archived.is_null()).into_boxed();
+        if let Some(start_min) = start_min {
+            query = query.filter(e_dsl::start.ge(i64::from(start_min)));
+        }
+        if let Some(start_max) = start_max {
+            query = query.filter(e_dsl::start.le(i64::from(start_max)));
+        }
+        let events: Vec<models::Event> = query.load(self)?;
+        let tag_rels = e_t_dsl::event_tag_relations.load(self)?;
+        Ok(events.into_iter().map(|e| (e, &tag_rels).into()).collect())
+    }
+
     fn count_events(&self) -> Result<usize> {
         use self::schema::events::dsl;
         Ok(dsl::events

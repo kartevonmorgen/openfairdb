@@ -23,6 +23,18 @@ impl From<i64> for Timestamp {
     }
 }
 
+impl From<NaiveDateTime> for Timestamp {
+    fn from(from: NaiveDateTime) -> Self {
+        Self(from.timestamp())
+    }
+}
+
+impl From<Timestamp> for NaiveDateTime {
+    fn from(from: Timestamp) -> Self {
+        NaiveDateTime::from_timestamp(from.0, 0)
+    }
+}
+
 impl From<DateTime<Utc>> for Timestamp {
     fn from(from: DateTime<Utc>) -> Self {
         Self(from.timestamp())
@@ -31,7 +43,7 @@ impl From<DateTime<Utc>> for Timestamp {
 
 impl From<Timestamp> for DateTime<Utc> {
     fn from(from: Timestamp) -> Self {
-        Self::from_utc(NaiveDateTime::from_timestamp(from.0, 0), Utc)
+        Self::from_utc(NaiveDateTime::from(from), Utc)
     }
 }
 

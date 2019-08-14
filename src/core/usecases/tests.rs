@@ -297,6 +297,34 @@ impl EventGateway for MockDb {
             .collect())
     }
 
+    fn get_events(
+        &self,
+        start_min: Option<Timestamp>,
+        start_max: Option<Timestamp>,
+    ) -> RepoResult<Vec<Event>> {
+        Ok(self
+            .events
+            .borrow()
+            .iter()
+            .filter(|e| e.archived.is_none())
+            .filter(|e| {
+                if let Some(start_min) = start_min {
+                    e.start >= start_min.into()
+                } else {
+                    true
+                }
+            })
+            .filter(|e| {
+                if let Some(start_max) = start_max {
+                    e.start <= start_max.into()
+                } else {
+                    true
+                }
+            })
+            .cloned()
+            .collect())
+    }
+
     fn count_events(&self) -> RepoResult<usize> {
         self.all_events().map(|v| v.len())
     }

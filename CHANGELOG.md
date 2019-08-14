@@ -3,6 +3,7 @@
 ## v0.5.8 (2019-08-14)
 
 - new(web): New endpoint /entries/recently-changed for retrieving recent changes
+- chore(db): Optimize filtering of events by start_min/start_max
 
 ## v0.5.7 (2019-07-24)
 
