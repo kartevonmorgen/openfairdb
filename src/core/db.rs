@@ -23,6 +23,13 @@ pub trait EntryGateway {
     fn update_entry(&self, _: &Entry) -> Result<()>;
     fn import_multiple_entries(&mut self, _: &[Entry]) -> Result<()>;
     fn archive_entries(&self, ids: &[&str], archived: Timestamp) -> Result<usize>;
+
+    fn recently_changed_entries(
+        &self,
+        since: Timestamp,
+        offset: Option<u64>,
+        limit: Option<u64>,
+    ) -> Result<Vec<Entry>>;
 }
 
 pub trait EventGateway {
