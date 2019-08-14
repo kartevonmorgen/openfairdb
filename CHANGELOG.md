@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.8 (2019-08-14)
+
+- new(web): New endpoint /entries/recently-changed for retrieving recent changes
+
 ## v0.5.7 (2019-07-24)
 
 - fix(db): Adjust scoring of search results
