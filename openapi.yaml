@@ -91,6 +91,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/Entry'
 
+  '/entries/recently-changed':
+    get:
+      summary: Get recently changed entries that have been created/updated/archived between since and now
+      tags:
+        - Entries
+      parameters:
+        - name: since
+          in: query
+          required: true
+          description: Time stamp of the latest change that should be included
+          schema:
+            $ref: '#/components/schemas/UnixTime'
+        - name: with_ratings
+          in: query
+          description: Return entries including their ratings
+          schema:
+            type: boolean
+        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: '#/components/parameters/PaginationOffset'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entry'
+
   '/ratings/{ids}':
     get:
       summary: Get multiple ratings
@@ -668,6 +695,24 @@ components:
       schema:
         type: string
         example: '42.27,-7.97,52.58,38.25'
+    PaginationLimit:
+      name: limit
+      in: query
+      required: false
+      description: Maximum number of items to return or implicit/unlimited if unspecified.
+      schema:
+        type: integer
+        format: int64
+        example: 100
+    PaginationOffset:
+      name: offset
+      in: query
+      required: false
+      description: Number of items to skip in the result list or 0 if unspecified.
+      schema:
+        type: integer
+        format: int64
+        example: 1000
   securitySchemes:
     bearerAuth:
       type: http
