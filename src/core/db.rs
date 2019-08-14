@@ -36,6 +36,11 @@ pub trait EventGateway {
     fn create_event(&self, _: Event) -> Result<()>;
     fn get_event(&self, _: &str) -> Result<Event>;
     fn all_events(&self) -> Result<Vec<Event>>;
+    fn get_events(
+        &self,
+        start_min: Option<Timestamp>,
+        start_max: Option<Timestamp>,
+    ) -> Result<Vec<Event>>;
     fn update_event(&self, _: &Event) -> Result<()>;
     fn archive_events(&self, ids: &[&str], archived: Timestamp) -> Result<usize>;
     fn delete_event(&self, _: &str) -> Result<()>;

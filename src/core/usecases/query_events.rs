@@ -26,18 +26,12 @@ pub fn query_events<D: Db>(
         None
     };
 
-    let mut events = db.all_events()?;
+    let mut events = db.get_events(start_min.map(Into::into), start_max.map(Into::into))?;
 
     if let Some(bbox) = bbox.as_ref().map(filter::extend_bbox) {
         events = events.into_iter().filter(|x| x.in_bbox(&bbox)).collect();
     }
 
-    if let Some(min) = start_min {
-        events = events.into_iter().filter(|e| e.start >= min).collect();
-    }
-    if let Some(max) = start_max {
-        events = events.into_iter().filter(|e| e.start <= max).collect();
-    }
     if let Some(tags) = tags {
         events = events
             .into_iter()
