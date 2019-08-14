@@ -543,7 +543,6 @@ mod tests {
                 .dispatch();
             assert_eq!(res.status(), Status::Unauthorized);
         }
-
     }
 
     mod read {
@@ -1178,5 +1177,4 @@ mod tests {
             assert_eq!(db.shared().unwrap().count_events().unwrap(), 1);
         }
     }
-
 }

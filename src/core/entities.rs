@@ -528,7 +528,6 @@ pub mod entry_builder {
             }
         }
     }
-
 }
 
 #[cfg(test)]

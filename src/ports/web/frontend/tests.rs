@@ -225,7 +225,6 @@ mod events {
         assert!(body_str.contains("<h2>A great event</h2>"));
         assert!(body_str.contains("Foo bar baz</p>"));
     }
-
 }
 
 mod index {

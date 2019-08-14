@@ -303,5 +303,4 @@ mod tests {
         assert_eq!(e.tags, vec!["vegan"]);
         assert_eq!(mock_db.tags.borrow().len(), 3);
     }
-
 }

@@ -275,5 +275,4 @@ mod tests {
         assert_eq!(1, levenshtein_distance("12345", "a12345")); // insert a
         assert_eq!(1, levenshtein_distance("aabaa", "aacaa")); // replace b by c
     }
-
 }

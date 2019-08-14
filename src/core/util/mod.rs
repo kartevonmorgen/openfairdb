@@ -84,5 +84,4 @@ mod tests {
         assert_eq!(remove_hash_tags("#tag"), "");
         assert_eq!(remove_hash_tags("some #text with #tags"), "some with");
     }
-
 }

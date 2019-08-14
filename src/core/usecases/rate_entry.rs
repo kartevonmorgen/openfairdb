@@ -173,5 +173,4 @@ mod tests {
         assert_eq!(db.ratings.borrow()[0].entry_id, "foo");
         assert_eq!(db.comments.borrow()[0].rating_id, db.ratings.borrow()[0].id);
     }
-
 }

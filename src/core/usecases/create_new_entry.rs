@@ -216,5 +216,4 @@ mod tests {
         assert_eq!(mock_db.tags.borrow().len(), 2);
         assert_eq!(mock_db.entries.borrow().len(), 1);
     }
-
 }
