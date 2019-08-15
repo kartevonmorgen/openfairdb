@@ -247,6 +247,7 @@ impl EntryGateway for SqliteConnection {
     fn recently_changed_entries(
         &self,
         since: Timestamp,
+        until: Option<Timestamp>,
         offset: Option<u64>,
         limit: Option<u64>,
     ) -> Result<Vec<Entry>> {
@@ -261,10 +262,13 @@ impl EntryGateway for SqliteConnection {
             diesel::dsl::sql::<diesel::sql_types::BigInt>("COALESCE(archived, created)");
         let mut query = e_dsl::entries
             .filter(e_dsl::current.eq(true))
-            .filter(changed_expr.clone().ge(i64::from(since)))
+            .filter(changed_expr.clone().ge(i64::from(since))) // inclusive
             .order_by(changed_expr.clone().desc())
             .order_by(e_dsl::id) // disambiguation if time stamps are equal
             .into_boxed();
+        if let Some(until) = until {
+            query = query.filter(changed_expr.clone().lt(i64::from(until))); // exclusive
+        }
         let offset = offset.unwrap_or(0);
         if offset > 0 {
             query = query.offset(offset as i64);

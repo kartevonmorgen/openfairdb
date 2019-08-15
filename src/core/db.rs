@@ -27,6 +27,7 @@ pub trait EntryGateway {
     fn recently_changed_entries(
         &self,
         since: Timestamp,
+        until: Option<Timestamp>,
         offset: Option<u64>,
         limit: Option<u64>,
     ) -> Result<Vec<Entry>>;

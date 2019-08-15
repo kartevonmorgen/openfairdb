@@ -112,10 +112,11 @@ const ENTRIES_RECECENTLY_CHANGED_MAX_AGE_IN_DAYS: i64 = 100;
 
 const SECONDS_PER_DAY: i64 = 24 * 60 * 60;
 
-#[get("/entries/recently-changed?<since>&<with_ratings>&<offset>&<limit>")]
+#[get("/entries/recently-changed?<since>&<until>&<with_ratings>&<offset>&<limit>")]
 fn get_recently_changed_entries(
     db: sqlite::Connections,
     mut since: i64,
+    until: Option<i64>,
     with_ratings: Option<bool>,
     offset: Option<u64>,
     mut limit: Option<u64>,
@@ -155,7 +156,7 @@ fn get_recently_changed_entries(
             limit = Some(limit.unwrap_or(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT - offset.unwrap_or(0)));
         }
         debug_assert!(limit.is_some());
-        let entries = db.recently_changed_entries(since.into(), offset, limit)?;
+        let entries = db.recently_changed_entries(since.into(), until.map(Into::into), offset, limit)?;
         if with_ratings.unwrap_or(false) {
             let mut results = Vec::with_capacity(entries.len());
             for e in entries.into_iter() {

@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.11 (2019-08-15)
+
+- new(web): Filter recently changed entries by both `since` and `until`
+
 ## v0.5.10 (2019-08-15)
 
 - fix(db): Fix result limitation (again)

@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: OpenFairDB API
-  version: 0.5.10
+  version: 0.5.11
   contact:
     name: slowtec GmbH
     url: 'https://slowtec.de'
@@ -103,7 +103,13 @@ paths:
         - name: since
           in: query
           required: true
-          description: Time stamp of the latest change that should be included
+          description: Time stamp of the oldest change (inclusive)
+          schema:
+            $ref: '#/components/schemas/UnixTime'
+        - name: until
+          in: query
+          required: false
+          description: Time stamp of the most recent change (exclusive)
           schema:
             $ref: '#/components/schemas/UnixTime'
         - name: with_ratings
