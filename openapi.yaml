@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: OpenFairDB API
-  version: 0.5.11
+  version: 0.5.12
   contact:
     name: slowtec GmbH
     url: 'https://slowtec.de'
@@ -395,6 +395,39 @@ paths:
                 type: array
                 items:
                   type: string
+  /tags/most-popular:
+    get:
+      summary: |
+        Get the most popular tags with their total usage count. Results can optionally
+        be filtered by min/max counts. Results are sorted in ascending order of the counts,
+        i.e. most popular tags appear first.
+      tags:
+        - Tags
+      parameters:
+        - name: min_count
+          in: query
+          required: false
+          description: Minimum number of count (inclusive)
+          schema:
+            type: integer
+            format: int64
+        - name: max_count
+          in: query
+          required: false
+          description: Maximum number of count (inclusive)
+          schema:
+            type: integer
+            format: int64
+        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: '#/components/parameters/PaginationOffset'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagCounts'
+
   /count/entries:
     get:
       summary: Get number of entries
@@ -696,6 +729,16 @@ components:
       format: int64
       description: 'Unix Time (number of seconds since 00:00::00 1. January, 1970, UTC)'
       example: 1547403509
+    TagCounts:
+      type: array
+      items:
+        type: array
+        items:
+          oneOf:
+            - type: string
+            - type: integer
+              format: in64
+      example: [["tag1", 52], ["tag2", 0]]
   parameters:
     BoundingBox:
       name: bbox
