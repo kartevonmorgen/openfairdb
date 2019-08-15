@@ -129,10 +129,12 @@ paths:
                 $ref: '#/components/schemas/Entry'
   /entries/most-popular-tags:
     get:
-      summary: Get most popular tags with their total usage count
+      summary: Get most popular tags for entries
       description: |
-        Results can optionally be filtered by min/max counts. Results are sorted in
-        descending order of counts, i.e. most popular tags appear first.
+        Get most popular tags for entries with their total usage count.
+        Results are sorted in descending order of counts, i.e. most popular
+        tags appear first. A maximum of 1000 tag with their count is returned
+        if no limit is specifid.
       tags:
         - Entries
       parameters:
