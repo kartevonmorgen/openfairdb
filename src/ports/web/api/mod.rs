@@ -176,12 +176,19 @@ fn get_recently_changed_entries(
     Ok(Json(results))
 }
 
+const ENTRIES_MOST_POPULAR_TAGS_PAGINATION_LIMIT_MAX: u64 = 1000;
+
 #[get("/entries/most-popular-tags?<offset>&<limit>")]
 pub fn entries_most_popular_tags(
     db: sqlite::Connections,
     offset: Option<u64>,
     limit: Option<u64>,
 ) -> Result<Vec<json::TagFrequency>> {
+    let limit = Some(
+        limit
+            .unwrap_or(ENTRIES_MOST_POPULAR_TAGS_PAGINATION_LIMIT_MAX)
+            .min(ENTRIES_MOST_POPULAR_TAGS_PAGINATION_LIMIT_MAX),
+    );
     let pagination = Pagination { offset, limit };
     let results = {
         let db = db.shared()?;
