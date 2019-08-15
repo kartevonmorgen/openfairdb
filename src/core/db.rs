@@ -31,6 +31,8 @@ pub trait EntryGateway {
         offset: Option<u64>,
         limit: Option<u64>,
     ) -> Result<Vec<Entry>>;
+
+    fn most_popular_entry_tags(&self, pagination: Pagination) -> Result<Vec<TagFrequency>>;
 }
 
 pub trait EventGateway {
@@ -69,6 +71,12 @@ pub trait OrganizationGateway {
 //  - TagGeatway
 //  - CategoryGateway
 //  - SubscriptionGateway
+
+#[derive(Clone, Debug, Default)]
+pub struct Pagination {
+    pub offset: Option<u64>,
+    pub limit: Option<u64>,
+}
 
 pub trait Db:
     EntryGateway

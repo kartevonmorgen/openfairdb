@@ -100,10 +100,15 @@ pub struct Category {
     pub name    : String
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Tag {
     pub id: String,
 }
+
+pub type TagCount = u64;
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct TagFrequency(pub String, pub TagCount);
 
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]

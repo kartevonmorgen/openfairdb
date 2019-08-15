@@ -339,6 +339,42 @@ impl EntryGateway for SqliteConnection {
         Ok(res_entries)
     }
 
+    fn most_popular_entry_tags(&self, pagination: Pagination) -> Result<Vec<TagFrequency>> {
+        use self::schema::{entries::dsl as e_dsl, entry_tag_relations::dsl as t_dsl};
+        let count = diesel::dsl::sql::<diesel::sql_types::BigInt>("count");
+        let mut query = self::schema::entry_tag_relations::table
+            .select((
+                t_dsl::tag_id,
+                diesel::dsl::sql::<diesel::sql_types::BigInt>("count(*) AS count"),
+            ))
+            .filter(
+                // Only consider entries that are alive
+                // TODO: Is this subselect really needed or redundant?
+                t_dsl::entry_id.eq_any(
+                    self::schema::entries::table
+                        .select(e_dsl::id)
+                        .filter(e_dsl::current.eq(true))
+                        .filter(e_dsl::archived.is_null()),
+                ),
+            )
+            .group_by(t_dsl::tag_id)
+            .order_by(count.clone().desc())
+            .then_order_by(t_dsl::tag_id)
+            .into_boxed();
+        let offset = pagination.offset.unwrap_or(0);
+        if offset > 0 {
+            query = query.offset(offset as i64);
+        }
+        if let Some(limit) = pagination.limit {
+            query = query.limit(limit as i64);
+        }
+        let rows = query.load::<(String, i64)>(self)?;
+        Ok(rows
+            .into_iter()
+            .map(|row| TagFrequency(row.0, row.1 as TagCount))
+            .collect())
+    }
+
     fn count_entries(&self) -> Result<usize> {
         use self::schema::entries::dsl as e_dsl;
         Ok(e_dsl::entries

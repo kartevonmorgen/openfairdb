@@ -296,3 +296,12 @@ pub struct ResetPassword {
     pub token: String,
     pub new_password: String,
 }
+
+#[derive(Serialize)]
+pub struct TagFrequency(pub String, pub u64);
+
+impl From<e::TagFrequency> for TagFrequency {
+    fn from(from: e::TagFrequency) -> Self {
+        Self(from.0, from.1)
+    }
+}

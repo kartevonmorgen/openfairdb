@@ -48,6 +48,7 @@ pub fn routes() -> Vec<Route> {
         get_entry,
         post_entry,
         put_entry,
+        entries_most_popular_tags,
         events::post_event,
         events::post_event_with_token,
         events::get_event,
@@ -121,42 +122,43 @@ fn get_recently_changed_entries(
     offset: Option<u64>,
     mut limit: Option<u64>,
 ) -> Result<Vec<json::Entry>> {
+    let since_min =
+        i64::from(Timestamp::now()) - ENTRIES_RECECENTLY_CHANGED_MAX_AGE_IN_DAYS * SECONDS_PER_DAY;
+    if since < since_min {
+        log::warn!(
+            "Maximum available age of recently changed entries exceeded: {} < {}",
+            since,
+            since_min
+        );
+        since = since_min;
+    }
+    let mut total_count = 0;
+    if let Some(offset) = offset {
+        total_count += offset;
+    }
+    total_count += limit.unwrap_or(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT);
+    if total_count > ENTRIES_RECECENTLY_CHANGED_MAX_COUNT {
+        log::warn!(
+            "Maximum available number of recently changed entries exceeded: {} > {}",
+            total_count,
+            ENTRIES_RECECENTLY_CHANGED_MAX_COUNT
+        );
+        if let Some(offset) = offset {
+            limit = Some(
+                ENTRIES_RECECENTLY_CHANGED_MAX_COUNT
+                    - offset.min(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT),
+            );
+        } else {
+            limit = Some(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT);
+        }
+    } else {
+        limit = Some(limit.unwrap_or(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT - offset.unwrap_or(0)));
+    }
+    debug_assert!(limit.is_some());
     let results = {
         let db = db.shared()?;
-        let since_min = i64::from(Timestamp::now())
-            - ENTRIES_RECECENTLY_CHANGED_MAX_AGE_IN_DAYS * SECONDS_PER_DAY;
-        if since < since_min {
-            log::warn!(
-                "Maximum available age of recently changed entries exceeded: {} < {}",
-                since,
-                since_min
-            );
-            since = since_min;
-        }
-        let mut total_count = 0;
-        if let Some(offset) = offset {
-            total_count += offset;
-        }
-        total_count += limit.unwrap_or(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT);
-        if total_count > ENTRIES_RECECENTLY_CHANGED_MAX_COUNT {
-            log::warn!(
-                "Maximum available number of recently changed entries exceeded: {} > {}",
-                total_count,
-                ENTRIES_RECECENTLY_CHANGED_MAX_COUNT
-            );
-            if let Some(offset) = offset {
-                limit = Some(
-                    ENTRIES_RECECENTLY_CHANGED_MAX_COUNT
-                        - offset.min(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT),
-                );
-            } else {
-                limit = Some(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT);
-            }
-        } else {
-            limit = Some(limit.unwrap_or(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT - offset.unwrap_or(0)));
-        }
-        debug_assert!(limit.is_some());
-        let entries = db.recently_changed_entries(since.into(), until.map(Into::into), offset, limit)?;
+        let entries =
+            db.recently_changed_entries(since.into(), until.map(Into::into), offset, limit)?;
         if with_ratings.unwrap_or(false) {
             let mut results = Vec::with_capacity(entries.len());
             for e in entries.into_iter() {
@@ -172,6 +174,20 @@ fn get_recently_changed_entries(
         }
     };
     Ok(Json(results))
+}
+
+#[get("/entries/most-popular-tags?<offset>&<limit>")]
+pub fn entries_most_popular_tags(
+    db: sqlite::Connections,
+    offset: Option<u64>,
+    limit: Option<u64>,
+) -> Result<Vec<json::TagFrequency>> {
+    let pagination = Pagination { offset, limit };
+    let results = {
+        let db = db.shared()?;
+        db.most_popular_entry_tags(pagination)?
+    };
+    Ok(Json(results.into_iter().map(Into::into).collect()))
 }
 
 #[get("/duplicates/<ids>")]

@@ -256,6 +256,9 @@ impl EntryGateway for MockDb {
     ) -> RepoResult<Vec<Entry>> {
         unimplemented!();
     }
+    fn most_popular_entry_tags(&self, _pagination: Pagination) -> RepoResult<Vec<TagFrequency>> {
+        unimplemented!();
+    }
     fn count_entries(&self) -> RepoResult<usize> {
         self.all_entries().map(|v| v.len())
     }
