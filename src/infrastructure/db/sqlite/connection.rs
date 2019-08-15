@@ -340,22 +340,27 @@ impl EntryGateway for SqliteConnection {
     }
 
     fn most_popular_entry_tags(&self, pagination: Pagination) -> Result<Vec<TagFrequency>> {
-        use self::schema::{entries::dsl as e_dsl, entry_tag_relations::dsl as t_dsl};
+        use self::schema::entry_tag_relations::dsl as t_dsl;
+        //use self::schema::entries::dsl as e_dsl;
         let count = diesel::dsl::sql::<diesel::sql_types::BigInt>("count");
         let mut query = self::schema::entry_tag_relations::table
             .select((
                 t_dsl::tag_id,
                 diesel::dsl::sql::<diesel::sql_types::BigInt>("count(*) AS count"),
             ))
+            // Only consider entries that are alive (= current and not archived)
+            // TODO: Diesel 1.4.x does not support multi-column subselects so
+            // we need to inject some handwritten SQL as a workaround here!
             .filter(
-                // Only consider entries that are alive
-                // TODO: Is this subselect really needed or redundant?
-                t_dsl::entry_id.eq_any(
+                /*
+                (t_dsl::entry_id, t_dsl::entry_version).eq_any(
                     self::schema::entries::table
-                        .select(e_dsl::id)
+                        .select(e_dsl::id, e_dsl::version)
                         .filter(e_dsl::current.eq(true))
                         .filter(e_dsl::archived.is_null()),
                 ),
+                */
+                diesel::dsl::sql("(entry_id, entry_version) IN (SELECT id, version FROM entries WHERE current=1 AND archived IS NULL)")
             )
             .group_by(t_dsl::tag_id)
             .order_by(count.clone().desc())
