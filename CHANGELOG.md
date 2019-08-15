@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.13 (2019-08-15)
+
+- fix(db): Aggregate popular tags only from current entries
+
 ## v0.5.12 (2019-08-15)
 
 - new(web): Add new request GET /entries/most-popular-tags
