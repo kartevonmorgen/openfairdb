@@ -12,6 +12,12 @@ use failure::Fallible;
 
 type Result<T> = std::result::Result<T, RepoError>;
 
+#[derive(Clone, Debug)]
+pub struct RecentlyChangedEntriesParams {
+    pub since: Timestamp,
+    pub until: Option<Timestamp>,
+}
+
 pub trait EntryGateway {
     fn get_entry(&self, _: &str) -> Result<Entry>;
     fn get_entries(&self, ids: &[&str]) -> Result<Vec<Entry>>;
@@ -26,13 +32,11 @@ pub trait EntryGateway {
 
     fn recently_changed_entries(
         &self,
-        since: Timestamp,
-        until: Option<Timestamp>,
-        offset: Option<u64>,
-        limit: Option<u64>,
+        params: &RecentlyChangedEntriesParams,
+        pagination: &Pagination,
     ) -> Result<Vec<Entry>>;
 
-    fn most_popular_entry_tags(&self, pagination: Pagination) -> Result<Vec<TagFrequency>>;
+    fn most_popular_entry_tags(&self, pagination: &Pagination) -> Result<Vec<TagFrequency>>;
 }
 
 pub trait EventGateway {

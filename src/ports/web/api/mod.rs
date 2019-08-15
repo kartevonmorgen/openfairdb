@@ -155,10 +155,14 @@ fn get_recently_changed_entries(
         limit = Some(limit.unwrap_or(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT - offset.unwrap_or(0)));
     }
     debug_assert!(limit.is_some());
+    let params = RecentlyChangedEntriesParams {
+        since: since.into(),
+        until: until.map(Into::into),
+    };
+    let pagination = Pagination { offset, limit };
     let results = {
         let db = db.shared()?;
-        let entries =
-            db.recently_changed_entries(since.into(), until.map(Into::into), offset, limit)?;
+        let entries = db.recently_changed_entries(&params, &pagination)?;
         if with_ratings.unwrap_or(false) {
             let mut results = Vec::with_capacity(entries.len());
             for e in entries.into_iter() {
@@ -192,7 +196,7 @@ pub fn entries_most_popular_tags(
     let pagination = Pagination { offset, limit };
     let results = {
         let db = db.shared()?;
-        db.most_popular_entry_tags(pagination)?
+        db.most_popular_entry_tags(&pagination)?
     };
     Ok(Json(results.into_iter().map(Into::into).collect()))
 }

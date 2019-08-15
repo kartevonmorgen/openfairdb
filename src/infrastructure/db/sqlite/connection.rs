@@ -246,10 +246,8 @@ impl EntryGateway for SqliteConnection {
 
     fn recently_changed_entries(
         &self,
-        since: Timestamp,
-        until: Option<Timestamp>,
-        offset: Option<u64>,
-        limit: Option<u64>,
+        params: &RecentlyChangedEntriesParams,
+        pagination: &Pagination,
     ) -> Result<Vec<Entry>> {
         use self::schema::{
             entries::dsl as e_dsl, entry_category_relations::dsl as e_c_dsl,
@@ -262,18 +260,18 @@ impl EntryGateway for SqliteConnection {
             diesel::dsl::sql::<diesel::sql_types::BigInt>("COALESCE(archived, created)");
         let mut query = e_dsl::entries
             .filter(e_dsl::current.eq(true))
-            .filter(changed_expr.clone().ge(i64::from(since))) // inclusive
+            .filter(changed_expr.clone().ge(i64::from(params.since))) // inclusive
             .order_by(changed_expr.clone().desc())
             .order_by(e_dsl::id) // disambiguation if time stamps are equal
             .into_boxed();
-        if let Some(until) = until {
+        if let Some(until) = params.until {
             query = query.filter(changed_expr.clone().lt(i64::from(until))); // exclusive
         }
-        let offset = offset.unwrap_or(0);
+        let offset = pagination.offset.unwrap_or(0);
         if offset > 0 {
             query = query.offset(offset as i64);
         }
-        if let Some(limit) = limit {
+        if let Some(limit) = pagination.limit {
             query = query.limit(limit as i64);
         }
         let entries: Vec<models::Entry> = query.load(self)?;
@@ -339,7 +337,7 @@ impl EntryGateway for SqliteConnection {
         Ok(res_entries)
     }
 
-    fn most_popular_entry_tags(&self, pagination: Pagination) -> Result<Vec<TagFrequency>> {
+    fn most_popular_entry_tags(&self, pagination: &Pagination) -> Result<Vec<TagFrequency>> {
         use self::schema::entry_tag_relations::dsl as t_dsl;
         //use self::schema::entries::dsl as e_dsl;
         let count = diesel::dsl::sql::<diesel::sql_types::BigInt>("count");

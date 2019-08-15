@@ -249,14 +249,12 @@ impl EntryGateway for MockDb {
     }
     fn recently_changed_entries(
         &self,
-        _since: Timestamp,
-        _until: Option<Timestamp>,
-        _offset: Option<u64>,
-        _limit: Option<u64>,
+        _params: &RecentlyChangedEntriesParams,
+        _pagination: &Pagination,
     ) -> RepoResult<Vec<Entry>> {
         unimplemented!();
     }
-    fn most_popular_entry_tags(&self, _pagination: Pagination) -> RepoResult<Vec<TagFrequency>> {
+    fn most_popular_entry_tags(&self, _pagination: &Pagination) -> RepoResult<Vec<TagFrequency>> {
         unimplemented!();
     }
     fn count_entries(&self) -> RepoResult<usize> {
