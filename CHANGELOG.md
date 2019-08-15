@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.12 (2019-08-15)
+
+- new(web): Add new request GET /entries/most-popular-tags
+
 ## v0.5.11 (2019-08-15)
 
 - new(web): Filter recently changed entries by both `since` and `until`
