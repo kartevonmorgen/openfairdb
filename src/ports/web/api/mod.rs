@@ -46,9 +46,10 @@ pub fn routes() -> Vec<Route> {
         get_bbox_subscriptions,
         unsubscribe_all_bboxes,
         get_entry,
+        get_entries_recently_changed,
+        get_entries_most_popular_tags,
         post_entry,
         put_entry,
-        entries_most_popular_tags,
         events::post_event,
         events::post_event_with_token,
         events::get_event,
@@ -70,7 +71,6 @@ pub fn routes() -> Vec<Route> {
         get_tags,
         search::get_search,
         get_duplicates,
-        get_recently_changed_entries,
         count::get_count_entries,
         count::get_count_tags,
         get_version,
@@ -114,7 +114,7 @@ const ENTRIES_RECECENTLY_CHANGED_MAX_AGE_IN_DAYS: i64 = 100;
 const SECONDS_PER_DAY: i64 = 24 * 60 * 60;
 
 #[get("/entries/recently-changed?<since>&<until>&<with_ratings>&<offset>&<limit>")]
-fn get_recently_changed_entries(
+fn get_entries_recently_changed(
     db: sqlite::Connections,
     mut since: i64,
     until: Option<i64>,
@@ -183,7 +183,7 @@ fn get_recently_changed_entries(
 const ENTRIES_MOST_POPULAR_TAGS_PAGINATION_LIMIT_MAX: u64 = 1000;
 
 #[get("/entries/most-popular-tags?<offset>&<limit>")]
-pub fn entries_most_popular_tags(
+pub fn get_entries_most_popular_tags(
     db: sqlite::Connections,
     offset: Option<u64>,
     limit: Option<u64>,
