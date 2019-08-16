@@ -262,7 +262,7 @@ impl EntryGateway for SqliteConnection {
             .filter(e_dsl::current.eq(true))
             .filter(changed_expr.clone().ge(i64::from(params.since))) // inclusive
             .order_by(changed_expr.clone().desc())
-            .order_by(e_dsl::id) // disambiguation if time stamps are equal
+            .then_order_by(e_dsl::id) // disambiguation if time stamps are equal
             .into_boxed();
         if let Some(until) = params.until {
             query = query.filter(changed_expr.clone().lt(i64::from(until))); // exclusive
@@ -362,7 +362,7 @@ impl EntryGateway for SqliteConnection {
             )
             .group_by(t_dsl::tag_id)
             .order_by(count.clone().desc())
-            .then_order_by(t_dsl::tag_id)
+            .then_order_by(t_dsl::tag_id) // disambiguation if counts are equal
             .into_boxed();
         let offset = pagination.offset.unwrap_or(0);
         if offset > 0 {
