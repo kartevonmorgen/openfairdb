@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.5.14 (2019-08-16)
+
+- fix(db): Fix sorting of recently changed entries
+
 ## v0.5.13 (2019-08-15)
 
 - fix(db): Aggregate popular tags only from current entries
