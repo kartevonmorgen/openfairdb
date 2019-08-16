@@ -103,6 +103,15 @@ fn load_entry(conn: &SqliteConnection, entry: models::Entry) -> Result<Entry> {
     })
 }
 
+#[derive(QueryableByName)]
+struct TagIdCount {
+    #[sql_type = "diesel::sql_types::Text"]
+    tag_id: String,
+
+    #[sql_type = "diesel::sql_types::BigInt"]
+    count: i64,
+}
+
 impl EntryGateway for SqliteConnection {
     fn create_entry(&self, e: Entry) -> Result<()> {
         let cat_rels: Vec<_> = e
@@ -339,44 +348,41 @@ impl EntryGateway for SqliteConnection {
         Ok(res_entries)
     }
 
-    fn most_popular_entry_tags(&self, pagination: &Pagination) -> Result<Vec<TagFrequency>> {
-        use self::schema::entry_tag_relations::dsl as t_dsl;
-        //use self::schema::entries::dsl as e_dsl;
-        let count = diesel::dsl::sql::<diesel::sql_types::BigInt>("count");
-        let mut query = self::schema::entry_tag_relations::table
-            .select((
-                t_dsl::tag_id,
-                diesel::dsl::sql::<diesel::sql_types::BigInt>("count(*) AS count"),
-            ))
-            // Only consider entries that are alive (= current and not archived)
-            // TODO: Diesel 1.4.x does not support multi-column subselects so
-            // we need to inject some handwritten SQL as a workaround here!
-            .filter(
-                /*
-                (t_dsl::entry_id, t_dsl::entry_version).eq_any(
-                    self::schema::entries::table
-                        .select(e_dsl::id, e_dsl::version)
-                        .filter(e_dsl::current.eq(true))
-                        .filter(e_dsl::archived.is_null()),
-                ),
-                */
-                diesel::dsl::sql("(entry_id, entry_version) IN (SELECT id, version FROM entries WHERE current=1 AND archived IS NULL)")
-            )
-            .group_by(t_dsl::tag_id)
-            .order_by(count.clone().desc())
-            .then_order_by(t_dsl::tag_id) // disambiguation if counts are equal
-            .into_boxed();
+    fn most_popular_entry_tags(
+        &self,
+        params: &MostPopularTagsParams,
+        pagination: &Pagination,
+    ) -> Result<Vec<TagFrequency>> {
+        // TODO: Diesel 1.4.x does not support the HAVING clause
+        // that is required to filter the aggregated column.
+        let mut sql = "SELECT tag_id, COUNT(*) as count \
+                       FROM entry_tag_relations \
+                       WHERE (entry_id, entry_version) IN \
+                       (SELECT id, version FROM entries WHERE current=1 AND archived IS NULL) \
+                       GROUP BY tag_id"
+            .to_string();
+        if params.min_count.is_some() || params.max_count.is_some() {
+            if let Some(min_count) = params.min_count {
+                sql.push_str(&format!(" HAVING count>={}", min_count));
+                if let Some(max_count) = params.max_count {
+                    sql.push_str(&format!(" AND count<={}", max_count));
+                }
+            } else if let Some(max_count) = params.max_count {
+                sql.push_str(&format!(" HAVING count<={}", max_count));
+            }
+        }
+        sql.push_str(" ORDER BY count DESC, tag_id");
         let offset = pagination.offset.unwrap_or(0);
         if offset > 0 {
-            query = query.offset(offset as i64);
+            sql.push_str(&format!(" OFFSET {}", offset));
         }
         if let Some(limit) = pagination.limit {
-            query = query.limit(limit as i64);
+            sql.push_str(&format!(" LIMIT {}", limit));
         }
-        let rows = query.load::<(String, i64)>(self)?;
+        let rows = diesel::dsl::sql_query(sql).load::<TagIdCount>(self)?;
         Ok(rows
             .into_iter()
-            .map(|row| TagFrequency(row.0, row.1 as TagCount))
+            .map(|row| TagFrequency(row.tag_id, row.count as TagCount))
             .collect())
     }
 

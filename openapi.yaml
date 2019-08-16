@@ -138,6 +138,20 @@ paths:
       tags:
         - Entries
       parameters:
+        - name: min_count
+          in: query
+          required: false
+          description: Minimum count per tag (inclusive)
+          schema:
+            type: integer
+            format: int64
+        - name: max_count
+          in: query
+          required: false
+          description: Maximum count per tag (inclusive)
+          schema:
+            type: integer
+            format: int64
         - $ref: '#/components/parameters/PaginationLimit'
         - $ref: '#/components/parameters/PaginationOffset'
       responses:

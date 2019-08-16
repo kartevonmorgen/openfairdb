@@ -13,6 +13,12 @@ use failure::Fallible;
 type Result<T> = std::result::Result<T, RepoError>;
 
 #[derive(Clone, Debug)]
+pub struct MostPopularTagsParams {
+    pub min_count: Option<u64>,
+    pub max_count: Option<u64>,
+}
+
+#[derive(Clone, Debug)]
 pub struct RecentlyChangedEntriesParams {
     pub since: Option<Timestamp>,
     pub until: Option<Timestamp>,
@@ -36,7 +42,11 @@ pub trait EntryGateway {
         pagination: &Pagination,
     ) -> Result<Vec<Entry>>;
 
-    fn most_popular_entry_tags(&self, pagination: &Pagination) -> Result<Vec<TagFrequency>>;
+    fn most_popular_entry_tags(
+        &self,
+        params: &MostPopularTagsParams,
+        pagination: &Pagination,
+    ) -> Result<Vec<TagFrequency>>;
 }
 
 pub trait EventGateway {

@@ -3,6 +3,7 @@
 ## v0.5.15 (2019-mm-dd)
 
 - new(web): GET /entries/recently-changed: Parameter `since` is optional
+- new(web): GET /entries/most-popular-tags: Add `min_count`/`max_count` parameters
 
 ## v0.5.14 (2019-08-16)
 

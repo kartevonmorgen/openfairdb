@@ -137,7 +137,8 @@ fn get_entries_recently_changed(
         }
     } else {
         Some(since_min)
-    }.map(Into::into);
+    }
+    .map(Into::into);
     debug_assert!(since.is_some());
     let mut total_count = 0;
     if let Some(offset) = offset {
@@ -189,12 +190,18 @@ fn get_entries_recently_changed(
 
 const ENTRIES_MOST_POPULAR_TAGS_PAGINATION_LIMIT_MAX: u64 = 1000;
 
-#[get("/entries/most-popular-tags?<offset>&<limit>")]
+#[get("/entries/most-popular-tags?<min_count>&<max_count>&<offset>&<limit>")]
 pub fn get_entries_most_popular_tags(
     db: sqlite::Connections,
+    min_count: Option<u64>,
+    max_count: Option<u64>,
     offset: Option<u64>,
     limit: Option<u64>,
 ) -> Result<Vec<json::TagFrequency>> {
+    let params = MostPopularTagsParams {
+        min_count,
+        max_count,
+    };
     let limit = Some(
         limit
             .unwrap_or(ENTRIES_MOST_POPULAR_TAGS_PAGINATION_LIMIT_MAX)
@@ -203,7 +210,7 @@ pub fn get_entries_most_popular_tags(
     let pagination = Pagination { offset, limit };
     let results = {
         let db = db.shared()?;
-        db.most_popular_entry_tags(&pagination)?
+        db.most_popular_entry_tags(&params, &pagination)?
     };
     Ok(Json(results.into_iter().map(Into::into).collect()))
 }
