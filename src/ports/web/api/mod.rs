@@ -116,7 +116,7 @@ const SECONDS_PER_DAY: i64 = 24 * 60 * 60;
 #[get("/entries/recently-changed?<since>&<until>&<with_ratings>&<offset>&<limit>")]
 fn get_entries_recently_changed(
     db: sqlite::Connections,
-    mut since: i64,
+    since: Option<i64>,
     until: Option<i64>,
     with_ratings: Option<bool>,
     offset: Option<u64>,
@@ -124,14 +124,21 @@ fn get_entries_recently_changed(
 ) -> Result<Vec<json::Entry>> {
     let since_min =
         i64::from(Timestamp::now()) - ENTRIES_RECECENTLY_CHANGED_MAX_AGE_IN_DAYS * SECONDS_PER_DAY;
-    if since < since_min {
-        log::warn!(
-            "Maximum available age of recently changed entries exceeded: {} < {}",
-            since,
-            since_min
-        );
-        since = since_min;
-    }
+    let since = if let Some(since) = since {
+        if since < since_min {
+            log::warn!(
+                "Maximum available age of recently changed entries exceeded: {} < {}",
+                since,
+                since_min
+            );
+            Some(since_min)
+        } else {
+            Some(since)
+        }
+    } else {
+        Some(since_min)
+    }.map(Into::into);
+    debug_assert!(since.is_some());
     let mut total_count = 0;
     if let Some(offset) = offset {
         total_count += offset;

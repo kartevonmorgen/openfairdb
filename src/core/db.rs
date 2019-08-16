@@ -14,7 +14,7 @@ type Result<T> = std::result::Result<T, RepoError>;
 
 #[derive(Clone, Debug)]
 pub struct RecentlyChangedEntriesParams {
-    pub since: Timestamp,
+    pub since: Option<Timestamp>,
     pub until: Option<Timestamp>,
 }
 

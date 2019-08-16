@@ -260,10 +260,12 @@ impl EntryGateway for SqliteConnection {
             diesel::dsl::sql::<diesel::sql_types::BigInt>("COALESCE(archived, created)");
         let mut query = e_dsl::entries
             .filter(e_dsl::current.eq(true))
-            .filter(changed_expr.clone().ge(i64::from(params.since))) // inclusive
             .order_by(changed_expr.clone().desc())
             .then_order_by(e_dsl::id) // disambiguation if time stamps are equal
             .into_boxed();
+        if let Some(since) = params.since {
+            query = query.filter(changed_expr.clone().ge(i64::from(since))) // inclusive
+        }
         if let Some(until) = params.until {
             query = query.filter(changed_expr.clone().lt(i64::from(until))); // exclusive
         }
