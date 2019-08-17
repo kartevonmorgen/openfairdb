@@ -28,7 +28,7 @@ fn load_users_by_email_or_username<D: UserGateway>(
                     "Search results for users with e-mail or username '{}' are ambiguous!",
                     email_or_username
                 );
-                Err(RepoError::NotFound)?;
+                return Err(RepoError::NotFound)?;
             }
             Ok(users)
         }

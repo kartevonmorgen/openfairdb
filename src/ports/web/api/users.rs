@@ -4,8 +4,8 @@ use super::*;
 pub fn post_user(db: sqlite::Connections, u: Json<usecases::NewUser>) -> Result<()> {
     let new_user = u.into_inner();
     let user = {
-        let mut db = db.exclusive()?;
-        usecases::create_new_user(&mut *db, new_user.clone())?;
+        let db = db.exclusive()?;
+        usecases::create_new_user(&*db, new_user.clone())?;
         db.get_user(&new_user.username)?
     };
 

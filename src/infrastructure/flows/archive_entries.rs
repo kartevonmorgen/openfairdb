@@ -115,7 +115,7 @@ mod tests {
             fixture.query_entries_by_tag(&entry_tags[2])[0].id
         );
 
-        assert!(archive_entries(&fixture, &vec![&*entry_ids[0], &*entry_ids[2]]).is_ok());
+        assert!(archive_entries(&fixture, &[&*entry_ids[0], &*entry_ids[2]]).is_ok());
 
         // Entries 0 and 2 disappeared
         assert!(!fixture.entry_exists(&entry_ids[0]));
@@ -128,10 +128,7 @@ mod tests {
         assert!(!fixture.entry_exists(&entry_ids[2]));
         assert!(fixture.query_entries_by_tag(&entry_tags[2]).is_empty());
 
-        assert_not_found(archive_entries(
-            &fixture,
-            &vec![&*entry_ids[1], &*entry_ids[2]],
-        ));
+        assert_not_found(archive_entries(&fixture, &[&*entry_ids[1], &*entry_ids[2]]));
 
         // No changes, i.e.entry 1 still exists in both database and index
         assert!(!fixture.entry_exists(&entry_ids[0]));
@@ -188,7 +185,7 @@ mod tests {
             assert!(fixture.comment_exists(comment_id));
         }
 
-        assert!(archive_entries(&fixture, &vec![&*entry_ids[0]]).is_ok());
+        assert!(archive_entries(&fixture, &[&*entry_ids[0]]).is_ok());
 
         assert!(!fixture.entry_exists(&entry_ids[0]));
         assert!(fixture.entry_exists(&entry_ids[1]));

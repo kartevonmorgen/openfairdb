@@ -134,10 +134,10 @@ mod tests {
     }
 
     pub fn register_user(pool: &sqlite::Connections, email: &str, pw: &str, confirmed: bool) {
-        let mut db = pool.exclusive().unwrap();
+        let db = pool.exclusive().unwrap();
         let username = email.replace("@", "").replace(".", "");
         usecases::create_new_user(
-            &mut *db,
+            &*db,
             usecases::NewUser {
                 username: username.clone(),
                 email: email.into(),
@@ -149,7 +149,7 @@ mod tests {
             let users = db.get_users_by_email(email).unwrap();
             for u in users {
                 if u.username == username {
-                    usecases::confirm_email_address(&mut *db, &u.id).unwrap();
+                    usecases::confirm_email_address(&*db, &u.id).unwrap();
                 }
             }
         }

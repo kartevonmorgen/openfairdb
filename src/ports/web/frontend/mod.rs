@@ -39,7 +39,7 @@ fn check_role(db: &dyn Db, account: &Account, role: Role) -> Result<User> {
             return Ok(user.to_owned());
         }
     }
-    return Err(Error::Parameter(ParameterError::Unauthorized).into());
+    Err(Error::Parameter(ParameterError::Unauthorized).into())
 }
 
 #[get("/")]

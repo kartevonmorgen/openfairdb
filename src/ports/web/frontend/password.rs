@@ -24,12 +24,10 @@ pub fn get_reset_password(
         } else {
             view::reset_password(flash, "/users/actions/reset-password", token.as_str())
         }
+    } else if let Some(true) = success {
+        view::reset_password_request_ack(flash)
     } else {
-        if let Some(true) = success {
-            view::reset_password_request_ack(flash)
-        } else {
-            view::reset_password_request(flash, "/users/actions/reset-password-request")
-        }
+        view::reset_password_request(flash, "/users/actions/reset-password-request")
     }
 }
 
@@ -77,19 +75,15 @@ pub fn post_reset_password(
         ));
     }
     match req.new_password.parse::<Password>() {
-        Err(_) => {
-            return Err(Flash::error(
-                Redirect::to(uri!(get_reset_password: token=req.token, success=_)),
-                "Your new password is not allowed.",
-            ));
-        }
+        Err(_) => Err(Flash::error(
+            Redirect::to(uri!(get_reset_password: token=req.token, success=_)),
+            "Your new password is not allowed.",
+        )),
         Ok(new_password) => match EmailToken::decode_from_str(&req.token) {
-            Err(_) => {
-                return Err(Flash::error(
-                    Redirect::to(uri!(get_reset_password: token = req.token, success = _)),
-                    "Resetting your password is not possible (invalid token).",
-                ));
-            }
+            Err(_) => Err(Flash::error(
+                Redirect::to(uri!(get_reset_password: token = req.token, success = _)),
+                "Resetting your password is not possible (invalid token).",
+            )),
             Ok(token) => {
                 match reset_password_with_email_token(
                     &db,

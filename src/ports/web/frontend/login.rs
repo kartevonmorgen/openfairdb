@@ -122,7 +122,7 @@ pub mod tests {
         let res = client
             .post("/login")
             .header(ContentType::Form)
-            .body(format!("email=foo%40bar.com&password=invalid"))
+            .body("email=foo%40bar.com&password=invalid")
             .dispatch();
         assert_eq!(res.status(), Status::SeeOther);
         for h in res.headers().iter() {
@@ -141,7 +141,7 @@ pub mod tests {
         let res = client
             .post("/login")
             .header(ContentType::Form)
-            .body(format!("email=foo%40bar.com&password=baz baz"))
+            .body("email=foo%40bar.com&password=baz baz")
             .dispatch();
         assert_eq!(res.status(), Status::SeeOther);
         assert!(user_id_cookie(&res).is_some());

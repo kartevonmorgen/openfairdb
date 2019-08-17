@@ -164,7 +164,7 @@ fn get_entries_recently_changed(
     }
     debug_assert!(limit.is_some());
     let params = RecentlyChangedEntriesParams {
-        since: since.into(),
+        since,
         until: until.map(Into::into),
     };
     let pagination = Pagination { offset, limit };

@@ -286,7 +286,7 @@ impl MapPoint {
                     let lng = LngCoord::try_from_deg(lng_deg);
                     if let Some(lng) = lng {
                         debug_assert!(lng.is_valid());
-                        return Ok(MapPoint::new(lat, lng));
+                        Ok(MapPoint::new(lat, lng))
                     } else {
                         failure::bail!("Invalid longitude degrees: {}", lng_deg);
                     }

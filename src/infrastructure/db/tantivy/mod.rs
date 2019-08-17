@@ -651,8 +651,7 @@ impl EntryIndex for TantivyEntryIndex {
                                     // The total rating is scaled by the number of different rating context
                                     // variants to achieve better results by emphasizing the rating factor.
                                     1.0 + f64::from(RatingContext::total_count())
-                                        * (f64::from(total_rating)
-                                            - f64::from(AvgRatingValue::default()))
+                                        * (total_rating - f64::from(AvgRatingValue::default()))
                                 };
                             // Transform the original score by log2() to narrow the range. Otherwise
                             // the rating boost factor is not powerful enough to promote highly

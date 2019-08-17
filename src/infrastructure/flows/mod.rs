@@ -65,7 +65,7 @@ mod tests {
                     .log_level(LoggingLevel::Debug)
                     .finalize()
                     .unwrap();
-                let db_connections = sqlite::Connections::init(&format!(":memory:"), 1).unwrap();
+                let db_connections = sqlite::Connections::init(":memory:", 1).unwrap();
                 embedded_migrations::run(&*db_connections.exclusive().unwrap()).unwrap();
                 let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
                 let rocket = rocket_instance(
@@ -93,9 +93,9 @@ mod tests {
 
             pub fn create_user(self: &EnvFixture, new_user: usecases::NewUser, role: Option<Role>) {
                 let email = {
-                    let mut db = self.db_connections.exclusive().unwrap();
+                    let db = self.db_connections.exclusive().unwrap();
                     let email = new_user.email.clone();
-                    usecases::create_new_user(&mut *db, new_user).unwrap();
+                    usecases::create_new_user(&*db, new_user).unwrap();
                     email
                 };
                 if let Some(role) = role {
@@ -207,7 +207,7 @@ mod tests {
             fn from(i: i32) -> Self {
                 let lat_deg = i % 91;
                 let lng_deg = -i % 181;
-                let pos = MapPoint::from_lat_lng_deg(lat_deg as f64, lng_deg as f64);
+                let pos = MapPoint::from_lat_lng_deg(f64::from(lat_deg), f64::from(lng_deg));
                 let title = format!("title_{}", i);
                 let description = format!("description_{}", i);
                 let categories = vec![format!("category_{}", i)];
