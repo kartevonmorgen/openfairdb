@@ -579,6 +579,8 @@ impl EventGateway for SqliteConnection {
             registration,
             organizer,
             archived,
+            image_url,
+            image_link_url,
         } = e_dsl::events
             .filter(e_dsl::id.eq(e_id))
             .filter(e_dsl::archived.is_null())
@@ -639,6 +641,8 @@ impl EventGateway for SqliteConnection {
             registration,
             organizer,
             archived: archived.map(Into::into),
+            image_url,
+            image_link_url,
         })
     }
 

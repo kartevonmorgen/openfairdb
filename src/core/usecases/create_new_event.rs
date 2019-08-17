@@ -31,6 +31,8 @@ pub struct NewEvent {
     pub token        : Option<String>,
     pub registration : Option<String>,
     pub organizer    : Option<String>,
+    pub image_url     : Option<String>,
+    pub image_link_url: Option<String>,
 }
 
 // TODO: move this into an adapter
@@ -96,6 +98,8 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
         registration,
         token,
         organizer,
+        image_url,
+        image_link_url,
         ..
     } = e;
     log::debug!("checking authorization");
@@ -207,6 +211,11 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
     let start = NaiveDateTime::from_timestamp(start, 0);
     let end = end.map(|e| NaiveDateTime::from_timestamp(e, 0));
 
+    let image_url = image_url.map(|ref url| parse_url_param(url)).transpose()?;
+    let image_link_url = image_link_url
+        .map(|ref url| parse_url_param(url))
+        .transpose()?;
+
     let event = Event {
         id,
         title,
@@ -221,6 +230,8 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
         registration,
         organizer,
         archived: None,
+        image_url,
+        image_link_url,
     };
     let event = event.auto_correct();
     log::debug!("Validating event");
@@ -273,6 +284,8 @@ mod tests {
             token        : None,
             registration : None,
             organizer    : None,
+            image_url     : Some("http://somewhere.com/image_url.jpg".to_string()),
+            image_link_url: Some("my.url/test.ext".to_string()),
         };
         let mut mock_db = MockDb::default();
         let id = create_new_event(&mut mock_db, x).unwrap();
@@ -286,6 +299,14 @@ mod tests {
         assert_eq!(x.description.as_ref().unwrap(), "bar");
         assert!(Uuid::parse_str(&x.id).is_ok());
         assert_eq!(x.id, id);
+        assert_eq!(
+            "http://somewhere.com/image_url.jpg",
+            x.image_url.as_ref().unwrap()
+        );
+        assert_eq!(
+            "https://www.my.url/test.ext",
+            x.image_link_url.as_ref().unwrap()
+        );
     }
 
     #[test]
@@ -310,6 +331,8 @@ mod tests {
             token        : None,
             registration : None,
             organizer    : None,
+            image_url     : None,
+            image_link_url: None,
         };
         let mut mock_db: MockDb = MockDb::default();
         assert!(create_new_event(&mut mock_db, x).is_err());
@@ -337,6 +360,8 @@ mod tests {
             token        : None,
             registration : None,
             organizer    : None,
+            image_url     : None,
+            image_link_url: None,
         };
         let mut mock_db: MockDb = MockDb::default();
         assert!(create_new_event(&mut mock_db, x).is_ok());
@@ -381,6 +406,8 @@ mod tests {
             token        : None,
             registration : None,
             organizer    : None,
+            image_url     : None,
+            image_link_url: None,
         };
         assert!(create_new_event(&mut mock_db, x).is_ok());
         let users = mock_db.all_users().unwrap();

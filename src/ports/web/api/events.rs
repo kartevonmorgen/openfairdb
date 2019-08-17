@@ -565,6 +565,8 @@ mod tests {
                 registration: Some(RegistrationType::Email),
                 organizer: None,
                 archived: None,
+                image_url: None,
+                image_link_url: None,
             };
             db.exclusive().unwrap().create_event(e).unwrap();
             let req = client.get("/events/1234").header(ContentType::JSON);
@@ -599,6 +601,8 @@ mod tests {
                         registration: None,
                         organizer: None,
                         archived: None,
+                        image_url: None,
+                        image_link_url: None,
                     })
                     .unwrap();
             }
@@ -632,6 +636,8 @@ mod tests {
                         registration: None,
                         organizer: None,
                         archived: None,
+                        image_url: None,
+                        image_link_url: None,
                     })
                     .unwrap();
             }
@@ -668,6 +674,8 @@ mod tests {
                         registration: None,
                         organizer: None,
                         archived: None,
+                        image_url: None,
+                        image_link_url: None,
                     })
                     .unwrap();
             }
@@ -730,6 +738,8 @@ mod tests {
                         registration: None,
                         organizer: None,
                         archived: None,
+                        image_url: None,
+                        image_link_url: None,
                     })
                     .unwrap();
                 db.exclusive()
@@ -799,6 +809,8 @@ mod tests {
                         registration: None,
                         organizer: None,
                         archived: None,
+                        image_url: None,
+                        image_link_url: None,
                     })
                     .unwrap();
             }
@@ -837,6 +849,8 @@ mod tests {
                         registration: None,
                         organizer: None,
                         archived: None,
+                        image_url: None,
+                        image_link_url: None,
                     })
                     .unwrap();
             }
@@ -879,6 +893,8 @@ mod tests {
                         registration: None,
                         organizer: None,
                         archived: None,
+                        image_url: None,
+                        image_link_url: None,
                     })
                     .unwrap();
             }
@@ -958,6 +974,8 @@ mod tests {
                 registration: None,
                 organizer: None,
                 archived: None,
+                image_url: None,
+                image_link_url: None,
             };
             db.exclusive().unwrap().create_event(e.clone()).unwrap();
             let res = client
@@ -999,6 +1017,8 @@ mod tests {
                 registration: None,
                 organizer: None,
                 archived: None,
+                image_url: None,
+                image_link_url: None,
             };
             db.exclusive().unwrap().create_event(e.clone()).unwrap();
             let res = client
@@ -1036,6 +1056,8 @@ mod tests {
                 registration: None,
                 organizer: None,
                 archived: None,
+                image_url: None,
+                image_link_url: None,
             };
             db.exclusive().unwrap().create_event(e.clone()).unwrap();
             let res = client
@@ -1075,6 +1097,8 @@ mod tests {
                 registration: None,
                 organizer: None,
                 archived: None,
+                image_url: None,
+                image_link_url: None,
             };
             db.exclusive().unwrap().create_event(e.clone()).unwrap();
             let res = client
@@ -1149,6 +1173,8 @@ mod tests {
                 registration: None,
                 organizer: None,
                 archived: None,
+                image_url: None,
+                image_link_url: None,
             };
             let e1 = Event {
                 id: "9999".into(),
@@ -1164,6 +1190,8 @@ mod tests {
                 registration: None,
                 organizer: None,
                 archived: None,
+                image_url: None,
+                image_link_url: None,
             };
             db.exclusive().unwrap().create_event(e0.clone()).unwrap();
             db.exclusive().unwrap().create_event(e1.clone()).unwrap();

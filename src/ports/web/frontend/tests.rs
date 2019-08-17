@@ -63,6 +63,8 @@ mod events {
                 registration: Some(RegistrationType::Email),
                 organizer: None,
                 archived: None,
+                image_url: None,
+                image_link_url: None,
             },
             Event {
                 id: "5678".into(),
@@ -81,6 +83,8 @@ mod events {
                 registration: Some(RegistrationType::Email),
                 organizer: None,
                 archived: None,
+                image_url: None,
+                image_link_url: None,
             },
             Event {
                 id: "0000".into(),
@@ -99,6 +103,8 @@ mod events {
                 registration: Some(RegistrationType::Email),
                 organizer: None,
                 archived: None,
+                image_url: None,
+                image_link_url: None,
             },
         ];
 
@@ -138,6 +144,8 @@ mod events {
                 registration: Some(RegistrationType::Email),
                 organizer: None,
                 archived: None,
+                image_url: None,
+                image_link_url: None,
             },
             Event {
                 id: "5678".into(),
@@ -156,6 +164,8 @@ mod events {
                 registration: Some(RegistrationType::Email),
                 organizer: None,
                 archived: None,
+                image_url: None,
+                image_link_url: None,
             },
             Event {
                 id: "0000".into(),
@@ -174,6 +184,8 @@ mod events {
                 registration: Some(RegistrationType::Email),
                 organizer: None,
                 archived: None,
+                image_url: None,
+                image_link_url: None,
             },
         ];
 
@@ -210,6 +222,8 @@ mod events {
             registration: Some(RegistrationType::Email),
             organizer: None,
             archived: None,
+            image_url: None,
+            image_link_url: None,
         }];
 
         {

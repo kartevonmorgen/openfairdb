@@ -82,6 +82,8 @@ pub struct Event {
     pub registration : Option<RegistrationType>,
     pub organizer    : Option<String>,
     pub archived     : Option<Timestamp>,
+    pub image_url     : Option<String>,
+    pub image_link_url: Option<String>,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]

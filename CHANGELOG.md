@@ -1,6 +1,10 @@
 # Changelog
 
-## v0.5.15 (2019-mm-dd)
+## v0.5.16 (2019-08-16)
+
+- new(web): Add image and image link URLs to events
+
+## v0.5.15 (2019-08-16)
 
 - new(web): GET /entries/recently-changed: Parameter `since` is optional
 - new(web): GET /entries/most-popular-tags: Add `min_count`/`max_count` parameters

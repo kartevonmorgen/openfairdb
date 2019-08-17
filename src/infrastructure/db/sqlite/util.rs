@@ -138,6 +138,8 @@ impl From<e::Event> for Event {
             registration,
             organizer,
             archived,
+            image_url,
+            image_link_url,
             ..
         } = e;
 
@@ -185,6 +187,8 @@ impl From<e::Event> for Event {
             registration,
             organizer,
             archived: archived.map(Into::into),
+            image_url,
+            image_link_url,
         }
     }
 }
@@ -273,6 +277,8 @@ impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
             registration,
             organizer,
             archived,
+            image_url,
+            image_link_url,
             ..
         } = e;
         let tags = tag_rels
@@ -326,6 +332,8 @@ impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
             registration,
             organizer,
             archived: archived.map(Into::into),
+            image_url,
+            image_link_url,
         }
     }
 }

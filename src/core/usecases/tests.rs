@@ -835,6 +835,8 @@ mod tests {
             registration: None,
             organizer: None,
             archived: None,
+            image_url: None,
+            image_link_url: None,
         })
         .unwrap();
         let e = usecases::get_event(&mut db, "x").unwrap();

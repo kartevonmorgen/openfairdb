@@ -36,8 +36,6 @@ class Coordinate {
 
 class Entry <<entity>> {
     license: String
-    image_url: String
-    image_link_url: String
 }
 
 Entry "*" -- "*" Category : categorizes <

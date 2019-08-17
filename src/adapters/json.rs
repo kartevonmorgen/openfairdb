@@ -57,6 +57,10 @@ pub struct Event {
     pub registration: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub organizer: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub image_link_url: Option<String>,
 }
 
 impl From<e::Event> for Event {
@@ -73,6 +77,8 @@ impl From<e::Event> for Event {
             homepage,
             registration,
             organizer,
+            image_url,
+            image_link_url,
             ..
         } = e;
 
@@ -128,6 +134,8 @@ impl From<e::Event> for Event {
             tags,
             registration,
             organizer,
+            image_url,
+            image_link_url,
         }
     }
 }

@@ -224,6 +224,8 @@ mod tests {
             registration: None,
             organizer: None,
             archived: None,
+            image_url: None,
+            image_link_url: None,
         };
 
         let mut x = e.clone();
@@ -321,6 +323,8 @@ mod tests {
             registration: None,
             organizer: None,
             archived: None,
+            image_url: None,
+            image_link_url: None,
         };
         assert!(e.validate().is_ok());
     }
@@ -341,6 +345,8 @@ mod tests {
             registration: None,
             organizer: None,
             archived: None,
+            image_url: None,
+            image_link_url: None,
         };
         assert!(e.validate().is_err());
     }
@@ -361,6 +367,8 @@ mod tests {
             registration: None,
             organizer: None,
             archived: None,
+            image_url: None,
+            image_link_url: None,
         };
         assert!(e.validate().is_err());
     }

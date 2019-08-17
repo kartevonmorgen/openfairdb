@@ -103,6 +103,8 @@ table! {
         registration -> Nullable<SmallInt>,
         organizer -> Nullable<Text>,
         archived -> Nullable<BigInt>,
+        image_url -> Nullable<Text>,
+        image_link_url -> Nullable<Text>,
     }
 }
 

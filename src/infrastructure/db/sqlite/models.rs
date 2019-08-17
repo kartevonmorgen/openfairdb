@@ -51,6 +51,8 @@ pub struct Event {
     pub registration: Option<i16>,
     pub organizer: Option<String>,
     pub archived: Option<i64>,
+    pub image_url: Option<String>,
+    pub image_link_url: Option<String>,
 }
 
 #[derive(Queryable, Insertable)]

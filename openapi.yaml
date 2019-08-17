@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: OpenFairDB API
-  version: 0.5.15
+  version: 0.5.16
   contact:
     name: slowtec GmbH
     url: 'https://slowtec.de'
@@ -719,6 +719,10 @@ components:
           example: telephone
           description: Type of registration
         organizer:
+          type: string
+        image_url:
+          type: string
+        image_link_url:
           type: string
       example:
         title: A great event
