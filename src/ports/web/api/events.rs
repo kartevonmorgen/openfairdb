@@ -477,7 +477,7 @@ mod tests {
                     .create_org(Organization {
                         id: "foo".into(),
                         name: "bar".into(),
-                        owned_tags: vec![],
+                        owned_tags: vec!["org-tag".into()],
                         api_token: "foo".into(),
                     })
                     .unwrap();
@@ -498,7 +498,7 @@ mod tests {
                     .create_org(Organization {
                         id: "foo".into(),
                         name: "bar".into(),
-                        owned_tags: vec![],
+                        owned_tags: vec!["org-tag".into()],
                         api_token: "foo".into(),
                     })
                     .unwrap();
@@ -519,7 +519,7 @@ mod tests {
                     .create_org(Organization {
                         id: "foo".into(),
                         name: "bar".into(),
-                        owned_tags: vec![],
+                        owned_tags: vec!["org-tag".into()],
                         api_token: "foo".into(),
                     })
                     .unwrap();
@@ -540,7 +540,7 @@ mod tests {
                     .create_org(Organization {
                         id: "foo".into(),
                         name: "bar".into(),
-                        owned_tags: vec![],
+                        owned_tags: vec!["org-tag".into()],
                         api_token: "foo".into(),
                     })
                     .unwrap();
@@ -737,7 +737,7 @@ mod tests {
                 .create_org(Organization {
                     id: "foo".into(),
                     name: "bar".into(),
-                    owned_tags: vec![],
+                    owned_tags: vec!["org-tag".into()],
                     api_token: "foo".into(),
                 })
                 .unwrap();
@@ -796,7 +796,7 @@ mod tests {
                 .create_org(Organization {
                     id: "foo".into(),
                     name: "bar".into(),
-                    owned_tags: vec![],
+                    owned_tags: vec!["org-tag".into()],
                     api_token: "foo".into(),
                 })
                 .unwrap();
@@ -957,7 +957,7 @@ mod tests {
                 .create_org(Organization {
                     id: "foo".into(),
                     name: "bar".into(),
-                    owned_tags: vec![],
+                    owned_tags: vec!["org-tag".into()],
                     api_token: "foo".into(),
                 })
                 .unwrap();
@@ -978,8 +978,62 @@ mod tests {
                 .create_org(Organization {
                     id: "foo".into(),
                     name: "bar".into(),
-                    owned_tags: vec![],
+                    owned_tags: vec!["org-tag".into()],
                     api_token: "foo".into(),
+                })
+                .unwrap();
+            let e = Event {
+                id: "1234".into(),
+                title: "x".into(),
+                description: None,
+                start: NaiveDateTime::from_timestamp(0, 0),
+                end: None,
+                location: None,
+                contact: None,
+                tags: vec!["bla".into(), "org-tag".into()],
+                homepage: None,
+                created_by: Some("foo@bar.com".into()),
+                registration: None,
+                organizer: None,
+                archived: None,
+                image_url: None,
+                image_link_url: None,
+            };
+            db.exclusive().unwrap().create_event(e.clone()).unwrap();
+            let res = client
+                .put("/events/1234")
+                .header(ContentType::JSON)
+                .header(Header::new("Authorization", "Bearer foo"))
+                .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com"}"#)
+                .dispatch();
+            assert_eq!(res.status(), Status::Ok);
+            let new = db.exclusive().unwrap().get_event("1234").unwrap();
+            assert_eq!(&*new.title, "new");
+            assert_eq!(new.start.timestamp(), 5);
+            assert!(new.created_by != e.created_by);
+        }
+
+        #[test]
+        fn with_api_token_but_mismatching_tag() {
+            let (client, db) = setup();
+            db.exclusive()
+                .unwrap()
+                .create_org(Organization {
+                    id: "foo".into(),
+                    name: "bar".into(),
+                    owned_tags: vec!["org-tag".into()],
+                    api_token: "foo".into(),
+                })
+                .unwrap();
+            // The events needs an owner, otherwise the test may fail
+            // with a debug assertion.
+            db.exclusive()
+                .unwrap()
+                .create_org(Organization {
+                    id: "bar".into(),
+                    name: "foo".into(),
+                    owned_tags: vec!["bla".into()],
+                    api_token: "bar".into(),
                 })
                 .unwrap();
             let e = Event {
@@ -1006,22 +1060,18 @@ mod tests {
                 .header(Header::new("Authorization", "Bearer foo"))
                 .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com"}"#)
                 .dispatch();
-            assert_eq!(res.status(), Status::Ok);
-            let new = db.exclusive().unwrap().get_event("1234").unwrap();
-            assert_eq!(&*new.title, "new");
-            assert_eq!(new.start.timestamp(), 5);
-            assert!(new.created_by != e.created_by);
+            assert_eq!(res.status(), Status::Forbidden);
         }
 
         #[test]
-        fn with_api_token_and_existing_tag() {
+        fn with_api_token_keep_org_tag() {
             let (client, db) = setup();
             db.exclusive()
                 .unwrap()
                 .create_org(Organization {
                     id: "foo".into(),
                     name: "bar".into(),
-                    owned_tags: vec![],
+                    owned_tags: vec!["org-tag".into()],
                     api_token: "foo".into(),
                 })
                 .unwrap();
@@ -1033,7 +1083,7 @@ mod tests {
                 end: None,
                 location: None,
                 contact: None,
-                tags: vec!["bla".into()],
+                tags: vec!["bla".into(), "org-tag".into()],
                 homepage: None,
                 created_by: Some("foo@bar.com".into()),
                 registration: None,
@@ -1047,9 +1097,11 @@ mod tests {
                 .put("/events/1234")
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
-                .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com","tags":["bla"]}"#)
+                .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com","tags":["bla2"]}"#)
                 .dispatch();
             assert_eq!(res.status(), Status::Ok);
+            let new = db.exclusive().unwrap().get_event("1234").unwrap();
+            assert_eq!(new.tags, vec!["bla2", "org-tag"]);
         }
 
         #[test]
@@ -1060,7 +1112,7 @@ mod tests {
                 .create_org(Organization {
                     id: "foo".into(),
                     name: "bar".into(),
-                    owned_tags: vec![],
+                    owned_tags: vec!["org-tag1".into(), "org-tag2".into()],
                     api_token: "foo".into(),
                 })
                 .unwrap();
@@ -1072,7 +1124,7 @@ mod tests {
                 end: None,
                 location: None,
                 contact: None,
-                tags: vec!["bli".into(), "bla".into(), "blub".into()],
+                tags: vec!["bli".into(), "org-tag".into(), "org-tag1".into(), "bla".into(), "blub".into()],
                 homepage: None,
                 created_by: Some("foo@bar.com".into()),
                 registration: None,
@@ -1086,11 +1138,11 @@ mod tests {
                 .put("/events/1234")
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
-                .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com","tags":["blub","new"]}"#)
+                .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com","tags":["blub","new","org-tag2"]}"#)
                 .dispatch();
             assert_eq!(res.status(), Status::Ok);
             let new = db.exclusive().unwrap().get_event("1234").unwrap();
-            assert_eq!(new.tags, vec!["blub", "new"]);
+            assert_eq!(new.tags, vec!["blub", "new", "org-tag2"]);
         }
 
         #[test]
@@ -1101,7 +1153,7 @@ mod tests {
                 .create_org(Organization {
                     id: "foo".into(),
                     name: "bar".into(),
-                    owned_tags: vec![],
+                    owned_tags: vec!["bla".into()],
                     api_token: "foo".into(),
                 })
                 .unwrap();
@@ -1157,7 +1209,7 @@ mod tests {
                 .create_org(Organization {
                     id: "foo".into(),
                     name: "bar".into(),
-                    owned_tags: vec![],
+                    owned_tags: vec!["org-tag".into()],
                     api_token: "foo".into(),
                 })
                 .unwrap();
