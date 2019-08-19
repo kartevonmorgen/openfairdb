@@ -124,7 +124,7 @@ impl EmailTokenCredentialsRepository for MockDb {
                 .borrow_mut()
                 .swap_remove(index))
         } else {
-            return Err(RepoError::NotFound);
+            Err(RepoError::NotFound)
         }
     }
 
@@ -201,15 +201,6 @@ fn create<T: Clone + Id>(objects: &mut Vec<T>, e: T) -> RepoResult<()> {
 fn update<T: Clone + Id>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
     if let Some(pos) = objects.iter().position(|x| x.id() == e.id()) {
         objects[pos] = e.clone();
-    } else {
-        return Err(RepoError::NotFound);
-    }
-    Ok(())
-}
-
-fn delete<T: Clone + Id>(objects: &mut Vec<T>, id: &str) -> RepoResult<()> {
-    if let Some(pos) = objects.iter().position(|x| x.id() == id) {
-        objects.remove(pos);
     } else {
         return Err(RepoError::NotFound);
     }
@@ -343,8 +334,8 @@ impl EventGateway for MockDb {
         unimplemented!();
     }
 
-    fn delete_event(&self, id: &str) -> RepoResult<()> {
-        delete(&mut self.events.borrow_mut(), id)
+    fn delete_event_with_matching_tags(&self, _id: &str, _tags: &[&str]) -> RepoResult<()> {
+        unimplemented!();
     }
 }
 
@@ -361,10 +352,10 @@ impl UserGateway for MockDb {
             .filter(|u| u.username == username)
             .cloned()
             .collect();
-        if users.len() > 0 {
-            Ok(users[0].clone())
-        } else {
+        if users.is_empty() {
             Err(RepoError::NotFound)
+        } else {
+            Ok(users[0].clone())
         }
     }
 
@@ -430,7 +421,7 @@ impl CommentRepository for MockDb {
             .comments
             .borrow()
             .iter()
-            .filter(|c| &c.rating_id == rating_id && c.archived.is_none())
+            .filter(|c| c.rating_id == rating_id && c.archived.is_none())
             .cloned()
             .collect())
     }
@@ -505,7 +496,7 @@ impl RatingRepository for MockDb {
             .ratings
             .borrow()
             .iter()
-            .filter(|r| r.archived.is_none() && &r.entry_id == entry_id)
+            .filter(|r| r.archived.is_none() && r.entry_id == entry_id)
             .cloned()
             .collect())
     }

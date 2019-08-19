@@ -748,9 +748,20 @@ impl EventGateway for SqliteConnection {
         Ok(count)
     }
 
-    fn delete_event(&self, id: &str) -> Result<()> {
-        use self::schema::events::dsl;
-        diesel::delete(dsl::events.filter(dsl::id.eq(id))).execute(self)?;
+    fn delete_event_with_matching_tags(&self, id: &str, tags: &[&str]) -> Result<()> {
+        use self::schema::{events::dsl as e_dsl, event_tag_relations::dsl as et_dsl};
+        let mut query = self::schema::events::table.select(e_dsl::id).into_boxed();
+        if !tags.is_empty() {
+            let id_subselect = et_dsl::event_tag_relations.select(et_dsl::event_id).filter(et_dsl::tag_id.eq_any(tags));
+            query = query.filter(e_dsl::id.eq_any(id_subselect));
+        }
+        let ids: Vec<String> = query.load(self)?;
+        debug_assert!(ids.len() <= 1);
+        if ids.is_empty() {
+            return Err(RepoError::NotFound);
+        }
+        diesel::delete(et_dsl::event_tag_relations.filter(et_dsl::event_id.eq(id))).execute(self)?;
+        diesel::delete(e_dsl::events.filter(e_dsl::id.eq(id))).execute(self)?;
         Ok(())
     }
 }

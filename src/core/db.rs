@@ -60,8 +60,10 @@ pub trait EventGateway {
     ) -> Result<Vec<Event>>;
     fn update_event(&self, _: &Event) -> Result<()>;
     fn archive_events(&self, ids: &[&str], archived: Timestamp) -> Result<usize>;
-    fn delete_event(&self, _: &str) -> Result<()>;
     fn count_events(&self) -> Result<usize>;
+
+    // Delete an event, but only if tagged with at least one of the given tags
+    fn delete_event_with_matching_tags(&self, id: &str, tags: &[&str]) -> Result<()>;
 }
 
 pub trait UserGateway {

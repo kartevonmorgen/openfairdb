@@ -1155,7 +1155,7 @@ mod tests {
                 .create_org(Organization {
                     id: "foo".into(),
                     name: "bar".into(),
-                    owned_tags: vec![],
+                    owned_tags: vec!["tag".into()],
                     api_token: "foo".into(),
                 })
                 .unwrap();
@@ -1167,7 +1167,7 @@ mod tests {
                 end: None,
                 location: None,
                 contact: None,
-                tags: vec!["bla".into()],
+                tags: vec!["bla".into(), "tag".into()],
                 homepage: None,
                 created_by: Some("foo@bar.com".into()),
                 registration: None,
@@ -1196,12 +1196,20 @@ mod tests {
             db.exclusive().unwrap().create_event(e0.clone()).unwrap();
             db.exclusive().unwrap().create_event(e1.clone()).unwrap();
             assert_eq!(db.shared().unwrap().count_events().unwrap(), 2);
+            // The 1st event has the owned tag and should be deleted.
             let res = client
                 .delete("/events/1234")
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
                 .dispatch();
             assert_eq!(res.status(), Status::Ok);
+            // The 2nd event is not tagged with one of the owned tags.
+            let res = client
+                .delete("/events/9999")
+                .header(ContentType::JSON)
+                .header(Header::new("Authorization", "Bearer foo"))
+                .dispatch();
+            assert_eq!(res.status(), Status::Unauthorized);
             assert_eq!(db.shared().unwrap().count_events().unwrap(), 1);
         }
     }
