@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.6.0 (2019-08-20)
+
+- new(web): Multi-tenancy support for events
+
 ## v0.5.16 (2019-08-16)
 
 - new(web): Add image and image link URLs to events
