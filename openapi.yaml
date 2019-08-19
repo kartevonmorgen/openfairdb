@@ -256,6 +256,13 @@ paths:
       tags:
         - Events
       summary: Create a new event
+      description: |
+        Creating new events is only allowed for registered organizations
+        by authorizing themselves with an API token. These organizations must
+        own reserved tags.
+
+        One or more reserved tags have to be provided upon creation. Otherwise
+        all of the organization's reserved tags are added implicitly to the event.
       security:
         - bearerAuth: []
       requestBody:
@@ -294,6 +301,13 @@ paths:
                 $ref: '#/components/schemas/Event'
     put:
       summary: Update an event
+      description: |
+        Events can only be updated by the organization that owns them.
+        Ownership is determined by the event's reserved tags.
+
+        The updated event must be assigned at least one of the organization's
+        reserved tags. Otherwise all reserved tags of the event are preserved
+        by implicitly re-adding them.
       tags:
         - Events
       security:
@@ -317,6 +331,9 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
     delete:
       summary: Delete an event
+      description: |
+        Events can only be deleted by the organization that owns them.
+        Ownership is determined by the event's reserved tags.
       tags:
         - Events
       security:
