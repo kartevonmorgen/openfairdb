@@ -120,6 +120,12 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent, mode: NewEventMode) ->
             match mode {
                 NewEventMode::Create => {
                     // Ensure that the event is owned by the authorized org
+                    if org.owned_tags.is_empty() {
+                        log::warn!("Cannot create event for {} without any owned tags", org.name);
+                        // All events are owned by an organization which must
+                        // be assigned at least one dedicated tag!
+                        return Err(Error::Parameter(ParameterError::Unauthorized));
+                    }
                     log::info!("Implicitly adding all {} tag(s) owned by {} while creating event", org.owned_tags.len(), org.name);
                     tags.reserve(org.owned_tags.len());
                     tags.append(&mut org.owned_tags);
