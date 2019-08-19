@@ -79,7 +79,6 @@ fn registration_type_from_str() {
 }
 
 pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
-    log::debug!("try_into_new_event");
     let NewEvent {
         title,
         description,
@@ -102,7 +101,6 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
         image_link_url,
         ..
     } = e;
-    log::debug!("checking authorization");
     let org = if let Some(ref token) = token {
         let org = db.get_org_by_api_token(token).map_err(|e| match e {
             RepoError::NotFound => Error::Parameter(ParameterError::Unauthorized),
@@ -112,9 +110,7 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
     } else {
         None
     };
-    log::debug!("prepare_tag_list");
     let tags = super::prepare_tag_list(tags.unwrap_or_else(|| vec![]));
-    log::debug!("check_for_owned_tags");
     super::check_for_owned_tags(db, &tags, &org)?;
     //TODO: use address.is_empty()
     let address = if street.is_some() || zip.is_some() || city.is_some() || country.is_some() {
@@ -129,7 +125,6 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
     };
 
     //TODO: use location.is_empty()
-    log::debug!("try_from_lat_lng_deg");
     let pos = if let (Some(lat), Some(lng)) = (lat, lng) {
         MapPoint::try_from_lat_lng_deg(lat, lng)
     } else {
@@ -144,7 +139,6 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
         None
     };
     //TODO: use contact.is_empty()
-    log::debug!("contact");
     let contact = if email.is_some() || telephone.is_some() {
         Some(Contact { email, telephone })
     } else {
@@ -234,7 +228,6 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
         image_link_url,
     };
     let event = event.auto_correct();
-    log::debug!("Validating event");
     event.validate()?;
     for t in &event.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
