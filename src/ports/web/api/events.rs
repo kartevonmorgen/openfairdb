@@ -465,7 +465,12 @@ mod tests {
                 assert_eq!(
                     ev.tags,
                     // Including the implicitly added org tag
-                    vec!["tag".to_string(), "tags".to_string(), "two".to_string(), "org-tag".to_string()]
+                    vec![
+                        "tag".to_string(),
+                        "tags".to_string(),
+                        "two".to_string(),
+                        "org-tag".to_string()
+                    ]
                 );
             }
 
@@ -1124,7 +1129,13 @@ mod tests {
                 end: None,
                 location: None,
                 contact: None,
-                tags: vec!["bli".into(), "org-tag".into(), "org-tag1".into(), "bla".into(), "blub".into()],
+                tags: vec![
+                    "bli".into(),
+                    "org-tag".into(),
+                    "org-tag1".into(),
+                    "bla".into(),
+                    "blub".into(),
+                ],
                 homepage: None,
                 created_by: Some("foo@bar.com".into()),
                 registration: None,

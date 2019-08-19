@@ -106,15 +106,17 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent, mode: NewEventMode) ->
         image_link_url,
         ..
     } = e;
-    let org = token.map(|t| {
-        db.get_org_by_api_token(&t).map_err(|e| {
-            log::warn!("Unknown or invalid API token: {}", t);
-            match e {
-                RepoError::NotFound => Error::Parameter(ParameterError::Unauthorized),
-                _ => Error::Repo(e),
-            }
+    let org = token
+        .map(|t| {
+            db.get_org_by_api_token(&t).map_err(|e| {
+                log::warn!("Unknown or invalid API token: {}", t);
+                match e {
+                    RepoError::NotFound => Error::Parameter(ParameterError::Unauthorized),
+                    _ => Error::Repo(e),
+                }
+            })
         })
-    }).transpose()?;
+        .transpose()?;
     let mut tags = super::prepare_tag_list(tags.unwrap_or_else(|| vec![]));
     if super::check_and_count_owned_tags(db, &tags, org.as_ref())? == 0 {
         if let Some(mut org) = org {
@@ -129,7 +131,11 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent, mode: NewEventMode) ->
             match mode {
                 NewEventMode::Create => {
                     // Ensure that the newly created event is owned by the authorized org
-                    log::info!("Implicitly adding all {} tag(s) owned by {} while creating event", org.owned_tags.len(), org.name);
+                    log::info!(
+                        "Implicitly adding all {} tag(s) owned by {} while creating event",
+                        org.owned_tags.len(),
+                        org.name
+                    );
                     tags.reserve(org.owned_tags.len());
                     tags.append(&mut org.owned_tags);
                 }
@@ -144,7 +150,10 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent, mode: NewEventMode) ->
                     }
                     tags.reserve(owned_count);
                     // Collect all existing tags that are owned by this org
-                    for owned_tag in old_tags.into_iter().filter(|t| org.owned_tags.iter().any(|x| x == t)) {
+                    for owned_tag in old_tags
+                        .into_iter()
+                        .filter(|t| org.owned_tags.iter().any(|x| x == t))
+                    {
                         tags.push(owned_tag);
                     }
                 }

@@ -6,16 +6,17 @@ pub fn delete_event<D: Db>(db: &mut D, id: &str, token: &str) -> Result<()> {
         _ => Error::Repo(e),
     })?;
     let tags: Vec<_> = org.owned_tags.iter().map(|tag| tag.as_str()).collect();
-    db.delete_event_with_matching_tags(id, &tags).map_err(|e| match e {
-        RepoError::NotFound => {
-            if db.get_event(id).is_ok() {
-                // Event actually exists, so tags didn't match
-                Error::Parameter(ParameterError::Unauthorized)
-            } else {
-                // Really not found
-                Error::Repo(RepoError::NotFound)
+    db.delete_event_with_matching_tags(id, &tags)
+        .map_err(|e| match e {
+            RepoError::NotFound => {
+                if db.get_event(id).is_ok() {
+                    // Event actually exists, so tags didn't match
+                    Error::Parameter(ParameterError::Unauthorized)
+                } else {
+                    // Really not found
+                    Error::Repo(RepoError::NotFound)
+                }
             }
-        }
-        e => Error::Repo(e),
-    })
+            e => Error::Repo(e),
+        })
 }
