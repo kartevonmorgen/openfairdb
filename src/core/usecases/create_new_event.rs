@@ -101,17 +101,21 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
         image_link_url,
         ..
     } = e;
-    let org = if let Some(ref token) = token {
-        let org = db.get_org_by_api_token(token).map_err(|e| match e {
+    let org = token.map(|t| {
+        db.get_org_by_api_token(&t).map_err(|e| match e {
             RepoError::NotFound => Error::Parameter(ParameterError::Unauthorized),
             _ => Error::Repo(e),
-        })?;
-        Some(org)
-    } else {
-        None
-    };
-    let tags = super::prepare_tag_list(tags.unwrap_or_else(|| vec![]));
-    super::check_for_owned_tags(db, &tags, &org)?;
+        })
+    }).transpose()?;
+    let mut tags = super::prepare_tag_list(tags.unwrap_or_else(|| vec![]));
+    if super::check_and_count_owned_tags(db, &tags, &org)? == 0 {
+        if let Some(mut org) = org {
+            // Ensure that the event is owned by the authorized org
+            log::info!("Implicitly adding {} tag(s) owned by {}", org.owned_tags.len(), org.name);
+            tags.reserve(org.owned_tags.len());
+            tags.append(&mut org.owned_tags);
+        }
+    }
     //TODO: use address.is_empty()
     let address = if street.is_some() || zip.is_some() || city.is_some() || country.is_some() {
         Some(Address {

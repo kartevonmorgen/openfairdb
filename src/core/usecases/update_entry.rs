@@ -59,7 +59,7 @@ pub fn prepare_updated_entry<D: Db>(db: &D, id: String, e: UpdateEntry) -> Resul
         Some(pos) => pos,
     };
     let tags = super::prepare_tag_list(tags);
-    super::check_for_owned_tags(db, &tags, &None)?;
+    super::check_and_count_owned_tags(db, &tags, &None)?;
     let address = Address {
         street,
         zip,

@@ -174,12 +174,16 @@ pub fn prepare_tag_list(tags: Vec<String>) -> Vec<String> {
     tags
 }
 
-pub fn check_for_owned_tags<D: Db>(
+// Counts and returns the number of tags owned by this org. If the
+// given list of tags contains tags that are owned by any other org
+// then fails with ParameterError::OwnedTag.
+pub fn check_and_count_owned_tags<D: Db>(
     db: &D,
     tags: &[String],
     org: &Option<Organization>,
-) -> Result<()> {
+) -> Result<usize> {
     let owned_tags = db.get_all_tags_owned_by_orgs()?;
+    let mut count = 0;
     for t in tags {
         if owned_tags.iter().any(|id| id == t) {
             match org {
@@ -187,6 +191,7 @@ pub fn check_for_owned_tags<D: Db>(
                     if !o.owned_tags.iter().any(|x| x == t) {
                         return Err(ParameterError::OwnedTag.into());
                     }
+                    count += 1;
                 }
                 None => {
                     return Err(ParameterError::OwnedTag.into());
@@ -194,5 +199,5 @@ pub fn check_for_owned_tags<D: Db>(
             }
         }
     }
-    Ok(())
+    Ok(count)
 }
