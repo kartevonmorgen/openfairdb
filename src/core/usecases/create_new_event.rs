@@ -124,7 +124,7 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent, mode: NewEventMode) ->
                         log::warn!("Cannot create event for {} without any owned tags", org.name);
                         // All events are owned by an organization which must
                         // be assigned at least one dedicated tag!
-                        return Err(Error::Parameter(ParameterError::Unauthorized));
+                        return Err(Error::Parameter(ParameterError::OwnedTag));
                     }
                     log::info!("Implicitly adding all {} tag(s) owned by {} while creating event", org.owned_tags.len(), org.name);
                     tags.reserve(org.owned_tags.len());
@@ -135,7 +135,14 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent, mode: NewEventMode) ->
                     let old_tags = db.get_event(id)?.tags;
                     // Verify that the org is entitled to update this event according to the owned tags
                     let owned_count = super::check_and_count_owned_tags(db, &old_tags, Some(&org))?;
+                    // The following assertion might be violated in tests if test events
+                    // are not owned by any organization. Fix those tests, no execeptions!
                     debug_assert!(owned_count > 0);
+                    // Even though the previous assertion is never supposed to be triggered,
+                    // we deny taking ownership of previously unowned events!
+                    if owned_count < 1 {
+                        return Err(Error::Parameter(ParameterError::OwnedTag));
+                    }
                     log::info!("Implicitly re-adding {} tag(s) owned by {} while updating event", owned_count, org.name);
                     tags.reserve(owned_count);
                     // Collect all existing tags that are owned by this org

@@ -294,7 +294,7 @@ mod tests {
                     .header(Header::new("Authorization", "Bearer foo"))
                     .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com"}"#)
                     .dispatch();
-                assert_eq!(res.status(), Status::Unauthorized);
+                assert_eq!(res.status(), Status::Forbidden);
             }
 
             #[test]
