@@ -107,25 +107,28 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent, mode: NewEventMode) ->
         ..
     } = e;
     let org = token.map(|t| {
-        db.get_org_by_api_token(&t).map_err(|e| match e {
-            RepoError::NotFound => Error::Parameter(ParameterError::Unauthorized),
-            _ => Error::Repo(e),
+        db.get_org_by_api_token(&t).map_err(|e| {
+            log::warn!("Unknown or invalid API token: {}", t);
+            match e {
+                RepoError::NotFound => Error::Parameter(ParameterError::Unauthorized),
+                _ => Error::Repo(e),
+            }
         })
     }).transpose()?;
     let mut tags = super::prepare_tag_list(tags.unwrap_or_else(|| vec![]));
     if super::check_and_count_owned_tags(db, &tags, org.as_ref())? == 0 {
         if let Some(mut org) = org {
+            if org.owned_tags.is_empty() {
+                log::info!("Organization {} doesn't own any tags that are required for creating/updating events", org.name);
+                // All events are owned by an organization which must
+                // be assigned at least one dedicated tag!
+                return Err(Error::Parameter(ParameterError::OwnedTag));
+            }
             // Implicitly add missing owned tags to prevent events with
             // undefined ownership!
             match mode {
                 NewEventMode::Create => {
-                    // Ensure that the event is owned by the authorized org
-                    if org.owned_tags.is_empty() {
-                        log::warn!("Cannot create event for {} without any owned tags", org.name);
-                        // All events are owned by an organization which must
-                        // be assigned at least one dedicated tag!
-                        return Err(Error::Parameter(ParameterError::OwnedTag));
-                    }
+                    // Ensure that the newly created event is owned by the authorized org
                     log::info!("Implicitly adding all {} tag(s) owned by {} while creating event", org.owned_tags.len(), org.name);
                     tags.reserve(org.owned_tags.len());
                     tags.append(&mut org.owned_tags);
@@ -135,15 +138,10 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent, mode: NewEventMode) ->
                     let old_tags = db.get_event(id)?.tags;
                     // Verify that the org is entitled to update this event according to the owned tags
                     let owned_count = super::check_and_count_owned_tags(db, &old_tags, Some(&org))?;
-                    // The following assertion might be violated in tests if test events
-                    // are not owned by any organization. Fix those tests, no execeptions!
-                    debug_assert!(owned_count > 0);
-                    // Even though the previous assertion is never supposed to be triggered,
-                    // we deny taking ownership of previously unowned events!
                     if owned_count < 1 {
+                        log::info!("Organization {} is not entitled to modify event {} according to the tags", org.name, id);
                         return Err(Error::Parameter(ParameterError::OwnedTag));
                     }
-                    log::info!("Implicitly re-adding {} tag(s) owned by {} while updating event", owned_count, org.name);
                     tags.reserve(owned_count);
                     // Collect all existing tags that are owned by this org
                     for owned_tag in old_tags.into_iter().filter(|t| org.owned_tags.iter().any(|x| x == t)) {
