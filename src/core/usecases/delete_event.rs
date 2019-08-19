@@ -11,7 +11,7 @@ pub fn delete_event<D: Db>(db: &mut D, id: &str, token: &str) -> Result<()> {
             RepoError::NotFound => {
                 if db.get_event(id).is_ok() {
                     // Event actually exists, so tags didn't match
-                    Error::Parameter(ParameterError::Unauthorized)
+                    Error::Parameter(ParameterError::OwnedTag)
                 } else {
                     // Really not found
                     Error::Repo(RepoError::NotFound)

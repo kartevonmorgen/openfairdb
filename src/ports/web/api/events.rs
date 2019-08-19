@@ -1294,7 +1294,7 @@ mod tests {
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
                 .dispatch();
-            assert_eq!(res.status(), Status::Unauthorized);
+            assert_eq!(res.status(), Status::Forbidden);
             assert_eq!(db.shared().unwrap().count_events().unwrap(), 1);
         }
     }
