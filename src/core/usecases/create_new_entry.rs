@@ -55,7 +55,7 @@ pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
         Some(pos) => pos,
     };
     let tags = super::prepare_tag_list(tags);
-    super::check_and_count_owned_tags(db, &tags, &None)?;
+    super::check_and_count_owned_tags(db, &tags, None)?;
     let address = Address {
         street,
         zip,

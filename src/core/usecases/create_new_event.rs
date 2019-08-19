@@ -78,7 +78,12 @@ fn registration_type_from_str() {
     assert!(RegistrationType::from_str("").is_err());
 }
 
-pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
+pub enum NewEventMode<'a> {
+    Create,
+    Update(&'a str),
+}
+
+pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent, mode: NewEventMode) -> Result<Event> {
     let NewEvent {
         title,
         description,
@@ -108,12 +113,31 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
         })
     }).transpose()?;
     let mut tags = super::prepare_tag_list(tags.unwrap_or_else(|| vec![]));
-    if super::check_and_count_owned_tags(db, &tags, &org)? == 0 {
+    if super::check_and_count_owned_tags(db, &tags, org.as_ref())? == 0 {
         if let Some(mut org) = org {
-            // Ensure that the event is owned by the authorized org
-            log::info!("Implicitly adding {} tag(s) owned by {}", org.owned_tags.len(), org.name);
-            tags.reserve(org.owned_tags.len());
-            tags.append(&mut org.owned_tags);
+            // Implicitly add missing owned tags to prevent events with
+            // undefined ownership!
+            match mode {
+                NewEventMode::Create => {
+                    // Ensure that the event is owned by the authorized org
+                    log::info!("Implicitly adding all {} tag(s) owned by {} while creating event", org.owned_tags.len(), org.name);
+                    tags.reserve(org.owned_tags.len());
+                    tags.append(&mut org.owned_tags);
+                }
+                NewEventMode::Update(id) => {
+                    // Keep all existing tags owned by the authorized org
+                    let old_tags = db.get_event(id)?.tags;
+                    // Verify that the org is entitled to update this event according to the owned tags
+                    let owned_count = super::check_and_count_owned_tags(db, &old_tags, Some(&org))?;
+                    debug_assert!(owned_count > 0);
+                    log::info!("Implicitly re-adding {} tag(s) owned by {} while updating event", owned_count, org.name);
+                    tags.reserve(owned_count);
+                    // Collect all existing tags that are owned by this org
+                    for owned_tag in old_tags.into_iter().filter(|t| org.owned_tags.iter().any(|x| x == t)) {
+                        tags.push(owned_tag);
+                    }
+                }
+            }
         }
     }
     //TODO: use address.is_empty()
@@ -240,7 +264,7 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<Event> {
 }
 
 pub fn create_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<String> {
-    let new_event = try_into_new_event(db, e)?;
+    let new_event = try_into_new_event(db, e, NewEventMode::Create)?;
     let new_id = new_event.id.clone();
     if new_event.created_by.is_none() {
         // NOTE: At the moment we require an email address,

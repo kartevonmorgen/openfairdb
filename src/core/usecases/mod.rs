@@ -180,7 +180,7 @@ pub fn prepare_tag_list(tags: Vec<String>) -> Vec<String> {
 pub fn check_and_count_owned_tags<D: Db>(
     db: &D,
     tags: &[String],
-    org: &Option<Organization>,
+    org: Option<&Organization>,
 ) -> Result<usize> {
     let owned_tags = db.get_all_tags_owned_by_orgs()?;
     let mut count = 0;
