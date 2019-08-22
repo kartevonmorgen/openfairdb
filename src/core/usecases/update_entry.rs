@@ -60,6 +60,13 @@ pub fn prepare_updated_entry<D: Db>(db: &D, id: String, e: UpdateEntry) -> Resul
     };
     let tags = super::prepare_tag_list(tags);
     super::check_and_count_owned_tags(db, &tags, None)?;
+    super::check_and_count_owned_tags(db, &tags, org.as_ref())?;
+    // TODO: Ensure that no reserved tags are removed without authorization.
+    // All existing reserved tags from other organizations must be preserved
+    // when editing entries. Reserved tags that already exist should not be
+    // considers during the check, because they must be preserved independent
+    // of who is editing the entry.
+    // GitHub issue: https://github.com/slowtec/openfairdb/issues/203
     let address = Address {
         street,
         zip,
