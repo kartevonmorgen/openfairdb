@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.6.1 (2019-08-22)
+
+- fix(web): Re-enable email feature in Docker builds
+
 ## v0.6.0 (2019-08-20)
 
 - new(web): Multi-tenancy support for events
