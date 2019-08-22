@@ -61,11 +61,9 @@ COPY [ \
     "./" ]
 
 # Test and build the actual project
-# The feature "email" is not available in the image, because it requires
-# a local sendmail installation.
 RUN cargo test --${BUILD_MODE} --target ${BUILD_TARGET} --all \
     && \
-    cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --no-default-features --features frontend --bin ${BUILD_BIN} \
+    cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --bin ${BUILD_BIN} \
     && \
     strip ./target/${BUILD_TARGET}/${BUILD_MODE}/${BUILD_BIN}
 
