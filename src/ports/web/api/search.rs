@@ -26,7 +26,7 @@ pub struct SearchQuery {
 type Result<T> = result::Result<Json<T>, AppError>;
 
 const DEFAULT_RESULT_LIMIT: usize = 100;
-const MAX_RESULT_LIMIT: usize = 250;
+const MAX_RESULT_LIMIT: usize = 500;
 
 #[get("/search?<search..>")]
 pub fn get_search(
