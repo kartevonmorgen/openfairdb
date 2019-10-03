@@ -1,23 +1,23 @@
 # Open Fair DB
 
-The backend for [Karte von morgen](https://github.com/flosse/kartevonmorgen/)
+The backend for [Karte von morgen](https://github.com/kartevonmorgen/kartevonmorgen/)
 written in [Rust](http://rustlang.org/).
 
-[![Build Status](https://travis-ci.org/slowtec/openfairdb.svg?branch=master)](https://travis-ci.org/slowtec/openfairdb)
-[![Coverage Status](https://coveralls.io/repos/github/slowtec/openfairdb/badge.svg?branch=master)](https://coveralls.io/github/slowtec/openfairdb?branch=master)
-[![dependency status](https://deps.rs/repo/github/slowtec/openfairdb/status.svg)](https://deps.rs/repo/github/slowtec/openfairdb)
-[![License](https://img.shields.io/badge/license-AGPLv3-blue.svg?style=flat)](https://github.com/slowtec/openfairdb/blob/master/LICENSE)
+[![Build Status](https://travis-ci.org/kartevonmorgen/openfairdb.svg?branch=master)](https://travis-ci.org/kartevonmorgen/openfairdb)
+[![Coverage Status](https://coveralls.io/repos/github/kartevonmorgen/openfairdb/badge.svg?branch=master)](https://coveralls.io/github/kartevonmorgen/openfairdb?branch=master)
+[![dependency status](https://deps.rs/repo/github/kartevonmorgen/openfairdb/status.svg)](https://deps.rs/repo/github/kartevonmorgen/openfairdb)
+[![License](https://img.shields.io/badge/license-AGPLv3-blue.svg?style=flat)](https://github.com/kartevonmorgen/openfairdb/blob/master/LICENSE)
 
 ## REST API
 
 The API is available under `http://api.ofdb.io/v0/`.
 
-The current API is documented within the [openapi.yaml](https://github.com/slowtec/openfairdb/blob/master/openapi.yaml) file.
+The current API is documented within the [openapi.yaml](https://github.com/kartevonmorgen/openfairdb/blob/master/openapi.yaml) file.
 You can render the API documentation e.g. with the swagger editor:
 
 - go to [https://editor.swagger.io](https://editor.swagger.io/)
 - go to `File` -> `import URL`
-- enter `https://raw.githubusercontent.com/slowtec/openfairdb/master/openapi.yaml`
+- enter `https://raw.githubusercontent.com/kartevonmorgen/openfairdb/master/openapi.yaml`
 - enjoy ;-)
 
 An other way to see how the API can be used, you can open the `network` tab in the developer
@@ -52,11 +52,11 @@ For the following requests one must be logged in:
 ## Quick start
 
 Download the latest build
-[openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz](https://github.com/slowtec/openfairdb/releases/download/v0.5.1/openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz),
+[openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz](https://github.com/kartevonmorgen/openfairdb/releases/download/v0.5.1/openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz),
 unpack and start it:
 
 ```sh
-wget https://github.com/slowtec/openfairdb/releases/download/v0.5.1/openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz
+wget https://github.com/kartevonmorgen/openfairdb/releases/download/v0.5.1/openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz
 tar xJf openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz
 RUST_LOG=info ./openfairdb
 ```
@@ -93,7 +93,7 @@ cargo install diesel_cli --no-default-features --features sqlite
 ### Compile & Run
 
 ```sh
-git clone https://github.com/slowtec/openfairdb
+git clone https://github.com/kartevonmorgen/openfairdb
 cd openfairdb/
 diesel migration run
 cargo build
@@ -169,7 +169,7 @@ docker cp <container id>:openfairdb .
 
 At the moment the OpenFairDB does not support online backups.
 Therefore we use a simple
-[script](https://github.com/slowtec/openfairdb/blob/master/scripts/backup-sqlite.sh)
+[script](https://github.com/kartevonmorgen/openfairdb/blob/master/scripts/backup-sqlite.sh)
 that copies the DB file once a day.
 
 # Domain Model

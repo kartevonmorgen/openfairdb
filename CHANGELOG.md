@@ -1,5 +1,9 @@
 # Changelog
 
+## next (unreleased)
+
+- new home: [kartevonmorgen/openfairdb](https://github.com/kartevonmorgen/openfairdb)
+
 ## v0.6.2 (2019-10-15)
 
 - fix(db): Increased maximum number of search result svia `limit` request parameter
