@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6.2 (2019-09-18)
+
+- new(web): Increased maximum number of search result svia `limit` request parameter
+            from 250 to 500. The default number of results if no limit is requested
+            is still 100.
+
 ## v0.6.1 (2019-08-22)
 
 - fix(web): Re-enable email feature in Docker builds
