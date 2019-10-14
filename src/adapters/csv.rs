@@ -18,6 +18,8 @@ pub struct CsvRecord {
     pub categories: String,
     pub tags: String,
     pub license: Option<String>,
+    pub image_url: Option<String>,
+    pub image_link_url: Option<String>,
     pub avg_rating: f64,
 }
 
@@ -35,6 +37,8 @@ impl From<(Entry, Vec<Category>, AvgRatingValue)> for CsvRecord {
             location,
             homepage,
             license,
+            image_url,
+            image_link_url,
             ..
         } = e.clone();
 
@@ -70,6 +74,8 @@ impl From<(Entry, Vec<Category>, AvgRatingValue)> for CsvRecord {
             country,
             homepage,
             license,
+            image_url,
+            image_link_url,
             categories,
             tags: e.tags.join(","),
             avg_rating: avg_rating.into(),

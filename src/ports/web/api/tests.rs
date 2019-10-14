@@ -1278,6 +1278,8 @@ fn export_csv() {
             ])
             .tags(vec!["bli", "bla"])
             .license(Some("license1"))
+            .image_url(Some("https://img"))
+            .image_link_url(Some("https://img,link"))
             .finish(),
         Entry::build()
             .id("entry2")
@@ -1343,7 +1345,7 @@ fn export_csv() {
             archived: None,
             title: "rating1".into(),
             value: RatingValue::from(2),
-            context: diversity.clone(),
+            context: diversity,
             source: None,
         })
         .unwrap();
@@ -1380,8 +1382,8 @@ fn export_csv() {
         }
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.starts_with("id,osm_node,created,version,title,description,lat,lng,street,zip,city,country,homepage,categories,tags,license,avg_rating\n"));
-    assert!(body_str.contains(&format!("entry1,1,2,3,title1,desc1,{lat},{lng},street1,zip1,city1,country1,homepage1,\"cat1,cat2\",\"bla,bli\",license1,0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg())));
-    assert!(body_str.contains("entry2,,0,0,,,0.0,0.0,,,,,,cat1,,,0.0\n"));
+    assert!(body_str.starts_with("id,osm_node,created,version,title,description,lat,lng,street,zip,city,country,homepage,categories,tags,license,image_url,image_link_url,avg_rating\n"));
+    assert!(body_str.contains(&format!("entry1,1,2,3,title1,desc1,{lat},{lng},street1,zip1,city1,country1,homepage1,\"cat1,cat2\",\"bla,bli\",license1,https://img,\"https://img,link\",0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg())));
+    assert!(body_str.contains("entry2,,0,0,,,0.0,0.0,,,,,,cat1,,,,,0.0\n"));
     assert!(!body_str.contains("entry3"));
 }

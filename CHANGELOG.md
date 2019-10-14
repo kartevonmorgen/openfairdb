@@ -1,10 +1,11 @@
 # Changelog
 
-## v0.6.2 (2019-09-18)
+## v0.6.2 (2019-10-15)
 
 - new(web): Increased maximum number of search result svia `limit` request parameter
             from 250 to 500. The default number of results if no limit is requested
             is still 100.
+- new(db): Add image_url and image_link_url to CSV export
 
 ## v0.6.1 (2019-08-22)
 
