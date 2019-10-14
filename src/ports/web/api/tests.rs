@@ -2,9 +2,12 @@ use super::*;
 
 use crate::{
     adapters::json,
-    core::{usecases as usecase, util::sort::Rated},
+    core::{usecases as usecase},
     test::Bencher,
 };
+
+#[cfg(feature = "export")]
+use crate::core::util::sort::Rated;
 
 pub mod prelude {
     pub use crate::core::db::*;
@@ -268,8 +271,8 @@ fn default_new_entry() -> usecases::NewEntry {
 fn new_entry_with_category(category: &str, lat: f64, lng: f64) -> usecases::NewEntry {
     usecases::NewEntry {
         categories: vec![category.into()],
-        lat: lat,
-        lng: lng,
+        lat,
+        lng,
         ..default_new_entry()
     }
 }
@@ -355,8 +358,8 @@ fn new_entry_with_text(title: &str, description: &str, lat: f64, lng: f64) -> us
     usecases::NewEntry {
         title: title.into(),
         description: description.into(),
-        lat: lat,
-        lng: lng,
+        lat,
+        lng,
         ..default_new_entry()
     }
 }
@@ -1263,6 +1266,7 @@ fn openapi() {
     assert!(body_str.contains("openapi:"))
 }
 
+#[cfg(feature = "export")]
 #[test]
 fn export_csv() {
     let mut entries = vec![
@@ -1386,4 +1390,13 @@ fn export_csv() {
     assert!(body_str.contains(&format!("entry1,1,2,3,title1,desc1,{lat},{lng},street1,zip1,city1,country1,homepage1,\"cat1,cat2\",\"bla,bli\",license1,https://img,\"https://img,link\",0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg())));
     assert!(body_str.contains("entry2,,0,0,,,0.0,0.0,,,,,,cat1,,,,,0.0\n"));
     assert!(!body_str.contains("entry3"));
+}
+
+#[cfg(not(feature = "export"))]
+#[test]
+fn export_csv() {
+    let (client, _, _) = setup2();
+    let req = client.get("/export/entries.csv?bbox=-1,-1,1,1");
+    let response = req.dispatch();
+    assert_eq!(response.status(), Status::NotFound);
 }

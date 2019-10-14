@@ -15,7 +15,9 @@ use crate::{
     },
 };
 
+#[cfg(feature = "export")]
 use csv;
+
 use rocket::{
     self,
     http::{ContentType, Cookie, Cookies, Status},
@@ -38,7 +40,7 @@ mod users;
 type Result<T> = result::Result<Json<T>, AppError>;
 
 pub fn routes() -> Vec<Route> {
-    routes![
+    let mut routes = routes![
         login,
         logout,
         confirm_email_address,
@@ -74,9 +76,12 @@ pub fn routes() -> Vec<Route> {
         count::get_count_entries,
         count::get_count_tags,
         get_version,
-        csv_export,
         get_api
-    ]
+    ];
+    if cfg!(feature = "export") {
+        routes.append(&mut routes![csv_export]);
+    }
+    routes
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -384,6 +389,8 @@ struct CsvExport {
 
 // TODO: CSV export should only be permitted with a valid API key!
 // https://github.com/slowtec/openfairdb/issues/147
+// NOTE: As a temporary workaround the CSV export must be enabled
+// explicitly with a build feature flag.
 #[get("/export/entries.csv?<export..>")]
 fn csv_export(
     connections: sqlite::Connections,
