@@ -102,7 +102,7 @@ fn get_entry(db: sqlite::Connections, ids: String) -> Result<Vec<json::Entry>> {
         let db = db.shared()?;
         for e in db.get_entries(&ids)?.into_iter() {
             let r = db.load_ratings_of_entry(&e.id)?;
-            results.push(json::Entry::from_entry_with_ratings(e, r));
+            results.push(json::from_entry_with_ratings(e, r));
         }
         results
     };
@@ -180,13 +180,13 @@ fn get_entries_recently_changed(
             let mut results = Vec::with_capacity(entries.len());
             for e in entries.into_iter() {
                 let r = db.load_ratings_of_entry(&e.id)?;
-                results.push(json::Entry::from_entry_with_ratings(e, r));
+                results.push(json::from_entry_with_ratings(e, r));
             }
             results
         } else {
             entries
                 .into_iter()
-                .map(|e| json::Entry::from_entry_with_ratings(e, vec![]))
+                .map(|e| json::from_entry_with_ratings(e, vec![]))
                 .collect()
         }
     };

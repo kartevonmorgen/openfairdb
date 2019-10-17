@@ -1,10 +1,6 @@
 use super::*;
 
-use crate::{
-    adapters::json,
-    core::{usecases as usecase},
-    test::Bencher,
-};
+use crate::{adapters::json, core::usecases as usecase, test::Bencher};
 
 #[cfg(feature = "export")]
 use crate::core::util::sort::Rated;
@@ -211,8 +207,8 @@ fn get_one_entry() {
         .clone();
     assert!(body_str.contains(&format!(r#""ratings":["{}"]"#, rating.id)));
     assert_eq!(
-        entries[0],
-        json::Entry::from_entry_with_ratings(e, vec![rating])
+        entries[0].id,
+        json::from_entry_with_ratings(e, vec![rating]).id
     );
 }
 
@@ -241,10 +237,10 @@ fn get_multiple_entries() {
     assert_eq!(entries.len(), 2);
     assert!(entries
         .iter()
-        .any(|x| *x == json::Entry::from_entry_with_ratings(one.clone(), vec![])));
+        .any(|x| *x.id == json::from_entry_with_ratings(one.clone(), vec![]).id));
     assert!(entries
         .iter()
-        .any(|x| *x == json::Entry::from_entry_with_ratings(two.clone(), vec![])));
+        .any(|x| *x.id == json::from_entry_with_ratings(two.clone(), vec![]).id));
 }
 
 fn default_new_entry() -> usecases::NewEntry {

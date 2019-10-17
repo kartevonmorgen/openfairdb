@@ -1,0 +1,8 @@
+[package]
+name = "ofdb-boundary"
+version = "0.0.0"
+authors = ["slowtec GmbH <post@slowtec.de>"]
+edition = "2018"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }

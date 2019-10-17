@@ -10,6 +10,13 @@ edition = "2018"
 
 [patch.crates-io]
 geocoding = { git = "https://github.com/georust/geocoding" }
+ofdb-boundary = { path = "ofdb-boundary" }
+
+[workspace]
+members = [
+  ".",
+  "ofdb-boundary"
+]
 
 [dependencies]
 bs58 = "*"
@@ -30,6 +37,7 @@ log = "*"
 num-derive = "*"
 num-traits = "*"
 maud = { version = "*", optional = true, features = ["rocket"] }
+ofdb-boundary = "*"
 openssl = { version = "*", features = ["vendored"] }
 owning_ref = "*"
 passwords = "*"
