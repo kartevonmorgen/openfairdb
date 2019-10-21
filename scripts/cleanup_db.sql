@@ -10,16 +10,16 @@ update ratings set archived=archived/1000 where archived not null and archived>1
 
 -- Delete invalid tags with less than 2 characters (= empty or single character)
 delete from entry_tag_relations where length(tag_id) < 2;
-delete from event_tag_relations where length(tag_id) < 2;
+delete from event_tags where length(tag) < 2;
 delete from org_tag_relations where length(tag_id) < 2;
 delete from tags where length(id) < 2;
 
 -- Delete orphaned tag relations
 delete from entry_tag_relations where (entry_id, entry_version) not in (select id, version from entries);
-delete from event_tag_relations where event_id not in (select id from events);
+delete from event_tags where event_id not in (select id from events);
 delete from org_tag_relations where org_id not in (select id from organizations);
 
 -- Insert missing tags (just in case some got lost along the way)
 insert or ignore into tags (id) select tag_id from entry_tag_relations;
-insert or ignore into tags (id) select tag_id from event_tag_relations;
+insert or ignore into tags (id) select tag from event_tags;
 insert or ignore into tags (id) select tag_id from org_tag_relations;
