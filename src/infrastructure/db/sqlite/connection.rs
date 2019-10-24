@@ -553,34 +553,172 @@ impl EntryGateway for SqliteConnection {
     }
 }
 
+fn into_new_event_with_tags(
+    db: &SqliteConnection,
+    event: Event,
+) -> Result<(models::NewEvent, Vec<String>)> {
+    let Event {
+        uid,
+        title,
+        start,
+        end,
+        description,
+        location,
+        contact,
+        homepage,
+        created_by,
+        registration,
+        organizer,
+        archived,
+        image_url,
+        image_link_url,
+        tags,
+        ..
+    } = event;
+
+    let mut street = None;
+    let mut zip = None;
+    let mut city = None;
+    let mut country = None;
+
+    let (lat, lng) = if let Some(l) = location {
+        if let Some(a) = l.address {
+            street = a.street;
+            zip = a.zip;
+            city = a.city;
+            country = a.country;
+        }
+        (Some(l.pos.lat().to_deg()), Some(l.pos.lng().to_deg()))
+    } else {
+        (None, None)
+    };
+
+    let (email, telephone) = if let Some(c) = contact {
+        (c.email, c.telephone)
+    } else {
+        (None, None)
+    };
+
+    let registration = registration.map(Into::into);
+
+    let created_by = if let Some(ref email) = created_by {
+        Some(resolve_user_id_by_email(db, email)?)
+    } else {
+        None
+    };
+
+    Ok((
+        models::NewEvent {
+            uid: uid.into(),
+            title,
+            description,
+            start: start.timestamp(),
+            end: end.map(|x| x.timestamp()),
+            lat,
+            lng,
+            street,
+            zip,
+            city,
+            country,
+            telephone,
+            email,
+            homepage,
+            created_by,
+            registration,
+            organizer,
+            archived: archived.map(Into::into),
+            image_url,
+            image_link_url,
+        },
+        tags,
+    ))
+}
+
+fn resolve_event_id(db: &SqliteConnection, uid: &str) -> Result<i64> {
+    use self::schema::events::dsl;
+    Ok(dsl::events
+        .select(dsl::id)
+        .filter(dsl::uid.eq(uid))
+        .first(db)?)
+}
+
 impl EventGateway for SqliteConnection {
     fn create_event(&self, e: Event) -> Result<()> {
-        let tag_rels: Vec<_> = e
-            .tags
-            .iter()
-            .map(|tag_id| models::StoreableEventTagRelation {
-                event_id: &e.id,
-                tag_id: &tag_id,
-            })
-            .collect();
-        let new_event = models::Event::from(e.clone());
+        let (new_event, tags) = into_new_event_with_tags(self, e)?;
         self.transaction::<_, diesel::result::Error, _>(|| {
+            // Insert event
             diesel::insert_into(schema::events::table)
                 .values(&new_event)
                 .execute(self)?;
-            diesel::insert_into(schema::event_tag_relations::table)
-                //WHERE NOT EXISTS
-                .values(&tag_rels)
+            let id = resolve_event_id(self, new_event.uid.as_ref()).map_err(|err| {
+                warn!(
+                    "Failed to resolve id of newly created event {}: {}",
+                    new_event.uid, err,
+                );
+                diesel::result::Error::RollbackTransaction
+            })?;
+            // Insert event tags
+            let tags: Vec<_> = tags
+                .iter()
+                .map(|tag| models::NewEventTag {
+                    event_id: id,
+                    tag: &tag,
+                })
+                .collect();
+            diesel::insert_or_ignore_into(schema::event_tags::table)
+                .values(&tags)
                 .execute(self)?;
             Ok(())
         })?;
         Ok(())
     }
 
-    fn get_event(&self, e_id: &str) -> Result<Event> {
-        use self::schema::{event_tag_relations::dsl as et_dsl, events::dsl as e_dsl};
+    fn update_event(&self, event: &Event) -> Result<()> {
+        let id = resolve_event_id(self, event.uid.as_ref())?;
+        let (new_event, new_tags) = into_new_event_with_tags(self, event.clone())?;
+        self.transaction::<_, diesel::result::Error, _>(|| {
+            use self::schema::event_tags::dsl as et_dsl;
+            use self::schema::events::dsl as e_dsl;
+            // Update event
+            diesel::update(e_dsl::events.filter(e_dsl::id.eq(&id)))
+                .set(&new_event)
+                .execute(self)?;
+            // Update event tags
+            let tags_diff = {
+                let old_tags = et_dsl::event_tags
+                    .select(et_dsl::tag)
+                    .filter(et_dsl::event_id.eq(id))
+                    .load(self)?;
+                super::util::tags_diff(&old_tags, &new_tags)
+            };
+            diesel::delete(
+                et_dsl::event_tags
+                    .filter(et_dsl::event_id.eq(id))
+                    .filter(et_dsl::tag.eq_any(&tags_diff.deleted)),
+            )
+            .execute(self)?;
+            {
+                let new_tags: Vec<_> = tags_diff
+                    .added
+                    .iter()
+                    .map(|tag| models::NewEventTag {
+                        event_id: id,
+                        tag: &tag,
+                    })
+                    .collect();
+                diesel::insert_or_ignore_into(et_dsl::event_tags)
+                    .values(&new_tags)
+                    .execute(self)?;
+            }
+            Ok(())
+        })?;
+        Ok(())
+    }
 
-        let models::Event {
+    fn get_event(&self, uid: &str) -> Result<Event> {
+        use self::schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl, users::dsl as u_dsl};
+
+        let models::EventEntity {
             id,
             title,
             description,
@@ -595,23 +733,47 @@ impl EventGateway for SqliteConnection {
             email,
             telephone,
             homepage,
-            created_by,
             registration,
             organizer,
             archived,
             image_url,
             image_link_url,
+            created_by_email,
+            ..
         } = e_dsl::events
-            .filter(e_dsl::id.eq(e_id))
+            .left_outer_join(u_dsl::users)
+            .select((
+                e_dsl::id,
+                e_dsl::uid,
+                e_dsl::title,
+                e_dsl::description,
+                e_dsl::start,
+                e_dsl::end,
+                e_dsl::lat,
+                e_dsl::lng,
+                e_dsl::street,
+                e_dsl::zip,
+                e_dsl::city,
+                e_dsl::country,
+                e_dsl::email,
+                e_dsl::telephone,
+                e_dsl::homepage,
+                e_dsl::created_by,
+                e_dsl::registration,
+                e_dsl::organizer,
+                e_dsl::archived,
+                e_dsl::image_url,
+                e_dsl::image_link_url,
+                u_dsl::email.nullable(),
+            ))
+            .filter(e_dsl::uid.eq(uid))
             .filter(e_dsl::archived.is_null())
             .first(self)?;
 
-        let tags = et_dsl::event_tag_relations
-            .filter(et_dsl::event_id.eq(&id))
-            .load::<models::EventTagRelation>(self)?
-            .into_iter()
-            .map(|r| r.tag_id)
-            .collect();
+        let tags = et_dsl::event_tags
+            .select(et_dsl::tag)
+            .filter(et_dsl::event_id.eq(id))
+            .load::<String>(self)?;
 
         let address = Address {
             street,
@@ -648,7 +810,7 @@ impl EventGateway for SqliteConnection {
         let registration = registration.map(Into::into);
 
         Ok(Event {
-            id,
+            uid: uid.into(),
             title,
             start: NaiveDateTime::from_timestamp(start, 0),
             end: end.map(|x| NaiveDateTime::from_timestamp(x, 0)),
@@ -657,7 +819,7 @@ impl EventGateway for SqliteConnection {
             contact,
             homepage,
             tags,
-            created_by,
+            created_by: created_by_email,
             registration,
             organizer,
             archived: archived.map(Into::into),
@@ -667,10 +829,36 @@ impl EventGateway for SqliteConnection {
     }
 
     fn all_events(&self) -> Result<Vec<Event>> {
-        use self::schema::{event_tag_relations::dsl as et_dsl, events::dsl as e_dsl};
-        let events: Vec<models::Event> =
-            e_dsl::events.filter(e_dsl::archived.is_null()).load(self)?;
-        let tag_rels = et_dsl::event_tag_relations.load(self)?;
+        use self::schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl, users::dsl as u_dsl};
+        let events: Vec<_> = e_dsl::events
+            .left_outer_join(u_dsl::users)
+            .select((
+                e_dsl::id,
+                e_dsl::uid,
+                e_dsl::title,
+                e_dsl::description,
+                e_dsl::start,
+                e_dsl::end,
+                e_dsl::lat,
+                e_dsl::lng,
+                e_dsl::street,
+                e_dsl::zip,
+                e_dsl::city,
+                e_dsl::country,
+                e_dsl::email,
+                e_dsl::telephone,
+                e_dsl::homepage,
+                e_dsl::created_by,
+                e_dsl::registration,
+                e_dsl::organizer,
+                e_dsl::archived,
+                e_dsl::image_url,
+                e_dsl::image_link_url,
+                u_dsl::email.nullable(),
+            ))
+            .filter(e_dsl::archived.is_null())
+            .load::<models::EventEntity>(self)?;
+        let tag_rels = et_dsl::event_tags.load(self)?;
         Ok(events.into_iter().map(|e| (e, &tag_rels).into()).collect())
     }
 
@@ -679,16 +867,43 @@ impl EventGateway for SqliteConnection {
         start_min: Option<Timestamp>,
         start_max: Option<Timestamp>,
     ) -> Result<Vec<Event>> {
-        use self::schema::{event_tag_relations::dsl as et_dsl, events::dsl as e_dsl};
-        let mut query = e_dsl::events.filter(e_dsl::archived.is_null()).into_boxed();
+        use self::schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl, users::dsl as u_dsl};
+        let mut query = e_dsl::events
+            .left_outer_join(u_dsl::users)
+            .select((
+                e_dsl::id,
+                e_dsl::uid,
+                e_dsl::title,
+                e_dsl::description,
+                e_dsl::start,
+                e_dsl::end,
+                e_dsl::lat,
+                e_dsl::lng,
+                e_dsl::street,
+                e_dsl::zip,
+                e_dsl::city,
+                e_dsl::country,
+                e_dsl::email,
+                e_dsl::telephone,
+                e_dsl::homepage,
+                e_dsl::created_by,
+                e_dsl::registration,
+                e_dsl::organizer,
+                e_dsl::archived,
+                e_dsl::image_url,
+                e_dsl::image_link_url,
+                u_dsl::email.nullable(),
+            ))
+            .filter(e_dsl::archived.is_null())
+            .into_boxed();
         if let Some(start_min) = start_min {
             query = query.filter(e_dsl::start.ge(i64::from(start_min)));
         }
         if let Some(start_max) = start_max {
             query = query.filter(e_dsl::start.le(i64::from(start_max)));
         }
-        let events: Vec<models::Event> = query.load(self)?;
-        let tag_rels = et_dsl::event_tag_relations.load(self)?;
+        let events: Vec<_> = query.load::<models::EventEntity>(self)?;
+        let tag_rels = et_dsl::event_tags.load(self)?;
         Ok(events.into_iter().map(|e| (e, &tag_rels).into()).collect())
     }
 
@@ -700,129 +915,100 @@ impl EventGateway for SqliteConnection {
             .first::<i64>(self)? as usize)
     }
 
-    fn update_event(&self, event: &Event) -> Result<()> {
-        let e = models::Event::from(event.clone());
-        self.transaction::<_, diesel::result::Error, _>(|| {
-            use self::schema::event_tag_relations::dsl as et_dsl;
-            use self::schema::events::dsl as e_dsl;
-
-            let old_tags = match self.get_event(&e.id) {
-                Ok(e) => e,
-                Err(err) => {
-                    warn!(
-                        "Cannot update non-existent or archived event '{}': {}",
-                        e.id, err
-                    );
-                    return Err(diesel::result::Error::RollbackTransaction);
-                }
-            }
-            .tags;
-            let new_tags = &event.tags;
-            let diff = super::util::tags_diff(&old_tags, new_tags);
-
-            let tag_rels: Vec<_> = diff
-                .added
-                .iter()
-                .map(|tag_id| models::StoreableEventTagRelation {
-                    event_id: &event.id,
-                    tag_id: &tag_id,
-                })
-                .collect();
-
-            diesel::delete(
-                et_dsl::event_tag_relations
-                    .filter(et_dsl::event_id.eq(&e.id))
-                    .filter(et_dsl::tag_id.eq_any(diff.deleted)),
-            )
-            .execute(self)?;
-
-            diesel::insert_or_ignore_into(schema::event_tag_relations::table)
-                .values(&tag_rels)
-                .execute(self)?;
-
-            diesel::update(e_dsl::events.filter(e_dsl::id.eq(&e.id)))
-                .set(&e)
-                .execute(self)?;
-
-            Ok(())
-        })?;
-        Ok(())
-    }
-
-    fn archive_events(&self, ids: &[&str], archived: Timestamp) -> Result<usize> {
+    fn archive_events(&self, uids: &[&str], archived: Timestamp) -> Result<usize> {
         use self::schema::events::dsl;
         let count = diesel::update(
             dsl::events
-                .filter(dsl::id.eq_any(ids))
+                .filter(dsl::uid.eq_any(uids))
                 .filter(dsl::archived.is_null()),
         )
         .set(dsl::archived.eq(Some(i64::from(archived))))
         .execute(self)?;
-        debug_assert!(count <= ids.len());
-        if count < ids.len() {
+        debug_assert!(count <= uids.len());
+        if count < uids.len() {
             return Err(RepoError::NotFound);
         }
-        if count > ids.len() {
+        if count > uids.len() {
             return Err(RepoError::TooManyFound);
         }
         Ok(count)
     }
 
-    fn delete_event_with_matching_tags(&self, id: &str, tags: &[&str]) -> Result<()> {
-        use self::schema::{event_tag_relations::dsl as et_dsl, events::dsl as e_dsl};
-        let mut query = self::schema::events::table.select(e_dsl::id).into_boxed();
+    fn delete_event_with_matching_tags(&self, uid: &str, tags: &[&str]) -> Result<Option<()>> {
+        use self::schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl};
+        let id = resolve_event_id(self, uid)?;
         if !tags.is_empty() {
-            let id_subselect = et_dsl::event_tag_relations
+            let ids: Vec<_> = et_dsl::event_tags
                 .select(et_dsl::event_id)
-                .filter(et_dsl::tag_id.eq_any(tags));
-            query = query.filter(e_dsl::id.eq_any(id_subselect));
+                .distinct()
+                .filter(et_dsl::event_id.eq(id))
+                .filter(et_dsl::tag.eq_any(tags))
+                .load::<i64>(self)?;
+            debug_assert!(ids.len() <= 1);
+            if ids.is_empty() {
+                return Ok(None);
+            }
+            debug_assert_eq!(id, *ids.first().unwrap());
         }
-        let ids: Vec<String> = query.load(self)?;
-        debug_assert!(ids.len() <= 1);
-        if ids.is_empty() {
-            return Err(RepoError::NotFound);
-        }
-        diesel::delete(et_dsl::event_tag_relations.filter(et_dsl::event_id.eq(id)))
-            .execute(self)?;
+        diesel::delete(et_dsl::event_tags.filter(et_dsl::event_id.eq(id))).execute(self)?;
         diesel::delete(e_dsl::events.filter(e_dsl::id.eq(id))).execute(self)?;
-        Ok(())
+        Ok(Some(()))
     }
 }
 
+fn resolve_user_id_by_email(db: &SqliteConnection, email: &str) -> Result<i64> {
+    use self::schema::users::dsl;
+    Ok(dsl::users
+        .select(dsl::id)
+        .filter(dsl::email.eq(email))
+        .first(db)?)
+}
+
 impl UserGateway for SqliteConnection {
-    fn create_user(&self, u: User) -> Result<()> {
+    fn create_user(&self, u: &User) -> Result<()> {
+        let new_user = models::NewUser::from(u);
         diesel::insert_into(schema::users::table)
-            .values(&models::User::from(u))
+            .values(&new_user)
             .execute(self)?;
         Ok(())
     }
+
     fn update_user(&self, u: &User) -> Result<()> {
         use self::schema::users::dsl;
-        let user = models::User::from(u.clone());
-        diesel::update(dsl::users.filter(dsl::id.eq(&u.id)))
-            .set(&user)
+        let new_user = models::NewUser::from(u);
+        diesel::update(dsl::users.filter(dsl::email.eq(new_user.email)))
+            .set(&new_user)
             .execute(self)?;
         Ok(())
     }
-    fn get_user(&self, username: &str) -> Result<User> {
-        use self::schema::users::dsl::users;
-        Ok(users.find(username).first::<models::User>(self)?.into())
-    }
-    fn get_users_by_email(&self, email: &str) -> Result<Vec<User>> {
+
+    fn delete_user_by_email(&self, email: &str) -> Result<()> {
         use self::schema::users::dsl;
-        let users = dsl::users
+        diesel::delete(dsl::users.filter(dsl::email.eq(email))).execute(self)?;
+        Ok(())
+    }
+
+    fn get_user_by_email(&self, email: &str) -> Result<User> {
+        use self::schema::users::dsl;
+        Ok(dsl::users
             .filter(dsl::email.eq(email))
-            .load::<models::User>(self)?;
-        if users.is_empty() {
-            return Err(RepoError::NotFound);
-        }
-        Ok(users.into_iter().map(User::from).collect())
+            .first::<models::UserEntity>(self)?
+            .into())
+    }
+
+    fn try_get_user_by_email(&self, email: &str) -> Result<Option<User>> {
+        use self::schema::users::dsl;
+        Ok(dsl::users
+            .filter(dsl::email.eq(email))
+            .first::<models::UserEntity>(self)
+            .optional()?
+            .map(Into::into))
     }
 
     fn all_users(&self) -> Result<Vec<User>> {
         use self::schema::users::dsl;
         Ok(dsl::users
-            .load::<models::User>(self)?
+            .load::<models::UserEntity>(self)?
             .into_iter()
             .map(Into::into)
             .collect())
@@ -833,12 +1019,6 @@ impl UserGateway for SqliteConnection {
         Ok(dsl::users
             .select(diesel::dsl::count(dsl::id))
             .first::<i64>(self)? as usize)
-    }
-
-    fn delete_user(&self, user_name: &str) -> Result<()> {
-        use self::schema::users::dsl::*;
-        diesel::delete(users.find(user_name)).execute(self)?;
-        Ok(())
     }
 }
 
@@ -1069,23 +1249,72 @@ impl Db for SqliteConnection {
         }
         Ok(())
     }
-    fn create_bbox_subscription(&mut self, sub: &BboxSubscription) -> Result<()> {
+    fn create_bbox_subscription(&self, new: &BboxSubscription) -> Result<()> {
+        let user_id = resolve_user_id_by_email(self, &new.user_email)?;
+        let (south_west_lat, south_west_lng) = new.bbox.south_west().to_lat_lng_deg();
+        let (north_east_lat, north_east_lng) = new.bbox.north_east().to_lat_lng_deg();
+        let insertable = models::NewBboxSubscription {
+            uid: new.uid.as_ref(),
+            user_id,
+            south_west_lat,
+            south_west_lng,
+            north_east_lat,
+            north_east_lng,
+        };
         diesel::insert_into(schema::bbox_subscriptions::table)
-            .values(&models::BboxSubscription::from(sub.clone()))
+            .values(&insertable)
             .execute(self)?;
         Ok(())
     }
     fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>> {
-        use self::schema::bbox_subscriptions::dsl;
-        Ok(dsl::bbox_subscriptions
-            .load::<models::BboxSubscription>(self)?
+        use self::schema::bbox_subscriptions::dsl as s_dsl;
+        use self::schema::users::dsl as u_dsl;
+        Ok(s_dsl::bbox_subscriptions
+            .inner_join(u_dsl::users)
+            .select((
+                s_dsl::id,
+                s_dsl::uid,
+                s_dsl::user_id,
+                s_dsl::south_west_lat,
+                s_dsl::south_west_lng,
+                s_dsl::north_east_lat,
+                s_dsl::north_east_lng,
+                u_dsl::email,
+            ))
+            .load::<models::BboxSubscriptionEntity>(self)?
             .into_iter()
             .map(BboxSubscription::from)
             .collect())
     }
-    fn delete_bbox_subscription(&mut self, id: &str) -> Result<()> {
-        use self::schema::bbox_subscriptions::dsl;
-        diesel::delete(dsl::bbox_subscriptions.find(id)).execute(self)?;
+    fn all_bbox_subscriptions_by_email(&self, email: &str) -> Result<Vec<BboxSubscription>> {
+        use self::schema::bbox_subscriptions::dsl as s_dsl;
+        use self::schema::users::dsl as u_dsl;
+        Ok(s_dsl::bbox_subscriptions
+            .inner_join(u_dsl::users)
+            .filter(u_dsl::email.eq(email))
+            .select((
+                s_dsl::id,
+                s_dsl::uid,
+                s_dsl::user_id,
+                s_dsl::south_west_lat,
+                s_dsl::south_west_lng,
+                s_dsl::north_east_lat,
+                s_dsl::north_east_lng,
+                u_dsl::email,
+            ))
+            .load::<models::BboxSubscriptionEntity>(self)?
+            .into_iter()
+            .map(BboxSubscription::from)
+            .collect())
+    }
+    fn delete_bbox_subscriptions_by_email(&self, email: &str) -> Result<()> {
+        use self::schema::bbox_subscriptions::dsl as s_dsl;
+        use self::schema::users::dsl as u_dsl;
+        let users_id = u_dsl::users
+            .select(u_dsl::id)
+            .filter(u_dsl::email.eq(email));
+        diesel::delete(s_dsl::bbox_subscriptions.filter(s_dsl::user_id.eq_any(users_id)))
+            .execute(self)?;
         Ok(())
     }
     fn all_categories(&self) -> Result<Vec<Category>> {
@@ -1111,16 +1340,17 @@ impl Db for SqliteConnection {
 }
 
 impl OrganizationGateway for SqliteConnection {
-    fn create_org(&mut self, o: Organization) -> Result<()> {
-        let tag_rels: Vec<_> = o
-            .owned_tags
+    fn create_org(&mut self, mut o: Organization) -> Result<()> {
+        let org_id = o.id.clone();
+        let owned_tags = std::mem::replace(&mut o.owned_tags, vec![]);
+        let tag_rels: Vec<_> = owned_tags
             .iter()
             .map(|tag_id| models::StoreableOrgTagRelation {
-                org_id: &o.id,
+                org_id: &org_id,
                 tag_id: &tag_id,
             })
             .collect();
-        let new_org = models::Organization::from(o.clone());
+        let new_org = models::Organization::from(o);
         self.transaction::<_, diesel::result::Error, _>(|| {
             diesel::insert_into(schema::organizations::table)
                 .values(&new_org)
@@ -1171,67 +1401,63 @@ impl OrganizationGateway for SqliteConnection {
     }
 }
 
-impl EmailTokenCredentialsRepository for SqliteConnection {
-    fn replace_email_token_credentials(
-        &self,
-        email_token_credentials: EmailTokenCredentials,
-    ) -> Result<EmailTokenCredentials> {
-        use self::schema::email_token_credentials::dsl;
-        let model = models::NewEmailTokenCredentials::from(&email_token_credentials);
+impl UserTokenRepo for SqliteConnection {
+    fn replace_user_token(&self, token: UserToken) -> Result<EmailNonce> {
+        use self::schema::user_tokens::dsl;
+        let user_id = resolve_user_id_by_email(self, &token.email_nonce.email)?;
+        let model = models::NewUserToken {
+            user_id,
+            nonce: token.email_nonce.nonce.to_string(),
+            expires_at: token.expires_at.into(),
+        };
         // Insert...
-        if let 0 = diesel::insert_into(schema::email_token_credentials::table)
+        if diesel::insert_into(schema::user_tokens::table)
             .values(&model)
             .execute(self)?
+            == 0
         {
             // ...or update
-            diesel::update(schema::email_token_credentials::table)
-                .filter(dsl::username.eq(&model.username))
+            diesel::update(schema::user_tokens::table)
+                .filter(dsl::user_id.eq(model.user_id))
                 .set(&model)
                 .execute(self)?;
         }
-        Ok(email_token_credentials)
+        Ok(token.email_nonce)
     }
 
-    fn consume_email_token_credentials(
-        &self,
-        email_or_username: &str,
-        token: &EmailToken,
-    ) -> Result<EmailTokenCredentials> {
-        use self::schema::email_token_credentials::dsl;
-        let model = dsl::email_token_credentials
-            .filter(dsl::nonce.eq(token.nonce.to_string()))
-            .filter(dsl::email.eq(token.email.to_string()))
-            .filter(
-                dsl::username
-                    .eq(email_or_username)
-                    .or(dsl::email.eq(email_or_username)),
-            )
-            .first::<models::EmailTokenCredentials>(self)?;
-        diesel::delete(dsl::email_token_credentials.filter(dsl::id.eq(model.id))).execute(self)?;
-        Ok(model.into())
+    fn consume_user_token(&self, email_nonce: &EmailNonce) -> Result<UserToken> {
+        use self::schema::user_tokens::dsl as t_dsl;
+        use self::schema::users::dsl as u_dsl;
+        let token = self.get_user_token_by_email(&email_nonce.email)?;
+        let user_id_subselect = u_dsl::users
+            .select(u_dsl::id)
+            .filter(u_dsl::email.eq(&email_nonce.email));
+        let target = t_dsl::user_tokens
+            .filter(t_dsl::nonce.eq(email_nonce.nonce.to_string()))
+            .filter(t_dsl::user_id.eq_any(user_id_subselect));
+        if diesel::delete(target).execute(self)? == 0 {
+            return Err(RepoError::NotFound);
+        }
+        debug_assert_eq!(email_nonce, &token.email_nonce);
+        Ok(token)
     }
 
-    fn discard_expired_email_token_credentials(&self, expired_before: Timestamp) -> Result<usize> {
-        use self::schema::email_token_credentials::dsl;
+    fn discard_expired_user_tokens(&self, expired_before: Timestamp) -> Result<usize> {
+        use self::schema::user_tokens::dsl;
         Ok(diesel::delete(
-            dsl::email_token_credentials.filter(dsl::expires_at.lt::<i64>(expired_before.into())),
+            dsl::user_tokens.filter(dsl::expires_at.lt::<i64>(expired_before.into())),
         )
         .execute(self)?)
     }
 
-    #[cfg(test)]
-    fn get_email_token_credentials_by_email_or_username(
-        &self,
-        email_or_username: &str,
-    ) -> Result<EmailTokenCredentials> {
-        use self::schema::email_token_credentials::dsl;
-        let model = dsl::email_token_credentials
-            .filter(
-                dsl::username
-                    .eq(email_or_username)
-                    .or(dsl::email.eq(email_or_username)),
-            )
-            .first::<models::EmailTokenCredentials>(self)?;
-        Ok(model.into())
+    fn get_user_token_by_email(&self, email: &str) -> Result<UserToken> {
+        use self::schema::user_tokens::dsl as t_dsl;
+        use self::schema::users::dsl as u_dsl;
+        Ok(t_dsl::user_tokens
+            .inner_join(u_dsl::users)
+            .select((u_dsl::id, t_dsl::nonce, t_dsl::expires_at, u_dsl::email))
+            .filter(u_dsl::email.eq(email))
+            .first::<models::UserTokenEntity>(self)?
+            .into())
     }
 }

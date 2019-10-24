@@ -48,7 +48,6 @@ mod tests {
             usecases::NewUser {
                 email: "user@bar.tld".into(),
                 password: "123456".into(),
-                username: "user".into(),
             },
             None,
         );
@@ -56,7 +55,6 @@ mod tests {
             usecases::NewUser {
                 email: "admin@foo.tld".into(),
                 password: "123456".into(),
-                username: "admin".into(),
             },
             Some(Role::Admin),
         );

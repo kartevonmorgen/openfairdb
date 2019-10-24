@@ -8,10 +8,9 @@ use crate::core::{
 };
 use chrono::prelude::*;
 use std::str::FromStr;
-use uuid::Uuid;
 
 #[rustfmt::skip]
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Default, Debug, Clone)]
 pub struct NewEvent {
     pub title        : String,
     pub description  : Option<String>,
@@ -28,7 +27,6 @@ pub struct NewEvent {
     pub homepage     : Option<String>,
     pub tags         : Option<Vec<String>>,
     pub created_by   : Option<String>,
-    pub token        : Option<String>,
     pub registration : Option<String>,
     pub organizer    : Option<String>,
     pub image_url     : Option<String>,
@@ -83,7 +81,12 @@ pub enum NewEventMode<'a> {
     Update(&'a str),
 }
 
-pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent, mode: NewEventMode) -> Result<Event> {
+pub fn try_into_new_event<D: Db>(
+    db: &mut D,
+    token: Option<&str>,
+    e: NewEvent,
+    mode: NewEventMode,
+) -> Result<Event> {
     let NewEvent {
         title,
         description,
@@ -100,7 +103,6 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent, mode: NewEventMode) ->
         tags,
         created_by,
         registration,
-        token,
         organizer,
         image_url,
         image_link_url,
@@ -108,7 +110,7 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent, mode: NewEventMode) ->
     } = e;
     let org = token
         .map(|t| {
-            db.get_org_by_api_token(&t).map_err(|e| {
+            db.get_org_by_api_token(t).map_err(|e| {
                 log::warn!("Unknown or invalid API token: {}", t);
                 match e {
                     RepoError::NotFound => Error::Parameter(ParameterError::Unauthorized),
@@ -192,7 +194,7 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent, mode: NewEventMode) ->
     } else {
         None
     };
-    let id = Uuid::new_v4().to_simple_ref().to_string();
+    let uid = Uid::new_uuid();
     let homepage = e
         .homepage
         .filter(|h| !h.is_empty())
@@ -200,8 +202,7 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent, mode: NewEventMode) ->
         .transpose()?;
 
     let created_by = if let Some(ref email) = created_by {
-        let username = create_user_from_email(db, email)?;
-        Some(username)
+        Some(create_user_from_email(db, email)?.email)
     } else {
         None
     };
@@ -259,7 +260,7 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent, mode: NewEventMode) ->
         .transpose()?;
 
     let event = Event {
-        id,
+        uid,
         title,
         start,
         end,
@@ -283,17 +284,17 @@ pub fn try_into_new_event<D: Db>(db: &mut D, e: NewEvent, mode: NewEventMode) ->
     Ok(event)
 }
 
-pub fn create_new_event<D: Db>(db: &mut D, e: NewEvent) -> Result<String> {
-    let new_event = try_into_new_event(db, e, NewEventMode::Create)?;
-    let new_id = new_event.id.clone();
+pub fn create_new_event<D: Db>(db: &mut D, token: Option<&str>, e: NewEvent) -> Result<Uid> {
+    let new_event = try_into_new_event(db, token, e, NewEventMode::Create)?;
     if new_event.created_by.is_none() {
         // NOTE: At the moment we require an email address,
         // but in the future we might allow anonymous creators
         return Err(ParameterError::CreatorEmail.into());
     }
+    let new_uid = new_event.uid.clone();
     debug!("Creating new event: {:?}", new_event);
     db.create_event(new_event)?;
-    Ok(new_id)
+    Ok(new_uid)
 }
 
 #[cfg(test)]
@@ -301,7 +302,6 @@ mod tests {
 
     use super::super::tests::MockDb;
     use super::*;
-    use uuid::Uuid;
 
     #[test]
     fn create_new_valid_event() {
@@ -322,15 +322,14 @@ mod tests {
             homepage     : None,
             tags         : Some(vec!["foo".into(),"bar".into()]),
             created_by   : Some("foo@bar.com".into()),
-            token        : None,
             registration : None,
             organizer    : None,
             image_url     : Some("http://somewhere.com/image_url.jpg".to_string()),
             image_link_url: Some("my.url/test.ext".to_string()),
         };
         let mut mock_db = MockDb::default();
-        let id = create_new_event(&mut mock_db, x).unwrap();
-        assert!(Uuid::parse_str(&id).is_ok());
+        let uid = create_new_event(&mut mock_db, None, x).unwrap();
+        assert!(uid.is_valid());
         assert_eq!(mock_db.events.borrow().len(), 1);
         assert_eq!(mock_db.tags.borrow().len(), 2);
         let x = &mock_db.events.borrow()[0];
@@ -338,8 +337,8 @@ mod tests {
         assert_eq!(x.start.timestamp(), 9999);
         assert!(x.location.is_none());
         assert_eq!(x.description.as_ref().unwrap(), "bar");
-        assert!(Uuid::parse_str(&x.id).is_ok());
-        assert_eq!(x.id, id);
+        assert!(x.uid.is_valid());
+        assert_eq!(x.uid, uid);
         assert_eq!(
             "http://somewhere.com/image_url.jpg",
             x.image_url.as_ref().unwrap()
@@ -369,14 +368,13 @@ mod tests {
             homepage     : None,
             tags         : None,
             created_by   : None,
-            token        : None,
             registration : None,
             organizer    : None,
             image_url     : None,
             image_link_url: None,
         };
         let mut mock_db: MockDb = MockDb::default();
-        assert!(create_new_event(&mut mock_db, x).is_err());
+        assert!(create_new_event(&mut mock_db, None, x).is_err());
     }
 
     #[test]
@@ -398,30 +396,26 @@ mod tests {
             homepage     : None,
             tags         : None,
             created_by   : Some("fooo@bar.tld".into()),
-            token        : None,
             registration : None,
             organizer    : None,
             image_url     : None,
             image_link_url: None,
         };
         let mut mock_db: MockDb = MockDb::default();
-        assert!(create_new_event(&mut mock_db, x).is_ok());
+        assert!(create_new_event(&mut mock_db, None, x).is_ok());
         let users = mock_db.all_users().unwrap();
         assert_eq!(users.len(), 1);
         assert_eq!(&users[0].email, "fooo@bar.tld");
-        assert_eq!(&users[0].username, "fooobartld");
     }
 
     #[test]
     fn create_event_with_valid_existing_creator_email() {
         let mut mock_db: MockDb = MockDb::default();
         mock_db
-            .create_user(User {
-                id: "x".into(),
-                username: "foo".into(),
+            .create_user(&User {
                 email: "fooo@bar.tld".into(),
-                password: "secret".parse::<Password>().unwrap(),
                 email_confirmed: true,
+                password: "secret".parse::<Password>().unwrap(),
                 role: Role::User,
             })
             .unwrap();
@@ -444,13 +438,12 @@ mod tests {
             homepage     : None,
             tags         : None,
             created_by   : Some("fooo@bar.tld".into()),
-            token        : None,
             registration : None,
             organizer    : None,
             image_url     : None,
             image_link_url: None,
         };
-        assert!(create_new_event(&mut mock_db, x).is_ok());
+        assert!(create_new_event(&mut mock_db, None, x).is_ok());
         let users = mock_db.all_users().unwrap();
         assert_eq!(users.len(), 1);
     }

@@ -1,17 +1,10 @@
 use super::super::{
     entities::*,
     error::ParameterError,
-    usecases::create_new_user::MAX_USERNAME_LEN,
     util::geo::{MapBbox, MapPoint},
 };
 use fast_chemail::is_valid_email;
-use regex::Regex;
 use url::Url;
-
-lazy_static! {
-    static ref USERNAME_REGEX: Regex =
-        Regex::new(&format!("^[a-z0-9]{{1,{}}}$", MAX_USERNAME_LEN)).unwrap();
-}
 
 pub trait Validate {
     fn validate(&self) -> Result<(), ParameterError>;
@@ -42,13 +35,6 @@ fn license(s: &str) -> Result<(), ParameterError> {
 pub fn bbox(bbox: &MapBbox) -> Result<(), ParameterError> {
     if !bbox.is_valid() || bbox.is_empty() {
         return Err(ParameterError::Bbox);
-    }
-    Ok(())
-}
-
-pub fn username(name: &str) -> Result<(), ParameterError> {
-    if !USERNAME_REGEX.is_match(name) {
-        return Err(ParameterError::UserName);
     }
     Ok(())
 }
@@ -178,15 +164,6 @@ mod tests {
     }
 
     #[test]
-    fn username_test() {
-        assert!(username("").is_err());
-        assert!(username("no-dash").is_err());
-        assert!(username("foo").is_ok());
-        assert!(username(&["x"; 40].join("")).is_ok());
-        assert!(username(&["x"; 41].join("")).is_err());
-    }
-
-    #[test]
     fn homepage_test() {
         assert!(homepage("https://openfairdb.org").is_ok());
         assert!(homepage("openfairdb.org/foo").is_err());
@@ -211,7 +188,7 @@ mod tests {
     #[test]
     fn event_autocorrect() {
         let e = Event {
-            id: "x".into(),
+            uid: "x".into(),
             title: "foo".into(),
             description: None,
             start: NaiveDateTime::from_timestamp(0, 0),
@@ -310,7 +287,7 @@ mod tests {
     #[test]
     fn event_test() {
         let e = Event {
-            id: "x".into(),
+            uid: "x".into(),
             title: "foo".into(),
             description: None,
             start: NaiveDateTime::from_timestamp(0, 0),
@@ -332,7 +309,7 @@ mod tests {
     #[test]
     fn event_with_invalid_homepage_test() {
         let e = Event {
-            id: "x".into(),
+            uid: "x".into(),
             title: "foo".into(),
             description: None,
             start: NaiveDateTime::from_timestamp(0, 0),
@@ -354,7 +331,7 @@ mod tests {
     #[test]
     fn event_with_invalid_end_test() {
         let e = Event {
-            id: "x".into(),
+            uid: "x".into(),
             title: "foo".into(),
             description: None,
             start: NaiveDateTime::from_timestamp(100, 0),

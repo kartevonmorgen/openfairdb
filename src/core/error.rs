@@ -26,10 +26,7 @@ quick_error! {
             description("Invalid contact")
         }
         RegistrationType{
-            description("Invalid registraion type")
-        }
-        UserName{
-            description("Invalid username")
+            description("Invalid registration type")
         }
         UserExists{
             description("The user already exists")
@@ -78,6 +75,9 @@ quick_error! {
         }
         Role{
             description("Invalid role")
+        }
+        TokenInvalid{
+            description("Token invalid")
         }
         TokenExpired{
             description("Token expired")

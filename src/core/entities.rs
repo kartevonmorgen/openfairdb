@@ -7,6 +7,65 @@ use crate::core::util::{
 
 use chrono::prelude::*;
 use failure::{bail, format_err, Fallible};
+use std::{fmt, str::FromStr};
+use uuid::Uuid;
+
+/// Universal, external/public identifier with a string representation.
+#[derive(Default, Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
+pub struct Uid(String);
+
+impl Uid {
+    pub fn new_uuid() -> Self {
+        Uuid::new_v4().into()
+    }
+
+    pub fn is_valid(&self) -> bool {
+        !self.0.is_empty()
+    }
+}
+
+impl AsRef<str> for Uid {
+    fn as_ref(&self) -> &str {
+        &self.0
+    }
+}
+
+impl From<String> for Uid {
+    fn from(from: String) -> Self {
+        Uid(from)
+    }
+}
+
+impl From<&str> for Uid {
+    fn from(from: &str) -> Self {
+        from.to_string().into()
+    }
+}
+
+impl From<Uuid> for Uid {
+    fn from(from: Uuid) -> Self {
+        Self(from.to_simple_ref().to_string())
+    }
+}
+
+impl From<Uid> for String {
+    fn from(from: Uid) -> Self {
+        from.0
+    }
+}
+
+impl FromStr for Uid {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Uid, Self::Err> {
+        Ok(Uid(s.to_owned()))
+    }
+}
+
+impl std::fmt::Display for Uid {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        f.write_str(&self.0)
+    }
+}
 
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
@@ -69,7 +128,7 @@ impl Contact {
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Event {
-    pub id           : String,
+    pub uid          : Uid,
     pub title        : String,
     pub description  : Option<String>,
     pub start        : NaiveDateTime,
@@ -115,11 +174,9 @@ pub struct TagFrequency(pub String, pub TagCount);
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct User {
-    pub id              : String, // TODO: remove
-    pub username        : String,
-    pub password        : Password,
     pub email           : String,
     pub email_confirmed : bool,
+    pub password        : Password,
     pub role            : Role,
 }
 
@@ -386,9 +443,9 @@ pub struct Rating {
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct BboxSubscription {
-    pub id       : String,
-    pub bbox     : MapBbox,
-    pub username : String,
+    pub uid        : Uid,
+    pub user_email : String,
+    pub bbox       : MapBbox,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -400,19 +457,18 @@ pub struct Organization {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EmailTokenCredentials {
+pub struct UserToken {
+    pub email_nonce: EmailNonce,
     pub expires_at: Timestamp,
-    pub username: String,
-    pub token: EmailToken,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct EmailToken {
+pub struct EmailNonce {
     pub email: String,
     pub nonce: Nonce,
 }
 
-impl EmailToken {
+impl EmailNonce {
     pub fn encode_to_string(&self) -> String {
         let nonce = self.nonce.to_string();
         debug_assert_eq!(Nonce::STR_LEN, nonce.len());
@@ -422,7 +478,7 @@ impl EmailToken {
         bs58::encode(concat).into_string()
     }
 
-    pub fn decode_from_str(encoded: &str) -> Fallible<EmailToken> {
+    pub fn decode_from_str(encoded: &str) -> Fallible<EmailNonce> {
         let decoded = bs58::decode(encoded).into_vec()?;
         let mut concat = String::from_utf8(decoded)?;
         if concat.len() <= Nonce::STR_LEN {
@@ -456,7 +512,6 @@ pub use self::entry_builder::*;
 pub mod entry_builder {
 
     use super::*;
-    use uuid::Uuid;
 
     pub struct EntryBuild {
         entry: Entry,

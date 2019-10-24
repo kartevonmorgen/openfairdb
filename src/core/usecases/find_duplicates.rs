@@ -155,6 +155,7 @@ fn min3(s: usize, t: usize, u: usize) -> usize {
 }
 
 #[cfg(test)]
+#[allow(clippy::unreadable_literal, clippy::excessive_precision)]
 mod tests {
     use super::*;
 

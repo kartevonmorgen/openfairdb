@@ -600,6 +600,7 @@ impl EntryIndexer for TantivyEntryIndex {
 }
 
 impl EntryIndex for TantivyEntryIndex {
+    #[allow(clippy::absurd_extreme_comparisons)]
     fn query_entries(&self, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<IndexedEntry>> {
         if limit <= 0 {
             bail!("Invalid limit: {}", limit);

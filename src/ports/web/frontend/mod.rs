@@ -34,9 +34,9 @@ const MAIN_CSS: &str = include_str!("main.css");
 type Result<T> = std::result::Result<T, AppError>;
 
 fn check_role(db: &dyn Db, account: &Account, role: Role) -> Result<User> {
-    if let Some(user) = db.get_users_by_email(account.email())?.first() {
+    if let Some(user) = db.try_get_user_by_email(account.email())? {
         if user.role == role {
-            return Ok(user.to_owned());
+            return Ok(user);
         }
     }
     Err(Error::Parameter(ParameterError::Unauthorized).into())
@@ -74,7 +74,7 @@ pub fn get_search_users(
     {
         let db = pool.shared()?;
         let admin = check_role(&*db, &account, Role::Admin)?;
-        let users = db.get_users_by_email(&email)?;
+        let users: Vec<_> = db.try_get_user_by_email(&email)?.into_iter().collect();
         Ok(view::user_search_result(&admin.email, &users))
     }
 }
@@ -130,9 +130,7 @@ pub fn get_entry(
         let ratings = db.load_ratings_of_entry(&e.id)?;
         let ratings_with_comments = db.zip_ratings_with_comments(ratings)?;
         let user = if let Some(a) = account {
-            db.get_users_by_email(a.email())?
-                .first()
-                .map(|u| u.to_owned())
+            db.try_get_user_by_email(a.email())?
         } else {
             None
         };
@@ -189,17 +187,17 @@ pub fn get_dashboard(db: sqlite::Connections, account: Account) -> Result<Markup
     let entry_count = db.count_entries()?;
     let user_count = db.count_users()?;
     let event_count = db.count_events()?;
-    let users = db.get_users_by_email(account.email())?;
-    if let Some(user) = users.first().cloned() {
-        if user.role == Role::Admin {
-            return Ok(view::dashboard(view::DashBoardPresenter {
-                user,
-                entry_count,
-                event_count,
-                tag_count,
-                user_count,
-            }));
-        }
+    let user = db
+        .try_get_user_by_email(account.email())?
+        .ok_or(Error::Parameter(ParameterError::Unauthorized))?;
+    if user.role == Role::Admin {
+        return Ok(view::dashboard(view::DashBoardPresenter {
+            user,
+            entry_count,
+            event_count,
+            tag_count,
+            user_count,
+        }));
     }
     Err(Error::Parameter(ParameterError::Unauthorized).into())
 }

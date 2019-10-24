@@ -107,16 +107,11 @@ mod tests {
             }
 
             pub fn try_get_user(self: &EnvFixture, email: &str) -> Option<User> {
-                match self
-                    .db_connections
+                self.db_connections
                     .shared()
                     .unwrap()
-                    .get_users_by_email(email)
-                {
-                    Ok(users) => users.first().cloned(),
-                    Err(RepoError::NotFound) => None,
-                    x => x.map(|_| None).unwrap(),
-                }
+                    .try_get_user_by_email(email)
+                    .unwrap_or_default()
             }
 
             pub fn try_get_entry(self: &EnvFixture, id: &str) -> Option<Entry> {
@@ -180,11 +175,6 @@ mod tests {
                     ..Default::default()
                 };
                 self.query_entries(&query)
-            }
-
-            pub fn create_user_from_email(self: &EnvFixture, email: &str) -> String {
-                usecases::create_user_from_email(&*self.db_connections.exclusive().unwrap(), email)
-                    .unwrap()
             }
         }
 

@@ -2,6 +2,7 @@ use super::*;
 
 use crate::core::{usecases, util::geo};
 
+use chrono::prelude::*;
 use failure::Fallible;
 use std::{cell::RefCell, result};
 
@@ -9,60 +10,60 @@ use std::{cell::RefCell, result};
 
 type RepoResult<T> = result::Result<T, RepoError>;
 
-trait Id {
-    fn id(&self) -> &str;
+trait Key {
+    fn key(&self) -> &str;
 }
 
-impl Id for Entry {
-    fn id(&self) -> &str {
+impl Key for Entry {
+    fn key(&self) -> &str {
         &self.id
     }
 }
 
-impl Id for Event {
-    fn id(&self) -> &str {
+impl Key for Event {
+    fn key(&self) -> &str {
+        self.uid.as_ref()
+    }
+}
+
+impl Key for Category {
+    fn key(&self) -> &str {
         &self.id
     }
 }
 
-impl Id for Category {
-    fn id(&self) -> &str {
+impl Key for Tag {
+    fn key(&self) -> &str {
         &self.id
     }
 }
 
-impl Id for Tag {
-    fn id(&self) -> &str {
+impl Key for User {
+    fn key(&self) -> &str {
+        &self.email
+    }
+}
+
+impl Key for Comment {
+    fn key(&self) -> &str {
         &self.id
     }
 }
 
-impl Id for User {
-    fn id(&self) -> &str {
+impl Key for Rating {
+    fn key(&self) -> &str {
         &self.id
     }
 }
 
-impl Id for Comment {
-    fn id(&self) -> &str {
-        &self.id
+impl Key for BboxSubscription {
+    fn key(&self) -> &str {
+        self.uid.as_ref()
     }
 }
 
-impl Id for Rating {
-    fn id(&self) -> &str {
-        &self.id
-    }
-}
-
-impl Id for BboxSubscription {
-    fn id(&self) -> &str {
-        &self.id
-    }
-}
-
-impl Id for Organization {
-    fn id(&self) -> &str {
+impl Key for Organization {
+    fn key(&self) -> &str {
         &self.id
     }
 }
@@ -76,76 +77,49 @@ pub struct MockDb {
     pub users: RefCell<Vec<User>>,
     pub ratings: RefCell<Vec<Rating>>,
     pub comments: RefCell<Vec<Comment>>,
-    pub bbox_subscriptions: Vec<BboxSubscription>,
+    pub bbox_subscriptions: RefCell<Vec<BboxSubscription>>,
     pub orgs: Vec<Organization>,
-    pub email_token_credentialss: RefCell<Vec<EmailTokenCredentials>>,
+    pub token: RefCell<Vec<UserToken>>,
 }
 
-impl EmailTokenCredentialsRepository for MockDb {
-    fn replace_email_token_credentials(
-        &self,
-        email_token_credentials: EmailTokenCredentials,
-    ) -> RepoResult<EmailTokenCredentials> {
-        for x in &mut self.email_token_credentialss.borrow_mut().iter_mut() {
-            if x.username == email_token_credentials.username {
-                *x = email_token_credentials.clone();
-                return Ok(email_token_credentials);
+impl UserTokenRepo for MockDb {
+    fn replace_user_token(&self, token: UserToken) -> RepoResult<EmailNonce> {
+        for x in &mut self.token.borrow_mut().iter_mut() {
+            if x.email_nonce.email == token.email_nonce.email {
+                *x = token.clone();
+                return Ok(token.email_nonce);
             }
         }
-        self.email_token_credentialss
-            .borrow_mut()
-            .push(email_token_credentials.clone());
-        Ok(email_token_credentials)
+        self.token.borrow_mut().push(token.clone());
+        Ok(token.email_nonce)
     }
 
-    fn consume_email_token_credentials(
-        &self,
-        email_or_username: &str,
-        token: &EmailToken,
-    ) -> RepoResult<EmailTokenCredentials> {
-        if let Some(index) = self
-            .email_token_credentialss
-            .borrow()
-            .iter()
-            .enumerate()
-            .find_map(|(i, x)| {
-                if (x.username == email_or_username || x.token.email == email_or_username)
-                    && x.token.email == token.email
-                    && x.token.nonce == token.nonce
-                {
-                    Some(i)
-                } else {
-                    None
-                }
-            })
-        {
-            Ok(self
-                .email_token_credentialss
-                .borrow_mut()
-                .swap_remove(index))
+    fn consume_user_token(&self, email_nonce: &EmailNonce) -> RepoResult<UserToken> {
+        if let Some(index) = self.token.borrow().iter().enumerate().find_map(|(i, x)| {
+            if x.email_nonce.email == email_nonce.email && x.email_nonce.nonce == email_nonce.nonce
+            {
+                Some(i)
+            } else {
+                None
+            }
+        }) {
+            Ok(self.token.borrow_mut().swap_remove(index))
         } else {
             Err(RepoError::NotFound)
         }
     }
 
-    fn discard_expired_email_token_credentials(
-        &self,
-        expired_before: Timestamp,
-    ) -> RepoResult<usize> {
-        let len_before = self.email_token_credentialss.borrow().len();
-        self.email_token_credentialss
+    fn discard_expired_user_tokens(&self, expired_before: Timestamp) -> RepoResult<usize> {
+        let len_before = self.token.borrow().len();
+        self.token
             .borrow_mut()
             .retain(|x| x.expires_at >= expired_before);
-        let len_after = self.email_token_credentialss.borrow().len();
+        let len_after = self.token.borrow().len();
         debug_assert!(len_before >= len_after);
         Ok(len_before - len_after)
     }
 
-    #[cfg(test)]
-    fn get_email_token_credentials_by_email_or_username(
-        &self,
-        _email_or_username: &str,
-    ) -> RepoResult<EmailTokenCredentials> {
+    fn get_user_token_by_email(&self, _email: &str) -> RepoResult<UserToken> {
         unimplemented!()
     }
 }
@@ -182,15 +156,15 @@ impl EntryIndex for MockDb {
     }
 }
 
-fn get<T: Clone + Id>(objects: &[T], id: &str) -> RepoResult<T> {
-    match objects.iter().find(|x| x.id() == id) {
+fn get<T: Clone + Key>(objects: &[T], id: &str) -> RepoResult<T> {
+    match objects.iter().find(|x| x.key() == id) {
         Some(x) => Ok(x.clone()),
         None => Err(RepoError::NotFound),
     }
 }
 
-fn create<T: Clone + Id>(objects: &mut Vec<T>, e: T) -> RepoResult<()> {
-    if objects.iter().any(|x| x.id() == e.id()) {
+fn create<T: Clone + Key>(objects: &mut Vec<T>, e: T) -> RepoResult<()> {
+    if objects.iter().any(|x| x.key() == e.key()) {
         return Err(RepoError::AlreadyExists);
     } else {
         objects.push(e);
@@ -198,8 +172,8 @@ fn create<T: Clone + Id>(objects: &mut Vec<T>, e: T) -> RepoResult<()> {
     Ok(())
 }
 
-fn update<T: Clone + Id>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
-    if let Some(pos) = objects.iter().position(|x| x.id() == e.id()) {
+fn update<T: Clone + Key>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
+    if let Some(pos) = objects.iter().position(|x| x.key() == e.key()) {
         objects[pos] = e.clone();
     } else {
         return Err(RepoError::NotFound);
@@ -274,8 +248,8 @@ impl EventGateway for MockDb {
         create(&mut self.events.borrow_mut(), e)
     }
 
-    fn get_event(&self, id: &str) -> RepoResult<Event> {
-        get(&self.events.borrow(), id).and_then(|e| {
+    fn get_event(&self, uid: &str) -> RepoResult<Event> {
+        get(&self.events.borrow(), uid).and_then(|e| {
             if e.archived.is_none() {
                 Ok(e)
             } else {
@@ -334,43 +308,29 @@ impl EventGateway for MockDb {
         unimplemented!();
     }
 
-    fn delete_event_with_matching_tags(&self, _id: &str, _tags: &[&str]) -> RepoResult<()> {
+    fn delete_event_with_matching_tags(&self, _id: &str, _tags: &[&str]) -> RepoResult<Option<()>> {
         unimplemented!();
     }
 }
 
 impl UserGateway for MockDb {
-    fn create_user(&self, u: User) -> RepoResult<()> {
-        create(&mut self.users.borrow_mut(), u)
+    fn create_user(&self, u: &User) -> RepoResult<()> {
+        create(&mut self.users.borrow_mut(), u.clone())
     }
 
-    fn get_user(&self, username: &str) -> RepoResult<User> {
-        let users: &Vec<User> = &self
-            .users
-            .borrow()
-            .iter()
-            .filter(|u| u.username == username)
-            .cloned()
-            .collect();
-        if users.is_empty() {
-            Err(RepoError::NotFound)
-        } else {
-            Ok(users[0].clone())
-        }
-    }
-
-    fn get_users_by_email(&self, email: &str) -> RepoResult<Vec<User>> {
-        let users: Vec<_> = self
+    fn try_get_user_by_email(&self, email: &str) -> RepoResult<Option<User>> {
+        Ok(self
             .users
             .borrow()
             .iter()
             .filter(|u| u.email == email)
             .cloned()
-            .collect();
-        if users.is_empty() {
-            return Err(RepoError::NotFound);
-        }
-        Ok(users)
+            .next())
+    }
+
+    fn get_user_by_email(&self, email: &str) -> RepoResult<User> {
+        self.try_get_user_by_email(email)?
+            .ok_or(RepoError::NotFound)
     }
 
     fn all_users(&self) -> RepoResult<Vec<User>> {
@@ -381,8 +341,8 @@ impl UserGateway for MockDb {
         self.all_users().map(|v| v.len())
     }
 
-    fn delete_user(&self, u_id: &str) -> RepoResult<()> {
-        self.users.borrow_mut().retain(|u| u.id != u_id);
+    fn delete_user_by_email(&self, email: &str) -> RepoResult<()> {
+        self.users.borrow_mut().retain(|u| u.email != email);
         Ok(())
     }
 
@@ -541,8 +501,8 @@ impl Db for MockDb {
         Ok(())
     }
 
-    fn create_bbox_subscription(&mut self, s: &BboxSubscription) -> RepoResult<()> {
-        create(&mut self.bbox_subscriptions, s.clone())
+    fn create_bbox_subscription(&self, s: &BboxSubscription) -> RepoResult<()> {
+        create(&mut self.bbox_subscriptions.borrow_mut(), s.clone())
     }
 
     fn all_categories(&self) -> RepoResult<Vec<Category>> {
@@ -557,288 +517,263 @@ impl Db for MockDb {
     }
 
     fn all_bbox_subscriptions(&self) -> RepoResult<Vec<BboxSubscription>> {
-        Ok(self.bbox_subscriptions.clone())
+        Ok(self.bbox_subscriptions.borrow().clone())
     }
 
-    fn delete_bbox_subscription(&mut self, s_id: &str) -> RepoResult<()> {
-        self.bbox_subscriptions = self
+    fn all_bbox_subscriptions_by_email(
+        &self,
+        user_email: &str,
+    ) -> RepoResult<Vec<BboxSubscription>> {
+        Ok(self
             .bbox_subscriptions
+            .borrow()
             .iter()
-            .filter(|s| s.id != s_id)
+            .filter(|s| s.user_email == user_email)
             .cloned()
-            .collect();
+            .collect())
+    }
+
+    fn delete_bbox_subscriptions_by_email(&self, user_email: &str) -> RepoResult<()> {
+        self.bbox_subscriptions
+            .borrow_mut()
+            .retain(|s| s.user_email != user_email);
         Ok(())
     }
 }
 
-mod tests {
-    use super::*;
-    use chrono::prelude::*;
-    #[test]
-    fn receive_different_user() {
-        let db = MockDb::default();
-        db.users.borrow_mut().push(User {
-            id: "1".into(),
-            username: "a".into(),
-            password: "secret".parse::<Password>().unwrap(),
-            email: "a@foo.bar".into(),
+#[test]
+fn receive_different_user() {
+    let db = MockDb::default();
+    db.users.borrow_mut().push(User {
+        email: "a@foo.bar".into(),
+        email_confirmed: true,
+        password: "secret".parse::<Password>().unwrap(),
+        role: Role::Guest,
+    });
+    db.users.borrow_mut().push(User {
+        email: "b@foo.bar".into(),
+        email_confirmed: true,
+        password: "secret".parse::<Password>().unwrap(),
+        role: Role::Guest,
+    });
+    assert!(get_user(&db, "a@foo.bar", "b@foo.bar").is_err());
+    assert!(get_user(&db, "a@foo.bar", "a@foo.bar").is_ok());
+}
+
+#[test]
+fn create_bbox_subscription() {
+    let db = MockDb::default();
+    let bbox_new = geo::MapBbox::new(
+        MapPoint::from_lat_lng_deg(-71.3, 179.5),
+        MapPoint::from_lat_lng_deg(88.2, -160),
+    );
+
+    assert!(db
+        .create_user(&User {
+            email: "abc@abc.de".into(),
             email_confirmed: true,
-            role: Role::Guest,
-        });
-        db.users.borrow_mut().push(User {
-            id: "2".into(),
-            username: "b".into(),
             password: "secret".parse::<Password>().unwrap(),
-            email: "b@foo.bar".into(),
-            email_confirmed: true,
             role: Role::Guest,
-        });
-        assert!(get_user(&db, "a", "b").is_err());
-        assert!(get_user(&db, "a", "a").is_ok());
-    }
+        })
+        .is_ok());
+    assert!(usecases::subscribe_to_bbox(&db, "abc@abc.de".into(), bbox_new).is_ok());
 
-    #[test]
-    fn create_bbox_subscription() {
-        let mut db = MockDb::default();
-        let bbox_new = geo::MapBbox::new(
-            MapPoint::from_lat_lng_deg(-71.3, 179.5),
-            MapPoint::from_lat_lng_deg(88.2, -160),
-        );
+    let bbox_subscription = db.all_bbox_subscriptions().unwrap()[0].clone();
+    assert_eq!(
+        bbox_subscription.bbox.north_east().lat(),
+        LatCoord::from_deg(88.2)
+    );
+}
 
-        let username = "a";
-        assert!(db
-            .create_user(User {
-                id: "123".into(),
-                username: username.into(),
-                password: "secret".parse::<Password>().unwrap(),
-                email: "abc@abc.de".into(),
-                email_confirmed: true,
-                role: Role::Guest,
-            })
-            .is_ok());
-        assert!(usecases::subscribe_to_bbox(bbox_new, username.into(), &mut db,).is_ok());
+#[test]
+fn modify_bbox_subscription() {
+    let db = MockDb::default();
 
-        let bbox_subscription = db.all_bbox_subscriptions().unwrap()[0].clone();
-        assert_eq!(
-            bbox_subscription.bbox.north_east().lat(),
-            LatCoord::from_deg(88.2)
-        );
-    }
+    let bbox_old = geo::MapBbox::new(
+        MapPoint::from_lat_lng_deg(49.0, 5.0),
+        MapPoint::from_lat_lng_deg(50.0, 10.0),
+    );
 
-    #[test]
-    fn modify_bbox_subscription() {
-        let mut db = MockDb::default();
+    let bbox_new = geo::MapBbox::new(
+        MapPoint::from_lat_lng_deg(9.0, 5.0),
+        MapPoint::from_lat_lng_deg(10.0, 10.0),
+    );
 
-        let bbox_old = geo::MapBbox::new(
-            MapPoint::from_lat_lng_deg(49.0, 5.0),
-            MapPoint::from_lat_lng_deg(50.0, 10.0),
-        );
+    assert!(db
+        .create_user(&User {
+            email: "abc@abc.de".into(),
+            email_confirmed: true,
+            password: "secret".parse::<Password>().unwrap(),
+            role: Role::Guest,
+        })
+        .is_ok());
 
-        let bbox_new = geo::MapBbox::new(
-            MapPoint::from_lat_lng_deg(9.0, 5.0),
-            MapPoint::from_lat_lng_deg(10.0, 10.0),
-        );
+    let bbox_subscription = BboxSubscription {
+        uid: "123".into(),
+        user_email: "abc@abc.de".into(),
+        bbox: bbox_old,
+    };
+    db.create_bbox_subscription(&bbox_subscription.clone())
+        .unwrap();
 
-        let username = "a";
-        assert!(db
-            .create_user(User {
-                id: "123".into(),
-                username: username.into(),
-                password: "secret".parse::<Password>().unwrap(),
-                email: "abc@abc.de".into(),
-                email_confirmed: true,
-                role: Role::Guest,
-            })
-            .is_ok());
+    usecases::subscribe_to_bbox(&db, "abc@abc.de".into(), bbox_new).unwrap();
 
-        let bbox_subscription = BboxSubscription {
-            id: "123".into(),
-            bbox: bbox_old,
-            username: "a".into(),
-        };
-        db.create_bbox_subscription(&bbox_subscription.clone())
+    let bbox_subscriptions: Vec<_> = db
+        .all_bbox_subscriptions()
+        .unwrap()
+        .into_iter()
+        .filter(|s| &*s.user_email == "abc@abc.de")
+        .collect();
+
+    assert_eq!(bbox_subscriptions.len(), 1);
+    assert_eq!(
+        bbox_subscriptions[0].clone().bbox.north_east().lat(),
+        LatCoord::from_deg(10.0)
+    );
+}
+
+#[test]
+fn get_bbox_subscriptions() {
+    let db = MockDb::default();
+
+    let bbox1 = geo::MapBbox::new(
+        MapPoint::from_lat_lng_deg(49.0, 5.0),
+        MapPoint::from_lat_lng_deg(50.0, 10.0),
+    );
+
+    let bbox2 = geo::MapBbox::new(
+        MapPoint::from_lat_lng_deg(9.0, 5.0),
+        MapPoint::from_lat_lng_deg(10.0, 10.0),
+    );
+
+    assert!(db
+        .create_user(&User {
+            email: "a@abc.de".into(),
+            email_confirmed: true,
+            password: "secret1".parse::<Password>().unwrap(),
+            role: Role::Guest,
+        })
+        .is_ok());
+    let bbox_subscription = BboxSubscription {
+        uid: "1".into(),
+        user_email: "a@abc.de".into(),
+        bbox: bbox1,
+    };
+    assert!(db
+        .create_bbox_subscription(&bbox_subscription.clone())
+        .is_ok());
+
+    assert!(db
+        .create_user(&User {
+            email: "b@abc.de".into(),
+            email_confirmed: true,
+            password: "secret2".parse::<Password>().unwrap(),
+            role: Role::Guest,
+        })
+        .is_ok());
+    let bbox_subscription2 = BboxSubscription {
+        uid: "2".into(),
+        user_email: "b@abc.de".into(),
+        bbox: bbox2,
+    };
+    assert!(db
+        .create_bbox_subscription(&bbox_subscription2.clone())
+        .is_ok());
+    let bbox_subscriptions = usecases::get_bbox_subscriptions(&db, "b@abc.de");
+    assert!(bbox_subscriptions.is_ok());
+    assert_eq!(bbox_subscriptions.unwrap()[0].uid, "2".into());
+}
+
+#[test]
+fn email_addresses_by_coordinate() {
+    let db = MockDb::default();
+    let bbox_new = geo::MapBbox::new(
+        MapPoint::from_lat_lng_deg(0.0, 0.0),
+        MapPoint::from_lat_lng_deg(10.0, 10.0),
+    );
+
+    db.create_user(&User {
+        email: "abc@abc.de".into(),
+        email_confirmed: true,
+        password: "secret".parse::<Password>().unwrap(),
+        role: Role::Guest,
+    })
+    .unwrap();
+
+    usecases::subscribe_to_bbox(&db, "abc@abc.de".into(), bbox_new).unwrap();
+
+    let email_addresses =
+        usecases::email_addresses_by_coordinate(&db, MapPoint::from_lat_lng_deg(5.0, 5.0)).unwrap();
+    assert_eq!(email_addresses.len(), 1);
+    assert_eq!(email_addresses[0], "abc@abc.de");
+
+    let no_email_addresses =
+        usecases::email_addresses_by_coordinate(&db, MapPoint::from_lat_lng_deg(20.0, 20.0))
             .unwrap();
+    assert_eq!(no_email_addresses.len(), 0);
+}
 
-        usecases::subscribe_to_bbox(bbox_new, username.into(), &mut db).unwrap();
-
-        let bbox_subscriptions: Vec<_> = db
-            .all_bbox_subscriptions()
-            .unwrap()
-            .into_iter()
-            .filter(|s| &*s.username == "a")
-            .collect();
-
-        assert_eq!(bbox_subscriptions.len(), 1);
-        assert_eq!(
-            bbox_subscriptions[0].clone().bbox.north_east().lat(),
-            LatCoord::from_deg(10.0)
-        );
-    }
-
-    #[test]
-    fn get_bbox_subscriptions() {
-        let mut db = MockDb::default();
-
-        let bbox1 = geo::MapBbox::new(
-            MapPoint::from_lat_lng_deg(49.0, 5.0),
-            MapPoint::from_lat_lng_deg(50.0, 10.0),
-        );
-
-        let bbox2 = geo::MapBbox::new(
-            MapPoint::from_lat_lng_deg(9.0, 5.0),
-            MapPoint::from_lat_lng_deg(10.0, 10.0),
-        );
-
-        let user1 = "a";
-        assert!(db
-            .create_user(User {
-                id: user1.into(),
-                username: user1.into(),
-                password: "secret1".parse::<Password>().unwrap(),
-                email: "abc@abc.de".into(),
-                email_confirmed: true,
-                role: Role::Guest,
-            })
-            .is_ok());
-        let bbox_subscription = BboxSubscription {
-            id: "1".into(),
-            bbox: bbox1,
-            username: "a".into(),
-        };
-        assert!(db
-            .create_bbox_subscription(&bbox_subscription.clone())
-            .is_ok());
-
-        let user2 = "b";
-        assert!(db
-            .create_user(User {
-                id: user2.into(),
-                username: user2.into(),
-                password: "secret2".parse::<Password>().unwrap(),
-                email: "abc@abc.de".into(),
-                email_confirmed: true,
-                role: Role::Guest,
-            })
-            .is_ok());
-        let bbox_subscription2 = BboxSubscription {
-            id: "2".into(),
-            bbox: bbox2,
-            username: "b".into(),
-        };
-        assert!(db
-            .create_bbox_subscription(&bbox_subscription2.clone())
-            .is_ok());
-        let bbox_subscriptions = usecases::get_bbox_subscriptions(user2.into(), &mut db);
-        assert!(bbox_subscriptions.is_ok());
-        assert_eq!(bbox_subscriptions.unwrap()[0].id, "2");
-    }
-
-    #[test]
-    fn email_addresses_by_coordinate() {
-        let mut db = MockDb::default();
-        let bbox_new = geo::MapBbox::new(
-            MapPoint::from_lat_lng_deg(0.0, 0.0),
-            MapPoint::from_lat_lng_deg(10.0, 10.0),
-        );
-
-        let username = "a";
-        let u_id = "123".to_string();
-        db.create_user(User {
-            id: u_id.clone(),
-            username: username.into(),
-            password: "secret".parse::<Password>().unwrap(),
+#[test]
+fn delete_user() {
+    let db = MockDb::default();
+    assert!(db
+        .create_user(&User {
             email: "abc@abc.de".into(),
             email_confirmed: true,
-            role: Role::Guest,
-        })
-        .unwrap();
-
-        usecases::subscribe_to_bbox(bbox_new, username, &mut db).unwrap();
-
-        let email_addresses =
-            usecases::email_addresses_by_coordinate(&db, MapPoint::from_lat_lng_deg(5.0, 5.0))
-                .unwrap();
-        assert_eq!(email_addresses.len(), 1);
-        assert_eq!(email_addresses[0], "abc@abc.de");
-
-        let no_email_addresses =
-            usecases::email_addresses_by_coordinate(&db, MapPoint::from_lat_lng_deg(20.0, 20.0))
-                .unwrap();
-        assert_eq!(no_email_addresses.len(), 0);
-    }
-
-    #[test]
-    fn delete_user() {
-        let mut db = MockDb::default();
-        let username = "a".to_string();
-        let u_id = "1".to_string();
-        assert!(db
-            .create_user(User {
-                id: u_id.clone(),
-                username: username.clone(),
-                password: "secret".parse::<Password>().unwrap(),
-                email: "abc@abc.de".into(),
-                email_confirmed: true,
-                role: Role::Guest,
-            })
-            .is_ok());
-        let username = "b".to_string();
-        let u_id = "2".to_string();
-        assert!(db
-            .create_user(User {
-                id: u_id.clone(),
-                username: username.clone(),
-                password: "secret".parse::<Password>().unwrap(),
-                email: "abcd@abcd.de".into(),
-                email_confirmed: true,
-                role: Role::Guest,
-            })
-            .is_ok());
-        assert_eq!(db.count_users().unwrap(), 2);
-
-        assert!(usecases::delete_user(&mut db, "1", "1").is_ok());
-        assert_eq!(db.count_users().unwrap(), 1);
-    }
-
-    #[test]
-    fn receive_event_with_creators_email() {
-        let mut db = MockDb::default();
-        db.create_user(User {
-            id: "x".into(),
-            username: "user".into(),
             password: "secret".parse::<Password>().unwrap(),
-            email: "abc@abc.de".into(),
-            email_confirmed: true,
             role: Role::Guest,
         })
-        .unwrap();
-        db.create_event(Event {
-            id: "x".into(),
-            title: "t".into(),
-            description: None,
-            start: NaiveDateTime::from_timestamp(0, 0),
-            end: None,
-            contact: None,
-            location: None,
-            homepage: None,
-            tags: vec![],
-            created_by: Some("user".into()),
-            registration: None,
-            organizer: None,
-            archived: None,
-            image_url: None,
-            image_link_url: None,
+        .is_ok());
+    assert!(db
+        .create_user(&User {
+            email: "abcd@abcd.de".into(),
+            email_confirmed: true,
+            password: "secret".parse::<Password>().unwrap(),
+            role: Role::Guest,
         })
-        .unwrap();
-        let e = usecases::get_event(&mut db, "x").unwrap();
-        assert_eq!(e.created_by.unwrap(), "abc@abc.de");
-    }
+        .is_ok());
+    assert_eq!(db.count_users().unwrap(), 2);
 
-    #[test]
-    fn tag_lists() {
-        assert_eq!(
-            vec!["a".to_string(), "b".to_string(), "c".to_string()],
-            prepare_tag_list(vec!["  a  c #b ".to_string()])
-        );
-    }
+    assert!(usecases::delete_user(&db, "abc@abc.de", "abc@abc.de").is_ok());
+    assert_eq!(db.count_users().unwrap(), 1);
+}
+
+#[test]
+fn receive_event_with_creators_email() {
+    let db = MockDb::default();
+    db.create_user(&User {
+        email: "abc@abc.de".into(),
+        email_confirmed: true,
+        password: "secret".parse::<Password>().unwrap(),
+        role: Role::Guest,
+    })
+    .unwrap();
+    db.create_event(Event {
+        uid: "x".into(),
+        title: "t".into(),
+        description: None,
+        start: NaiveDateTime::from_timestamp(0, 0),
+        end: None,
+        contact: None,
+        location: None,
+        homepage: None,
+        tags: vec![],
+        created_by: Some("abc@abc.de".into()),
+        registration: None,
+        organizer: None,
+        archived: None,
+        image_url: None,
+        image_link_url: None,
+    })
+    .unwrap();
+    let e = usecases::get_event(&db, "x").unwrap();
+    assert_eq!(e.created_by.unwrap(), "abc@abc.de");
+}
+
+#[test]
+fn tag_lists() {
+    assert_eq!(
+        vec!["a".to_string(), "b".to_string(), "c".to_string()],
+        prepare_tag_list(vec!["  a  c #b ".to_string()])
+    );
 }

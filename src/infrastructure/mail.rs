@@ -131,7 +131,7 @@ mod tests {
     #[test]
     fn create_simple_mail() {
         let mail = compose(
-            &vec!["mail@test.org".into()],
+            &["mail@test.org"],
             "My veeeeerrrrryyyyy looooonnnnnggggg Subject with äöüÄÖÜß Umlaute and even more characters that are distributed onto multiple lines",
             "Hello Mail",
         ).unwrap();
@@ -149,7 +149,7 @@ mod tests {
 
     #[test]
     fn check_addresses() {
-        assert!(compose(&vec![], "foo", "bar").is_err());
-        assert!(compose(&vec!["not-valid".into()], "foo", "bar").is_err());
+        assert!(compose(&[], "foo", "bar").is_err());
+        assert!(compose(&["not-valid"], "foo", "bar").is_err());
     }
 }

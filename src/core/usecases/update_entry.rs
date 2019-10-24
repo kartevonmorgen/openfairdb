@@ -27,12 +27,6 @@ pub struct UpdateEntry {
 
 pub struct Storable(Entry);
 
-impl Storable {
-    pub fn entry_id(&self) -> &str {
-        &self.0.id
-    }
-}
-
 pub fn prepare_updated_entry<D: Db>(db: &D, id: String, e: UpdateEntry) -> Result<Storable> {
     let old: Entry = db.get_entry(&id)?;
     if (old.version + 1) != e.version {

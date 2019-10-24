@@ -39,18 +39,18 @@ pub fn query_events<D: Db>(
             .collect();
     }
 
-    if let Some(email) = created_by {
-        let users = db.all_users()?;
-        match users.into_iter().find(|u| u.email == *email) {
-            Some(user) => {
-                let u = Some(user.username);
-                events = events.into_iter().filter(|e| e.created_by == u).collect();
-            }
-            None => {
-                events = vec![];
-            }
+    if let Some(ref email) = created_by {
+        if let Some(user) = db.try_get_user_by_email(email)? {
+            events = events
+                .into_iter()
+                .filter(|e| e.created_by.as_ref() == Some(&user.email))
+                .collect();
+        } else {
+            events = vec![];
         }
     }
+
     events.sort_by(|a, b| a.start.cmp(&b.start));
+
     Ok(events)
 }

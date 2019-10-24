@@ -362,7 +362,7 @@ paths:
             schema:
               type: object
               properties:
-                username:
+                email:
                   type: string
                 password:
                   type: string
@@ -377,24 +377,6 @@ paths:
       responses:
         '200':
           description: Sucessfull response
-  '/users/{username}':
-    get:
-      summary: Get user data
-      tags:
-        - Users
-      parameters:
-        - name: username
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Sucessfull response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
   '/users/reset-password-request':
     post:
       summary: Request a password reset
@@ -407,7 +389,7 @@ paths:
             schema:
               type: object
               properties:
-                email_or_username:
+                email:
                   type: string
       responses:
         '200':
@@ -424,7 +406,7 @@ paths:
             schema:
               type: object
               properties:
-                email_or_username:
+                email:
                   type: string
                 token:
                   type: string
@@ -608,12 +590,6 @@ components:
         created:
           $ref: '#/components/schemas/UnixTime'
         text:
-          type: string
-    User:
-      properties:
-        username:
-          type: string
-        email:
           type: string
     BboxSubscription:
       properties:

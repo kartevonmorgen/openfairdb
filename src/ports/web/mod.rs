@@ -48,7 +48,7 @@ pub(crate) fn rocket_instance(
     index_all_entries(&*connections.exclusive().unwrap(), &mut search_engine).unwrap();
 
     info!("Discarding expired user e-mail nonces...");
-    usecases::discard_expired_email_token_credentials(&*connections.exclusive().unwrap()).unwrap();
+    usecases::discard_expired_user_tokens(&*connections.exclusive().unwrap()).unwrap();
 
     info!("Initialization finished");
     let r = match cfg {
@@ -135,23 +135,21 @@ mod tests {
 
     pub fn register_user(pool: &sqlite::Connections, email: &str, pw: &str, confirmed: bool) {
         let db = pool.exclusive().unwrap();
-        let username = email.replace("@", "").replace(".", "");
         usecases::create_new_user(
             &*db,
             usecases::NewUser {
-                username: username.clone(),
-                email: email.into(),
-                password: pw.into(),
+                email: email.to_string(),
+                password: pw.to_string(),
             },
         )
         .unwrap();
+        let email_nonce = EmailNonce {
+            email: email.to_string(),
+            nonce: Nonce::new(),
+        };
+        let token = email_nonce.encode_to_string();
         if confirmed {
-            let users = db.get_users_by_email(email).unwrap();
-            for u in users {
-                if u.username == username {
-                    usecases::confirm_email_address(&*db, &u.id).unwrap();
-                }
-            }
+            usecases::confirm_email_address(&*db, &token).unwrap();
         }
     }
 }

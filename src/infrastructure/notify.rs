@@ -76,12 +76,22 @@ pub fn entry_updated(email_addresses: &[String], entry: &Entry, all_categories: 
 }
 
 pub fn user_registered_kvm(user: &User) {
-    let url = format!("https://kartevonmorgen.org/#/?confirm_email={}", user.id);
+    let token = EmailNonce {
+        email: user.email.clone(),
+        nonce: Nonce::new(),
+    }
+    .encode_to_string();
+    let url = format!("https://kartevonmorgen.org/#/?confirm_email={}", token);
     user_registered(user, &url);
 }
 
 pub fn user_registered_ofdb(user: &User) {
-    let url = format!("https://openfairdb.org/register/confirm/{}", user.id);
+    let token = EmailNonce {
+        email: user.email.clone(),
+        nonce: Nonce::new(),
+    }
+    .encode_to_string();
+    let url = format!("https://openfairdb.org/register/confirm/{}", token);
     user_registered(user, &url);
 }
 
@@ -90,15 +100,15 @@ pub fn user_registered(user: &User, url: &str) {
 
     #[cfg(feature = "email")]
     {
-        info!("Sending confirmation e-mail to user {}", user.username);
+        info!("Sending confirmation e-mail to user {}", user.email);
         compose_and_send_email(&user.email, &content.subject, &content.body);
     }
 }
 
-pub fn user_reset_password_requested(token: &EmailToken) {
+pub fn user_reset_password_requested(email_nonce: &EmailNonce) {
     let url = format!(
         "https://openfairdb.org/reset-password?token={}",
-        token.encode_to_string()
+        email_nonce.encode_to_string()
     );
     let content = user_communication::user_reset_password_email(&url);
 
@@ -106,8 +116,12 @@ pub fn user_reset_password_requested(token: &EmailToken) {
     {
         info!(
             "Sending e-mail to {} after password reset requested",
-            token.email
+            email_nonce.email
         );
-        compose_and_send_emails(&[token.email.to_owned()], &content.subject, &content.body);
+        compose_and_send_emails(
+            &[email_nonce.email.to_owned()],
+            &content.subject,
+            &content.body,
+        );
     }
 }

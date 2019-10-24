@@ -105,7 +105,6 @@ mod tests {
             usecases::NewUser {
                 email: "scout@foo.tld".into(),
                 password: "123456".into(),
-                username: "foo".into(),
             },
             Some(Role::Scout),
         );
@@ -157,7 +156,7 @@ mod tests {
         // Archive ratings 1 and 2
         assert!(archive_ratings(
             &fixture,
-            &vec![&*rating_comment_ids[1].0, &*rating_comment_ids[2].0]
+            &[&*rating_comment_ids[1].0, &*rating_comment_ids[2].0]
         )
         .is_ok());
 
@@ -180,7 +179,7 @@ mod tests {
         // Try to archive ratings 0 and 1 (already archived)
         assert_not_found(archive_ratings(
             &fixture,
-            &vec![&*rating_comment_ids[0].0, &*rating_comment_ids[1].0],
+            &[&*rating_comment_ids[0].0, &*rating_comment_ids[1].0],
         ));
 
         // No changes due to rollback
@@ -198,7 +197,7 @@ mod tests {
         // Archive remaining ratings
         assert!(archive_ratings(
             &fixture,
-            &vec![&*rating_comment_ids[0].0, &*rating_comment_ids[3].0]
+            &[&*rating_comment_ids[0].0, &*rating_comment_ids[3].0]
         )
         .is_ok());
 

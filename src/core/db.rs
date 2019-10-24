@@ -51,30 +51,37 @@ pub trait EntryGateway {
 
 pub trait EventGateway {
     fn create_event(&self, _: Event) -> Result<()>;
-    fn get_event(&self, _: &str) -> Result<Event>;
+    fn update_event(&self, _: &Event) -> Result<()>;
+    fn archive_events(&self, uids: &[&str], archived: Timestamp) -> Result<usize>;
+
+    fn get_event(&self, uid: &str) -> Result<Event>;
+
     fn all_events(&self) -> Result<Vec<Event>>;
+    fn count_events(&self) -> Result<usize>;
+
     fn get_events(
         &self,
         start_min: Option<Timestamp>,
         start_max: Option<Timestamp>,
     ) -> Result<Vec<Event>>;
-    fn update_event(&self, _: &Event) -> Result<()>;
-    fn archive_events(&self, ids: &[&str], archived: Timestamp) -> Result<usize>;
-    fn count_events(&self) -> Result<usize>;
 
     // Delete an event, but only if tagged with at least one of the given tags
-    fn delete_event_with_matching_tags(&self, id: &str, tags: &[&str]) -> Result<()>;
+    // Ok(Some(())) => Found and deleted
+    // Ok(None)     => No matching tags
+    // TODO: Use explicit result semantics
+    fn delete_event_with_matching_tags(&self, uid: &str, tags: &[&str]) -> Result<Option<()>>;
 }
 
 pub trait UserGateway {
-    fn create_user(&self, user: User) -> Result<()>;
+    fn create_user(&self, user: &User) -> Result<()>;
     fn update_user(&self, user: &User) -> Result<()>;
-    fn get_user(&self, username: &str) -> Result<User>;
-    //TODO make email => user relation unique
-    fn get_users_by_email(&self, email: &str) -> Result<Vec<User>>;
+    fn delete_user_by_email(&self, email: &str) -> Result<()>;
+
     fn all_users(&self) -> Result<Vec<User>>;
-    fn delete_user(&self, username: &str) -> Result<()>;
     fn count_users(&self) -> Result<usize>;
+
+    fn get_user_by_email(&self, email: &str) -> Result<User>;
+    fn try_get_user_by_email(&self, email: &str) -> Result<Option<User>>;
 }
 
 pub trait OrganizationGateway {
@@ -101,18 +108,19 @@ pub trait Db:
     + OrganizationGateway
     + CommentRepository
     + RatingRepository
-    + EmailTokenCredentialsRepository
+    + UserTokenRepo
 {
     fn create_tag_if_it_does_not_exist(&self, _: &Tag) -> Result<()>;
     fn create_category_if_it_does_not_exist(&mut self, _: &Category) -> Result<()>;
-    fn create_bbox_subscription(&mut self, _: &BboxSubscription) -> Result<()>;
 
     fn all_categories(&self) -> Result<Vec<Category>>;
     fn all_tags(&self) -> Result<Vec<Tag>>;
     fn count_tags(&self) -> Result<usize>;
-    fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>>;
 
-    fn delete_bbox_subscription(&mut self, _: &str) -> Result<()>;
+    fn create_bbox_subscription(&self, _: &BboxSubscription) -> Result<()>;
+    fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>>;
+    fn all_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<Vec<BboxSubscription>>;
+    fn delete_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<()>;
 }
 
 #[derive(Debug, Default, Clone)]

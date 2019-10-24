@@ -24,7 +24,7 @@ fn get_user(pool: &Connections, name: &str) -> User {
     let email = format!("{}@example.com", name);
     pool.shared()
         .unwrap()
-        .get_users_by_email(&email)
+        .try_get_user_by_email(&email)
         .unwrap()
         .into_iter()
         .next()
@@ -47,7 +47,7 @@ mod events {
         let (client, db, _) = setup();
         let events = vec![
             Event {
-                id: "1234".into(),
+                uid: "1234".into(),
                 title: "x".into(),
                 description: None,
                 start: chrono::Utc::now()
@@ -67,7 +67,7 @@ mod events {
                 image_link_url: None,
             },
             Event {
-                id: "5678".into(),
+                uid: "5678".into(),
                 title: "x".into(),
                 description: None,
                 start: chrono::Utc::now()
@@ -87,7 +87,7 @@ mod events {
                 image_link_url: None,
             },
             Event {
-                id: "0000".into(),
+                uid: "0000".into(),
                 title: "x".into(),
                 description: None,
                 start: chrono::Utc::now()
@@ -128,7 +128,7 @@ mod events {
         let (client, db, _) = setup();
         let events = vec![
             Event {
-                id: "1234".into(),
+                uid: "1234".into(),
                 title: "x".into(),
                 description: None,
                 start: chrono::Utc::now()
@@ -148,7 +148,7 @@ mod events {
                 image_link_url: None,
             },
             Event {
-                id: "5678".into(),
+                uid: "5678".into(),
                 title: "x".into(),
                 description: None,
                 start: chrono::Utc::now()
@@ -168,7 +168,7 @@ mod events {
                 image_link_url: None,
             },
             Event {
-                id: "0000".into(),
+                uid: "0000".into(),
                 title: "x".into(),
                 description: None,
                 start: chrono::Utc::now()
@@ -209,7 +209,7 @@ mod events {
     fn get_a_single_event() {
         let (client, db, _) = setup();
         let events = vec![Event {
-            id: "1234".into(),
+            uid: "1234".into(),
             title: "A great event".into(),
             description: Some("Foo bar baz".into()),
             start: NaiveDateTime::from_timestamp(0, 0),
@@ -457,14 +457,14 @@ mod pw_reset {
         let body_str = res.body().and_then(|b| b.into_string()).unwrap();
         assert!(body_str.contains("<form"));
         assert!(body_str.contains("action=\"/users/actions/reset-password-request\""));
-        assert!(body_str.contains("name=\"email_or_username\""));
+        assert!(body_str.contains("name=\"email\""));
         assert!(body_str.contains("type=\"submit\""));
 
         // User sends the request
         let res = client
             .post("/users/actions/reset-password-request")
             .header(ContentType::Form)
-            .body("email_or_username=user%40example.com")
+            .body("email=user%40example.com")
             .dispatch();
         assert_eq!(res.status(), Status::SeeOther);
         let h = res
@@ -484,9 +484,9 @@ mod pw_reset {
         let token = db
             .shared()
             .unwrap()
-            .get_email_token_credentials_by_email_or_username("user@example.com")
+            .get_user_token_by_email("user@example.com")
             .unwrap()
-            .token
+            .email_nonce
             .encode_to_string();
 
         // User opens the link
@@ -497,7 +497,6 @@ mod pw_reset {
         let body_str = res.body().and_then(|b| b.into_string()).unwrap();
         assert!(body_str.contains("<form"));
         assert!(body_str.contains("action=\"/users/actions/reset-password\""));
-        assert!(body_str.contains("name=\"email_or_username\""));
         assert!(body_str.contains("name=\"new_password\""));
         assert!(body_str.contains("name=\"new_password_repeated\""));
         assert!(body_str.contains("name=\"token\""));
@@ -507,7 +506,10 @@ mod pw_reset {
         let res = client
             .post("/users/actions/reset-password")
             .header(ContentType::Form)
-            .body(format!("email_or_username=user%40example.com&new_password=12345678&new_password_repeated=12345678&token={}", token))
+            .body(format!(
+                "new_password=12345678&new_password_repeated=12345678&token={}",
+                token
+            ))
             .dispatch();
         assert_eq!(res.status(), Status::SeeOther);
         let h = res

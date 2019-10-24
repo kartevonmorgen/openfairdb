@@ -112,14 +112,7 @@ mod tests {
                 .pos(MapPoint::from_lat_lng_deg(10.0, 10.1))
                 .finish(),
         ];
-        assert_eq!(
-            entries
-                .iter()
-                .filter(|&x| x.in_bbox(&bb))
-                .collect::<Vec<&Entry>>()
-                .len(),
-            2
-        );
+        assert_eq!(entries.iter().filter(|&x| x.in_bbox(&bb)).count(), 2);
     }
 
     #[test]

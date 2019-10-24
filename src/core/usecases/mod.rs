@@ -5,7 +5,6 @@ use crate::core::{
         validate,
     },
 };
-use uuid::Uuid;
 
 //TODO: move usecases into separate files
 
@@ -20,7 +19,6 @@ mod create_new_entry;
 mod create_new_event;
 pub mod create_new_user;
 mod delete_event;
-mod email_token_credentials;
 mod find_duplicates;
 mod indexing;
 mod login;
@@ -28,17 +26,19 @@ mod query_events;
 mod rate_entry;
 mod register;
 mod search;
-#[cfg(test)]
-pub mod tests;
 mod update_entry;
 mod update_event;
+mod user_tokens;
+
+#[cfg(test)]
+pub mod tests;
 
 pub use self::{
     archive_comments::*, archive_entries::*, archive_events::*, archive_ratings::*,
     change_user_role::*, confirm_email::*, confirm_email_and_reset_password::*,
     create_new_entry::*, create_new_event::*, create_new_user::*, delete_event::*,
-    email_token_credentials::*, find_duplicates::*, indexing::*, login::*, query_events::*,
-    rate_entry::*, register::*, search::*, update_entry::*, update_event::*,
+    find_duplicates::*, indexing::*, login::*, query_events::*, rate_entry::*, register::*,
+    search::*, update_entry::*, update_event::*, user_tokens::*,
 };
 
 pub fn load_ratings_with_comments<D: Db>(
@@ -50,71 +50,51 @@ pub fn load_ratings_with_comments<D: Db>(
     Ok(results)
 }
 
-pub fn get_user<D: Db>(
-    db: &D,
-    logged_in_username: &str,
-    requested_username: &str,
-) -> Result<(String, String)> {
-    let u: User = db.get_user(requested_username)?;
-    if logged_in_username != requested_username {
+pub fn get_user<D: Db>(db: &D, logged_in_email: &str, requested_email: &str) -> Result<User> {
+    if logged_in_email != requested_email {
         return Err(Error::Parameter(ParameterError::Forbidden));
     }
-    Ok((u.username, u.email))
+    Ok(db.get_user_by_email(requested_email)?)
 }
 
-pub fn get_event<D: Db>(db: &D, id: &str) -> Result<Event> {
-    let mut e: Event = db.get_event(id)?;
-    if let Some(ref username) = e.created_by {
-        let u = db.get_user(username)?;
-        e.created_by = Some(u.email);
-    }
-    Ok(e)
+pub fn get_event<D: Db>(db: &D, uid: &str) -> Result<Event> {
+    Ok(db.get_event(uid)?)
 }
 
-pub fn delete_user(db: &mut dyn Db, login_id: &str, u_id: &str) -> Result<()> {
-    if login_id != u_id {
+pub fn delete_user(db: &dyn Db, login_email: &str, email: &str) -> Result<()> {
+    if login_email != email {
         return Err(Error::Parameter(ParameterError::Forbidden));
     }
-    db.delete_user(login_id)?;
-    Ok(())
+    Ok(db.delete_user_by_email(email)?)
 }
 
-pub fn subscribe_to_bbox(bbox: MapBbox, username: &str, db: &mut dyn Db) -> Result<()> {
+pub fn subscribe_to_bbox(db: &dyn Db, user_email: String, bbox: MapBbox) -> Result<()> {
     validate::bbox(&bbox)?;
 
     // TODO: support multiple subscriptions in KVM (frontend)
-    // In the meanwile we just replace existing subscriptions
+    // In the meanwhile we just replace existing subscriptions
     // with a new one.
-    unsubscribe_all_bboxes_by_username(db, username)?;
+    unsubscribe_all_bboxes(db, &user_email)?;
 
-    let id = Uuid::new_v4().to_simple_ref().to_string();
+    let uid = Uid::new_uuid();
     db.create_bbox_subscription(&BboxSubscription {
-        id,
+        uid,
+        user_email,
         bbox,
-        username: username.into(),
     })?;
     Ok(())
 }
 
-pub fn get_bbox_subscriptions(username: &str, db: &dyn Db) -> Result<Vec<BboxSubscription>> {
+pub fn unsubscribe_all_bboxes(db: &dyn Db, user_email: &str) -> Result<()> {
+    Ok(db.delete_bbox_subscriptions_by_email(&user_email)?)
+}
+
+pub fn get_bbox_subscriptions(db: &dyn Db, user_email: &str) -> Result<Vec<BboxSubscription>> {
     Ok(db
         .all_bbox_subscriptions()?
         .into_iter()
-        .filter(|s| s.username == username)
+        .filter(|s| s.user_email == user_email)
         .collect())
-}
-
-pub fn unsubscribe_all_bboxes_by_username(db: &mut dyn Db, username: &str) -> Result<()> {
-    let user_subscriptions: Vec<_> = db
-        .all_bbox_subscriptions()?
-        .into_iter()
-        .filter(|s| s.username == username)
-        .map(|s| s.id)
-        .collect();
-    for s_id in user_subscriptions {
-        db.delete_bbox_subscription(&s_id)?;
-    }
-    Ok(())
 }
 
 pub fn bbox_subscriptions_by_coordinate(
@@ -128,26 +108,11 @@ pub fn bbox_subscriptions_by_coordinate(
         .collect())
 }
 
-pub fn email_addresses_from_subscriptions(
-    db: &dyn Db,
-    subs: &[BboxSubscription],
-) -> Result<Vec<String>> {
-    let usernames: Vec<_> = subs.iter().map(|s| &s.username).collect();
-
-    let mut addresses: Vec<_> = db
-        .all_users()?
-        .into_iter()
-        .filter(|u| usernames.iter().any(|x| **x == u.username))
-        .map(|u| u.email)
-        .collect();
-    addresses.dedup();
-    Ok(addresses)
-}
-
 pub fn email_addresses_by_coordinate(db: &dyn Db, pos: MapPoint) -> Result<Vec<String>> {
-    let subs = bbox_subscriptions_by_coordinate(db, pos)?;
-    let addresses = email_addresses_from_subscriptions(db, &subs)?;
-    Ok(addresses)
+    Ok(bbox_subscriptions_by_coordinate(db, pos)?
+        .into_iter()
+        .map(|s| s.user_email)
+        .collect())
 }
 
 pub fn prepare_tag_list(tags: Vec<String>) -> Vec<String> {

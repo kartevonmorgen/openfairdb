@@ -17,7 +17,6 @@ pub mod prelude {
         geo::{Distance, LatCoord, LngCoord, MapPoint},
         nonce::Nonce,
         password::Password,
-        rowid::RowId,
         time::Timestamp,
     };
 

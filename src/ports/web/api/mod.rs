@@ -84,11 +84,6 @@ pub fn routes() -> Vec<Route> {
     routes
 }
 
-#[derive(Deserialize, Debug, Clone)]
-struct UserId {
-    u_id: String,
-}
-
 #[get("/entries/<ids>")]
 fn get_entry(db: sqlite::Connections, ids: String) -> Result<Vec<json::Entry>> {
     // TODO: Only lookup and return a single entity
@@ -255,10 +250,16 @@ fn login(
     mut cookies: Cookies,
     login: Json<usecases::Login>,
 ) -> Result<()> {
-    //TODO: login with email
-    let username = usecases::login_with_username(&*db.shared()?, &login.into_inner())?;
+    let login = login.into_inner();
+    {
+        let credentials = usecases::Credentials {
+            email: &login.email,
+            password: &login.password,
+        };
+        usecases::login_with_email(&*db.shared()?, &credentials)?;
+    }
     cookies.add_private(
-        Cookie::build(COOKIE_USER_KEY, username)
+        Cookie::build(COOKIE_USER_KEY, login.email)
             .same_site(rocket::http::SameSite::None)
             .finish(),
     );
@@ -271,10 +272,19 @@ fn logout(mut cookies: Cookies) -> Result<()> {
     Ok(Json(()))
 }
 
-#[post("/confirm-email-address", format = "application/json", data = "<user>")]
-fn confirm_email_address(db: sqlite::Connections, user: Json<UserId>) -> Result<()> {
-    let u_id = user.into_inner().u_id;
-    usecases::confirm_email_address(&*db.exclusive()?, &u_id)?;
+#[derive(Deserialize, Debug, Clone)]
+struct ConfirmationToken {
+    token: String,
+}
+
+#[post(
+    "/confirm-email-address",
+    format = "application/json",
+    data = "<token>"
+)]
+fn confirm_email_address(db: sqlite::Connections, token: Json<ConfirmationToken>) -> Result<()> {
+    let token = token.into_inner().token;
+    usecases::confirm_email_address(&*db.exclusive()?, &token)?;
     Ok(Json(()))
 }
 
@@ -297,15 +307,15 @@ fn subscribe_to_bbox(
         return Err(Error::Parameter(ParameterError::Bbox).into());
     }
     let bbox = geo::MapBbox::new(sw_ne[0], sw_ne[1]);
-    let Login(username) = user;
-    usecases::subscribe_to_bbox(bbox, &username, &mut *db.exclusive()?)?;
+    let Login(email) = user;
+    usecases::subscribe_to_bbox(&*db.exclusive()?, email, bbox)?;
     Ok(Json(()))
 }
 
 #[delete("/unsubscribe-all-bboxes")]
 fn unsubscribe_all_bboxes(db: sqlite::Connections, user: Login) -> Result<()> {
-    let Login(username) = user;
-    usecases::unsubscribe_all_bboxes_by_username(&mut *db.exclusive()?, &username)?;
+    let Login(email) = user;
+    usecases::unsubscribe_all_bboxes(&*db.exclusive()?, &email)?;
     Ok(Json(()))
 }
 
@@ -314,11 +324,11 @@ fn get_bbox_subscriptions(
     db: sqlite::Connections,
     user: Login,
 ) -> Result<Vec<json::BboxSubscription>> {
-    let Login(username) = user;
-    let user_subscriptions = usecases::get_bbox_subscriptions(&username, &*db.shared()?)?
+    let Login(email) = user;
+    let user_subscriptions = usecases::get_bbox_subscriptions(&*db.shared()?, &email)?
         .into_iter()
         .map(|s| json::BboxSubscription {
-            id: s.id,
+            id: s.uid.into(),
             south_west_lat: s.bbox.south_west().lat().to_deg(),
             south_west_lng: s.bbox.south_west().lng().to_deg(),
             north_east_lat: s.bbox.north_east().lat().to_deg(),

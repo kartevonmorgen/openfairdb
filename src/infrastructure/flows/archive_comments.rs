@@ -45,7 +45,6 @@ mod tests {
             usecases::NewUser {
                 email: "scout@foo.tld".into(),
                 password: "123456".into(),
-                username: "foo".into(),
             },
             Some(Role::Scout),
         );
@@ -97,7 +96,7 @@ mod tests {
         assert!(archive_comments(
             &fixture,
             "scout@foo.tld",
-            &vec![&*rating_comment_ids[1].1, &*rating_comment_ids[2].1]
+            &[&*rating_comment_ids[1].1, &*rating_comment_ids[2].1]
         )
         .is_ok());
 
@@ -119,7 +118,7 @@ mod tests {
         assert_not_found(archive_comments(
             &fixture,
             "scout@foo.tld",
-            &vec![&*rating_comment_ids[0].1, &*rating_comment_ids[1].1],
+            &[&*rating_comment_ids[0].1, &*rating_comment_ids[1].1],
         ));
 
         // No changes due to rollback
@@ -138,7 +137,7 @@ mod tests {
         assert!(archive_comments(
             &fixture,
             "scout@foo.tld",
-            &vec![&*rating_comment_ids[0].1, &*rating_comment_ids[3].1]
+            &[&*rating_comment_ids[0].1, &*rating_comment_ids[3].1]
         )
         .is_ok());
 

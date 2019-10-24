@@ -43,25 +43,16 @@ pub fn post_register(
                     };
                     Err(Flash::error(Redirect::to(uri!(get_register)), msg))
                 }
-                Ok(username) => {
-                    if let Ok(users) = db.get_users_by_email(&credentials.email) {
-                        for user in users {
-                            if user.username == username {
-                                debug!("Created user with ID = {}", user.id);
+                Ok(()) => {
+                    if let Ok(user) = db.get_user_by_email(&credentials.email) {
+                        debug_assert_eq!(user.email, credentials.email);
+                        notify::user_registered_ofdb(&user);
 
-                                debug_assert_eq!(user.email, credentials.email);
-                                notify::user_registered_ofdb(&user);
-
-                                let msg =
-                                    "Registered sucessfully. Please confirm your email address.";
-                                return Ok(Flash::success(
-                                    Redirect::to(uri!(super::login::get_login)),
-                                    msg,
-                                ));
-                            } else {
-                                warn!("Found user {} with same e-mail address", user.username);
-                            }
-                        }
+                        let msg = "Registered sucessfully. Please confirm your email address.";
+                        return Ok(Flash::success(
+                            Redirect::to(uri!(super::login::get_login)),
+                            msg,
+                        ));
                     }
                     Err(Flash::error(
                         Redirect::to(uri!(get_register)),
@@ -73,28 +64,25 @@ pub fn post_register(
     }
 }
 
-#[get("/register/confirm/<user_id>")]
+#[get("/register/confirm/<token>")]
 pub fn get_email_confirmation(
     db: Connections,
-    user_id: &RawStr,
+    token: &RawStr,
 ) -> std::result::Result<Flash<Redirect>, Flash<Redirect>> {
     match db.exclusive() {
         Err(_) => Err(Flash::error(
-            Redirect::to(uri!(get_email_confirmation: user_id)),
+            Redirect::to(uri!(get_email_confirmation: token)),
             "We are so sorry! An internal server error has occurred. Please try again later.",
         )),
-        Ok(db) => {
-            let u_id = user_id.as_str();
-            match usecases::confirm_email_address(&*db, &u_id) {
-                Ok(_) => Ok(Flash::success(
-                    Redirect::to(uri!(super::login::get_login)),
-                    "Your email address is now confirmed :)",
-                )),
-                Err(_) => Err(Flash::error(
-                    Redirect::to(uri!(get_email_confirmation: user_id)),
-                    "We are sorry but seems to be something wrong.",
-                )),
-            }
-        }
+        Ok(db) => match usecases::confirm_email_address(&*db, token.as_str()) {
+            Ok(_) => Ok(Flash::success(
+                Redirect::to(uri!(super::login::get_login)),
+                "Your email address is now confirmed :)",
+            )),
+            Err(_) => Err(Flash::error(
+                Redirect::to(uri!(get_email_confirmation: token)),
+                "We are sorry but seems to be something wrong.",
+            )),
+        },
     }
 }

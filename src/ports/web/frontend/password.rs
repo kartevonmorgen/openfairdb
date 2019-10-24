@@ -33,7 +33,7 @@ pub fn get_reset_password(
 
 #[derive(FromForm)]
 pub struct ResetPasswordRequest {
-    email_or_username: String,
+    email: String,
 }
 
 #[post("/users/actions/reset-password-request", data = "<data>")]
@@ -41,8 +41,8 @@ pub fn post_reset_password_request(
     db: Connections,
     data: Form<ResetPasswordRequest>,
 ) -> std::result::Result<Redirect, Flash<Redirect>> {
-    let ResetPasswordRequest { email_or_username } = data.into_inner();
-    match reset_password_request(&db, &email_or_username) {
+    let ResetPasswordRequest { email } = data.into_inner();
+    match reset_password_request(&db, &email) {
         Err(_) => Err(Flash::error(
             Redirect::to(uri!(get_reset_password:token = _, success = _)),
             "Failed to request a password reset.",
@@ -55,7 +55,6 @@ pub fn post_reset_password_request(
 
 #[derive(FromForm)]
 pub struct ResetPassword {
-    email_or_username: String,
     token: String,
     new_password: String,
     new_password_repeated: String,
@@ -79,18 +78,13 @@ pub fn post_reset_password(
             Redirect::to(uri!(get_reset_password: token=req.token, success=_)),
             "Your new password is not allowed.",
         )),
-        Ok(new_password) => match EmailToken::decode_from_str(&req.token) {
+        Ok(new_password) => match EmailNonce::decode_from_str(&req.token) {
             Err(_) => Err(Flash::error(
                 Redirect::to(uri!(get_reset_password: token = req.token, success = _)),
                 "Resetting your password is not possible (invalid token).",
             )),
-            Ok(token) => {
-                match reset_password_with_email_token(
-                    &db,
-                    &req.email_or_username,
-                    token,
-                    new_password,
-                ) {
+            Ok(email_nonce) => {
+                match reset_password_with_email_nonce(&db, email_nonce, new_password) {
                     Err(_) => Err(Flash::error(
                         Redirect::to(uri!(
                                 get_reset_password: token = req.token, success = _)),

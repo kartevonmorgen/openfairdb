@@ -29,6 +29,7 @@ const DEFAULT_RESULT_LIMIT: usize = 100;
 const MAX_RESULT_LIMIT: usize = 500;
 
 #[get("/search?<search..>")]
+#[allow(clippy::absurd_extreme_comparisons)]
 pub fn get_search(
     search_engine: tantivy::SearchEngine,
     search: Form<SearchQuery>,

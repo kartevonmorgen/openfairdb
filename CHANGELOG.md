@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.7.0 (2019-10-dd)
+
+- fix(db): Replace redundant user id and name with email address
+
 ## v0.6.3 (2019-10-25)
 
 - new home: [kartevonmorgen/openfairdb](https://github.com/kartevonmorgen/openfairdb)

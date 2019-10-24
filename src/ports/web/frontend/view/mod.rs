@@ -323,7 +323,7 @@ pub fn events(events: &[Event]) -> Markup {
                     ul class="event-list" {
                         @for e in events {
                             li {
-                                a href=(format!("/events/{}", e.id)) {
+                                a href=(format!("/events/{}", e.uid)) {
                                     div {
                                         h4 {
                                             span class="title" { (e.title) }
@@ -384,7 +384,6 @@ pub fn user_search_result(admin_email: &str, users: &[User]) -> Markup {
                         tbody {
                             @for u in users {
                                 tr {
-                                    td { (u.username) }
                                     td { (u.email) }
                                     td { (if u.email_confirmed{"yes"}else{"no"}) }
                                     td { (format!("{:?}",u.role)) }

@@ -17,9 +17,6 @@ pub struct RateEntry {
 pub struct Storable(Entry, Rating, Comment);
 
 impl Storable {
-    pub fn entry_id(&self) -> &str {
-        &self.0.id
-    }
     pub fn rating_id(&self) -> &str {
         &self.1.id
     }

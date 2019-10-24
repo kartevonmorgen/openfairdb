@@ -54,23 +54,12 @@ pub trait RatingRepository {
     fn load_entry_ids_of_ratings(&self, ids: &[&str]) -> Result<Vec<String>>;
 }
 
-pub trait EmailTokenCredentialsRepository {
-    fn replace_email_token_credentials(
-        &self,
-        email_token_credentials: EmailTokenCredentials,
-    ) -> Result<EmailTokenCredentials>;
+pub trait UserTokenRepo {
+    fn replace_user_token(&self, user_token: UserToken) -> Result<EmailNonce>;
 
-    fn consume_email_token_credentials(
-        &self,
-        email_or_username: &str,
-        token: &EmailToken,
-    ) -> Result<EmailTokenCredentials>;
+    fn consume_user_token(&self, email_nonce: &EmailNonce) -> Result<UserToken>;
 
-    fn discard_expired_email_token_credentials(&self, expired_before: Timestamp) -> Result<usize>;
+    fn discard_expired_user_tokens(&self, expired_before: Timestamp) -> Result<usize>;
 
-    #[cfg(test)]
-    fn get_email_token_credentials_by_email_or_username(
-        &self,
-        email_or_username: &str,
-    ) -> Result<EmailTokenCredentials>;
+    fn get_user_token_by_email(&self, email: &str) -> Result<UserToken>;
 }

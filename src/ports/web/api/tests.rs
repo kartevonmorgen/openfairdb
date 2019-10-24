@@ -1,10 +1,6 @@
 use super::*;
 
-use crate::{
-    adapters::json,
-    core::{usecases as usecase},
-    test::Bencher,
-};
+use crate::{adapters::json, core::usecases as usecase, test::Bencher};
 
 #[cfg(feature = "export")]
 use crate::core::util::sort::Rated;
@@ -864,11 +860,15 @@ fn create_new_user() {
     let req = client
         .post("/users")
         .header(ContentType::JSON)
-        .body(r#"{"username":"foo","email":"foo@bar.com","password":"foo bar"}"#);
+        .body(r#"{"email":"foo@bar.com","password":"foo bar"}"#);
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let u = db.exclusive().unwrap().get_user("foo").unwrap();
-    assert_eq!(u.username, "foo");
+    let u = db
+        .exclusive()
+        .unwrap()
+        .get_user_by_email("foo@bar.com")
+        .unwrap();
+    assert_eq!(u.email, "foo@bar.com");
     assert!(u.password.verify("foo bar"));
     test_json(&response);
 }
@@ -1002,15 +1002,17 @@ fn user_id_cookie(response: &Response) -> Option<Cookie<'static>> {
 #[test]
 fn post_user() {
     let (client, _) = setup();
-    let req1 = client.post("/users").header(ContentType::JSON).body(
-        r#"{"username": "foo12341234", "email": "123412341234foo@bar.de", "password": "foo bar"}"#,
-    );
+    let req1 = client
+        .post("/users")
+        .header(ContentType::JSON)
+        .body(r#"{"email": "123412341234foo@bar.de", "password": "foo bar"}"#);
     let response1 = req1.dispatch();
     assert_eq!(response1.status(), Status::Ok);
 
-    let req2 = client.post("/users").header(ContentType::JSON).body(
-        r#"{"username": "baz14234134", "email": "123412341234baz@bar.de", "password": "baz bar"}"#,
-    );
+    let req2 = client
+        .post("/users")
+        .header(ContentType::JSON)
+        .body(r#"{"email": "123412341234baz@bar.de", "password": "baz bar"}"#);
     let response2 = req2.dispatch();
     assert_eq!(response2.status(), Status::Ok);
 }
@@ -1021,7 +1023,7 @@ fn login_with_invalid_credentials() {
     let req = client
         .post("/login")
         .header(ContentType::JSON)
-        .body(r#"{"username": "foo", "password": "bar"}"#);
+        .body(r#"{"email": "foo", "password": "bar"}"#);
     let response = req.dispatch();
     assert!(!response
         .headers()
@@ -1034,20 +1036,18 @@ fn login_with_invalid_credentials() {
 fn login_with_valid_credentials() {
     let (client, db) = setup();
     let users = vec![User {
-        id: "123".into(),
-        username: "foo".into(),
-        password: "secret".parse::<Password>().unwrap(),
         email: "foo@bar".into(),
         email_confirmed: true,
+        password: "secret".parse::<Password>().unwrap(),
         role: Role::Guest,
     }];
     for u in users {
-        db.exclusive().unwrap().create_user(u).unwrap();
+        db.exclusive().unwrap().create_user(&u).unwrap();
     }
     let response = client
         .post("/login")
         .header(ContentType::JSON)
-        .body(r#"{"username": "foo", "password": "secret"}"#)
+        .body(r#"{"email": "foo@bar", "password": "secret"}"#)
         .dispatch();
     let cookie = user_id_cookie(&response).unwrap();
     assert_eq!(response.status(), Status::Ok);
@@ -1058,22 +1058,20 @@ fn login_with_valid_credentials() {
 fn login_logout_succeeds() {
     let (client, db) = setup();
     let users = vec![User {
-        id: "123".into(),
-        username: "foo".into(),
-        password: "secret".parse::<Password>().unwrap(),
         email: "foo@bar".into(),
         email_confirmed: true,
+        password: "secret".parse::<Password>().unwrap(),
         role: Role::Guest,
     }];
     for u in users {
-        db.exclusive().unwrap().create_user(u).unwrap();
+        db.exclusive().unwrap().create_user(&u).unwrap();
     }
 
     // Login
     let response = client
         .post("/login")
         .header(ContentType::JSON)
-        .body(r#"{"username": "foo", "password": "secret"}"#)
+        .body(r#"{"email": "foo@bar", "password": "secret"}"#)
         .dispatch();
     let cookie = user_id_cookie(&response).expect("login cookie");
 
@@ -1089,76 +1087,22 @@ fn login_logout_succeeds() {
 }
 
 #[test]
-fn get_user() {
-    let (client, db) = setup();
-    let users = vec![
-        User {
-            id: "123".into(),
-            username: "a".into(),
-            password: "secret1".parse::<Password>().unwrap(),
-            email: "a@bar".into(),
-            email_confirmed: true,
-            role: Role::Guest,
-        },
-        User {
-            id: "123".into(),
-            username: "b".into(),
-            password: "secret2".parse::<Password>().unwrap(),
-            email: "b@bar".into(),
-            email_confirmed: true,
-            role: Role::Guest,
-        },
-    ];
-    for u in users {
-        db.exclusive().unwrap().create_user(u).unwrap();
-    }
-    let response = client
-        .post("/login")
-        .header(ContentType::JSON)
-        .body(r#"{"username": "a", "password": "secret1"}"#)
-        .dispatch();
-
-    let cookie = user_id_cookie(&response).unwrap();
-
-    let response = client
-        .get("/users/b")
-        .header(ContentType::JSON)
-        .cookie(cookie.clone())
-        .dispatch();
-
-    assert_eq!(response.status(), Status::Forbidden);
-
-    let mut response = client
-        .get("/users/a")
-        .header(ContentType::JSON)
-        .cookie(cookie)
-        .dispatch();
-
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert_eq!(response.status(), Status::Ok);
-    assert_eq!(body_str, r#"{"username":"a","email":"a@bar"}"#);
-    test_json(&response);
-}
-
-#[test]
 fn confirm_email_address() {
     let (client, db) = setup();
     let users = vec![User {
-        id: "123".into(),
-        username: "foo".into(),
-        password: "secret".parse::<Password>().unwrap(),
         email: "a@bar.de".into(),
         email_confirmed: false,
+        password: "secret".parse::<Password>().unwrap(),
         role: Role::Guest,
     }];
     for u in users {
-        db.exclusive().unwrap().create_user(u).unwrap();
+        db.exclusive().unwrap().create_user(&u).unwrap();
     }
 
     let response = client
         .post("/login")
         .header(ContentType::JSON)
-        .body(r#"{"username": "foo", "password": "secret"}"#)
+        .body(r#"{"email": "a@bar.de", "password": "secret"}"#)
         .dispatch();
 
     assert_eq!(response.status(), Status::Forbidden);
@@ -1167,10 +1111,15 @@ fn confirm_email_address() {
         false
     );
 
+    let token = EmailNonce {
+        email: "a@bar.de".into(),
+        nonce: Nonce::new(),
+    }
+    .encode_to_string();
     let response = client
         .post("/confirm-email-address")
         .header(ContentType::JSON)
-        .body(r#"{"u_id": "123"}"#)
+        .body(format!("{{\"token\":\"{}\"}}", token))
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(
@@ -1181,7 +1130,7 @@ fn confirm_email_address() {
     let response = client
         .post("/login")
         .header(ContentType::JSON)
-        .body(r#"{"username": "foo", "password": "secret"}"#)
+        .body(r#"{"email": "a@bar.de", "password": "secret"}"#)
         .dispatch();
     let cookie: Cookie = response
         .headers()
@@ -1204,15 +1153,13 @@ fn confirm_email_address() {
 fn send_confirmation_email() {
     let (client, db) = setup();
     let users = vec![User {
-        id: "123".into(),
-        username: "foo".into(),
-        password: "secret".parse::<Password>().unwrap(),
         email: "a@bar.de".into(),
         email_confirmed: false,
+        password: "secret".parse::<Password>().unwrap(),
         role: Role::Guest,
     }];
     for u in users {
-        db.exclusive().unwrap().create_user(u).unwrap();
+        db.exclusive().unwrap().create_user(&u).unwrap();
     }
 
     let response = client
@@ -1227,20 +1174,18 @@ fn send_confirmation_email() {
 fn subscribe_to_bbox() {
     let (client, db) = setup();
     let users = vec![User {
-        id: "123".into(),
-        username: "foo".into(),
-        password: "secret".parse::<Password>().unwrap(),
         email: "foo@bar".into(),
         email_confirmed: true,
+        password: "secret".parse::<Password>().unwrap(),
         role: Role::Guest,
     }];
     for u in users {
-        db.exclusive().unwrap().create_user(u).unwrap();
+        db.exclusive().unwrap().create_user(&u).unwrap();
     }
     let response = client
         .post("/login")
         .header(ContentType::JSON)
-        .body(r#"{"username": "foo", "password": "secret"}"#)
+        .body(r#"{"email": "foo@bar", "password": "secret"}"#)
         .dispatch();
     let cookie = user_id_cookie(&response).unwrap();
     let response = client
@@ -1380,9 +1325,8 @@ fn export_csv() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     for h in response.headers().iter() {
-        match h.name.as_str() {
-            "Content-Type" => assert_eq!(h.value, "text/csv; charset=utf-8"),
-            _ => { /* let these through */ }
+        if h.name.as_str() == "Content-Type" {
+            assert_eq!(h.value, "text/csv; charset=utf-8");
         }
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();

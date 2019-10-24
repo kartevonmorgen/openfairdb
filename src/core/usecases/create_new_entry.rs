@@ -28,12 +28,6 @@ pub struct NewEntry {
 #[derive(Debug, Clone)]
 pub struct Storable(Entry);
 
-impl Storable {
-    pub fn entry_id(&self) -> &str {
-        &self.0.id
-    }
-}
-
 pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
     let NewEntry {
         title,
@@ -185,8 +179,8 @@ mod tests {
             image_url     : None,
             image_link_url: None,
         };
-        let mut mock_db: MockDb = MockDb::default();
-        assert!(prepare_new_entry(&mut mock_db, x).is_err());
+        let mock_db: MockDb = MockDb::default();
+        assert!(prepare_new_entry(&mock_db, x).is_err());
     }
 
     #[test]

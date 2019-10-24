@@ -3,7 +3,6 @@ pub mod geo;
 pub mod nonce;
 pub mod parse;
 pub mod password;
-pub mod rowid;
 pub mod sort;
 pub mod time;
 pub mod validate;

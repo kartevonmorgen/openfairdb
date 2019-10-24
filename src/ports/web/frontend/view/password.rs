@@ -10,13 +10,13 @@ pub fn reset_password_request(flash: Option<FlashMessage>, action: &str) -> Mark
         None,
         html! {
           h2 { "Password reset" }
-          p { "Please enter your email address or username to reset your password." }
+          p { "Please enter your email address to reset your password." }
           form class="reset-pw-req" action=(action) method="POST" {
               fieldset{
                 label {
-                    "eMail or username:"
+                    "eMail:"
                     br;
-                    input type="text" name="email_or_username" placeholder="eMail address or username";
+                    input type="text" name="email" placeholder="eMail address";
                 }
                 br;
                 input type="submit" value="reset";
@@ -53,9 +53,9 @@ pub fn reset_password(flash: Option<FlashMessage>, action: &str, token: &str) ->
           form class="reset-pw" action=(action) method="POST" {
               fieldset{
                 label {
-                    "eMail or username:"
+                    "eMail:"
                     br;
-                    input type="text" name="email_or_username" placeholder="eMail address or username";
+                    input type="text" name="email" placeholder="eMail address";
                 }
                 br;
                 label{

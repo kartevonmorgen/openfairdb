@@ -1,10 +1,5 @@
 use super::schema::*;
 
-use crate::core::{
-    entities,
-    util::{nonce::Nonce, rowid::RowId},
-};
-
 #[derive(Queryable, Insertable)]
 #[table_name = "entries"]
 pub struct Entry {
@@ -30,10 +25,10 @@ pub struct Entry {
     pub image_link_url: Option<String>,
 }
 
-#[derive(Queryable, Insertable, AsChangeset)]
+#[derive(Insertable, AsChangeset)]
 #[table_name = "events"]
-pub struct Event {
-    pub id: String,
+pub struct NewEvent {
+    pub uid: String,
     pub title: String,
     pub description: Option<String>,
     pub start: i64,
@@ -47,12 +42,40 @@ pub struct Event {
     pub email: Option<String>,
     pub telephone: Option<String>,
     pub homepage: Option<String>,
-    pub created_by: Option<String>,
+    pub created_by: Option<i64>,
     pub registration: Option<i16>,
     pub organizer: Option<String>,
     pub archived: Option<i64>,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
+}
+
+#[derive(Queryable)]
+pub struct EventEntity {
+    // Table columns
+    pub id: i64,
+    pub uid: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub start: i64,
+    pub end: Option<i64>,
+    pub lat: Option<f64>,
+    pub lng: Option<f64>,
+    pub street: Option<String>,
+    pub zip: Option<String>,
+    pub city: Option<String>,
+    pub country: Option<String>,
+    pub email: Option<String>,
+    pub telephone: Option<String>,
+    pub homepage: Option<String>,
+    pub created_by_id: Option<i64>,
+    pub registration: Option<i16>,
+    pub organizer: Option<String>,
+    pub archived: Option<i64>,
+    pub image_url: Option<String>,
+    pub image_link_url: Option<String>,
+    // Joined columns
+    pub created_by_email: Option<String>,
 }
 
 #[derive(Queryable, Insertable)]
@@ -103,16 +126,16 @@ pub struct StoreableEntryTagRelation<'a, 'b> {
 }
 
 #[derive(Queryable)]
-pub struct EventTagRelation {
-    pub event_id: String,
-    pub tag_id: String,
+pub struct EventTag {
+    pub event_id: i64,
+    pub tag: String,
 }
 
 #[derive(Insertable)]
-#[table_name = "event_tag_relations"]
-pub struct StoreableEventTagRelation<'a, 'b> {
-    pub event_id: &'a str,
-    pub tag_id: &'b str,
+#[table_name = "event_tags"]
+pub struct NewEventTag<'a> {
+    pub event_id: i64,
+    pub tag: &'a str,
 }
 
 #[derive(Queryable)]
@@ -134,14 +157,21 @@ pub struct Tag {
     pub id: String,
 }
 
-#[derive(Queryable, Insertable, AsChangeset)]
+#[derive(Insertable, AsChangeset)]
 #[table_name = "users"]
-pub struct User {
-    pub id: String, // TOTO: remove
-    pub username: String,
+pub struct NewUser<'a> {
+    pub email: &'a str,
+    pub email_confirmed: bool,
     pub password: String,
+    pub role: i16,
+}
+
+#[derive(Queryable)]
+pub struct UserEntity {
+    pub id: i64,
     pub email: String,
     pub email_confirmed: bool,
+    pub password: String,
     pub role: i16,
 }
 
@@ -168,66 +198,45 @@ pub struct Rating {
     pub entry_id: String,
 }
 
-#[derive(Queryable, Insertable)]
+#[derive(Insertable)]
 #[table_name = "bbox_subscriptions"]
-pub struct BboxSubscription {
-    pub id: String,
+pub struct NewBboxSubscription<'a> {
+    pub uid: &'a str,
+    pub user_id: i64,
     pub south_west_lat: f64,
     pub south_west_lng: f64,
     pub north_east_lat: f64,
     pub north_east_lng: f64,
-    pub username: String,
 }
 
 #[derive(Queryable)]
-pub struct EmailTokenCredentials {
+pub struct BboxSubscriptionEntity {
+    // Table columns
     pub id: i64,
-    pub expires_at: i64,
-    pub username: String,
-    pub email: String,
-    pub nonce: String,
-}
-
-impl From<EmailTokenCredentials> for entities::EmailTokenCredentials {
-    fn from(from: EmailTokenCredentials) -> Self {
-        Self {
-            expires_at: from.expires_at.into(),
-            username: from.username,
-            token: entities::EmailToken {
-                email: from.email,
-                nonce: from.nonce.parse::<Nonce>().unwrap_or_default(),
-            },
-        }
-    }
-}
-
-impl From<EmailTokenCredentials> for (RowId, entities::EmailTokenCredentials) {
-    fn from(from: EmailTokenCredentials) -> Self {
-        let rowid = from.id.into();
-        let entity = from.into();
-        (rowid, entity)
-    }
+    pub uid: String,
+    pub user_id: i64,
+    pub south_west_lat: f64,
+    pub south_west_lng: f64,
+    pub north_east_lat: f64,
+    pub north_east_lng: f64,
+    // Joined columns
+    pub user_email: String,
 }
 
 #[derive(Insertable, AsChangeset)]
-#[table_name = "email_token_credentials"]
-pub struct NewEmailTokenCredentials<'a, 'b> {
-    pub expires_at: i64,
-    pub username: &'a str,
-    pub email: &'b str,
+#[table_name = "user_tokens"]
+pub struct NewUserToken {
+    pub user_id: i64,
     pub nonce: String,
+    pub expires_at: i64,
 }
 
-impl<'a, 'b, 'x> From<&'x entities::EmailTokenCredentials> for NewEmailTokenCredentials<'a, 'b>
-where
-    'x: 'a + 'b,
-{
-    fn from(from: &'x entities::EmailTokenCredentials) -> Self {
-        Self {
-            expires_at: from.expires_at.into(),
-            username: &from.username,
-            email: &from.token.email,
-            nonce: from.token.nonce.to_string(),
-        }
-    }
+#[derive(Queryable)]
+pub struct UserTokenEntity {
+    // Table columns
+    pub user_id: i64,
+    pub nonce: String,
+    pub expires_at: i64,
+    // Joined columns
+    pub user_email: String,
 }

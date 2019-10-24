@@ -66,7 +66,7 @@ pub struct Event {
 impl From<e::Event> for Event {
     fn from(e: e::Event) -> Self {
         let e::Event {
-            id,
+            uid,
             title,
             description,
             start,
@@ -116,7 +116,7 @@ impl From<e::Event> for Event {
         let end = end.map(|end| end.timestamp());
 
         Event {
-            id,
+            id: uid.into(),
             // created,
             title,
             description,
@@ -224,8 +224,14 @@ pub struct SearchResponse {
 
 #[derive(Serialize)]
 pub struct User {
-    pub username: String,
     pub email: String,
+}
+
+impl From<e::User> for User {
+    fn from(from: e::User) -> Self {
+        let e::User { email, .. } = from;
+        Self { email }
+    }
 }
 
 #[derive(Serialize)]
@@ -295,12 +301,11 @@ impl Entry {
 
 #[derive(Deserialize)]
 pub struct RequestPasswordReset {
-    pub email_or_username: String,
+    pub email: String,
 }
 
 #[derive(Deserialize)]
 pub struct ResetPassword {
-    pub email_or_username: String,
     pub token: String,
     pub new_password: String,
 }

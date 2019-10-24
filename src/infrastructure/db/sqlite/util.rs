@@ -2,7 +2,10 @@ use super::models::*;
 use crate::core::{
     entities as e,
     prelude::{Error, ParameterError, Result},
-    util::geo::{MapBbox, MapPoint},
+    util::{
+        geo::{MapBbox, MapPoint},
+        nonce::Nonce,
+    },
 };
 use chrono::prelude::*;
 use std::str::FromStr;
@@ -123,76 +126,6 @@ fn registration_type_into_i16() {
     assert_eq!(u, 3);
 }
 
-impl From<e::Event> for Event {
-    fn from(e: e::Event) -> Self {
-        let e::Event {
-            id,
-            title,
-            start,
-            end,
-            description,
-            location,
-            contact,
-            homepage,
-            created_by,
-            registration,
-            organizer,
-            archived,
-            image_url,
-            image_link_url,
-            ..
-        } = e;
-
-        let mut street = None;
-        let mut zip = None;
-        let mut city = None;
-        let mut country = None;
-
-        let (lat, lng) = if let Some(l) = location {
-            if let Some(a) = l.address {
-                street = a.street;
-                zip = a.zip;
-                city = a.city;
-                country = a.country;
-            }
-            (Some(l.pos.lat().to_deg()), Some(l.pos.lng().to_deg()))
-        } else {
-            (None, None)
-        };
-
-        let (email, telephone) = if let Some(c) = contact {
-            (c.email, c.telephone)
-        } else {
-            (None, None)
-        };
-
-        let registration = registration.map(Into::into);
-
-        Event {
-            id,
-            title,
-            description,
-            start: start.timestamp(),
-            end: end.map(|x| x.timestamp()),
-            lat,
-            lng,
-            street,
-            zip,
-            city,
-            country,
-            telephone,
-            email,
-            homepage,
-            created_by,
-            registration,
-            organizer,
-            archived: archived.map(Into::into),
-            image_url,
-            image_link_url,
-        }
-    }
-}
-
 impl From<(Entry, Vec<String>, Vec<String>)> for e::Entry {
     fn from(d: (Entry, Vec<String>, Vec<String>)) -> Self {
         let (e, categories, tags) = d;
@@ -255,11 +188,12 @@ impl From<(Entry, Vec<String>, Vec<String>)> for e::Entry {
     }
 }
 
-impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
-    fn from(d: (Event, &Vec<EventTagRelation>)) -> Self {
+impl From<(EventEntity, &Vec<EventTag>)> for e::Event {
+    fn from(d: (EventEntity, &Vec<EventTag>)) -> Self {
         let (e, tag_rels) = d;
-        let Event {
+        let EventEntity {
             id,
+            uid,
             title,
             description,
             start,
@@ -273,18 +207,18 @@ impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
             email,
             telephone,
             homepage,
-            created_by,
             registration,
             organizer,
             archived,
             image_url,
             image_link_url,
+            created_by_email,
             ..
         } = e;
         let tags = tag_rels
             .iter()
             .filter(|r| r.event_id == id)
-            .map(|r| &r.tag_id)
+            .map(|r| &r.tag)
             .cloned()
             .collect();
         let address = if street.is_some() || zip.is_some() || city.is_some() || country.is_some() {
@@ -319,7 +253,7 @@ impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
         let registration = registration.map(Into::into);
 
         e::Event {
-            id,
+            uid: uid.into(),
             title,
             description,
             start: NaiveDateTime::from_timestamp(start, 0),
@@ -328,7 +262,7 @@ impl From<(Event, &Vec<EventTagRelation>)> for e::Event {
             contact,
             homepage,
             tags,
-            created_by,
+            created_by: created_by_email,
             registration,
             organizer,
             archived: archived.map(Into::into),
@@ -384,23 +318,35 @@ impl From<e::Tag> for Tag {
     }
 }
 
-impl From<User> for e::User {
-    fn from(u: User) -> e::User {
+impl<'a> From<&'a e::User> for NewUser<'a> {
+    fn from(u: &'a e::User) -> NewUser<'a> {
+        use num_traits::ToPrimitive;
+        Self {
+            email: &u.email,
+            email_confirmed: u.email_confirmed,
+            password: u.password.to_string(),
+            role: u.role.to_i16().unwrap_or_else(|| {
+                warn!("Could not convert role {:?} to i16. Use 0 instead.", u.role);
+                0
+            }),
+        }
+    }
+}
+
+impl From<UserEntity> for e::User {
+    fn from(u: UserEntity) -> e::User {
         use num_traits::FromPrimitive;
-        let User {
-            id,
-            username,
+        let UserEntity {
+            email,
+            email_confirmed,
             password,
-            email,
-            email_confirmed,
             role,
+            ..
         } = u;
-        e::User {
-            id,
-            username,
-            password: password.into(),
+        Self {
             email,
             email_confirmed,
+            password: password.into(),
             role: e::Role::from_i16(role).unwrap_or_else(|| {
                 warn!(
                     "Could not cast role from i16 (value: {}). Use {:?} instead.",
@@ -408,31 +354,6 @@ impl From<User> for e::User {
                     e::Role::default()
                 );
                 e::Role::default()
-            }),
-        }
-    }
-}
-
-impl From<e::User> for User {
-    fn from(u: e::User) -> User {
-        use num_traits::ToPrimitive;
-        let e::User {
-            id,
-            username,
-            password,
-            email,
-            email_confirmed,
-            role,
-        } = u;
-        User {
-            id,
-            username,
-            password: password.into(),
-            email,
-            email_confirmed,
-            role: role.to_i16().unwrap_or_else(|| {
-                warn!("Could not convert role {:?} to i16. Use 0 instead.", role);
-                0
             }),
         }
     }
@@ -526,37 +447,38 @@ impl From<e::Rating> for Rating {
     }
 }
 
-impl From<BboxSubscription> for e::BboxSubscription {
-    fn from(s: BboxSubscription) -> e::BboxSubscription {
-        let BboxSubscription {
-            id,
+impl From<BboxSubscriptionEntity> for e::BboxSubscription {
+    fn from(from: BboxSubscriptionEntity) -> Self {
+        let BboxSubscriptionEntity {
+            uid,
+            user_email,
             south_west_lat,
             south_west_lng,
             north_east_lat,
             north_east_lng,
-            username,
-        } = s;
-        e::BboxSubscription {
-            id,
-            bbox: MapBbox::new(
-                MapPoint::try_from_lat_lng_deg(south_west_lat, south_west_lng).unwrap_or_default(),
-                MapPoint::try_from_lat_lng_deg(north_east_lat, north_east_lng).unwrap_or_default(),
-            ),
-            username,
+            ..
+        } = from;
+        let south_west =
+            MapPoint::try_from_lat_lng_deg(south_west_lat, south_west_lng).unwrap_or_default();
+        let north_east =
+            MapPoint::try_from_lat_lng_deg(north_east_lat, north_east_lng).unwrap_or_default();
+        let bbox = MapBbox::new(south_west, north_east);
+        Self {
+            uid: uid.into(),
+            user_email,
+            bbox,
         }
     }
 }
 
-impl From<e::BboxSubscription> for BboxSubscription {
-    fn from(s: e::BboxSubscription) -> BboxSubscription {
-        let e::BboxSubscription { id, bbox, username } = s;
-        BboxSubscription {
-            id,
-            south_west_lat: bbox.south_west().lat().to_deg(),
-            south_west_lng: bbox.south_west().lng().to_deg(),
-            north_east_lat: bbox.north_east().lat().to_deg(),
-            north_east_lng: bbox.north_east().lng().to_deg(),
-            username,
+impl From<UserTokenEntity> for e::UserToken {
+    fn from(from: UserTokenEntity) -> Self {
+        Self {
+            email_nonce: e::EmailNonce {
+                email: from.user_email,
+                nonce: from.nonce.parse::<Nonce>().unwrap_or_default(),
+            },
+            expires_at: from.expires_at.into(),
         }
     }
 }

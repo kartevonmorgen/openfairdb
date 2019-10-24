@@ -1,11 +1,12 @@
 table! {
     bbox_subscriptions (id) {
-        id -> Text,
+        id -> BigInt,
+        uid -> Text,
+        user_id -> BigInt,
         south_west_lat -> Double,
         south_west_lng -> Double,
         north_east_lat -> Double,
         north_east_lng -> Double,
-        username -> Text,
     }
 }
 
@@ -70,9 +71,9 @@ table! {
 }
 
 table! {
-    event_tag_relations (event_id, tag_id) {
-        event_id -> Text,
-        tag_id -> Text,
+    event_tags (event_id, tag) {
+        event_id -> BigInt,
+        tag -> Text,
     }
 }
 
@@ -85,7 +86,8 @@ table! {
 
 table! {
     events (id) {
-        id -> Text,
+        id -> BigInt,
+        uid -> Text,
         title -> Text,
         description -> Nullable<Text>,
         start -> BigInt,
@@ -99,7 +101,7 @@ table! {
         email -> Nullable<Text>,
         telephone -> Nullable<Text>,
         homepage -> Nullable<Text>,
-        created_by -> Nullable<Text>,
+        created_by -> Nullable<BigInt>,
         registration -> Nullable<SmallInt>,
         organizer -> Nullable<Text>,
         archived -> Nullable<BigInt>,
@@ -128,22 +130,20 @@ table! {
 }
 
 table! {
-    users (username) {
-        id -> Text,
-        username -> Text,
-        password -> Text,
+    users (id) {
+        id -> BigInt,
         email -> Text,
         email_confirmed -> Bool,
+        password -> Text,
         role -> SmallInt,
     }
 }
 
 table! {
-    email_token_credentials (id) {
+    user_tokens (id) {
         id -> BigInt,
+        user_id -> BigInt,
         expires_at -> BigInt,
-        username -> Text,
-        email -> Text,
         nonce -> Text,
     }
 }
@@ -156,16 +156,17 @@ table! {
     }
 }
 
-joinable!(bbox_subscriptions -> users (username));
+joinable!(bbox_subscriptions -> users (user_id));
 joinable!(comments -> ratings (rating_id));
 joinable!(entry_category_relations -> categories (category_id));
 joinable!(entry_tag_relations -> tags (tag_id));
-joinable!(event_tag_relations -> events (event_id));
-joinable!(event_tag_relations -> tags (tag_id));
+joinable!(event_tags -> events (event_id));
 joinable!(events -> users (created_by));
 joinable!(org_tag_relations -> organizations (org_id));
 joinable!(org_tag_relations -> tags (tag_id));
-joinable!(email_token_credentials -> users (username));
+joinable!(user_tokens -> users (user_id));
+
+allow_tables_to_appear_in_same_query!(events, event_tags,);
 
 allow_tables_to_appear_in_same_query!(
     bbox_subscriptions,
@@ -174,12 +175,11 @@ allow_tables_to_appear_in_same_query!(
     entries,
     entry_category_relations,
     entry_tag_relations,
-    event_tag_relations,
     events,
     org_tag_relations,
     organizations,
     ratings,
     tags,
     users,
-    email_token_credentials,
+    user_tokens,
 );

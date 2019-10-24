@@ -4,51 +4,12 @@ use crate::core::error::Error;
 
 use diesel::connection::Connection;
 
-// Try to load users either by e-mail (1st) or by username (2nd)
-fn load_users_by_email_or_username<D: UserGateway>(
-    db: &D,
-    email_or_username: &str,
-) -> Result<Vec<User>> {
-    // Try with the username first (if available)
-    match db.get_users_by_email(email_or_username) {
-        Err(RepoError::NotFound) => {
-            let user = db.get_user(email_or_username)?;
-            Ok(vec![user])
-        }
-        res => {
-            let users = res?;
-            debug_assert!(!users.is_empty());
-            if let Ok(user) = db.get_user(email_or_username) {
-                for u in &users {
-                    if u.username == user.username {
-                        return Ok(vec![user]);
-                    }
-                }
-                error!(
-                    "Search results for users with e-mail or username '{}' are ambiguous!",
-                    email_or_username
-                );
-                return Err(RepoError::NotFound)?;
-            }
-            Ok(users)
-        }
-    }
-}
-
-fn refresh_email_token_credentials(
-    connections: &sqlite::Connections,
-    user: &User,
-) -> Result<EmailTokenCredentials> {
+fn refresh_user_token(connections: &sqlite::Connections, user: &User) -> Result<EmailNonce> {
     let mut rollback_err: Option<Error> = None;
     let connection = connections.exclusive()?;
     Ok(connection
         .transaction::<_, diesel::result::Error, _>(|| {
-            usecases::refresh_email_token_credentials(
-                &*connection,
-                user.username.to_owned(),
-                user.email.to_owned(),
-            )
-            .map_err(|err| {
+            usecases::refresh_user_token(&*connection, user.email.to_owned()).map_err(|err| {
                 rollback_err = Some(err);
                 diesel::result::Error::RollbackTransaction
             })
@@ -58,34 +19,20 @@ fn refresh_email_token_credentials(
 
 pub fn reset_password_request(
     connections: &sqlite::Connections,
-    email_or_username: &str,
-) -> Result<Vec<EmailToken>> {
+    email: &str,
+) -> Result<EmailNonce> {
     // The user is loaded before the following transaction that
     // requires exclusive access to the database connection for
     // writing.
-    let users = load_users_by_email_or_username(&*connections.shared()?, email_or_username)?;
-    if users.len() > 1 {
-        warn!(
-            "Requesting password reset for all ({}) users with e-mail address '{}'",
-            users.len(),
-            users[0].email
-        );
-    }
-
-    let mut tokens = Vec::with_capacity(users.len());
-    for user in &users {
-        let credentials = refresh_email_token_credentials(&connections, &user)?;
-        notify::user_reset_password_requested(&credentials.token);
-        tokens.push(credentials.token);
-    }
-
-    Ok(tokens)
+    let user = connections.shared()?.get_user_by_email(email)?;
+    let email_nonce = refresh_user_token(&connections, &user)?;
+    notify::user_reset_password_requested(&email_nonce);
+    Ok(email_nonce)
 }
 
-pub fn reset_password_with_email_token(
+pub fn reset_password_with_email_nonce(
     connections: &sqlite::Connections,
-    email_or_username: &str,
-    token: EmailToken,
+    email_nonce: EmailNonce,
     new_password: Password,
 ) -> Result<()> {
     let connection = connections.exclusive()?;
@@ -93,22 +40,21 @@ pub fn reset_password_with_email_token(
     // The token should be consumed only once, even if the
     // following transaction for updating the user fails!
     let mut rollback_err: Option<Error> = None;
-    let credentials = connection
+    let token = connection
         .transaction::<_, diesel::result::Error, _>(|| {
-            usecases::consume_email_token_credentials(&*connection, email_or_username, &token)
-                .map_err(|err| {
-                    warn!(
-                        "Missing or invalid token to reset password for user '{}': {}",
-                        email_or_username, err
-                    );
-                    rollback_err = Some(err);
-                    diesel::result::Error::RollbackTransaction
-                })
+            usecases::consume_user_token(&*connection, &email_nonce).map_err(|err| {
+                warn!(
+                    "Missing or invalid token to reset password for user '{}': {}",
+                    email_nonce.email, err
+                );
+                rollback_err = Some(err);
+                diesel::result::Error::RollbackTransaction
+            })
         })
         .map_err(|err| rollback_err.unwrap_or_else(|| Error::from(RepoError::from(err))))?;
 
     // The consumed nonce must match the request parameters
-    debug_assert!(credentials.token == token);
+    debug_assert!(token.email_nonce == email_nonce);
 
     // Verify and update the user entity
     let mut rollback_err: Option<Error> = None;
@@ -116,14 +62,13 @@ pub fn reset_password_with_email_token(
         .transaction::<_, diesel::result::Error, _>(|| {
             usecases::confirm_email_and_reset_password(
                 &*connection,
-                &credentials.username,
-                &credentials.token.email,
+                &token.email_nonce.email,
                 new_password,
             )
             .map_err(|err| {
                 warn!(
-                    "Failed to verify e-mail ({}) and reset password for user ({}): {}",
-                    credentials.token.email, credentials.username, err
+                    "Failed to verify e-mail ({}) and reset password: {}",
+                    token.email_nonce.email, err
                 );
                 rollback_err = Some(err);
                 diesel::result::Error::RollbackTransaction
@@ -137,25 +82,16 @@ pub fn reset_password_with_email_token(
 mod tests {
     use super::super::tests::prelude::*;
 
-    fn reset_password_request(
-        fixture: &EnvFixture,
-        email_or_username: &str,
-    ) -> super::Result<Vec<EmailToken>> {
-        super::reset_password_request(&fixture.db_connections, email_or_username)
+    fn reset_password_request(fixture: &EnvFixture, email: &str) -> super::Result<EmailNonce> {
+        super::reset_password_request(&fixture.db_connections, email)
     }
 
-    fn reset_password_with_email_token(
+    fn reset_password_with_email_nonce(
         fixture: &EnvFixture,
-        email_or_username: &str,
-        token: EmailToken,
+        email_nonce: EmailNonce,
         new_password: Password,
     ) -> super::Result<()> {
-        super::reset_password_with_email_token(
-            &fixture.db_connections,
-            email_or_username,
-            token,
-            new_password,
-        )
+        super::reset_password_with_email_nonce(&fixture.db_connections, email_nonce, new_password)
     }
 
     #[test]
@@ -164,19 +100,31 @@ mod tests {
 
         // User 1
         let email1 = "user1@some.org";
-        let username1 = fixture.create_user_from_email(email1);
         let credentials1 = usecases::Credentials {
             email: &email1,
             password: "new pass1",
         };
+        fixture.create_user(
+            usecases::NewUser {
+                email: email1.to_string(),
+                password: "old pass1".to_string(),
+            },
+            None,
+        );
 
         // User 2
         let email2 = "user2@some.org";
-        let username2 = fixture.create_user_from_email(email2);
         let credentials2 = usecases::Credentials {
             email: &email2,
             password: "new pass2",
         };
+        fixture.create_user(
+            usecases::NewUser {
+                email: email2.to_string(),
+                password: "old pass2".to_string(),
+            },
+            None,
+        );
 
         // Verify that password is invalid for both users
         debug_assert!(usecases::login_with_email(
@@ -191,31 +139,24 @@ mod tests {
         .is_err());
 
         // Request and reset password for user 1 (by email)
-        let tokens = reset_password_request(&fixture, email1).unwrap();
-        assert_eq!(1, tokens.len());
-        let token1 = tokens.into_iter().next().unwrap();
-        assert_eq!(email1, token1.email);
-        // Verify that we are not able to reset the password of another user with this token
-        assert!(reset_password_with_email_token(
-            &fixture,
-            email2,
-            token1.clone(),
-            credentials2.password.parse::<Password>().unwrap()
-        )
-        .is_err());
+        let email_nonce1 = reset_password_request(&fixture, email1).unwrap();
+        assert_eq!(email1, email_nonce1.email);
+
+        // Request and reset password for user 2
+        let email_nonce2 = reset_password_request(&fixture, &email2).unwrap();
+        assert_eq!(email2, email_nonce2.email);
+
         // Reset the password of user 1
-        assert!(reset_password_with_email_token(
+        assert!(reset_password_with_email_nonce(
             &fixture,
-            email1,
-            token1.clone(),
+            email_nonce1.clone(),
             credentials1.password.parse::<Password>().unwrap()
         )
         .is_ok());
         // Verify that a 2nd attempt to reset the password with the same token fails
-        assert!(reset_password_with_email_token(
+        assert!(reset_password_with_email_nonce(
             &fixture,
-            email1,
-            token1,
+            email_nonce1,
             credentials1.password.parse::<Password>().unwrap()
         )
         .is_err());
@@ -232,32 +173,16 @@ mod tests {
         )
         .is_err());
 
-        // Request and reset password for user 2 (by username)
-        let tokens = reset_password_request(&fixture, &username2).unwrap();
-        assert_eq!(1, tokens.len());
-        let token2 = tokens.into_iter().next().unwrap();
-        assert_eq!(email2, token2.email);
-        // Verify that we are not able to reset the password of another user with this token
-        assert!(reset_password_with_email_token(
+        assert!(reset_password_with_email_nonce(
             &fixture,
-            &username1,
-            token2.clone(),
-            credentials1.password.parse::<Password>().unwrap()
-        )
-        .is_err());
-        // Reset the password of user 2
-        assert!(reset_password_with_email_token(
-            &fixture,
-            &username2,
-            token2.clone(),
+            email_nonce2.clone(),
             credentials2.password.parse::<Password>().unwrap()
         )
         .is_ok());
         // Verify that a 2nd attempt to reset the password with the same token fails
-        assert!(reset_password_with_email_token(
+        assert!(reset_password_with_email_nonce(
             &fixture,
-            &username2,
-            token2,
+            email_nonce2,
             credentials2.password.parse::<Password>().unwrap()
         )
         .is_err());

@@ -29,10 +29,9 @@ pub fn post_event_with_token(
     e: Json<usecases::NewEvent>,
 ) -> Result<String> {
     let mut e = e.into_inner();
-    e.token = Some(token.0);
     check_and_set_address_location(&mut e);
-    let id = usecases::create_new_event(&mut *db.exclusive()?, e.clone())?;
-    Ok(Json(id))
+    let uid = usecases::create_new_event(&mut *db.exclusive()?, Some(&token.0), e.clone())?;
+    Ok(Json(uid.to_string()))
 }
 
 #[post("/events", format = "application/json", data = "<_e>", rank = 2)]
@@ -78,9 +77,13 @@ pub fn put_event_with_token(
     e: Json<usecases::UpdateEvent>,
 ) -> Result<()> {
     let mut e = e.into_inner();
-    e.token = Some(token.0);
     check_and_set_address_location(&mut e);
-    usecases::update_event(&mut *db.exclusive()?, &id.to_string(), e.clone())?;
+    usecases::update_event(
+        &mut *db.exclusive()?,
+        Some(&token.0),
+        &id.to_string(),
+        e.clone(),
+    )?;
     Ok(Json(()))
 }
 
@@ -201,7 +204,7 @@ pub fn delete_event(mut _db: sqlite::Connections, _id: &RawStr) -> Status {
 
 #[delete("/events/<id>")]
 pub fn delete_event_with_token(db: sqlite::Connections, token: Bearer, id: &RawStr) -> Result<()> {
-    usecases::delete_event(&mut *db.exclusive()?, &id.to_string(), &token.0)?;
+    usecases::delete_event(&mut *db.exclusive()?, &token.0, &id.to_string())?;
     Ok(Json(()))
 }
 
@@ -319,8 +322,8 @@ mod tests {
                 test_json(&res);
                 let body_str = res.body().and_then(|b| b.into_string()).unwrap();
                 let ev = db.shared().unwrap().all_events().unwrap()[0].clone();
-                let eid = ev.id.clone();
-                assert_eq!(ev.created_by.unwrap(), "foobarcom");
+                let eid = ev.uid.clone();
+                assert_eq!(ev.created_by.unwrap(), "foo@bar.com");
                 assert_eq!(body_str, format!("\"{}\"", eid));
             }
 
@@ -344,7 +347,10 @@ mod tests {
                     .dispatch();
                 assert_eq!(res.status(), Status::Ok);
                 let u = db.shared().unwrap().all_users().unwrap()[0].clone();
-                assert_eq!(u.username, "averysuperlongemailaddressasuperlongdoma");
+                assert_eq!(
+                    u.email,
+                    "a-very-super-long-email-address@a-super-long-domain.com"
+                );
             }
 
             #[test]
@@ -579,7 +585,7 @@ mod tests {
         fn by_id() {
             let (client, db) = setup();
             let e = Event {
-                id: "1234".into(),
+                uid: "1234".into(),
                 title: "x".into(),
                 description: None,
                 start: NaiveDateTime::from_timestamp(0, 0),
@@ -615,7 +621,7 @@ mod tests {
                 db.exclusive()
                     .unwrap()
                     .create_event(Event {
-                        id: id.into(),
+                        uid: id.into(),
                         title: id.into(),
                         description: None,
                         start: NaiveDateTime::from_timestamp(0, 0),
@@ -650,7 +656,7 @@ mod tests {
                 db.exclusive()
                     .unwrap()
                     .create_event(Event {
-                        id: s.to_string(),
+                        uid: s.to_string().into(),
                         title: s.to_string(),
                         description: None,
                         start,
@@ -688,7 +694,7 @@ mod tests {
                 db.exclusive()
                     .unwrap()
                     .create_event(Event {
-                        id: id.into(),
+                        uid: id.into(),
                         title: id.into(),
                         description: None,
                         start: NaiveDateTime::from_timestamp(0, 0),
@@ -746,41 +752,22 @@ mod tests {
                     api_token: "foo".into(),
                 })
                 .unwrap();
-            let emails = vec!["foo@bar.com", "test@test.com", "bla@bla.bla"];
-            for (i, m) in emails.into_iter().enumerate() {
-                let username = m.to_string().replace(".", "").replace("@", "");
-                db.exclusive()
+            let uids: Vec<_> = ["foo@bar.com", "test@test.com", "bla@bla.bla"]
+                .iter()
+                .map(|m| {
+                    let new_event = usecases::NewEvent {
+                        title: m.to_string(),
+                        created_by: Some(m.to_string()),
+                        ..Default::default()
+                    };
+                    usecases::create_new_event(
+                        &mut *db.exclusive().unwrap(),
+                        Some("foo"),
+                        new_event,
+                    )
                     .unwrap()
-                    .create_event(Event {
-                        id: i.to_string(),
-                        title: m.into(),
-                        description: None,
-                        start: NaiveDateTime::from_timestamp(0, 0),
-                        end: None,
-                        location: None,
-                        contact: None,
-                        tags: vec![],
-                        homepage: None,
-                        created_by: Some(username.clone()),
-                        registration: None,
-                        organizer: None,
-                        archived: None,
-                        image_url: None,
-                        image_link_url: None,
-                    })
-                    .unwrap();
-                db.exclusive()
-                    .unwrap()
-                    .create_user(User {
-                        id: i.to_string(),
-                        username,
-                        password: "secret".parse::<Password>().unwrap(),
-                        email: m.into(),
-                        email_confirmed: true,
-                        role: Role::default(),
-                    })
-                    .unwrap();
-            }
+                })
+                .collect();
             let mut res = client
                 .get("/events?created_by=test%40test.com")
                 .header(ContentType::JSON)
@@ -788,9 +775,9 @@ mod tests {
                 .dispatch();
             assert_eq!(res.status(), Status::Ok);
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
-            assert!(body_str.contains("\"id\":\"1\""));
-            assert!(!body_str.contains("\"id\":\"0\""));
-            assert!(!body_str.contains("\"id\":\"2\""));
+            assert!(!body_str.contains(&format!("\"id\":\"{}\"", uids[0])));
+            assert!(body_str.contains(&format!("\"id\":\"{}\"", uids[1])));
+            assert!(!body_str.contains(&format!("\"id\":\"{}\"", uids[2])));
         }
 
         #[test]
@@ -823,7 +810,7 @@ mod tests {
                 db.exclusive()
                     .unwrap()
                     .create_event(Event {
-                        id: s.to_string(),
+                        uid: s.to_string().into(),
                         title: s.to_string(),
                         description: None,
                         start,
@@ -863,7 +850,7 @@ mod tests {
                 db.exclusive()
                     .unwrap()
                     .create_event(Event {
-                        id: s.to_string(),
+                        uid: s.to_string().into(),
                         title: s.to_string(),
                         description: None,
                         start,
@@ -904,7 +891,7 @@ mod tests {
                 db.exclusive()
                     .unwrap()
                     .create_event(Event {
-                        id: format!("{}-{}", lat, lng),
+                        uid: format!("{}-{}", lat, lng).into(),
                         title: format!("{}-{}", lat, lng),
                         description: None,
                         start: NaiveDateTime::from_timestamp(0, 0),
@@ -987,35 +974,26 @@ mod tests {
                     api_token: "foo".into(),
                 })
                 .unwrap();
-            let e = Event {
-                id: "1234".into(),
+            let e = usecases::NewEvent {
                 title: "x".into(),
-                description: None,
-                start: NaiveDateTime::from_timestamp(0, 0),
-                end: None,
-                location: None,
-                contact: None,
-                tags: vec!["bla".into(), "org-tag".into()],
-                homepage: None,
+                tags: Some(vec!["bla".into(), "org-tag".into()]),
                 created_by: Some("foo@bar.com".into()),
-                registration: None,
-                organizer: None,
-                archived: None,
-                image_url: None,
-                image_link_url: None,
+                ..Default::default()
             };
-            db.exclusive().unwrap().create_event(e.clone()).unwrap();
+            let uid =
+                usecases::create_new_event(&mut *db.exclusive().unwrap(), Some("foo"), e).unwrap();
+            assert!(db.shared().unwrap().get_event(uid.as_ref()).is_ok());
             let res = client
-                .put("/events/1234")
+                .put(format!("/events/{}", uid))
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
                 .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com"}"#)
                 .dispatch();
             assert_eq!(res.status(), Status::Ok);
-            let new = db.exclusive().unwrap().get_event("1234").unwrap();
-            assert_eq!(&*new.title, "new");
+            let new = db.exclusive().unwrap().get_event(uid.as_ref()).unwrap();
+            assert_eq!(new.title, "new");
             assert_eq!(new.start.timestamp(), 5);
-            assert!(new.created_by != e.created_by);
+            assert_eq!(new.created_by.unwrap(), "changed@bar.com");
         }
 
         #[test]
@@ -1041,26 +1019,17 @@ mod tests {
                     api_token: "bar".into(),
                 })
                 .unwrap();
-            let e = Event {
-                id: "1234".into(),
+            let e = usecases::NewEvent {
                 title: "x".into(),
-                description: None,
-                start: NaiveDateTime::from_timestamp(0, 0),
-                end: None,
-                location: None,
-                contact: None,
-                tags: vec!["bla".into()],
-                homepage: None,
+                tags: Some(vec!["bla".into()]),
                 created_by: Some("foo@bar.com".into()),
-                registration: None,
-                organizer: None,
-                archived: None,
-                image_url: None,
-                image_link_url: None,
+                ..Default::default()
             };
-            db.exclusive().unwrap().create_event(e.clone()).unwrap();
+            let uid =
+                usecases::create_new_event(&mut *db.exclusive().unwrap(), Some("bar"), e).unwrap();
+            assert!(db.shared().unwrap().get_event(uid.as_ref()).is_ok());
             let res = client
-                .put("/events/1234")
+                .put(format!("/events/{}", uid))
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
                 .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com"}"#)
@@ -1080,32 +1049,23 @@ mod tests {
                     api_token: "foo".into(),
                 })
                 .unwrap();
-            let e = Event {
-                id: "1234".into(),
+            let e = usecases::NewEvent {
                 title: "x".into(),
-                description: None,
-                start: NaiveDateTime::from_timestamp(0, 0),
-                end: None,
-                location: None,
-                contact: None,
-                tags: vec!["bla".into(), "org-tag".into()],
-                homepage: None,
+                tags: Some(vec!["bla".into(), "org-tag".into()]),
                 created_by: Some("foo@bar.com".into()),
-                registration: None,
-                organizer: None,
-                archived: None,
-                image_url: None,
-                image_link_url: None,
+                ..Default::default()
             };
-            db.exclusive().unwrap().create_event(e.clone()).unwrap();
+            let uid =
+                usecases::create_new_event(&mut *db.exclusive().unwrap(), Some("foo"), e).unwrap();
+            assert!(db.shared().unwrap().get_event(uid.as_ref()).is_ok());
             let res = client
-                .put("/events/1234")
+                .put(format!("/events/{}", uid))
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
                 .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com","tags":["bla2"]}"#)
                 .dispatch();
             assert_eq!(res.status(), Status::Ok);
-            let new = db.exclusive().unwrap().get_event("1234").unwrap();
+            let new = db.exclusive().unwrap().get_event(uid.as_ref()).unwrap();
             assert_eq!(new.tags, vec!["bla2", "org-tag"]);
         }
 
@@ -1121,38 +1081,29 @@ mod tests {
                     api_token: "foo".into(),
                 })
                 .unwrap();
-            let e = Event {
-                id: "1234".into(),
+            let e = usecases::NewEvent {
                 title: "x".into(),
-                description: None,
-                start: NaiveDateTime::from_timestamp(0, 0),
-                end: None,
-                location: None,
-                contact: None,
-                tags: vec![
+                tags: Some(vec![
                     "bli".into(),
                     "org-tag".into(),
                     "org-tag1".into(),
                     "bla".into(),
                     "blub".into(),
-                ],
-                homepage: None,
+                ]),
                 created_by: Some("foo@bar.com".into()),
-                registration: None,
-                organizer: None,
-                archived: None,
-                image_url: None,
-                image_link_url: None,
+                ..Default::default()
             };
-            db.exclusive().unwrap().create_event(e.clone()).unwrap();
+            let uid =
+                usecases::create_new_event(&mut *db.exclusive().unwrap(), Some("foo"), e).unwrap();
+            assert!(db.shared().unwrap().get_event(uid.as_ref()).is_ok());
             let res = client
-                .put("/events/1234")
+                .put(format!("/events/{}", uid))
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
                 .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com","tags":["blub","new","org-tag2"]}"#)
                 .dispatch();
             assert_eq!(res.status(), Status::Ok);
-            let new = db.exclusive().unwrap().get_event("1234").unwrap();
+            let new = db.exclusive().unwrap().get_event(uid.as_ref()).unwrap();
             assert_eq!(new.tags, vec!["blub", "new", "org-tag2"]);
         }
 
@@ -1168,34 +1119,26 @@ mod tests {
                     api_token: "foo".into(),
                 })
                 .unwrap();
-            let e = Event {
-                id: "1234".into(),
+            let created_by = Some("foo@bar.com".into());
+            let e = usecases::NewEvent {
                 title: "x".into(),
-                description: None,
-                start: NaiveDateTime::from_timestamp(0, 0),
-                end: None,
-                location: None,
-                contact: None,
-                tags: vec!["bla".into()],
-                homepage: None,
-                created_by: Some("foo@bar.com".into()),
-                registration: None,
-                organizer: None,
-                archived: None,
-                image_url: None,
-                image_link_url: None,
+                tags: Some(vec!["bla".into()]),
+                created_by: created_by.clone(),
+                ..Default::default()
             };
-            db.exclusive().unwrap().create_event(e.clone()).unwrap();
+            let uid =
+                usecases::create_new_event(&mut *db.exclusive().unwrap(), Some("foo"), e).unwrap();
+            assert!(db.shared().unwrap().get_event(uid.as_ref()).is_ok());
             let res = client
-                .put("/events/1234")
+                .put(format!("/events/{}", uid))
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
                 .body("{\"title\":\"Changed\",\"start\":99}")
                 .dispatch();
             assert_eq!(res.status(), Status::Ok);
-            let new = db.shared().unwrap().get_event("1234").unwrap();
-            assert_eq!(&*new.title, "Changed");
-            assert!(new.created_by == e.created_by);
+            let new = db.shared().unwrap().get_event(uid.as_ref()).unwrap();
+            assert_eq!(new.title, "Changed");
+            assert_eq!(new.created_by, created_by);
         }
     }
 
@@ -1244,53 +1187,38 @@ mod tests {
                     api_token: "foo".into(),
                 })
                 .unwrap();
-            let e0 = Event {
-                id: "1234".into(),
+            let e1 = usecases::NewEvent {
                 title: "x".into(),
-                description: None,
-                start: NaiveDateTime::from_timestamp(0, 0),
-                end: None,
-                location: None,
-                contact: None,
-                tags: vec!["bla".into(), "tag".into()],
-                homepage: None,
+                tags: Some(vec!["bla".into()]), // org tag will be added implicitly!
                 created_by: Some("foo@bar.com".into()),
-                registration: None,
-                organizer: None,
-                archived: None,
-                image_url: None,
-                image_link_url: None,
+                ..Default::default()
             };
-            let e1 = Event {
-                id: "9999".into(),
+            let uid1 =
+                usecases::create_new_event(&mut *db.exclusive().unwrap(), Some("foo"), e1).unwrap();
+            let e2 = usecases::NewEvent {
                 title: "x".into(),
-                description: None,
-                start: NaiveDateTime::from_timestamp(0, 0),
-                end: None,
-                location: None,
-                contact: None,
-                tags: vec!["bla".into()],
-                homepage: None,
+                start: 0,
+                tags: Some(vec!["bla".into()]), // org tag will be added implicitly!
                 created_by: Some("foo@bar.com".into()),
-                registration: None,
-                organizer: None,
-                archived: None,
-                image_url: None,
-                image_link_url: None,
+                ..Default::default()
             };
-            db.exclusive().unwrap().create_event(e0.clone()).unwrap();
-            db.exclusive().unwrap().create_event(e1.clone()).unwrap();
+            let uid2 =
+                usecases::create_new_event(&mut *db.exclusive().unwrap(), Some("foo"), e2).unwrap();
+            // Manually delete the implicitly added org tag from the 2nd event!
+            let mut e2 = db.shared().unwrap().get_event(uid2.as_ref()).unwrap();
+            e2.tags.retain(|t| t != "tag");
+            db.exclusive().unwrap().update_event(&e2).unwrap();
             assert_eq!(db.shared().unwrap().count_events().unwrap(), 2);
             // The 1st event has the owned tag and should be deleted.
             let res = client
-                .delete("/events/1234")
+                .delete(format!("/events/{}", uid1))
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
                 .dispatch();
             assert_eq!(res.status(), Status::Ok);
             // The 2nd event is not tagged with one of the owned tags.
             let res = client
-                .delete("/events/9999")
+                .delete(format!("/events/{}", uid2))
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
                 .dispatch();

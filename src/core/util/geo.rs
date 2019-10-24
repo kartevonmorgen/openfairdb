@@ -91,6 +91,7 @@ impl LatCoord {
         self.0.is_valid()
     }
 
+    #[allow(clippy::absurd_extreme_comparisons)]
     pub fn to_rad(self) -> f64 {
         if self.is_valid() {
             debug_assert!(self.to_raw() >= RAW_COORD_MIN);
@@ -104,6 +105,7 @@ impl LatCoord {
         }
     }
 
+    #[allow(clippy::absurd_extreme_comparisons)]
     pub fn to_deg(self) -> f64 {
         if self.is_valid() {
             debug_assert!(self.to_raw() >= RAW_COORD_MIN);
@@ -179,6 +181,7 @@ impl LngCoord {
         self.0.is_valid()
     }
 
+    #[allow(clippy::absurd_extreme_comparisons)]
     pub fn to_rad(self) -> f64 {
         if self.is_valid() {
             debug_assert!(self.to_raw() >= RAW_COORD_MIN);
@@ -192,6 +195,7 @@ impl LngCoord {
         }
     }
 
+    #[allow(clippy::absurd_extreme_comparisons)]
     pub fn to_deg(self) -> f64 {
         if self.is_valid() {
             debug_assert!(self.to_raw() >= RAW_COORD_MIN);
@@ -444,8 +448,8 @@ impl std::str::FromStr for MapBbox {
 }
 
 #[cfg(test)]
+#[allow(clippy::unreadable_literal, clippy::float_cmp)]
 mod tests {
-
     use super::*;
 
     #[test]

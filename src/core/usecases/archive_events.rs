@@ -1,8 +1,8 @@
 use crate::core::prelude::*;
 
-pub fn archive_events<D: Db>(db: &D, ids: &[&str]) -> Result<()> {
-    debug!("Archiving events {:?}", ids);
+pub fn archive_events<D: Db>(db: &D, uids: &[&str]) -> Result<()> {
+    debug!("Archiving events {:?}", uids);
     let archived = Timestamp::now();
-    db.archive_events(ids, archived)?;
+    db.archive_events(uids, archived)?;
     Ok(())
 }

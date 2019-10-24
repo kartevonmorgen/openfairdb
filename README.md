@@ -42,7 +42,6 @@ The API might still change sometimes. We will try to let you know in that case.
 ### Login & Subscriptions
 
 For the following requests one must be logged in:
-`GET /users/:USERNAME`
 `GET /bbox-subscriptions`
 `POST /subscribe-to-bbox`
 `POST /unsubscribe-all-bboxes`
