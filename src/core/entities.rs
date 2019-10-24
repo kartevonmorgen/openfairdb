@@ -481,7 +481,7 @@ impl EmailNonce {
     pub fn decode_from_str(encoded: &str) -> Fallible<EmailNonce> {
         let decoded = bs58::decode(encoded).into_vec()?;
         let mut concat = String::from_utf8(decoded)?;
-        if concat.len() <= Nonce::STR_LEN {
+        if concat.len() < Nonce::STR_LEN {
             bail!(
                 "Invalid token - too short: {} <= {}",
                 concat.len(),
@@ -496,6 +496,38 @@ impl EmailNonce {
         concat.truncate(email_len);
         let email = concat;
         Ok(Self { email, nonce })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn encode_decode_email_nonce() {
+        let example = EmailNonce {
+            email: "test@example.com".into(),
+            nonce: Nonce::new(),
+        };
+        let encoded = example.encode_to_string();
+        let decoded = EmailNonce::decode_from_str(&encoded).unwrap();
+        assert_eq!(example, decoded);
+    }
+
+    #[test]
+    fn encode_decode_email_nonce_with_empty_email() {
+        let example = EmailNonce {
+            email: "".into(),
+            nonce: Nonce::new(),
+        };
+        let encoded = example.encode_to_string();
+        let decoded = EmailNonce::decode_from_str(&encoded).unwrap();
+        assert_eq!(example, decoded);
+    }
+
+    #[test]
+    fn decode_empty_email_nonce() {
+        assert!(EmailNonce::decode_from_str("").is_err());
     }
 }
 
