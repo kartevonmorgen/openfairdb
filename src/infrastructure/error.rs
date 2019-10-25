@@ -48,9 +48,6 @@ quick_error! {
         R2d2(err: r2d2::PoolError){
             from()
         }
-        Toml(err: ::toml::de::Error){
-            from()
-        }
         CsvIntoInner(err: ::csv::IntoInnerError<::csv::Writer<::std::vec::Vec<u8>>>){
             from()
         }
