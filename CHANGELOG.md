@@ -6,7 +6,7 @@
 
 ## v0.6.2 (2019-10-15)
 
-- fix(db): Increased maximum number of search result svia `limit` request parameter
+- fix(db): Increased maximum number of search results via `limit` request parameter
 from 250 to 500. The default number of results if no limit is requested is still 100.
 - new(db): Add image_url and image_link_url to CSV export
 - chore(db): Disabled CSV export temporarily
