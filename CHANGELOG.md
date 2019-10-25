@@ -1,8 +1,9 @@
 # Changelog
 
-## next (unreleased)
+## v0.6.3 (2019-10-25)
 
 - new home: [kartevonmorgen/openfairdb](https://github.com/kartevonmorgen/openfairdb)
+- fix(db): Fix merging of tags and categories for recently changed entries
 
 ## v0.6.2 (2019-10-15)
 
