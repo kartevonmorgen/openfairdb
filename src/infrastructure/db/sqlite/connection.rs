@@ -32,8 +32,8 @@ fn reset_current_entry_before_insert_new_version(conn: &SqliteConnection, id: &s
 }
 
 fn load_entry(conn: &SqliteConnection, entry: models::Entry) -> Result<Entry> {
-    use self::schema::entry_category_relations::dsl as e_c_dsl;
-    use self::schema::entry_tag_relations::dsl as e_t_dsl;
+    use self::schema::entry_category_relations::dsl as ec_dsl;
+    use self::schema::entry_tag_relations::dsl as et_dsl;
 
     let models::Entry {
         id,
@@ -68,17 +68,17 @@ fn load_entry(conn: &SqliteConnection, entry: models::Entry) -> Result<Entry> {
         }),
     };
 
-    let categories = e_c_dsl::entry_category_relations
-        .filter(e_c_dsl::entry_id.eq(&id))
-        .filter(e_c_dsl::entry_version.eq(version))
+    let categories = ec_dsl::entry_category_relations
+        .filter(ec_dsl::entry_id.eq(&id))
+        .filter(ec_dsl::entry_version.eq(version))
         .load::<models::EntryCategoryRelation>(conn)?
         .into_iter()
         .map(|r| r.category_id)
         .collect();
 
-    let tags = e_t_dsl::entry_tag_relations
-        .filter(e_t_dsl::entry_id.eq(&id))
-        .filter(e_t_dsl::entry_version.eq(version))
+    let tags = et_dsl::entry_tag_relations
+        .filter(et_dsl::entry_id.eq(&id))
+        .filter(et_dsl::entry_version.eq(version))
         .load::<models::EntryTagRelation>(conn)?
         .into_iter()
         .map(|r| r.tag_id)
@@ -180,8 +180,8 @@ impl EntryGateway for SqliteConnection {
 
     fn all_entries(&self) -> Result<Vec<Entry>> {
         use self::schema::{
-            entries::dsl as e_dsl, entry_category_relations::dsl as e_c_dsl,
-            entry_tag_relations::dsl as e_t_dsl,
+            entries::dsl as e_dsl, entry_category_relations::dsl as ec_dsl,
+            entry_tag_relations::dsl as et_dsl,
         };
         // TODO: Don't load all table contents into memory at once!
         // We only need to iterator over the sorted rows of the results.
@@ -191,13 +191,13 @@ impl EntryGateway for SqliteConnection {
             .filter(e_dsl::archived.is_null())
             .order_by(e_dsl::id)
             .load(self)?;
-        let mut cat_rels = e_c_dsl::entry_category_relations
-            .order_by(e_c_dsl::entry_id)
+        let mut cat_rels = ec_dsl::entry_category_relations
+            .order_by(ec_dsl::entry_id)
             .load(self)?
             .into_iter()
             .peekable();
-        let mut tag_rels = e_t_dsl::entry_tag_relations
-            .order_by(e_t_dsl::entry_id)
+        let mut tag_rels = et_dsl::entry_tag_relations
+            .order_by(et_dsl::entry_id)
             .load(self)?
             .into_iter()
             .peekable();
@@ -259,25 +259,53 @@ impl EntryGateway for SqliteConnection {
         pagination: &Pagination,
     ) -> Result<Vec<Entry>> {
         use self::schema::{
-            entries::dsl as e_dsl, entry_category_relations::dsl as e_c_dsl,
-            entry_tag_relations::dsl as e_t_dsl,
+            entries::dsl as e_dsl, entry_category_relations::dsl as ec_dsl,
+            entry_tag_relations::dsl as et_dsl,
         };
         // TODO: Don't load all table contents into memory at once!
         // We only need to iterator over the sorted rows of the results.
         // Unfortunately Diesel does not offer a Cursor API.
-        let changed_expr =
-            diesel::dsl::sql::<diesel::sql_types::BigInt>("COALESCE(archived, created)");
+        let changed_expr = diesel::dsl::sql::<diesel::sql_types::BigInt>(
+            "COALESCE(entries.archived, entries.created)",
+        );
         let mut query = e_dsl::entries
             .filter(e_dsl::current.eq(true))
             .order_by(changed_expr.clone().desc())
             .then_order_by(e_dsl::id) // disambiguation if time stamps are equal
             .into_boxed();
+        let mut cats_query = e_dsl::entries
+            .left_outer_join(
+                ec_dsl::entry_category_relations.on(ec_dsl::entry_id
+                    .eq(e_dsl::id)
+                    .and(ec_dsl::entry_version.eq(e_dsl::version))),
+            )
+            .select((e_dsl::id, e_dsl::version, ec_dsl::category_id.nullable()))
+            .order_by(changed_expr.clone().desc())
+            .then_order_by(e_dsl::id)
+            .into_boxed();
+        let mut tags_query = e_dsl::entries
+            .left_outer_join(
+                et_dsl::entry_tag_relations.on(et_dsl::entry_id
+                    .eq(e_dsl::id)
+                    .and(et_dsl::entry_version.eq(e_dsl::version))),
+            )
+            .select((e_dsl::id, e_dsl::version, et_dsl::tag_id.nullable()))
+            .order_by(changed_expr.clone().desc())
+            .then_order_by(e_dsl::id)
+            .into_boxed();
         if let Some(since) = params.since {
-            query = query.filter(changed_expr.clone().ge(i64::from(since))) // inclusive
+            // inclusive
+            query = query.filter(changed_expr.clone().ge(i64::from(since)));
+            cats_query = cats_query.filter(changed_expr.clone().ge(i64::from(since)));
+            tags_query = tags_query.filter(changed_expr.clone().ge(i64::from(since)));
         }
         if let Some(until) = params.until {
-            query = query.filter(changed_expr.clone().lt(i64::from(until))); // exclusive
+            // exclusive
+            query = query.filter(changed_expr.clone().lt(i64::from(until)));
+            cats_query = cats_query.filter(changed_expr.clone().lt(i64::from(until)));
+            tags_query = tags_query.filter(changed_expr.clone().lt(i64::from(until)));
         }
+        // Pagination must only be applied to the entries query!
         let offset = pagination.offset.unwrap_or(0);
         if offset > 0 {
             query = query.offset(offset as i64);
@@ -286,63 +314,55 @@ impl EntryGateway for SqliteConnection {
             query = query.limit(limit as i64);
         }
         let entries: Vec<models::Entry> = query.load(self)?;
-        let mut cat_rels = e_c_dsl::entry_category_relations
-            .order_by(e_c_dsl::entry_id)
-            .load(self)?
+        let mut cat_rels = cats_query
+            .load::<(String, i64, Option<String>)>(self)?
             .into_iter()
             .peekable();
-        let mut tag_rels = e_t_dsl::entry_tag_relations
-            .order_by(e_t_dsl::entry_id)
-            .load(self)?
+        let mut tag_rels = tags_query
+            .load::<(String, i64, Option<String>)>(self)?
             .into_iter()
             .peekable();
         let mut res_entries = Vec::with_capacity(entries.len());
-        // All results are sorted by entry id and we only need to iterate
-        // once through the results to pick up the categories and tags of
-        // each entry.
+        // All results are sorted according to the same criteria.
+        // The categories/tags queries may contains results for
+        // additional entries due to missing pagination. Those
+        // results will be skipped during the merge phase.
         for entry in entries.into_iter() {
-            let mut categories = Vec::with_capacity(10);
-            let mut tags = Vec::with_capacity(100);
-            // Skip orphaned/deleted relations for which no current entry exists
+            // Ignore categories of other entries
             while let Some(true) = cat_rels
                 .peek()
-                .map(|ec: &models::EntryCategoryRelation| ec.entry_id < entry.id)
+                .map(|(id, version, _)| &entry.id != id || &entry.version != version)
             {
-                let _ = cat_rels.next();
+                cat_rels.next().unwrap();
             }
-            while let Some(true) = tag_rels
-                .peek()
-                .map(|et: &models::EntryTagRelation| et.entry_id < entry.id)
-            {
-                let _ = tag_rels.next();
-            }
-            // Collect categories of the current entry
+            // Collect categories of current entry
+            let mut categories = Vec::with_capacity(4);
             while let Some(true) = cat_rels
                 .peek()
-                .map(|ec: &models::EntryCategoryRelation| ec.entry_id == entry.id)
+                .map(|(id, version, _)| &entry.id == id && &entry.version == version)
             {
-                let cat_rel = cat_rels.next().unwrap();
-                if cat_rel.entry_version != entry.version {
-                    // Skip category relation with outdated version
-                    debug_assert!(cat_rel.entry_version < entry.version);
-                } else {
-                    categories.push(cat_rel.category_id);
+                if let (_, _, Some(cat)) = cat_rels.next().unwrap() {
+                    categories.push(cat);
                 }
             }
-            // Collect tags of entry
+            // Ignore tags of other entries
             while let Some(true) = tag_rels
                 .peek()
-                .map(|et: &models::EntryTagRelation| et.entry_id == entry.id)
+                .map(|(id, version, _)| &entry.id != id || &entry.version != version)
             {
-                let tag_rel = tag_rels.next().unwrap();
-                if tag_rel.entry_version != entry.version {
-                    // Skip tag relation with outdated version
-                    debug_assert!(tag_rel.entry_version < entry.version);
-                } else {
-                    tags.push(tag_rel.tag_id);
+                tag_rels.next().unwrap();
+            }
+            // Collect tags of current entry
+            let mut tags = Vec::with_capacity(30);
+            while let Some(true) = tag_rels
+                .peek()
+                .map(|(id, version, _)| &entry.id == id && &entry.version == version)
+            {
+                if let (_, _, Some(tag)) = tag_rels.next().unwrap() {
+                    tags.push(tag);
                 }
             }
-            // Convert into result entry
+            // Convert into resulting entry
             res_entries.push((entry, categories, tags).into());
         }
         Ok(res_entries)
@@ -558,7 +578,7 @@ impl EventGateway for SqliteConnection {
     }
 
     fn get_event(&self, e_id: &str) -> Result<Event> {
-        use self::schema::{event_tag_relations::dsl as e_t_dsl, events::dsl as e_dsl};
+        use self::schema::{event_tag_relations::dsl as et_dsl, events::dsl as e_dsl};
 
         let models::Event {
             id,
@@ -586,8 +606,8 @@ impl EventGateway for SqliteConnection {
             .filter(e_dsl::archived.is_null())
             .first(self)?;
 
-        let tags = e_t_dsl::event_tag_relations
-            .filter(e_t_dsl::event_id.eq(&id))
+        let tags = et_dsl::event_tag_relations
+            .filter(et_dsl::event_id.eq(&id))
             .load::<models::EventTagRelation>(self)?
             .into_iter()
             .map(|r| r.tag_id)
@@ -647,10 +667,10 @@ impl EventGateway for SqliteConnection {
     }
 
     fn all_events(&self) -> Result<Vec<Event>> {
-        use self::schema::{event_tag_relations::dsl as e_t_dsl, events::dsl as e_dsl};
+        use self::schema::{event_tag_relations::dsl as et_dsl, events::dsl as e_dsl};
         let events: Vec<models::Event> =
             e_dsl::events.filter(e_dsl::archived.is_null()).load(self)?;
-        let tag_rels = e_t_dsl::event_tag_relations.load(self)?;
+        let tag_rels = et_dsl::event_tag_relations.load(self)?;
         Ok(events.into_iter().map(|e| (e, &tag_rels).into()).collect())
     }
 
@@ -659,7 +679,7 @@ impl EventGateway for SqliteConnection {
         start_min: Option<Timestamp>,
         start_max: Option<Timestamp>,
     ) -> Result<Vec<Event>> {
-        use self::schema::{event_tag_relations::dsl as e_t_dsl, events::dsl as e_dsl};
+        use self::schema::{event_tag_relations::dsl as et_dsl, events::dsl as e_dsl};
         let mut query = e_dsl::events.filter(e_dsl::archived.is_null()).into_boxed();
         if let Some(start_min) = start_min {
             query = query.filter(e_dsl::start.ge(i64::from(start_min)));
@@ -668,7 +688,7 @@ impl EventGateway for SqliteConnection {
             query = query.filter(e_dsl::start.le(i64::from(start_max)));
         }
         let events: Vec<models::Event> = query.load(self)?;
-        let tag_rels = e_t_dsl::event_tag_relations.load(self)?;
+        let tag_rels = et_dsl::event_tag_relations.load(self)?;
         Ok(events.into_iter().map(|e| (e, &tag_rels).into()).collect())
     }
 
@@ -683,7 +703,7 @@ impl EventGateway for SqliteConnection {
     fn update_event(&self, event: &Event) -> Result<()> {
         let e = models::Event::from(event.clone());
         self.transaction::<_, diesel::result::Error, _>(|| {
-            use self::schema::event_tag_relations::dsl as e_t_dsl;
+            use self::schema::event_tag_relations::dsl as et_dsl;
             use self::schema::events::dsl as e_dsl;
 
             let old_tags = match self.get_event(&e.id) {
@@ -710,9 +730,9 @@ impl EventGateway for SqliteConnection {
                 .collect();
 
             diesel::delete(
-                e_t_dsl::event_tag_relations
-                    .filter(e_t_dsl::event_id.eq(&e.id))
-                    .filter(e_t_dsl::tag_id.eq_any(diff.deleted)),
+                et_dsl::event_tag_relations
+                    .filter(et_dsl::event_id.eq(&e.id))
+                    .filter(et_dsl::tag_id.eq_any(diff.deleted)),
             )
             .execute(self)?;
 
