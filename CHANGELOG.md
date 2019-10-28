@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.7.0 (2019-10-dd)
+## v0.7.0 (2019-10-28)
 
 - fix(db): Replace redundant user id and name with email address
 
