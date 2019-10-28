@@ -52,12 +52,6 @@ pub fn reset_password(flash: Option<FlashMessage>, action: &str, token: &str) ->
         html! {
           form class="reset-pw" action=(action) method="POST" {
               fieldset{
-                label {
-                    "eMail:"
-                    br;
-                    input type="text" name="email" placeholder="eMail address";
-                }
-                br;
                 label{
                     "New password:"
                     br;
