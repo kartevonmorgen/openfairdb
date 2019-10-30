@@ -1,14 +1,11 @@
 use super::web;
 
 use crate::core::prelude::*;
-use crate::infrastructure::{
-    db::{sqlite, tantivy},
-    osm,
-};
+use crate::infrastructure::db::{sqlite, tantivy};
 
-use clap::{App, Arg, SubCommand};
+use clap::{App, Arg};
 use dotenv::dotenv;
-use std::{env, path::Path, process};
+use std::{env, path::Path};
 
 const DEFAULT_DB_URL: &str = "openfair.db";
 const DB_CONNECTION_POOL_SIZE: u32 = 10;
@@ -64,19 +61,6 @@ pub fn run() {
                 .long("fix-event-address-location")
                 .help("Update the location of ALL events by resolving their address"),
         )
-        .subcommand(
-            SubCommand::with_name("osm")
-                .about("OpenStreetMap functionalities")
-                .subcommand(
-                    SubCommand::with_name("import")
-                        .about("import entries from OSM (JSON file)")
-                        .arg(
-                            Arg::with_name("osm-file")
-                                .value_name("OSM_FILE")
-                                .help("JSON file with osm nodes"),
-                        ),
-                ),
-        )
         .get_matches();
 
     let db_url = matches
@@ -101,22 +85,6 @@ pub fn run() {
     let search_engine = tantivy::SearchEngine::init_with_path(idx_path).unwrap();
 
     match matches.subcommand() {
-        ("osm", Some(osm_matches)) => match osm_matches.subcommand() {
-            ("import", Some(import_matches)) => {
-                let osm_file = match import_matches.value_of("osm-file") {
-                    Some(osm_file) => osm_file,
-                    None => {
-                        println!("{}", matches.usage());
-                        process::exit(1)
-                    }
-                };
-                if let Err(err) = osm::import_from_osm_file(&db_url, osm_file) {
-                    println!("Could not import from '{}': {}", osm_file, err);
-                    process::exit(1)
-                }
-            }
-            _ => println!("{}", osm_matches.usage()),
-        },
         _ => {
             if matches.is_present("fix-event-address-location") {
                 info!("Updating all event locations...");

@@ -70,7 +70,6 @@ impl std::fmt::Display for Uid {
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
-    pub osm_node       : Option<u64>,
     pub uid            : Uid,
     pub version        : u64,
     pub created_at     : Timestamp,

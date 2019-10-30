@@ -13,7 +13,6 @@ use std::str::FromStr;
 impl From<e::Entry> for Entry {
     fn from(e: e::Entry) -> Self {
         let e::Entry {
-            osm_node,
             uid,
             created_at,
             archived_at,
@@ -50,7 +49,7 @@ impl From<e::Entry> for Entry {
         });
 
         Entry {
-            osm_node: osm_node.map(|x| x as i64),
+            osm_node: None,
             id: uid.into(),
             version: version as i64,
             created: created_at.into(),
@@ -172,7 +171,6 @@ impl From<(Entry, Vec<String>, Vec<String>)> for e::Entry {
             None
         };
         e::Entry {
-            osm_node: e.osm_node.map(|x| x as u64),
             uid: id.into(),
             version: version as u64,
             created_at: created.into(),

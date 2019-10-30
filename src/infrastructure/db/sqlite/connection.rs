@@ -37,7 +37,6 @@ fn load_entry(conn: &SqliteConnection, entry: models::Entry) -> Result<Entry> {
 
     let models::Entry {
         id,
-        osm_node,
         created,
         archived,
         version,
@@ -85,7 +84,6 @@ fn load_entry(conn: &SqliteConnection, entry: models::Entry) -> Result<Entry> {
         .collect();
 
     Ok(Entry {
-        osm_node: osm_node.map(|x| x as u64),
         uid: id.into(),
         created_at: created.into(),
         archived_at: archived.map(Into::into),

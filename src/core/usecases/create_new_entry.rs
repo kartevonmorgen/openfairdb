@@ -83,7 +83,6 @@ pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
         .transpose()?;
 
     let e = Entry {
-        osm_node: None,
         uid,
         created_at,
         archived_at: None,

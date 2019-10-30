@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.7.1 (2019-mm-dd)
+
+- chore(cli): Removed OSM import
+
 ## v0.7.0 (2019-10-28)
 
 - fix(db): Replace redundant user id and name with email address

@@ -6,7 +6,6 @@ use crate::core::{
 #[rustfmt::skip]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct UpdateEntry {
-    pub osm_node       : Option<u64>,
     pub version        : u64,
     pub title          : String,
     pub description    : String,
@@ -72,7 +71,6 @@ pub fn prepare_updated_entry<D: Db>(db: &D, uid: Uid, e: UpdateEntry) -> Result<
         Some(address)
     };
     let e = Entry {
-        osm_node: None,
         uid,
         created_at: Timestamp::now(),
         archived_at: None,
@@ -133,7 +131,6 @@ mod tests {
 
         #[rustfmt::skip]
         let new = UpdateEntry {
-            osm_node    :  None,
             version     : 2,
             title       : "foo".into(),
             description : "bar".into(),
@@ -189,7 +186,6 @@ mod tests {
 
         #[rustfmt::skip]
         let new = UpdateEntry {
-            osm_node    : None,
             version     : 3,
             title       : "foo".into(),
             description : "bar".into(),
@@ -230,7 +226,6 @@ mod tests {
         let uid = Uid::new_uuid();
         #[rustfmt::skip]
         let new = UpdateEntry {
-            osm_node    : None,
             version     : 4,
             title       : "foo".into(),
             description : "bar".into(),
@@ -277,7 +272,6 @@ mod tests {
             .finish();
         #[rustfmt::skip]
         let new = UpdateEntry {
-            osm_node    :  None,
             version     : 2,
             title       : "foo".into(),
             description : "bar".into(),

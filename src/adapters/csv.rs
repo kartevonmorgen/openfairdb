@@ -3,7 +3,6 @@ use crate::core::entities::*;
 #[derive(Debug, Serialize)]
 pub struct CsvRecord {
     pub id: String,
-    pub osm_node: Option<u64>,
     pub created: i64,
     pub version: u64,
     pub title: String,
@@ -28,7 +27,6 @@ impl From<(Entry, Vec<Category>, AvgRatingValue)> for CsvRecord {
         let (e, categories, avg_rating) = t;
 
         let Entry {
-            osm_node,
             uid,
             created_at,
             version,
@@ -60,7 +58,6 @@ impl From<(Entry, Vec<Category>, AvgRatingValue)> for CsvRecord {
             .join(",");
 
         CsvRecord {
-            osm_node: osm_node.map(|x| x as u64),
             id: uid.into(),
             created: created_at.into(),
             version: version as u64,
