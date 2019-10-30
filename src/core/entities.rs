@@ -70,11 +70,11 @@ impl std::fmt::Display for Uid {
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
-    pub id             : String,
     pub osm_node       : Option<u64>,
-    pub created        : Timestamp,
-    pub archived       : Option<Timestamp>,
+    pub uid            : Uid,
     pub version        : u64,
+    pub created_at     : Timestamp,
+    pub archived_at    : Option<Timestamp>,
     pub title          : String,
     pub description    : String,
     pub location       : Location,
@@ -115,13 +115,13 @@ impl Address {
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct Contact {
-    pub email     : Option<String>,
-    pub telephone : Option<String>,
+    pub email : Option<String>,
+    pub phone : Option<String>,
 }
 
 impl Contact {
     pub fn is_empty(&self) -> bool {
-        !(self.email.is_some() || self.telephone.is_some())
+        !(self.email.is_some() || self.phone.is_some())
     }
 }
 
@@ -550,8 +550,8 @@ pub mod entry_builder {
     }
 
     impl EntryBuild {
-        pub fn id(mut self, id: &str) -> Self {
-            self.entry.id = id.into();
+        pub fn id(mut self, uid: &str) -> Self {
+            self.entry.uid = uid.into();
             self
         }
         pub fn version(mut self, v: u64) -> Self {
@@ -600,11 +600,10 @@ pub mod entry_builder {
         fn build() -> EntryBuild {
             EntryBuild {
                 entry: Entry {
-                    id: Uuid::new_v4().to_simple_ref().to_string(),
-                    osm_node: None,
-                    created: 0.into(),
-                    archived: None,
+                    uid: Uid::new_uuid(),
                     version: 0,
+                    created_at: 0.into(),
+                    archived_at: None,
                     title: "".into(),
                     description: "".into(),
                     location: Location {
@@ -682,7 +681,7 @@ pub mod address_builder {
         c.email = Some("foo@bar".into());
         assert_eq!(c.is_empty(), false);
         let mut c = Contact::default();
-        c.telephone = Some("123".into());
+        c.phone = Some("123".into());
         assert_eq!(c.is_empty(), false);
     }
 }

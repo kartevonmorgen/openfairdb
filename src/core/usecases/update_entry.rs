@@ -27,8 +27,8 @@ pub struct UpdateEntry {
 
 pub struct Storable(Entry);
 
-pub fn prepare_updated_entry<D: Db>(db: &D, id: String, e: UpdateEntry) -> Result<Storable> {
-    let old: Entry = db.get_entry(&id)?;
+pub fn prepare_updated_entry<D: Db>(db: &D, uid: Uid, e: UpdateEntry) -> Result<Storable> {
+    let old: Entry = db.get_entry(uid.as_ref())?;
     if (old.version + 1) != e.version {
         return Err(Error::Repo(RepoError::InvalidVersion));
     }
@@ -72,15 +72,18 @@ pub fn prepare_updated_entry<D: Db>(db: &D, id: String, e: UpdateEntry) -> Resul
         Some(address)
     };
     let e = Entry {
-        id,
         osm_node: None,
-        created: Timestamp::now(),
-        archived: None,
+        uid,
+        created_at: Timestamp::now(),
+        archived_at: None,
         version,
         title,
         description,
         location: Location { pos, address },
-        contact: Some(Contact { email, telephone }),
+        contact: Some(Contact {
+            email,
+            phone: telephone,
+        }),
         homepage: e.homepage.map(|ref url| parse_url_param(url)).transpose()?,
         categories,
         tags,
@@ -105,7 +108,7 @@ pub fn store_updated_entry<D: Db>(db: &D, s: Storable) -> Result<(Entry, Vec<Rat
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
     db.update_entry(&entry)?;
-    let ratings = db.load_ratings_of_entry(&entry.id)?;
+    let ratings = db.load_ratings_of_entry(entry.uid.as_ref())?;
     Ok((entry, ratings))
 }
 
@@ -114,13 +117,12 @@ mod tests {
 
     use super::super::tests::MockDb;
     use super::*;
-    use uuid::Uuid;
 
     #[test]
     fn update_valid_entry() {
-        let id = Uuid::new_v4().to_simple_ref().to_string();
+        let uid = Uid::new_uuid();
         let old = Entry::build()
-            .id(&id)
+            .id(uid.as_ref())
             .version(1)
             .title("foo")
             .description("bar")
@@ -152,7 +154,7 @@ mod tests {
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![old].into();
         let now = Timestamp::now();
-        let e = prepare_updated_entry(&mock_db, id.clone(), new).unwrap();
+        let e = prepare_updated_entry(&mock_db, uid.clone(), new).unwrap();
         assert!(store_updated_entry(&mock_db, e).is_ok());
         assert_eq!(mock_db.entries.borrow().len(), 1);
         let x = &mock_db.entries.borrow()[0];
@@ -168,18 +170,18 @@ mod tests {
         );
         assert_eq!("bar", x.description);
         assert_eq!(2, x.version);
-        assert!(x.created >= now);
-        assert_eq!(None, x.archived);
-        assert!(Uuid::parse_str(&x.id).is_ok());
+        assert!(x.created_at >= now);
+        assert_eq!(None, x.archived_at);
+        assert_eq!(&x.uid, &x.uid.as_ref().parse().unwrap());
         assert_eq!("https://www.img2/", x.image_url.as_ref().unwrap());
         assert_eq!("http://imglink/", x.image_link_url.as_ref().unwrap());
     }
 
     #[test]
     fn update_entry_with_invalid_version() {
-        let id = Uuid::new_v4().to_simple_ref().to_string();
+        let uid = Uid::new_uuid();
         let old = Entry::build()
-            .id(&id)
+            .id(uid.as_ref())
             .version(3)
             .title("foo")
             .description("bar")
@@ -207,7 +209,7 @@ mod tests {
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![old].into();
-        let result = prepare_updated_entry(&mock_db, id.clone(), new);
+        let result = prepare_updated_entry(&mock_db, uid.clone(), new);
         assert!(result.is_err());
         match result.err().unwrap() {
             Error::Repo(err) => match err {
@@ -225,7 +227,7 @@ mod tests {
 
     #[test]
     fn update_non_existing_entry() {
-        let id = Uuid::new_v4().to_simple_ref().to_string();
+        let uid = Uid::new_uuid();
         #[rustfmt::skip]
         let new = UpdateEntry {
             osm_node    : None,
@@ -248,7 +250,7 @@ mod tests {
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![].into();
-        let result = prepare_updated_entry(&mock_db, id.clone(), new);
+        let result = prepare_updated_entry(&mock_db, uid.clone(), new);
         assert!(result.is_err());
         match result.err().unwrap() {
             Error::Repo(err) => match err {
@@ -266,9 +268,9 @@ mod tests {
 
     #[test]
     fn update_valid_entry_with_tags() {
-        let id = Uuid::new_v4().to_simple_ref().to_string();
+        let uid = Uid::new_uuid();
         let old = Entry::build()
-            .id(&id)
+            .id(uid.as_ref())
             .version(1)
             .tags(vec!["bio", "fair"])
             .license(Some("CC0-1.0"))
@@ -296,10 +298,10 @@ mod tests {
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![old].into();
         mock_db.tags = vec![Tag { id: "bio".into() }, Tag { id: "fair".into() }].into();
-        let e = prepare_updated_entry(&mock_db, id.clone(), new).unwrap();
+        let e = prepare_updated_entry(&mock_db, uid.clone(), new).unwrap();
         assert!(store_updated_entry(&mock_db, e).is_ok());
-        let e = mock_db.get_entry(&id).unwrap();
-        assert_eq!(None, e.archived);
+        let e = mock_db.get_entry(uid.as_ref()).unwrap();
+        assert_eq!(None, e.archived_at);
         assert_eq!(e.tags, vec!["vegan"]);
         assert_eq!(mock_db.tags.borrow().len(), 3);
     }

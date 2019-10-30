@@ -50,7 +50,9 @@ fn create_entry() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    let eid = db.exclusive().unwrap().all_entries().unwrap()[0].id.clone();
+    let eid = db.exclusive().unwrap().all_entries().unwrap()[0]
+        .uid
+        .clone();
     assert_eq!(body_str, format!("\"{}\"", eid));
 }
 
@@ -101,7 +103,9 @@ fn create_entry_with_tag_duplicates() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    let eid = db.exclusive().unwrap().all_entries().unwrap()[0].id.clone();
+    let eid = db.exclusive().unwrap().all_entries().unwrap()[0]
+        .uid
+        .clone();
     assert_eq!(body_str, format!("\"{}\"", eid));
 }
 
@@ -152,10 +156,10 @@ fn update_entry_with_tag_duplicates() {
     json.push_str(&format!(
         "{{\"version\":{},\"id\":\"{}\"",
         e.version + 1,
-        e.id
+        e.uid
     ));
     json.push_str(r#","title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["bar","bar"]}"#);
-    let url = format!("/entries/{}", e.id);
+    let url = format!("/entries/{}", e.uid);
     let req = client.put(url).header(ContentType::JSON).body(json);
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -1241,8 +1245,7 @@ fn export_csv() {
             .finish(),
     ];
     entries[0].location.address = Some(Address::build().street("street1").finish());
-    entries[0].osm_node = Some(1);
-    entries[0].created = 2.into();
+    entries[0].created_at = 2.into();
     entries[0].location.address = Some(
         Address::build()
             .street("street1")
@@ -1314,7 +1317,11 @@ fn export_csv() {
 
     let entries = db.shared().unwrap().all_entries().unwrap();
     for e in &entries {
-        let ratings = db.shared().unwrap().load_ratings_of_entry(&e.id).unwrap();
+        let ratings = db
+            .shared()
+            .unwrap()
+            .load_ratings_of_entry(e.uid.as_ref())
+            .unwrap();
         search_engine
             .add_or_update_entry(&e, &e.avg_ratings(&ratings))
             .unwrap();

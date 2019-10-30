@@ -127,7 +127,7 @@ pub fn get_entry(
     let (user, e, ratings): (Option<User>, _, _) = {
         let db = pool.shared()?;
         let e = db.get_entry(id.as_str())?;
-        let ratings = db.load_ratings_of_entry(&e.id)?;
+        let ratings = db.load_ratings_of_entry(e.uid.as_ref())?;
         let ratings_with_comments = db.zip_ratings_with_comments(ratings)?;
         let user = if let Some(a) = account {
             db.try_get_user_by_email(a.email())?

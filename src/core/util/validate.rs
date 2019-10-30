@@ -85,7 +85,7 @@ impl AutoCorrect for Event {
         self.homepage = self.homepage.filter(|x| !x.is_empty());
         self.contact = self.contact.and_then(|c| {
             let c = c.auto_correct();
-            if c.email.is_none() && c.telephone.is_none() {
+            if c.email.is_none() && c.phone.is_none() {
                 None
             } else {
                 Some(c)
@@ -119,7 +119,7 @@ impl Validate for Event {
 impl AutoCorrect for Contact {
     fn auto_correct(mut self) -> Self {
         self.email = self.email.filter(|x| !x.is_empty());
-        self.telephone = self.telephone.filter(|x| !x.is_empty());
+        self.phone = self.phone.filter(|x| !x.is_empty());
         self
     }
 }
@@ -173,13 +173,13 @@ mod tests {
     fn contact_email_test() {
         assert!(Contact {
             email: Some("foo".into()),
-            telephone: None
+            phone: None
         }
         .validate()
         .is_err());
         assert!(Contact {
             email: Some("foo@bar.tld".into()),
-            telephone: None
+            phone: None
         }
         .validate()
         .is_ok());
@@ -216,14 +216,14 @@ mod tests {
         let mut x = e.clone();
         x.contact = Some(Contact {
             email: Some("".into()),
-            telephone: None,
+            phone: None,
         });
         assert!(x.auto_correct().contact.is_none());
 
         let mut x = e.clone();
         x.contact = Some(Contact {
             email: None,
-            telephone: Some("".into()),
+            phone: Some("".into()),
         });
         assert!(x.auto_correct().contact.is_none());
 

@@ -503,10 +503,10 @@ impl TantivyEntryIndex {
 
 impl EntryIndexer for TantivyEntryIndex {
     fn add_or_update_entry(&mut self, entry: &Entry, ratings: &AvgRatings) -> Fallible<()> {
-        let id_term = Term::from_field_text(self.fields.id, &entry.id);
+        let id_term = Term::from_field_text(self.fields.id, entry.uid.as_ref());
         self.index_writer.delete_term(id_term);
         let mut doc = Document::default();
-        doc.add_text(self.fields.id, &entry.id);
+        doc.add_text(self.fields.id, entry.uid.as_ref());
         doc.add_i64(
             self.fields.lat,
             i64::from(entry.location.pos.lat().to_raw()),

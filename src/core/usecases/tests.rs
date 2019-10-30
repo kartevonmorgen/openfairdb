@@ -16,7 +16,7 @@ trait Key {
 
 impl Key for Entry {
     fn key(&self) -> &str {
-        &self.id
+        &self.uid.as_ref()
     }
 }
 
@@ -129,7 +129,7 @@ impl EntryIndexer for MockDb {
         // Nothing to do, the entry has already been stored
         // in the database.
         //debug_assert_eq!(Ok(entry), self.db.get_entry(&entry.id).as_ref());
-        debug_assert!(entry == &self.get_entry(&entry.id).unwrap());
+        debug_assert!(entry == &self.get_entry(entry.uid.as_ref()).unwrap());
         Ok(())
     }
 
@@ -187,7 +187,7 @@ impl EntryGateway for MockDb {
     }
     fn get_entry(&self, id: &str) -> RepoResult<Entry> {
         get(&self.entries.borrow(), id).and_then(|e| {
-            if e.archived.is_none() {
+            if e.archived_at.is_none() {
                 Ok(e)
             } else {
                 Err(RepoError::NotFound)
@@ -199,7 +199,7 @@ impl EntryGateway for MockDb {
             .entries
             .borrow()
             .iter()
-            .filter(|e| e.archived.is_none() && ids.iter().any(|id| &e.id == id))
+            .filter(|e| e.archived_at.is_none() && ids.iter().any(|id| &e.uid.as_ref() == id))
             .cloned()
             .collect())
     }
@@ -208,7 +208,7 @@ impl EntryGateway for MockDb {
             .entries
             .borrow()
             .iter()
-            .filter(|e| e.archived.is_none())
+            .filter(|e| e.archived_at.is_none())
             .cloned()
             .collect())
     }

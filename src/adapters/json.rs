@@ -101,7 +101,10 @@ impl From<e::Event> for Event {
             country,
         } = address.unwrap_or_default();
 
-        let e::Contact { email, telephone } = contact.unwrap_or_default();
+        let e::Contact {
+            email,
+            phone: telephone,
+        } = contact.unwrap_or_default();
 
         let registration = registration.map(|r| {
             match r {
@@ -248,8 +251,8 @@ pub struct BboxSubscription {
 impl Entry {
     pub fn from_entry_with_ratings(e: e::Entry, ratings: Vec<e::Rating>) -> Entry {
         let e::Entry {
-            id,
-            created,
+            uid,
+            created_at,
             version,
             title,
             description,
@@ -272,11 +275,14 @@ impl Entry {
             country,
         } = address.unwrap_or_default();
 
-        let e::Contact { email, telephone } = e.contact.unwrap_or_default();
+        let e::Contact {
+            email,
+            phone: telephone,
+        } = e.contact.unwrap_or_default();
 
         Entry {
-            id,
-            created: created.into(),
+            id: uid.into(),
+            created: created_at.into(),
             version,
             title,
             description,

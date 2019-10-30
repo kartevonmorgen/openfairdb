@@ -8,7 +8,10 @@ impl Rated for Entry {
     fn avg_ratings(&self, ratings: &[Rating]) -> AvgRatings {
         debug_assert_eq!(
             ratings.len(),
-            ratings.iter().filter(|r| r.entry_id == self.id).count()
+            ratings
+                .iter()
+                .filter(|r| r.entry_id == self.uid.as_ref())
+                .count()
         );
         ratings
             .iter()
@@ -94,7 +97,7 @@ pub mod tests {
         let ratings: Vec<_> = entries
             .iter()
             .map(|e| {
-                let ratings = create_ratings_of_entry(&e.id, 1);
+                let ratings = create_ratings_of_entry(e.uid.as_ref(), 1);
                 ratings[0].clone()
             })
             .collect();
@@ -104,7 +107,7 @@ pub mod tests {
 
     fn create_entry_with_multiple_ratings(n: usize) -> (Entry, Vec<Rating>) {
         let entry = Entry::build().finish();
-        let ratings = create_ratings_of_entry(&entry.id, n);
+        let ratings = create_ratings_of_entry(entry.uid.as_ref(), n);
         (entry, ratings)
     }
 

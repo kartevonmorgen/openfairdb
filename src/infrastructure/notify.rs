@@ -50,7 +50,7 @@ pub fn entry_added(email_addresses: &[String], entry: &Entry, all_categories: Ve
         info!(
             "Sending e-mails to {} recipients after new entry {} added",
             email_addresses.len(),
-            entry.id
+            entry.uid
         );
         compose_and_send_emails(email_addresses, &content.subject, &content.body);
     }
@@ -69,7 +69,7 @@ pub fn entry_updated(email_addresses: &[String], entry: &Entry, all_categories: 
         info!(
             "Sending e-mails to {} recipients after entry {} updated",
             email_addresses.len(),
-            entry.id
+            entry.uid
         );
         compose_and_send_emails(email_addresses, &content.subject, &content.body);
     }

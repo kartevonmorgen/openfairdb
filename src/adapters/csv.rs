@@ -28,9 +28,9 @@ impl From<(Entry, Vec<Category>, AvgRatingValue)> for CsvRecord {
         let (e, categories, avg_rating) = t;
 
         let Entry {
-            id,
             osm_node,
-            created,
+            uid,
+            created_at,
             version,
             title,
             description,
@@ -60,9 +60,9 @@ impl From<(Entry, Vec<Category>, AvgRatingValue)> for CsvRecord {
             .join(",");
 
         CsvRecord {
-            id,
             osm_node: osm_node.map(|x| x as u64),
-            created: created.into(),
+            id: uid.into(),
+            created: created_at.into(),
             version: version as u64,
             title,
             description,

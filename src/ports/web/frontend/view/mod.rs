@@ -185,7 +185,7 @@ pub fn event(email: Option<&str>, ev: Event) -> Markup {
                             (email)
                             br;
                         }
-                        @if let Some(phone) = contact.telephone{
+                        @if let Some(phone) = contact.phone{
                             (phone)
                         }
                     }

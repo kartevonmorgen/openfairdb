@@ -85,15 +85,18 @@ fn load_entry(conn: &SqliteConnection, entry: models::Entry) -> Result<Entry> {
         .collect();
 
     Ok(Entry {
-        id,
         osm_node: osm_node.map(|x| x as u64),
-        created: created.into(),
-        archived: archived.map(Into::into),
+        uid: id.into(),
+        created_at: created.into(),
+        archived_at: archived.map(Into::into),
         version: version as u64,
         title,
         description,
         location,
-        contact: Some(Contact { email, telephone }),
+        contact: Some(Contact {
+            email,
+            phone: telephone,
+        }),
         homepage,
         categories,
         tags,
@@ -118,7 +121,7 @@ impl EntryGateway for SqliteConnection {
             .categories
             .iter()
             .map(|category_id| models::StoreableEntryCategoryRelation {
-                entry_id: &e.id,
+                entry_id: &e.uid.as_ref(),
                 entry_version: e.version as i64,
                 category_id: &category_id,
             })
@@ -127,7 +130,7 @@ impl EntryGateway for SqliteConnection {
             .tags
             .iter()
             .map(|tag_id| models::StoreableEntryTagRelation {
-                entry_id: &e.id,
+                entry_id: &e.uid.as_ref(),
                 entry_version: e.version as i64,
                 tag_id: &tag_id,
             })
@@ -422,7 +425,7 @@ impl EntryGateway for SqliteConnection {
             .categories
             .iter()
             .map(|category_id| models::StoreableEntryCategoryRelation {
-                entry_id: &entry.id,
+                entry_id: &entry.uid.as_ref(),
                 entry_version: entry.version as i64,
                 category_id: &category_id,
             })
@@ -432,7 +435,7 @@ impl EntryGateway for SqliteConnection {
             .tags
             .iter()
             .map(|tag_id| models::StoreableEntryTagRelation {
-                entry_id: &entry.id,
+                entry_id: &entry.uid.as_ref(),
                 entry_version: entry.version as i64,
                 tag_id: &tag_id,
             })
@@ -484,7 +487,7 @@ impl EntryGateway for SqliteConnection {
                     .categories
                     .iter()
                     .map(|category_id| models::StoreableEntryCategoryRelation {
-                        entry_id: &e.id,
+                        entry_id: &e.uid.as_ref(),
                         entry_version: e.version as i64,
                         category_id: &category_id,
                     })
@@ -493,7 +496,7 @@ impl EntryGateway for SqliteConnection {
                     .tags
                     .iter()
                     .map(|tag_id| models::StoreableEntryTagRelation {
-                        entry_id: &e.id,
+                        entry_id: &e.uid.as_ref(),
                         entry_version: e.version as i64,
                         tag_id: &tag_id,
                     })
@@ -594,7 +597,7 @@ fn into_new_event_with_tags(
     };
 
     let (email, telephone) = if let Some(c) = contact {
-        (c.email, c.telephone)
+        (c.email, c.phone)
     } else {
         (None, None)
     };
@@ -802,7 +805,10 @@ impl EventGateway for SqliteConnection {
             None
         };
         let contact = if email.is_some() || telephone.is_some() {
-            Some(Contact { email, telephone })
+            Some(Contact {
+                email,
+                phone: telephone,
+            })
         } else {
             None
         };

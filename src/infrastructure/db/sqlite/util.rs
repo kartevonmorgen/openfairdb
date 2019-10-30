@@ -13,10 +13,10 @@ use std::str::FromStr;
 impl From<e::Entry> for Entry {
     fn from(e: e::Entry) -> Self {
         let e::Entry {
-            id,
             osm_node,
-            created,
-            archived,
+            uid,
+            created_at,
+            archived_at,
             version,
             title,
             description,
@@ -44,17 +44,17 @@ impl From<e::Entry> for Entry {
             country: None,
         });
 
-        let e::Contact { email, telephone } = contact.unwrap_or_else(|| e::Contact {
+        let e::Contact { email, phone } = contact.unwrap_or_else(|| e::Contact {
             email: None,
-            telephone: None,
+            phone: None,
         });
 
         Entry {
-            id,
             osm_node: osm_node.map(|x| x as i64),
-            created: created.into(),
-            archived: archived.map(Into::into),
+            id: uid.into(),
             version: version as i64,
+            created: created_at.into(),
+            archived: archived_at.map(Into::into),
             current: true,
             title,
             description,
@@ -65,7 +65,7 @@ impl From<e::Entry> for Entry {
             city,
             country,
             email,
-            telephone,
+            telephone: phone,
             homepage,
             license,
             image_url,
@@ -164,16 +164,19 @@ impl From<(Entry, Vec<String>, Vec<String>)> for e::Entry {
             },
         };
         let contact = if email.is_some() || telephone.is_some() {
-            Some(e::Contact { email, telephone })
+            Some(e::Contact {
+                email,
+                phone: telephone,
+            })
         } else {
             None
         };
         e::Entry {
-            id,
             osm_node: e.osm_node.map(|x| x as u64),
-            created: created.into(),
-            archived: archived.map(Into::into),
+            uid: id.into(),
             version: version as u64,
+            created_at: created.into(),
+            archived_at: archived.map(Into::into),
             title,
             description,
             location,
@@ -245,7 +248,10 @@ impl From<(EventEntity, &Vec<EventTag>)> for e::Event {
             None
         };
         let contact = if email.is_some() || telephone.is_some() {
-            Some(e::Contact { email, telephone })
+            Some(e::Contact {
+                email,
+                phone: telephone,
+            })
         } else {
             None
         };

@@ -36,7 +36,7 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: RateEntry) -> Result<Storable> {
     let rating_id = Uuid::new_v4().to_simple_ref().to_string();
     let comment_id = Uuid::new_v4().to_simple_ref().to_string();
     let entry = db.get_entry(&r.entry)?;
-    debug_assert_eq!(entry.id, r.entry);
+    debug_assert_eq!(entry.uid.as_ref(), &r.entry);
     let rating = Rating {
         id: rating_id.clone(),
         entry_id: r.entry,
@@ -59,11 +59,11 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: RateEntry) -> Result<Storable> {
 
 pub fn store_new_rating<D: Db>(db: &D, s: Storable) -> Result<(Entry, Vec<Rating>)> {
     let Storable(entry, rating, comment) = s;
-    debug_assert_eq!(entry.id, rating.entry_id);
+    debug_assert_eq!(entry.uid.as_ref(), &rating.entry_id);
     debug_assert_eq!(rating.id, comment.rating_id);
     db.create_rating(rating)?;
     db.create_comment(comment)?;
-    let ratings = db.load_ratings_of_entry(&entry.id)?;
+    let ratings = db.load_ratings_of_entry(entry.uid.as_ref())?;
     Ok((entry, ratings))
 }
 

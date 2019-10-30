@@ -5,7 +5,7 @@ use diesel::connection::Connection;
 pub fn update_entry(
     connections: &sqlite::Connections,
     indexer: &mut dyn EntryIndexer,
-    id: String,
+    uid: Uid,
     update_entry: usecases::UpdateEntry,
 ) -> Result<Entry> {
     // Update existing entry
@@ -14,7 +14,7 @@ pub fn update_entry(
         let mut prepare_err = None;
         connection
             .transaction::<_, diesel::result::Error, _>(|| {
-                match usecases::prepare_updated_entry(&*connection, id, update_entry) {
+                match usecases::prepare_updated_entry(&*connection, uid, update_entry) {
                     Ok(storable) => {
                         let (entry, ratings) =
                             usecases::store_updated_entry(&*connection, storable).map_err(
@@ -44,7 +44,7 @@ pub fn update_entry(
     // TODO: Move to a separate task/thread that doesn't delay this request
     if let Err(err) = usecases::index_entry(indexer, &entry, &ratings).and_then(|_| indexer.flush())
     {
-        error!("Failed to reindex updated entry {}: {}", entry.id, err);
+        error!("Failed to reindex updated entry {}: {}", entry.uid, err);
     }
 
     // Send subscription e-mails
@@ -52,7 +52,7 @@ pub fn update_entry(
     if let Err(err) = notify_entry_updated(connections, &entry) {
         error!(
             "Failed to send notifications for updated entry {}: {}",
-            entry.id, err
+            entry.uid, err
         );
     }
 

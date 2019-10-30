@@ -2,7 +2,6 @@ use crate::core::{
     prelude::*,
     util::{parse::parse_url_param, validate::Validate},
 };
-use uuid::Uuid;
 
 #[rustfmt::skip]
 #[derive(Deserialize, Debug, Clone)]
@@ -63,13 +62,16 @@ pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
     };
     let location = Location { pos, address };
     let contact = if email.is_some() || telephone.is_some() {
-        Some(Contact { email, telephone })
+        Some(Contact {
+            email,
+            phone: telephone,
+        })
     } else {
         None
     };
-    let created = Timestamp::now();
-    let new_id = Uuid::new_v4().to_simple_ref().to_string();
-    let id = new_id.clone();
+    let created_at = Timestamp::now();
+    let new_id = Uid::new_uuid();
+    let uid = new_id.clone();
     let homepage = e.homepage.map(|ref url| parse_url_param(url)).transpose()?;
     let image_url = e
         .image_url
@@ -81,10 +83,10 @@ pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
         .transpose()?;
 
     let e = Entry {
-        id,
         osm_node: None,
-        created,
-        archived: None,
+        uid,
+        created_at,
+        archived_at: None,
         version: 0,
         title,
         description,
@@ -118,7 +120,6 @@ mod tests {
 
     use super::super::tests::MockDb;
     use super::*;
-    use uuid::Uuid;
 
     #[test]
     fn create_new_valid_entry() {
@@ -146,16 +147,16 @@ mod tests {
         let e = prepare_new_entry(&mock_db, x).unwrap();
         let (e, initial_ratings) = store_new_entry(&mock_db, e).unwrap();
         assert!(initial_ratings.is_empty());
-        assert!(Uuid::parse_str(&e.id).is_ok());
+        assert_eq!(&e.uid, &e.uid.as_ref().parse().unwrap());
         assert_eq!(mock_db.entries.borrow().len(), 1);
         let x = &mock_db.entries.borrow()[0];
         assert_eq!(x.title, "foo");
         assert_eq!(x.description, "bar");
         assert_eq!(x.version, 0);
-        assert!(x.created >= now);
-        assert_eq!(None, x.archived);
-        assert!(Uuid::parse_str(&x.id).is_ok());
-        assert_eq!(x.id, e.id);
+        assert!(x.created_at >= now);
+        assert_eq!(None, x.archived_at);
+        assert_eq!(&x.uid, &x.uid.as_ref().parse().unwrap());
+        assert_eq!(x.uid, e.uid);
     }
 
     #[test]

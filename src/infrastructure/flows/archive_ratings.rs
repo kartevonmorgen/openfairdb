@@ -46,12 +46,12 @@ pub fn post_archive_ratings(
                 continue;
             }
         };
-        let ratings = match connection.load_ratings_of_entry(&entry.id) {
+        let ratings = match connection.load_ratings_of_entry(entry.uid.as_ref()) {
             Ok(ratings) => ratings,
             Err(err) => {
                 error!(
                     "Failed to load ratings for entry {} for reindexing after archiving ratings: {}",
-                    entry.id, err
+                    entry.uid, err
                 );
                 // Skip entry
                 continue;
@@ -60,7 +60,7 @@ pub fn post_archive_ratings(
         if let Err(err) = usecases::index_entry(indexer, &entry, &ratings) {
             error!(
                 "Failed to reindex entry {} after archiving ratings: {}",
-                entry.id, err
+                entry.uid, err
             );
         }
     }

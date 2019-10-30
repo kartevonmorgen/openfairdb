@@ -73,9 +73,9 @@ pub fn entry_email(
     ]
     .join(", ");
 
-    let Contact { email, telephone } = e.contact.clone().unwrap_or_else(|| Contact {
+    let Contact { email, phone } = e.contact.clone().unwrap_or_else(|| Contact {
         email: None,
-        telephone: None,
+        phone: None,
     });
 
     format!(
@@ -87,7 +87,7 @@ pub fn entry_email(
     Adresse: {address}
     Webseite: {homepage}
     Email-Adresse: {email}
-    Telefon: {telephone}\n
+    Telefon: {phone}\n
 Eintrag anschauen oder bearbeiten:
 https://kartevonmorgen.org/#/?entry={id}\n
 Du kannst dein Abonnement des Kartenbereichs abbestellen indem du dich auf https://kartevonmorgen.org einloggst.\n
@@ -95,11 +95,11 @@ euphorische Grüße
 das Karte von morgen-Team",
         introSentence = intro_sentence,
         title = &e.title,
-        id = &e.id,
+        id = e.uid.as_ref(),
         description = &e.description,
         address = address,
         email = email.unwrap_or_else(||"".into()),
-        telephone = telephone.unwrap_or_else(||"".into()),
+        phone = phone.unwrap_or_else(||"".into()),
         homepage = e.homepage.clone().unwrap_or_else(||"".into()),
         category = category,
         tags = tags.join(", ")

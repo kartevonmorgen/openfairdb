@@ -45,7 +45,7 @@ pub fn create_rating(
     {
         error!(
             "Failed to reindex entry {} after adding a new rating: {}",
-            entry.id, err
+            entry.uid, err
         );
     }
 

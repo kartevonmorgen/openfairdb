@@ -71,9 +71,9 @@ fn entry_detail(e: EntryPresenter) -> Markup {
                             td { a href=(format!("mailto:{}",m)) { (m) } }
                         }
                     }
-                    @if let Some(ref t) = c.telephone {
+                    @if let Some(ref t) = c.phone {
                         tr {
-                            td { "Telephone" }
+                            td { "Phone" }
                             td { a href=(format!("tel:{}",t)) { (t) } }
                         }
                     }
@@ -102,7 +102,7 @@ fn entry_detail(e: EntryPresenter) -> Markup {
             ul {
                 @for (r,comments) in ratings {
                     li {
-                        (rating(&e.entry.id, e.allow_archiving, &r, &comments))
+                        (rating(e.entry.uid.as_ref(), e.allow_archiving, &r, &comments))
                     }
                 }
             }

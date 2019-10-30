@@ -96,7 +96,7 @@ fn get_entry(db: sqlite::Connections, ids: String) -> Result<Vec<json::Entry>> {
         let mut results = Vec::with_capacity(ids.len());
         let db = db.shared()?;
         for e in db.get_entries(&ids)?.into_iter() {
-            let r = db.load_ratings_of_entry(&e.id)?;
+            let r = db.load_ratings_of_entry(e.uid.as_ref())?;
             results.push(json::Entry::from_entry_with_ratings(e, r));
         }
         results
@@ -174,7 +174,7 @@ fn get_entries_recently_changed(
         if with_ratings.unwrap_or(false) {
             let mut results = Vec::with_capacity(entries.len());
             for e in entries.into_iter() {
-                let r = db.load_ratings_of_entry(&e.id)?;
+                let r = db.load_ratings_of_entry(e.uid.as_ref())?;
                 results.push(json::Entry::from_entry_with_ratings(e, r));
             }
             results
@@ -229,7 +229,12 @@ fn get_duplicates(
         (db.get_entries(&ids)?, db.all_entries()?)
     };
     let results = usecases::find_duplicates(&entries, &all_entries);
-    Ok(Json(results))
+    Ok(Json(
+        results
+            .into_iter()
+            .map(|(uid1, uid2, dup)| (uid1.to_string(), uid2.to_string(), dup))
+            .collect(),
+    ))
 }
 
 #[get("/server/version")]
@@ -351,15 +356,22 @@ fn post_entry(
     )?))
 }
 
-#[put("/entries/<id>", format = "application/json", data = "<data>")]
+#[put("/entries/<uid>", format = "application/json", data = "<data>")]
 fn put_entry(
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
-    id: String,
+    uid: String,
     data: Json<usecases::UpdateEntry>,
 ) -> Result<String> {
     Ok(Json(
-        flows::update_entry(&connections, &mut search_engine, id, data.into_inner())?.id,
+        flows::update_entry(
+            &connections,
+            &mut search_engine,
+            uid.into(),
+            data.into_inner(),
+        )?
+        .uid
+        .into(),
     ))
 }
 

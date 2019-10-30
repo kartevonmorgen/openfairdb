@@ -43,7 +43,7 @@ pub fn create_entry(
     // TODO: Move to a separate task/thread that doesn't delay this request
     if let Err(err) = usecases::index_entry(indexer, &entry, &ratings).and_then(|_| indexer.flush())
     {
-        error!("Failed to index newly added entry {}: {}", entry.id, err);
+        error!("Failed to index newly added entry {}: {}", entry.uid, err);
     }
 
     // Send subscription e-mails
@@ -51,11 +51,11 @@ pub fn create_entry(
     if let Err(err) = notify_entry_added(connections, &entry) {
         error!(
             "Failed to send notifications for newly added entry {}: {}",
-            entry.id, err
+            entry.uid, err
         );
     }
 
-    Ok(entry.id)
+    Ok(entry.uid.into())
 }
 
 fn notify_entry_added(connections: &sqlite::Connections, entry: &Entry) -> Result<()> {
