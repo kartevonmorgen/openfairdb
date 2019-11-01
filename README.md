@@ -94,7 +94,6 @@ cargo install diesel_cli --no-default-features --features sqlite
 ```sh
 git clone https://github.com/kartevonmorgen/openfairdb
 cd openfairdb/
-diesel migration run
 cargo build
 ./target/debug/openfairdb
 ```

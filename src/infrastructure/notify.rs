@@ -40,8 +40,8 @@ pub fn compose_and_send_emails(recipients: &[String], subject: &str, body: &str)
 pub fn entry_added(email_addresses: &[String], entry: &Entry, all_categories: Vec<Category>) {
     let category_names: Vec<String> = all_categories
         .into_iter()
-        .filter(|c| entry.categories.iter().any(|c_id| &c.id == c_id))
-        .map(|c| c.name)
+        .filter(|c| entry.categories.iter().any(|c_uid| &c.uid == c_uid))
+        .map(|c| c.name())
         .collect();
     let content = user_communication::entry_added_email(entry, &category_names);
 
@@ -59,8 +59,8 @@ pub fn entry_added(email_addresses: &[String], entry: &Entry, all_categories: Ve
 pub fn entry_updated(email_addresses: &[String], entry: &Entry, all_categories: Vec<Category>) {
     let category_names: Vec<String> = all_categories
         .into_iter()
-        .filter(|c| entry.categories.iter().any(|c_id| &c.id == c_id))
-        .map(|c| c.name)
+        .filter(|c| entry.categories.iter().any(|c_uid| &c.uid == c_uid))
+        .map(|c| c.name())
         .collect();
     let content = user_communication::entry_changed_email(entry, &category_names);
 

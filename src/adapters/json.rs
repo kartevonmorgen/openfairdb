@@ -185,6 +185,22 @@ pub struct EntrySearchRatings {
 }
 
 #[derive(Serialize)]
+pub struct Category {
+    pub id: String,
+    pub name: String,
+}
+
+impl From<e::Category> for Category {
+    fn from(from: e::Category) -> Self {
+        let name = from.name();
+        Self {
+            id: from.uid.into(),
+            name,
+        }
+    }
+}
+
+#[derive(Serialize)]
 pub struct EntrySearchResult {
     pub id: String,
     pub lat: f64,
@@ -295,9 +311,9 @@ impl Entry {
             email,
             telephone,
             homepage,
-            categories,
+            categories: categories.into_iter().map(Into::into).collect(),
             tags,
-            ratings: ratings.into_iter().map(|r| r.id).collect(),
+            ratings: ratings.into_iter().map(|r| r.uid.to_string()).collect(),
             license,
             image_url,
             image_link_url,

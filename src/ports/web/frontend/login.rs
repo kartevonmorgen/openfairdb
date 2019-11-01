@@ -89,6 +89,7 @@ pub mod tests {
         self,
         tests::{prelude::*, register_user},
     };
+    use rocket::http::Status as HttpStatus;
 
     fn setup() -> (Client, Connections) {
         let (client, db, _) = web::tests::setup(vec![("/", super::super::routes())]);
@@ -109,7 +110,7 @@ pub mod tests {
     fn get_login() {
         let (client, _) = setup();
         let mut res = client.get("/login").dispatch();
-        assert_eq!(res.status(), Status::Ok);
+        assert_eq!(res.status(), HttpStatus::Ok);
         let body_str = res.body().and_then(|b| b.into_string()).unwrap();
         assert!(body_str.contains("action=\"login\""));
         assert!(user_id_cookie(&res).is_none());
@@ -124,7 +125,7 @@ pub mod tests {
             .header(ContentType::Form)
             .body("email=foo%40bar.com&password=invalid")
             .dispatch();
-        assert_eq!(res.status(), Status::SeeOther);
+        assert_eq!(res.status(), HttpStatus::SeeOther);
         for h in res.headers().iter() {
             match h.name.as_str() {
                 "Location" => assert_eq!(h.value, "/login"),
@@ -143,7 +144,7 @@ pub mod tests {
             .header(ContentType::Form)
             .body("email=foo%40bar.com&password=baz baz")
             .dispatch();
-        assert_eq!(res.status(), Status::SeeOther);
+        assert_eq!(res.status(), HttpStatus::SeeOther);
         assert!(user_id_cookie(&res).is_some());
         //TODO: extract private cookie value to assert v == "foo@bar.com"
         for h in res.headers().iter() {

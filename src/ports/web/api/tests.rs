@@ -33,15 +33,6 @@ use self::prelude::*;
 #[test]
 fn create_entry() {
     let (client, db) = setup();
-    db.exclusive()
-        .unwrap()
-        .create_category_if_it_does_not_exist(&Category {
-            id: "x".into(),
-            created: 0,
-            version: 0,
-            name: "x".into(),
-        })
-        .unwrap();
     let req = client.post("/entries")
                     .header(ContentType::JSON)
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#);
@@ -58,15 +49,6 @@ fn create_entry() {
 #[test]
 fn create_entry_with_reserved_tag() {
     let (client, db) = setup();
-    db.exclusive()
-        .unwrap()
-        .create_category_if_it_does_not_exist(&Category {
-            id: "x".into(),
-            created: 0,
-            version: 0,
-            name: "x".into(),
-        })
-        .unwrap();
     db.exclusive()
         .unwrap()
         .create_org(Organization {
@@ -86,15 +68,6 @@ fn create_entry_with_reserved_tag() {
 #[test]
 fn create_entry_with_tag_duplicates() {
     let (client, db) = setup();
-    db.exclusive()
-        .unwrap()
-        .create_category_if_it_does_not_exist(&Category {
-            id: "x".into(),
-            created: 0,
-            version: 0,
-            name: "x".into(),
-        })
-        .unwrap();
     let req = client.post("/entries")
                     .header(ContentType::JSON)
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","foo"]}"#);
@@ -111,15 +84,6 @@ fn create_entry_with_tag_duplicates() {
 #[test]
 fn create_entry_with_sharp_tag() {
     let (client, db) = setup();
-    db.exclusive()
-        .unwrap()
-        .create_category_if_it_does_not_exist(&Category {
-            id: "x".into(),
-            created: 0,
-            version: 0,
-            name: "x".into(),
-        })
-        .unwrap();
     let json = r##"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","#bar"]}"##;
     let response = client
         .post("/entries")
@@ -137,15 +101,6 @@ fn create_entry_with_sharp_tag() {
 #[test]
 fn update_entry_with_tag_duplicates() {
     let (client, db) = setup();
-    db.exclusive()
-        .unwrap()
-        .create_category_if_it_does_not_exist(&Category {
-            id: "x".into(),
-            created: 0,
-            version: 0,
-            name: "x".into(),
-        })
-        .unwrap();
     let req = client.post("/entries")
                     .header(ContentType::JSON)
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","foo"]}"#);
@@ -208,7 +163,7 @@ fn get_one_entry() {
         .load_ratings_of_entry("get_one_entry_test")
         .unwrap()[0]
         .clone();
-    assert!(body_str.contains(&format!(r#""ratings":["{}"]"#, rating.id)));
+    assert!(body_str.contains(&format!(r#""ratings":["{}"]"#, rating.uid)));
     assert_eq!(
         entries[0],
         json::Entry::from_entry_with_ratings(e, vec![rating])
@@ -284,26 +239,6 @@ fn search_with_categories_and_bbox() {
         new_entry_with_category("bar", 3.0, 3.0),
     ];
     let (client, connections, mut search_engine) = setup2();
-    connections
-        .exclusive()
-        .unwrap()
-        .create_category_if_it_does_not_exist(&Category {
-            id: "foo".into(),
-            created: 0,
-            version: 0,
-            name: "foo".into(),
-        })
-        .unwrap();
-    connections
-        .exclusive()
-        .unwrap()
-        .create_category_if_it_does_not_exist(&Category {
-            id: "bar".into(),
-            created: 0,
-            version: 0,
-            name: "bar".into(),
-        })
-        .unwrap();
     let entry_ids: Vec<_> = entries
         .into_iter()
         .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
@@ -505,16 +440,6 @@ fn search_with_tags() {
         },
     ];
     let (client, connections, mut search_engine) = setup2();
-    connections
-        .exclusive()
-        .unwrap()
-        .create_category_if_it_does_not_exist(&Category {
-            id: "foo".into(),
-            created: 0,
-            version: 0,
-            name: "foo".into(),
-        })
-        .unwrap();
     connections
         .exclusive()
         .unwrap()
@@ -919,22 +844,22 @@ fn get_one_rating() {
         },
     )
     .unwrap();
-    let rid = connections
+    let ruid = connections
         .shared()
         .unwrap()
         .load_ratings_of_entry("foo")
         .unwrap()[0]
-        .id
+        .uid
         .clone();
-    let req = client.get(format!("/ratings/{}", rid));
+    let req = client.get(format!("/ratings/{}", ruid));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
     let ratings: Vec<json::Rating> = serde_json::from_str(&body_str).unwrap();
-    assert_eq!(ratings[0].id, rid);
     assert_eq!(ratings[0].comments.len(), 1);
+    assert_eq!(ratings[0].id, ruid.to_string());
 }
 
 #[test]
@@ -973,21 +898,21 @@ fn ratings_with_and_without_source() {
     )
     .unwrap();
 
-    let rid = connections
+    let ruid = connections
         .shared()
         .unwrap()
         .load_ratings_of_entry("bar")
         .unwrap()[0]
-        .id
+        .uid
         .clone();
-    let req = client.get(format!("/ratings/{}", rid));
+    let req = client.get(format!("/ratings/{}", ruid));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
     let ratings: Vec<json::Rating> = serde_json::from_str(&body_str).unwrap();
-    assert_eq!(ratings[0].id, rid);
+    assert_eq!(ratings[0].id, ruid.to_string());
     assert_eq!(ratings[0].comments.len(), 1);
 }
 
@@ -1276,24 +1201,6 @@ fn export_csv() {
 
     db.exclusive()
         .unwrap()
-        .create_category_if_it_does_not_exist(&Category {
-            id: "2cd00bebec0c48ba9db761da48678134".into(),
-            created: 0,
-            version: 0,
-            name: "cat1".into(),
-        })
-        .unwrap();
-    db.exclusive()
-        .unwrap()
-        .create_category_if_it_does_not_exist(&Category {
-            id: "77b3c33a92554bcf8e8c2c86cedd6f6f".into(),
-            created: 0,
-            version: 0,
-            name: "cat2".into(),
-        })
-        .unwrap();
-    db.exclusive()
-        .unwrap()
         .create_tag_if_it_does_not_exist(&Tag { id: "bli".into() })
         .unwrap();
     db.exclusive()
@@ -1307,10 +1214,10 @@ fn export_csv() {
     db.exclusive()
         .unwrap()
         .create_rating(Rating {
-            id: "123".into(),
-            entry_id: "entry1".into(),
-            created: 123.into(),
-            archived: None,
+            uid: "123".into(),
+            place_uid: "entry1".into(),
+            created_at: 123.into(),
+            archived_at: None,
             title: "rating1".into(),
             value: RatingValue::from(2),
             context: diversity,
@@ -1320,10 +1227,10 @@ fn export_csv() {
     db.exclusive()
         .unwrap()
         .create_rating(Rating {
-            id: "345".into(),
-            entry_id: "entry1".into(),
-            created: 123.into(),
-            archived: None,
+            uid: "345".into(),
+            place_uid: "entry1".into(),
+            created_at: 123.into(),
+            archived_at: None,
             title: "rating2".into(),
             value: RatingValue::from(1),
             context: diversity,

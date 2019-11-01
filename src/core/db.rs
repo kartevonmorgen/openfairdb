@@ -24,16 +24,14 @@ pub struct RecentlyChangedEntriesParams {
     pub until: Option<Timestamp>,
 }
 
-pub trait EntryGateway {
+pub trait PlaceGateway {
     fn get_entry(&self, _: &str) -> Result<Entry>;
     fn get_entries(&self, ids: &[&str]) -> Result<Vec<Entry>>;
-
     fn all_entries(&self) -> Result<Vec<Entry>>;
     fn count_entries(&self) -> Result<usize>;
 
     fn create_entry(&self, _: Entry) -> Result<()>;
     fn update_entry(&self, _: &Entry) -> Result<()>;
-    fn import_multiple_entries(&mut self, _: &[Entry]) -> Result<()>;
     fn archive_entries(&self, ids: &[&str], archived: Timestamp) -> Result<usize>;
 
     fn recently_changed_entries(
@@ -92,7 +90,6 @@ pub trait OrganizationGateway {
 
 //TODO:
 //  - TagGeatway
-//  - CategoryGateway
 //  - SubscriptionGateway
 
 #[derive(Clone, Debug, Default)]
@@ -102,7 +99,7 @@ pub struct Pagination {
 }
 
 pub trait Db:
-    EntryGateway
+    PlaceGateway
     + UserGateway
     + EventGateway
     + OrganizationGateway
@@ -111,9 +108,14 @@ pub trait Db:
     + UserTokenRepo
 {
     fn create_tag_if_it_does_not_exist(&self, _: &Tag) -> Result<()>;
-    fn create_category_if_it_does_not_exist(&mut self, _: &Category) -> Result<()>;
 
-    fn all_categories(&self) -> Result<Vec<Category>>;
+    fn all_categories(&self) -> Result<Vec<Category>> {
+        Ok(vec![
+            Category::new_non_profit(),
+            Category::new_commercial(),
+            Category::new_event(),
+        ])
+    }
     fn all_tags(&self) -> Result<Vec<Tag>>;
     fn count_tags(&self) -> Result<usize>;
 

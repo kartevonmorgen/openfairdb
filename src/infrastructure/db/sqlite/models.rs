@@ -1,14 +1,27 @@
 use super::schema::*;
 
-#[derive(Queryable, Insertable)]
-#[table_name = "entries"]
-pub struct Entry {
-    pub id: String,
-    pub osm_node: Option<i64>,
-    pub created: i64,
-    pub archived: Option<i64>,
-    pub version: i64,
-    pub current: bool,
+#[derive(Insertable)]
+#[table_name = "place"]
+pub struct NewPlace<'a> {
+    pub uid: &'a str,
+    pub rev: i64,
+}
+
+#[derive(Queryable)]
+pub struct Place {
+    pub id: i64,
+    pub uid: String,
+    pub rev: i64,
+}
+
+#[derive(Insertable)]
+#[table_name = "place_rev"]
+pub struct NewPlaceRev {
+    pub place_id: i64,
+    pub rev: i64,
+    pub created_at: i64,
+    pub created_by: Option<i64>,
+    pub status: i16,
     pub title: String,
     pub description: String,
     pub lat: f64,
@@ -18,11 +31,116 @@ pub struct Entry {
     pub city: Option<String>,
     pub country: Option<String>,
     pub email: Option<String>,
-    pub telephone: Option<String>,
+    pub phone: Option<String>,
     pub homepage: Option<String>,
     pub license: Option<String>,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
+}
+
+#[derive(Queryable)]
+pub struct PlaceRev {
+    pub id: i64,
+    pub place_id: i64,
+    pub place_uid: String,
+    pub rev: i64,
+    pub created_at: i64,
+    pub created_by: Option<i64>,
+    pub status: i16,
+    pub title: String,
+    pub description: String,
+    pub lat: f64,
+    pub lng: f64,
+    pub street: Option<String>,
+    pub zip: Option<String>,
+    pub city: Option<String>,
+    pub country: Option<String>,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub homepage: Option<String>,
+    pub license: Option<String>,
+    pub image_url: Option<String>,
+    pub image_link_url: Option<String>,
+}
+
+#[derive(Insertable)]
+#[table_name = "place_rev_status_log"]
+pub struct NewPlaceRevStatusLog<'a, 'b> {
+    pub place_rev_id: i64,
+    pub status: i16,
+    pub created_at: i64,
+    pub created_by: Option<i64>,
+    pub context: Option<&'a str>,
+    pub notes: Option<&'b str>,
+}
+
+#[derive(Queryable)]
+pub struct PlaceRevTag {
+    pub place_rev_id: i64,
+    pub tag: String,
+}
+
+#[derive(Insertable)]
+#[table_name = "place_rev_tag"]
+pub struct NewPlaceRevTag<'a> {
+    pub place_rev_id: i64,
+    pub tag: &'a str,
+}
+
+#[derive(Insertable)]
+#[table_name = "place_rating"]
+pub struct NewPlaceRating {
+    pub uid: String,
+    pub place_id: i64,
+    pub created_at: i64,
+    pub created_by: Option<i64>,
+    pub archived_at: Option<i64>,
+    pub archived_by: Option<i64>,
+    pub title: String,
+    pub value: i16,
+    pub context: String,
+    pub source: Option<String>,
+}
+
+#[derive(Queryable)]
+pub struct PlaceRating {
+    pub id: i64,
+    pub uid: String,
+    pub place_id: i64,
+    pub place_uid: String,
+    pub created_at: i64,
+    pub created_by: Option<i64>,
+    pub archived_at: Option<i64>,
+    pub archived_by: Option<i64>,
+    pub title: String,
+    pub value: i16,
+    pub context: String,
+    pub source: Option<String>,
+}
+
+#[derive(Insertable)]
+#[table_name = "place_rating_comment"]
+pub struct NewPlaceRatingComment {
+    pub uid: String,
+    pub rating_id: i64,
+    pub created_at: i64,
+    pub created_by: Option<i64>,
+    pub archived_at: Option<i64>,
+    pub archived_by: Option<i64>,
+    pub text: String,
+}
+
+#[derive(Queryable)]
+pub struct PlaceRatingComment {
+    pub id: i64,
+    pub uid: String,
+    pub rating_id: i64,
+    pub rating_uid: String,
+    pub created_at: i64,
+    pub created_by: Option<i64>,
+    pub archived_at: Option<i64>,
+    pub archived_by: Option<i64>,
+    pub text: String,
 }
 
 #[derive(Insertable, AsChangeset)]
@@ -86,45 +204,6 @@ pub struct Organization {
     pub api_token: String,
 }
 
-#[derive(Queryable, Insertable)]
-#[table_name = "categories"]
-pub struct Category {
-    pub id: String,
-    pub created: i64,
-    pub version: i64,
-    pub name: String,
-}
-
-#[derive(Queryable)]
-pub struct EntryCategoryRelation {
-    pub entry_id: String,
-    pub entry_version: i64,
-    pub category_id: String,
-}
-
-#[derive(Insertable)]
-#[table_name = "entry_category_relations"]
-pub struct StoreableEntryCategoryRelation<'a, 'b> {
-    pub entry_id: &'a str,
-    pub entry_version: i64,
-    pub category_id: &'b str,
-}
-
-#[derive(Queryable)]
-pub struct EntryTagRelation {
-    pub entry_id: String,
-    pub entry_version: i64,
-    pub tag_id: String,
-}
-
-#[derive(Insertable)]
-#[table_name = "entry_tag_relations"]
-pub struct StoreableEntryTagRelation<'a, 'b> {
-    pub entry_id: &'a str,
-    pub entry_version: i64,
-    pub tag_id: &'b str,
-}
-
 #[derive(Queryable)]
 pub struct EventTag {
     pub event_id: i64,
@@ -173,29 +252,6 @@ pub struct UserEntity {
     pub email_confirmed: bool,
     pub password: String,
     pub role: i16,
-}
-
-#[derive(Queryable, Insertable)]
-#[table_name = "comments"]
-pub struct Comment {
-    pub id: String,
-    pub created: i64,
-    pub archived: Option<i64>,
-    pub text: String,
-    pub rating_id: String,
-}
-
-#[derive(Queryable, Insertable)]
-#[table_name = "ratings"]
-pub struct Rating {
-    pub id: String,
-    pub created: i64,
-    pub archived: Option<i64>,
-    pub title: String,
-    pub value: i32,
-    pub context: String,
-    pub source: Option<String>,
-    pub entry_id: String,
 }
 
 #[derive(Insertable)]

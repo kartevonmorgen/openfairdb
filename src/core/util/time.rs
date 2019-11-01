@@ -9,6 +9,10 @@ impl Timestamp {
     pub fn now() -> Self {
         Utc::now().into()
     }
+
+    pub const fn into_inner(self) -> i64 {
+        self.0
+    }
 }
 
 impl From<Timestamp> for i64 {

@@ -23,8 +23,8 @@ pub trait CommentRepository {
     ) -> Result<Vec<(Rating, Vec<Comment>)>> {
         let mut results = Vec::with_capacity(ratings.len());
         for rating in ratings {
-            debug_assert!(rating.archived.is_none());
-            let comments = self.load_comments_of_rating(&rating.id)?;
+            debug_assert!(rating.archived_at.is_none());
+            let comments = self.load_comments_of_rating(rating.uid.as_ref())?;
             results.push((rating, comments));
         }
         Ok(results)

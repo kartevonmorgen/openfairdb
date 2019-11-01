@@ -17,7 +17,7 @@ mod tantivy;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
-fn index_all_entries<D: EntryGateway + RatingRepository>(
+fn index_all_entries<D: PlaceGateway + RatingRepository>(
     db: &D,
     entry_indexer: &mut dyn EntryIndexer,
 ) -> Result<()> {

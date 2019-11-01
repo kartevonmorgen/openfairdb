@@ -53,7 +53,7 @@ impl From<(Entry, Vec<Category>, AvgRatingValue)> for CsvRecord {
 
         let categories = categories
             .into_iter()
-            .map(|c| c.name)
+            .map(|c| c.tag)
             .collect::<Vec<_>>()
             .join(",");
 

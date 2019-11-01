@@ -28,7 +28,7 @@ impl Key for Event {
 
 impl Key for Category {
     fn key(&self) -> &str {
-        &self.id
+        self.uid.as_ref()
     }
 }
 
@@ -46,13 +46,13 @@ impl Key for User {
 
 impl Key for Comment {
     fn key(&self) -> &str {
-        &self.id
+        &self.uid.as_ref()
     }
 }
 
 impl Key for Rating {
     fn key(&self) -> &str {
-        &self.id
+        &self.uid.as_ref()
     }
 }
 
@@ -72,7 +72,6 @@ impl Key for Organization {
 pub struct MockDb {
     pub entries: RefCell<Vec<Entry>>,
     pub events: RefCell<Vec<Event>>,
-    pub categories: Vec<Category>,
     pub tags: RefCell<Vec<Tag>>,
     pub users: RefCell<Vec<User>>,
     pub ratings: RefCell<Vec<Rating>>,
@@ -181,7 +180,7 @@ fn update<T: Clone + Key>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
     Ok(())
 }
 
-impl EntryGateway for MockDb {
+impl PlaceGateway for MockDb {
     fn create_entry(&self, e: Entry) -> RepoResult<()> {
         create(&mut self.entries.borrow_mut(), e)
     }
@@ -232,10 +231,6 @@ impl EntryGateway for MockDb {
 
     fn update_entry(&self, e: &Entry) -> RepoResult<()> {
         update(&mut self.entries.borrow_mut(), e)
-    }
-
-    fn import_multiple_entries(&mut self, _entries: &[Entry]) -> RepoResult<()> {
-        unimplemented!();
     }
 
     fn archive_entries(&self, _ids: &[&str], _archived: Timestamp) -> RepoResult<usize> {
@@ -356,9 +351,9 @@ impl CommentRepository for MockDb {
         create(&mut self.comments.borrow_mut(), c)
     }
 
-    fn load_comment(&self, id: &str) -> RepoResult<Comment> {
-        get(&self.comments.borrow(), id).and_then(|c| {
-            if c.archived.is_none() {
+    fn load_comment(&self, uid: &str) -> RepoResult<Comment> {
+        get(&self.comments.borrow(), uid).and_then(|c| {
+            if c.archived_at.is_none() {
                 Ok(c)
             } else {
                 Err(RepoError::NotFound)
@@ -366,27 +361,27 @@ impl CommentRepository for MockDb {
         })
     }
 
-    fn load_comments(&self, ids: &[&str]) -> RepoResult<Vec<Comment>> {
+    fn load_comments(&self, uids: &[&str]) -> RepoResult<Vec<Comment>> {
         Ok(self
             .comments
             .borrow()
             .iter()
-            .filter(|c| ids.iter().any(|id| &c.id == id) && c.archived.is_none())
+            .filter(|c| uids.iter().any(|uid| c.uid.as_ref() == *uid) && c.archived_at.is_none())
             .cloned()
             .collect())
     }
 
-    fn load_comments_of_rating(&self, rating_id: &str) -> RepoResult<Vec<Comment>> {
+    fn load_comments_of_rating(&self, rating_uid: &str) -> RepoResult<Vec<Comment>> {
         Ok(self
             .comments
             .borrow()
             .iter()
-            .filter(|c| c.rating_id == rating_id && c.archived.is_none())
+            .filter(|c| c.rating_uid.as_ref() == rating_uid && c.archived_at.is_none())
             .cloned()
             .collect())
     }
 
-    fn archive_comments(&self, _ids: &[&str], _archived: Timestamp) -> RepoResult<usize> {
+    fn archive_comments(&self, _uids: &[&str], _archived: Timestamp) -> RepoResult<usize> {
         unimplemented!();
     }
     fn archive_comments_of_ratings(
@@ -433,7 +428,7 @@ impl RatingRepository for MockDb {
 
     fn load_rating(&self, id: &str) -> RepoResult<Rating> {
         get(&self.ratings.borrow(), id).and_then(|r| {
-            if r.archived.is_none() {
+            if r.archived_at.is_none() {
                 Ok(r)
             } else {
                 Err(RepoError::NotFound)
@@ -446,17 +441,17 @@ impl RatingRepository for MockDb {
             .ratings
             .borrow()
             .iter()
-            .filter(|r| ids.iter().any(|id| &r.id == id) && r.archived.is_none())
+            .filter(|r| ids.iter().any(|uid| r.uid.as_ref() == *uid) && r.archived_at.is_none())
             .cloned()
             .collect())
     }
 
-    fn load_ratings_of_entry(&self, entry_id: &str) -> RepoResult<Vec<Rating>> {
+    fn load_ratings_of_entry(&self, place_uid: &str) -> RepoResult<Vec<Rating>> {
         Ok(self
             .ratings
             .borrow()
             .iter()
-            .filter(|r| r.archived.is_none() && r.entry_id == entry_id)
+            .filter(|r| r.archived_at.is_none() && r.place_uid.as_ref() == place_uid)
             .cloned()
             .collect())
     }
@@ -489,24 +484,8 @@ impl Db for MockDb {
         Ok(())
     }
 
-    fn create_category_if_it_does_not_exist(&mut self, e: &Category) -> RepoResult<()> {
-        if let Err(err) = create(&mut self.categories, e.clone()) {
-            match err {
-                RepoError::AlreadyExists => {
-                    // that's ok
-                }
-                _ => return Err(err),
-            }
-        }
-        Ok(())
-    }
-
     fn create_bbox_subscription(&self, s: &BboxSubscription) -> RepoResult<()> {
         create(&mut self.bbox_subscriptions.borrow_mut(), s.clone())
-    }
-
-    fn all_categories(&self) -> RepoResult<Vec<Category>> {
-        Ok(self.categories.clone())
     }
 
     fn all_tags(&self) -> RepoResult<Vec<Tag>> {

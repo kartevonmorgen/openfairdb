@@ -15,8 +15,8 @@ pub fn create_rating(
             .transaction::<_, diesel::result::Error, _>(|| {
                 match usecases::prepare_new_rating(&*connection, rate_entry) {
                     Ok(storable) => {
-                        let rating_id = storable.rating_id().to_owned();
-                        let comment_id = storable.comment_id().to_owned();
+                        let rating_id = storable.rating_uid().to_owned();
+                        let comment_id = storable.comment_uid().to_owned();
                         let (entry, ratings) = usecases::store_new_rating(&*connection, storable)
                             .map_err(|err| {
                             warn!("Failed to store new rating for entry: {}", err);

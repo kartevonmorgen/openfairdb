@@ -11,7 +11,7 @@ use std::{fmt, str::FromStr};
 use uuid::Uuid;
 
 /// Universal, external/public identifier with a string representation.
-#[derive(Default, Debug, Clone, PartialEq, Eq, Ord, PartialOrd)]
+#[derive(Default, Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Uid(String);
 
 impl Uid {
@@ -67,6 +67,58 @@ impl std::fmt::Display for Uid {
     }
 }
 
+#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
+pub struct Status(i16);
+
+impl Status {
+    pub const fn rejected() -> Self {
+        Self(-1)
+    }
+
+    pub const fn archived() -> Self {
+        Self(0)
+    }
+
+    pub const fn created() -> Self {
+        Self(1)
+    }
+
+    pub const fn confirmed() -> Self {
+        Self(2)
+    }
+
+    pub fn is_valid(self) -> bool {
+        self.0 >= -1 && self.0 <= 2
+    }
+
+    pub const fn default() -> Self {
+        Self::created()
+    }
+
+    pub const fn from_inner(inner: i16) -> Self {
+        Self(inner)
+    }
+
+    pub const fn into_inner(self) -> i16 {
+        self.0
+    }
+
+}
+
+impl From<Status> for i16 {
+    fn from(from: Status) -> Self {
+        from.0
+    }
+}
+
+impl From<i16> for Status {
+    fn from(from: i16) -> Self {
+        let status = Status::from_inner(from);
+        debug_assert!(status.is_valid());
+        status
+    }
+}
+
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Entry {
@@ -79,7 +131,7 @@ pub struct Entry {
     pub location       : Location,
     pub contact        : Option<Contact>,
     pub homepage       : Option<String>,
-    pub categories     : Vec<String>,
+    pub categories     : Vec<Uid>,
     pub tags           : Vec<String>,
     pub license        : Option<String>,
     pub image_url      : Option<String>,
@@ -144,7 +196,7 @@ pub struct Event {
     pub image_link_url: Option<String>,
 }
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum RegistrationType {
     Email,
     Phone,
@@ -152,12 +204,88 @@ pub enum RegistrationType {
 }
 
 #[rustfmt::skip]
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Category {
-    pub id      : String,
-    pub created : i64,
-    pub version : u64,
-    pub name    : String
+    pub uid : Uid,
+    pub tag : String
+}
+
+impl Category {
+    pub fn name(&self) -> String {
+        format!("#{}", self.tag)
+    }
+}
+
+impl Category {
+    pub const UID_NON_PROFIT: &'static str = "2cd00bebec0c48ba9db761da48678134";
+    pub const UID_COMMERCIAL: &'static str = "77b3c33a92554bcf8e8c2c86cedd6f6f";
+    pub const UID_EVENT: &'static str = "c2dc278a2d6a4b9b8a50cb606fc017ed";
+
+    pub const TAG_NON_PROFIT: &'static str = "non-profit";
+    pub const TAG_COMMERCIAL: &'static str = "commercial";
+    pub const TAG_EVENT: &'static str = "event";
+
+    pub fn new_non_profit() -> Self {
+        Self {
+            uid: Self::UID_NON_PROFIT.into(),
+            tag: Self::TAG_NON_PROFIT.into(),
+        }
+    }
+
+    pub fn new_commercial() -> Self {
+        Self {
+            uid: Self::UID_COMMERCIAL.into(),
+            tag: Self::TAG_COMMERCIAL.into(),
+        }
+    }
+
+    pub fn new_event() -> Self {
+        Self {
+            uid: Self::UID_EVENT.into(),
+            tag: Self::TAG_EVENT.into(),
+        }
+    }
+
+    pub fn split_from_tags(tags: Vec<String>) -> (Vec<String>, Vec<Category>) {
+        let mut categories = Vec::with_capacity(3);
+        let tags = tags
+            .into_iter()
+            .filter(|t| match t.as_str() {
+                Self::TAG_NON_PROFIT => {
+                    categories.push(Self::new_non_profit());
+                    false
+                }
+                Self::TAG_COMMERCIAL => {
+                    categories.push(Self::new_commercial());
+                    false
+                }
+                Self::TAG_EVENT => {
+                    categories.push(Self::new_event());
+                    false
+                }
+                _ => true,
+            })
+            .collect();
+        (tags, categories)
+    }
+
+    pub fn merge_uids_into_tags(uids: Vec<Uid>, mut tags: Vec<String>) -> Vec<String> {
+        tags.reserve(uids.len());
+        tags = uids
+            .iter()
+            .fold(tags, |mut tags, uid| {
+                match uid.as_ref() {
+                    Self::UID_NON_PROFIT => tags.push(Self::TAG_NON_PROFIT.into()),
+                    Self::UID_COMMERCIAL => tags.push(Self::TAG_COMMERCIAL.into()),
+                    Self::UID_EVENT => tags.push(Self::TAG_EVENT.into()),
+                    _ => (),
+                }
+                tags
+            });
+        tags.sort_unstable();
+        tags.dedup();
+        tags
+    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -197,14 +325,14 @@ impl Default for Role {
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Comment {
-    pub id        : String,
-    pub created   : Timestamp,
-    pub archived  : Option<Timestamp>,
-    pub text      : String,
-    pub rating_id : String,
+    pub uid         : Uid,
+    pub rating_uid  : Uid,
+    pub created_at  : Timestamp,
+    pub archived_at : Option<Timestamp>,
+    pub text        : String,
 }
 
-#[derive(Debug, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, Eq, PartialEq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum RatingContext {
     Diversity,
@@ -222,7 +350,7 @@ impl RatingContext {
     }
 }
 
-#[derive(Debug, Default, Clone, Copy, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Default, Clone, Copy, Deserialize, Serialize, Eq, PartialEq, PartialOrd, Ord)]
 pub struct RatingValue(i8);
 
 impl RatingValue {
@@ -429,14 +557,14 @@ impl std::ops::AddAssign<(RatingContext, RatingValue)> for AvgRatingsBuilder {
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Rating {
-    pub id       : String,
-    pub entry_id : String,
-    pub created  : Timestamp,
-    pub archived : Option<Timestamp>,
-    pub title    : String,
-    pub value    : RatingValue,
-    pub context  : RatingContext,
-    pub source   : Option<String>,
+    pub uid         : Uid,
+    pub place_uid   : Uid,
+    pub created_at  : Timestamp,
+    pub archived_at : Option<Timestamp>,
+    pub title       : String,
+    pub value       : RatingValue,
+    pub context     : RatingContext,
+    pub source      : Option<String>,
 }
 
 #[rustfmt::skip]
@@ -455,13 +583,13 @@ pub struct Organization {
     pub api_token: String,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct UserToken {
     pub email_nonce: EmailNonce,
     pub expires_at: Timestamp,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct EmailNonce {
     pub email: String,
     pub nonce: Nonce,

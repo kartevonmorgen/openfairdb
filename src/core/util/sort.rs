@@ -10,7 +10,7 @@ impl Rated for Entry {
             ratings.len(),
             ratings
                 .iter()
-                .filter(|r| r.entry_id == self.uid.as_ref())
+                .filter(|r| r.place_uid == self.uid)
                 .count()
         );
         ratings
@@ -27,18 +27,17 @@ impl Rated for Entry {
 pub mod tests {
     use super::*;
     use crate::test::Bencher;
-    use uuid::Uuid;
 
     fn new_entry(id: &str) -> Entry {
         Entry::build().id(id).finish()
     }
 
-    fn new_rating(id: &str, entry_id: &str, value: i8, context: RatingContext) -> Rating {
+    fn new_rating(uid: &str, place_uid: &str, value: i8, context: RatingContext) -> Rating {
         Rating {
-            id: id.into(),
-            entry_id: entry_id.into(),
-            created: Timestamp::now(),
-            archived: None,
+            uid: uid.into(),
+            place_uid: place_uid.into(),
+            created_at: Timestamp::now(),
+            archived_at: None,
             title: "blubb".into(),
             value: value.into(),
             context,
@@ -111,13 +110,13 @@ pub mod tests {
         (entry, ratings)
     }
 
-    fn create_ratings_of_entry(id: &str, n: usize) -> Vec<Rating> {
+    fn create_ratings_of_entry(place_uid: &str, n: usize) -> Vec<Rating> {
         (0..n)
             .map(|_| Rating {
-                id: Uuid::new_v4().to_simple_ref().to_string(),
-                entry_id: id.into(),
-                created: Timestamp::now(),
-                archived: None,
+                uid: Uid::new_uuid(),
+                place_uid: place_uid.into(),
+                created_at: Timestamp::now(),
+                archived_at: None,
                 title: "".into(),
                 value: 2.into(),
                 context: RatingContext::Diversity,

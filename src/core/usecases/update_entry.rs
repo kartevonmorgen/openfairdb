@@ -83,7 +83,7 @@ pub fn prepare_updated_entry<D: Db>(db: &D, uid: Uid, e: UpdateEntry) -> Result<
             phone: telephone,
         }),
         homepage: e.homepage.map(|ref url| parse_url_param(url)).transpose()?,
-        categories,
+        categories: categories.into_iter().map(Into::into).collect(),
         tags,
         license: old.license, // license is immutable
         image_url: e

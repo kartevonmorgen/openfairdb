@@ -378,25 +378,26 @@ fn get_tags(connections: sqlite::Connections) -> Result<Vec<String>> {
 }
 
 #[get("/categories")]
-fn get_categories(connections: sqlite::Connections) -> Result<Vec<Category>> {
-    let categories = connections.shared()?.all_categories()?;
+fn get_categories(connections: sqlite::Connections) -> Result<Vec<json::Category>> {
+    let categories = connections.shared()?.all_categories()?.into_iter().map(Into::into).collect();
     Ok(Json(categories))
 }
 
-#[get("/categories/<ids>")]
-fn get_category(connections: sqlite::Connections, ids: String) -> Result<Vec<Category>> {
+#[get("/categories/<uids>")]
+fn get_category(connections: sqlite::Connections, uids: String) -> Result<Vec<json::Category>> {
     // TODO: Only lookup and return a single entity
     // TODO: Add a new method for searching multiple ids
-    let ids = util::split_ids(&ids);
-    if ids.is_empty() {
+    let uids = util::split_ids(&uids);
+    if uids.is_empty() {
         return Ok(Json(vec![]));
     }
     let categories = connections
         .shared()?
         .all_categories()?
         .into_iter()
-        .filter(|c| ids.iter().any(|id| &c.id == id))
-        .collect::<Vec<Category>>();
+        .filter(|c| uids.iter().any(|uid| c.uid.as_ref() == *uid))
+        .map(Into::into)
+        .collect();
     Ok(Json(categories))
 }
 
@@ -445,7 +446,7 @@ fn csv_export(
                 if let Ok(entry) = db.get_entry(id) {
                     let categories = all_categories
                         .iter()
-                        .filter(|c1| entry.categories.iter().any(|c2| *c2 == c1.id))
+                        .filter(|c1| entry.categories.iter().any(|c2| *c2 == c1.uid))
                         .cloned()
                         .collect::<Vec<Category>>();
                     Some((entry, categories, ratings.total()))

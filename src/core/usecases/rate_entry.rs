@@ -1,5 +1,4 @@
 use crate::core::prelude::*;
-use uuid::Uuid;
 
 #[rustfmt::skip]
 #[derive(Deserialize, Debug, Clone)]
@@ -17,11 +16,11 @@ pub struct RateEntry {
 pub struct Storable(Entry, Rating, Comment);
 
 impl Storable {
-    pub fn rating_id(&self) -> &str {
-        &self.1.id
+    pub fn rating_uid(&self) -> &str {
+        &self.1.uid.as_ref()
     }
-    pub fn comment_id(&self) -> &str {
-        &self.2.id
+    pub fn comment_uid(&self) -> &str {
+        &self.2.uid.as_ref()
     }
 }
 
@@ -33,34 +32,34 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: RateEntry) -> Result<Storable> {
         return Err(Error::Parameter(ParameterError::RatingValue));
     }
     let now = Timestamp::now();
-    let rating_id = Uuid::new_v4().to_simple_ref().to_string();
-    let comment_id = Uuid::new_v4().to_simple_ref().to_string();
+    let rating_uid = Uid::new_uuid();
+    let comment_uid = Uid::new_uuid();
     let entry = db.get_entry(&r.entry)?;
     debug_assert_eq!(entry.uid.as_ref(), &r.entry);
     let rating = Rating {
-        id: rating_id.clone(),
-        entry_id: r.entry,
-        created: now,
-        archived: None,
+        uid: rating_uid.clone(),
+        place_uid: r.entry.into(),
+        created_at: now,
+        archived_at: None,
         title: r.title,
         value: r.value,
         context: r.context,
         source: r.source,
     };
     let comment = Comment {
-        id: comment_id,
-        created: now,
-        archived: None,
+        uid: comment_uid,
+        rating_uid,
+        created_at: now,
+        archived_at: None,
         text: r.comment,
-        rating_id: rating_id.clone(),
     };
     Ok(Storable(entry, rating, comment))
 }
 
 pub fn store_new_rating<D: Db>(db: &D, s: Storable) -> Result<(Entry, Vec<Rating>)> {
     let Storable(entry, rating, comment) = s;
-    debug_assert_eq!(entry.uid.as_ref(), &rating.entry_id);
-    debug_assert_eq!(rating.id, comment.rating_id);
+    debug_assert_eq!(entry.uid, rating.place_uid);
+    debug_assert_eq!(rating.uid, comment.rating_uid);
     db.create_rating(rating)?;
     db.create_comment(comment)?;
     let ratings = db.load_ratings_of_entry(entry.uid.as_ref())?;
@@ -167,7 +166,7 @@ mod tests {
 
         assert_eq!(db.ratings.borrow().len(), 1);
         assert_eq!(db.comments.borrow().len(), 1);
-        assert_eq!(db.ratings.borrow()[0].entry_id, "foo");
-        assert_eq!(db.comments.borrow()[0].rating_id, db.ratings.borrow()[0].id);
+        assert_eq!(db.ratings.borrow()[0].place_uid, "foo".into());
+        assert_eq!(db.comments.borrow()[0].rating_uid, db.ratings.borrow()[0].uid);
     }
 }

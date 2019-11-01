@@ -92,7 +92,7 @@ pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
         location,
         contact,
         homepage,
-        categories,
+        categories: categories.into_iter().map(Into::into).collect(),
         tags,
         license: Some(e.license),
         image_url,

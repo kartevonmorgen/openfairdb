@@ -38,7 +38,7 @@ mod tests {
         use super::super::Result;
 
         pub use rocket::{
-            http::{ContentType, Cookie, Status},
+            http::{ContentType, Cookie, Status as HttpStatus},
             local::Client,
             response::Response,
         };
@@ -180,8 +180,8 @@ mod tests {
 
         pub fn assert_not_found<T: std::fmt::Debug>(res: Result<T>) {
             assert_eq!(
-                RepoError::NotFound.to_string(),
-                res.unwrap_err().to_string()
+                Err(RepoError::NotFound.to_string()),
+                res.map(|t| format!("{:?}", t)).map_err(|e| e.to_string())
             );
         }
 

@@ -355,7 +355,7 @@ mod entry {
         login_user(&client, "foo");
         let (e_id, _, c_id) = create_entry_with_rating(&db, &mut search);
         let comment = db.shared().unwrap().load_comment(&c_id).unwrap();
-        assert!(comment.archived.is_none());
+        assert!(comment.archived_at.is_none());
         let res = client
             .post("/comments/actions/archive")
             .header(ContentType::Form)
@@ -377,7 +377,7 @@ mod entry {
         login_user(&client, "foo");
         let (e_id, _, c_id) = create_entry_with_rating(&db, &mut search);
         let comment = db.shared().unwrap().load_comment(&c_id).unwrap();
-        assert!(comment.archived.is_none());
+        assert!(comment.archived_at.is_none());
         let res = client
             .post("/comments/actions/archive")
             .header(ContentType::Form)
@@ -403,7 +403,7 @@ mod entry {
             .dispatch();
         assert_eq!(res.status(), Status::NotFound);
         let comment = db.shared().unwrap().load_comment(&c_id).unwrap();
-        assert!(comment.archived.is_none());
+        assert!(comment.archived_at.is_none());
     }
 
     #[test]

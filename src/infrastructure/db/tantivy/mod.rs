@@ -551,7 +551,7 @@ impl EntryIndexer for TantivyEntryIndex {
             doc.add_text(self.fields.address_country, country);
         }
         for category in &entry.categories {
-            doc.add_text(self.fields.category, category);
+            doc.add_text(self.fields.category, category.as_ref());
         }
         for tag in &entry.tags {
             doc.add_text(self.fields.tag, tag);

@@ -10,69 +10,6 @@ use crate::core::{
 use chrono::prelude::*;
 use std::str::FromStr;
 
-impl From<e::Entry> for Entry {
-    fn from(e: e::Entry) -> Self {
-        let e::Entry {
-            uid,
-            created_at,
-            archived_at,
-            version,
-            title,
-            description,
-            location,
-            contact,
-            homepage,
-            license,
-            image_url,
-            image_link_url,
-            ..
-        } = e;
-
-        let e::Location { pos, address } = location;
-        debug_assert!(pos.is_valid());
-
-        let e::Address {
-            street,
-            zip,
-            city,
-            country,
-        } = address.unwrap_or_else(|| e::Address {
-            street: None,
-            zip: None,
-            city: None,
-            country: None,
-        });
-
-        let e::Contact { email, phone } = contact.unwrap_or_else(|| e::Contact {
-            email: None,
-            phone: None,
-        });
-
-        Entry {
-            osm_node: None,
-            id: uid.into(),
-            version: version as i64,
-            created: created_at.into(),
-            archived: archived_at.map(Into::into),
-            current: true,
-            title,
-            description,
-            lat: pos.lat().to_deg(),
-            lng: pos.lng().to_deg(),
-            street,
-            zip,
-            city,
-            country,
-            email,
-            telephone: phone,
-            homepage,
-            license,
-            image_url,
-            image_link_url,
-        }
-    }
-}
-
 impl From<i16> for e::RegistrationType {
     fn from(i: i16) -> Self {
         use crate::core::entities::RegistrationType::*;
@@ -123,70 +60,6 @@ fn registration_type_into_i16() {
     assert_eq!(e, 1);
     assert_eq!(p, 2);
     assert_eq!(u, 3);
-}
-
-impl From<(Entry, Vec<String>, Vec<String>)> for e::Entry {
-    fn from(d: (Entry, Vec<String>, Vec<String>)) -> Self {
-        let (e, categories, tags) = d;
-        let Entry {
-            id,
-            version,
-            created,
-            archived,
-            title,
-            description,
-            lat,
-            lng,
-            street,
-            zip,
-            city,
-            country,
-            email,
-            telephone,
-            license,
-            homepage,
-            image_url,
-            image_link_url,
-            ..
-        } = e;
-        let location = e::Location {
-            pos: MapPoint::try_from_lat_lng_deg(lat, lng).unwrap_or_default(),
-            address: if street.is_some() || zip.is_some() || city.is_some() || country.is_some() {
-                Some(e::Address {
-                    street,
-                    zip,
-                    city,
-                    country,
-                })
-            } else {
-                None
-            },
-        };
-        let contact = if email.is_some() || telephone.is_some() {
-            Some(e::Contact {
-                email,
-                phone: telephone,
-            })
-        } else {
-            None
-        };
-        e::Entry {
-            uid: id.into(),
-            version: version as u64,
-            created_at: created.into(),
-            archived_at: archived.map(Into::into),
-            title,
-            description,
-            location,
-            contact,
-            homepage,
-            categories,
-            tags,
-            license,
-            image_url,
-            image_link_url,
-        }
-    }
 }
 
 impl From<(EventEntity, &Vec<EventTag>)> for e::Event {
@@ -276,40 +149,6 @@ impl From<(EventEntity, &Vec<EventTag>)> for e::Event {
     }
 }
 
-impl From<Category> for e::Category {
-    fn from(c: Category) -> e::Category {
-        let Category {
-            id,
-            name,
-            created,
-            version,
-        } = c;
-        e::Category {
-            id,
-            name,
-            created,
-            version: version as u64,
-        }
-    }
-}
-
-impl From<e::Category> for Category {
-    fn from(c: e::Category) -> Category {
-        let e::Category {
-            id,
-            name,
-            created,
-            version,
-        } = c;
-        Category {
-            id,
-            name,
-            created,
-            version: version as i64,
-        }
-    }
-}
-
 impl From<Tag> for e::Tag {
     fn from(t: Tag) -> e::Tag {
         e::Tag { id: t.id }
@@ -363,90 +202,48 @@ impl From<UserEntity> for e::User {
     }
 }
 
-impl From<Comment> for e::Comment {
-    fn from(c: Comment) -> e::Comment {
-        let Comment {
-            id,
-            created,
-            archived,
+impl From<PlaceRatingComment> for e::Comment {
+    fn from(c: PlaceRatingComment) -> Self {
+        let PlaceRatingComment {
+            uid,
+            rating_uid,
+            created_at,
+            archived_at,
             text,
-            rating_id,
+            ..
         } = c;
-        e::Comment {
-            id,
-            created: created.into(),
-            archived: archived.map(Into::into),
+        Self {
+            uid: uid.into(),
+            rating_uid: rating_uid.into(),
+            created_at: created_at.into(),
+            archived_at: archived_at.map(Into::into),
             text,
-            rating_id,
         }
     }
 }
 
-impl From<e::Comment> for Comment {
-    fn from(c: e::Comment) -> Comment {
-        let e::Comment {
-            id,
-            created,
-            archived,
-            text,
-            rating_id,
-        } = c;
-        Comment {
-            id,
-            created: created.into(),
-            archived: archived.map(Into::into),
-            text,
-            rating_id,
-        }
-    }
-}
-
-impl From<Rating> for e::Rating {
-    fn from(r: Rating) -> e::Rating {
-        let Rating {
-            id,
-            entry_id,
-            created,
-            archived,
+impl From<PlaceRating> for e::Rating {
+    fn from(r: PlaceRating) -> Self {
+        let PlaceRating {
+            uid,
+            place_uid,
+            created_at,
+            archived_at,
             title,
             context,
             value,
             source,
+            ..
         } = r;
-        e::Rating {
-            id,
-            entry_id,
-            created: created.into(),
-            archived: archived.map(Into::into),
+        Self {
+            uid: uid.into(),
+            place_uid: place_uid.into(),
+            created_at: created_at.into(),
+            archived_at: archived_at.map(Into::into),
             title,
             value: (value as i8).into(),
             context: context.parse().unwrap(),
             source,
-        }
-    }
-}
-
-impl From<e::Rating> for Rating {
-    fn from(r: e::Rating) -> Rating {
-        let e::Rating {
-            id,
-            created,
-            archived,
-            title,
-            context,
-            value,
-            source,
-            entry_id,
-        } = r;
-        Rating {
-            id,
-            created: created.into(),
-            archived: archived.map(Into::into),
-            title,
-            value: i8::from(value).into(),
-            context: context.into(),
-            source,
-            entry_id,
         }
     }
 }

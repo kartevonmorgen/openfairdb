@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.x.y (2019-11-dd)
+
+- new(db): Renamed and transformed "entries" into "places"
+- new(db): Added status log for place revisions
+- fix(db): Removed categories from database
+
 ## v0.7.2 (2019-11-08)
 
 - fix(web): Re-enabled CSV export for Scout role

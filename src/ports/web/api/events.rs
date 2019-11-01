@@ -4,7 +4,7 @@ use crate::core::util::{geo::MapBbox, validate};
 
 use chrono::prelude::*;
 use rocket::{
-    http::{RawStr, Status},
+    http::{RawStr, Status as HttpStatus},
     request::{FromQuery, Query},
 };
 
@@ -38,8 +38,8 @@ pub fn post_event_with_token(
 // NOTE:
 // At the moment we don't want to allow anonymous event creation.
 // So for now we assure that it's blocked:
-pub fn post_event(mut _db: sqlite::Connections, _e: Json<usecases::NewEvent>) -> Status {
-    Status::Unauthorized
+pub fn post_event(mut _db: sqlite::Connections, _e: Json<usecases::NewEvent>) -> HttpStatus {
+    HttpStatus::Unauthorized
 }
 // But in the future we might allow anonymous event creation:
 //
@@ -65,8 +65,8 @@ pub fn put_event(
     mut _db: sqlite::Connections,
     _id: &RawStr,
     _e: Json<usecases::UpdateEvent>,
-) -> Status {
-    Status::Unauthorized
+) -> HttpStatus {
+    HttpStatus::Unauthorized
 }
 
 #[put("/events/<id>", format = "application/json", data = "<e>")]
@@ -198,8 +198,8 @@ pub fn get_events(db: sqlite::Connections, query: EventQuery) -> Result<Vec<json
 }
 
 #[delete("/events/<_id>", rank = 2)]
-pub fn delete_event(mut _db: sqlite::Connections, _id: &RawStr) -> Status {
-    Status::Unauthorized
+pub fn delete_event(mut _db: sqlite::Connections, _id: &RawStr) -> HttpStatus {
+    HttpStatus::Unauthorized
 }
 
 #[delete("/events/<id>")]
@@ -229,10 +229,10 @@ mod tests {
             // NOTE:
             // At the moment we don't want to allow anonymous event creation.
             // So for now we assure that it's blocked:
-            assert_eq!(response.status(), Status::Unauthorized);
+            assert_eq!(response.status(), HttpStatus::Unauthorized);
             // But in the future we might allow anonymous event creation:
             //
-            // assert_eq!(response.status(), Status::Ok);
+            // assert_eq!(response.status(), HttpStatus::Ok);
             // test_json(&response);
             // let body_str = response.body().and_then(|b| b.into_string()).unwrap();
             // let eid = db.get().unwrap().all_events().unwrap()[0].id.clone();
@@ -250,10 +250,10 @@ mod tests {
             // NOTE:
             // At the moment we don't want to allow anonymous event creation.
             // So for now we assure that it's blocked:
-            assert_eq!(response.status(), Status::Unauthorized);
+            assert_eq!(response.status(), HttpStatus::Unauthorized);
             // But in the future we might allow anonymous event creation:
             //
-            // assert_eq!(response.status(), Status::Ok);
+            // assert_eq!(response.status(), HttpStatus::Ok);
             // test_json(&response);
             // let body_str = response.body().and_then(|b| b.into_string()).unwrap();
             // let ev = db.get().unwrap().all_events().unwrap()[0].clone();
@@ -264,7 +264,7 @@ mod tests {
             //     .get(format!("/events/{}", eid))
             //     .header(ContentType::JSON);
             // let mut response = req.dispatch();
-            // assert_eq!(response.status(), Status::Ok);
+            // assert_eq!(response.status(), HttpStatus::Ok);
             // test_json(&response);
             // let body_str = response.body().and_then(|b| b.into_string()).unwrap();
             // assert_eq!(
@@ -297,7 +297,7 @@ mod tests {
                     .header(Header::new("Authorization", "Bearer foo"))
                     .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com"}"#)
                     .dispatch();
-                assert_eq!(res.status(), Status::Forbidden);
+                assert_eq!(res.status(), HttpStatus::Forbidden);
             }
 
             #[test]
@@ -318,7 +318,7 @@ mod tests {
                     .header(Header::new("Authorization", "Bearer foo"))
                     .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com"}"#)
                     .dispatch();
-                assert_eq!(res.status(), Status::Ok);
+                assert_eq!(res.status(), HttpStatus::Ok);
                 test_json(&res);
                 let body_str = res.body().and_then(|b| b.into_string()).unwrap();
                 let ev = db.shared().unwrap().all_events().unwrap()[0].clone();
@@ -345,7 +345,7 @@ mod tests {
                     .header(Header::new("Authorization", "Bearer foo"))
                     .body(r#"{"title":"Reginaltreffen","start":0,"created_by":"a-very-super-long-email-address@a-super-long-domain.com"}"#)
                     .dispatch();
-                assert_eq!(res.status(), Status::Ok);
+                assert_eq!(res.status(), HttpStatus::Ok);
                 let u = db.shared().unwrap().all_users().unwrap()[0].clone();
                 assert_eq!(
                     u.email,
@@ -371,7 +371,7 @@ mod tests {
                     .header(Header::new("Authorization", "Bearer foo"))
                     .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","email":"","homepage":"","description":"","registration":""}"#)
                     .dispatch();
-                assert_eq!(res.status(), Status::Ok);
+                assert_eq!(res.status(), HttpStatus::Ok);
                 test_json(&res);
                 let ev = db.shared().unwrap().all_events().unwrap()[0].clone();
                 assert!(ev.contact.is_none());
@@ -397,7 +397,7 @@ mod tests {
                     .header(Header::new("Authorization", "Bearer foo"))
                     .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","registration":"telephone","telephone":"12345"}"#)
                     .dispatch();
-                assert_eq!(res.status(), Status::Ok);
+                assert_eq!(res.status(), HttpStatus::Ok);
                 test_json(&res);
                 let ev = db.shared().unwrap().all_events().unwrap()[0].clone();
                 assert_eq!(ev.registration.unwrap(), RegistrationType::Phone);
@@ -430,21 +430,21 @@ mod tests {
                     .header(Header::new("Authorization", "Bearer a"))
                     .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","tags":["a"] }"#)
                     .dispatch();
-                assert_eq!(res.status(), Status::Ok);
+                assert_eq!(res.status(), HttpStatus::Ok);
                 let res = client
                     .post("/events")
                     .header(ContentType::JSON)
                     .header(Header::new("Authorization", "Bearer a"))
                     .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","tags":["b"] }"#)
                     .dispatch();
-                assert_eq!(res.status(), Status::Forbidden);
+                assert_eq!(res.status(), HttpStatus::Forbidden);
                 let res = client
                     .post("/events")
                     .header(ContentType::JSON)
                     .header(Header::new("Authorization", "Bearer b"))
                     .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","tags":["b"] }"#)
                     .dispatch();
-                assert_eq!(res.status(), Status::Ok);
+                assert_eq!(res.status(), HttpStatus::Ok);
             }
 
             #[test]
@@ -465,7 +465,7 @@ mod tests {
                     .header(Header::new("Authorization", "Bearer foo"))
                     .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","tags":["", " "," tag","tag ","two tags", "tag"]}"#)
                     .dispatch();
-                assert_eq!(res.status(), Status::Ok);
+                assert_eq!(res.status(), HttpStatus::Ok);
                 test_json(&res);
                 let ev = db.shared().unwrap().all_events().unwrap()[0].clone();
                 assert_eq!(
@@ -498,7 +498,7 @@ mod tests {
                     .header(Header::new("Authorization", "Bearer foo"))
                     .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","registration":"foo"}"#)
                     .dispatch();
-                assert_eq!(res.status(), Status::BadRequest);
+                assert_eq!(res.status(), HttpStatus::BadRequest);
             }
 
             #[test]
@@ -519,7 +519,7 @@ mod tests {
                     .header(Header::new("Authorization", "Bearer foo"))
                     .body(r#"{"title":"x","start":0}"#)
                     .dispatch();
-                assert_eq!(res.status(), Status::BadRequest);
+                assert_eq!(res.status(), HttpStatus::BadRequest);
             }
 
             #[test]
@@ -540,7 +540,7 @@ mod tests {
                     .header(Header::new("Authorization", "Bearer foo"))
                     .body(r#"{"title":"","start":0,"created_by":"foo@bar.com"}"#)
                     .dispatch();
-                assert_eq!(res.status(), Status::BadRequest);
+                assert_eq!(res.status(), HttpStatus::BadRequest);
             }
 
             #[test]
@@ -561,7 +561,7 @@ mod tests {
                     .header(Header::new("Authorization", "Bearer foo"))
                     .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","registration":"telephone"}"#)
                     .dispatch();
-                assert_eq!(res.status(), Status::BadRequest);
+                assert_eq!(res.status(), HttpStatus::BadRequest);
             }
         }
 
@@ -574,7 +574,7 @@ mod tests {
                 .header(Header::new("Authorization", "Bearer not-valid"))
                 .body(r#"{"title":"x","start":0}"#)
                 .dispatch();
-            assert_eq!(res.status(), Status::Unauthorized);
+            assert_eq!(res.status(), HttpStatus::Unauthorized);
         }
     }
 
@@ -604,7 +604,7 @@ mod tests {
             db.exclusive().unwrap().create_event(e).unwrap();
             let req = client.get("/events/1234").header(ContentType::JSON);
             let mut response = req.dispatch();
-            assert_eq!(response.status(), Status::Ok);
+            assert_eq!(response.status(), HttpStatus::Ok);
             test_json(&response);
             let body_str = response.body().and_then(|b| b.into_string()).unwrap();
             assert_eq!(
@@ -641,7 +641,7 @@ mod tests {
             }
             let req = client.get("/events").header(ContentType::JSON);
             let mut response = req.dispatch();
-            assert_eq!(response.status(), Status::Ok);
+            assert_eq!(response.status(), HttpStatus::Ok);
             test_json(&response);
             let body_str = response.body().and_then(|b| b.into_string()).unwrap();
             assert!(body_str.contains("\"id\":\"a\""));
@@ -675,7 +675,7 @@ mod tests {
                     .unwrap();
             }
             let mut res = client.get("/events").header(ContentType::JSON).dispatch();
-            assert_eq!(res.status(), Status::Ok);
+            assert_eq!(res.status(), HttpStatus::Ok);
             test_json(&res);
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
             let objects: Vec<_> = body_str.split("},{").collect();
@@ -714,7 +714,7 @@ mod tests {
             }
             let req = client.get("/events?tag=a&tag=c").header(ContentType::JSON);
             let mut response = req.dispatch();
-            assert_eq!(response.status(), Status::Ok);
+            assert_eq!(response.status(), HttpStatus::Ok);
             test_json(&response);
             let body_str = response.body().and_then(|b| b.into_string()).unwrap();
             assert!(body_str.contains("\"id\":\"a\""));
@@ -723,7 +723,7 @@ mod tests {
 
             let req = client.get("/events?tag=b").header(ContentType::JSON);
             let mut response = req.dispatch();
-            assert_eq!(response.status(), Status::Ok);
+            assert_eq!(response.status(), HttpStatus::Ok);
             let body_str = response.body().and_then(|b| b.into_string()).unwrap();
             assert!(!body_str.contains("\"id\":\"a\""));
             assert!(body_str.contains("\"id\":\"b\""));
@@ -737,7 +737,7 @@ mod tests {
                 .get("/events?created_by=foo%40bar.com")
                 .header(ContentType::JSON)
                 .dispatch();
-            assert_eq!(res.status(), Status::Unauthorized);
+            assert_eq!(res.status(), HttpStatus::Unauthorized);
         }
 
         #[test]
@@ -773,7 +773,7 @@ mod tests {
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
                 .dispatch();
-            assert_eq!(res.status(), Status::Ok);
+            assert_eq!(res.status(), HttpStatus::Ok);
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
             assert!(!body_str.contains(&format!("\"id\":\"{}\"", uids[0])));
             assert!(body_str.contains(&format!("\"id\":\"{}\"", uids[1])));
@@ -798,7 +798,7 @@ mod tests {
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer bar"))
                 .dispatch();
-            assert_eq!(res.status(), Status::Unauthorized);
+            assert_eq!(res.status(), HttpStatus::Unauthorized);
         }
 
         #[test]
@@ -832,7 +832,7 @@ mod tests {
                 .get("/events?start_min=150")
                 .header(ContentType::JSON)
                 .dispatch();
-            assert_eq!(res.status(), Status::Ok);
+            assert_eq!(res.status(), HttpStatus::Ok);
             test_json(&res);
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
             let objects: Vec<_> = body_str.split("},{").collect();
@@ -872,7 +872,7 @@ mod tests {
                 .get("/events?start_max=250")
                 .header(ContentType::JSON)
                 .dispatch();
-            assert_eq!(res.status(), Status::Ok);
+            assert_eq!(res.status(), HttpStatus::Ok);
             test_json(&res);
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
             let objects: Vec<_> = body_str.split("},{").collect();
@@ -916,7 +916,7 @@ mod tests {
                 .get("/events?bbox=-8,-5,10,7.9")
                 .header(ContentType::JSON)
                 .dispatch();
-            assert_eq!(res.status(), Status::Ok);
+            assert_eq!(res.status(), HttpStatus::Ok);
             test_json(&res);
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
             let objects: Vec<_> = body_str.split("},{").collect();
@@ -938,7 +938,7 @@ mod tests {
                 .header(ContentType::JSON)
                 .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com"}"#)
                 .dispatch();
-            assert_eq!(res.status(), Status::Unauthorized);
+            assert_eq!(res.status(), HttpStatus::Unauthorized);
         }
 
         #[test]
@@ -959,7 +959,7 @@ mod tests {
                 .header(Header::new("Authorization", "Bearer bar"))
                 .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com"}"#)
                 .dispatch();
-            assert_eq!(res.status(), Status::Unauthorized);
+            assert_eq!(res.status(), HttpStatus::Unauthorized);
         }
 
         #[test]
@@ -989,7 +989,7 @@ mod tests {
                 .header(Header::new("Authorization", "Bearer foo"))
                 .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com"}"#)
                 .dispatch();
-            assert_eq!(res.status(), Status::Ok);
+            assert_eq!(res.status(), HttpStatus::Ok);
             let new = db.exclusive().unwrap().get_event(uid.as_ref()).unwrap();
             assert_eq!(new.title, "new");
             assert_eq!(new.start.timestamp(), 5);
@@ -1034,7 +1034,7 @@ mod tests {
                 .header(Header::new("Authorization", "Bearer foo"))
                 .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com"}"#)
                 .dispatch();
-            assert_eq!(res.status(), Status::Forbidden);
+            assert_eq!(res.status(), HttpStatus::Forbidden);
         }
 
         #[test]
@@ -1064,7 +1064,7 @@ mod tests {
                 .header(Header::new("Authorization", "Bearer foo"))
                 .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com","tags":["bla2"]}"#)
                 .dispatch();
-            assert_eq!(res.status(), Status::Ok);
+            assert_eq!(res.status(), HttpStatus::Ok);
             let new = db.exclusive().unwrap().get_event(uid.as_ref()).unwrap();
             assert_eq!(new.tags, vec!["bla2", "org-tag"]);
         }
@@ -1102,7 +1102,7 @@ mod tests {
                 .header(Header::new("Authorization", "Bearer foo"))
                 .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com","tags":["blub","new","org-tag2"]}"#)
                 .dispatch();
-            assert_eq!(res.status(), Status::Ok);
+            assert_eq!(res.status(), HttpStatus::Ok);
             let new = db.exclusive().unwrap().get_event(uid.as_ref()).unwrap();
             assert_eq!(new.tags, vec!["blub", "new", "org-tag2"]);
         }
@@ -1135,7 +1135,7 @@ mod tests {
                 .header(Header::new("Authorization", "Bearer foo"))
                 .body("{\"title\":\"Changed\",\"start\":99}")
                 .dispatch();
-            assert_eq!(res.status(), Status::Ok);
+            assert_eq!(res.status(), HttpStatus::Ok);
             let new = db.shared().unwrap().get_event(uid.as_ref()).unwrap();
             assert_eq!(new.title, "Changed");
             assert_eq!(new.created_by, created_by);
@@ -1152,7 +1152,7 @@ mod tests {
                 .delete("/events/foo")
                 .header(ContentType::JSON)
                 .dispatch();
-            assert_eq!(res.status(), Status::Unauthorized);
+            assert_eq!(res.status(), HttpStatus::Unauthorized);
         }
 
         #[test]
@@ -1172,7 +1172,7 @@ mod tests {
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer bar"))
                 .dispatch();
-            assert_eq!(res.status(), Status::Unauthorized);
+            assert_eq!(res.status(), HttpStatus::Unauthorized);
         }
 
         #[test]
@@ -1215,14 +1215,14 @@ mod tests {
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
                 .dispatch();
-            assert_eq!(res.status(), Status::Ok);
+            assert_eq!(res.status(), HttpStatus::Ok);
             // The 2nd event is not tagged with one of the owned tags.
             let res = client
                 .delete(format!("/events/{}", uid2))
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
                 .dispatch();
-            assert_eq!(res.status(), Status::Forbidden);
+            assert_eq!(res.status(), HttpStatus::Forbidden);
             assert_eq!(db.shared().unwrap().count_events().unwrap(), 1);
         }
     }

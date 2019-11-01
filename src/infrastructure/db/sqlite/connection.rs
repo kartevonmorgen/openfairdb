@@ -11,35 +11,12 @@ use std::result;
 
 type Result<T> = result::Result<T, RepoError>;
 
-fn reset_current_entry_before_insert_new_version(conn: &SqliteConnection, id: &str) -> Result<()> {
-    use self::schema::entries::dsl;
-    let count = diesel::update(
-        dsl::entries
-            .filter(dsl::id.eq(id))
-            .filter(dsl::current.eq(true))
-            .filter(dsl::archived.is_null()),
-    )
-    .set(dsl::current.eq(false))
-    .execute(conn)?;
-    match count {
-        // Either none or one entry version was marked as
-        // `current` before and has been reset.
-        n if n <= 1 => Ok(()),
-        // Otherwise refuse to insert a new entry version.
-        n if n > 1 => Err(RepoError::TooManyFound),
-        _ => unreachable!(),
-    }
-}
-
-fn load_entry(conn: &SqliteConnection, entry: models::Entry) -> Result<Entry> {
-    use self::schema::entry_category_relations::dsl as ec_dsl;
-    use self::schema::entry_tag_relations::dsl as et_dsl;
-
-    let models::Entry {
+fn load_entry(conn: &SqliteConnection, place_rev: models::PlaceRev) -> Result<Entry> {
+    let models::PlaceRev {
         id,
-        created,
-        archived,
-        version,
+        place_uid,
+        rev,
+        created_at,
         title,
         description,
         lat,
@@ -49,13 +26,13 @@ fn load_entry(conn: &SqliteConnection, entry: models::Entry) -> Result<Entry> {
         city,
         country,
         email,
-        telephone,
+        phone,
         homepage,
         license,
         image_url,
         image_link_url,
         ..
-    } = entry;
+    } = place_rev;
 
     let location = Location {
         pos: MapPoint::try_from_lat_lng_deg(lat, lng).unwrap_or_default(),
@@ -67,34 +44,35 @@ fn load_entry(conn: &SqliteConnection, entry: models::Entry) -> Result<Entry> {
         }),
     };
 
-    let categories = ec_dsl::entry_category_relations
-        .filter(ec_dsl::entry_id.eq(&id))
-        .filter(ec_dsl::entry_version.eq(version))
-        .load::<models::EntryCategoryRelation>(conn)?
+    use schema::place_rev_status_log::dsl as log_dsl;
+    let archived_at = log_dsl::place_rev_status_log
+        .select(log_dsl::created_at)
+        .filter(log_dsl::place_rev_id.eq(&id))
+        .filter(log_dsl::status.eq(Status::archived().into_inner()))
+        .first::<i64>(conn)
+        .optional()?
+        .map(Into::into);
+
+    use schema::place_rev_tag::dsl as tag_dsl;
+    let tags: Vec<_> = tag_dsl::place_rev_tag
+        .filter(tag_dsl::place_rev_id.eq(&id))
+        .load::<models::PlaceRevTag>(conn)?
         .into_iter()
-        .map(|r| r.category_id)
+        .map(|r| r.tag)
         .collect();
 
-    let tags = et_dsl::entry_tag_relations
-        .filter(et_dsl::entry_id.eq(&id))
-        .filter(et_dsl::entry_version.eq(version))
-        .load::<models::EntryTagRelation>(conn)?
-        .into_iter()
-        .map(|r| r.tag_id)
-        .collect();
+    let (tags, categories) = Category::split_from_tags(tags);
+    let categories = categories.into_iter().map(|c| c.uid).collect();
 
     Ok(Entry {
-        uid: id.into(),
-        created_at: created.into(),
-        archived_at: archived.map(Into::into),
-        version: version as u64,
+        uid: place_uid.into(),
+        created_at: created_at.into(),
+        archived_at,
+        version: rev as u64,
         title,
         description,
         location,
-        contact: Some(Contact {
-            email,
-            phone: telephone,
-        }),
+        contact: Some(Contact { email, phone }),
         homepage,
         categories,
         tags,
@@ -105,153 +83,270 @@ fn load_entry(conn: &SqliteConnection, entry: models::Entry) -> Result<Entry> {
 }
 
 #[derive(QueryableByName)]
-struct TagIdCount {
+struct TagCountRow {
     #[sql_type = "diesel::sql_types::Text"]
-    tag_id: String,
+    tag: String,
 
     #[sql_type = "diesel::sql_types::BigInt"]
     count: i64,
 }
 
-impl EntryGateway for SqliteConnection {
+fn resolve_place_id(conn: &SqliteConnection, uid: &str) -> Result<i64> {
+    use schema::place::dsl;
+    Ok(schema::place::table
+        .select(dsl::id)
+        .filter(dsl::uid.eq(uid))
+        .first::<i64>(conn)?)
+}
+
+fn resolve_rating_id(conn: &SqliteConnection, uid: &str) -> Result<i64> {
+    use schema::place_rating::dsl;
+    Ok(schema::place_rating::table
+        .select(dsl::id)
+        .filter(dsl::uid.eq(uid))
+        .first::<i64>(conn)?)
+}
+
+fn resolve_place_rev_id(conn: &SqliteConnection, place_id: i64, rev: i64) -> Result<i64> {
+    use schema::place_rev::dsl;
+    Ok(dsl::place_rev
+        .select(dsl::id)
+        .filter(dsl::place_id.eq(place_id))
+        .filter(dsl::rev.eq(rev))
+        .first::<i64>(conn)?)
+}
+
+fn new_place_rev_from_entry(
+    conn: &SqliteConnection,
+    e: Entry,
+) -> Result<(Uid, models::NewPlaceRev, Vec<String>)> {
+    let Entry {
+        uid,
+        created_at,
+        archived_at,
+        version,
+        title,
+        description,
+        location: Location {
+            pos,
+            address,
+        },
+        contact,
+        homepage,
+        categories,
+        tags,
+        license,
+        image_url,
+        image_link_url,
+    } = e;
+    if version == 0 {
+        // Create a new place
+        use schema::place::dsl;
+        let new_place = models::NewPlace {
+            uid: uid.as_ref(),
+            rev: 0,
+        };
+        diesel::insert_or_ignore_into(dsl::place)
+            .values(new_place)
+            .execute(conn)?;
+    } else {
+        // Update the existing place with a new revision
+        use schema::place::dsl;
+        debug_assert!(version > 0);
+        let _count = diesel::update(
+            dsl::place
+                .filter(dsl::uid.eq(uid.as_ref()))
+                .filter(dsl::rev.eq(version as i64 - 1)),
+        )
+        .set(dsl::rev.eq(version as i64))
+        .execute(conn)?;
+        debug_assert_eq!(1, _count);
+    }
+    let place_id = resolve_place_id(conn, uid.as_ref())?;
+    let Contact { email, phone } = contact.unwrap_or_default();
+    let Address {
+        street,
+        zip,
+        city,
+        country,
+    } = address.unwrap_or_default();
+    let (created_at, status) = if let Some(archived_at) = archived_at {
+        (archived_at, Status::archived())
+    } else {
+        (created_at, Status::created())
+    };
+    let new_place_rev = models::NewPlaceRev {
+        place_id,
+        rev: version as i64,
+        created_at: created_at.into(),
+        created_by: None,
+        status: status.into(),
+        title,
+        description,
+        lat: pos.lat().to_deg(),
+        lng: pos.lng().to_deg(),
+        street,
+        zip,
+        city,
+        country,
+        email,
+        phone,
+        homepage,
+        license,
+        image_url,
+        image_link_url,
+    };
+    let tags = Category::merge_uids_into_tags(categories, tags);
+    Ok((uid, new_place_rev, tags))
+}
+
+impl PlaceGateway for SqliteConnection {
     fn create_entry(&self, e: Entry) -> Result<()> {
-        let cat_rels: Vec<_> = e
-            .categories
+        let (_, new_place_rev, tags) = new_place_rev_from_entry(self, e)?;
+        // TODO: Confirming, rejecting, or archiving an entry only changes the status
+        // of an existing revision and must not create a new revision!
+        assert_eq!(Status::created(), new_place_rev.status.into());
+        diesel::insert_into(schema::place_rev::table)
+            .values(&new_place_rev)
+            .execute(self)?;
+        let place_rev_id = resolve_place_rev_id(self, new_place_rev.place_id, new_place_rev.rev)?;
+
+        // Insert into place_rev_status_log
+        let new_place_rev_log_status = models::NewPlaceRevStatusLog {
+            place_rev_id,
+            status: new_place_rev.status,
+            created_at: new_place_rev.created_at,
+            created_by: new_place_rev.created_by,
+            context: None,
+            notes: Some("created"),
+        };
+        diesel::insert_into(schema::place_rev_status_log::table)
+            .values(new_place_rev_log_status)
+            .execute(self)?;
+
+        // Insert into place_rev_tag
+        let tags: Vec<_> = tags
             .iter()
-            .map(|category_id| models::StoreableEntryCategoryRelation {
-                entry_id: &e.uid.as_ref(),
-                entry_version: e.version as i64,
-                category_id: &category_id,
+            .map(|tag| models::NewPlaceRevTag {
+                place_rev_id,
+                tag: tag.as_str(),
             })
             .collect();
-        let tag_rels: Vec<_> = e
-            .tags
-            .iter()
-            .map(|tag_id| models::StoreableEntryTagRelation {
-                entry_id: &e.uid.as_ref(),
-                entry_version: e.version as i64,
-                tag_id: &tag_id,
-            })
-            .collect();
-        let new_entry = models::Entry::from(e.clone());
-        reset_current_entry_before_insert_new_version(self, &new_entry.id)?;
-        diesel::insert_into(schema::entries::table)
-            .values(&new_entry)
-            .execute(self)?;
-        diesel::insert_into(schema::entry_category_relations::table)
-            //WHERE NOT EXISTS
-            .values(&cat_rels)
-            .execute(self)?;
-        diesel::insert_into(schema::entry_tag_relations::table)
-            //WHERE NOT EXISTS
-            .values(&tag_rels)
+        diesel::insert_into(schema::place_rev_tag::table)
+            .values(&tags)
             .execute(self)?;
         Ok(())
     }
 
-    fn get_entry(&self, id: &str) -> Result<Entry> {
-        use self::schema::entries::dsl as e_dsl;
-
-        let entry = e_dsl::entries
-            .filter(e_dsl::id.eq(id))
-            .filter(e_dsl::current.eq(true))
-            .filter(e_dsl::archived.is_null())
-            .first(self)?;
-
-        load_entry(self, entry)
+    fn update_entry(&self, entry: &Entry) -> Result<()> {
+        // Updating an entry creates a new revision
+        self.create_entry(entry.clone())
     }
 
-    fn get_entries(&self, ids: &[&str]) -> Result<Vec<Entry>> {
-        use self::schema::entries::dsl as e_dsl;
+    fn archive_entries(&self, uids: &[&str], archived_at: Timestamp) -> Result<usize> {
+        use schema::place::dsl;
+        use schema::place_rev::dsl as rev_dsl;
 
-        // TODO: Split loading into chunks of fixed size
-        info!("Loading multiple ({}) entries at once", ids.len());
-        let entries = e_dsl::entries
-            .filter(e_dsl::id.eq_any(ids))
-            .filter(e_dsl::current.eq(true))
-            .filter(e_dsl::archived.is_null())
-            .load::<models::Entry>(self)?;
-
-        let mut results = Vec::with_capacity(entries.len());
-        for entry in entries {
-            results.push(load_entry(self, entry)?);
+        let rev_ids = schema::place::table
+            .inner_join(
+                schema::place_rev::table
+                    .on(rev_dsl::place_id.eq(dsl::id).and(rev_dsl::rev.eq(dsl::rev))),
+            )
+            .select(rev_dsl::id)
+            .filter(dsl::uid.eq_any(uids))
+            .load(self)?;
+        let count = rev_ids.len();
+        for rev_id in rev_ids {
+            let update_count = diesel::update(
+                schema::place_rev::table
+                    .filter(rev_dsl::id.eq(rev_id))
+                    .filter(rev_dsl::status.ne(Status::archived().into_inner())),
+            )
+            .set(rev_dsl::status.eq(Status::archived().into_inner()))
+            .execute(self)?;
+            debug_assert!(update_count <= 1);
+            if update_count > 0 {
+                if update_count > 1 {
+                    // Should never happen
+                    return Err(RepoError::TooManyFound);
+                }
+                let new_place_rev_log_status = models::NewPlaceRevStatusLog {
+                    place_rev_id: rev_id,
+                    status: Status::archived().into(),
+                    created_at: archived_at.into(),
+                    created_by: None,
+                    context: None,
+                    notes: Some("archived"),
+                };
+                diesel::insert_into(schema::place_rev_status_log::table)
+                    .values(new_place_rev_log_status)
+                    .execute(self)?;
+            } else {
+                return Err(RepoError::NotFound);
+            }
         }
-        Ok(results)
+        Ok(count)
+    }
+
+    fn get_entries(&self, uids: &[&str]) -> Result<Vec<Entry>> {
+        use schema::place::dsl;
+        use schema::place_rev::dsl as rev_dsl;
+
+        let mut query = schema::place::table
+            .inner_join(
+                schema::place_rev::table
+                    .on(rev_dsl::place_id.eq(dsl::id).and(rev_dsl::rev.eq(dsl::rev))),
+            )
+            .select((
+                rev_dsl::id,
+                rev_dsl::place_id,
+                dsl::uid,
+                rev_dsl::rev,
+                rev_dsl::created_at,
+                rev_dsl::created_by,
+                rev_dsl::status,
+                rev_dsl::title,
+                rev_dsl::description,
+                rev_dsl::lat,
+                rev_dsl::lng,
+                rev_dsl::street,
+                rev_dsl::zip,
+                rev_dsl::city,
+                rev_dsl::country,
+                rev_dsl::email,
+                rev_dsl::phone,
+                rev_dsl::homepage,
+                rev_dsl::license,
+                rev_dsl::image_url,
+                rev_dsl::image_link_url,
+            ))
+            .filter(rev_dsl::status.ge(Status::created().into_inner()))
+            .into_boxed();
+        if uids.is_empty() {
+            warn!("Loading all entries at once");
+        } else {
+            // TODO: Split loading into chunks of fixed size
+            info!("Loading multiple ({}) entries at once", uids.len());
+            query = query.filter(dsl::uid.eq_any(uids));
+        }
+
+        let revisions = query.load::<models::PlaceRev>(self)?;
+
+        let mut entries = Vec::with_capacity(revisions.len());
+        for place_rev in revisions {
+            entries.push(load_entry(self, place_rev)?);
+        }
+        Ok(entries)
+    }
+
+    fn get_entry(&self, uid: &str) -> Result<Entry> {
+        let entries = self.get_entries(&[uid])?;
+        debug_assert!(entries.len() <= 1);
+        entries.into_iter().next().ok_or(RepoError::NotFound)
     }
 
     fn all_entries(&self) -> Result<Vec<Entry>> {
-        use self::schema::{
-            entries::dsl as e_dsl, entry_category_relations::dsl as ec_dsl,
-            entry_tag_relations::dsl as et_dsl,
-        };
-        // TODO: Don't load all table contents into memory at once!
-        // We only need to iterator over the sorted rows of the results.
-        // Unfortunately Diesel does not offer a Cursor API.
-        let entries: Vec<models::Entry> = e_dsl::entries
-            .filter(e_dsl::current.eq(true))
-            .filter(e_dsl::archived.is_null())
-            .order_by(e_dsl::id)
-            .load(self)?;
-        let mut cat_rels = ec_dsl::entry_category_relations
-            .order_by(ec_dsl::entry_id)
-            .load(self)?
-            .into_iter()
-            .peekable();
-        let mut tag_rels = et_dsl::entry_tag_relations
-            .order_by(et_dsl::entry_id)
-            .load(self)?
-            .into_iter()
-            .peekable();
-        let mut res_entries = Vec::with_capacity(entries.len());
-        // All results are sorted by entry id and we only need to iterate
-        // once through the results to pick up the categories and tags of
-        // each entry.
-        for entry in entries.into_iter() {
-            let mut categories = Vec::with_capacity(10);
-            let mut tags = Vec::with_capacity(100);
-            // Skip orphaned/deleted relations for which no current entry exists
-            while let Some(true) = cat_rels
-                .peek()
-                .map(|ec: &models::EntryCategoryRelation| ec.entry_id < entry.id)
-            {
-                let _ = cat_rels.next();
-            }
-            while let Some(true) = tag_rels
-                .peek()
-                .map(|et: &models::EntryTagRelation| et.entry_id < entry.id)
-            {
-                let _ = tag_rels.next();
-            }
-            // Collect categories of the current entry
-            while let Some(true) = cat_rels
-                .peek()
-                .map(|ec: &models::EntryCategoryRelation| ec.entry_id == entry.id)
-            {
-                let cat_rel = cat_rels.next().unwrap();
-                if cat_rel.entry_version != entry.version {
-                    // Skip category relation with outdated version
-                    debug_assert!(cat_rel.entry_version < entry.version);
-                } else {
-                    categories.push(cat_rel.category_id);
-                }
-            }
-            // Collect tags of entry
-            while let Some(true) = tag_rels
-                .peek()
-                .map(|et: &models::EntryTagRelation| et.entry_id == entry.id)
-            {
-                let tag_rel = tag_rels.next().unwrap();
-                if tag_rel.entry_version != entry.version {
-                    // Skip tag relation with outdated version
-                    debug_assert!(tag_rel.entry_version < entry.version);
-                } else {
-                    tags.push(tag_rel.tag_id);
-                }
-            }
-            // Convert into result entry
-            res_entries.push((entry, categories, tags).into());
-        }
-        Ok(res_entries)
+        self.get_entries(&[])
     }
 
     fn recently_changed_entries(
@@ -259,54 +354,59 @@ impl EntryGateway for SqliteConnection {
         params: &RecentlyChangedEntriesParams,
         pagination: &Pagination,
     ) -> Result<Vec<Entry>> {
-        use self::schema::{
-            entries::dsl as e_dsl, entry_category_relations::dsl as ec_dsl,
-            entry_tag_relations::dsl as et_dsl,
-        };
-        // TODO: Don't load all table contents into memory at once!
-        // We only need to iterator over the sorted rows of the results.
-        // Unfortunately Diesel does not offer a Cursor API.
-        let changed_expr = diesel::dsl::sql::<diesel::sql_types::BigInt>(
-            "COALESCE(entries.archived, entries.created)",
-        );
-        let mut query = e_dsl::entries
-            .filter(e_dsl::current.eq(true))
-            .order_by(changed_expr.clone().desc())
-            .then_order_by(e_dsl::id) // disambiguation if time stamps are equal
-            .into_boxed();
-        let mut cats_query = e_dsl::entries
-            .left_outer_join(
-                ec_dsl::entry_category_relations.on(ec_dsl::entry_id
-                    .eq(e_dsl::id)
-                    .and(ec_dsl::entry_version.eq(e_dsl::version))),
+        use schema::place::dsl;
+        use schema::place_rev::dsl as rev_dsl;
+        use schema::place_rev_status_log::dsl as log_dsl;
+
+        let mut query = schema::place::table
+            .inner_join(
+                schema::place_rev::table
+                    .on(rev_dsl::place_id.eq(dsl::id).and(rev_dsl::rev.eq(dsl::rev))),
             )
-            .select((e_dsl::id, e_dsl::version, ec_dsl::category_id.nullable()))
-            .order_by(changed_expr.clone().desc())
-            .then_order_by(e_dsl::id)
-            .into_boxed();
-        let mut tags_query = e_dsl::entries
-            .left_outer_join(
-                et_dsl::entry_tag_relations.on(et_dsl::entry_id
-                    .eq(e_dsl::id)
-                    .and(et_dsl::entry_version.eq(e_dsl::version))),
+            .inner_join(
+                schema::place_rev_status_log::table.on(log_dsl::place_rev_id.eq(rev_dsl::id)),
             )
-            .select((e_dsl::id, e_dsl::version, et_dsl::tag_id.nullable()))
-            .order_by(changed_expr.clone().desc())
-            .then_order_by(e_dsl::id)
+            .select((
+                rev_dsl::id,
+                rev_dsl::place_id,
+                dsl::uid,
+                rev_dsl::rev,
+                // Reconstruct historic values of status/created_at/created_by
+                // from the status log. The revision only reflects the most
+                // recent status and the original creation values!
+                log_dsl::created_at,
+                log_dsl::created_by,
+                log_dsl::status,
+                rev_dsl::title,
+                rev_dsl::description,
+                rev_dsl::lat,
+                rev_dsl::lng,
+                rev_dsl::street,
+                rev_dsl::zip,
+                rev_dsl::city,
+                rev_dsl::country,
+                rev_dsl::email,
+                rev_dsl::phone,
+                rev_dsl::homepage,
+                rev_dsl::license,
+                rev_dsl::image_url,
+                rev_dsl::image_link_url,
+            ))
+            .order_by(log_dsl::created_at.desc())
+            .then_order_by(log_dsl::id) // disambiguation if time stamps are equal
             .into_boxed();
+
+        // Since (inclusive)
         if let Some(since) = params.since {
-            // inclusive
-            query = query.filter(changed_expr.clone().ge(i64::from(since)));
-            cats_query = cats_query.filter(changed_expr.clone().ge(i64::from(since)));
-            tags_query = tags_query.filter(changed_expr.clone().ge(i64::from(since)));
+            query = query.filter(log_dsl::created_at.ge(i64::from(since)));
         }
+
+        // Until (exclusive)
         if let Some(until) = params.until {
-            // exclusive
-            query = query.filter(changed_expr.clone().lt(i64::from(until)));
-            cats_query = cats_query.filter(changed_expr.clone().lt(i64::from(until)));
-            tags_query = tags_query.filter(changed_expr.clone().lt(i64::from(until)));
+            query = query.filter(log_dsl::created_at.lt(i64::from(until)));
         }
-        // Pagination must only be applied to the entries query!
+
+        // Pagination
         let offset = pagination.offset.unwrap_or(0);
         if offset > 0 {
             query = query.offset(offset as i64);
@@ -314,59 +414,14 @@ impl EntryGateway for SqliteConnection {
         if let Some(limit) = pagination.limit {
             query = query.limit(limit as i64);
         }
-        let entries: Vec<models::Entry> = query.load(self)?;
-        let mut cat_rels = cats_query
-            .load::<(String, i64, Option<String>)>(self)?
-            .into_iter()
-            .peekable();
-        let mut tag_rels = tags_query
-            .load::<(String, i64, Option<String>)>(self)?
-            .into_iter()
-            .peekable();
-        let mut res_entries = Vec::with_capacity(entries.len());
-        // All results are sorted according to the same criteria.
-        // The categories/tags queries may contains results for
-        // additional entries due to missing pagination. Those
-        // results will be skipped during the merge phase.
-        for entry in entries.into_iter() {
-            // Ignore categories of other entries
-            while let Some(true) = cat_rels
-                .peek()
-                .map(|(id, version, _)| &entry.id != id || &entry.version != version)
-            {
-                cat_rels.next().unwrap();
-            }
-            // Collect categories of current entry
-            let mut categories = Vec::with_capacity(4);
-            while let Some(true) = cat_rels
-                .peek()
-                .map(|(id, version, _)| &entry.id == id && &entry.version == version)
-            {
-                if let (_, _, Some(cat)) = cat_rels.next().unwrap() {
-                    categories.push(cat);
-                }
-            }
-            // Ignore tags of other entries
-            while let Some(true) = tag_rels
-                .peek()
-                .map(|(id, version, _)| &entry.id != id || &entry.version != version)
-            {
-                tag_rels.next().unwrap();
-            }
-            // Collect tags of current entry
-            let mut tags = Vec::with_capacity(30);
-            while let Some(true) = tag_rels
-                .peek()
-                .map(|(id, version, _)| &entry.id == id && &entry.version == version)
-            {
-                if let (_, _, Some(tag)) = tag_rels.next().unwrap() {
-                    tags.push(tag);
-                }
-            }
-            // Convert into resulting entry
-            res_entries.push((entry, categories, tags).into());
+
+        let revisions = query.load::<models::PlaceRev>(self)?;
+
+        let mut entries = Vec::with_capacity(revisions.len());
+        for place_rev in revisions {
+            entries.push(load_entry(self, place_rev)?);
         }
-        Ok(res_entries)
+        Ok(entries)
     }
 
     fn most_popular_entry_tags(
@@ -376,11 +431,11 @@ impl EntryGateway for SqliteConnection {
     ) -> Result<Vec<TagFrequency>> {
         // TODO: Diesel 1.4.x does not support the HAVING clause
         // that is required to filter the aggregated column.
-        let mut sql = "SELECT tag_id, COUNT(*) as count \
-                       FROM entry_tag_relations \
-                       WHERE (entry_id, entry_version) IN \
-                       (SELECT id, version FROM entries WHERE current=1 AND archived IS NULL) \
-                       GROUP BY tag_id"
+        let mut sql = "SELECT tag, COUNT(*) as count \
+                       FROM place_rev_tag \
+                       WHERE place_rev_id IN \
+                       (SELECT id FROM place_rev WHERE (place_id, rev) IN (SELECT id, rev FROM place) AND status > 0) \
+                       GROUP BY tag"
             .to_string();
         if params.min_count.is_some() || params.max_count.is_some() {
             if let Some(min_count) = params.min_count {
@@ -392,7 +447,7 @@ impl EntryGateway for SqliteConnection {
                 sql.push_str(&format!(" HAVING count<={}", max_count));
             }
         }
-        sql.push_str(" ORDER BY count DESC, tag_id");
+        sql.push_str(" ORDER BY count DESC, tag");
         let offset = pagination.offset.unwrap_or(0);
         if offset > 0 {
             sql.push_str(&format!(" OFFSET {}", offset));
@@ -400,162 +455,24 @@ impl EntryGateway for SqliteConnection {
         if let Some(limit) = pagination.limit {
             sql.push_str(&format!(" LIMIT {}", limit));
         }
-        let rows = diesel::dsl::sql_query(sql).load::<TagIdCount>(self)?;
+        let rows = diesel::dsl::sql_query(sql).load::<TagCountRow>(self)?;
         Ok(rows
             .into_iter()
-            .map(|row| TagFrequency(row.tag_id, row.count as TagCount))
+            .map(|row| TagFrequency(row.tag, row.count as TagCount))
             .collect())
     }
 
     fn count_entries(&self) -> Result<usize> {
-        use self::schema::entries::dsl as e_dsl;
-        Ok(e_dsl::entries
-            .select(diesel::dsl::count(e_dsl::id))
-            .filter(e_dsl::current.eq(true))
-            .filter(e_dsl::archived.is_null())
+        use schema::place_rev::dsl;
+        Ok(schema::place_rev::table
+            .select(diesel::dsl::count(dsl::place_id))
+            .filter(dsl::status.ge(Status::created().into_inner()))
             .first::<i64>(self)? as usize)
-    }
-
-    fn update_entry(&self, entry: &Entry) -> Result<()> {
-        let e = models::Entry::from(entry.clone());
-
-        let cat_rels: Vec<_> = entry
-            .categories
-            .iter()
-            .map(|category_id| models::StoreableEntryCategoryRelation {
-                entry_id: &entry.uid.as_ref(),
-                entry_version: entry.version as i64,
-                category_id: &category_id,
-            })
-            .collect();
-
-        let tag_rels: Vec<_> = entry
-            .tags
-            .iter()
-            .map(|tag_id| models::StoreableEntryTagRelation {
-                entry_id: &entry.uid.as_ref(),
-                entry_version: entry.version as i64,
-                tag_id: &tag_id,
-            })
-            .collect();
-
-        reset_current_entry_before_insert_new_version(self, &e.id)?;
-        diesel::insert_into(schema::entries::table)
-            .values(&e)
-            .execute(self)?;
-        diesel::insert_into(schema::entry_category_relations::table)
-            //WHERE NOT EXISTS
-            .values(&cat_rels)
-            .execute(self)?;
-        diesel::insert_into(schema::entry_tag_relations::table)
-            //WHERE NOT EXISTS
-            .values(&tag_rels)
-            .execute(self)?;
-        Ok(())
-    }
-
-    fn archive_entries(&self, ids: &[&str], archived: Timestamp) -> Result<usize> {
-        // Entry
-        use self::schema::entries::dsl as e_dsl;
-        let count = diesel::update(
-            e_dsl::entries
-                .filter(e_dsl::id.eq_any(ids))
-                .filter(e_dsl::current.eq(true))
-                .filter(e_dsl::archived.is_null()),
-        )
-        .set(e_dsl::archived.eq(Some(i64::from(archived))))
-        .execute(self)?;
-        debug_assert!(count <= ids.len());
-        if count < ids.len() {
-            return Err(RepoError::NotFound);
-        }
-        if count > ids.len() {
-            // Should never happen
-            return Err(RepoError::TooManyFound);
-        }
-        Ok(count)
-    }
-
-    fn import_multiple_entries(&mut self, new_entries: &[Entry]) -> Result<()> {
-        let imports: Vec<_> = new_entries
-            .iter()
-            .map(|e| {
-                let new_entry = models::Entry::from(e.clone());
-                let cat_rels: Vec<_> = e
-                    .categories
-                    .iter()
-                    .map(|category_id| models::StoreableEntryCategoryRelation {
-                        entry_id: &e.uid.as_ref(),
-                        entry_version: e.version as i64,
-                        category_id: &category_id,
-                    })
-                    .collect();
-                let tag_rels: Vec<_> = e
-                    .tags
-                    .iter()
-                    .map(|tag_id| models::StoreableEntryTagRelation {
-                        entry_id: &e.uid.as_ref(),
-                        entry_version: e.version as i64,
-                        tag_id: &tag_id,
-                    })
-                    .collect();
-                (new_entry, cat_rels, tag_rels)
-            })
-            .collect();
-        self.transaction::<_, diesel::result::Error, _>(|| {
-            for (new_entry, cat_rels, tag_rels) in imports {
-                reset_current_entry_before_insert_new_version(self, &new_entry.id).map_err(
-                    |err| {
-                        error!(
-                            "Import: Failed to reset current entry {}: {}",
-                            new_entry.id, err
-                        );
-                        diesel::result::Error::RollbackTransaction
-                    },
-                )?;
-                diesel::insert_into(schema::entries::table)
-                    .values(&new_entry)
-                    .execute(self)?;
-                diesel::insert_into(schema::entry_category_relations::table)
-                    .values(&cat_rels)
-                    .execute(self)?;
-
-                for r in &tag_rels {
-                    let res = diesel::insert_into(schema::tags::table)
-                        .values(&models::Tag {
-                            id: r.tag_id.to_owned(),
-                        })
-                        .execute(self);
-                    if let Err(err) = res {
-                        match err {
-                            DieselError::DatabaseError(db_err, _) => {
-                                match db_err {
-                                    DatabaseErrorKind::UniqueViolation => {
-                                        // that's ok :)
-                                    }
-                                    _ => {
-                                        return Err(err);
-                                    }
-                                }
-                            }
-                            _ => {
-                                return Err(err);
-                            }
-                        }
-                    }
-                }
-                diesel::insert_into(schema::entry_tag_relations::table)
-                    .values(&tag_rels)
-                    .execute(self)?;
-            }
-            Ok(())
-        })?;
-        Ok(())
     }
 }
 
 fn into_new_event_with_tags(
-    db: &SqliteConnection,
+    conn: &SqliteConnection,
     event: Event,
 ) -> Result<(models::NewEvent, Vec<String>)> {
     let Event {
@@ -603,7 +520,7 @@ fn into_new_event_with_tags(
     let registration = registration.map(Into::into);
 
     let created_by = if let Some(ref email) = created_by {
-        Some(resolve_user_id_by_email(db, email)?)
+        Some(resolve_user_id_by_email(conn, email)?)
     } else {
         None
     };
@@ -635,12 +552,12 @@ fn into_new_event_with_tags(
     ))
 }
 
-fn resolve_event_id(db: &SqliteConnection, uid: &str) -> Result<i64> {
-    use self::schema::events::dsl;
+fn resolve_event_id(conn: &SqliteConnection, uid: &str) -> Result<i64> {
+    use schema::events::dsl;
     Ok(dsl::events
         .select(dsl::id)
         .filter(dsl::uid.eq(uid))
-        .first(db)?)
+        .first(conn)?)
 }
 
 impl EventGateway for SqliteConnection {
@@ -678,8 +595,8 @@ impl EventGateway for SqliteConnection {
         let id = resolve_event_id(self, event.uid.as_ref())?;
         let (new_event, new_tags) = into_new_event_with_tags(self, event.clone())?;
         self.transaction::<_, diesel::result::Error, _>(|| {
-            use self::schema::event_tags::dsl as et_dsl;
-            use self::schema::events::dsl as e_dsl;
+            use schema::event_tags::dsl as et_dsl;
+            use schema::events::dsl as e_dsl;
             // Update event
             diesel::update(e_dsl::events.filter(e_dsl::id.eq(&id)))
                 .set(&new_event)
@@ -717,7 +634,7 @@ impl EventGateway for SqliteConnection {
     }
 
     fn get_event(&self, uid: &str) -> Result<Event> {
-        use self::schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl, users::dsl as u_dsl};
+        use schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl, users::dsl as u_dsl};
 
         let models::EventEntity {
             id,
@@ -833,7 +750,7 @@ impl EventGateway for SqliteConnection {
     }
 
     fn all_events(&self) -> Result<Vec<Event>> {
-        use self::schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl, users::dsl as u_dsl};
+        use schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl, users::dsl as u_dsl};
         let events: Vec<_> = e_dsl::events
             .left_outer_join(u_dsl::users)
             .select((
@@ -871,7 +788,7 @@ impl EventGateway for SqliteConnection {
         start_min: Option<Timestamp>,
         start_max: Option<Timestamp>,
     ) -> Result<Vec<Event>> {
-        use self::schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl, users::dsl as u_dsl};
+        use schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl, users::dsl as u_dsl};
         let mut query = e_dsl::events
             .left_outer_join(u_dsl::users)
             .select((
@@ -912,7 +829,7 @@ impl EventGateway for SqliteConnection {
     }
 
     fn count_events(&self) -> Result<usize> {
-        use self::schema::events::dsl;
+        use schema::events::dsl;
         Ok(dsl::events
             .select(diesel::dsl::count(dsl::id))
             .filter(dsl::archived.is_null())
@@ -920,7 +837,7 @@ impl EventGateway for SqliteConnection {
     }
 
     fn archive_events(&self, uids: &[&str], archived: Timestamp) -> Result<usize> {
-        use self::schema::events::dsl;
+        use schema::events::dsl;
         let count = diesel::update(
             dsl::events
                 .filter(dsl::uid.eq_any(uids))
@@ -939,7 +856,7 @@ impl EventGateway for SqliteConnection {
     }
 
     fn delete_event_with_matching_tags(&self, uid: &str, tags: &[&str]) -> Result<Option<()>> {
-        use self::schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl};
+        use schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl};
         let id = resolve_event_id(self, uid)?;
         if !tags.is_empty() {
             let ids: Vec<_> = et_dsl::event_tags
@@ -960,12 +877,12 @@ impl EventGateway for SqliteConnection {
     }
 }
 
-fn resolve_user_id_by_email(db: &SqliteConnection, email: &str) -> Result<i64> {
-    use self::schema::users::dsl;
+fn resolve_user_id_by_email(conn: &SqliteConnection, email: &str) -> Result<i64> {
+    use schema::users::dsl;
     Ok(dsl::users
         .select(dsl::id)
         .filter(dsl::email.eq(email))
-        .first(db)?)
+        .first(conn)?)
 }
 
 impl UserGateway for SqliteConnection {
@@ -978,7 +895,7 @@ impl UserGateway for SqliteConnection {
     }
 
     fn update_user(&self, u: &User) -> Result<()> {
-        use self::schema::users::dsl;
+        use schema::users::dsl;
         let new_user = models::NewUser::from(u);
         diesel::update(dsl::users.filter(dsl::email.eq(new_user.email)))
             .set(&new_user)
@@ -987,13 +904,13 @@ impl UserGateway for SqliteConnection {
     }
 
     fn delete_user_by_email(&self, email: &str) -> Result<()> {
-        use self::schema::users::dsl;
+        use schema::users::dsl;
         diesel::delete(dsl::users.filter(dsl::email.eq(email))).execute(self)?;
         Ok(())
     }
 
     fn get_user_by_email(&self, email: &str) -> Result<User> {
-        use self::schema::users::dsl;
+        use schema::users::dsl;
         Ok(dsl::users
             .filter(dsl::email.eq(email))
             .first::<models::UserEntity>(self)?
@@ -1001,7 +918,7 @@ impl UserGateway for SqliteConnection {
     }
 
     fn try_get_user_by_email(&self, email: &str) -> Result<Option<User>> {
-        use self::schema::users::dsl;
+        use schema::users::dsl;
         Ok(dsl::users
             .filter(dsl::email.eq(email))
             .first::<models::UserEntity>(self)
@@ -1010,7 +927,7 @@ impl UserGateway for SqliteConnection {
     }
 
     fn all_users(&self) -> Result<Vec<User>> {
-        use self::schema::users::dsl;
+        use schema::users::dsl;
         Ok(dsl::users
             .load::<models::UserEntity>(self)?
             .into_iter()
@@ -1019,7 +936,7 @@ impl UserGateway for SqliteConnection {
     }
 
     fn count_users(&self) -> Result<usize> {
-        use self::schema::users::dsl;
+        use schema::users::dsl;
         Ok(dsl::users
             .select(diesel::dsl::count(dsl::id))
             .first::<i64>(self)? as usize)
@@ -1028,141 +945,245 @@ impl UserGateway for SqliteConnection {
 
 impl RatingRepository for SqliteConnection {
     fn create_rating(&self, rating: Rating) -> Result<()> {
-        diesel::insert_into(schema::ratings::table)
-            .values(&models::Rating::from(rating))
+        let Rating {
+            uid,
+            place_uid,
+            created_at,
+            archived_at,
+            title,
+            value,
+            context,
+            source,
+        } = rating;
+        let place_id = resolve_place_id(self, place_uid.as_ref())?;
+        let new_place_rating = models::NewPlaceRating {
+            uid: uid.into(),
+            place_id,
+            created_at: created_at.into(),
+            created_by: None,
+            archived_at: archived_at.map(Into::into),
+            archived_by: None,
+            title,
+            value: i8::from(value).into(),
+            context: context.into(),
+            source,
+        };
+        let _count = diesel::insert_into(schema::place_rating::table)
+            .values(&new_place_rating)
             .execute(self)?;
+        debug_assert_eq!(1, _count);
         Ok(())
     }
 
-    fn load_rating(&self, id: &str) -> Result<Rating> {
-        use self::schema::ratings::dsl;
-        Ok(dsl::ratings
-            .filter(dsl::id.eq(id))
-            .filter(dsl::archived.is_null())
-            .first::<models::Rating>(self)?
-            .into())
-    }
-
-    fn load_ratings(&self, ids: &[&str]) -> Result<Vec<Rating>> {
-        use self::schema::ratings::dsl;
-        // TODO: Split loading into chunks of fixed size
-        info!("Loading multiple ({}) ratings at once", ids.len());
-        Ok(dsl::ratings
-            .filter(dsl::id.eq_any(ids))
-            .filter(dsl::archived.is_null())
-            .load::<models::Rating>(self)?
+    fn load_ratings(&self, uids: &[&str]) -> Result<Vec<Rating>> {
+        use schema::place::dsl as place_dsl;
+        use schema::place_rating::dsl as rating_dsl;
+        Ok(schema::place_rating::table
+            .inner_join(schema::place::table)
+            .select((
+                rating_dsl::id,
+                rating_dsl::uid,
+                place_dsl::id,
+                place_dsl::uid,
+                rating_dsl::created_at,
+                rating_dsl::created_by,
+                rating_dsl::archived_at,
+                rating_dsl::archived_by,
+                rating_dsl::title,
+                rating_dsl::value,
+                rating_dsl::context,
+                rating_dsl::source,
+            ))
+            .filter(rating_dsl::uid.eq_any(uids))
+            .filter(rating_dsl::archived_at.is_null())
+            .load::<models::PlaceRating>(self)?
             .into_iter()
             .map(Into::into)
             .collect())
     }
 
-    fn load_ratings_of_entry(&self, entry_id: &str) -> Result<Vec<Rating>> {
-        use self::schema::ratings::dsl;
-        Ok(dsl::ratings
-            .filter(dsl::entry_id.eq(entry_id))
-            .filter(dsl::archived.is_null())
-            .load::<models::Rating>(self)?
+    fn load_rating(&self, uid: &str) -> Result<Rating> {
+        let ratings = self.load_ratings(&[uid])?;
+        debug_assert!(ratings.len() <= 1);
+        ratings.into_iter().next().ok_or(RepoError::NotFound)
+    }
+
+    fn load_ratings_of_entry(&self, place_uid: &str) -> Result<Vec<Rating>> {
+        use schema::place::dsl as place_dsl;
+        use schema::place_rating::dsl as rating_dsl;
+        Ok(schema::place_rating::table
+            .inner_join(schema::place::table)
+            .select((
+                rating_dsl::id,
+                rating_dsl::uid,
+                place_dsl::id,
+                place_dsl::uid,
+                rating_dsl::created_at,
+                rating_dsl::created_by,
+                rating_dsl::archived_at,
+                rating_dsl::archived_by,
+                rating_dsl::title,
+                rating_dsl::value,
+                rating_dsl::context,
+                rating_dsl::source,
+            ))
+            .filter(place_dsl::uid.eq(place_uid))
+            .filter(rating_dsl::archived_at.is_null())
+            .load::<models::PlaceRating>(self)?
             .into_iter()
             .map(Into::into)
             .collect())
     }
 
-    fn load_entry_ids_of_ratings(&self, ids: &[&str]) -> Result<Vec<String>> {
-        use self::schema::ratings::dsl;
-        Ok(dsl::ratings
-            .select(dsl::entry_id)
-            .distinct()
-            .filter(dsl::id.eq_any(ids))
+    fn load_entry_ids_of_ratings(&self, uids: &[&str]) -> Result<Vec<String>> {
+        use schema::place::dsl as place_dsl;
+        use schema::place_rating::dsl as rating_dsl;
+        Ok(schema::place_rating::table
+            .inner_join(schema::place::table)
+            .select(place_dsl::uid)
+            .filter(rating_dsl::uid.eq_any(uids))
             .load::<String>(self)?)
     }
 
-    fn archive_ratings(&self, ids: &[&str], archived: Timestamp) -> Result<usize> {
-        use self::schema::ratings::dsl as r_dsl;
+    fn archive_ratings(&self, uids: &[&str], archived_at: Timestamp) -> Result<usize> {
+        use schema::place_rating::dsl;
         let count = diesel::update(
-            r_dsl::ratings
-                .filter(r_dsl::id.eq_any(ids))
-                .filter(r_dsl::archived.is_null()),
+            schema::place_rating::table
+                .filter(dsl::uid.eq_any(uids))
+                .filter(dsl::archived_at.is_null()),
         )
-        .set(r_dsl::archived.eq(Some(i64::from(archived))))
+        .set(dsl::archived_at.eq(Some(archived_at.into_inner())))
         .execute(self)?;
-        debug_assert!(count <= ids.len());
-        if count < ids.len() {
+        if count < uids.len() {
             return Err(RepoError::NotFound);
         }
-        if count > ids.len() {
-            // Should never happen
+        if count > uids.len() {
+            // Should never happen (see debug assertion)
             return Err(RepoError::TooManyFound);
         }
         Ok(count)
     }
 
-    fn archive_ratings_of_entries(&self, entry_ids: &[&str], archived: Timestamp) -> Result<usize> {
-        use self::schema::ratings::dsl;
+    fn archive_ratings_of_entries(
+        &self,
+        place_uids: &[&str],
+        archived_at: Timestamp,
+    ) -> Result<usize> {
+        use schema::place::dsl as place_dsl;
+        use schema::place_rating::dsl as rating_dsl;
         Ok(diesel::update(
-            dsl::ratings
-                .filter(dsl::entry_id.eq_any(entry_ids))
-                .filter(dsl::archived.is_null()),
+            schema::place_rating::table
+                .filter(
+                    rating_dsl::place_id.eq_any(
+                        schema::place::table
+                            .select(place_dsl::id)
+                            .filter(place_dsl::uid.eq_any(place_uids)),
+                    ),
+                )
+                .filter(rating_dsl::archived_at.is_null()),
         )
-        .set(dsl::archived.eq(Some(i64::from(archived))))
+        .set(rating_dsl::archived_at.eq(Some(archived_at.into_inner())))
         .execute(self)?)
     }
 }
 
 impl CommentRepository for SqliteConnection {
-    fn create_comment(&self, c: Comment) -> Result<()> {
-        diesel::insert_into(schema::comments::table)
-            .values(&models::Comment::from(c))
+    fn create_comment(&self, comment: Comment) -> Result<()> {
+        let Comment {
+            uid,
+            rating_uid,
+            created_at,
+            archived_at,
+            text,
+            ..
+        } = comment;
+        let rating_id = resolve_rating_id(self, rating_uid.as_ref())?;
+        let new_place_rating_comment = models::NewPlaceRatingComment {
+            uid: uid.into(),
+            rating_id,
+            created_at: created_at.into(),
+            created_by: None,
+            archived_at: archived_at.map(Into::into),
+            archived_by: None,
+            text,
+        };
+        let _count = diesel::insert_into(schema::place_rating_comment::table)
+            .values(&new_place_rating_comment)
             .execute(self)?;
+        debug_assert_eq!(1, _count);
         Ok(())
     }
 
-    fn load_comment(&self, id: &str) -> Result<Comment> {
-        use self::schema::comments::dsl;
-        Ok(dsl::comments
-            .filter(dsl::id.eq(id))
-            .filter(dsl::archived.is_null())
-            .first::<models::Comment>(self)?
-            .into())
-    }
-
-    fn load_comments(&self, ids: &[&str]) -> Result<Vec<Comment>> {
-        use self::schema::comments::dsl;
+    fn load_comments(&self, uids: &[&str]) -> Result<Vec<Comment>> {
+        use schema::place_rating::dsl as rating_dsl;
+        use schema::place_rating_comment::dsl as comment_dsl;
         // TODO: Split loading into chunks of fixed size
-        info!("Loading multiple ({}) comments at once", ids.len());
-        Ok(dsl::comments
-            .filter(dsl::id.eq_any(ids))
-            .filter(dsl::archived.is_null())
-            .load::<models::Comment>(self)?
+        info!("Loading multiple ({}) comments at once", uids.len());
+        Ok(schema::place_rating_comment::table
+            .inner_join(schema::place_rating::table)
+            .select((
+                comment_dsl::id,
+                comment_dsl::uid,
+                comment_dsl::rating_id,
+                rating_dsl::uid,
+                comment_dsl::created_at,
+                comment_dsl::created_by,
+                comment_dsl::archived_at,
+                comment_dsl::archived_by,
+                comment_dsl::text,
+            ))
+            .filter(comment_dsl::uid.eq_any(uids))
+            .filter(comment_dsl::archived_at.is_null())
+            .load::<models::PlaceRatingComment>(self)?
             .into_iter()
             .map(Into::into)
             .collect())
     }
 
-    fn load_comments_of_rating(&self, rating_id: &str) -> Result<Vec<Comment>> {
-        use self::schema::comments::dsl;
-        Ok(dsl::comments
-            .filter(dsl::rating_id.eq(rating_id))
-            .filter(dsl::archived.is_null())
-            .load::<models::Comment>(self)?
+    fn load_comment(&self, uid: &str) -> Result<Comment> {
+        let comments = self.load_comments(&[uid])?;
+        debug_assert!(comments.len() <= 1);
+        comments.into_iter().next().ok_or(RepoError::NotFound)
+    }
+
+    fn load_comments_of_rating(&self, rating_uid: &str) -> Result<Vec<Comment>> {
+        use schema::place_rating::dsl as rating_dsl;
+        use schema::place_rating_comment::dsl as comment_dsl;
+        Ok(schema::place_rating_comment::table
+            .inner_join(schema::place_rating::table)
+            .select((
+                comment_dsl::id,
+                comment_dsl::uid,
+                comment_dsl::rating_id,
+                rating_dsl::uid,
+                comment_dsl::created_at,
+                comment_dsl::created_by,
+                comment_dsl::archived_at,
+                comment_dsl::archived_by,
+                comment_dsl::text,
+            ))
+            .filter(rating_dsl::uid.eq(rating_uid))
+            .filter(comment_dsl::archived_at.is_null())
+            .load::<models::PlaceRatingComment>(self)?
             .into_iter()
             .map(Into::into)
             .collect())
     }
 
-    fn archive_comments(&self, ids: &[&str], archived: Timestamp) -> Result<usize> {
-        use self::schema::comments::dsl;
+    fn archive_comments(&self, uids: &[&str], archived_at: Timestamp) -> Result<usize> {
+        use schema::place_rating_comment::dsl;
         let count = diesel::update(
-            dsl::comments
-                .filter(dsl::id.eq_any(ids))
-                .filter(dsl::archived.is_null()),
+            schema::place_rating_comment::table
+                .filter(dsl::uid.eq_any(uids))
+                .filter(dsl::archived_at.is_null()),
         )
-        .set(dsl::archived.eq(Some(i64::from(archived))))
+        .set(dsl::archived_at.eq(Some(archived_at.into_inner())))
         .execute(self)?;
-        debug_assert!(count <= ids.len());
-        if count < ids.len() {
+        if count < uids.len() {
             return Err(RepoError::NotFound);
         }
-        if count > ids.len() {
+        if count > uids.len() {
+            // Should never happen (see debug assertion)
             return Err(RepoError::TooManyFound);
         }
         Ok(count)
@@ -1170,38 +1191,50 @@ impl CommentRepository for SqliteConnection {
 
     fn archive_comments_of_ratings(
         &self,
-        rating_ids: &[&str],
-        archived: Timestamp,
+        rating_uids: &[&str],
+        archived_at: Timestamp,
     ) -> Result<usize> {
-        use self::schema::comments::dsl;
+        use schema::place_rating::dsl as rating_dsl;
+        use schema::place_rating_comment::dsl as comment_dsl;
         Ok(diesel::update(
-            dsl::comments
-                .filter(dsl::rating_id.eq_any(rating_ids))
-                .filter(dsl::archived.is_null()),
+            schema::place_rating_comment::table
+                .filter(
+                    comment_dsl::rating_id.eq_any(
+                        schema::place_rating::table
+                            .select(rating_dsl::id)
+                            .filter(rating_dsl::uid.eq_any(rating_uids)),
+                    ),
+                )
+                .filter(comment_dsl::archived_at.is_null()),
         )
-        .set(dsl::archived.eq(Some(i64::from(archived))))
+        .set(comment_dsl::archived_at.eq(Some(archived_at.into_inner())))
         .execute(self)?)
     }
 
     fn archive_comments_of_entries(
         &self,
-        entry_ids: &[&str],
-        archived: Timestamp,
+        place_uids: &[&str],
+        archived_at: Timestamp,
     ) -> Result<usize> {
-        use self::schema::comments::dsl as c_dsl;
-        use self::schema::ratings::dsl as r_dsl;
+        use schema::place::dsl as place_dsl;
+        use schema::place_rating::dsl as rating_dsl;
+        use schema::place_rating_comment::dsl as comment_dsl;
         Ok(diesel::update(
-            c_dsl::comments
+            schema::place_rating_comment::table
                 .filter(
-                    c_dsl::rating_id.eq_any(
-                        r_dsl::ratings
-                            .select(r_dsl::id)
-                            .filter(r_dsl::entry_id.eq_any(entry_ids)),
+                    comment_dsl::rating_id.eq_any(
+                        schema::place_rating::table.select(rating_dsl::id).filter(
+                            rating_dsl::place_id.eq_any(
+                                schema::place::table
+                                    .select(place_dsl::id)
+                                    .filter(place_dsl::uid.eq_any(place_uids)),
+                            ),
+                        ),
                     ),
                 )
-                .filter(c_dsl::archived.is_null()),
+                .filter(comment_dsl::archived_at.is_null()),
         )
-        .set(c_dsl::archived.eq(Some(i64::from(archived))))
+        .set(comment_dsl::archived_at.eq(Some(archived_at.into_inner())))
         .execute(self)?)
     }
 }
@@ -1213,8 +1246,8 @@ impl Db for SqliteConnection {
             .execute(self);
         if let Err(err) = res {
             match err {
-                DieselError::DatabaseError(db_err, _) => {
-                    match db_err {
+                DieselError::DatabaseError(conn_err, _) => {
+                    match conn_err {
                         DatabaseErrorKind::UniqueViolation => {
                             // that's ok :)
                         }
@@ -1230,29 +1263,7 @@ impl Db for SqliteConnection {
         }
         Ok(())
     }
-    fn create_category_if_it_does_not_exist(&mut self, c: &Category) -> Result<()> {
-        let res = diesel::insert_into(schema::categories::table)
-            .values(&models::Category::from(c.clone()))
-            .execute(self);
-        if let Err(err) = res {
-            match err {
-                DieselError::DatabaseError(db_err, _) => {
-                    match db_err {
-                        DatabaseErrorKind::UniqueViolation => {
-                            // that's ok :)
-                        }
-                        _ => {
-                            return Err(err.into());
-                        }
-                    }
-                }
-                _ => {
-                    return Err(err.into());
-                }
-            }
-        }
-        Ok(())
-    }
+
     fn create_bbox_subscription(&self, new: &BboxSubscription) -> Result<()> {
         let user_id = resolve_user_id_by_email(self, &new.user_email)?;
         let (south_west_lat, south_west_lng) = new.bbox.south_west().to_lat_lng_deg();
@@ -1270,9 +1281,10 @@ impl Db for SqliteConnection {
             .execute(self)?;
         Ok(())
     }
+
     fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>> {
-        use self::schema::bbox_subscriptions::dsl as s_dsl;
-        use self::schema::users::dsl as u_dsl;
+        use schema::bbox_subscriptions::dsl as s_dsl;
+        use schema::users::dsl as u_dsl;
         Ok(s_dsl::bbox_subscriptions
             .inner_join(u_dsl::users)
             .select((
@@ -1291,8 +1303,8 @@ impl Db for SqliteConnection {
             .collect())
     }
     fn all_bbox_subscriptions_by_email(&self, email: &str) -> Result<Vec<BboxSubscription>> {
-        use self::schema::bbox_subscriptions::dsl as s_dsl;
-        use self::schema::users::dsl as u_dsl;
+        use schema::bbox_subscriptions::dsl as s_dsl;
+        use schema::users::dsl as u_dsl;
         Ok(s_dsl::bbox_subscriptions
             .inner_join(u_dsl::users)
             .filter(u_dsl::email.eq(email))
@@ -1312,8 +1324,8 @@ impl Db for SqliteConnection {
             .collect())
     }
     fn delete_bbox_subscriptions_by_email(&self, email: &str) -> Result<()> {
-        use self::schema::bbox_subscriptions::dsl as s_dsl;
-        use self::schema::users::dsl as u_dsl;
+        use schema::bbox_subscriptions::dsl as s_dsl;
+        use schema::users::dsl as u_dsl;
         let users_id = u_dsl::users
             .select(u_dsl::id)
             .filter(u_dsl::email.eq(email));
@@ -1321,16 +1333,8 @@ impl Db for SqliteConnection {
             .execute(self)?;
         Ok(())
     }
-    fn all_categories(&self) -> Result<Vec<Category>> {
-        use self::schema::categories::dsl::*;
-        Ok(categories
-            .load::<models::Category>(self)?
-            .into_iter()
-            .map(Category::from)
-            .collect())
-    }
     fn all_tags(&self) -> Result<Vec<Tag>> {
-        use self::schema::tags::dsl::*;
+        use schema::tags::dsl::*;
         Ok(tags
             .load::<models::Tag>(self)?
             .into_iter()
@@ -1338,7 +1342,7 @@ impl Db for SqliteConnection {
             .collect())
     }
     fn count_tags(&self) -> Result<usize> {
-        use self::schema::tags::dsl::*;
+        use schema::tags::dsl::*;
         Ok(tags.select(diesel::dsl::count(id)).first::<i64>(self)? as usize)
     }
 }
@@ -1368,7 +1372,7 @@ impl OrganizationGateway for SqliteConnection {
         Ok(())
     }
     fn get_org_by_api_token(&self, token: &str) -> Result<Organization> {
-        use self::schema::{org_tag_relations::dsl as o_t_dsl, organizations::dsl as o_dsl};
+        use schema::{org_tag_relations::dsl as o_t_dsl, organizations::dsl as o_dsl};
 
         let models::Organization {
             id,
@@ -1394,7 +1398,7 @@ impl OrganizationGateway for SqliteConnection {
     }
 
     fn get_all_tags_owned_by_orgs(&self) -> Result<Vec<String>> {
-        use self::schema::org_tag_relations::dsl;
+        use schema::org_tag_relations::dsl;
         let mut tags: Vec<_> = dsl::org_tag_relations
             .load::<models::OrgTagRelation>(self)?
             .into_iter()
@@ -1407,7 +1411,7 @@ impl OrganizationGateway for SqliteConnection {
 
 impl UserTokenRepo for SqliteConnection {
     fn replace_user_token(&self, token: UserToken) -> Result<EmailNonce> {
-        use self::schema::user_tokens::dsl;
+        use schema::user_tokens::dsl;
         let user_id = resolve_user_id_by_email(self, &token.email_nonce.email)?;
         let model = models::NewUserToken {
             user_id,
@@ -1421,17 +1425,18 @@ impl UserTokenRepo for SqliteConnection {
             == 0
         {
             // ...or update
-            diesel::update(schema::user_tokens::table)
+            let _count = diesel::update(schema::user_tokens::table)
                 .filter(dsl::user_id.eq(model.user_id))
                 .set(&model)
                 .execute(self)?;
+            debug_assert_eq!(1, _count);
         }
         Ok(token.email_nonce)
     }
 
     fn consume_user_token(&self, email_nonce: &EmailNonce) -> Result<UserToken> {
-        use self::schema::user_tokens::dsl as t_dsl;
-        use self::schema::users::dsl as u_dsl;
+        use schema::user_tokens::dsl as t_dsl;
+        use schema::users::dsl as u_dsl;
         let token = self.get_user_token_by_email(&email_nonce.email)?;
         let user_id_subselect = u_dsl::users
             .select(u_dsl::id)
@@ -1447,7 +1452,7 @@ impl UserTokenRepo for SqliteConnection {
     }
 
     fn discard_expired_user_tokens(&self, expired_before: Timestamp) -> Result<usize> {
-        use self::schema::user_tokens::dsl;
+        use schema::user_tokens::dsl;
         Ok(diesel::delete(
             dsl::user_tokens.filter(dsl::expires_at.lt::<i64>(expired_before.into())),
         )
@@ -1455,8 +1460,8 @@ impl UserTokenRepo for SqliteConnection {
     }
 
     fn get_user_token_by_email(&self, email: &str) -> Result<UserToken> {
-        use self::schema::user_tokens::dsl as t_dsl;
-        use self::schema::users::dsl as u_dsl;
+        use schema::user_tokens::dsl as t_dsl;
+        use schema::users::dsl as u_dsl;
         Ok(t_dsl::user_tokens
             .inner_join(u_dsl::users)
             .select((u_dsl::id, t_dsl::nonce, t_dsl::expires_at, u_dsl::email))
