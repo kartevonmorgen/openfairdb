@@ -87,10 +87,10 @@ pub mod tests {
         assert_eq!(entry2.avg_ratings(&ratings2).total(), 0.0.into());
     }
 
-    pub fn create_entries_with_ratings(n: usize) -> (Vec<Place>, Vec<Rating>) {
-        let entries: Vec<Place> = (0..n).map(|_| Place::build().finish()).collect();
+    pub fn create_places_with_ratings(n: usize) -> (Vec<Place>, Vec<Rating>) {
+        let places: Vec<Place> = (0..n).map(|_| Place::build().finish()).collect();
 
-        let ratings: Vec<_> = entries
+        let ratings: Vec<_> = places
             .iter()
             .map(|e| {
                 let ratings = create_ratings_of_entry(e.uid.as_ref(), 1);
@@ -98,10 +98,10 @@ pub mod tests {
             })
             .collect();
 
-        (entries, ratings)
+        (places, ratings)
     }
 
-    fn create_entry_with_multiple_ratings(n: usize) -> (Place, Vec<Rating>) {
+    fn create_place_with_multiple_ratings(n: usize) -> (Place, Vec<Rating>) {
         let entry = Place::build().finish();
         let ratings = create_ratings_of_entry(entry.uid.as_ref(), n);
         (entry, ratings)
@@ -124,7 +124,7 @@ pub mod tests {
 
     #[bench]
     fn bench_calc_avg_of_1000_ratings_for_an_entry(b: &mut Bencher) {
-        let (entry, ratings) = create_entry_with_multiple_ratings(1000);
+        let (entry, ratings) = create_place_with_multiple_ratings(1000);
         b.iter(|| entry.avg_ratings(&ratings[..]));
     }
 }

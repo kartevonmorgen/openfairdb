@@ -1,6 +1,6 @@
 use super::*;
 
-use crate::{adapters::json, core::usecases as usecase, test::Bencher};
+use crate::{adapters::json, core::usecases, test::Bencher};
 
 use crate::core::util::sort::Rated;
 
@@ -48,7 +48,7 @@ fn create_place_rev() {
 }
 
 #[test]
-fn create_entry_with_reserved_tag() {
+fn create_place_with_reserved_tag() {
     let (client, db) = setup();
     db.exclusive()
         .unwrap()
@@ -67,7 +67,7 @@ fn create_entry_with_reserved_tag() {
 }
 
 #[test]
-fn create_entry_with_tag_duplicates() {
+fn create_place_with_tag_duplicates() {
     let (client, db) = setup();
     let req = client.post("/entries")
                     .header(ContentType::JSON)
@@ -84,7 +84,7 @@ fn create_entry_with_tag_duplicates() {
 }
 
 #[test]
-fn create_entry_with_sharp_tag() {
+fn create_place_with_sharp_tag() {
     let (client, db) = setup();
     let json = r##"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","#bar"]}"##;
     let response = client
@@ -102,7 +102,7 @@ fn create_entry_with_sharp_tag() {
 }
 
 #[test]
-fn update_entry_with_tag_duplicates() {
+fn update_place_with_tag_duplicates() {
     let (client, db) = setup();
     let req = client.post("/entries")
                     .header(ContentType::JSON)
@@ -142,7 +142,7 @@ fn get_one_entry() {
     flows::create_rating(
         &connections,
         &mut search_engine,
-        usecase::RateEntry {
+        usecases::NewPlaceRating {
             context: RatingContext::Humanity,
             value: RatingValue::from(2),
             title: "title".into(),
@@ -174,7 +174,7 @@ fn get_one_entry() {
 }
 
 #[test]
-fn get_multiple_entries() {
+fn get_multiple_places() {
     let one = Place::build()
         .id("get_multiple_entry_test_one")
         .title("some")
@@ -210,8 +210,8 @@ fn get_multiple_entries() {
         .any(|x| *x == json::Entry::from_entry_with_ratings(two.clone(), vec![])));
 }
 
-fn default_new_entry() -> usecases::NewEntry {
-    usecases::NewEntry {
+fn default_new_entry() -> usecases::NewPlace {
+    usecases::NewPlace {
         title: Default::default(),
         description: Default::default(),
         categories: Default::default(),
@@ -231,8 +231,8 @@ fn default_new_entry() -> usecases::NewEntry {
     }
 }
 
-fn new_entry_with_category(category: &str, lat: f64, lng: f64) -> usecases::NewEntry {
-    usecases::NewEntry {
+fn new_entry_with_category(category: &str, lat: f64, lng: f64) -> usecases::NewPlace {
+    usecases::NewPlace {
         categories: vec![category.into()],
         lat,
         lng,
@@ -248,10 +248,10 @@ fn search_with_categories_and_bbox() {
         new_entry_with_category(Category::UID_COMMERCIAL, 3.0, 3.0),
     ];
     let (client, connections, mut search_engine) = setup2();
-    let entry_ids: Vec<_> = entries
+    let place_uids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_entry(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, e, None)
                 .unwrap()
                 .uid
                 .to_string()
@@ -267,9 +267,9 @@ fn search_with_categories_and_bbox() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[2])));
 
     let req = client.get(format!(
         "/search?bbox=1.8,0.5,3.0,3.0&categories={}",
@@ -279,9 +279,9 @@ fn search_with_categories_and_bbox() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[2])));
 
     let req = client.get(format!(
         "/search?bbox=-10,-10,10,10&categories={}",
@@ -290,9 +290,9 @@ fn search_with_categories_and_bbox() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[2])));
 
     let req = client.get(format!(
         "/search?bbox=-10,-10,10,10&categories={},{}",
@@ -302,9 +302,9 @@ fn search_with_categories_and_bbox() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[2])));
 
     let req = client.get(format!(
         "/search?bbox=0.9,0.5,2.5,2.0&categories={},{}",
@@ -314,13 +314,13 @@ fn search_with_categories_and_bbox() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[2])));
 }
 
-fn new_entry_with_text(title: &str, description: &str, lat: f64, lng: f64) -> usecases::NewEntry {
-    usecases::NewEntry {
+fn new_entry_with_text(title: &str, description: &str, lat: f64, lng: f64) -> usecases::NewPlace {
+    usecases::NewPlace {
         title: title.into(),
         description: description.into(),
         lat,
@@ -337,10 +337,10 @@ fn search_with_text() {
         new_entry_with_text("baZ", "blub", 3.0, 3.0),
     ];
     let (client, connections, mut search_engine) = setup2();
-    let entry_ids: Vec<_> = entries
+    let place_uids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_entry(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, e, None)
                 .unwrap()
                 .uid
                 .to_string()
@@ -357,9 +357,9 @@ fn search_with_text() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[2])));
 
     // Search case insensitive "Foo" and "foo" with bbox
     let req = client.get("/search?bbox=1.8,0.5,3.0,3.0&text=Foo");
@@ -367,9 +367,9 @@ fn search_with_text() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[2])));
 
     // Search with whitespace
     let req = client.get("/search?bbox=-10,-10,10,10&text=blub%20foo");
@@ -377,9 +377,9 @@ fn search_with_text() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[2])));
 
     // Search with whitespace and bbox
     let req = client.get("/search?bbox=0.9,0.5,2.5,2.0&text=blub%20foo");
@@ -387,9 +387,9 @@ fn search_with_text() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[2])));
 
     // Search with punctuation
     // TODO: Ignore punctuation in query text and make this test pass
@@ -400,14 +400,14 @@ fn search_with_text() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[2])));
     */
 }
 
-fn new_entry_with_city(city: &str, latlng: f64) -> usecases::NewEntry {
-    usecases::NewEntry {
+fn new_entry_with_city(city: &str, latlng: f64) -> usecases::NewPlace {
+    usecases::NewPlace {
         city: Some(city.into()),
         lat: latlng,
         lng: latlng,
@@ -423,10 +423,10 @@ fn search_with_city() {
         new_entry_with_city("Stuttgart-Möhringen", 3.0),
     ];
     let (client, connections, mut search_engine) = setup2();
-    let entry_ids: Vec<_> = entries
+    let place_uids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_entry(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, e, None)
                 .unwrap()
                 .uid
                 .to_string()
@@ -442,15 +442,15 @@ fn search_with_city() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[2])));
 }
 
 #[ignore]
 #[bench]
-fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
-    let (entries, ratings) = crate::core::util::sort::tests::create_entries_with_ratings(10_000);
+fn bench_search_in_10_000_rated_places(b: &mut Bencher) {
+    let (entries, ratings) = crate::core::util::sort::tests::create_places_with_ratings(10_000);
     let (client, db) = setup();
     let conn = db.exclusive().unwrap();
     for e in entries {
@@ -465,16 +465,16 @@ fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
 #[test]
 fn search_with_tags() {
     let entries = vec![
-        usecases::NewEntry {
+        usecases::NewPlace {
             categories: vec![Category::UID_NON_PROFIT.to_string()],
             ..default_new_entry()
         },
-        usecases::NewEntry {
+        usecases::NewPlace {
             categories: vec![Category::UID_NON_PROFIT.to_string()],
             tags: vec!["bla-blubb".to_string(), "foo-bar".to_string()],
             ..default_new_entry()
         },
-        usecases::NewEntry {
+        usecases::NewPlace {
             categories: vec![Category::UID_NON_PROFIT.to_string()],
             tags: vec!["foo-bar".to_string()],
             ..default_new_entry()
@@ -502,10 +502,10 @@ fn search_with_tags() {
             id: "bla-blubb".into(),
         })
         .unwrap();
-    let entry_ids: Vec<_> = entries
+    let place_uids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_entry(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, e, None)
                 .unwrap()
                 .uid
                 .to_string()
@@ -519,7 +519,7 @@ fn search_with_tags() {
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains(&format!(
         "\"visible\":[{{\"id\":\"{}\",\"lat\":0.0,\"lng\":0.0,\"title\":\"\",\"description\":\"\",\"categories\":[\"{}\"],\"tags\":[\"bla-blubb\",\"foo-bar\"],\"ratings\":{{\"total\":0.0,\"diversity\":0.0,\"fairness\":0.0,\"humanity\":0.0,\"renewable\":0.0,\"solidarity\":0.0,\"transparency\":0.0}}}}]",
-        entry_ids[1],
+        place_uids[1],
         Category::UID_NON_PROFIT,
     )));
 
@@ -527,23 +527,23 @@ fn search_with_tags() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[2])));
 }
 
 #[test]
 fn search_with_uppercase_tags() {
     let entries = vec![
-        usecases::NewEntry {
+        usecases::NewPlace {
             tags: vec!["fOO".to_string()],
             ..default_new_entry()
         },
-        usecases::NewEntry {
+        usecases::NewPlace {
             tags: vec!["fooo".to_string()],
             ..default_new_entry()
         },
-        usecases::NewEntry {
+        usecases::NewPlace {
             tags: vec!["Foo".to_string()],
             ..default_new_entry()
         },
@@ -564,10 +564,10 @@ fn search_with_uppercase_tags() {
         .unwrap()
         .create_tag_if_it_does_not_exist(&Tag { id: "baz".into() })
         .unwrap();
-    let entry_ids: Vec<_> = entries
+    let place_uids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_entry(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, e, None)
                 .unwrap()
                 .uid
                 .to_string()
@@ -578,22 +578,22 @@ fn search_with_uppercase_tags() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[2])));
 }
 
 #[test]
 fn search_with_hashtag() {
     let entries = vec![
-        usecases::NewEntry {
+        usecases::NewPlace {
             ..default_new_entry()
         },
-        usecases::NewEntry {
+        usecases::NewPlace {
             tags: vec!["bla-blubb".to_string(), "foo-bar".to_string()],
             ..default_new_entry()
         },
-        usecases::NewEntry {
+        usecases::NewPlace {
             tags: vec!["foo-bar".to_string()],
             ..default_new_entry()
         },
@@ -613,10 +613,10 @@ fn search_with_hashtag() {
             id: "foo-bar".into(),
         })
         .unwrap();
-    let entry_ids: Vec<_> = entries
+    let place_uids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_entry(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, e, None)
                 .unwrap()
                 .uid
                 .to_string()
@@ -627,22 +627,22 @@ fn search_with_hashtag() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[2])));
 }
 
 #[test]
 fn search_with_two_hashtags() {
     let entries = vec![
-        usecases::NewEntry {
+        usecases::NewPlace {
             ..default_new_entry()
         },
-        usecases::NewEntry {
+        usecases::NewPlace {
             tags: vec!["bla-blubb".to_string(), "foo-bar".to_string()],
             ..default_new_entry()
         },
-        usecases::NewEntry {
+        usecases::NewPlace {
             tags: vec!["foo-bar".to_string()],
             ..default_new_entry()
         },
@@ -662,10 +662,10 @@ fn search_with_two_hashtags() {
             id: "foo-bar".into(),
         })
         .unwrap();
-    let entry_ids: Vec<_> = entries
+    let place_uids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_entry(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, e, None)
                 .unwrap()
                 .uid
         })
@@ -675,31 +675,31 @@ fn search_with_two_hashtags() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[2])));
 }
 
 #[test]
 fn search_with_commata() {
     let entries = vec![
-        usecases::NewEntry {
+        usecases::NewPlace {
             ..default_new_entry()
         },
-        usecases::NewEntry {
+        usecases::NewPlace {
             tags: vec!["eins".to_string(), "zwei".to_string()],
             ..default_new_entry()
         },
-        usecases::NewEntry {
+        usecases::NewPlace {
             tags: vec!["eins".to_string()],
             ..default_new_entry()
         },
-        usecases::NewEntry {
+        usecases::NewPlace {
             title: "eins".to_string(),
             tags: vec!["zwei".to_string()],
             ..default_new_entry()
         },
-        usecases::NewEntry {
+        usecases::NewPlace {
             title: "eins".to_string(),
             description: "zwei".to_string(),
             ..default_new_entry()
@@ -716,10 +716,10 @@ fn search_with_commata() {
         .unwrap()
         .create_tag_if_it_does_not_exist(&Tag { id: "zwei".into() })
         .unwrap();
-    let entry_ids: Vec<_> = entries
+    let place_uids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_entry(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, e, None)
                 .unwrap()
                 .uid
                 .to_string()
@@ -732,11 +732,11 @@ fn search_with_commata() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[3])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[4])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[2])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[3])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[4])));
 
     // Without hashtag symbol '#' -> tags are optional
     // eins + #zwei
@@ -744,11 +744,11 @@ fn search_with_commata() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[3])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[4])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[3])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[4])));
 
     // Without hashtag symbol '#' -> tags are optional
     // eins + zwei
@@ -756,26 +756,26 @@ fn search_with_commata() {
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[3])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[4])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[3])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[4])));
 }
 
 #[test]
 fn search_without_specifying_hashtag_symbol() {
     let entries = vec![
-        usecases::NewEntry {
+        usecases::NewPlace {
             title: "foo".into(),
             ..default_new_entry()
         },
-        usecases::NewEntry {
+        usecases::NewPlace {
             title: "foo".into(),
             tags: vec!["bla-blubb".to_string(), "foo-bar".to_string()],
             ..default_new_entry()
         },
-        usecases::NewEntry {
+        usecases::NewPlace {
             title: "foo".into(),
             tags: vec!["foo-bar".to_string()],
             ..default_new_entry()
@@ -796,10 +796,10 @@ fn search_without_specifying_hashtag_symbol() {
             id: "foo-bar".into(),
         })
         .unwrap();
-    let entry_ids: Vec<_> = entries
+    let place_uids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_entry(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, e, None)
                 .unwrap()
                 .uid
                 .to_string()
@@ -809,18 +809,18 @@ fn search_without_specifying_hashtag_symbol() {
     let mut response = client.get("/search?bbox=-10,-10,10,10&text=foo").dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[2])));
 
     let mut response = client
         .get("/search?bbox=-10,-10,10,10&text=%23foo")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[2])));
 
     // Text "foo-bar" is tokenized into "foo" and "bar"
     let mut response = client
@@ -828,36 +828,36 @@ fn search_without_specifying_hashtag_symbol() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[2])));
 
     let mut response = client
         .get("/search?bbox=-10,-10,10,10&text=%23foo-bar")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[2])));
 
     let mut response = client
         .get("/search?bbox=-10,-10,10,10&text=%23bla-blubb")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[2])));
 
     let mut response = client
         .get("/search?bbox=-10,-10,10,10&text=bla-blubb")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[0])));
-    assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
-    assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[0])));
+    assert!(body_str.contains(&format!("\"{}\"", place_uids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_uids[2])));
 }
 
 #[test]
@@ -919,7 +919,7 @@ fn get_one_rating() {
     flows::create_rating(
         &connections,
         &mut search_engine,
-        usecase::RateEntry {
+        usecases::NewPlaceRating {
             context: RatingContext::Humanity,
             value: RatingValue::from(2),
             user: None,
@@ -966,7 +966,7 @@ fn ratings_with_and_without_source() {
     flows::create_rating(
         &connections,
         &mut search_engine,
-        usecase::RateEntry {
+        usecases::NewPlaceRating {
             context: RatingContext::Humanity,
             value: RatingValue::from(2),
             user: None,
@@ -980,7 +980,7 @@ fn ratings_with_and_without_source() {
     flows::create_rating(
         &connections,
         &mut search_engine,
-        usecase::RateEntry {
+        usecases::NewPlaceRating {
             context: RatingContext::Humanity,
             value: RatingValue::from(2),
             user: None,
@@ -1353,7 +1353,7 @@ fn export_csv() {
             .load_ratings_of_entry(e.uid.as_ref())
             .unwrap();
         search_engine
-            .add_or_update_entry(&e, &e.avg_ratings(&ratings))
+            .add_or_update_place(&e, &e.avg_ratings(&ratings))
             .unwrap();
     }
     search_engine.flush().unwrap();

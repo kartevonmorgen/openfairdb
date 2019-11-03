@@ -49,39 +49,39 @@ mod tests {
             Some(Role::Scout),
         );
 
-        let entry_ids = vec![
-            fixture.create_entry(0.into(), None),
-            fixture.create_entry(1.into(), None),
+        let place_uids = vec![
+            fixture.create_place(0.into(), None),
+            fixture.create_place(1.into(), None),
         ];
         let rating_comment_ids = vec![
             fixture.create_rating(new_entry_rating(
                 0,
-                &entry_ids[0],
+                &place_uids[0],
                 RatingContext::Diversity,
                 RatingValue::new(-1),
             )),
             fixture.create_rating(new_entry_rating(
                 1,
-                &entry_ids[0],
+                &place_uids[0],
                 RatingContext::Fairness,
                 RatingValue::new(0),
             )),
             fixture.create_rating(new_entry_rating(
                 2,
-                &entry_ids[1],
+                &place_uids[1],
                 RatingContext::Transparency,
                 RatingValue::new(1),
             )),
             fixture.create_rating(new_entry_rating(
                 3,
-                &entry_ids[1],
+                &place_uids[1],
                 RatingContext::Renewable,
                 RatingValue::new(2),
             )),
         ];
 
-        assert!(fixture.entry_exists(&entry_ids[0]));
-        assert!(fixture.entry_exists(&entry_ids[1]));
+        assert!(fixture.entry_exists(&place_uids[0]));
+        assert!(fixture.entry_exists(&place_uids[1]));
         assert!(fixture.rating_exists(&rating_comment_ids[0].0));
         assert!(fixture.rating_exists(&rating_comment_ids[1].0));
         assert!(fixture.rating_exists(&rating_comment_ids[2].0));
@@ -101,8 +101,8 @@ mod tests {
         .is_ok());
 
         // Entries and ratings still exist
-        assert!(fixture.entry_exists(&entry_ids[0]));
-        assert!(fixture.entry_exists(&entry_ids[1]));
+        assert!(fixture.entry_exists(&place_uids[0]));
+        assert!(fixture.entry_exists(&place_uids[1]));
         assert!(fixture.rating_exists(&rating_comment_ids[0].0));
         assert!(fixture.rating_exists(&rating_comment_ids[1].0));
         assert!(fixture.rating_exists(&rating_comment_ids[2].0));
@@ -122,8 +122,8 @@ mod tests {
         ));
 
         // No changes due to rollback
-        assert!(fixture.entry_exists(&entry_ids[0]));
-        assert!(fixture.entry_exists(&entry_ids[1]));
+        assert!(fixture.entry_exists(&place_uids[0]));
+        assert!(fixture.entry_exists(&place_uids[1]));
         assert!(fixture.rating_exists(&rating_comment_ids[0].0));
         assert!(fixture.rating_exists(&rating_comment_ids[1].0));
         assert!(fixture.rating_exists(&rating_comment_ids[2].0));
@@ -142,8 +142,8 @@ mod tests {
         .is_ok());
 
         // Entries and ratings still exist
-        assert!(fixture.entry_exists(&entry_ids[0]));
-        assert!(fixture.entry_exists(&entry_ids[1]));
+        assert!(fixture.entry_exists(&place_uids[0]));
+        assert!(fixture.entry_exists(&place_uids[1]));
         assert!(fixture.rating_exists(&rating_comment_ids[0].0));
         assert!(fixture.rating_exists(&rating_comment_ids[1].0));
         assert!(fixture.rating_exists(&rating_comment_ids[2].0));

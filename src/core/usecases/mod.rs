@@ -9,36 +9,36 @@ use crate::core::{
 //TODO: move usecases into separate files
 
 mod archive_comments;
-mod archive_entries;
 mod archive_events;
+mod archive_places;
 mod archive_ratings;
 mod change_user_role;
 mod confirm_email;
 mod confirm_email_and_reset_password;
-mod create_new_entry;
 mod create_new_event;
+mod create_new_place;
 pub mod create_new_user;
 mod delete_event;
 mod find_duplicates;
 mod indexing;
 mod login;
 mod query_events;
-mod rate_entry;
+mod rate_place;
 mod register;
 mod search;
-mod update_entry;
 mod update_event;
+mod update_place;
 mod user_tokens;
 
 #[cfg(test)]
 pub mod tests;
 
 pub use self::{
-    archive_comments::*, archive_entries::*, archive_events::*, archive_ratings::*,
+    archive_comments::*, archive_events::*, archive_places::*, archive_ratings::*,
     change_user_role::*, confirm_email::*, confirm_email_and_reset_password::*,
-    create_new_entry::*, create_new_event::*, create_new_user::*, delete_event::*,
-    find_duplicates::*, indexing::*, login::*, query_events::*, rate_entry::*, register::*,
-    search::*, update_entry::*, update_event::*, user_tokens::*,
+    create_new_event::*, create_new_place::*, create_new_user::*, delete_event::*,
+    find_duplicates::*, indexing::*, login::*, query_events::*, rate_place::*, register::*,
+    search::*, update_event::*, update_place::*, user_tokens::*,
 };
 
 pub fn load_ratings_with_comments<D: Db>(

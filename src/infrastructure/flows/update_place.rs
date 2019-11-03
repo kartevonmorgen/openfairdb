@@ -2,11 +2,11 @@ use super::*;
 
 use diesel::connection::Connection;
 
-pub fn update_entry(
+pub fn update_place(
     connections: &sqlite::Connections,
-    indexer: &mut dyn EntryIndexer,
+    indexer: &mut dyn PlaceIndexer,
     uid: Uid,
-    update_entry: usecases::UpdateEntry,
+    update_place: usecases::UpdatePlace,
     account_email: Option<&str>,
 ) -> Result<Place> {
     // Update existing entry
@@ -18,7 +18,7 @@ pub fn update_entry(
                 || match usecases::prepare_updated_place_rev(
                     &*connection,
                     uid,
-                    update_entry,
+                    update_place,
                     account_email,
                 ) {
                     Ok(storable) => {

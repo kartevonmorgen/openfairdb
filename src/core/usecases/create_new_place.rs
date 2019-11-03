@@ -5,7 +5,7 @@ use crate::core::{
 
 #[rustfmt::skip]
 #[derive(Deserialize, Debug, Clone)]
-pub struct NewEntry {
+pub struct NewPlace {
     pub title          : String,
     pub description    : String,
     pub lat            : f64,
@@ -29,10 +29,10 @@ pub struct Storable(Place);
 
 pub fn prepare_new_place_rev<D: Db>(
     db: &D,
-    e: NewEntry,
+    e: NewPlace,
     created_by_email: Option<&str>,
 ) -> Result<Storable> {
-    let NewEntry {
+    let NewPlace {
         title,
         description,
         categories,
@@ -122,9 +122,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn create_new_valid_entry() {
+    fn create_new_valid_place() {
         #[rustfmt::skip]
-        let x = NewEntry {
+        let x = NewPlace {
             title       : "foo".into(),
             description : "bar".into(),
             lat         : 0.0,
@@ -154,9 +154,9 @@ mod tests {
     }
 
     #[test]
-    fn create_entry_with_invalid_email() {
+    fn create_place_with_invalid_email() {
         #[rustfmt::skip]
-        let x = NewEntry {
+        let x = NewPlace {
             title       : "foo".into(),
             description : "bar".into(),
             lat         : 0.0,
@@ -179,9 +179,9 @@ mod tests {
     }
 
     #[test]
-    fn add_new_valid_entry_with_tags() {
+    fn add_new_valid_place_with_tags() {
         #[rustfmt::skip]
-        let x = NewEntry {
+        let x = NewPlace {
             title       : "foo".into(),
             description : "bar".into(),
             lat         : 0.0,

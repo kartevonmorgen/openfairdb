@@ -127,7 +127,7 @@ pub trait Db:
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct IndexedEntry {
+pub struct IndexedPlace {
     pub id: String,
     pub pos: MapPoint,
     pub title: String,
@@ -138,7 +138,7 @@ pub struct IndexedEntry {
 }
 
 #[derive(Debug, Default, Clone)]
-pub struct EntryIndexQuery<'a, 'b> {
+pub struct PlaceIndexQuery<'a, 'b> {
     pub include_bbox: Option<MapBbox>,
     pub exclude_bbox: Option<MapBbox>,
     pub categories: Vec<&'a str>,
@@ -148,12 +148,12 @@ pub struct EntryIndexQuery<'a, 'b> {
     pub text: Option<String>,
 }
 
-pub trait EntryIndex {
-    fn query_entries(&self, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<IndexedEntry>>;
+pub trait PlaceIndex {
+    fn query_places(&self, query: &PlaceIndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>>;
 }
 
-pub trait EntryIndexer: EntryIndex {
-    fn add_or_update_entry(&mut self, place_rev: &Place, ratings: &AvgRatings) -> Fallible<()>;
-    fn remove_entry_by_id(&mut self, uid: &str) -> Fallible<()>;
+pub trait PlaceIndexer: PlaceIndex {
+    fn add_or_update_place(&mut self, place_rev: &Place, ratings: &AvgRatings) -> Fallible<()>;
+    fn remove_place_by_uid(&mut self, uid: &str) -> Fallible<()>;
     fn flush(&mut self) -> Fallible<()>;
 }

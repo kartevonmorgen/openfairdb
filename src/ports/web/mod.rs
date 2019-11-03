@@ -1,5 +1,5 @@
 use crate::{
-    core::{db::EntryIndexer, prelude::*, usecases, util::sort::Rated},
+    core::{db::PlaceIndexer, prelude::*, usecases, util::sort::Rated},
     infrastructure::error::AppError,
 };
 use rocket::{config::Config, Rocket, Route};
@@ -17,9 +17,9 @@ mod tantivy;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
-fn index_all_entries<D: PlaceRepo + RatingRepository>(
+fn index_all_places<D: PlaceRepo + RatingRepository>(
     db: &D,
-    entry_indexer: &mut dyn EntryIndexer,
+    entry_indexer: &mut dyn PlaceIndexer,
 ) -> Result<()> {
     // TODO: Split into chunks with fixed size instead of
     // loading all entries at once!
@@ -27,7 +27,7 @@ fn index_all_entries<D: PlaceRepo + RatingRepository>(
     for (entry, _) in entries {
         let ratings = db.load_ratings_of_entry(entry.uid.as_ref())?;
         if let Err(err) =
-            entry_indexer.add_or_update_entry(&entry, &entry.avg_ratings(&ratings[..]))
+            entry_indexer.add_or_update_place(&entry, &entry.avg_ratings(&ratings[..]))
         {
             error!("Failed to index entry {:?}: {}", entry, err);
         }
@@ -45,7 +45,7 @@ pub(crate) fn rocket_instance(
     cfg: Option<Config>,
 ) -> Rocket {
     info!("Indexing all entries...");
-    index_all_entries(&*connections.exclusive().unwrap(), &mut search_engine).unwrap();
+    index_all_places(&*connections.exclusive().unwrap(), &mut search_engine).unwrap();
 
     info!("Discarding expired user e-mail nonces...");
     usecases::discard_expired_user_tokens(&*connections.exclusive().unwrap()).unwrap();

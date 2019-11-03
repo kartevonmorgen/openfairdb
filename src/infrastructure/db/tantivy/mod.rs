@@ -1,5 +1,5 @@
 use crate::core::{
-    db::{EntryIndex, EntryIndexQuery, EntryIndexer, IndexedEntry},
+    db::{IndexedPlace, PlaceIndex, PlaceIndexQuery, PlaceIndexer},
     entities::{AvgRatingValue, AvgRatings, Category, Place, RatingContext},
     util::geo::{LatCoord, LngCoord, MapPoint, RawCoord},
 };
@@ -20,7 +20,7 @@ use tantivy::{
 
 const OVERALL_INDEX_HEAP_SIZE_IN_BYTES: usize = 50_000_000;
 
-struct IndexedEntryFields {
+struct IndexedPlaceFields {
     id: Field,
     lat: Field,
     lng: Field,
@@ -41,7 +41,7 @@ struct IndexedEntryFields {
     total_rating: Field,
 }
 
-impl IndexedEntryFields {
+impl IndexedPlaceFields {
     fn build_schema() -> (Self, Schema) {
         let id_options = TextOptions::default()
             .set_indexing_options(
@@ -105,10 +105,10 @@ impl IndexedEntryFields {
         (fields, schema_builder.build())
     }
 
-    fn read_document(&self, doc: &Document) -> IndexedEntry {
+    fn read_document(&self, doc: &Document) -> IndexedPlace {
         let mut lat: Option<LatCoord> = Default::default();
         let mut lng: Option<LngCoord> = Default::default();
-        let mut entry = IndexedEntry::default();
+        let mut entry = IndexedPlace::default();
         entry.categories.reserve(4);
         entry.tags.reserve(32);
         for field_value in doc.field_values() {
@@ -209,8 +209,8 @@ impl IndexedEntryFields {
     }
 }
 
-pub(crate) struct TantivyEntryIndex {
-    fields: IndexedEntryFields,
+pub(crate) struct TantivyPlaceIndex {
+    fields: IndexedPlaceFields,
     index_reader: IndexReader,
     index_writer: IndexWriter,
     text_query_parser: QueryParser,
@@ -280,14 +280,14 @@ enum TopDocsMode {
     ScoreBoostedByRating,
 }
 
-impl TantivyEntryIndex {
+impl TantivyPlaceIndex {
     pub fn create_in_ram() -> Fallible<Self> {
         let no_path: Option<&Path> = None;
         Self::create(no_path)
     }
 
     pub fn create<P: AsRef<Path>>(path: Option<P>) -> Fallible<Self> {
-        let (fields, schema) = IndexedEntryFields::build_schema();
+        let (fields, schema) = IndexedPlaceFields::build_schema();
 
         // TODO: Open index from existing directory
         let index = if let Some(path) = path {
@@ -331,7 +331,7 @@ impl TantivyEntryIndex {
         })
     }
 
-    fn build_query(&self, query: &EntryIndexQuery) -> (BooleanQuery, TopDocsMode) {
+    fn build_query(&self, query: &PlaceIndexQuery) -> (BooleanQuery, TopDocsMode) {
         let mut sub_queries: Vec<(Occur, Box<dyn Query>)> = Vec::with_capacity(1 + 2 + 1 + 1 + 1);
 
         if !query.ids.is_empty() {
@@ -501,8 +501,8 @@ impl TantivyEntryIndex {
     }
 }
 
-impl EntryIndexer for TantivyEntryIndex {
-    fn add_or_update_entry(&mut self, entry: &Place, ratings: &AvgRatings) -> Fallible<()> {
+impl PlaceIndexer for TantivyPlaceIndex {
+    fn add_or_update_place(&mut self, entry: &Place, ratings: &AvgRatings) -> Fallible<()> {
         let id_term = Term::from_field_text(self.fields.id, entry.uid.as_ref());
         self.index_writer.delete_term(id_term);
         let mut doc = Document::default();
@@ -585,7 +585,7 @@ impl EntryIndexer for TantivyEntryIndex {
         Ok(())
     }
 
-    fn remove_entry_by_id(&mut self, id: &str) -> Fallible<()> {
+    fn remove_place_by_uid(&mut self, id: &str) -> Fallible<()> {
         let id_term = Term::from_field_text(self.fields.id, id);
         self.index_writer.delete_term(id_term);
         Ok(())
@@ -600,9 +600,9 @@ impl EntryIndexer for TantivyEntryIndex {
     }
 }
 
-impl EntryIndex for TantivyEntryIndex {
+impl PlaceIndex for TantivyPlaceIndex {
     #[allow(clippy::absurd_extreme_comparisons)]
-    fn query_entries(&self, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<IndexedEntry>> {
+    fn query_places(&self, query: &PlaceIndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>> {
         if limit <= 0 {
             bail!("Invalid limit: {}", limit);
         }
@@ -683,45 +683,45 @@ impl EntryIndex for TantivyEntryIndex {
 }
 
 #[derive(Clone)]
-pub struct SearchEngine(Arc<Mutex<Box<dyn EntryIndexer + Send>>>);
+pub struct SearchEngine(Arc<Mutex<Box<dyn PlaceIndexer + Send>>>);
 
 impl SearchEngine {
     pub fn init_in_ram() -> Fallible<SearchEngine> {
-        let entry_index = TantivyEntryIndex::create_in_ram()?;
+        let entry_index = TantivyPlaceIndex::create_in_ram()?;
         Ok(SearchEngine(Arc::new(Mutex::new(Box::new(entry_index)))))
     }
 
     pub fn init_with_path<P: AsRef<Path>>(path: Option<P>) -> Fallible<SearchEngine> {
-        let entry_index = TantivyEntryIndex::create(path)?;
+        let entry_index = TantivyPlaceIndex::create(path)?;
         Ok(SearchEngine(Arc::new(Mutex::new(Box::new(entry_index)))))
     }
 }
 
-impl EntryIndex for SearchEngine {
-    fn query_entries(&self, query: &EntryIndexQuery, limit: usize) -> Fallible<Vec<IndexedEntry>> {
+impl PlaceIndex for SearchEngine {
+    fn query_places(&self, query: &PlaceIndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>> {
         let entry_index = match self.0.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         };
-        entry_index.query_entries(query, limit)
+        entry_index.query_places(query, limit)
     }
 }
 
-impl EntryIndexer for SearchEngine {
-    fn add_or_update_entry(&mut self, entry: &Place, ratings: &AvgRatings) -> Fallible<()> {
+impl PlaceIndexer for SearchEngine {
+    fn add_or_update_place(&mut self, entry: &Place, ratings: &AvgRatings) -> Fallible<()> {
         let mut inner = match self.0.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         };
-        inner.add_or_update_entry(entry, ratings)
+        inner.add_or_update_place(entry, ratings)
     }
 
-    fn remove_entry_by_id(&mut self, id: &str) -> Fallible<()> {
+    fn remove_place_by_uid(&mut self, id: &str) -> Fallible<()> {
         let mut inner = match self.0.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         };
-        inner.remove_entry_by_id(id)
+        inner.remove_place_by_uid(id)
     }
 
     fn flush(&mut self) -> Fallible<()> {

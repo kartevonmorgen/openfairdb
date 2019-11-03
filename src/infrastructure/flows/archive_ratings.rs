@@ -29,18 +29,18 @@ pub fn exec_archive_ratings(
 
 pub fn post_archive_ratings(
     connections: &sqlite::Connections,
-    indexer: &mut dyn EntryIndexer,
+    indexer: &mut dyn PlaceIndexer,
     ids: &[&str],
 ) -> Result<()> {
     let connection = connections.shared()?;
-    let entry_ids = connection.load_entry_ids_of_ratings(ids)?;
-    for entry_id in entry_ids {
-        let (entry, _) = match connection.get_place(&entry_id) {
+    let place_uids = connection.load_place_uids_of_ratings(ids)?;
+    for place_uid in place_uids {
+        let (entry, _) = match connection.get_place(&place_uid) {
             Ok(entry) => entry,
             Err(err) => {
                 error!(
                     "Failed to load entry {} for reindexing after archiving ratings: {}",
-                    entry_id, err
+                    place_uid, err
                 );
                 // Skip entry
                 continue;
@@ -75,7 +75,7 @@ pub fn post_archive_ratings(
 
 pub fn archive_ratings(
     connections: &sqlite::Connections,
-    indexer: &mut dyn EntryIndexer,
+    indexer: &mut dyn PlaceIndexer,
     account_email: &str,
     ids: &[&str],
 ) -> Result<()> {
@@ -109,39 +109,39 @@ mod tests {
             Some(Role::Scout),
         );
 
-        let entry_ids = vec![
-            fixture.create_entry(0.into(), None),
-            fixture.create_entry(1.into(), None),
+        let place_uids = vec![
+            fixture.create_place(0.into(), None),
+            fixture.create_place(1.into(), None),
         ];
         let rating_comment_ids = vec![
             fixture.create_rating(new_entry_rating(
                 0,
-                &entry_ids[0],
+                &place_uids[0],
                 RatingContext::Diversity,
                 RatingValue::new(-1),
             )),
             fixture.create_rating(new_entry_rating(
                 1,
-                &entry_ids[0],
+                &place_uids[0],
                 RatingContext::Fairness,
                 RatingValue::new(0),
             )),
             fixture.create_rating(new_entry_rating(
                 2,
-                &entry_ids[1],
+                &place_uids[1],
                 RatingContext::Transparency,
                 RatingValue::new(1),
             )),
             fixture.create_rating(new_entry_rating(
                 3,
-                &entry_ids[1],
+                &place_uids[1],
                 RatingContext::Renewable,
                 RatingValue::new(2),
             )),
         ];
 
-        assert!(fixture.entry_exists(&entry_ids[0]));
-        assert!(fixture.entry_exists(&entry_ids[1]));
+        assert!(fixture.entry_exists(&place_uids[0]));
+        assert!(fixture.entry_exists(&place_uids[1]));
 
         assert!(fixture.rating_exists(&rating_comment_ids[0].0));
         assert!(fixture.rating_exists(&rating_comment_ids[1].0));
@@ -161,8 +161,8 @@ mod tests {
         .is_ok());
 
         // Entries still exist
-        assert!(fixture.entry_exists(&entry_ids[0]));
-        assert!(fixture.entry_exists(&entry_ids[1]));
+        assert!(fixture.entry_exists(&place_uids[0]));
+        assert!(fixture.entry_exists(&place_uids[1]));
 
         // Ratings 1 and 2 disappeared
         assert!(fixture.rating_exists(&rating_comment_ids[0].0));
@@ -183,8 +183,8 @@ mod tests {
         ));
 
         // No changes due to rollback
-        assert!(fixture.entry_exists(&entry_ids[0]));
-        assert!(fixture.entry_exists(&entry_ids[1]));
+        assert!(fixture.entry_exists(&place_uids[0]));
+        assert!(fixture.entry_exists(&place_uids[1]));
         assert!(fixture.rating_exists(&rating_comment_ids[0].0));
         assert!(!fixture.rating_exists(&rating_comment_ids[1].0));
         assert!(!fixture.rating_exists(&rating_comment_ids[2].0));
@@ -202,8 +202,8 @@ mod tests {
         .is_ok());
 
         // Entries still exist
-        assert!(fixture.entry_exists(&entry_ids[0]));
-        assert!(fixture.entry_exists(&entry_ids[1]));
+        assert!(fixture.entry_exists(&place_uids[0]));
+        assert!(fixture.entry_exists(&place_uids[1]));
 
         // All ratings disappeared
         assert!(!fixture.rating_exists(&rating_comment_ids[0].0));

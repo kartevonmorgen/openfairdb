@@ -2,7 +2,7 @@ use crate::core::prelude::*;
 
 #[rustfmt::skip]
 #[derive(Deserialize, Debug, Clone)]
-pub struct RateEntry {
+pub struct NewPlaceRating {
     pub entry   : String,
     pub title   : String,
     pub value   : RatingValue,
@@ -24,7 +24,7 @@ impl Storable {
     }
 }
 
-pub fn prepare_new_rating<D: Db>(db: &D, r: RateEntry) -> Result<Storable> {
+pub fn prepare_new_rating<D: Db>(db: &D, r: NewPlaceRating) -> Result<Storable> {
     if r.comment.is_empty() {
         return Err(Error::Parameter(ParameterError::EmptyComment));
     }
@@ -78,7 +78,7 @@ mod tests {
         let db = MockDb::default();
         assert!(prepare_new_rating(
             &db,
-            RateEntry {
+            NewPlaceRating {
                 entry: "does_not_exist".into(),
                 title: "title".into(),
                 comment: "a comment".into(),
@@ -98,7 +98,7 @@ mod tests {
         db.entries = vec![(e, Status::created())].into();
         assert!(prepare_new_rating(
             &db,
-            RateEntry {
+            NewPlaceRating {
                 entry: "foo".into(),
                 comment: "".into(),
                 title: "title".into(),
@@ -118,7 +118,7 @@ mod tests {
         db.entries = vec![(e, Status::created())].into();
         assert!(prepare_new_rating(
             &db,
-            RateEntry {
+            NewPlaceRating {
                 entry: "foo".into(),
                 comment: "comment".into(),
                 title: "title".into(),
@@ -131,7 +131,7 @@ mod tests {
         .is_err());
         assert!(prepare_new_rating(
             &db,
-            RateEntry {
+            NewPlaceRating {
                 entry: "foo".into(),
                 title: "title".into(),
                 comment: "comment".into(),
@@ -151,7 +151,7 @@ mod tests {
         db.entries = vec![(e, Status::created())].into();
         let c = prepare_new_rating(
             &db,
-            RateEntry {
+            NewPlaceRating {
                 entry: "foo".into(),
                 comment: "comment".into(),
                 title: "title".into(),

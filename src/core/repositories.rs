@@ -36,7 +36,7 @@ pub trait CommentRepository {
         rating_ids: &[&str],
         activity: &Activity,
     ) -> Result<usize>;
-    fn archive_comments_of_entries(&self, entry_ids: &[&str], activity: &Activity)
+    fn archive_comments_of_places(&self, place_uids: &[&str], activity: &Activity)
         -> Result<usize>;
 }
 
@@ -46,12 +46,12 @@ pub trait RatingRepository {
     // Only unarchived ratings without comments
     fn load_rating(&self, id: &str) -> Result<Rating>;
     fn load_ratings(&self, ids: &[&str]) -> Result<Vec<Rating>>;
-    fn load_ratings_of_entry(&self, entry_id: &str) -> Result<Vec<Rating>>;
+    fn load_ratings_of_entry(&self, place_uid: &str) -> Result<Vec<Rating>>;
 
     fn archive_ratings(&self, ids: &[&str], activity: &Activity) -> Result<usize>;
-    fn archive_ratings_of_entries(&self, entry_ids: &[&str], activity: &Activity) -> Result<usize>;
+    fn archive_ratings_of_places(&self, place_uids: &[&str], activity: &Activity) -> Result<usize>;
 
-    fn load_entry_ids_of_ratings(&self, ids: &[&str]) -> Result<Vec<String>>;
+    fn load_place_uids_of_ratings(&self, ids: &[&str]) -> Result<Vec<String>>;
 }
 
 pub trait UserTokenRepo {

@@ -196,7 +196,7 @@ pub fn get_dashboard(db: sqlite::Connections, account: Account) -> Result<Markup
 #[derive(FromForm)]
 pub struct ArchiveAction {
     ids: String,
-    entry_id: String,
+    place_uid: String,
 }
 
 #[post("/comments/actions/archive", data = "<data>")]
@@ -210,10 +210,10 @@ pub fn post_comments_archive(
     let ids: Vec<_> = d.ids.split(',').filter(|id| !id.is_empty()).collect();
     match archive_comments(&db, account.email(), &ids) {
         Err(_) => Err(Flash::error(
-            Redirect::to(uri!(get_entry:d.entry_id)),
+            Redirect::to(uri!(get_entry:d.place_uid)),
             "Failed to achive the comment.",
         )),
-        Ok(_) => Ok(Redirect::to(uri!(get_entry:d.entry_id))),
+        Ok(_) => Ok(Redirect::to(uri!(get_entry:d.place_uid))),
     }
 }
 
@@ -228,10 +228,10 @@ pub fn post_ratings_archive(
     let ids: Vec<_> = d.ids.split(',').filter(|id| !id.is_empty()).collect();
     match archive_ratings(&db, &mut search_engine, account.email(), &ids) {
         Err(_) => Err(Flash::error(
-            Redirect::to(uri!(get_entry:d.entry_id)),
+            Redirect::to(uri!(get_entry:d.place_uid)),
             "Failed to archive the rating.",
         )),
-        Ok(_) => Ok(Redirect::to(uri!(get_entry:d.entry_id))),
+        Ok(_) => Ok(Redirect::to(uri!(get_entry:d.place_uid))),
     }
 }
 

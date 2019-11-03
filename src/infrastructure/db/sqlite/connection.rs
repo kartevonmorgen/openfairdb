@@ -1153,7 +1153,7 @@ impl RatingRepository for SqliteConnection {
             .collect())
     }
 
-    fn load_entry_ids_of_ratings(&self, uids: &[&str]) -> Result<Vec<String>> {
+    fn load_place_uids_of_ratings(&self, uids: &[&str]) -> Result<Vec<String>> {
         use schema::place::dsl as place_dsl;
         use schema::place_rating::dsl as rating_dsl;
         Ok(schema::place_rating::table
@@ -1183,11 +1183,7 @@ impl RatingRepository for SqliteConnection {
         Ok(count)
     }
 
-    fn archive_ratings_of_entries(
-        &self,
-        place_uids: &[&str],
-        activity: &Activity,
-    ) -> Result<usize> {
+    fn archive_ratings_of_places(&self, place_uids: &[&str], activity: &Activity) -> Result<usize> {
         use schema::place::dsl as place_dsl;
         use schema::place_rating::dsl as rating_dsl;
         Ok(diesel::update(
@@ -1333,7 +1329,7 @@ impl CommentRepository for SqliteConnection {
         .execute(self)?)
     }
 
-    fn archive_comments_of_entries(
+    fn archive_comments_of_places(
         &self,
         place_uids: &[&str],
         activity: &Activity,

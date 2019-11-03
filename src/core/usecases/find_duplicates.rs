@@ -7,15 +7,15 @@ pub enum DuplicateType {
     SimilarWords,
 }
 
-// return vector of entries like: (entry1ID, entry2ID, reason)
-// where entry1 and entry2 are similar entries
+// return vector of places like: (entry1ID, entry2ID, reason)
+// where entry1 and entry2 are similar places
 pub fn find_duplicates(
-    entries: &[(Place, Status)],
-    all_entries: &[(Place, Status)],
+    places: &[(Place, Status)],
+    all_places: &[(Place, Status)],
 ) -> Vec<(Uid, Uid, DuplicateType)> {
     let mut duplicates = Vec::new();
-    for (e1, _) in &entries[..] {
-        for (e2, _) in &all_entries[..] {
+    for (e1, _) in &places[..] {
+        for (e2, _) in &all_places[..] {
             if e1.uid >= e2.uid {
                 continue;
             }
@@ -29,7 +29,7 @@ pub fn find_duplicates(
 
 const DUPLICATE_MAX_DISTANCE: Distance = Distance::from_meters(100.0);
 
-// returns a DuplicateType if the two entries have a similar title, returns None otherwise
+// returns a DuplicateType if the two places have a similar title, returns None otherwise
 fn is_duplicate(e1: &Place, e2: &Place) -> Option<DuplicateType> {
     if similar_title(e1, e2, 0.3, 0) && in_close_proximity(e1, e2, DUPLICATE_MAX_DISTANCE) {
         Some(DuplicateType::SimilarChars)
@@ -250,7 +250,7 @@ mod tests {
         assert_eq!(Some(DuplicateType::SimilarChars), is_duplicate(&e1, &e3));
         // titles not similar
         assert_eq!(None, is_duplicate(&e2, &e4));
-        // entries not located close together
+        // places not located close together
         assert_eq!(None, is_duplicate(&e4, &e5));
     }
 

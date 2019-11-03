@@ -65,7 +65,7 @@ fn leaflet_css_link() -> Markup {
     }
 }
 
-pub fn search_results(email: Option<&str>, search_term: &str, entries: &[IndexedEntry]) -> Markup {
+pub fn search_results(email: Option<&str>, search_term: &str, entries: &[IndexedPlace]) -> Markup {
     page(
         "OpenFairDB Search Results",
         email,
@@ -100,7 +100,7 @@ pub fn search_results(email: Option<&str>, search_term: &str, entries: &[Indexed
     )
 }
 
-fn entry_result(e: &IndexedEntry) -> Markup {
+fn entry_result(e: &IndexedPlace) -> Markup {
     html! {
         h3 {
             a href=(format!("entries/{}",e.id)) {(e.title)}

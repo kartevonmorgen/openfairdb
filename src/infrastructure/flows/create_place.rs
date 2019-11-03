@@ -4,10 +4,10 @@ use crate::core::error::RepoError;
 
 use diesel::Connection;
 
-pub fn create_entry(
+pub fn create_place(
     connections: &sqlite::Connections,
-    indexer: &mut dyn EntryIndexer,
-    new_entry: usecases::NewEntry,
+    indexer: &mut dyn PlaceIndexer,
+    new_entry: usecases::NewPlace,
     account_email: Option<&str>,
 ) -> Result<Place> {
     // Create and add new entry

@@ -112,13 +112,13 @@ fn entry_detail(e: EntryPresenter) -> Markup {
     }
 }
 
-fn rating(entry_id: &str, archive: bool, r: &Rating, comments: &[Comment]) -> Markup {
+fn rating(place_uid: &str, archive: bool, r: &Rating, comments: &[Comment]) -> Markup {
     html! {
       h5 { (r.title) " " span { (format!("({})",i8::from(r.value))) } }
       @if archive {
         form action = "/ratings/actions/archive" method = "POST" {
             input type="hidden" name="ids" value=(r.uid.to_string());
-            input type="hidden" name="entry_id" value=(entry_id);
+            input type="hidden" name="place_uid" value=(place_uid);
             input type="submit" value="archive rating";
         }
       }
@@ -132,7 +132,7 @@ fn rating(entry_id: &str, archive: bool, r: &Rating, comments: &[Comment]) -> Ma
                   @if archive {
                     form action = "/comments/actions/archive" method = "POST" {
                         input type="hidden" name="ids" value=(c.uid.to_string());
-                        input type="hidden" name="entry_id" value=(entry_id);
+                        input type="hidden" name="place_uid" value=(place_uid);
                         input type="submit" value="archive comment";
                     }
                   }

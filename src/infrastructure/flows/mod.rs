@@ -1,17 +1,17 @@
 mod archive_comments;
-mod archive_entries;
 mod archive_events;
+mod archive_places;
 mod archive_ratings;
 mod change_user_role;
-mod create_entry;
+mod create_place;
 mod create_rating;
 mod reset_password;
-mod update_entry;
+mod update_place;
 
 pub mod prelude {
     pub use super::{
-        archive_comments::*, archive_entries::*, archive_events::*, archive_ratings::*,
-        change_user_role::*, create_entry::*, create_rating::*, reset_password::*, update_entry::*,
+        archive_comments::*, archive_events::*, archive_places::*, archive_ratings::*,
+        change_user_role::*, create_place::*, create_rating::*, reset_password::*, update_place::*,
     };
 }
 
@@ -82,15 +82,15 @@ mod tests {
                 }
             }
 
-            pub fn create_entry(
+            pub fn create_place(
                 self: &EnvFixture,
-                new_entry: NewEntry,
+                new_place: NewPlace,
                 account_email: Option<&str>,
             ) -> String {
-                flows::create_entry(
+                flows::create_place(
                     &self.db_connections,
                     &mut *self.search_engine.borrow_mut(),
-                    new_entry.into(),
+                    new_place.into(),
                     account_email,
                 )
                 .unwrap()
@@ -135,7 +135,7 @@ mod tests {
 
             pub fn create_rating(
                 self: &EnvFixture,
-                rate_entry: usecases::RateEntry,
+                rate_entry: usecases::NewPlaceRating,
             ) -> (String, String) {
                 flows::create_rating(
                     &self.db_connections,
@@ -169,19 +169,19 @@ mod tests {
                 self.try_get_comment(id).is_some()
             }
 
-            pub fn query_entries(self: &EnvFixture, query: &EntryIndexQuery) -> Vec<IndexedEntry> {
+            pub fn query_places(self: &EnvFixture, query: &PlaceIndexQuery) -> Vec<IndexedPlace> {
                 self.search_engine
                     .borrow_mut()
-                    .query_entries(query, 100)
+                    .query_places(query, 100)
                     .unwrap()
             }
 
-            pub fn query_entries_by_tag(self: &EnvFixture, tag: &str) -> Vec<IndexedEntry> {
-                let query = EntryIndexQuery {
+            pub fn query_places_by_tag(self: &EnvFixture, tag: &str) -> Vec<IndexedPlace> {
+                let query = PlaceIndexQuery {
                     hash_tags: vec![tag.into()],
                     ..Default::default()
                 };
-                self.query_entries(&query)
+                self.query_places(&query)
             }
         }
 
@@ -192,7 +192,7 @@ mod tests {
             );
         }
 
-        pub struct NewEntry {
+        pub struct NewPlace {
             pub pos: MapPoint,
             pub title: String,
             pub description: String,
@@ -200,7 +200,7 @@ mod tests {
             pub tags: Vec<String>,
         }
 
-        impl From<i32> for NewEntry {
+        impl From<i32> for NewPlace {
             fn from(i: i32) -> Self {
                 let lat_deg = i % 91;
                 let lng_deg = -i % 181;
@@ -209,7 +209,7 @@ mod tests {
                 let description = format!("description_{}", i);
                 let categories = vec![format!("category_{}", i)];
                 let tags = vec![format!("tag_{}", i)];
-                NewEntry {
+                NewPlace {
                     pos,
                     title,
                     description,
@@ -219,9 +219,9 @@ mod tests {
             }
         }
 
-        impl From<NewEntry> for usecases::NewEntry {
-            fn from(e: NewEntry) -> Self {
-                usecases::NewEntry {
+        impl From<NewPlace> for usecases::NewPlace {
+            fn from(e: NewPlace) -> Self {
+                usecases::NewPlace {
                     lat: e.pos.lat().to_deg(),
                     lng: e.pos.lng().to_deg(),
                     title: e.title,
@@ -244,12 +244,12 @@ mod tests {
 
         pub fn new_entry_rating(
             i: i32,
-            entry_id: &str,
+            place_uid: &str,
             context: RatingContext,
             value: RatingValue,
-        ) -> usecases::RateEntry {
-            usecases::RateEntry {
-                entry: entry_id.to_owned(),
+        ) -> usecases::NewPlaceRating {
+            usecases::NewPlaceRating {
+                entry: place_uid.to_owned(),
                 context,
                 value,
                 title: format!("title_{}", i),

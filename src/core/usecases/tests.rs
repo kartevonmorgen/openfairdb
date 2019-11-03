@@ -123,15 +123,15 @@ impl UserTokenRepo for MockDb {
     }
 }
 
-impl EntryIndexer for MockDb {
-    fn add_or_update_entry(&mut self, place_rev: &Place, _ratings: &AvgRatings) -> Fallible<()> {
+impl PlaceIndexer for MockDb {
+    fn add_or_update_place(&mut self, place_rev: &Place, _ratings: &AvgRatings) -> Fallible<()> {
         // Nothing to do, the entry has already been stored
         // in the database.
         debug_assert!(place_rev == &self.get_place(place_rev.uid.as_ref()).unwrap().0);
         Ok(())
     }
 
-    fn remove_entry_by_id(&mut self, uid: &str) -> Fallible<()> {
+    fn remove_place_by_uid(&mut self, uid: &str) -> Fallible<()> {
         // Nothing to do, the entry has already been stored
         // in the database.
         //debug_assert_eq!(Err(RepoError::NotFound), self.db.get_place(&id));
@@ -144,12 +144,8 @@ impl EntryIndexer for MockDb {
     }
 }
 
-impl EntryIndex for MockDb {
-    fn query_entries(
-        &self,
-        _query: &EntryIndexQuery,
-        _limit: usize,
-    ) -> Fallible<Vec<IndexedEntry>> {
+impl PlaceIndex for MockDb {
+    fn query_places(&self, _query: &PlaceIndexQuery, _limit: usize) -> Fallible<Vec<IndexedPlace>> {
         unimplemented!();
     }
 }
@@ -399,9 +395,9 @@ impl CommentRepository for MockDb {
     ) -> RepoResult<usize> {
         unimplemented!();
     }
-    fn archive_comments_of_entries(
+    fn archive_comments_of_places(
         &self,
-        _entry_ids: &[&str],
+        _place_uids: &[&str],
         _activity: &Activity,
     ) -> RepoResult<usize> {
         unimplemented!();
@@ -464,15 +460,15 @@ impl RatingRepository for MockDb {
             .collect())
     }
 
-    fn load_entry_ids_of_ratings(&self, _ids: &[&str]) -> RepoResult<Vec<String>> {
+    fn load_place_uids_of_ratings(&self, _ids: &[&str]) -> RepoResult<Vec<String>> {
         unimplemented!();
     }
     fn archive_ratings(&self, _ids: &[&str], _activity: &Activity) -> RepoResult<usize> {
         unimplemented!();
     }
-    fn archive_ratings_of_entries(
+    fn archive_ratings_of_places(
         &self,
-        _entry_ids: &[&str],
+        _place_uids: &[&str],
         _activity: &Activity,
     ) -> RepoResult<usize> {
         unimplemented!();

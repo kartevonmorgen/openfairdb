@@ -4,8 +4,8 @@ use diesel::connection::Connection;
 
 pub fn create_rating(
     connections: &sqlite::Connections,
-    indexer: &mut dyn EntryIndexer,
-    rate_entry: usecases::RateEntry,
+    indexer: &mut dyn PlaceIndexer,
+    rate_entry: usecases::NewPlaceRating,
 ) -> Result<(String, String)> {
     // Add new rating to existing entry
     let (rating_id, comment_id, entry, ratings) = {

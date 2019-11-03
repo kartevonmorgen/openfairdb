@@ -1,4 +1,4 @@
-use crate::core::{db::IndexedEntry, entities as e, util::geo::MapPoint};
+use crate::core::{db::IndexedPlace, entities as e, util::geo::MapPoint};
 
 #[rustfmt::skip]
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
@@ -211,8 +211,8 @@ pub struct EntrySearchResult {
     pub ratings: EntrySearchRatings,
 }
 
-impl From<IndexedEntry> for EntrySearchResult {
-    fn from(from: IndexedEntry) -> Self {
+impl From<IndexedPlace> for EntrySearchResult {
+    fn from(from: IndexedPlace) -> Self {
         Self {
             id: from.id,
             lat: from.pos.lat().to_deg(),

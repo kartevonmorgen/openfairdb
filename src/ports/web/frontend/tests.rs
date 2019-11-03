@@ -266,11 +266,11 @@ mod entry {
     use crate::core::usecases;
     use crate::infrastructure::flows;
 
-    fn create_entry_with_rating(
+    fn create_place_with_rating(
         db: &sqlite::Connections,
         search: &mut tantivy::SearchEngine,
     ) -> (String, String, String) {
-        let e = usecases::NewEntry {
+        let e = usecases::NewPlace {
             title: "entry".into(),
             description: "desc".into(),
             lat: 3.7,
@@ -288,10 +288,10 @@ mod entry {
             image_url: None,
             image_link_url: None,
         };
-        let e_id = flows::prelude::create_entry(db, search, e, None)
+        let e_id = flows::prelude::create_place(db, search, e, None)
             .unwrap()
             .uid;
-        let r = usecases::RateEntry {
+        let r = usecases::NewPlaceRating {
             title: "A rating".into(),
             comment: "Foo".into(),
             context: RatingContext::Diversity,
@@ -307,7 +307,7 @@ mod entry {
     #[test]
     fn get_entry_details() {
         let (client, db, mut search) = setup();
-        let (id, _, _) = create_entry_with_rating(&db, &mut search);
+        let (id, _, _) = create_place_with_rating(&db, &mut search);
         let mut res = client.get(format!("/entries/{}", id)).dispatch();
         assert_eq!(res.status(), Status::Ok);
         let body_str = res.body().and_then(|b| b.into_string()).unwrap();
@@ -321,7 +321,7 @@ mod entry {
     #[test]
     fn get_entry_details_as_admin() {
         let (client, db, mut search) = setup();
-        let (id, _, _) = create_entry_with_rating(&db, &mut search);
+        let (id, _, _) = create_place_with_rating(&db, &mut search);
         create_user(&db, "foo", Role::Admin);
         login_user(&client, "foo");
         let mut res = client.get(format!("/entries/{}", id)).dispatch();
@@ -337,7 +337,7 @@ mod entry {
     #[test]
     fn get_entry_details_as_scout() {
         let (client, db, mut search) = setup();
-        let (id, _, _) = create_entry_with_rating(&db, &mut search);
+        let (id, _, _) = create_place_with_rating(&db, &mut search);
         create_user(&db, "foo", Role::Scout);
         login_user(&client, "foo");
         let mut res = client.get(format!("/entries/{}", id)).dispatch();
@@ -355,13 +355,13 @@ mod entry {
         let (client, db, mut search) = setup();
         create_user(&db, "foo", Role::Admin);
         login_user(&client, "foo");
-        let (e_id, _, c_id) = create_entry_with_rating(&db, &mut search);
+        let (e_id, _, c_id) = create_place_with_rating(&db, &mut search);
         let comment = db.shared().unwrap().load_comment(&c_id).unwrap();
         assert!(comment.archived_at.is_none());
         let res = client
             .post("/comments/actions/archive")
             .header(ContentType::Form)
-            .body(format!("ids={}&entry_id={}", c_id, e_id))
+            .body(format!("ids={}&place_uid={}", c_id, e_id))
             .dispatch();
         assert_eq!(res.status(), Status::SeeOther);
         //TODO: archived comments should be loaded too.
@@ -377,13 +377,13 @@ mod entry {
         let (client, db, mut search) = setup();
         create_user(&db, "foo", Role::Scout);
         login_user(&client, "foo");
-        let (e_id, _, c_id) = create_entry_with_rating(&db, &mut search);
+        let (e_id, _, c_id) = create_place_with_rating(&db, &mut search);
         let comment = db.shared().unwrap().load_comment(&c_id).unwrap();
         assert!(comment.archived_at.is_none());
         let res = client
             .post("/comments/actions/archive")
             .header(ContentType::Form)
-            .body(format!("ids={}&entry_id={}", c_id, e_id))
+            .body(format!("ids={}&place_uid={}", c_id, e_id))
             .dispatch();
         assert_eq!(res.status(), Status::SeeOther);
         //TODO: archived comments should be loaded too.
@@ -397,11 +397,11 @@ mod entry {
     #[test]
     fn archive_comment_as_guest() {
         let (client, db, mut search) = setup();
-        let (e_id, _, c_id) = create_entry_with_rating(&db, &mut search);
+        let (e_id, _, c_id) = create_place_with_rating(&db, &mut search);
         let res = client
             .post("/comments/actions/archive")
             .header(ContentType::Form)
-            .body(format!("ids={}&entry_id={}", c_id, e_id))
+            .body(format!("ids={}&place_uid={}", c_id, e_id))
             .dispatch();
         assert_eq!(res.status(), Status::NotFound);
         let comment = db.shared().unwrap().load_comment(&c_id).unwrap();
@@ -411,11 +411,11 @@ mod entry {
     #[test]
     fn archive_rating_as_guest() {
         let (client, db, mut search) = setup();
-        let (e_id, r_id, _) = create_entry_with_rating(&db, &mut search);
+        let (e_id, r_id, _) = create_place_with_rating(&db, &mut search);
         let res = client
             .post("/ratings/actions/archive")
             .header(ContentType::Form)
-            .body(format!("ids={}&entry_id={}", r_id, e_id))
+            .body(format!("ids={}&place_uid={}", r_id, e_id))
             .dispatch();
         assert_eq!(res.status(), Status::NotFound);
     }

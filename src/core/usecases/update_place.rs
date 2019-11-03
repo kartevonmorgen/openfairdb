@@ -5,7 +5,7 @@ use crate::core::{
 
 #[rustfmt::skip]
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct UpdateEntry {
+pub struct UpdatePlace {
     pub version        : u64,
     pub title          : String,
     pub description    : String,
@@ -29,10 +29,10 @@ pub struct Storable(Place);
 pub fn prepare_updated_place_rev<D: Db>(
     db: &D,
     place_uid: Uid,
-    e: UpdateEntry,
+    e: UpdatePlace,
     updated_by: Option<&str>,
 ) -> Result<Storable> {
-    let UpdateEntry {
+    let UpdatePlace {
         version,
         title,
         description,
@@ -57,7 +57,7 @@ pub fn prepare_updated_place_rev<D: Db>(
     super::check_and_count_owned_tags(db, &tags, None)?;
     // TODO: Ensure that no reserved tags are removed without authorization.
     // All existing reserved tags from other organizations must be preserved
-    // when editing entries. Reserved tags that already exist should not be
+    // when editing places. Reserved tags that already exist should not be
     // considers during the check, because they must be preserved independent
     // of who is editing the place_rev.
     // GitHub issue: https://github.com/slowtec/openfairdb/issues/203
@@ -141,7 +141,7 @@ mod tests {
             .finish();
 
         #[rustfmt::skip]
-        let new = UpdateEntry {
+        let new = UpdatePlace {
             version     : 2,
             title       : "foo".into(),
             description : "bar".into(),
@@ -195,7 +195,7 @@ mod tests {
             .finish();
 
         #[rustfmt::skip]
-        let new = UpdateEntry {
+        let new = UpdatePlace {
             version     : 3,
             title       : "foo".into(),
             description : "bar".into(),
@@ -238,7 +238,7 @@ mod tests {
     fn update_non_existing_place_rev() {
         let uid = Uid::new_uuid();
         #[rustfmt::skip]
-        let new = UpdateEntry {
+        let new = UpdatePlace {
             version     : 4,
             title       : "foo".into(),
             description : "bar".into(),
@@ -284,7 +284,7 @@ mod tests {
             .license("CC0-1.0")
             .finish();
         #[rustfmt::skip]
-        let new = UpdateEntry {
+        let new = UpdatePlace {
             version     : 2,
             title       : "foo".into(),
             description : "bar".into(),

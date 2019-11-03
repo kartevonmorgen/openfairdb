@@ -344,10 +344,10 @@ fn post_entry(
     account: Option<Account>,
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
-    body: Json<usecases::NewEntry>,
+    body: Json<usecases::NewPlace>,
 ) -> Result<String> {
     Ok(Json(
-        flows::create_entry(
+        flows::create_place(
             &connections,
             &mut search_engine,
             body.into_inner(),
@@ -364,10 +364,10 @@ fn put_entry(
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
     uid: String,
-    data: Json<usecases::UpdateEntry>,
+    data: Json<usecases::UpdatePlace>,
 ) -> Result<String> {
     Ok(Json(
-        flows::update_entry(
+        flows::update_place(
             &connections,
             &mut search_engine,
             uid.into(),
@@ -451,7 +451,7 @@ fn csv_export(
             .0
             .into_iter()
             .filter_map(|indexed_entry| {
-                let IndexedEntry {
+                let IndexedPlace {
                     ref id,
                     ref ratings,
                     ..

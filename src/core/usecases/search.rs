@@ -12,10 +12,10 @@ pub struct SearchRequest<'a, 'b, 'c, 'd> {
 }
 
 pub fn search(
-    index: &dyn EntryIndex,
+    index: &dyn PlaceIndex,
     req: SearchRequest,
     limit: usize,
-) -> Result<(Vec<IndexedEntry>, Vec<IndexedEntry>)> {
+) -> Result<(Vec<IndexedPlace>, Vec<IndexedPlace>)> {
     let visible_bbox: MapBbox = req.bbox;
 
     let mut hash_tags = req.text.map(util::extract_hash_tags).unwrap_or_default();
@@ -38,7 +38,7 @@ pub fn search(
         .map(filter::split_text_to_words)
         .unwrap_or_default();
 
-    let visible_entries_query = EntryIndexQuery {
+    let visible_places_query = PlaceIndexQuery {
         include_bbox: Some(visible_bbox),
         exclude_bbox: None,
         categories: req.categories,
@@ -51,31 +51,31 @@ pub fn search(
     // 1st query: Search for visible results only
     // This is required to reliably retrieve all available results!
     // See also: https://github.com/slowtec/openfairdb/issues/183
-    let visible_entries = index
-        .query_entries(&visible_entries_query, limit)
+    let visible_places = index
+        .query_places(&visible_places_query, limit)
         .map_err(|err| RepoError::Other(Box::new(err.compat())))?;
-    debug_assert!(visible_entries
+    debug_assert!(visible_places
         .iter()
         .all(|e| visible_bbox.contains_point(e.pos)));
 
     // 2nd query: Search for remaining invisible results
-    let invisible_entries = if visible_entries.len() < limit {
-        let invisible_entries_query = EntryIndexQuery {
+    let invisible_places = if visible_places.len() < limit {
+        let invisible_places_query = PlaceIndexQuery {
             include_bbox: Some(filter::extend_bbox(&visible_bbox)),
-            exclude_bbox: visible_entries_query.include_bbox,
-            ..visible_entries_query
+            exclude_bbox: visible_places_query.include_bbox,
+            ..visible_places_query
         };
         index
-            .query_entries(&invisible_entries_query, limit - visible_entries.len())
+            .query_places(&invisible_places_query, limit - visible_places.len())
             .map_err(|err| RepoError::Other(Box::new(err.compat())))?
     } else {
         vec![]
     };
-    debug_assert!(!invisible_entries
+    debug_assert!(!invisible_places
         .iter()
         .any(|e| visible_bbox.contains_point(e.pos)));
 
-    Ok((visible_entries, invisible_entries))
+    Ok((visible_places, invisible_places))
 }
 
 /// The global search usecase is like the one
@@ -83,14 +83,14 @@ pub fn search(
 /// of only one single search input.
 /// So here we don't care about tags, categories etc.
 /// We also ignore the rating of an entry for now.
-pub fn global_search(index: &dyn EntryIndex, txt: &str, limit: usize) -> Result<Vec<IndexedEntry>> {
-    let index_query = EntryIndexQuery {
+pub fn global_search(index: &dyn PlaceIndex, txt: &str, limit: usize) -> Result<Vec<IndexedPlace>> {
+    let index_query = PlaceIndexQuery {
         text: Some(txt.into()),
         ..Default::default()
     };
 
     let entries = index
-        .query_entries(&index_query, limit)
+        .query_places(&index_query, limit)
         .map_err(|err| RepoError::Other(Box::new(err.compat())))?;
 
     Ok(entries)
