@@ -9,23 +9,23 @@ pub fn create_entry(
     indexer: &mut dyn EntryIndexer,
     new_entry: usecases::NewEntry,
     account_email: Option<&str>,
-) -> Result<PlaceRev> {
+) -> Result<Place> {
     // Create and add new entry
-    let (entry, ratings) = {
+    let (place, ratings) = {
         let connection = connections.exclusive()?;
         let mut prepare_err = None;
         connection
             .transaction::<_, diesel::result::Error, _>(|| {
                 match usecases::prepare_new_place_rev(&*connection, new_entry, account_email) {
                     Ok(storable) => {
-                        let (entry, ratings) =
+                        let (place, ratings) =
                             usecases::store_new_place_rev(&*connection, storable).map_err(
                                 |err| {
-                                    warn!("Failed to store newly created entry: {}", err);
+                                    warn!("Failed to store newly created place: {}", err);
                                     diesel::result::Error::RollbackTransaction
                                 },
                             )?;
-                        Ok((entry, ratings))
+                        Ok((place, ratings))
                     }
                     Err(err) => {
                         prepare_err = Some(err);
@@ -42,33 +42,33 @@ pub fn create_entry(
             })
     }?;
 
-    // Index newly added entry
+    // Index newly added place
     // TODO: Move to a separate task/thread that doesn't delay this request
-    if let Err(err) = usecases::index_entry(indexer, &entry, &ratings).and_then(|_| indexer.flush())
+    if let Err(err) = usecases::index_entry(indexer, &place, &ratings).and_then(|_| indexer.flush())
     {
-        error!("Failed to index newly added entry {}: {}", entry.uid, err);
+        error!("Failed to index newly added place {}: {}", place.uid, err);
     }
 
     // Send subscription e-mails
     // TODO: Move to a separate task/thread that doesn't delay this request
-    if let Err(err) = notify_entry_added(connections, &entry) {
+    if let Err(err) = notify_entry_added(connections, &place) {
         error!(
-            "Failed to send notifications for newly added entry {}: {}",
-            entry.uid, err
+            "Failed to send notifications for newly added place {}: {}",
+            place.uid, err
         );
     }
 
-    Ok(entry)
+    Ok(place)
 }
 
-fn notify_entry_added(connections: &sqlite::Connections, entry: &PlaceRev) -> Result<()> {
+fn notify_entry_added(connections: &sqlite::Connections, place: &Place) -> Result<()> {
     let (email_addresses, all_categories) = {
         let connection = connections.shared()?;
         let email_addresses =
-            usecases::email_addresses_by_coordinate(&*connection, entry.location.pos)?;
+            usecases::email_addresses_by_coordinate(&*connection, place.location.pos)?;
         let all_categories = connection.all_categories()?;
         (email_addresses, all_categories)
     };
-    notify::entry_added(&email_addresses, &entry, all_categories);
+    notify::entry_added(&email_addresses, &place, all_categories);
     Ok(())
 }

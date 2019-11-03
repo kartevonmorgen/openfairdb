@@ -29,17 +29,18 @@ HAVING version=MAX(version);
 CREATE TABLE place_rev (
     -- immutable header
     id             INTEGER PRIMARY KEY,
-    place_id       INTEGER NOT NULL,
     rev            INTEGER NOT NULL,
+    place_id       INTEGER NOT NULL,
     created_at     INTEGER NOT NULL,
     created_by     INTEGER,
     -- mutable header
     status         INTEGER NOT NULL,
     -- immutable body
+    license        TEXT NOT NULL,
     title          TEXT NOT NULL,
     description    TEXT NOT NULL,
     lat            FLOAT NOT NULL,
-    lng            FLOAT NOT NULL,
+    lon            FLOAT NOT NULL,
     street         TEXT,
     zip            TEXT,
     city           TEXT,
@@ -47,7 +48,6 @@ CREATE TABLE place_rev (
     email          TEXT,
     phone          TEXT,
     homepage       TEXT,
-    license        TEXT NOT NULL,
     image_url      TEXT,
     image_link_url TEXT,
     --
@@ -58,11 +58,12 @@ CREATE TABLE place_rev (
 
 INSERT INTO place_rev SELECT
 entries.rowid,
-place.id,
 entries.version, -- rev
+place.id,
 entries.created, -- created_at
 NULL, -- created_by -> user_id
 1, -- status = created (no archived entries yet!)
+entries.license,
 entries.title,
 entries.description,
 entries.lat,
@@ -74,7 +75,6 @@ entries.country,
 entries.email,
 entries.telephone,
 entries.homepage,
-entries.license,
 entries.image_url,
 entries.image_link_url
 FROM entries
@@ -83,9 +83,9 @@ JOIN place ON entries.id=place.uid;
 CREATE TABLE place_rev_status_log (
     id           INTEGER PRIMARY KEY,
     place_rev_id INTEGER NOT NULL,
-    status       INTEGER NOT NULL,
     created_at   INTEGER NOT NULL,
     created_by   INTEGER,
+    status       INTEGER NOT NULL,
     context      TEXT, -- any technical or system context, e.g. client IP address, ...
     notes        TEXT, -- human-written informational notes
     --
@@ -96,9 +96,9 @@ CREATE TABLE place_rev_status_log (
 INSERT INTO place_rev_status_log SELECT
 id,
 id,
-status,
 created_at,
 created_by,
+status,
 NULL,
 NULL
 FROM place_rev;

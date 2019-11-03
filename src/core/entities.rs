@@ -254,22 +254,23 @@ impl From<i16> for Status {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct PlaceRev {
+pub struct Place {
     pub uid: Uid,
-    pub revision: Revision,
+    pub rev: Revision,
     pub created: Activity,
+    pub license: String,
     pub title: String,
     pub description: String,
     pub location: Location,
     pub contact: Option<Contact>,
     pub homepage: Option<String>,
-    pub tags: Vec<String>,
-    pub license: String,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
+    pub tags: Vec<String>,
 }
 
-#[rustfmt::skip]#[derive(Debug, Clone, PartialEq)]
+#[rustfmt::skip]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Location {
     pub pos     : MapPoint,
     pub address : Option<Address>,
@@ -790,67 +791,68 @@ pub trait Builder {
 }
 
 #[cfg(test)]
-pub use self::entry_builder::*;
+pub use self::place_builder::*;
 
 #[cfg(test)]
-pub mod entry_builder {
+pub mod place_builder {
 
     use super::*;
 
-    pub struct EntryBuild {
-        entry: PlaceRev,
+    pub struct PlaceBuild {
+        place: Place,
     }
 
-    impl EntryBuild {
+    impl PlaceBuild {
         pub fn id(mut self, uid: &str) -> Self {
-            self.entry.uid = uid.into();
+            self.place.uid = uid.into();
             self
         }
         pub fn revision(mut self, v: u64) -> Self {
-            self.entry.revision = v.into();
+            self.place.rev = v.into();
             self
         }
         pub fn title(mut self, title: &str) -> Self {
-            self.entry.title = title.into();
+            self.place.title = title.into();
             self
         }
         pub fn description(mut self, desc: &str) -> Self {
-            self.entry.description = desc.into();
+            self.place.description = desc.into();
             self
         }
         pub fn pos(mut self, pos: MapPoint) -> Self {
-            self.entry.location.pos = pos;
+            self.place.location.pos = pos;
             self
         }
         pub fn tags(mut self, tags: Vec<&str>) -> Self {
-            self.entry.tags = tags.into_iter().map(|x| x.into()).collect();
+            self.place.tags = tags.into_iter().map(|x| x.into()).collect();
             self
         }
         pub fn license(mut self, license: &str) -> Self {
-            self.entry.license = license.into();
+            self.place.license = license.into();
             self
         }
         pub fn image_url(mut self, image_url: Option<&str>) -> Self {
-            self.entry.image_url = image_url.map(Into::into);
+            self.place.image_url = image_url.map(Into::into);
             self
         }
         pub fn image_link_url(mut self, image_link_url: Option<&str>) -> Self {
-            self.entry.image_link_url = image_link_url.map(Into::into);
+            self.place.image_link_url = image_link_url.map(Into::into);
             self
         }
-        pub fn finish(self) -> PlaceRev {
-            self.entry
+        pub fn finish(self) -> Place {
+            self.place
         }
     }
 
-    impl Builder for PlaceRev {
-        type Build = EntryBuild;
-        fn build() -> EntryBuild {
-            EntryBuild {
-                entry: PlaceRev {
+    impl Builder for Place {
+        type Build = PlaceBuild;
+        fn build() -> PlaceBuild {
+            PlaceBuild {
+                place: Place {
                     uid: Uid::new_uuid(),
-                    revision: Revision::initial(),
+                    rev: Revision::initial(),
                     created: Activity::now_anonymous(),
+                    license: "".into(),
                     title: "".into(),
                     description: "".into(),
                     location: Location {
@@ -859,10 +861,9 @@ pub mod entry_builder {
                     },
                     contact: None,
                     homepage: None,
-                    tags: vec![],
-                    license: "".into(),
                     image_url: None,
                     image_link_url: None,
+                    tags: vec![],
                 },
             }
         }

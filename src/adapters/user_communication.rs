@@ -23,7 +23,7 @@ pub fn user_reset_password_email(url: &str) -> EmailContent {
     EmailContent { subject, body }
 }
 
-pub fn entry_added_email(e: &PlaceRev, category_names: &[String]) -> EmailContent {
+pub fn entry_added_email(e: &Place, category_names: &[String]) -> EmailContent {
     let subject = format!("Karte von morgen - neuer Eintrag: {}", e.title);
     let intro_sentence = "ein neuer Eintrag auf der Karte von morgen wurde erstellt";
     let body = entry_email(&e, category_names, &e.tags, intro_sentence);
@@ -31,7 +31,7 @@ pub fn entry_added_email(e: &PlaceRev, category_names: &[String]) -> EmailConten
 }
 
 //TODO: calc diff
-pub fn entry_changed_email(e: &PlaceRev, category_names: &[String]) -> EmailContent {
+pub fn entry_changed_email(e: &Place, category_names: &[String]) -> EmailContent {
     let subject = format!("Karte von morgen - Eintrag verändert: {}", e.title);
     let intro_sentence = "folgender Eintrag der Karte von morgen wurde verändert";
     let body = entry_email(&e, category_names, &e.tags, intro_sentence);
@@ -39,7 +39,7 @@ pub fn entry_changed_email(e: &PlaceRev, category_names: &[String]) -> EmailCont
 }
 
 pub fn entry_email(
-    e: &PlaceRev,
+    e: &Place,
     category_names: &[String],
     tags: &[String],
     intro_sentence: &str,

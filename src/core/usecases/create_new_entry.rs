@@ -25,7 +25,7 @@ pub struct NewEntry {
 }
 
 #[derive(Debug, Clone)]
-pub struct Storable(PlaceRev);
+pub struct Storable(Place);
 
 pub fn prepare_new_place_rev<D: Db>(
     db: &D,
@@ -85,25 +85,25 @@ pub fn prepare_new_place_rev<D: Db>(
         .map(|ref url| parse_url_param(url))
         .transpose()?;
 
-    let e = PlaceRev {
+    let e = Place {
         uid: Uid::new_uuid(),
-        revision: Revision::initial(),
+        rev: Revision::initial(),
         created: Activity::now(created_by_email.map(Into::into)),
+        license,
         title,
         description,
         location,
         contact,
         homepage,
-        tags,
-        license,
         image_url,
         image_link_url,
+        tags,
     };
     e.validate()?;
     Ok(Storable(e))
 }
 
-pub fn store_new_place_rev<D: Db>(db: &D, s: Storable) -> Result<(PlaceRev, Vec<Rating>)> {
+pub fn store_new_place_rev<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>)> {
     let Storable(place_rev) = s;
     debug!("Storing new place revision: {:?}", place_rev);
     for t in &place_rev.tags {
@@ -150,7 +150,7 @@ mod tests {
         let (x, _) = &mock_db.entries.borrow()[0];
         assert_eq!(x.title, "foo");
         assert_eq!(x.description, "bar");
-        assert_eq!(x.revision, Revision::initial());
+        assert_eq!(x.rev, Revision::initial());
     }
 
     #[test]

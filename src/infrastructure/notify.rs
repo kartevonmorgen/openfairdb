@@ -37,41 +37,41 @@ pub fn compose_and_send_emails(recipients: &[String], subject: &str, body: &str)
     }
 }
 
-pub fn entry_added(email_addresses: &[String], entry: &PlaceRev, all_categories: Vec<Category>) {
-    let (_, categories) = Category::split_from_tags(entry.tags.clone());
+pub fn entry_added(email_addresses: &[String], place: &Place, all_categories: Vec<Category>) {
+    let (_, categories) = Category::split_from_tags(place.tags.clone());
     let category_names: Vec<String> = all_categories
         .into_iter()
         .filter(|c1| categories.iter().any(|c2| c1.uid == c2.uid))
         .map(|c| c.name())
         .collect();
-    let content = user_communication::entry_added_email(entry, &category_names);
+    let content = user_communication::entry_added_email(place, &category_names);
 
     #[cfg(feature = "email")]
     {
         info!(
-            "Sending e-mails to {} recipients after new entry {} added",
+            "Sending e-mails to {} recipients after new place {} added",
             email_addresses.len(),
-            entry.uid
+            place.uid,
         );
         compose_and_send_emails(email_addresses, &content.subject, &content.body);
     }
 }
 
-pub fn entry_updated(email_addresses: &[String], entry: &PlaceRev, all_categories: Vec<Category>) {
-    let (_, categories) = Category::split_from_tags(entry.tags.clone());
+pub fn entry_updated(email_addresses: &[String], place: &Place, all_categories: Vec<Category>) {
+    let (_, categories) = Category::split_from_tags(place.tags.clone());
     let category_names: Vec<String> = all_categories
         .into_iter()
         .filter(|c1| categories.iter().any(|c2| c1.uid == c2.uid))
         .map(|c| c.name())
         .collect();
-    let content = user_communication::entry_changed_email(entry, &category_names);
+    let content = user_communication::entry_changed_email(place, &category_names);
 
     #[cfg(feature = "email")]
     {
         info!(
-            "Sending e-mails to {} recipients after entry {} updated",
+            "Sending e-mails to {} recipients after place {} updated",
             email_addresses.len(),
-            entry.uid
+            place.uid
         );
         compose_and_send_emails(email_addresses, &content.subject, &content.body);
     }

@@ -17,15 +17,16 @@ pub struct Place {
 #[derive(Insertable)]
 #[table_name = "place_rev"]
 pub struct NewPlaceRev {
-    pub place_id: i64,
     pub rev: i64,
+    pub place_id: i64,
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub status: i16,
+    pub license: String,
     pub title: String,
     pub description: String,
     pub lat: f64,
-    pub lng: f64,
+    pub lon: f64,
     pub street: Option<String>,
     pub zip: Option<String>,
     pub city: Option<String>,
@@ -33,7 +34,6 @@ pub struct NewPlaceRev {
     pub email: Option<String>,
     pub phone: Option<String>,
     pub homepage: Option<String>,
-    pub license: String,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
 }
@@ -47,10 +47,11 @@ pub struct PlaceRev {
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub status: i16,
+    pub license: String,
     pub title: String,
     pub description: String,
     pub lat: f64,
-    pub lng: f64,
+    pub lon: f64,
     pub street: Option<String>,
     pub zip: Option<String>,
     pub city: Option<String>,
@@ -58,7 +59,6 @@ pub struct PlaceRev {
     pub email: Option<String>,
     pub phone: Option<String>,
     pub homepage: Option<String>,
-    pub license: String,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
 }
@@ -76,10 +76,11 @@ pub struct PlaceRevStatusLog {
     pub status_created_by: Option<i64>,
     pub status_context: Option<String>,
     pub status_notes: Option<String>,
+    pub license: String,
     pub title: String,
     pub description: String,
     pub lat: f64,
-    pub lng: f64,
+    pub lon: f64,
     pub street: Option<String>,
     pub zip: Option<String>,
     pub city: Option<String>,
@@ -87,7 +88,6 @@ pub struct PlaceRevStatusLog {
     pub email: Option<String>,
     pub phone: Option<String>,
     pub homepage: Option<String>,
-    pub license: String,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
 }
@@ -96,9 +96,9 @@ pub struct PlaceRevStatusLog {
 #[table_name = "place_rev_status_log"]
 pub struct NewPlaceRevStatusLog<'a, 'b> {
     pub place_rev_id: i64,
-    pub status: i16,
     pub created_at: i64,
     pub created_by: Option<i64>,
+    pub status: i16,
     pub context: Option<&'a str>,
     pub notes: Option<&'b str>,
 }

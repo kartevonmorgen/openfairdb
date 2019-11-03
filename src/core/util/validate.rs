@@ -39,7 +39,7 @@ pub fn bbox(bbox: &MapBbox) -> Result<(), ParameterError> {
     Ok(())
 }
 
-impl Validate for PlaceRev {
+impl Validate for Place {
     fn validate(&self) -> Result<(), ParameterError> {
         //TODO: check title
 

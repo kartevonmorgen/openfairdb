@@ -112,7 +112,7 @@ fn update_entry_with_tag_duplicates() {
     let mut json = String::new();
     json.push_str(&format!(
         "{{\"version\":{},\"id\":\"{}\"",
-        u64::from(e.revision.next()),
+        u64::from(e.rev.next()),
         e.uid
     ));
     json.push_str(r#","title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["bar","bar"]}"#);
@@ -127,7 +127,7 @@ fn update_entry_with_tag_duplicates() {
 
 #[test]
 fn get_one_entry() {
-    let e = PlaceRev::build()
+    let e = Place::build()
         .id("get_one_entry_test")
         .title("some")
         .description("desc")
@@ -175,12 +175,12 @@ fn get_one_entry() {
 
 #[test]
 fn get_multiple_entries() {
-    let one = PlaceRev::build()
+    let one = Place::build()
         .id("get_multiple_entry_test_one")
         .title("some")
         .description("desc")
         .finish();
-    let two = PlaceRev::build()
+    let two = Place::build()
         .id("get_multiple_entry_test_two")
         .title("some")
         .description("desc")
@@ -882,7 +882,7 @@ fn create_new_user() {
 #[test]
 fn create_rating() {
     let (client, connections, _) = setup2();
-    let entries = vec![PlaceRev::build().id("foo").finish()];
+    let entries = vec![Place::build().id("foo").finish()];
     for e in entries {
         connections
             .exclusive()
@@ -909,7 +909,7 @@ fn create_rating() {
 
 #[test]
 fn get_one_rating() {
-    let e = PlaceRev::build().id("foo").finish();
+    let e = Place::build().id("foo").finish();
     let (client, connections, mut search_engine) = setup2();
     connections
         .exclusive()
@@ -950,8 +950,8 @@ fn get_one_rating() {
 
 #[test]
 fn ratings_with_and_without_source() {
-    let e1 = PlaceRev::build().id("foo").finish();
-    let e2 = PlaceRev::build().id("bar").finish();
+    let e1 = Place::build().id("foo").finish();
+    let e2 = Place::build().id("bar").finish();
     let (client, connections, mut search_engine) = setup2();
     connections
         .exclusive()
@@ -1256,30 +1256,30 @@ fn export_csv() {
     assert_eq!(response.status(), Status::Ok);
 
     let mut entries = vec![
-        PlaceRev::build()
+        Place::build()
             .id("entry1")
             .revision(3)
+            .license("license1")
             .title("title1")
             .description("desc1")
             .pos(MapPoint::from_lat_lng_deg(0.1, 0.2))
+            .image_url(Some("https://img"))
+            .image_link_url(Some("https://img,link"))
             .tags(vec![
                 "bli",
                 "bla",
                 Category::TAG_NON_PROFIT,
                 Category::TAG_COMMERCIAL,
             ])
-            .license("license1")
-            .image_url(Some("https://img"))
-            .image_link_url(Some("https://img,link"))
             .finish(),
-        PlaceRev::build()
+        Place::build()
             .id("entry2")
             .tags(vec![Category::TAG_NON_PROFIT])
             .finish(),
-        PlaceRev::build()
+        Place::build()
             .id("entry3")
-            .tags(vec![Category::TAG_COMMERCIAL])
             .pos(MapPoint::from_lat_lng_deg(2.0, 2.0))
+            .tags(vec![Category::TAG_COMMERCIAL])
             .finish(),
     ];
     entries[0].location.address = Some(Address::build().street("street1").finish());

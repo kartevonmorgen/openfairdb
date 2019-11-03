@@ -4,7 +4,7 @@ pub trait Rated {
     fn avg_ratings(&self, _: &[Rating]) -> AvgRatings;
 }
 
-impl Rated for PlaceRev {
+impl Rated for Place {
     fn avg_ratings(&self, ratings: &[Rating]) -> AvgRatings {
         debug_assert_eq!(
             ratings.len(),
@@ -25,8 +25,8 @@ pub mod tests {
     use super::*;
     use crate::test::Bencher;
 
-    fn new_place_rev(id: &str) -> PlaceRev {
-        PlaceRev::build().id(id).finish()
+    fn new_place_rev(id: &str) -> Place {
+        Place::build().id(id).finish()
     }
 
     fn new_rating(uid: &str, place_uid: &str, value: i8, context: RatingContext) -> Rating {
@@ -87,8 +87,8 @@ pub mod tests {
         assert_eq!(entry2.avg_ratings(&ratings2).total(), 0.0.into());
     }
 
-    pub fn create_entries_with_ratings(n: usize) -> (Vec<PlaceRev>, Vec<Rating>) {
-        let entries: Vec<PlaceRev> = (0..n).map(|_| PlaceRev::build().finish()).collect();
+    pub fn create_entries_with_ratings(n: usize) -> (Vec<Place>, Vec<Rating>) {
+        let entries: Vec<Place> = (0..n).map(|_| Place::build().finish()).collect();
 
         let ratings: Vec<_> = entries
             .iter()
@@ -101,8 +101,8 @@ pub mod tests {
         (entries, ratings)
     }
 
-    fn create_entry_with_multiple_ratings(n: usize) -> (PlaceRev, Vec<Rating>) {
-        let entry = PlaceRev::build().finish();
+    fn create_entry_with_multiple_ratings(n: usize) -> (Place, Vec<Rating>) {
+        let entry = Place::build().finish();
         let ratings = create_ratings_of_entry(entry.uid.as_ref(), n);
         (entry, ratings)
     }

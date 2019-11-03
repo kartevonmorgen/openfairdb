@@ -10,8 +10,8 @@ pub enum DuplicateType {
 // return vector of entries like: (entry1ID, entry2ID, reason)
 // where entry1 and entry2 are similar entries
 pub fn find_duplicates(
-    entries: &[(PlaceRev, Status)],
-    all_entries: &[(PlaceRev, Status)],
+    entries: &[(Place, Status)],
+    all_entries: &[(Place, Status)],
 ) -> Vec<(Uid, Uid, DuplicateType)> {
     let mut duplicates = Vec::new();
     for (e1, _) in &entries[..] {
@@ -30,7 +30,7 @@ pub fn find_duplicates(
 const DUPLICATE_MAX_DISTANCE: Distance = Distance::from_meters(100.0);
 
 // returns a DuplicateType if the two entries have a similar title, returns None otherwise
-fn is_duplicate(e1: &PlaceRev, e2: &PlaceRev) -> Option<DuplicateType> {
+fn is_duplicate(e1: &Place, e2: &Place) -> Option<DuplicateType> {
     if similar_title(e1, e2, 0.3, 0) && in_close_proximity(e1, e2, DUPLICATE_MAX_DISTANCE) {
         Some(DuplicateType::SimilarChars)
     } else if similar_title(e1, e2, 0.0, 2) && in_close_proximity(e1, e2, DUPLICATE_MAX_DISTANCE) {
@@ -40,7 +40,7 @@ fn is_duplicate(e1: &PlaceRev, e2: &PlaceRev) -> Option<DuplicateType> {
     }
 }
 
-fn in_close_proximity(e1: &PlaceRev, e2: &PlaceRev, max_dist: Distance) -> bool {
+fn in_close_proximity(e1: &Place, e2: &Place, max_dist: Distance) -> bool {
     if let Some(dist) = MapPoint::distance(e1.location.pos, e2.location.pos) {
         return dist <= max_dist;
     }
@@ -48,8 +48,8 @@ fn in_close_proximity(e1: &PlaceRev, e2: &PlaceRev, max_dist: Distance) -> bool 
 }
 
 fn similar_title(
-    e1: &PlaceRev,
-    e2: &PlaceRev,
+    e1: &Place,
+    e2: &Place,
     max_percent_different: f32,
     max_words_different: u32,
 ) -> bool {
@@ -159,8 +159,8 @@ fn min3(s: usize, t: usize, u: usize) -> usize {
 mod tests {
     use super::*;
 
-    fn new_entry(title: String, description: String, pos: MapPoint) -> PlaceRev {
-        PlaceRev::build()
+    fn new_entry(title: String, description: String, pos: MapPoint) -> Place {
+        Place::build()
             .id(&title)
             .title(&title)
             .description(&description)

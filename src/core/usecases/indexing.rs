@@ -4,7 +4,7 @@ use failure::Fallible;
 
 pub fn index_entry(
     indexer: &mut dyn EntryIndexer,
-    place_rev: &PlaceRev,
+    place_rev: &Place,
     ratings: &[Rating],
 ) -> Fallible<AvgRatings> {
     let avg_ratings = place_rev.avg_ratings(ratings);

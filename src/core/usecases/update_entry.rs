@@ -24,7 +24,7 @@ pub struct UpdateEntry {
     pub image_link_url : Option<String>,
 }
 
-pub struct Storable(PlaceRev);
+pub struct Storable(Place);
 
 pub fn prepare_updated_place_rev<D: Db>(
     db: &D,
@@ -43,7 +43,7 @@ pub fn prepare_updated_place_rev<D: Db>(
         city,
         country,
         email,
-        telephone,
+        telephone: phone,
         categories,
         tags,
         ..
@@ -76,27 +76,26 @@ pub fn prepare_updated_place_rev<D: Db>(
         let old_place_rev = db.get_place(place_uid.as_str())?.0;
         // Check for revision conflict (optimistic locking)
         let revision = Revision::from(version);
-        if old_place_rev.revision.next() != revision {
+        if old_place_rev.rev.next() != revision {
             return Err(RepoError::InvalidVersion.into());
         }
         // The license is immutable
         let license = old_place_rev.license;
         (revision, license)
     };
-    let plave_rev = PlaceRev {
+    let plave_rev = Place {
         uid: place_uid,
-        revision,
+        rev: revision,
         created: Activity::now(updated_by.map(Into::into)),
+        license,
         title,
         description,
         location: Location { pos, address },
         contact: Some(Contact {
             email: email.map(Into::into),
-            phone: telephone,
+            phone,
         }),
         homepage: e.homepage.map(|ref url| parse_url_param(url)).transpose()?,
-        tags,
-        license,
         image_url: e
             .image_url
             .map(|ref url| parse_url_param(url))
@@ -105,12 +104,13 @@ pub fn prepare_updated_place_rev<D: Db>(
             .image_link_url
             .map(|ref url| parse_url_param(url))
             .transpose()?,
+        tags,
     };
     plave_rev.validate()?;
     Ok(Storable(plave_rev))
 }
 
-pub fn store_updated_place_rev<D: Db>(db: &D, s: Storable) -> Result<(PlaceRev, Vec<Rating>)> {
+pub fn store_updated_place_rev<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>)> {
     let Storable(place_rev) = s;
     debug!("Storing updated place revision: {:?}", place_rev);
     for t in &place_rev.tags {
@@ -130,7 +130,7 @@ mod tests {
     #[test]
     fn update_valid_place_rev() {
         let uid = Uid::new_uuid();
-        let old = PlaceRev::build()
+        let old = Place::build()
             .id(uid.as_ref())
             .revision(1)
             .title("foo")
@@ -177,7 +177,7 @@ mod tests {
                 .unwrap()
         );
         assert_eq!("bar", x.description);
-        assert_eq!(Revision::from(2), x.revision);
+        assert_eq!(Revision::from(2), x.rev);
         assert!(x.created.when >= now);
         assert_eq!("https://www.img2/", x.image_url.as_ref().unwrap());
         assert_eq!("http://imglink/", x.image_link_url.as_ref().unwrap());
@@ -186,7 +186,7 @@ mod tests {
     #[test]
     fn update_place_rev_with_invalid_version() {
         let uid = Uid::new_uuid();
-        let old = PlaceRev::build()
+        let old = Place::build()
             .id(uid.as_ref())
             .revision(3)
             .title("foo")
@@ -277,7 +277,7 @@ mod tests {
     #[test]
     fn update_valid_place_rev_with_tags() {
         let uid = Uid::new_uuid();
-        let old = PlaceRev::build()
+        let old = Place::build()
             .id(uid.as_ref())
             .revision(1)
             .tags(vec!["bio", "fair"])

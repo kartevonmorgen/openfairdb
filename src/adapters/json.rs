@@ -264,21 +264,23 @@ pub struct BboxSubscription {
 // Entity -> JSON
 
 impl Entry {
-    pub fn from_entry_with_ratings(e: e::PlaceRev, ratings: Vec<e::Rating>) -> Entry {
-        let e::PlaceRev {
+    pub fn from_entry_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -> Entry {
+        let e::Place {
             uid,
+            rev,
             created,
-            revision,
+            license,
             title,
             description,
             location,
+            contact,
             homepage,
             tags,
-            license,
             image_url,
             image_link_url,
             ..
-        } = e;
+        } = place;
+
         let e::Location { pos, address } = location;
         let lat = pos.lat().to_deg();
         let lng = pos.lng().to_deg();
@@ -292,14 +294,14 @@ impl Entry {
         let e::Contact {
             email,
             phone: telephone,
-        } = e.contact.unwrap_or_default();
+        } = contact.unwrap_or_default();
 
         let (tags, categories) = e::Category::split_from_tags(tags);
 
         Entry {
             id: uid.into(),
             created: created.when.into(),
-            version: revision.into(),
+            version: rev.into(),
             title,
             description,
             lat,

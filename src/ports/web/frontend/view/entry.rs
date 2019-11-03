@@ -6,13 +6,13 @@ use std::collections::HashMap;
 type Ratings = Vec<(Rating, Vec<Comment>)>;
 
 pub struct EntryPresenter {
-    pub entry: PlaceRev,
+    pub entry: Place,
     pub ratings: HashMap<RatingContext, Ratings>,
     pub allow_archiving: bool,
 }
 
-impl From<(PlaceRev, Vec<(Rating, Vec<Comment>)>, Role)> for EntryPresenter {
-    fn from((entry, rtngs, role): (PlaceRev, Vec<(Rating, Vec<Comment>)>, Role)) -> EntryPresenter {
+impl From<(Place, Vec<(Rating, Vec<Comment>)>, Role)> for EntryPresenter {
+    fn from((entry, rtngs, role): (Place, Vec<(Rating, Vec<Comment>)>, Role)) -> EntryPresenter {
         let mut p: EntryPresenter = (entry, rtngs).into();
         p.allow_archiving = match role {
             Role::Admin | Role::Scout => true,
@@ -22,8 +22,8 @@ impl From<(PlaceRev, Vec<(Rating, Vec<Comment>)>, Role)> for EntryPresenter {
     }
 }
 
-impl From<(PlaceRev, Vec<(Rating, Vec<Comment>)>)> for EntryPresenter {
-    fn from((entry, rtngs): (PlaceRev, Vec<(Rating, Vec<Comment>)>)) -> EntryPresenter {
+impl From<(Place, Vec<(Rating, Vec<Comment>)>)> for EntryPresenter {
+    fn from((entry, rtngs): (Place, Vec<(Rating, Vec<Comment>)>)) -> EntryPresenter {
         let mut ratings: HashMap<RatingContext, Ratings> = HashMap::new();
 
         for (r, comments) in rtngs {

@@ -11,21 +11,19 @@ use std::result;
 
 type Result<T> = result::Result<T, RepoError>;
 
-fn load_place_rev(
-    conn: &SqliteConnection,
-    place_rev: models::PlaceRev,
-) -> Result<(PlaceRev, Status)> {
+fn load_place(conn: &SqliteConnection, place_rev: models::PlaceRev) -> Result<(Place, Status)> {
     let models::PlaceRev {
         id,
-        place_uid,
         rev,
+        place_uid,
         created_at,
         created_by: created_by_id,
         status,
+        license,
         title,
         description,
         lat,
-        lng,
+        lon,
         street,
         zip,
         city,
@@ -33,14 +31,13 @@ fn load_place_rev(
         email,
         phone,
         homepage,
-        license,
         image_url,
         image_link_url,
         ..
     } = place_rev;
 
     let location = Location {
-        pos: MapPoint::try_from_lat_lng_deg(lat, lng).unwrap_or_default(),
+        pos: MapPoint::try_from_lat_lng_deg(lat, lon).unwrap_or_default(),
         address: Some(Address {
             street,
             zip,
@@ -69,13 +66,14 @@ fn load_place_rev(
         None
     };
 
-    let place_rev = PlaceRev {
+    let place = Place {
         uid: place_uid.into(),
-        revision: Revision::from(rev as u64),
+        rev: Revision::from(rev as u64),
         created: Activity {
             when: created_at.into(),
             who: created_by.map(Into::into),
         },
+        license,
         title,
         description,
         location,
@@ -84,23 +82,22 @@ fn load_place_rev(
             phone,
         }),
         homepage,
-        tags,
-        license,
         image_url,
         image_link_url,
+        tags,
     };
 
-    Ok((place_rev, status.into()))
+    Ok((place, status.into()))
 }
 
-fn load_place_rev_log(
+fn load_place_log(
     conn: &SqliteConnection,
-    place_rev: models::PlaceRevStatusLog,
-) -> Result<(PlaceRev, Status, ActivityLog)> {
+    place_log: models::PlaceRevStatusLog,
+) -> Result<(Place, Status, ActivityLog)> {
     let models::PlaceRevStatusLog {
         id,
-        place_uid,
         rev,
+        place_uid,
         created_at,
         created_by: created_by_id,
         status,
@@ -108,10 +105,11 @@ fn load_place_rev_log(
         status_created_by: status_created_by_id,
         status_context,
         status_notes,
+        license,
         title,
         description,
         lat,
-        lng,
+        lon,
         street,
         zip,
         city,
@@ -119,14 +117,13 @@ fn load_place_rev_log(
         email,
         phone,
         homepage,
-        license,
         image_url,
         image_link_url,
         ..
-    } = place_rev;
+    } = place_log;
 
     let location = Location {
-        pos: MapPoint::try_from_lat_lng_deg(lat, lng).unwrap_or_default(),
+        pos: MapPoint::try_from_lat_lng_deg(lat, lon).unwrap_or_default(),
         address: Some(Address {
             street,
             zip,
@@ -169,13 +166,14 @@ fn load_place_rev_log(
         None
     };
 
-    let place_rev = PlaceRev {
+    let place = Place {
         uid: place_uid.into(),
-        revision: Revision::from(rev as u64),
+        rev: Revision::from(rev as u64),
         created: Activity {
             when: created_at.into(),
             who: created_by.map(Into::into),
         },
+        license,
         title,
         description,
         location,
@@ -184,10 +182,9 @@ fn load_place_rev_log(
             phone,
         }),
         homepage,
-        tags,
-        license,
         image_url,
         image_link_url,
+        tags,
     };
 
     let activity_log = ActivityLog {
@@ -199,7 +196,7 @@ fn load_place_rev_log(
         notes: status_notes,
     };
 
-    Ok((place_rev, status.into(), activity_log))
+    Ok((place, status.into(), activity_log))
 }
 
 #[derive(QueryableByName)]
@@ -239,23 +236,22 @@ fn resolve_rating_id(conn: &SqliteConnection, uid: &str) -> Result<i64> {
 
 fn into_new_place_rev(
     conn: &SqliteConnection,
-    place_rev: PlaceRev,
+    place: Place,
 ) -> Result<(Uid, models::NewPlaceRev, Vec<String>)> {
-    let PlaceRev {
+    let Place {
         uid: place_uid,
-        revision: new_revision,
+        rev: new_revision,
         created,
+        license,
         title,
         description,
         location: Location { pos, address },
         contact,
         homepage,
-        tags,
-        license,
         image_url,
         image_link_url,
-        ..
-    } = place_rev;
+        tags,
+    } = place;
     let place_id = if new_revision.is_initial() {
         // Create a new place
         let new_place = models::NewPlace {
@@ -304,10 +300,11 @@ fn into_new_place_rev(
         created_at: created.when.into(),
         created_by,
         status: Status::created().into(),
+        license,
         title,
         description,
         lat: pos.lat().to_deg(),
-        lng: pos.lng().to_deg(),
+        lon: pos.lng().to_deg(),
         street,
         zip,
         city,
@@ -315,7 +312,6 @@ fn into_new_place_rev(
         email: email.map(Into::into),
         phone,
         homepage,
-        license,
         image_url,
         image_link_url,
     };
@@ -323,8 +319,8 @@ fn into_new_place_rev(
 }
 
 impl PlaceRepo for SqliteConnection {
-    fn create_place_rev(&self, place_rev: PlaceRev) -> Result<()> {
-        let (_, new_place_rev, tags) = into_new_place_rev(self, place_rev)?;
+    fn create_place_rev(&self, place: Place) -> Result<()> {
+        let (_, new_place_rev, tags) = into_new_place_rev(self, place)?;
         diesel::insert_into(schema::place_rev::table)
             .values(&new_place_rev)
             .execute(self)?;
@@ -409,7 +405,7 @@ impl PlaceRepo for SqliteConnection {
         Ok(count)
     }
 
-    fn get_places(&self, place_uids: &[&str]) -> Result<Vec<(PlaceRev, Status)>> {
+    fn get_places(&self, place_uids: &[&str]) -> Result<Vec<(Place, Status)>> {
         use schema::place::dsl as place_dsl;
         use schema::place_rev::dsl as rev_dsl;
 
@@ -427,10 +423,11 @@ impl PlaceRepo for SqliteConnection {
                 rev_dsl::created_at,
                 rev_dsl::created_by,
                 rev_dsl::status,
+                rev_dsl::license,
                 rev_dsl::title,
                 rev_dsl::description,
                 rev_dsl::lat,
-                rev_dsl::lng,
+                rev_dsl::lon,
                 rev_dsl::street,
                 rev_dsl::zip,
                 rev_dsl::city,
@@ -438,7 +435,6 @@ impl PlaceRepo for SqliteConnection {
                 rev_dsl::email,
                 rev_dsl::phone,
                 rev_dsl::homepage,
-                rev_dsl::license,
                 rev_dsl::image_url,
                 rev_dsl::image_link_url,
             ))
@@ -455,18 +451,18 @@ impl PlaceRepo for SqliteConnection {
         let rows = query.load::<models::PlaceRev>(self)?;
         let mut results = Vec::with_capacity(rows.len());
         for row in rows {
-            results.push(load_place_rev(self, row)?);
+            results.push(load_place(self, row)?);
         }
         Ok(results)
     }
 
-    fn get_place(&self, place_uid: &str) -> Result<(PlaceRev, Status)> {
+    fn get_place(&self, place_uid: &str) -> Result<(Place, Status)> {
         let places = self.get_places(&[place_uid])?;
         debug_assert!(places.len() <= 1);
         places.into_iter().next().ok_or(RepoError::NotFound)
     }
 
-    fn all_places(&self) -> Result<Vec<(PlaceRev, Status)>> {
+    fn all_places(&self) -> Result<Vec<(Place, Status)>> {
         self.get_places(&[])
     }
 
@@ -474,7 +470,7 @@ impl PlaceRepo for SqliteConnection {
         &self,
         params: &RecentlyChangedEntriesParams,
         pagination: &Pagination,
-    ) -> Result<Vec<(PlaceRev, Status, ActivityLog)>> {
+    ) -> Result<Vec<(Place, Status, ActivityLog)>> {
         use schema::place::dsl as place_dsl;
         use schema::place_rev::dsl as rev_dsl;
         use schema::place_rev_status_log::dsl as log_dsl;
@@ -500,10 +496,11 @@ impl PlaceRepo for SqliteConnection {
                 log_dsl::created_by,
                 log_dsl::context,
                 log_dsl::notes,
+                rev_dsl::license,
                 rev_dsl::title,
                 rev_dsl::description,
                 rev_dsl::lat,
-                rev_dsl::lng,
+                rev_dsl::lon,
                 rev_dsl::street,
                 rev_dsl::zip,
                 rev_dsl::city,
@@ -511,7 +508,6 @@ impl PlaceRepo for SqliteConnection {
                 rev_dsl::email,
                 rev_dsl::phone,
                 rev_dsl::homepage,
-                rev_dsl::license,
                 rev_dsl::image_url,
                 rev_dsl::image_link_url,
             ))
@@ -541,7 +537,7 @@ impl PlaceRepo for SqliteConnection {
         let rows = query.load::<models::PlaceRevStatusLog>(self)?;
         let mut results = Vec::with_capacity(rows.len());
         for row in rows {
-            results.push(load_place_rev_log(self, row)?);
+            results.push(load_place_log(self, row)?);
         }
         Ok(results)
     }

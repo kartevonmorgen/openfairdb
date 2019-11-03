@@ -14,7 +14,7 @@ trait Key {
     fn key(&self) -> &str;
 }
 
-impl Key for (PlaceRev, Status) {
+impl Key for (Place, Status) {
     fn key(&self) -> &str {
         &self.0.uid.as_ref()
     }
@@ -70,7 +70,7 @@ impl Key for Organization {
 
 #[derive(Default)]
 pub struct MockDb {
-    pub entries: RefCell<Vec<(PlaceRev, Status)>>,
+    pub entries: RefCell<Vec<(Place, Status)>>,
     pub events: RefCell<Vec<Event>>,
     pub tags: RefCell<Vec<Tag>>,
     pub users: RefCell<Vec<User>>,
@@ -124,7 +124,7 @@ impl UserTokenRepo for MockDb {
 }
 
 impl EntryIndexer for MockDb {
-    fn add_or_update_entry(&mut self, place_rev: &PlaceRev, _ratings: &AvgRatings) -> Fallible<()> {
+    fn add_or_update_entry(&mut self, place_rev: &Place, _ratings: &AvgRatings) -> Fallible<()> {
         // Nothing to do, the entry has already been stored
         // in the database.
         debug_assert!(place_rev == &self.get_place(place_rev.uid.as_ref()).unwrap().0);
@@ -191,10 +191,10 @@ fn update<T: Clone + Key>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
 }
 
 impl PlaceRepo for MockDb {
-    fn create_place_rev(&self, e: PlaceRev) -> RepoResult<()> {
+    fn create_place_rev(&self, e: Place) -> RepoResult<()> {
         create_or_replace(&mut self.entries.borrow_mut(), (e, Status::created()))
     }
-    fn get_place(&self, id: &str) -> RepoResult<(PlaceRev, Status)> {
+    fn get_place(&self, id: &str) -> RepoResult<(Place, Status)> {
         get(&self.entries.borrow(), id).and_then(|(e, s)| {
             if s != EntityStatus::archived() {
                 Ok((e, s))
@@ -203,7 +203,7 @@ impl PlaceRepo for MockDb {
             }
         })
     }
-    fn get_places(&self, ids: &[&str]) -> RepoResult<Vec<(PlaceRev, Status)>> {
+    fn get_places(&self, ids: &[&str]) -> RepoResult<Vec<(Place, Status)>> {
         Ok(self
             .entries
             .borrow()
@@ -214,7 +214,7 @@ impl PlaceRepo for MockDb {
             .cloned()
             .collect())
     }
-    fn all_places(&self) -> RepoResult<Vec<(PlaceRev, Status)>> {
+    fn all_places(&self) -> RepoResult<Vec<(Place, Status)>> {
         Ok(self
             .entries
             .borrow()
@@ -227,7 +227,7 @@ impl PlaceRepo for MockDb {
         &self,
         _params: &RecentlyChangedEntriesParams,
         _pagination: &Pagination,
-    ) -> RepoResult<Vec<(PlaceRev, Status, ActivityLog)>> {
+    ) -> RepoResult<Vec<(Place, Status, ActivityLog)>> {
         unimplemented!();
     }
     fn most_popular_place_tags(

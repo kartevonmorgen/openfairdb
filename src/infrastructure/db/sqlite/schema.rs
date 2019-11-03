@@ -103,15 +103,16 @@ joinable!(place_rating_comment -> place_rating (rating_id));
 table! {
     place_rev (id) {
         id -> BigInt,
-        place_id -> BigInt,
         rev -> BigInt,
+        place_id -> BigInt,
         created_at -> BigInt,
         created_by -> Nullable<BigInt>,
         status -> SmallInt,
+        license -> Text,
         title -> Text,
         description -> Text,
         lat -> Double,
-        lng -> Double,
+        lon -> Double,
         street -> Nullable<Text>,
         zip -> Nullable<Text>,
         city -> Nullable<Text>,
@@ -119,7 +120,6 @@ table! {
         email -> Nullable<Text>,
         phone -> Nullable<Text>,
         homepage -> Nullable<Text>,
-        license -> Text,
         image_url -> Nullable<Text>,
         image_link_url -> Nullable<Text>,
     }
@@ -131,9 +131,9 @@ table! {
     place_rev_status_log (id) {
         id -> BigInt,
         place_rev_id -> BigInt,
-        status -> SmallInt,
         created_at -> BigInt,
         created_by -> Nullable<BigInt>,
+        status -> SmallInt,
         context -> Nullable<Text>,
         notes -> Nullable<Text>,
     }

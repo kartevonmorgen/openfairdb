@@ -1,6 +1,6 @@
 use crate::core::{
     db::{EntryIndex, EntryIndexQuery, EntryIndexer, IndexedEntry},
-    entities::{AvgRatingValue, AvgRatings, Category, PlaceRev, RatingContext},
+    entities::{AvgRatingValue, AvgRatings, Category, Place, RatingContext},
     util::geo::{LatCoord, LngCoord, MapPoint, RawCoord},
 };
 
@@ -502,7 +502,7 @@ impl TantivyEntryIndex {
 }
 
 impl EntryIndexer for TantivyEntryIndex {
-    fn add_or_update_entry(&mut self, entry: &PlaceRev, ratings: &AvgRatings) -> Fallible<()> {
+    fn add_or_update_entry(&mut self, entry: &Place, ratings: &AvgRatings) -> Fallible<()> {
         let id_term = Term::from_field_text(self.fields.id, entry.uid.as_ref());
         self.index_writer.delete_term(id_term);
         let mut doc = Document::default();
@@ -708,7 +708,7 @@ impl EntryIndex for SearchEngine {
 }
 
 impl EntryIndexer for SearchEngine {
-    fn add_or_update_entry(&mut self, entry: &PlaceRev, ratings: &AvgRatings) -> Fallible<()> {
+    fn add_or_update_entry(&mut self, entry: &Place, ratings: &AvgRatings) -> Fallible<()> {
         let mut inner = match self.0.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
