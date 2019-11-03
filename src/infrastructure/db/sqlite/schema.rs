@@ -63,6 +63,7 @@ table! {
     place (id) {
         id -> BigInt,
         uid -> Text,
+        lic -> Text,
         rev -> BigInt,
     }
 }
@@ -108,7 +109,6 @@ table! {
         created_at -> BigInt,
         created_by -> Nullable<BigInt>,
         status -> SmallInt,
-        license -> Text,
         title -> Text,
         description -> Text,
         lat -> Double,

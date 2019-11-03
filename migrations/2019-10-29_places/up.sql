@@ -12,6 +12,7 @@ CREATE TABLE place (
     -- immutable
     id  INTEGER PRIMARY KEY,
     uid TEXT NOT NULL,
+    lic TEXT NOT NULL, -- license
     -- mutable
     rev INTEGER NOT NULL, -- current revision = MAX(place_rev.rev)
     --
@@ -19,7 +20,7 @@ CREATE TABLE place (
 );
 
 INSERT INTO place
-SELECT rowid, id, version
+SELECT rowid, id, license, version
 FROM entries
 WHERE current<>0
 GROUP BY id
@@ -36,7 +37,6 @@ CREATE TABLE place_rev (
     -- mutable header
     status         INTEGER NOT NULL,
     -- immutable body
-    license        TEXT NOT NULL,
     title          TEXT NOT NULL,
     description    TEXT NOT NULL,
     lat            FLOAT NOT NULL,
@@ -63,7 +63,6 @@ place.id,
 entries.created, -- created_at
 NULL, -- created_by -> user_id
 1, -- status = created (no archived entries yet!)
-entries.license,
 entries.title,
 entries.description,
 entries.lat,

@@ -2,8 +2,9 @@ use super::schema::*;
 
 #[derive(Insertable)]
 #[table_name = "place"]
-pub struct NewPlace<'a> {
+pub struct NewPlace<'a, 'b> {
     pub uid: &'a str,
+    pub lic: &'b str,
     pub rev: i64,
 }
 
@@ -11,6 +12,7 @@ pub struct NewPlace<'a> {
 pub struct Place {
     pub id: i64,
     pub uid: String,
+    pub lic: String,
     pub rev: i64,
 }
 
@@ -22,7 +24,6 @@ pub struct NewPlaceRev {
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub status: i16,
-    pub license: String,
     pub title: String,
     pub description: String,
     pub lat: f64,
@@ -44,10 +45,10 @@ pub struct PlaceRev {
     pub rev: i64,
     pub place_id: i64,
     pub place_uid: String,
+    pub place_lic: String,
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub status: i16,
-    pub license: String,
     pub title: String,
     pub description: String,
     pub lat: f64,
@@ -69,6 +70,7 @@ pub struct PlaceRevStatusLog {
     pub rev: i64,
     pub place_id: i64,
     pub place_uid: String,
+    pub place_lic: String,
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub status: i16,
@@ -76,7 +78,6 @@ pub struct PlaceRevStatusLog {
     pub status_created_by: Option<i64>,
     pub status_context: Option<String>,
     pub status_notes: Option<String>,
-    pub license: String,
     pub title: String,
     pub description: String,
     pub lat: f64,
