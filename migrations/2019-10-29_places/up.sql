@@ -79,20 +79,20 @@ entries.image_link_url
 FROM entries
 JOIN place ON entries.id=place.uid;
 
-CREATE TABLE place_rev_status_log (
+CREATE TABLE place_rev_activity_log (
     id           INTEGER PRIMARY KEY,
     place_rev_id INTEGER NOT NULL,
     created_at   INTEGER NOT NULL,
     created_by   INTEGER,
     status       INTEGER NOT NULL,
-    context      TEXT, -- any technical or system context, e.g. client IP address, ...
+    context      TEXT, -- arbitrary technical or system context, e.g. client IP address, ...
     notes        TEXT, -- human-written informational notes
     --
     FOREIGN KEY (place_rev_id) REFERENCES place_rev(id),
     FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
-INSERT INTO place_rev_status_log SELECT
+INSERT INTO place_rev_activity_log SELECT
 id,
 id,
 created_at,
@@ -211,8 +211,8 @@ DROP TABLE categories;
 
 CREATE INDEX place_rev_idx_created_at ON place_rev (created_at);
 CREATE INDEX place_rev_idx_created_by ON place_rev (created_by);
-CREATE INDEX place_rev_status_log_idx_created_at ON place_rev_status_log (created_at);
-CREATE INDEX place_rev_status_log_idx_created_by ON place_rev_status_log (created_by);
+CREATE INDEX place_rev_activity_log_idx_created_at ON place_rev_activity_log (created_at);
+CREATE INDEX place_rev_activity_log_idx_created_by ON place_rev_activity_log (created_by);
 CREATE INDEX place_rev_tag_idx_tag ON place_rev_tag (tag);
 CREATE INDEX rating_idx_place_id ON place_rating (place_id);
 CREATE INDEX rating_idx_created_at ON place_rating (created_at);

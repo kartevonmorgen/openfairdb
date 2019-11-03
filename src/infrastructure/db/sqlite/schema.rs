@@ -128,7 +128,7 @@ table! {
 joinable!(place_rev -> place (place_id));
 
 table! {
-    place_rev_status_log (id) {
+    place_rev_activity_log (id) {
         id -> BigInt,
         place_rev_id -> BigInt,
         created_at -> BigInt,
@@ -139,7 +139,7 @@ table! {
     }
 }
 
-joinable!(place_rev_status_log -> place_rev (place_rev_id));
+joinable!(place_rev_activity_log -> place_rev (place_rev_id));
 
 table! {
     place_rev_tag (place_rev_id, tag) {
@@ -219,7 +219,7 @@ allow_tables_to_appear_in_same_query!(
     place_rating,
     place_rating_comment,
     place_rev,
-    place_rev_status_log,
+    place_rev_activity_log,
     place_rev_tag,
     org_tag_relations,
     organizations,

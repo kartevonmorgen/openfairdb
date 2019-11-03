@@ -326,7 +326,7 @@ impl PlaceRepo for SqliteConnection {
             .execute(self)?;
         let place_rev_id = resolve_place_rev_id(self, new_place_rev.place_id, new_place_rev.rev)?;
 
-        // Insert into place_rev_status_log
+        // Insert into place_rev_activity_log
         let new_place_rev_log_status = models::NewPlaceRevStatusLog {
             place_rev_id,
             status: new_place_rev.status,
@@ -335,7 +335,7 @@ impl PlaceRepo for SqliteConnection {
             context: None,
             notes: Some("created"),
         };
-        diesel::insert_into(schema::place_rev_status_log::table)
+        diesel::insert_into(schema::place_rev_activity_log::table)
             .values(new_place_rev_log_status)
             .execute(self)?;
 
@@ -395,7 +395,7 @@ impl PlaceRepo for SqliteConnection {
                     context: None,
                     notes: Some("archived"),
                 };
-                diesel::insert_into(schema::place_rev_status_log::table)
+                diesel::insert_into(schema::place_rev_activity_log::table)
                     .values(new_place_rev_log_status)
                     .execute(self)?;
             } else {
@@ -473,7 +473,7 @@ impl PlaceRepo for SqliteConnection {
     ) -> Result<Vec<(Place, Status, ActivityLog)>> {
         use schema::place::dsl as place_dsl;
         use schema::place_rev::dsl as rev_dsl;
-        use schema::place_rev_status_log::dsl as log_dsl;
+        use schema::place_rev_activity_log::dsl as log_dsl;
 
         let mut query = schema::place::table
             .inner_join(
@@ -482,7 +482,7 @@ impl PlaceRepo for SqliteConnection {
                     .and(rev_dsl::rev.eq(place_dsl::rev))),
             )
             .inner_join(
-                schema::place_rev_status_log::table.on(log_dsl::place_rev_id.eq(rev_dsl::id)),
+                schema::place_rev_activity_log::table.on(log_dsl::place_rev_id.eq(rev_dsl::id)),
             )
             .select((
                 rev_dsl::id,

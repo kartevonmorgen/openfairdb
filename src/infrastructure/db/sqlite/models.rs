@@ -94,7 +94,7 @@ pub struct PlaceRevStatusLog {
 }
 
 #[derive(Insertable)]
-#[table_name = "place_rev_status_log"]
+#[table_name = "place_rev_activity_log"]
 pub struct NewPlaceRevStatusLog<'a, 'b> {
     pub place_rev_id: i64,
     pub created_at: i64,
