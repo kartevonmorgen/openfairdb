@@ -20,7 +20,7 @@ ARG BUILD_BIN=${PROJECT_NAME}
 ###############################################################################
 # 1st Build Stage
 # The tag of the base image must match the version in the file rust-toolchain!
-FROM clux/muslrust:nightly-2019-10-26 AS build
+FROM clux/muslrust:nightly-2019-11-01 AS build
 
 # Import global ARGs
 ARG WORKDIR_ROOT
