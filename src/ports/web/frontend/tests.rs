@@ -288,7 +288,9 @@ mod entry {
             image_url: None,
             image_link_url: None,
         };
-        let e_id = flows::prelude::create_entry(db, search, e).unwrap();
+        let e_id = flows::prelude::create_entry(db, search, e, None)
+            .unwrap()
+            .uid;
         let r = usecases::RateEntry {
             title: "A rating".into(),
             comment: "Foo".into(),
@@ -296,10 +298,10 @@ mod entry {
             source: None,
             user: None,
             value: 1.into(),
-            entry: e_id.clone(),
+            entry: e_id.clone().into(),
         };
         let (r_id, c_id) = flows::prelude::create_rating(db, search, r).unwrap();
-        (e_id, r_id, c_id)
+        (e_id.into(), r_id, c_id)
     }
 
     #[test]

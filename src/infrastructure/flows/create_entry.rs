@@ -8,20 +8,23 @@ pub fn create_entry(
     connections: &sqlite::Connections,
     indexer: &mut dyn EntryIndexer,
     new_entry: usecases::NewEntry,
-) -> Result<String> {
+    account_email: Option<&str>,
+) -> Result<PlaceRev> {
     // Create and add new entry
     let (entry, ratings) = {
         let connection = connections.exclusive()?;
         let mut prepare_err = None;
         connection
             .transaction::<_, diesel::result::Error, _>(|| {
-                match usecases::prepare_new_entry(&*connection, new_entry) {
+                match usecases::prepare_new_place_rev(&*connection, new_entry, account_email) {
                     Ok(storable) => {
-                        let (entry, ratings) = usecases::store_new_entry(&*connection, storable)
-                            .map_err(|err| {
-                                warn!("Failed to store newly created entry: {}", err);
-                                diesel::result::Error::RollbackTransaction
-                            })?;
+                        let (entry, ratings) =
+                            usecases::store_new_place_rev(&*connection, storable).map_err(
+                                |err| {
+                                    warn!("Failed to store newly created entry: {}", err);
+                                    diesel::result::Error::RollbackTransaction
+                                },
+                            )?;
                         Ok((entry, ratings))
                     }
                     Err(err) => {
@@ -55,10 +58,10 @@ pub fn create_entry(
         );
     }
 
-    Ok(entry.uid.into())
+    Ok(entry)
 }
 
-fn notify_entry_added(connections: &sqlite::Connections, entry: &Entry) -> Result<()> {
+fn notify_entry_added(connections: &sqlite::Connections, entry: &PlaceRev) -> Result<()> {
     let (email_addresses, all_categories) = {
         let connection = connections.shared()?;
         let email_addresses =

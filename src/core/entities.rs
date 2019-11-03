@@ -7,7 +7,7 @@ use crate::core::util::{
 
 use chrono::prelude::*;
 use failure::{bail, format_err, Fallible};
-use std::{fmt, str::FromStr};
+use std::{borrow::Borrow, fmt, ops::Deref, str::FromStr};
 use uuid::Uuid;
 
 /// Universal, external/public identifier with a string representation.
@@ -22,29 +22,39 @@ impl Uid {
     pub fn is_valid(&self) -> bool {
         !self.0.is_empty()
     }
+
+    pub fn as_str(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+impl AsRef<String> for Uid {
+    fn as_ref(&self) -> &String {
+        &self.0
+    }
 }
 
 impl AsRef<str> for Uid {
     fn as_ref(&self) -> &str {
-        &self.0
+        self.0.as_str()
     }
 }
 
 impl From<String> for Uid {
     fn from(from: String) -> Self {
-        Uid(from)
+        Self(from)
     }
 }
 
 impl From<&str> for Uid {
     fn from(from: &str) -> Self {
-        from.to_string().into()
+        from.to_owned().into()
     }
 }
 
 impl From<Uuid> for Uid {
     fn from(from: Uuid) -> Self {
-        Self(from.to_simple_ref().to_string())
+        from.to_simple_ref().to_string().into()
     }
 }
 
@@ -57,17 +67,142 @@ impl From<Uid> for String {
 impl FromStr for Uid {
     type Err = ();
     fn from_str(s: &str) -> Result<Uid, Self::Err> {
-        Ok(Uid(s.to_owned()))
+        Ok(s.into())
     }
 }
 
-impl std::fmt::Display for Uid {
+impl Borrow<str> for Uid {
+    fn borrow(&self) -> &str {
+        self.as_ref()
+    }
+}
+
+impl fmt::Display for Uid {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        f.write_str(&self.0)
+        f.write_str(self.as_ref())
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct Revision(u64);
+
+impl Revision {
+    pub const fn initial() -> Self {
+        Self(0)
+    }
+
+    pub fn is_initial(self) -> bool {
+        self == Self::initial()
+    }
+
+    pub fn next(self) -> Self {
+        Self(self.0.saturating_add(1))
+    }
+}
+
+impl From<Revision> for u64 {
+    fn from(from: Revision) -> Self {
+        from.0
+    }
+}
+
+impl From<u64> for Revision {
+    fn from(from: u64) -> Self {
+        Self(from)
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub struct Email(String);
+
+impl AsRef<String> for Email {
+    fn as_ref(&self) -> &String {
+        &self.0
+    }
+}
+
+impl AsRef<str> for Email {
+    fn as_ref(&self) -> &str {
+        self.0.as_str()
+    }
+}
+
+impl From<Email> for String {
+    fn from(from: Email) -> Self {
+        from.0
+    }
+}
+
+impl From<String> for Email {
+    fn from(from: String) -> Self {
+        Self(from)
+    }
+}
+
+impl From<&str> for Email {
+    fn from(from: &str) -> Self {
+        from.to_owned().into()
+    }
+}
+
+impl FromStr for Email {
+    type Err = ();
+    fn from_str(s: &str) -> Result<Email, Self::Err> {
+        Ok(s.into())
+    }
+}
+
+impl Borrow<str> for Email {
+    fn borrow(&self) -> &str {
+        self.as_ref()
+    }
+}
+
+impl Deref for Email {
+    type Target = String;
+
+    fn deref(&self) -> &String {
+        self.as_ref()
+    }
+}
+
+impl fmt::Display for Email {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        f.write_str(self.as_ref())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Activity {
+    pub when: Timestamp,
+    pub who: Option<Email>,
+}
+
+impl Activity {
+    pub fn now(who: Option<Email>) -> Self {
+        Self {
+            when: Timestamp::now(),
+            who,
+        }
+    }
+
+    pub fn now_anonymous() -> Self {
+        Self::now(None)
+    }
+
+    pub fn is_anonymous(&self) -> bool {
+        self.who.is_none()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ActivityLog {
+    pub activity: Activity,
+    pub context: Option<String>,
+    pub notes: Option<String>,
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Status(i16);
 
 impl Status {
@@ -102,7 +237,6 @@ impl Status {
     pub const fn into_inner(self) -> i16 {
         self.0
     }
-
 }
 
 impl From<Status> for i16 {
@@ -119,34 +253,30 @@ impl From<i16> for Status {
     }
 }
 
-#[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
-pub struct Entry {
-    pub uid            : Uid,
-    pub version        : u64,
-    pub created_at     : Timestamp,
-    pub archived_at    : Option<Timestamp>,
-    pub title          : String,
-    pub description    : String,
-    pub location       : Location,
-    pub contact        : Option<Contact>,
-    pub homepage       : Option<String>,
-    pub categories     : Vec<Uid>,
-    pub tags           : Vec<String>,
-    pub license        : Option<String>,
-    pub image_url      : Option<String>,
-    pub image_link_url : Option<String>,
+pub struct PlaceRev {
+    pub uid: Uid,
+    pub revision: Revision,
+    pub created: Activity,
+    pub title: String,
+    pub description: String,
+    pub location: Location,
+    pub contact: Option<Contact>,
+    pub homepage: Option<String>,
+    pub tags: Vec<String>,
+    pub license: String,
+    pub image_url: Option<String>,
+    pub image_link_url: Option<String>,
 }
 
-#[rustfmt::skip]
-#[derive(Debug, Clone, PartialEq, Default)]
+#[rustfmt::skip]#[derive(Debug, Clone, PartialEq)]
 pub struct Location {
-    pub pos:      MapPoint,
-    pub address : Option<Address>
+    pub pos     : MapPoint,
+    pub address : Option<Address>,
 }
 
 #[rustfmt::skip]
-#[derive(Debug, Clone, PartialEq,Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Address {
     pub street  : Option<String>,
     pub zip     : Option<String>,
@@ -156,23 +286,20 @@ pub struct Address {
 
 impl Address {
     pub fn is_empty(&self) -> bool {
-        !(self.street.is_some()
-            || self.zip.is_some()
-            || self.city.is_some()
-            || self.country.is_some())
+        self.street.is_none() && self.zip.is_none() && self.city.is_none() && self.country.is_none()
     }
 }
 
 #[rustfmt::skip]
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Contact {
-    pub email : Option<String>,
+    pub email : Option<Email>,
     pub phone : Option<String>,
 }
 
 impl Contact {
     pub fn is_empty(&self) -> bool {
-        !(self.email.is_some() || self.phone.is_some())
+        self.email.is_none() && self.phone.is_none()
     }
 }
 
@@ -271,17 +398,15 @@ impl Category {
 
     pub fn merge_uids_into_tags(uids: Vec<Uid>, mut tags: Vec<String>) -> Vec<String> {
         tags.reserve(uids.len());
-        tags = uids
-            .iter()
-            .fold(tags, |mut tags, uid| {
-                match uid.as_ref() {
-                    Self::UID_NON_PROFIT => tags.push(Self::TAG_NON_PROFIT.into()),
-                    Self::UID_COMMERCIAL => tags.push(Self::TAG_COMMERCIAL.into()),
-                    Self::UID_EVENT => tags.push(Self::TAG_EVENT.into()),
-                    _ => (),
-                }
-                tags
-            });
+        tags = uids.iter().fold(tags, |mut tags, uid| {
+            match uid.as_ref() {
+                Self::UID_NON_PROFIT => tags.push(Self::TAG_NON_PROFIT.into()),
+                Self::UID_COMMERCIAL => tags.push(Self::TAG_COMMERCIAL.into()),
+                Self::UID_EVENT => tags.push(Self::TAG_EVENT.into()),
+                _ => (),
+            }
+            tags
+        });
         tags.sort_unstable();
         tags.dedup();
         tags
@@ -673,7 +798,7 @@ pub mod entry_builder {
     use super::*;
 
     pub struct EntryBuild {
-        entry: Entry,
+        entry: PlaceRev,
     }
 
     impl EntryBuild {
@@ -681,8 +806,8 @@ pub mod entry_builder {
             self.entry.uid = uid.into();
             self
         }
-        pub fn version(mut self, v: u64) -> Self {
-            self.entry.version = v;
+        pub fn revision(mut self, v: u64) -> Self {
+            self.entry.revision = v.into();
             self
         }
         pub fn title(mut self, title: &str) -> Self {
@@ -697,16 +822,12 @@ pub mod entry_builder {
             self.entry.location.pos = pos;
             self
         }
-        pub fn categories(mut self, cats: Vec<&str>) -> Self {
-            self.entry.categories = cats.into_iter().map(|x| x.into()).collect();
-            self
-        }
         pub fn tags(mut self, tags: Vec<&str>) -> Self {
             self.entry.tags = tags.into_iter().map(|x| x.into()).collect();
             self
         }
-        pub fn license(mut self, license: Option<&str>) -> Self {
-            self.entry.license = license.map(|s| s.into());
+        pub fn license(mut self, license: &str) -> Self {
+            self.entry.license = license.into();
             self
         }
         pub fn image_url(mut self, image_url: Option<&str>) -> Self {
@@ -717,20 +838,19 @@ pub mod entry_builder {
             self.entry.image_link_url = image_link_url.map(Into::into);
             self
         }
-        pub fn finish(self) -> Entry {
+        pub fn finish(self) -> PlaceRev {
             self.entry
         }
     }
 
-    impl Builder for Entry {
+    impl Builder for PlaceRev {
         type Build = EntryBuild;
         fn build() -> EntryBuild {
             EntryBuild {
-                entry: Entry {
+                entry: PlaceRev {
                     uid: Uid::new_uuid(),
-                    version: 0,
-                    created_at: 0.into(),
-                    archived_at: None,
+                    revision: Revision::initial(),
+                    created: Activity::now_anonymous(),
                     title: "".into(),
                     description: "".into(),
                     location: Location {
@@ -739,9 +859,8 @@ pub mod entry_builder {
                     },
                     contact: None,
                     homepage: None,
-                    categories: vec![],
                     tags: vec![],
-                    license: None,
+                    license: "".into(),
                     image_url: None,
                     image_link_url: None,
                 },

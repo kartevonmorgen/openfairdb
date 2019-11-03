@@ -191,7 +191,7 @@ pub fn try_into_new_event<D: Db>(
     //TODO: use contact.is_empty()
     let contact = if email.is_some() || telephone.is_some() {
         Some(Contact {
-            email,
+            email: email.map(Into::into),
             phone: telephone,
         })
     } else {

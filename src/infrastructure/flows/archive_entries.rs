@@ -2,12 +2,16 @@ use super::*;
 
 use diesel::connection::Connection;
 
-pub fn exec_archive_entries(connections: &sqlite::Connections, ids: &[&str]) -> Result<()> {
+pub fn exec_archive_entries(
+    connections: &sqlite::Connections,
+    ids: &[&str],
+    archived_by_email: Option<&str>,
+) -> Result<()> {
     let mut repo_err = None;
     let connection = connections.exclusive()?;
     Ok(connection
         .transaction::<_, diesel::result::Error, _>(|| {
-            usecases::archive_entries(&*connection, ids).map_err(|err| {
+            usecases::archive_entries(&*connection, ids, archived_by_email).map_err(|err| {
                 warn!("Failed to archive {} entries: {}", ids.len(), err);
                 repo_err = Some(err);
                 diesel::result::Error::RollbackTransaction
@@ -46,8 +50,9 @@ pub fn archive_entries(
     connections: &sqlite::Connections,
     indexer: &mut dyn EntryIndexer,
     ids: &[&str],
+    archived_by_email: Option<&str>,
 ) -> Result<()> {
-    exec_archive_entries(connections, ids)?;
+    exec_archive_entries(connections, ids, archived_by_email)?;
     post_archive_entries(indexer, ids)?;
     Ok(())
 }
@@ -61,6 +66,7 @@ mod tests {
             &fixture.db_connections,
             &mut *fixture.search_engine.borrow_mut(),
             ids,
+            None,
         )
     }
 
@@ -68,9 +74,9 @@ mod tests {
     fn should_archive_multiple_entries_only_once() {
         let fixture = EnvFixture::new();
         let entry_ids = vec![
-            fixture.create_entry(0.into()),
-            fixture.create_entry(1.into()),
-            fixture.create_entry(2.into()),
+            fixture.create_entry(0.into(), None),
+            fixture.create_entry(1.into(), None),
+            fixture.create_entry(2.into(), None),
         ];
         let entry_tags = vec![
             fixture
@@ -146,8 +152,8 @@ mod tests {
     fn should_archive_entries_with_ratings_and_comments() {
         let fixture = EnvFixture::new();
         let entry_ids = vec![
-            fixture.create_entry(0.into()),
-            fixture.create_entry(1.into()),
+            fixture.create_entry(0.into(), None),
+            fixture.create_entry(1.into(), None),
         ];
 
         let rating_comment_ids = vec![

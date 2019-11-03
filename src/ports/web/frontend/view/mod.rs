@@ -235,14 +235,14 @@ impl MapPin {
     }
 }
 
-impl From<Entry> for MapPin {
-    fn from(e: Entry) -> Self {
+impl From<PlaceRev> for MapPin {
+    fn from(e: PlaceRev) -> Self {
         e.location.into()
     }
 }
 
-impl From<&Entry> for MapPin {
-    fn from(e: &Entry) -> Self {
+impl From<&PlaceRev> for MapPin {
+    fn from(e: &PlaceRev) -> Self {
         (&e.location).into()
     }
 }

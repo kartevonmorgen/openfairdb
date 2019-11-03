@@ -134,7 +134,7 @@ pub fn prepare_tag_list(tags: Vec<String>) -> Vec<String> {
             t => Some(t.to_owned()),
         })
         .collect();
-    tags.sort();
+    tags.sort_unstable();
     tags.dedup();
     tags
 }

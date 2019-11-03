@@ -23,7 +23,7 @@ pub fn user_reset_password_email(url: &str) -> EmailContent {
     EmailContent { subject, body }
 }
 
-pub fn entry_added_email(e: &Entry, category_names: &[String]) -> EmailContent {
+pub fn entry_added_email(e: &PlaceRev, category_names: &[String]) -> EmailContent {
     let subject = format!("Karte von morgen - neuer Eintrag: {}", e.title);
     let intro_sentence = "ein neuer Eintrag auf der Karte von morgen wurde erstellt";
     let body = entry_email(&e, category_names, &e.tags, intro_sentence);
@@ -31,7 +31,7 @@ pub fn entry_added_email(e: &Entry, category_names: &[String]) -> EmailContent {
 }
 
 //TODO: calc diff
-pub fn entry_changed_email(e: &Entry, category_names: &[String]) -> EmailContent {
+pub fn entry_changed_email(e: &PlaceRev, category_names: &[String]) -> EmailContent {
     let subject = format!("Karte von morgen - Eintrag verändert: {}", e.title);
     let intro_sentence = "folgender Eintrag der Karte von morgen wurde verändert";
     let body = entry_email(&e, category_names, &e.tags, intro_sentence);
@@ -39,7 +39,7 @@ pub fn entry_changed_email(e: &Entry, category_names: &[String]) -> EmailContent
 }
 
 pub fn entry_email(
-    e: &Entry,
+    e: &PlaceRev,
     category_names: &[String],
     tags: &[String],
     intro_sentence: &str,
@@ -95,12 +95,12 @@ euphorische Grüße
 das Karte von morgen-Team",
         introSentence = intro_sentence,
         title = &e.title,
-        id = e.uid.as_ref(),
+        id = &e.uid,
         description = &e.description,
         address = address,
-        email = email.unwrap_or_else(||"".into()),
-        phone = phone.unwrap_or_else(||"".into()),
-        homepage = e.homepage.clone().unwrap_or_else(||"".into()),
+        email = email.map(|e| e.to_string()).unwrap_or_default(),
+        phone = phone.unwrap_or_default(),
+        homepage = e.homepage.clone().unwrap_or_default(),
         category = category,
         tags = tags.join(", ")
     )

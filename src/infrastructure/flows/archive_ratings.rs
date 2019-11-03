@@ -35,7 +35,7 @@ pub fn post_archive_ratings(
     let connection = connections.shared()?;
     let entry_ids = connection.load_entry_ids_of_ratings(ids)?;
     for entry_id in entry_ids {
-        let entry = match connection.get_entry(&entry_id) {
+        let (entry, _) = match connection.get_place(&entry_id) {
             Ok(entry) => entry,
             Err(err) => {
                 error!(
@@ -110,8 +110,8 @@ mod tests {
         );
 
         let entry_ids = vec![
-            fixture.create_entry(0.into()),
-            fixture.create_entry(1.into()),
+            fixture.create_entry(0.into(), None),
+            fixture.create_entry(1.into(), None),
         ];
         let rating_comment_ids = vec![
             fixture.create_rating(new_entry_rating(

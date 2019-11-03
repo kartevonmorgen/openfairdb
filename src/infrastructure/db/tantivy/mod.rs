@@ -1,6 +1,6 @@
 use crate::core::{
     db::{EntryIndex, EntryIndexQuery, EntryIndexer, IndexedEntry},
-    entities::{AvgRatingValue, AvgRatings, Entry, RatingContext},
+    entities::{AvgRatingValue, AvgRatings, Category, PlaceRev, RatingContext},
     util::geo::{LatCoord, LngCoord, MapPoint, RawCoord},
 };
 
@@ -86,15 +86,14 @@ impl IndexedEntryFields {
             lat: schema_builder.add_i64_field("lat", INDEXED | STORED),
             lng: schema_builder.add_i64_field("lng", INDEXED | STORED),
             title: schema_builder.add_text_field("title", text_options.clone()),
-            description: schema_builder.add_text_field("description", text_options.clone()),
+            description: schema_builder.add_text_field("description", text_options),
             address_street: schema_builder
                 .add_text_field("address_street", address_options.clone()),
             address_city: schema_builder.add_text_field("address_city", address_options.clone()),
             address_zip: schema_builder.add_text_field("address_zip", address_options.clone()),
-            address_country: schema_builder
-                .add_text_field("address_country", address_options.clone()),
-            category: schema_builder.add_text_field("category", category_options.clone()),
-            tag: schema_builder.add_text_field("tag", tag_options.clone()),
+            address_country: schema_builder.add_text_field("address_country", address_options),
+            category: schema_builder.add_text_field("category", category_options),
+            tag: schema_builder.add_text_field("tag", tag_options),
             ratings_diversity: schema_builder.add_u64_field("ratings_diversity", STORED),
             ratings_fairness: schema_builder.add_u64_field("ratings_fairness", STORED),
             ratings_humanity: schema_builder.add_u64_field("ratings_humanity", STORED),
@@ -503,7 +502,7 @@ impl TantivyEntryIndex {
 }
 
 impl EntryIndexer for TantivyEntryIndex {
-    fn add_or_update_entry(&mut self, entry: &Entry, ratings: &AvgRatings) -> Fallible<()> {
+    fn add_or_update_entry(&mut self, entry: &PlaceRev, ratings: &AvgRatings) -> Fallible<()> {
         let id_term = Term::from_field_text(self.fields.id, entry.uid.as_ref());
         self.index_writer.delete_term(id_term);
         let mut doc = Document::default();
@@ -550,10 +549,11 @@ impl EntryIndexer for TantivyEntryIndex {
         {
             doc.add_text(self.fields.address_country, country);
         }
-        for category in &entry.categories {
-            doc.add_text(self.fields.category, category.as_ref());
+        let (tags, categories) = Category::split_from_tags(entry.tags.clone());
+        for category in &categories {
+            doc.add_text(self.fields.category, category.uid.as_ref());
         }
-        for tag in &entry.tags {
+        for tag in &tags {
             doc.add_text(self.fields.tag, tag);
         }
         doc.add_u64(self.fields.total_rating, avg_rating_to_u64(ratings.total()));
@@ -708,7 +708,7 @@ impl EntryIndex for SearchEngine {
 }
 
 impl EntryIndexer for SearchEngine {
-    fn add_or_update_entry(&mut self, entry: &Entry, ratings: &AvgRatings) -> Fallible<()> {
+    fn add_or_update_entry(&mut self, entry: &PlaceRev, ratings: &AvgRatings) -> Fallible<()> {
         let mut inner = match self.0.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),

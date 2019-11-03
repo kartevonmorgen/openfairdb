@@ -120,7 +120,7 @@ impl From<(EventEntity, &Vec<EventTag>)> for e::Event {
         };
         let contact = if email.is_some() || telephone.is_some() {
             Some(e::Contact {
-                email,
+                email: email.map(Into::into),
                 phone: telephone,
             })
         } else {

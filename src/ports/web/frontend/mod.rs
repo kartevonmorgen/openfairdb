@@ -117,7 +117,7 @@ pub fn get_entry(
     //TODO: dry out
     let (user, e, ratings): (Option<User>, _, _) = {
         let db = pool.shared()?;
-        let e = db.get_entry(id.as_str())?;
+        let (e, _) = db.get_place(id.as_str())?;
         let ratings = db.load_ratings_of_entry(e.uid.as_ref())?;
         let ratings_with_comments = db.zip_ratings_with_comments(ratings)?;
         let user = if let Some(a) = account {
@@ -175,7 +175,7 @@ pub fn get_events(db: sqlite::Connections, query: EventQuery) -> Result<Markup> 
 pub fn get_dashboard(db: sqlite::Connections, account: Account) -> Result<Markup> {
     let db = db.shared()?;
     let tag_count = db.count_tags()?;
-    let entry_count = db.count_entries()?;
+    let entry_count = db.count_places()?;
     let user_count = db.count_users()?;
     let event_count = db.count_events()?;
     let user = db

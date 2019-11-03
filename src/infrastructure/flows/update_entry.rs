@@ -7,17 +7,23 @@ pub fn update_entry(
     indexer: &mut dyn EntryIndexer,
     uid: Uid,
     update_entry: usecases::UpdateEntry,
-) -> Result<Entry> {
+    account_email: Option<&str>,
+) -> Result<PlaceRev> {
     // Update existing entry
     let (entry, ratings) = {
         let connection = connections.exclusive()?;
         let mut prepare_err = None;
         connection
-            .transaction::<_, diesel::result::Error, _>(|| {
-                match usecases::prepare_updated_entry(&*connection, uid, update_entry) {
+            .transaction::<_, diesel::result::Error, _>(
+                || match usecases::prepare_updated_place_rev(
+                    &*connection,
+                    uid,
+                    update_entry,
+                    account_email,
+                ) {
                     Ok(storable) => {
                         let (entry, ratings) =
-                            usecases::store_updated_entry(&*connection, storable).map_err(
+                            usecases::store_updated_place_rev(&*connection, storable).map_err(
                                 |err| {
                                     warn!("Failed to store updated entry: {}", err);
                                     diesel::result::Error::RollbackTransaction
@@ -29,8 +35,8 @@ pub fn update_entry(
                         prepare_err = Some(err);
                         Err(diesel::result::Error::RollbackTransaction)
                     }
-                }
-            })
+                },
+            )
             .map_err(|err| {
                 if let Some(err) = prepare_err {
                     err
@@ -59,7 +65,7 @@ pub fn update_entry(
     Ok(entry)
 }
 
-fn notify_entry_updated(connections: &sqlite::Connections, entry: &Entry) -> Result<()> {
+fn notify_entry_updated(connections: &sqlite::Connections, entry: &PlaceRev) -> Result<()> {
     let (email_addresses, all_categories) = {
         let connection = connections.shared()?;
         let email_addresses =

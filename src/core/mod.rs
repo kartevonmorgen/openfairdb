@@ -10,7 +10,7 @@ pub mod prelude {
     use std::result;
 
     pub use super::db::*;
-    pub use super::entities::{*, Status as EntityStatus};
+    pub use super::entities::{Status as EntityStatus, *};
     pub use super::error::*;
     pub use super::repositories::*;
     pub use super::util::{

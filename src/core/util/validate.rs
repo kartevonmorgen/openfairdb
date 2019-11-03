@@ -39,17 +39,15 @@ pub fn bbox(bbox: &MapBbox) -> Result<(), ParameterError> {
     Ok(())
 }
 
-impl Validate for Entry {
+impl Validate for PlaceRev {
     fn validate(&self) -> Result<(), ParameterError> {
         //TODO: check title
-        self.license
-            .clone()
-            .ok_or(ParameterError::License)
-            .and_then(|ref l| license(l))?;
+
+        license(&self.license)?;
 
         if let Some(ref c) = self.contact {
             if let Some(ref e) = c.email {
-                email(e)?;
+                email(e.as_ref())?;
             }
         }
 
@@ -64,7 +62,7 @@ impl Validate for Entry {
 impl Validate for Contact {
     fn validate(&self) -> Result<(), ParameterError> {
         if let Some(ref e) = self.email {
-            email(e)?;
+            email(e.as_ref())?;
         }
         //TODO: check phone
         Ok(())

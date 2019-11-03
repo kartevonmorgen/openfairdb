@@ -120,7 +120,6 @@ impl From<e::Event> for Event {
 
         Event {
             id: uid.into(),
-            // created,
             title,
             description,
             start,
@@ -131,7 +130,7 @@ impl From<e::Event> for Event {
             zip,
             city,
             country,
-            email,
+            email: email.map(Into::into),
             telephone,
             homepage,
             tags,
@@ -265,16 +264,15 @@ pub struct BboxSubscription {
 // Entity -> JSON
 
 impl Entry {
-    pub fn from_entry_with_ratings(e: e::Entry, ratings: Vec<e::Rating>) -> Entry {
-        let e::Entry {
+    pub fn from_entry_with_ratings(e: e::PlaceRev, ratings: Vec<e::Rating>) -> Entry {
+        let e::PlaceRev {
             uid,
-            created_at,
-            version,
+            created,
+            revision,
             title,
             description,
             location,
             homepage,
-            categories,
             tags,
             license,
             image_url,
@@ -296,10 +294,12 @@ impl Entry {
             phone: telephone,
         } = e.contact.unwrap_or_default();
 
+        let (tags, categories) = e::Category::split_from_tags(tags);
+
         Entry {
             id: uid.into(),
-            created: created_at.into(),
-            version,
+            created: created.when.into(),
+            version: revision.into(),
             title,
             description,
             lat,
@@ -308,13 +308,13 @@ impl Entry {
             zip,
             city,
             country,
-            email,
+            email: email.map(Into::into),
             telephone,
             homepage,
-            categories: categories.into_iter().map(Into::into).collect(),
+            categories: categories.into_iter().map(|c| c.uid.to_string()).collect(),
             tags,
             ratings: ratings.into_iter().map(|r| r.uid.to_string()).collect(),
-            license,
+            license: Some(license),
             image_url,
             image_link_url,
         }

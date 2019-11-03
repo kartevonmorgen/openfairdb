@@ -17,14 +17,14 @@ mod tantivy;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
-fn index_all_entries<D: PlaceGateway + RatingRepository>(
+fn index_all_entries<D: PlaceRepo + RatingRepository>(
     db: &D,
     entry_indexer: &mut dyn EntryIndexer,
 ) -> Result<()> {
     // TODO: Split into chunks with fixed size instead of
     // loading all entries at once!
-    let entries = db.all_entries()?;
-    for entry in entries {
+    let entries = db.all_places()?;
+    for (entry, _) in entries {
         let ratings = db.load_ratings_of_entry(entry.uid.as_ref())?;
         if let Err(err) =
             entry_indexer.add_or_update_entry(&entry, &entry.avg_ratings(&ratings[..]))

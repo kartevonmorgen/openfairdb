@@ -33,7 +33,7 @@ pub struct NewPlaceRev {
     pub email: Option<String>,
     pub phone: Option<String>,
     pub homepage: Option<String>,
-    pub license: Option<String>,
+    pub license: String,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
 }
@@ -41,9 +41,9 @@ pub struct NewPlaceRev {
 #[derive(Queryable)]
 pub struct PlaceRev {
     pub id: i64,
+    pub rev: i64,
     pub place_id: i64,
     pub place_uid: String,
-    pub rev: i64,
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub status: i16,
@@ -58,7 +58,36 @@ pub struct PlaceRev {
     pub email: Option<String>,
     pub phone: Option<String>,
     pub homepage: Option<String>,
-    pub license: Option<String>,
+    pub license: String,
+    pub image_url: Option<String>,
+    pub image_link_url: Option<String>,
+}
+
+#[derive(Queryable)]
+pub struct PlaceRevStatusLog {
+    pub id: i64,
+    pub rev: i64,
+    pub place_id: i64,
+    pub place_uid: String,
+    pub created_at: i64,
+    pub created_by: Option<i64>,
+    pub status: i16,
+    pub status_created_at: i64,
+    pub status_created_by: Option<i64>,
+    pub status_context: Option<String>,
+    pub status_notes: Option<String>,
+    pub title: String,
+    pub description: String,
+    pub lat: f64,
+    pub lng: f64,
+    pub street: Option<String>,
+    pub zip: Option<String>,
+    pub city: Option<String>,
+    pub country: Option<String>,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub homepage: Option<String>,
+    pub license: String,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
 }

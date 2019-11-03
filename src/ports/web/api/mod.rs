@@ -91,7 +91,7 @@ fn get_entry(db: sqlite::Connections, ids: String) -> Result<Vec<json::Entry>> {
     let results = {
         let mut results = Vec::with_capacity(ids.len());
         let db = db.shared()?;
-        for e in db.get_entries(&ids)?.into_iter() {
+        for (e, _) in db.get_places(&ids)?.into_iter() {
             let r = db.load_ratings_of_entry(e.uid.as_ref())?;
             results.push(json::Entry::from_entry_with_ratings(e, r));
         }
@@ -166,10 +166,10 @@ fn get_entries_recently_changed(
     let pagination = Pagination { offset, limit };
     let results = {
         let db = db.shared()?;
-        let entries = db.recently_changed_entries(&params, &pagination)?;
+        let entries = db.recently_changed_places(&params, &pagination)?;
         if with_ratings.unwrap_or(false) {
             let mut results = Vec::with_capacity(entries.len());
-            for e in entries.into_iter() {
+            for (e, _, _) in entries.into_iter() {
                 let r = db.load_ratings_of_entry(e.uid.as_ref())?;
                 results.push(json::Entry::from_entry_with_ratings(e, r));
             }
@@ -177,7 +177,7 @@ fn get_entries_recently_changed(
         } else {
             entries
                 .into_iter()
-                .map(|e| json::Entry::from_entry_with_ratings(e, vec![]))
+                .map(|(e, _, _)| json::Entry::from_entry_with_ratings(e, vec![]))
                 .collect()
         }
     };
@@ -206,7 +206,7 @@ pub fn get_entries_most_popular_tags(
     let pagination = Pagination { offset, limit };
     let results = {
         let db = db.shared()?;
-        db.most_popular_entry_tags(&params, &pagination)?
+        db.most_popular_place_tags(&params, &pagination)?
     };
     Ok(Json(results.into_iter().map(Into::into).collect()))
 }
@@ -222,7 +222,7 @@ fn get_duplicates(
     }
     let (entries, all_entries) = {
         let db = db.shared()?;
-        (db.get_entries(&ids)?, db.all_entries()?)
+        (db.get_places(&ids)?, db.all_places()?)
     };
     let results = usecases::find_duplicates(&entries, &all_entries);
     Ok(Json(
@@ -341,19 +341,26 @@ fn get_bbox_subscriptions(
 
 #[post("/entries", format = "application/json", data = "<body>")]
 fn post_entry(
+    account: Option<Account>,
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
     body: Json<usecases::NewEntry>,
 ) -> Result<String> {
-    Ok(Json(flows::create_entry(
-        &connections,
-        &mut search_engine,
-        body.into_inner(),
-    )?))
+    Ok(Json(
+        flows::create_entry(
+            &connections,
+            &mut search_engine,
+            body.into_inner(),
+            account.as_ref().map(|a| a.email()),
+        )?
+        .uid
+        .to_string(),
+    ))
 }
 
 #[put("/entries/<uid>", format = "application/json", data = "<data>")]
 fn put_entry(
+    account: Option<Account>,
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
     uid: String,
@@ -365,6 +372,7 @@ fn put_entry(
             &mut search_engine,
             uid.into(),
             data.into_inner(),
+            account.as_ref().map(|a| a.email()),
         )?
         .uid
         .into(),
@@ -379,7 +387,12 @@ fn get_tags(connections: sqlite::Connections) -> Result<Vec<String>> {
 
 #[get("/categories")]
 fn get_categories(connections: sqlite::Connections) -> Result<Vec<json::Category>> {
-    let categories = connections.shared()?.all_categories()?.into_iter().map(Into::into).collect();
+    let categories = connections
+        .shared()?
+        .all_categories()?
+        .into_iter()
+        .map(Into::into)
+        .collect();
     Ok(Json(categories))
 }
 
@@ -395,7 +408,7 @@ fn get_category(connections: sqlite::Connections, uids: String) -> Result<Vec<js
         .shared()?
         .all_categories()?
         .into_iter()
-        .filter(|c| uids.iter().any(|uid| c.uid.as_ref() == *uid))
+        .filter(|c| uids.iter().any(|uid| c.uid.as_str() == *uid))
         .map(Into::into)
         .collect();
     Ok(Json(categories))
@@ -433,7 +446,7 @@ fn csv_export(
 
     let entries_categories_and_ratings = {
         let all_categories: Vec<_> = db.all_categories()?;
-        let limit = db.count_entries()? + 100;
+        let limit = db.count_places()? + 100;
         usecases::search(&search_engine, req, limit)?
             .0
             .into_iter()
@@ -443,10 +456,11 @@ fn csv_export(
                     ref ratings,
                     ..
                 } = indexed_entry;
-                if let Ok(entry) = db.get_entry(id) {
+                if let Ok((entry, _)) = db.get_place(id) {
+                    let (_, categories) = Category::split_from_tags(entry.tags.clone());
                     let categories = all_categories
                         .iter()
-                        .filter(|c1| entry.categories.iter().any(|c2| *c2 == c1.uid))
+                        .filter(|c1| categories.iter().any(|c2| c1.uid == c2.uid))
                         .cloned()
                         .collect::<Vec<Category>>();
                     Some((entry, categories, ratings.total()))

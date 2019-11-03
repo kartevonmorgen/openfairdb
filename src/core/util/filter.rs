@@ -44,7 +44,7 @@ pub trait InBBox {
     fn in_bbox(&self, bbox: &MapBbox) -> bool;
 }
 
-impl InBBox for Entry {
+impl InBBox for PlaceRev {
     fn in_bbox(&self, bbox: &MapBbox) -> bool {
         bbox.contains_point(self.location.pos)
     }
@@ -81,13 +81,13 @@ mod tests {
             MapPoint::from_lat_lng_deg(-10.0, -10.0),
             MapPoint::from_lat_lng_deg(10.0, 10.0),
         );
-        let e = Entry::build()
+        let e = PlaceRev::build()
             .title("foo")
             .description("bar")
             .pos(MapPoint::from_lat_lng_deg(5.0, 5.0))
             .finish();
         assert_eq!(e.in_bbox(&bb), true);
-        let e = Entry::build()
+        let e = PlaceRev::build()
             .title("foo")
             .description("bar")
             .pos(MapPoint::from_lat_lng_deg(10.1, 10.0))
@@ -102,13 +102,13 @@ mod tests {
             MapPoint::from_lat_lng_deg(10.0, 10.0),
         );
         let entries = vec![
-            Entry::build()
+            PlaceRev::build()
                 .pos(MapPoint::from_lat_lng_deg(5.0, 5.0))
                 .finish(),
-            Entry::build()
+            PlaceRev::build()
                 .pos(MapPoint::from_lat_lng_deg(-5.0, 5.0))
                 .finish(),
-            Entry::build()
+            PlaceRev::build()
                 .pos(MapPoint::from_lat_lng_deg(10.0, 10.1))
                 .finish(),
         ];

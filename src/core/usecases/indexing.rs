@@ -4,15 +4,15 @@ use failure::Fallible;
 
 pub fn index_entry(
     indexer: &mut dyn EntryIndexer,
-    entry: &Entry,
+    place_rev: &PlaceRev,
     ratings: &[Rating],
 ) -> Fallible<AvgRatings> {
-    let avg_ratings = entry.avg_ratings(ratings);
-    indexer.add_or_update_entry(entry, &avg_ratings)?;
+    let avg_ratings = place_rev.avg_ratings(ratings);
+    indexer.add_or_update_entry(place_rev, &avg_ratings)?;
     Ok(avg_ratings)
 }
 
-pub fn unindex_entry(indexer: &mut dyn EntryIndexer, entry_id: &str) -> Fallible<()> {
-    indexer.remove_entry_by_id(entry_id)?;
+pub fn unindex_entry(indexer: &mut dyn EntryIndexer, uid: &str) -> Fallible<()> {
+    indexer.remove_entry_by_id(uid)?;
     Ok(())
 }

@@ -9,10 +9,13 @@ pub enum DuplicateType {
 
 // return vector of entries like: (entry1ID, entry2ID, reason)
 // where entry1 and entry2 are similar entries
-pub fn find_duplicates(entries: &[Entry], all_entries: &[Entry]) -> Vec<(Uid, Uid, DuplicateType)> {
+pub fn find_duplicates(
+    entries: &[(PlaceRev, Status)],
+    all_entries: &[(PlaceRev, Status)],
+) -> Vec<(Uid, Uid, DuplicateType)> {
     let mut duplicates = Vec::new();
-    for e1 in &entries[..] {
-        for e2 in &all_entries[..] {
+    for (e1, _) in &entries[..] {
+        for (e2, _) in &all_entries[..] {
             if e1.uid >= e2.uid {
                 continue;
             }
@@ -27,7 +30,7 @@ pub fn find_duplicates(entries: &[Entry], all_entries: &[Entry]) -> Vec<(Uid, Ui
 const DUPLICATE_MAX_DISTANCE: Distance = Distance::from_meters(100.0);
 
 // returns a DuplicateType if the two entries have a similar title, returns None otherwise
-fn is_duplicate(e1: &Entry, e2: &Entry) -> Option<DuplicateType> {
+fn is_duplicate(e1: &PlaceRev, e2: &PlaceRev) -> Option<DuplicateType> {
     if similar_title(e1, e2, 0.3, 0) && in_close_proximity(e1, e2, DUPLICATE_MAX_DISTANCE) {
         Some(DuplicateType::SimilarChars)
     } else if similar_title(e1, e2, 0.0, 2) && in_close_proximity(e1, e2, DUPLICATE_MAX_DISTANCE) {
@@ -37,7 +40,7 @@ fn is_duplicate(e1: &Entry, e2: &Entry) -> Option<DuplicateType> {
     }
 }
 
-fn in_close_proximity(e1: &Entry, e2: &Entry, max_dist: Distance) -> bool {
+fn in_close_proximity(e1: &PlaceRev, e2: &PlaceRev, max_dist: Distance) -> bool {
     if let Some(dist) = MapPoint::distance(e1.location.pos, e2.location.pos) {
         return dist <= max_dist;
     }
@@ -45,8 +48,8 @@ fn in_close_proximity(e1: &Entry, e2: &Entry, max_dist: Distance) -> bool {
 }
 
 fn similar_title(
-    e1: &Entry,
-    e2: &Entry,
+    e1: &PlaceRev,
+    e2: &PlaceRev,
     max_percent_different: f32,
     max_words_different: u32,
 ) -> bool {
@@ -156,8 +159,8 @@ fn min3(s: usize, t: usize, u: usize) -> usize {
 mod tests {
     use super::*;
 
-    fn new_entry(title: String, description: String, pos: MapPoint) -> Entry {
-        Entry::build()
+    fn new_entry(title: String, description: String, pos: MapPoint) -> PlaceRev {
+        PlaceRev::build()
             .id(&title)
             .title(&title)
             .description(&description)

@@ -25,9 +25,13 @@ pub struct NewEntry {
 }
 
 #[derive(Debug, Clone)]
-pub struct Storable(Entry);
+pub struct Storable(PlaceRev);
 
-pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
+pub fn prepare_new_place_rev<D: Db>(
+    db: &D,
+    e: NewEntry,
+    created_by_email: Option<&str>,
+) -> Result<Storable> {
     let NewEntry {
         title,
         description,
@@ -41,13 +45,15 @@ pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
         city,
         country,
         tags,
+        license,
         ..
     } = e;
     let pos = match MapPoint::try_from_lat_lng_deg(lat, lng) {
         None => return Err(ParameterError::InvalidPosition.into()),
         Some(pos) => pos,
     };
-    let tags = super::prepare_tag_list(tags);
+    let categories = categories.into_iter().map(Uid::from).collect();
+    let tags = super::prepare_tag_list(Category::merge_uids_into_tags(categories, tags));
     super::check_and_count_owned_tags(db, &tags, None)?;
     let address = Address {
         street,
@@ -63,15 +69,12 @@ pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
     let location = Location { pos, address };
     let contact = if email.is_some() || telephone.is_some() {
         Some(Contact {
-            email,
+            email: email.map(Into::into),
             phone: telephone,
         })
     } else {
         None
     };
-    let created_at = Timestamp::now();
-    let new_id = Uid::new_uuid();
-    let uid = new_id.clone();
     let homepage = e.homepage.map(|ref url| parse_url_param(url)).transpose()?;
     let image_url = e
         .image_url
@@ -82,19 +85,17 @@ pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
         .map(|ref url| parse_url_param(url))
         .transpose()?;
 
-    let e = Entry {
-        uid,
-        created_at,
-        archived_at: None,
-        version: 0,
+    let e = PlaceRev {
+        uid: Uid::new_uuid(),
+        revision: Revision::initial(),
+        created: Activity::now(created_by_email.map(Into::into)),
         title,
         description,
         location,
         contact,
         homepage,
-        categories: categories.into_iter().map(Into::into).collect(),
         tags,
-        license: Some(e.license),
+        license,
         image_url,
         image_link_url,
     };
@@ -102,16 +103,16 @@ pub fn prepare_new_entry<D: Db>(db: &D, e: NewEntry) -> Result<Storable> {
     Ok(Storable(e))
 }
 
-pub fn store_new_entry<D: Db>(db: &D, s: Storable) -> Result<(Entry, Vec<Rating>)> {
-    let Storable(entry) = s;
-    debug!("Storing newly created entry: {:?}", entry);
-    for t in &entry.tags {
+pub fn store_new_place_rev<D: Db>(db: &D, s: Storable) -> Result<(PlaceRev, Vec<Rating>)> {
+    let Storable(place_rev) = s;
+    debug!("Storing new place revision: {:?}", place_rev);
+    for t in &place_rev.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
-    db.create_entry(entry.clone())?;
+    db.create_place_rev(place_rev.clone())?;
     // No initial ratings so far
     let ratings = vec![];
-    Ok((entry, ratings))
+    Ok((place_rev, ratings))
 }
 
 #[cfg(test)]
@@ -142,20 +143,14 @@ mod tests {
             image_link_url: None,
         };
         let mock_db = MockDb::default();
-        let now = Timestamp::now();
-        let e = prepare_new_entry(&mock_db, x).unwrap();
-        let (e, initial_ratings) = store_new_entry(&mock_db, e).unwrap();
+        let storable = prepare_new_place_rev(&mock_db, x, None).unwrap();
+        let (_, initial_ratings) = store_new_place_rev(&mock_db, storable).unwrap();
         assert!(initial_ratings.is_empty());
-        assert_eq!(&e.uid, &e.uid.as_ref().parse().unwrap());
         assert_eq!(mock_db.entries.borrow().len(), 1);
-        let x = &mock_db.entries.borrow()[0];
+        let (x, _) = &mock_db.entries.borrow()[0];
         assert_eq!(x.title, "foo");
         assert_eq!(x.description, "bar");
-        assert_eq!(x.version, 0);
-        assert!(x.created_at >= now);
-        assert_eq!(None, x.archived_at);
-        assert_eq!(&x.uid, &x.uid.as_ref().parse().unwrap());
-        assert_eq!(x.uid, e.uid);
+        assert_eq!(x.revision, Revision::initial());
     }
 
     #[test]
@@ -180,7 +175,7 @@ mod tests {
             image_link_url: None,
         };
         let mock_db: MockDb = MockDb::default();
-        assert!(prepare_new_entry(&mock_db, x).is_err());
+        assert!(prepare_new_place_rev(&mock_db, x, None).is_err());
     }
 
     #[test]
@@ -205,8 +200,8 @@ mod tests {
             image_link_url: None,
         };
         let mock_db = MockDb::default();
-        let e = prepare_new_entry(&mock_db, x).unwrap();
-        assert!(store_new_entry(&mock_db, e).is_ok());
+        let e = prepare_new_place_rev(&mock_db, x, None).unwrap();
+        assert!(store_new_place_rev(&mock_db, e).is_ok());
         assert_eq!(mock_db.tags.borrow().len(), 2);
         assert_eq!(mock_db.entries.borrow().len(), 1);
     }

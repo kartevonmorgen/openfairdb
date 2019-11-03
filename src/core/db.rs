@@ -24,27 +24,28 @@ pub struct RecentlyChangedEntriesParams {
     pub until: Option<Timestamp>,
 }
 
-pub trait PlaceGateway {
-    fn get_entry(&self, _: &str) -> Result<Entry>;
-    fn get_entries(&self, ids: &[&str]) -> Result<Vec<Entry>>;
-    fn all_entries(&self) -> Result<Vec<Entry>>;
-    fn count_entries(&self) -> Result<usize>;
+pub trait PlaceRepo {
+    fn get_place(&self, uid: &str) -> Result<(PlaceRev, Status)>;
+    fn get_places(&self, uids: &[&str]) -> Result<Vec<(PlaceRev, Status)>>;
 
-    fn create_entry(&self, _: Entry) -> Result<()>;
-    fn update_entry(&self, _: &Entry) -> Result<()>;
-    fn archive_entries(&self, ids: &[&str], archived: Timestamp) -> Result<usize>;
+    fn all_places(&self) -> Result<Vec<(PlaceRev, Status)>>;
+    fn count_places(&self) -> Result<usize>;
 
-    fn recently_changed_entries(
+    fn recently_changed_places(
         &self,
         params: &RecentlyChangedEntriesParams,
         pagination: &Pagination,
-    ) -> Result<Vec<Entry>>;
+    ) -> Result<Vec<(PlaceRev, Status, ActivityLog)>>;
 
-    fn most_popular_entry_tags(
+    fn most_popular_place_tags(
         &self,
         params: &MostPopularTagsParams,
         pagination: &Pagination,
     ) -> Result<Vec<TagFrequency>>;
+
+    fn archive_places(&self, uids: &[&str], activity: &Activity) -> Result<usize>;
+
+    fn create_place_rev(&self, place_rev: PlaceRev) -> Result<()>;
 }
 
 pub trait EventGateway {
@@ -99,7 +100,7 @@ pub struct Pagination {
 }
 
 pub trait Db:
-    PlaceGateway
+    PlaceRepo
     + UserGateway
     + EventGateway
     + OrganizationGateway
@@ -152,7 +153,7 @@ pub trait EntryIndex {
 }
 
 pub trait EntryIndexer: EntryIndex {
-    fn add_or_update_entry(&mut self, entry: &Entry, ratings: &AvgRatings) -> Fallible<()>;
-    fn remove_entry_by_id(&mut self, id: &str) -> Fallible<()>;
+    fn add_or_update_entry(&mut self, place_rev: &PlaceRev, ratings: &AvgRatings) -> Fallible<()>;
+    fn remove_entry_by_id(&mut self, uid: &str) -> Fallible<()>;
     fn flush(&mut self) -> Fallible<()>;
 }

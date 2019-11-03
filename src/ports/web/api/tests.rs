@@ -31,7 +31,7 @@ pub mod prelude {
 use self::prelude::*;
 
 #[test]
-fn create_entry() {
+fn create_place_rev() {
     let (client, db) = setup();
     let req = client.post("/entries")
                     .header(ContentType::JSON)
@@ -40,7 +40,8 @@ fn create_entry() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    let eid = db.exclusive().unwrap().all_entries().unwrap()[0]
+    let eid = db.exclusive().unwrap().all_places().unwrap()[0]
+        .0
         .uid
         .clone();
     assert_eq!(body_str, format!("\"{}\"", eid));
@@ -75,7 +76,8 @@ fn create_entry_with_tag_duplicates() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    let eid = db.exclusive().unwrap().all_entries().unwrap()[0]
+    let eid = db.exclusive().unwrap().all_places().unwrap()[0]
+        .0
         .uid
         .clone();
     assert_eq!(body_str, format!("\"{}\"", eid));
@@ -92,7 +94,8 @@ fn create_entry_with_sharp_tag() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let tags = db.exclusive().unwrap().all_entries().unwrap()[0]
+    let tags = db.exclusive().unwrap().all_places().unwrap()[0]
+        .0
         .tags
         .clone();
     assert_eq!(tags, vec!["bar", "foo"]);
@@ -105,11 +108,11 @@ fn update_entry_with_tag_duplicates() {
                     .header(ContentType::JSON)
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","foo"]}"#);
     let _res = req.dispatch();
-    let e = db.exclusive().unwrap().all_entries().unwrap()[0].clone();
+    let (e, _) = db.exclusive().unwrap().all_places().unwrap()[0].clone();
     let mut json = String::new();
     json.push_str(&format!(
         "{{\"version\":{},\"id\":\"{}\"",
-        e.version + 1,
+        u64::from(e.revision.next()),
         e.uid
     ));
     json.push_str(r#","title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["bar","bar"]}"#);
@@ -118,13 +121,13 @@ fn update_entry_with_tag_duplicates() {
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let e = db.exclusive().unwrap().all_entries().unwrap()[0].clone();
+    let (e, _) = db.exclusive().unwrap().all_places().unwrap()[0].clone();
     assert_eq!(e.tags, vec!["bar"]);
 }
 
 #[test]
 fn get_one_entry() {
-    let e = Entry::build()
+    let e = PlaceRev::build()
         .id("get_one_entry_test")
         .title("some")
         .description("desc")
@@ -134,7 +137,7 @@ fn get_one_entry() {
     connections
         .exclusive()
         .unwrap()
-        .create_entry(e.clone())
+        .create_place_rev(e.clone())
         .unwrap();
     flows::create_rating(
         &connections,
@@ -172,19 +175,25 @@ fn get_one_entry() {
 
 #[test]
 fn get_multiple_entries() {
-    let one = Entry::build()
+    let one = PlaceRev::build()
         .id("get_multiple_entry_test_one")
         .title("some")
         .description("desc")
         .finish();
-    let two = Entry::build()
+    let two = PlaceRev::build()
         .id("get_multiple_entry_test_two")
         .title("some")
         .description("desc")
         .finish();
     let (client, db) = setup();
-    db.exclusive().unwrap().create_entry(one.clone()).unwrap();
-    db.exclusive().unwrap().create_entry(two.clone()).unwrap();
+    db.exclusive()
+        .unwrap()
+        .create_place_rev(one.clone())
+        .unwrap();
+    db.exclusive()
+        .unwrap()
+        .create_place_rev(two.clone())
+        .unwrap();
     let req = client.get("/entries/get_multiple_entry_test_one,get_multiple_entry_test_two");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -234,18 +243,26 @@ fn new_entry_with_category(category: &str, lat: f64, lng: f64) -> usecases::NewE
 #[test]
 fn search_with_categories_and_bbox() {
     let entries = vec![
-        new_entry_with_category("foo", 1.0, 1.0),
-        new_entry_with_category("foo", 2.0, 2.0),
-        new_entry_with_category("bar", 3.0, 3.0),
+        new_entry_with_category(Category::UID_NON_PROFIT, 1.0, 1.0),
+        new_entry_with_category(Category::UID_NON_PROFIT, 2.0, 2.0),
+        new_entry_with_category(Category::UID_COMMERCIAL, 3.0, 3.0),
     ];
     let (client, connections, mut search_engine) = setup2();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| {
+            flows::create_entry(&connections, &mut search_engine, e, None)
+                .unwrap()
+                .uid
+                .to_string()
+        })
         .collect();
     search_engine.flush().unwrap();
 
-    let req = client.get("/search?bbox=-10,-10,10,10&categories=foo");
+    let req = client.get(format!(
+        "/search?bbox=-10,-10,10,10&categories={}",
+        Category::UID_NON_PROFIT
+    ));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
@@ -254,7 +271,10 @@ fn search_with_categories_and_bbox() {
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
 
-    let req = client.get("/search?bbox=1.8,0.5,3.0,3.0&categories=foo");
+    let req = client.get(format!(
+        "/search?bbox=1.8,0.5,3.0,3.0&categories={}",
+        Category::UID_NON_PROFIT
+    ));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
@@ -263,7 +283,10 @@ fn search_with_categories_and_bbox() {
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", entry_ids[2])));
 
-    let req = client.get("/search?bbox=-10,-10,10,10&categories=bar");
+    let req = client.get(format!(
+        "/search?bbox=-10,-10,10,10&categories={}",
+        Category::UID_COMMERCIAL
+    ));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
@@ -271,7 +294,11 @@ fn search_with_categories_and_bbox() {
     assert!(!body_str.contains(&format!("\"{}\"", entry_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
 
-    let req = client.get("/search?bbox=-10,-10,10,10&categories=foo,bar");
+    let req = client.get(format!(
+        "/search?bbox=-10,-10,10,10&categories={},{}",
+        Category::UID_NON_PROFIT,
+        Category::UID_COMMERCIAL
+    ));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
@@ -279,7 +306,11 @@ fn search_with_categories_and_bbox() {
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", entry_ids[2])));
 
-    let req = client.get("/search?bbox=0.9,0.5,2.5,2.0&categories=foo,bar");
+    let req = client.get(format!(
+        "/search?bbox=0.9,0.5,2.5,2.0&categories={},{}",
+        Category::UID_NON_PROFIT,
+        Category::UID_COMMERCIAL
+    ));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
@@ -308,7 +339,12 @@ fn search_with_text() {
     let (client, connections, mut search_engine) = setup2();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| {
+            flows::create_entry(&connections, &mut search_engine, e, None)
+                .unwrap()
+                .uid
+                .to_string()
+        })
         .collect();
     search_engine.flush().unwrap();
 
@@ -389,7 +425,12 @@ fn search_with_city() {
     let (client, connections, mut search_engine) = setup2();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| {
+            flows::create_entry(&connections, &mut search_engine, e, None)
+                .unwrap()
+                .uid
+                .to_string()
+        })
         .collect();
     search_engine.flush().unwrap();
 
@@ -413,7 +454,7 @@ fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
     let (client, db) = setup();
     let conn = db.exclusive().unwrap();
     for e in entries {
-        conn.create_entry(e).unwrap();
+        conn.create_place_rev(e).unwrap();
     }
     for r in ratings {
         conn.create_rating(r).unwrap();
@@ -425,21 +466,28 @@ fn bench_search_in_10_000_rated_entries(b: &mut Bencher) {
 fn search_with_tags() {
     let entries = vec![
         usecases::NewEntry {
-            categories: vec!["foo".to_string()],
+            categories: vec![Category::UID_NON_PROFIT.to_string()],
             ..default_new_entry()
         },
         usecases::NewEntry {
-            categories: vec!["foo".to_string()],
+            categories: vec![Category::UID_NON_PROFIT.to_string()],
             tags: vec!["bla-blubb".to_string(), "foo-bar".to_string()],
             ..default_new_entry()
         },
         usecases::NewEntry {
-            categories: vec!["foo".to_string()],
+            categories: vec![Category::UID_NON_PROFIT.to_string()],
             tags: vec!["foo-bar".to_string()],
             ..default_new_entry()
         },
     ];
     let (client, connections, mut search_engine) = setup2();
+    connections
+        .exclusive()
+        .unwrap()
+        .create_tag_if_it_does_not_exist(&Tag {
+            id: Category::TAG_NON_PROFIT.into(),
+        })
+        .unwrap();
     connections
         .exclusive()
         .unwrap()
@@ -456,7 +504,12 @@ fn search_with_tags() {
         .unwrap();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| {
+            flows::create_entry(&connections, &mut search_engine, e, None)
+                .unwrap()
+                .uid
+                .to_string()
+        })
         .collect();
 
     let req = client.get("/search?bbox=-10,-10,10,10&tags=bla-blubb");
@@ -465,8 +518,9 @@ fn search_with_tags() {
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains(&format!(
-        "\"visible\":[{{\"id\":\"{}\",\"lat\":0.0,\"lng\":0.0,\"title\":\"\",\"description\":\"\",\"categories\":[\"foo\"],\"tags\":[\"bla-blubb\",\"foo-bar\"],\"ratings\":{{\"total\":0.0,\"diversity\":0.0,\"fairness\":0.0,\"humanity\":0.0,\"renewable\":0.0,\"solidarity\":0.0,\"transparency\":0.0}}}}]",
+        "\"visible\":[{{\"id\":\"{}\",\"lat\":0.0,\"lng\":0.0,\"title\":\"\",\"description\":\"\",\"categories\":[\"{}\"],\"tags\":[\"bla-blubb\",\"foo-bar\"],\"ratings\":{{\"total\":0.0,\"diversity\":0.0,\"fairness\":0.0,\"humanity\":0.0,\"renewable\":0.0,\"solidarity\":0.0,\"transparency\":0.0}}}}]",
         entry_ids[1],
+        Category::UID_NON_PROFIT,
     )));
 
     let req = client.get("/search?bbox=-10,-10,10,10&tags=foo-bar");
@@ -512,7 +566,12 @@ fn search_with_uppercase_tags() {
         .unwrap();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| {
+            flows::create_entry(&connections, &mut search_engine, e, None)
+                .unwrap()
+                .uid
+                .to_string()
+        })
         .collect();
 
     let req = client.get("/search?bbox=-10,-10,10,10&tags=Foo");
@@ -556,7 +615,12 @@ fn search_with_hashtag() {
         .unwrap();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| {
+            flows::create_entry(&connections, &mut search_engine, e, None)
+                .unwrap()
+                .uid
+                .to_string()
+        })
         .collect();
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23foo-bar");
@@ -600,7 +664,11 @@ fn search_with_two_hashtags() {
         .unwrap();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| {
+            flows::create_entry(&connections, &mut search_engine, e, None)
+                .unwrap()
+                .uid
+        })
         .collect();
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23bla-blubb%20%23foo-bar");
@@ -650,7 +718,12 @@ fn search_with_commata() {
         .unwrap();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| {
+            flows::create_entry(&connections, &mut search_engine, e, None)
+                .unwrap()
+                .uid
+                .to_string()
+        })
         .collect();
 
     // With hashtag symbol '#' -> all hashtags are mandatory
@@ -725,7 +798,12 @@ fn search_without_specifying_hashtag_symbol() {
         .unwrap();
     let entry_ids: Vec<_> = entries
         .into_iter()
-        .map(|e| flows::create_entry(&connections, &mut search_engine, e).unwrap())
+        .map(|e| {
+            flows::create_entry(&connections, &mut search_engine, e, None)
+                .unwrap()
+                .uid
+                .to_string()
+        })
         .collect();
 
     let mut response = client.get("/search?bbox=-10,-10,10,10&text=foo").dispatch();
@@ -804,9 +882,13 @@ fn create_new_user() {
 #[test]
 fn create_rating() {
     let (client, connections, _) = setup2();
-    let entries = vec![Entry::build().id("foo").finish()];
+    let entries = vec![PlaceRev::build().id("foo").finish()];
     for e in entries {
-        connections.exclusive().unwrap().create_entry(e).unwrap();
+        connections
+            .exclusive()
+            .unwrap()
+            .create_place_rev(e)
+            .unwrap();
     }
     let req = client.post("/ratings")
         .header(ContentType::JSON)
@@ -827,9 +909,13 @@ fn create_rating() {
 
 #[test]
 fn get_one_rating() {
-    let e = Entry::build().id("foo").finish();
+    let e = PlaceRev::build().id("foo").finish();
     let (client, connections, mut search_engine) = setup2();
-    connections.exclusive().unwrap().create_entry(e).unwrap();
+    connections
+        .exclusive()
+        .unwrap()
+        .create_place_rev(e)
+        .unwrap();
     flows::create_rating(
         &connections,
         &mut search_engine,
@@ -864,11 +950,19 @@ fn get_one_rating() {
 
 #[test]
 fn ratings_with_and_without_source() {
-    let e1 = Entry::build().id("foo").finish();
-    let e2 = Entry::build().id("bar").finish();
+    let e1 = PlaceRev::build().id("foo").finish();
+    let e2 = PlaceRev::build().id("bar").finish();
     let (client, connections, mut search_engine) = setup2();
-    connections.exclusive().unwrap().create_entry(e1).unwrap();
-    connections.exclusive().unwrap().create_entry(e2).unwrap();
+    connections
+        .exclusive()
+        .unwrap()
+        .create_place_rev(e1)
+        .unwrap();
+    connections
+        .exclusive()
+        .unwrap()
+        .create_place_rev(e2)
+        .unwrap();
     flows::create_rating(
         &connections,
         &mut search_engine,
@@ -1162,33 +1256,34 @@ fn export_csv() {
     assert_eq!(response.status(), Status::Ok);
 
     let mut entries = vec![
-        Entry::build()
+        PlaceRev::build()
             .id("entry1")
-            .version(3)
+            .revision(3)
             .title("title1")
             .description("desc1")
             .pos(MapPoint::from_lat_lng_deg(0.1, 0.2))
-            .categories(vec![
-                "2cd00bebec0c48ba9db761da48678134",
-                "77b3c33a92554bcf8e8c2c86cedd6f6f",
+            .tags(vec![
+                "bli",
+                "bla",
+                Category::TAG_NON_PROFIT,
+                Category::TAG_COMMERCIAL,
             ])
-            .tags(vec!["bli", "bla"])
-            .license(Some("license1"))
+            .license("license1")
             .image_url(Some("https://img"))
             .image_link_url(Some("https://img,link"))
             .finish(),
-        Entry::build()
+        PlaceRev::build()
             .id("entry2")
-            .categories(vec!["2cd00bebec0c48ba9db761da48678134"])
+            .tags(vec![Category::TAG_NON_PROFIT])
             .finish(),
-        Entry::build()
+        PlaceRev::build()
             .id("entry3")
-            .categories(vec!["77b3c33a92554bcf8e8c2c86cedd6f6f"])
+            .tags(vec![Category::TAG_COMMERCIAL])
             .pos(MapPoint::from_lat_lng_deg(2.0, 2.0))
             .finish(),
     ];
     entries[0].location.address = Some(Address::build().street("street1").finish());
-    entries[0].created_at = 2.into();
+    entries[0].created.when = 2.into();
     entries[0].location.address = Some(
         Address::build()
             .street("street1")
@@ -1207,8 +1302,20 @@ fn export_csv() {
         .unwrap()
         .create_tag_if_it_does_not_exist(&Tag { id: "bla".into() })
         .unwrap();
+    db.exclusive()
+        .unwrap()
+        .create_tag_if_it_does_not_exist(&Tag {
+            id: Category::TAG_NON_PROFIT.into(),
+        })
+        .unwrap();
+    db.exclusive()
+        .unwrap()
+        .create_tag_if_it_does_not_exist(&Tag {
+            id: Category::TAG_COMMERCIAL.into(),
+        })
+        .unwrap();
     for e in entries {
-        db.exclusive().unwrap().create_entry(e).unwrap();
+        db.exclusive().unwrap().create_place_rev(e).unwrap();
     }
     let diversity = RatingContext::Diversity;
     db.exclusive()
@@ -1238,8 +1345,8 @@ fn export_csv() {
         })
         .unwrap();
 
-    let entries = db.shared().unwrap().all_entries().unwrap();
-    for e in &entries {
+    let entries = db.shared().unwrap().all_places().unwrap();
+    for (e, _) in &entries {
         let ratings = db
             .shared()
             .unwrap()

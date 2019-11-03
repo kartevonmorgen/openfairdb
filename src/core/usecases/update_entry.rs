@@ -24,13 +24,14 @@ pub struct UpdateEntry {
     pub image_link_url : Option<String>,
 }
 
-pub struct Storable(Entry);
+pub struct Storable(PlaceRev);
 
-pub fn prepare_updated_entry<D: Db>(db: &D, uid: Uid, e: UpdateEntry) -> Result<Storable> {
-    let old: Entry = db.get_entry(uid.as_ref())?;
-    if (old.version + 1) != e.version {
-        return Err(Error::Repo(RepoError::InvalidVersion));
-    }
+pub fn prepare_updated_place_rev<D: Db>(
+    db: &D,
+    place_uid: Uid,
+    e: UpdateEntry,
+    updated_by: Option<&str>,
+) -> Result<Storable> {
     let UpdateEntry {
         version,
         title,
@@ -51,13 +52,14 @@ pub fn prepare_updated_entry<D: Db>(db: &D, uid: Uid, e: UpdateEntry) -> Result<
         None => return Err(ParameterError::InvalidPosition.into()),
         Some(pos) => pos,
     };
-    let tags = super::prepare_tag_list(tags);
+    let categories = categories.into_iter().map(Uid::from).collect();
+    let tags = super::prepare_tag_list(Category::merge_uids_into_tags(categories, tags));
     super::check_and_count_owned_tags(db, &tags, None)?;
     // TODO: Ensure that no reserved tags are removed without authorization.
     // All existing reserved tags from other organizations must be preserved
     // when editing entries. Reserved tags that already exist should not be
     // considers during the check, because they must be preserved independent
-    // of who is editing the entry.
+    // of who is editing the place_rev.
     // GitHub issue: https://github.com/slowtec/openfairdb/issues/203
     let address = Address {
         street,
@@ -70,22 +72,31 @@ pub fn prepare_updated_entry<D: Db>(db: &D, uid: Uid, e: UpdateEntry) -> Result<
     } else {
         Some(address)
     };
-    let e = Entry {
-        uid,
-        created_at: Timestamp::now(),
-        archived_at: None,
-        version,
+    let (revision, license) = {
+        let old_place_rev = db.get_place(place_uid.as_str())?.0;
+        // Check for revision conflict (optimistic locking)
+        let revision = Revision::from(version);
+        if old_place_rev.revision.next() != revision {
+            return Err(RepoError::InvalidVersion.into());
+        }
+        // The license is immutable
+        let license = old_place_rev.license;
+        (revision, license)
+    };
+    let plave_rev = PlaceRev {
+        uid: place_uid,
+        revision,
+        created: Activity::now(updated_by.map(Into::into)),
         title,
         description,
         location: Location { pos, address },
         contact: Some(Contact {
-            email,
+            email: email.map(Into::into),
             phone: telephone,
         }),
         homepage: e.homepage.map(|ref url| parse_url_param(url)).transpose()?,
-        categories: categories.into_iter().map(Into::into).collect(),
         tags,
-        license: old.license, // license is immutable
+        license,
         image_url: e
             .image_url
             .map(|ref url| parse_url_param(url))
@@ -95,19 +106,19 @@ pub fn prepare_updated_entry<D: Db>(db: &D, uid: Uid, e: UpdateEntry) -> Result<
             .map(|ref url| parse_url_param(url))
             .transpose()?,
     };
-    e.validate()?;
-    Ok(Storable(e))
+    plave_rev.validate()?;
+    Ok(Storable(plave_rev))
 }
 
-pub fn store_updated_entry<D: Db>(db: &D, s: Storable) -> Result<(Entry, Vec<Rating>)> {
-    let Storable(entry) = s;
-    debug!("Storing updated entry: {:?}", entry);
-    for t in &entry.tags {
+pub fn store_updated_place_rev<D: Db>(db: &D, s: Storable) -> Result<(PlaceRev, Vec<Rating>)> {
+    let Storable(place_rev) = s;
+    debug!("Storing updated place revision: {:?}", place_rev);
+    for t in &place_rev.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
-    db.update_entry(&entry)?;
-    let ratings = db.load_ratings_of_entry(entry.uid.as_ref())?;
-    Ok((entry, ratings))
+    db.create_place_rev(place_rev.clone())?;
+    let ratings = db.load_ratings_of_entry(place_rev.uid.as_ref())?;
+    Ok((place_rev, ratings))
 }
 
 #[cfg(test)]
@@ -117,16 +128,16 @@ mod tests {
     use super::*;
 
     #[test]
-    fn update_valid_entry() {
+    fn update_valid_place_rev() {
         let uid = Uid::new_uuid();
-        let old = Entry::build()
+        let old = PlaceRev::build()
             .id(uid.as_ref())
-            .version(1)
+            .revision(1)
             .title("foo")
             .description("bar")
             .image_url(Some("http://img"))
             .image_link_url(Some("http://imglink"))
-            .license(Some("CC0-1.0"))
+            .license("CC0-1.0")
             .finish();
 
         #[rustfmt::skip]
@@ -149,12 +160,12 @@ mod tests {
             image_link_url: old.image_link_url.clone(),
         };
         let mut mock_db = MockDb::default();
-        mock_db.entries = vec![old].into();
+        mock_db.entries = vec![(old, Status::created())].into();
         let now = Timestamp::now();
-        let e = prepare_updated_entry(&mock_db, uid.clone(), new).unwrap();
-        assert!(store_updated_entry(&mock_db, e).is_ok());
+        let storable = prepare_updated_place_rev(&mock_db, uid.clone(), new, None).unwrap();
+        assert!(store_updated_place_rev(&mock_db, storable).is_ok());
         assert_eq!(mock_db.entries.borrow().len(), 1);
-        let x = &mock_db.entries.borrow()[0];
+        let (x, _) = &mock_db.entries.borrow()[0];
         assert_eq!(
             "street",
             x.location
@@ -166,22 +177,21 @@ mod tests {
                 .unwrap()
         );
         assert_eq!("bar", x.description);
-        assert_eq!(2, x.version);
-        assert!(x.created_at >= now);
-        assert_eq!(None, x.archived_at);
-        assert_eq!(&x.uid, &x.uid.as_ref().parse().unwrap());
+        assert_eq!(Revision::from(2), x.revision);
+        assert!(x.created.when >= now);
         assert_eq!("https://www.img2/", x.image_url.as_ref().unwrap());
         assert_eq!("http://imglink/", x.image_link_url.as_ref().unwrap());
     }
 
     #[test]
-    fn update_entry_with_invalid_version() {
+    fn update_place_rev_with_invalid_version() {
         let uid = Uid::new_uuid();
-        let old = Entry::build()
+        let old = PlaceRev::build()
             .id(uid.as_ref())
-            .version(3)
+            .revision(3)
             .title("foo")
             .description("bar")
+            .license("CC0-1.0")
             .finish();
 
         #[rustfmt::skip]
@@ -204,25 +214,28 @@ mod tests {
             image_link_url: None,
         };
         let mut mock_db = MockDb::default();
-        mock_db.entries = vec![old].into();
-        let result = prepare_updated_entry(&mock_db, uid.clone(), new);
-        assert!(result.is_err());
-        match result.err().unwrap() {
+        mock_db.entries = vec![(old, Status::created())].into();
+        let err = match prepare_updated_place_rev(&mock_db, uid.clone(), new, None) {
+            Ok(storable) => store_updated_place_rev(&mock_db, storable).err(),
+            Err(err) => Some(err),
+        };
+        assert!(err.is_some());
+        match err.unwrap() {
             Error::Repo(err) => match err {
                 RepoError::InvalidVersion => {}
-                _ => {
-                    panic!("invalid error type");
+                e => {
+                    panic!(format!("Unexpected error: {:?}", e));
                 }
             },
-            _ => {
-                panic!("invalid error type");
+            e => {
+                panic!(format!("Unexpected error: {:?}", e));
             }
         }
         assert_eq!(mock_db.entries.borrow().len(), 1);
     }
 
     #[test]
-    fn update_non_existing_entry() {
+    fn update_non_existing_place_rev() {
         let uid = Uid::new_uuid();
         #[rustfmt::skip]
         let new = UpdateEntry {
@@ -245,7 +258,7 @@ mod tests {
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![].into();
-        let result = prepare_updated_entry(&mock_db, uid.clone(), new);
+        let result = prepare_updated_place_rev(&mock_db, uid.clone(), new, None);
         assert!(result.is_err());
         match result.err().unwrap() {
             Error::Repo(err) => match err {
@@ -262,13 +275,13 @@ mod tests {
     }
 
     #[test]
-    fn update_valid_entry_with_tags() {
+    fn update_valid_place_rev_with_tags() {
         let uid = Uid::new_uuid();
-        let old = Entry::build()
+        let old = PlaceRev::build()
             .id(uid.as_ref())
-            .version(1)
+            .revision(1)
             .tags(vec!["bio", "fair"])
-            .license(Some("CC0-1.0"))
+            .license("CC0-1.0")
             .finish();
         #[rustfmt::skip]
         let new = UpdateEntry {
@@ -290,12 +303,11 @@ mod tests {
             image_link_url: None,
         };
         let mut mock_db = MockDb::default();
-        mock_db.entries = vec![old].into();
+        mock_db.entries = vec![(old, Status::created())].into();
         mock_db.tags = vec![Tag { id: "bio".into() }, Tag { id: "fair".into() }].into();
-        let e = prepare_updated_entry(&mock_db, uid.clone(), new).unwrap();
-        assert!(store_updated_entry(&mock_db, e).is_ok());
-        let e = mock_db.get_entry(uid.as_ref()).unwrap();
-        assert_eq!(None, e.archived_at);
+        let storable = prepare_updated_place_rev(&mock_db, uid.clone(), new, None).unwrap();
+        assert!(store_updated_place_rev(&mock_db, storable).is_ok());
+        let (e, _) = mock_db.get_place(uid.as_ref()).unwrap();
         assert_eq!(e.tags, vec!["vegan"]);
         assert_eq!(mock_db.tags.borrow().len(), 3);
     }

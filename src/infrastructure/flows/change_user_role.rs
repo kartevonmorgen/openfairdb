@@ -13,7 +13,7 @@ pub fn change_user_role(
         .transaction::<_, diesel::result::Error, _>(|| {
             usecases::change_user_role(&*connection, account_email, user_email, role).map_err(
                 |err| {
-                    warn!("Failed to chage role for email {}: {}", user_email, err);
+                    warn!("Failed to change role for email {}: {}", user_email, err);
                     repo_err = Some(err);
                     diesel::result::Error::RollbackTransaction
                 },

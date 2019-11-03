@@ -14,9 +14,9 @@ trait Key {
     fn key(&self) -> &str;
 }
 
-impl Key for Entry {
+impl Key for (PlaceRev, Status) {
     fn key(&self) -> &str {
-        &self.uid.as_ref()
+        &self.0.uid.as_ref()
     }
 }
 
@@ -70,7 +70,7 @@ impl Key for Organization {
 
 #[derive(Default)]
 pub struct MockDb {
-    pub entries: RefCell<Vec<Entry>>,
+    pub entries: RefCell<Vec<(PlaceRev, Status)>>,
     pub events: RefCell<Vec<Event>>,
     pub tags: RefCell<Vec<Tag>>,
     pub users: RefCell<Vec<User>>,
@@ -124,19 +124,18 @@ impl UserTokenRepo for MockDb {
 }
 
 impl EntryIndexer for MockDb {
-    fn add_or_update_entry(&mut self, entry: &Entry, _ratings: &AvgRatings) -> Fallible<()> {
+    fn add_or_update_entry(&mut self, place_rev: &PlaceRev, _ratings: &AvgRatings) -> Fallible<()> {
         // Nothing to do, the entry has already been stored
         // in the database.
-        //debug_assert_eq!(Ok(entry), self.db.get_entry(&entry.id).as_ref());
-        debug_assert!(entry == &self.get_entry(entry.uid.as_ref()).unwrap());
+        debug_assert!(place_rev == &self.get_place(place_rev.uid.as_ref()).unwrap().0);
         Ok(())
     }
 
-    fn remove_entry_by_id(&mut self, id: &str) -> Fallible<()> {
+    fn remove_entry_by_id(&mut self, uid: &str) -> Fallible<()> {
         // Nothing to do, the entry has already been stored
         // in the database.
-        //debug_assert_eq!(Err(RepoError::NotFound), self.db.get_entry(&id));
-        debug_assert!(self.get_entry(&id).is_err());
+        //debug_assert_eq!(Err(RepoError::NotFound), self.db.get_place(&id));
+        debug_assert!(self.get_place(&uid).is_err());
         Ok(())
     }
 
@@ -171,6 +170,17 @@ fn create<T: Clone + Key>(objects: &mut Vec<T>, e: T) -> RepoResult<()> {
     Ok(())
 }
 
+fn create_or_replace<T: Clone + Key>(objects: &mut Vec<T>, e: T) -> RepoResult<()> {
+    for elem in objects.iter_mut() {
+        if elem.key() == e.key() {
+            *elem = e;
+            return Ok(());
+        }
+    }
+    objects.push(e);
+    Ok(())
+}
+
 fn update<T: Clone + Key>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
     if let Some(pos) = objects.iter().position(|x| x.key() == e.key()) {
         objects[pos] = e.clone();
@@ -180,60 +190,58 @@ fn update<T: Clone + Key>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
     Ok(())
 }
 
-impl PlaceGateway for MockDb {
-    fn create_entry(&self, e: Entry) -> RepoResult<()> {
-        create(&mut self.entries.borrow_mut(), e)
+impl PlaceRepo for MockDb {
+    fn create_place_rev(&self, e: PlaceRev) -> RepoResult<()> {
+        create_or_replace(&mut self.entries.borrow_mut(), (e, Status::created()))
     }
-    fn get_entry(&self, id: &str) -> RepoResult<Entry> {
-        get(&self.entries.borrow(), id).and_then(|e| {
-            if e.archived_at.is_none() {
-                Ok(e)
+    fn get_place(&self, id: &str) -> RepoResult<(PlaceRev, Status)> {
+        get(&self.entries.borrow(), id).and_then(|(e, s)| {
+            if s != EntityStatus::archived() {
+                Ok((e, s))
             } else {
                 Err(RepoError::NotFound)
             }
         })
     }
-    fn get_entries(&self, ids: &[&str]) -> RepoResult<Vec<Entry>> {
+    fn get_places(&self, ids: &[&str]) -> RepoResult<Vec<(PlaceRev, Status)>> {
         Ok(self
             .entries
             .borrow()
             .iter()
-            .filter(|e| e.archived_at.is_none() && ids.iter().any(|id| &e.uid.as_ref() == id))
+            .filter(|(e, s)| {
+                *s != EntityStatus::archived() && ids.iter().any(|id| e.uid.as_str() == *id)
+            })
             .cloned()
             .collect())
     }
-    fn all_entries(&self) -> RepoResult<Vec<Entry>> {
+    fn all_places(&self) -> RepoResult<Vec<(PlaceRev, Status)>> {
         Ok(self
             .entries
             .borrow()
             .iter()
-            .filter(|e| e.archived_at.is_none())
+            .filter(|(_, s)| *s != EntityStatus::archived())
             .cloned()
             .collect())
     }
-    fn recently_changed_entries(
+    fn recently_changed_places(
         &self,
         _params: &RecentlyChangedEntriesParams,
         _pagination: &Pagination,
-    ) -> RepoResult<Vec<Entry>> {
+    ) -> RepoResult<Vec<(PlaceRev, Status, ActivityLog)>> {
         unimplemented!();
     }
-    fn most_popular_entry_tags(
+    fn most_popular_place_tags(
         &self,
         _params: &MostPopularTagsParams,
         _pagination: &Pagination,
     ) -> RepoResult<Vec<TagFrequency>> {
         unimplemented!();
     }
-    fn count_entries(&self) -> RepoResult<usize> {
-        self.all_entries().map(|v| v.len())
+    fn count_places(&self) -> RepoResult<usize> {
+        self.all_places().map(|v| v.len())
     }
 
-    fn update_entry(&self, e: &Entry) -> RepoResult<()> {
-        update(&mut self.entries.borrow_mut(), e)
-    }
-
-    fn archive_entries(&self, _ids: &[&str], _archived: Timestamp) -> RepoResult<usize> {
+    fn archive_places(&self, _ids: &[&str], _activity: &Activity) -> RepoResult<usize> {
         unimplemented!();
     }
 }
@@ -366,7 +374,7 @@ impl CommentRepository for MockDb {
             .comments
             .borrow()
             .iter()
-            .filter(|c| uids.iter().any(|uid| c.uid.as_ref() == *uid) && c.archived_at.is_none())
+            .filter(|c| uids.iter().any(|uid| c.uid.as_str() == *uid) && c.archived_at.is_none())
             .cloned()
             .collect())
     }
@@ -376,25 +384,25 @@ impl CommentRepository for MockDb {
             .comments
             .borrow()
             .iter()
-            .filter(|c| c.rating_uid.as_ref() == rating_uid && c.archived_at.is_none())
+            .filter(|c| c.rating_uid.as_str() == rating_uid && c.archived_at.is_none())
             .cloned()
             .collect())
     }
 
-    fn archive_comments(&self, _uids: &[&str], _archived: Timestamp) -> RepoResult<usize> {
+    fn archive_comments(&self, _uids: &[&str], _activity: &Activity) -> RepoResult<usize> {
         unimplemented!();
     }
     fn archive_comments_of_ratings(
         &self,
         _rating_ids: &[&str],
-        _archived: Timestamp,
+        _activity: &Activity,
     ) -> RepoResult<usize> {
         unimplemented!();
     }
     fn archive_comments_of_entries(
         &self,
         _entry_ids: &[&str],
-        _archived: Timestamp,
+        _activity: &Activity,
     ) -> RepoResult<usize> {
         unimplemented!();
     }
@@ -441,7 +449,7 @@ impl RatingRepository for MockDb {
             .ratings
             .borrow()
             .iter()
-            .filter(|r| ids.iter().any(|uid| r.uid.as_ref() == *uid) && r.archived_at.is_none())
+            .filter(|r| ids.iter().any(|uid| r.uid.as_str() == *uid) && r.archived_at.is_none())
             .cloned()
             .collect())
     }
@@ -451,7 +459,7 @@ impl RatingRepository for MockDb {
             .ratings
             .borrow()
             .iter()
-            .filter(|r| r.archived_at.is_none() && r.place_uid.as_ref() == place_uid)
+            .filter(|r| r.archived_at.is_none() && r.place_uid.as_str() == place_uid)
             .cloned()
             .collect())
     }
@@ -459,13 +467,13 @@ impl RatingRepository for MockDb {
     fn load_entry_ids_of_ratings(&self, _ids: &[&str]) -> RepoResult<Vec<String>> {
         unimplemented!();
     }
-    fn archive_ratings(&self, _ids: &[&str], _archived: Timestamp) -> RepoResult<usize> {
+    fn archive_ratings(&self, _ids: &[&str], _activity: &Activity) -> RepoResult<usize> {
         unimplemented!();
     }
     fn archive_ratings_of_entries(
         &self,
         _entry_ids: &[&str],
-        _archived: Timestamp,
+        _activity: &Activity,
     ) -> RepoResult<usize> {
         unimplemented!();
     }

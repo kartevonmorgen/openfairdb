@@ -47,7 +47,7 @@ CREATE TABLE place_rev (
     email          TEXT,
     phone          TEXT,
     homepage       TEXT,
-    license        TEXT,
+    license        TEXT NOT NULL,
     image_url      TEXT,
     image_link_url TEXT,
     --

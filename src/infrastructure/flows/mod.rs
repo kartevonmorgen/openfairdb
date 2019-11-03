@@ -82,13 +82,20 @@ mod tests {
                 }
             }
 
-            pub fn create_entry(self: &EnvFixture, new_entry: NewEntry) -> String {
+            pub fn create_entry(
+                self: &EnvFixture,
+                new_entry: NewEntry,
+                account_email: Option<&str>,
+            ) -> String {
                 flows::create_entry(
                     &self.db_connections,
                     &mut *self.search_engine.borrow_mut(),
                     new_entry.into(),
+                    account_email,
                 )
                 .unwrap()
+                .uid
+                .into()
             }
 
             pub fn create_user(self: &EnvFixture, new_user: usecases::NewUser, role: Option<Role>) {
@@ -114,9 +121,9 @@ mod tests {
                     .unwrap_or_default()
             }
 
-            pub fn try_get_entry(self: &EnvFixture, id: &str) -> Option<Entry> {
-                match self.db_connections.shared().unwrap().get_entry(id) {
-                    Ok(entry) => Some(entry),
+            pub fn try_get_entry(self: &EnvFixture, id: &str) -> Option<PlaceRev> {
+                match self.db_connections.shared().unwrap().get_place(id) {
+                    Ok((entry, _)) => Some(entry),
                     Err(RepoError::NotFound) => None,
                     x => x.map(|_| None).unwrap(),
                 }

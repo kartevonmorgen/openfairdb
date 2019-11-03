@@ -50,8 +50,8 @@ mod tests {
         );
 
         let entry_ids = vec![
-            fixture.create_entry(0.into()),
-            fixture.create_entry(1.into()),
+            fixture.create_entry(0.into(), None),
+            fixture.create_entry(1.into(), None),
         ];
         let rating_comment_ids = vec![
             fixture.create_rating(new_entry_rating(

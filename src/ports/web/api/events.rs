@@ -30,7 +30,7 @@ pub fn post_event_with_token(
 ) -> Result<String> {
     let mut e = e.into_inner();
     check_and_set_address_location(&mut e);
-    let uid = usecases::create_new_event(&mut *db.exclusive()?, Some(&token.0), e.clone())?;
+    let uid = usecases::create_new_event(&mut *db.exclusive()?, Some(&token.0), e)?;
     Ok(Json(uid.to_string()))
 }
 
@@ -78,12 +78,7 @@ pub fn put_event_with_token(
 ) -> Result<()> {
     let mut e = e.into_inner();
     check_and_set_address_location(&mut e);
-    usecases::update_event(
-        &mut *db.exclusive()?,
-        Some(&token.0),
-        &id.to_string(),
-        e.clone(),
-    )?;
+    usecases::update_event(&mut *db.exclusive()?, Some(&token.0), &id.to_string(), e)?;
     Ok(Json(()))
 }
 

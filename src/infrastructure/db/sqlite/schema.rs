@@ -8,7 +8,6 @@ table! {
     }
 }
 
-
 ///////////////////////////////////////////////////////////////////////
 // Organizations
 ///////////////////////////////////////////////////////////////////////
@@ -30,7 +29,6 @@ table! {
 
 joinable!(org_tag_relations -> organizations (org_id));
 joinable!(org_tag_relations -> tags (tag_id));
-
 
 ///////////////////////////////////////////////////////////////////////
 // Users
@@ -56,7 +54,6 @@ table! {
 }
 
 joinable!(user_tokens -> users (user_id));
-
 
 ///////////////////////////////////////////////////////////////////////
 // Places
@@ -122,7 +119,7 @@ table! {
         email -> Nullable<Text>,
         phone -> Nullable<Text>,
         homepage -> Nullable<Text>,
-        license -> Nullable<Text>,
+        license -> Text,
         image_url -> Nullable<Text>,
         image_link_url -> Nullable<Text>,
     }
@@ -152,7 +149,6 @@ table! {
 }
 
 joinable!(place_rev_tag -> place_rev (place_rev_id));
-
 
 ///////////////////////////////////////////////////////////////////////
 // Events
@@ -195,7 +191,6 @@ table! {
 
 joinable!(event_tags -> events (event_id));
 
-
 ///////////////////////////////////////////////////////////////////////
 // Subscriptions
 ///////////////////////////////////////////////////////////////////////
@@ -213,7 +208,6 @@ table! {
 }
 
 joinable!(bbox_subscriptions -> users (user_id));
-
 
 ///////////////////////////////////////////////////////////////////////
 

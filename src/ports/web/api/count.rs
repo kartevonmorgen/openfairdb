@@ -2,7 +2,7 @@ use super::*;
 
 #[get("/count/entries")]
 pub fn get_count_entries(db: sqlite::Connections) -> Result<usize> {
-    Ok(Json(db.shared()?.count_entries()?))
+    Ok(Json(db.shared()?.count_places()?))
 }
 
 #[get("/count/tags")]

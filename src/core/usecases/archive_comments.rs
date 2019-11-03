@@ -7,8 +7,8 @@ pub fn archive_comments<D: Db>(db: &D, user_email: &str, ids: &[&str]) -> Result
     let user = db.try_get_user_by_email(user_email)?;
     if let Some(user) = user {
         if user.role >= Role::Scout {
-            let archived = Timestamp::now();
-            db.archive_comments(ids, archived)?;
+            let archived = Activity::now(Some(user_email.into()));
+            db.archive_comments(ids, &archived)?;
             return Ok(());
         }
     }

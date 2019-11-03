@@ -16,20 +16,20 @@ pub struct CsvRecord {
     pub homepage: Option<String>,
     pub categories: String,
     pub tags: String,
-    pub license: Option<String>,
+    pub license: String,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
     pub avg_rating: f64,
 }
 
-impl From<(Entry, Vec<Category>, AvgRatingValue)> for CsvRecord {
-    fn from(t: (Entry, Vec<Category>, AvgRatingValue)) -> Self {
+impl From<(PlaceRev, Vec<Category>, AvgRatingValue)> for CsvRecord {
+    fn from(t: (PlaceRev, Vec<Category>, AvgRatingValue)) -> Self {
         let (e, categories, avg_rating) = t;
 
-        let Entry {
+        let PlaceRev {
             uid,
-            created_at,
-            version,
+            created,
+            revision,
             title,
             description,
             location,
@@ -59,8 +59,8 @@ impl From<(Entry, Vec<Category>, AvgRatingValue)> for CsvRecord {
 
         CsvRecord {
             id: uid.into(),
-            created: created_at.into(),
-            version: version as u64,
+            created: created.when.into(),
+            version: revision.into(),
             title,
             description,
             lat: pos.lat().to_deg(),
