@@ -237,7 +237,7 @@ impl PlaceRepo for MockDb {
         self.all_places().map(|v| v.len())
     }
 
-    fn archive_places(&self, _ids: &[&str], _activity: &Activity) -> RepoResult<usize> {
+    fn change_status_of_places(&self, _uids: &[&str], _status: Status, _activity: &Activity) -> RepoResult<usize> {
         unimplemented!();
     }
 }

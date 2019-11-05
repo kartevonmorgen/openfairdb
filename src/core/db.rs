@@ -43,7 +43,7 @@ pub trait PlaceRepo {
         pagination: &Pagination,
     ) -> Result<Vec<TagFrequency>>;
 
-    fn archive_places(&self, uids: &[&str], activity: &Activity) -> Result<usize>;
+    fn change_status_of_places(&self, uids: &[&str], status: Status, activity: &Activity) -> Result<usize>;
 
     fn create_place_rev(&self, place_rev: Place) -> Result<()>;
 }

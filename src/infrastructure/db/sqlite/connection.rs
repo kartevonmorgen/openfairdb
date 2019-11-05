@@ -354,15 +354,10 @@ impl PlaceRepo for SqliteConnection {
         Ok(())
     }
 
-    fn archive_places(&self, place_uids: &[&str], activity: &Activity) -> Result<usize> {
+    fn change_status_of_places(&self, uids: &[&str], status: Status, activity: &Activity) -> Result<usize> {
         use schema::place::dsl as place_dsl;
         use schema::place_rev::dsl as rev_dsl;
 
-        let archived_by = if let Some(ref email) = activity.who {
-            Some(resolve_user_id_by_email(self, email.as_ref())?)
-        } else {
-            None
-        };
         let rev_ids = schema::place::table
             .inner_join(
                 schema::place_rev::table.on(rev_dsl::place_id
@@ -370,16 +365,23 @@ impl PlaceRepo for SqliteConnection {
                     .and(rev_dsl::rev.eq(place_dsl::rev))),
             )
             .select(rev_dsl::id)
-            .filter(place_dsl::uid.eq_any(place_uids))
+            .filter(place_dsl::uid.eq_any(uids))
             .load(self)?;
         let count = rev_ids.len();
+        let status = status.into_inner();
+        let created_by = if let Some(ref email) = activity.who {
+            Some(resolve_user_id_by_email(self, email.as_ref())?)
+        } else {
+            None
+        };
+        let created_at = activity.when.into();
         for rev_id in rev_ids {
             let update_count = diesel::update(
                 schema::place_rev::table
                     .filter(rev_dsl::id.eq(rev_id))
-                    .filter(rev_dsl::status.ne(Status::archived().into_inner())),
+                    .filter(rev_dsl::status.ne(status)),
             )
-            .set(rev_dsl::status.eq(Status::archived().into_inner()))
+            .set(rev_dsl::status.eq(status))
             .execute(self)?;
             debug_assert!(update_count <= 1);
             if update_count > 0 {
@@ -389,9 +391,9 @@ impl PlaceRepo for SqliteConnection {
                 }
                 let new_place_rev_log_status = models::NewPlaceRevStatusLog {
                     place_rev_id: rev_id,
-                    status: Status::archived().into(),
-                    created_at: activity.when.into(),
-                    created_by: archived_by,
+                    status,
+                    created_at,
+                    created_by,
                     context: None,
                     notes: Some("archived"),
                 };
