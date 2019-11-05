@@ -354,7 +354,12 @@ impl PlaceRepo for SqliteConnection {
         Ok(())
     }
 
-    fn change_status_of_places(&self, uids: &[&str], status: Status, activity: &Activity) -> Result<usize> {
+    fn change_status_of_places(
+        &self,
+        uids: &[&str],
+        status: Status,
+        activity: &Activity,
+    ) -> Result<usize> {
         use schema::place::dsl as place_dsl;
         use schema::place_rev::dsl as rev_dsl;
 
@@ -368,13 +373,13 @@ impl PlaceRepo for SqliteConnection {
             .filter(place_dsl::uid.eq_any(uids))
             .load(self)?;
         let count = rev_ids.len();
-        let status = status.into_inner();
         let created_by = if let Some(ref email) = activity.who {
             Some(resolve_user_id_by_email(self, email.as_ref())?)
         } else {
             None
         };
         let created_at = activity.when.into();
+        let status = status.into_inner();
         for rev_id in rev_ids {
             let update_count = diesel::update(
                 schema::place_rev::table
@@ -385,10 +390,6 @@ impl PlaceRepo for SqliteConnection {
             .execute(self)?;
             debug_assert!(update_count <= 1);
             if update_count > 0 {
-                if update_count > 1 {
-                    // Should never happen
-                    return Err(RepoError::TooManyFound);
-                }
                 let new_place_rev_log_status = models::NewPlaceRevStatusLog {
                     place_rev_id: rev_id,
                     status,
@@ -400,8 +401,6 @@ impl PlaceRepo for SqliteConnection {
                 diesel::insert_into(schema::place_rev_activity_log::table)
                     .values(new_place_rev_log_status)
                     .execute(self)?;
-            } else {
-                return Err(RepoError::NotFound);
             }
         }
         Ok(count)
@@ -440,7 +439,6 @@ impl PlaceRepo for SqliteConnection {
                 rev_dsl::image_url,
                 rev_dsl::image_link_url,
             ))
-            .filter(rev_dsl::status.ge(Status::created().into_inner()))
             .into_boxed();
         if place_uids.is_empty() {
             warn!("Loading all entries at once");
@@ -966,12 +964,6 @@ impl EventGateway for SqliteConnection {
         .set(dsl::archived.eq(Some(i64::from(archived))))
         .execute(self)?;
         debug_assert!(count <= uids.len());
-        if count < uids.len() {
-            return Err(RepoError::NotFound);
-        }
-        if count > uids.len() {
-            return Err(RepoError::TooManyFound);
-        }
         Ok(count)
     }
 
@@ -1167,27 +1159,35 @@ impl RatingRepository for SqliteConnection {
 
     fn archive_ratings(&self, uids: &[&str], activity: &Activity) -> Result<usize> {
         use schema::place_rating::dsl;
+        let archived_at = Some(activity.when.into_inner());
+        let archived_by = if let Some(ref email) = activity.who {
+            Some(resolve_user_id_by_email(self, email.as_ref())?)
+        } else {
+            None
+        };
         let count = diesel::update(
             schema::place_rating::table
                 .filter(dsl::uid.eq_any(uids))
                 .filter(dsl::archived_at.is_null()),
         )
-        // TODO: Set archived_by
-        .set(dsl::archived_at.eq(Some(activity.when.into_inner())))
+        .set((
+            dsl::archived_at.eq(archived_at),
+            dsl::archived_by.eq(archived_by),
+        ))
         .execute(self)?;
-        if count < uids.len() {
-            return Err(RepoError::NotFound);
-        }
-        if count > uids.len() {
-            // Should never happen (see debug assertion)
-            return Err(RepoError::TooManyFound);
-        }
+        debug_assert!(count < uids.len());
         Ok(count)
     }
 
     fn archive_ratings_of_places(&self, place_uids: &[&str], activity: &Activity) -> Result<usize> {
         use schema::place::dsl as place_dsl;
         use schema::place_rating::dsl as rating_dsl;
+        let archived_at = Some(activity.when.into_inner());
+        let archived_by = if let Some(ref email) = activity.who {
+            Some(resolve_user_id_by_email(self, email.as_ref())?)
+        } else {
+            None
+        };
         Ok(diesel::update(
             schema::place_rating::table
                 .filter(
@@ -1199,8 +1199,10 @@ impl RatingRepository for SqliteConnection {
                 )
                 .filter(rating_dsl::archived_at.is_null()),
         )
-        // TODO: Set archived_by
-        .set(rating_dsl::archived_at.eq(Some(activity.when.into_inner())))
+        .set((
+            rating_dsl::archived_at.eq(archived_at),
+            rating_dsl::archived_by.eq(archived_by),
+        ))
         .execute(self)?)
     }
 }
@@ -1290,21 +1292,23 @@ impl CommentRepository for SqliteConnection {
 
     fn archive_comments(&self, uids: &[&str], activity: &Activity) -> Result<usize> {
         use schema::place_rating_comment::dsl;
+        let archived_at = Some(activity.when.into_inner());
+        let archived_by = if let Some(ref email) = activity.who {
+            Some(resolve_user_id_by_email(self, email.as_ref())?)
+        } else {
+            None
+        };
         let count = diesel::update(
             schema::place_rating_comment::table
                 .filter(dsl::uid.eq_any(uids))
                 .filter(dsl::archived_at.is_null()),
         )
-        // TODO: Set archived_by
-        .set(dsl::archived_at.eq(Some(activity.when.into_inner())))
+        .set((
+            dsl::archived_at.eq(archived_at),
+            dsl::archived_by.eq(archived_by),
+        ))
         .execute(self)?;
-        if count < uids.len() {
-            return Err(RepoError::NotFound);
-        }
-        if count > uids.len() {
-            // Should never happen (see debug assertion)
-            return Err(RepoError::TooManyFound);
-        }
+        debug_assert!(count <= uids.len());
         Ok(count)
     }
 
@@ -1315,6 +1319,12 @@ impl CommentRepository for SqliteConnection {
     ) -> Result<usize> {
         use schema::place_rating::dsl as rating_dsl;
         use schema::place_rating_comment::dsl as comment_dsl;
+        let archived_at = Some(activity.when.into_inner());
+        let archived_by = if let Some(ref email) = activity.who {
+            Some(resolve_user_id_by_email(self, email.as_ref())?)
+        } else {
+            None
+        };
         Ok(diesel::update(
             schema::place_rating_comment::table
                 .filter(
@@ -1326,8 +1336,10 @@ impl CommentRepository for SqliteConnection {
                 )
                 .filter(comment_dsl::archived_at.is_null()),
         )
-        // TODO: Set archived_by
-        .set(comment_dsl::archived_at.eq(Some(activity.when.into_inner())))
+        .set((
+            comment_dsl::archived_at.eq(archived_at),
+            comment_dsl::archived_by.eq(archived_by),
+        ))
         .execute(self)?)
     }
 
@@ -1339,6 +1351,12 @@ impl CommentRepository for SqliteConnection {
         use schema::place::dsl as place_dsl;
         use schema::place_rating::dsl as rating_dsl;
         use schema::place_rating_comment::dsl as comment_dsl;
+        let archived_at = Some(activity.when.into_inner());
+        let archived_by = if let Some(ref email) = activity.who {
+            Some(resolve_user_id_by_email(self, email.as_ref())?)
+        } else {
+            None
+        };
         Ok(diesel::update(
             schema::place_rating_comment::table
                 .filter(
@@ -1354,8 +1372,10 @@ impl CommentRepository for SqliteConnection {
                 )
                 .filter(comment_dsl::archived_at.is_null()),
         )
-        // TODO: Set archived_by
-        .set(comment_dsl::archived_at.eq(Some(activity.when.into_inner())))
+        .set((
+            comment_dsl::archived_at.eq(archived_at),
+            comment_dsl::archived_by.eq(archived_by),
+        ))
         .execute(self)?)
     }
 }
