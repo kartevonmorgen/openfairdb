@@ -132,7 +132,6 @@ pub struct IndexedPlace {
     pub pos: MapPoint,
     pub title: String,
     pub description: String,
-    pub categories: Vec<String>,
     pub tags: Vec<String>,
     pub ratings: AvgRatings,
 }

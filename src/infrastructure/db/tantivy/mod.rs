@@ -1,6 +1,6 @@
 use crate::core::{
     db::{IndexedPlace, PlaceIndex, PlaceIndexQuery, PlaceIndexer},
-    entities::{AvgRatingValue, AvgRatings, Category, Place, RatingContext},
+    entities::{AvgRatingValue, AvgRatings, Category, Place, RatingContext, Uid},
     util::geo::{LatCoord, LngCoord, MapPoint, RawCoord},
 };
 
@@ -30,7 +30,6 @@ struct IndexedPlaceFields {
     address_city: Field,
     address_zip: Field,
     address_country: Field,
-    category: Field,
     tag: Field,
     ratings_diversity: Field,
     ratings_fairness: Field,
@@ -48,13 +47,6 @@ impl IndexedPlaceFields {
                 TextFieldIndexing::default()
                     .set_tokenizer(ID_TOKENIZER)
                     .set_index_option(IndexRecordOption::Basic),
-            )
-            .set_stored();
-        let category_options = TextOptions::default()
-            .set_indexing_options(
-                TextFieldIndexing::default()
-                    .set_tokenizer(ID_TOKENIZER)
-                    .set_index_option(IndexRecordOption::WithFreqs),
             )
             .set_stored();
         let tag_options = TextOptions::default()
@@ -92,7 +84,6 @@ impl IndexedPlaceFields {
             address_city: schema_builder.add_text_field("address_city", address_options.clone()),
             address_zip: schema_builder.add_text_field("address_zip", address_options.clone()),
             address_country: schema_builder.add_text_field("address_country", address_options),
-            category: schema_builder.add_text_field("category", category_options),
             tag: schema_builder.add_text_field("tag", tag_options),
             ratings_diversity: schema_builder.add_u64_field("ratings_diversity", STORED),
             ratings_fairness: schema_builder.add_u64_field("ratings_fairness", STORED),
@@ -109,7 +100,6 @@ impl IndexedPlaceFields {
         let mut lat: Option<LatCoord> = Default::default();
         let mut lng: Option<LngCoord> = Default::default();
         let mut entry = IndexedPlace::default();
-        entry.categories.reserve(4);
         entry.tags.reserve(32);
         for field_value in doc.field_values() {
             match field_value {
@@ -149,13 +139,6 @@ impl IndexedPlaceFields {
                         entry.description = description.into();
                     } else {
                         error!("Invalid description value: {:?}", fv.value());
-                    }
-                }
-                fv if fv.field() == self.category => {
-                    if let Some(category) = fv.value().text() {
-                        entry.categories.push(category.into());
-                    } else {
-                        error!("Invalid category value: {:?}", fv.value());
                     }
                 }
                 fv if fv.field() == self.tag => {
@@ -420,33 +403,36 @@ impl TantivyPlaceIndex {
             }
         }
 
-        // Categories
-        if !query.categories.is_empty() {
-            let categories_query: Box<dyn Query> = if query.categories.len() > 1 {
-                debug!("Query multiple categories: {:?}", query.categories);
+        let merged_tags = Category::merge_uids_into_tags(
+            query.categories.iter().map(|c| Uid::from(*c)).collect(),
+            query.hash_tags.clone(),
+        );
+        let (tags, categories) = Category::split_from_tags(merged_tags);
+
+        // Categories (= mapped to predefined tags + separate sub-query)
+        if !categories.is_empty() {
+            let categories_query: Box<dyn Query> = if categories.len() > 1 {
+                debug!("Query multiple categories: {:?}", categories);
                 let mut category_queries: Vec<(Occur, Box<dyn Query>)> =
-                    Vec::with_capacity(query.categories.len());
-                for category in &query.categories {
-                    debug_assert!(!category.trim().is_empty());
-                    let category_term =
-                        Term::from_field_text(self.fields.category, &category.to_lowercase());
-                    let category_query = TermQuery::new(category_term, IndexRecordOption::Basic);
-                    category_queries.push((Occur::Should, Box::new(category_query)));
+                    Vec::with_capacity(categories.len());
+                for category in &categories {
+                    let tag_term = Term::from_field_text(self.fields.tag, &category.tag);
+                    let tag_query = TermQuery::new(tag_term, IndexRecordOption::Basic);
+                    category_queries.push((Occur::Should, Box::new(tag_query)));
                 }
                 Box::new(BooleanQuery::from(category_queries))
             } else {
-                let category = &query.categories[0];
-                debug!("Query single category: {}", category);
-                debug_assert!(!category.trim().is_empty());
-                let category_term =
-                    Term::from_field_text(self.fields.category, &category.to_lowercase());
-                Box::new(TermQuery::new(category_term, IndexRecordOption::Basic))
+                let category = &categories[0];
+                debug!("Query single category: {:?}", category);
+                let tag_term =
+                    Term::from_field_text(self.fields.tag, &category.tag);
+                Box::new(TermQuery::new(tag_term, IndexRecordOption::Basic))
             };
             sub_queries.push((Occur::Must, categories_query));
         }
 
         // Hash tags (mandatory)
-        for tag in &query.hash_tags {
+        for tag in &tags {
             debug!("Query hash tag (mandatory): {}", tag);
             debug_assert!(!tag.trim().is_empty());
             let tag_term = Term::from_field_text(self.fields.tag, &tag.to_lowercase());
@@ -549,11 +535,7 @@ impl PlaceIndexer for TantivyPlaceIndex {
         {
             doc.add_text(self.fields.address_country, country);
         }
-        let (tags, categories) = Category::split_from_tags(entry.tags.clone());
-        for category in &categories {
-            doc.add_text(self.fields.category, category.uid.as_ref());
-        }
-        for tag in &tags {
+        for tag in &entry.tags {
             doc.add_text(self.fields.tag, tag);
         }
         doc.add_u64(self.fields.total_rating, avg_rating_to_u64(ratings.total()));

@@ -213,14 +213,15 @@ pub struct EntrySearchResult {
 
 impl From<IndexedPlace> for EntrySearchResult {
     fn from(from: IndexedPlace) -> Self {
+        let (tags, categories) = e::Category::split_from_tags(from.tags);
         Self {
             id: from.id,
             lat: from.pos.lat().to_deg(),
             lng: from.pos.lng().to_deg(),
             title: from.title,
             description: from.description,
-            categories: from.categories,
-            tags: from.tags,
+            categories: categories.into_iter().map(|c| c.uid.to_string()).collect(),
+            tags,
             ratings: EntrySearchRatings {
                 total: from.ratings.total(),
                 diversity: from.ratings.diversity,
