@@ -69,6 +69,6 @@ fn notify_entry_added(connections: &sqlite::Connections, place: &Place) -> Resul
         let all_categories = connection.all_categories()?;
         (email_addresses, all_categories)
     };
-    notify::entry_added(&email_addresses, &place, all_categories);
+    notify::entry_added(&email_addresses, place, all_categories);
     Ok(())
 }

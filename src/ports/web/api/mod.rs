@@ -456,14 +456,15 @@ fn csv_export(
                     ref ratings,
                     ..
                 } = indexed_entry;
-                if let Ok((entry, _)) = db.get_place(id) {
-                    let (_, categories) = Category::split_from_tags(entry.tags.clone());
+                if let Ok((mut place, _)) = db.get_place(id) {
+                    let (tags, categories) = Category::split_from_tags(place.tags);
+                    place.tags = tags;
                     let categories = all_categories
                         .iter()
                         .filter(|c1| categories.iter().any(|c2| c1.uid == c2.uid))
                         .cloned()
                         .collect::<Vec<Category>>();
-                    Some((entry, categories, ratings.total()))
+                    Some((place, categories, ratings.total()))
                 } else {
                     None
                 }

@@ -143,13 +143,16 @@ mod tests {
             image_link_url: None,
         };
         let mock_db = MockDb::default();
-        let storable = prepare_new_place_rev(&mock_db, x, None).unwrap();
+        let now = Timestamp::now();
+        let storable = prepare_new_place_rev(&mock_db, x, Some("test@example.com")).unwrap();
         let (_, initial_ratings) = store_new_place_rev(&mock_db, storable).unwrap();
         assert!(initial_ratings.is_empty());
         assert_eq!(mock_db.entries.borrow().len(), 1);
         let (x, _) = &mock_db.entries.borrow()[0];
         assert_eq!(x.title, "foo");
         assert_eq!(x.description, "bar");
+        assert!(x.created.when >= now);
+        assert_eq!(x.created.who, Some("test@example.com".into()));
         assert_eq!(x.rev, Revision::initial());
     }
 

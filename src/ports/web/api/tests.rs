@@ -1235,7 +1235,7 @@ fn openapi() {
 
 #[test]
 fn export_csv() {
-   let (client, db, mut search_engine) = setup2();
+    let (client, db, mut search_engine) = setup2();
 
     let users = vec![User {
         email: "foo@bar".into(),
@@ -1247,7 +1247,6 @@ fn export_csv() {
         db.exclusive().unwrap().create_user(&u).unwrap();
     }
 
-
     let response = client
         .post("/login")
         .header(ContentType::JSON)
@@ -1258,7 +1257,6 @@ fn export_csv() {
     let mut entries = vec![
         Place::build()
             .id("entry1")
-            .revision(3)
             .license("license1")
             .title("title1")
             .description("desc1")
@@ -1283,7 +1281,7 @@ fn export_csv() {
             .finish(),
     ];
     entries[0].location.address = Some(Address::build().street("street1").finish());
-    entries[0].created.when = 2.into();
+    entries[0].created.when = 1111.into();
     entries[0].location.address = Some(
         Address::build()
             .street("street1")
@@ -1293,6 +1291,7 @@ fn export_csv() {
             .finish(),
     );
     entries[0].homepage = Some("homepage1".to_string());
+    entries[1].created.when = 2222.into();
 
     db.exclusive()
         .unwrap()
@@ -1315,6 +1314,7 @@ fn export_csv() {
         })
         .unwrap();
     for e in entries {
+        // Only works if all places have the default/initial revision!
         db.exclusive().unwrap().create_place_rev(e).unwrap();
     }
     let diversity = RatingContext::Diversity;
@@ -1368,8 +1368,8 @@ fn export_csv() {
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.starts_with("id,created,version,title,description,lat,lng,street,zip,city,country,homepage,categories,tags,license,image_url,image_link_url,avg_rating\n"));
-    assert!(body_str.contains(&format!("entry1,2,3,title1,desc1,{lat},{lng},street1,zip1,city1,country1,homepage1,\"cat1,cat2\",\"bla,bli\",license1,https://img,\"https://img,link\",0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg())));
-    assert!(body_str.contains("entry2,0,0,,,0.0,0.0,,,,,,cat1,,,,,0.0\n"));
+    assert!(body_str.contains(&format!("entry1,1111,0,title1,desc1,{lat},{lng},street1,zip1,city1,country1,homepage1,\"{cat1},{cat2}\",\"bla,bli\",license1,https://img,\"https://img,link\",0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg(), cat1 = Category::UID_NON_PROFIT, cat2 = Category::UID_COMMERCIAL)));
+    assert!(body_str.contains(&format!("entry2,2222,0,,,0.0,0.0,,,,,,{cat},,,,,0.0\n", cat = Category::UID_NON_PROFIT)));
     assert!(!body_str.contains("entry3"));
 }
 
@@ -1377,24 +1377,26 @@ fn export_csv() {
 fn export_csv_authorization() {
     let (client, db) = setup();
 
-    let users = vec![User {
-        email: "admin@example.com".into(),
-        email_confirmed: true,
-        password: "secret".parse::<Password>().unwrap(),
-        role: Role::Admin,
-    },
-    User {
-        email: "scout@example.com".into(),
-        email_confirmed: true,
-        password: "secret".parse::<Password>().unwrap(),
-        role: Role::Scout,
-    },
-    User {
-        email: "user@example.com".into(),
-        email_confirmed: true,
-        password: "secret".parse::<Password>().unwrap(),
-        role: Role::User,
-    }];
+    let users = vec![
+        User {
+            email: "admin@example.com".into(),
+            email_confirmed: true,
+            password: "secret".parse::<Password>().unwrap(),
+            role: Role::Admin,
+        },
+        User {
+            email: "scout@example.com".into(),
+            email_confirmed: true,
+            password: "secret".parse::<Password>().unwrap(),
+            role: Role::Scout,
+        },
+        User {
+            email: "user@example.com".into(),
+            email_confirmed: true,
+            password: "secret".parse::<Password>().unwrap(),
+            role: Role::User,
+        },
+    ];
     for u in users {
         db.exclusive().unwrap().create_user(&u).unwrap();
     }

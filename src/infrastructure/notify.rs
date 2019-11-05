@@ -38,13 +38,15 @@ pub fn compose_and_send_emails(recipients: &[String], subject: &str, body: &str)
 }
 
 pub fn entry_added(email_addresses: &[String], place: &Place, all_categories: Vec<Category>) {
-    let (_, categories) = Category::split_from_tags(place.tags.clone());
+    let mut place = place.clone();
+    let (tags, categories) = Category::split_from_tags(place.tags);
+    place.tags = tags;
     let category_names: Vec<String> = all_categories
         .into_iter()
         .filter(|c1| categories.iter().any(|c2| c1.uid == c2.uid))
         .map(|c| c.name())
         .collect();
-    let content = user_communication::entry_added_email(place, &category_names);
+    let content = user_communication::entry_added_email(&place, &category_names);
 
     #[cfg(feature = "email")]
     {
@@ -58,13 +60,15 @@ pub fn entry_added(email_addresses: &[String], place: &Place, all_categories: Ve
 }
 
 pub fn entry_updated(email_addresses: &[String], place: &Place, all_categories: Vec<Category>) {
-    let (_, categories) = Category::split_from_tags(place.tags.clone());
+    let mut place = place.clone();
+    let (tags, categories) = Category::split_from_tags(place.tags);
+    place.tags = tags;
     let category_names: Vec<String> = all_categories
         .into_iter()
         .filter(|c1| categories.iter().any(|c2| c1.uid == c2.uid))
         .map(|c| c.name())
         .collect();
-    let content = user_communication::entry_changed_email(place, &category_names);
+    let content = user_communication::entry_changed_email(&place, &category_names);
 
     #[cfg(feature = "email")]
     {
