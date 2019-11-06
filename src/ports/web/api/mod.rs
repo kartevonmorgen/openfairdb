@@ -15,7 +15,6 @@ use crate::{
     },
 };
 
-#[cfg(feature = "export")]
 use csv;
 
 use rocket::{
@@ -40,7 +39,7 @@ mod users;
 type Result<T> = result::Result<Json<T>, AppError>;
 
 pub fn routes() -> Vec<Route> {
-    let mut routes = routes![
+    routes![
         login,
         logout,
         confirm_email_address,
@@ -76,12 +75,9 @@ pub fn routes() -> Vec<Route> {
         count::get_count_entries,
         count::get_count_tags,
         get_version,
-        get_api
-    ];
-    if cfg!(feature = "export") {
-        routes.append(&mut routes![csv_export]);
-    }
-    routes
+        get_api,
+        csv_export,
+    ]
 }
 
 #[get("/entries/<ids>")]
@@ -409,14 +405,11 @@ struct CsvExport {
     bbox: String,
 }
 
-// TODO: CSV export should only be permitted with a valid API key!
-// https://github.com/slowtec/openfairdb/issues/147
-// NOTE: As a temporary workaround the CSV export must be enabled
-// explicitly with a build feature flag.
 #[get("/export/entries.csv?<export..>")]
 fn csv_export(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
+    login: Login,
     export: Form<CsvExport>,
 ) -> result::Result<Content<String>, AppError> {
     let bbox = export
@@ -434,8 +427,10 @@ fn csv_export(
         text: None,
     };
 
+    let db = connections.shared()?;
+    usecases::authorize_user_by_email(&*db, &login.0, Role::Admin)?;
+
     let entries_categories_and_ratings = {
-        let db = connections.shared()?;
         let all_categories: Vec<_> = db.all_categories()?;
         let limit = db.count_entries()? + 100;
         usecases::search(&search_engine, req, limit)?

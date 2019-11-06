@@ -2,7 +2,6 @@ use super::*;
 
 use crate::{adapters::json, core::usecases as usecase, test::Bencher};
 
-#[cfg(feature = "export")]
 use crate::core::util::sort::Rated;
 
 pub mod prelude {
@@ -1215,9 +1214,28 @@ fn openapi() {
     assert!(body_str.contains("openapi:"))
 }
 
-#[cfg(feature = "export")]
 #[test]
 fn export_csv() {
+   let (client, db, mut search_engine) = setup2();
+
+    let users = vec![User {
+        email: "foo@bar".into(),
+        email_confirmed: true,
+        password: "secret".parse::<Password>().unwrap(),
+        role: Role::Admin,
+    }];
+    for u in users {
+        db.exclusive().unwrap().create_user(&u).unwrap();
+    }
+
+
+    let response = client
+        .post("/login")
+        .header(ContentType::JSON)
+        .body(r#"{"email": "foo@bar", "password": "secret"}"#)
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
     let mut entries = vec![
         Entry::build()
             .id("entry1")
@@ -1255,8 +1273,6 @@ fn export_csv() {
             .finish(),
     );
     entries[0].homepage = Some("homepage1".to_string());
-
-    let (client, db, mut search_engine) = setup2();
 
     db.exclusive()
         .unwrap()
@@ -1343,11 +1359,60 @@ fn export_csv() {
     assert!(!body_str.contains("entry3"));
 }
 
-#[cfg(not(feature = "export"))]
 #[test]
-fn export_csv() {
-    let (client, _, _) = setup2();
+fn export_csv_authorization() {
+    let (client, db) = setup();
+
+    let users = vec![User {
+        email: "admin@example.com".into(),
+        email_confirmed: true,
+        password: "secret".parse::<Password>().unwrap(),
+        role: Role::Admin,
+    },
+    User {
+        email: "scout@example.com".into(),
+        email_confirmed: true,
+        password: "secret".parse::<Password>().unwrap(),
+        role: Role::Scout,
+    },
+    User {
+        email: "user@example.com".into(),
+        email_confirmed: true,
+        password: "secret".parse::<Password>().unwrap(),
+        role: Role::User,
+    }];
+    for u in users {
+        db.exclusive().unwrap().create_user(&u).unwrap();
+    }
+
+    let response = client.get("/export/entries.csv?bbox=-1,-1,1,1").dispatch();
+    assert_eq!(response.status(), Status::Unauthorized);
+
+    let login = client
+        .post("/login")
+        .header(ContentType::JSON)
+        .body(r#"{"email": "user@example.com", "password": "secret"}"#)
+        .dispatch();
+    assert_eq!(login.status(), Status::Ok);
     let req = client.get("/export/entries.csv?bbox=-1,-1,1,1");
     let response = req.dispatch();
-    assert_eq!(response.status(), Status::NotFound);
+    assert_eq!(response.status(), Status::Unauthorized);
+
+    let login = client
+        .post("/login")
+        .header(ContentType::JSON)
+        .body(r#"{"email": "scout@example.com", "password": "secret"}"#)
+        .dispatch();
+    assert_eq!(login.status(), Status::Ok);
+    let response = client.get("/export/entries.csv?bbox=-1,-1,1,1").dispatch();
+    assert_eq!(response.status(), Status::Unauthorized);
+
+    let login = client
+        .post("/login")
+        .header(ContentType::JSON)
+        .body(r#"{"email": "admin@example.com", "password": "secret"}"#)
+        .dispatch();
+    assert_eq!(login.status(), Status::Ok);
+    let response = client.get("/export/entries.csv?bbox=-1,-1,1,1").dispatch();
+    assert_eq!(response.status(), Status::Ok);
 }

@@ -33,15 +33,6 @@ const MAIN_CSS: &str = include_str!("main.css");
 
 type Result<T> = std::result::Result<T, AppError>;
 
-fn check_role(db: &dyn Db, account: &Account, role: Role) -> Result<User> {
-    if let Some(user) = db.try_get_user_by_email(account.email())? {
-        if user.role == role {
-            return Ok(user);
-        }
-    }
-    Err(Error::Parameter(ParameterError::Unauthorized).into())
-}
-
 #[get("/")]
 pub fn get_index_user(account: Account) -> Markup {
     view::index(Some(&account.email()))
@@ -73,7 +64,7 @@ pub fn get_search_users(
     let email = email.url_decode()?;
     {
         let db = pool.shared()?;
-        let admin = check_role(&*db, &account, Role::Admin)?;
+        let admin = usecases::authorize_user_by_email(&*db, account.email(), Role::Admin)?;
         let users: Vec<_> = db.try_get_user_by_email(&email)?.into_iter().collect();
         Ok(view::user_search_result(&admin.email, &users))
     }

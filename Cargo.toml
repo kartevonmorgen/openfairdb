@@ -52,4 +52,3 @@ rand = "*"
 default = ["email","frontend"]
 email = ["quoted_printable"]
 frontend = ["maud"]
-export = []

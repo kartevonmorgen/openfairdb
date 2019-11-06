@@ -166,3 +166,12 @@ pub fn check_and_count_owned_tags<D: Db>(
     }
     Ok(count)
 }
+
+pub fn authorize_user_by_email(db: &dyn Db, user_email: &str, min_required_role: Role) -> Result<User> {
+    if let Some(user) = db.try_get_user_by_email(user_email)? {
+        if user.role >= min_required_role {
+            return Ok(user);
+        }
+    }
+    Err(Error::Parameter(ParameterError::Unauthorized))
+}

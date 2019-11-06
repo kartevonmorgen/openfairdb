@@ -462,7 +462,8 @@ impl TantivyEntryIndex {
         if let Some(text) = &query.text {
             debug!("Query text: {}", text);
             debug_assert!(!text.trim().is_empty());
-            match self.text_query_parser.parse_query(&text.to_lowercase()) {
+            let text = text.to_lowercase();
+            match self.text_query_parser.parse_query(&text) {
                 Ok(text_query) => {
                     if query.hash_tags.is_empty() && query.text_tags.is_empty() {
                         sub_queries.push((Occur::Must, Box::new(text_query)));
