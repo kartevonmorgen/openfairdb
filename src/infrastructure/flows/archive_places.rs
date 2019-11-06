@@ -2,7 +2,7 @@ use super::*;
 
 use diesel::connection::Connection;
 
-pub fn exec_archive_places(
+fn exec_archive_places(
     connections: &sqlite::Connections,
     ids: &[&str],
     archived_by_email: &str,
@@ -11,8 +11,14 @@ pub fn exec_archive_places(
     let connection = connections.exclusive()?;
     Ok(connection
         .transaction::<_, diesel::result::Error, _>(|| {
-            usecases::archive_places(&*connection, ids, archived_by_email).map_err(|err| {
-                warn!("Failed to archive {} entries: {}", ids.len(), err);
+            usecases::change_status_of_places(
+                &*connection,
+                ids,
+                Status::archived(),
+                archived_by_email,
+            )
+            .map_err(|err| {
+                warn!("Failed to archive {} places: {}", ids.len(), err);
                 repo_err = Some(err);
                 diesel::result::Error::RollbackTransaction
             })
@@ -26,20 +32,20 @@ pub fn exec_archive_places(
         })?)
 }
 
-pub fn post_archive_places(indexer: &mut dyn PlaceIndexer, ids: &[&str]) -> Result<()> {
+fn post_archive_places(indexer: &mut dyn PlaceIndexer, ids: &[&str]) -> Result<()> {
     // Remove archived entries from search index
     // TODO: Move to a separate task/thread that doesn't delay this request
     for id in ids {
         if let Err(err) = usecases::unindex_entry(indexer, id) {
             error!(
-                "Failed to remove archived entry {} from search index: {}",
+                "Failed to remove archived place {} from search index: {}",
                 id, err
             );
         }
     }
     if let Err(err) = indexer.flush() {
         error!(
-            "Failed to finish updating the search index after archiving entries: {}",
+            "Failed to finish updating the search index after archiving places: {}",
             err
         );
     }
