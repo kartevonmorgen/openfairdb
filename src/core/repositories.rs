@@ -30,14 +30,17 @@ pub trait CommentRepository {
         Ok(results)
     }
 
-    fn archive_comments(&self, ids: &[&str], activity: &Activity) -> Result<usize>;
+    fn archive_comments(&self, ids: &[&str], activity: &UserActivity) -> Result<usize>;
     fn archive_comments_of_ratings(
         &self,
         rating_ids: &[&str],
-        activity: &Activity,
+        activity: &UserActivity,
     ) -> Result<usize>;
-    fn archive_comments_of_places(&self, place_uids: &[&str], activity: &Activity)
-        -> Result<usize>;
+    fn archive_comments_of_places(
+        &self,
+        place_uids: &[&str],
+        activity: &UserActivity,
+    ) -> Result<usize>;
 }
 
 pub trait RatingRepository {
@@ -48,8 +51,12 @@ pub trait RatingRepository {
     fn load_ratings(&self, ids: &[&str]) -> Result<Vec<Rating>>;
     fn load_ratings_of_entry(&self, place_uid: &str) -> Result<Vec<Rating>>;
 
-    fn archive_ratings(&self, ids: &[&str], activity: &Activity) -> Result<usize>;
-    fn archive_ratings_of_places(&self, place_uids: &[&str], activity: &Activity) -> Result<usize>;
+    fn archive_ratings(&self, ids: &[&str], activity: &UserActivity) -> Result<usize>;
+    fn archive_ratings_of_places(
+        &self,
+        place_uids: &[&str],
+        activity: &UserActivity,
+    ) -> Result<usize>;
 
     fn load_place_uids_of_ratings(&self, ids: &[&str]) -> Result<Vec<String>>;
 }

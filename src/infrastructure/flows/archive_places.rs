@@ -5,8 +5,8 @@ use diesel::connection::Connection;
 pub fn exec_archive_places(
     connections: &sqlite::Connections,
     ids: &[&str],
-    archived_by_email: Option<&str>,
-) -> Result<()> {
+    archived_by_email: &str,
+) -> Result<usize> {
     let mut repo_err = None;
     let connection = connections.exclusive()?;
     Ok(connection
@@ -50,29 +50,42 @@ pub fn archive_places(
     connections: &sqlite::Connections,
     indexer: &mut dyn PlaceIndexer,
     ids: &[&str],
-    archived_by_email: Option<&str>,
-) -> Result<()> {
-    exec_archive_places(connections, ids, archived_by_email)?;
+    archived_by_email: &str,
+) -> Result<usize> {
+    let count = exec_archive_places(connections, ids, archived_by_email)?;
     post_archive_places(indexer, ids)?;
-    Ok(())
+    Ok(count)
 }
 
 #[cfg(test)]
 mod tests {
     use super::super::tests::prelude::*;
 
-    fn archive_places(fixture: &EnvFixture, ids: &[&str]) -> super::Result<()> {
+    fn archive_places(
+        fixture: &EnvFixture,
+        ids: &[&str],
+        archived_by_email: &str,
+    ) -> super::Result<usize> {
         super::archive_places(
             &fixture.db_connections,
             &mut *fixture.search_engine.borrow_mut(),
             ids,
-            None,
+            archived_by_email,
         )
     }
 
     #[test]
     fn should_archive_multiple_places_only_once() {
         let fixture = EnvFixture::new();
+
+        fixture.create_user(
+            usecases::NewUser {
+                email: "test@example.com".into(),
+                password: "test123".into(),
+            },
+            None,
+        );
+
         let place_uids = vec![
             fixture.create_place(0.into(), None),
             fixture.create_place(1.into(), None),
@@ -80,24 +93,27 @@ mod tests {
         ];
         let entry_tags = vec![
             fixture
-                .try_get_entry(&place_uids[0])
+                .try_get_place(&place_uids[0])
                 .unwrap()
+                .0
                 .tags
                 .into_iter()
                 .take(1)
                 .next()
                 .unwrap(),
             fixture
-                .try_get_entry(&place_uids[1])
+                .try_get_place(&place_uids[1])
                 .unwrap()
+                .0
                 .tags
                 .into_iter()
                 .take(1)
                 .next()
                 .unwrap(),
             fixture
-                .try_get_entry(&place_uids[2])
+                .try_get_place(&place_uids[2])
                 .unwrap()
+                .0
                 .tags
                 .into_iter()
                 .take(1)
@@ -105,55 +121,95 @@ mod tests {
                 .unwrap(),
         ];
 
-        assert!(fixture.entry_exists(&place_uids[0]));
+        assert!(fixture.place_exists(&place_uids[0]));
         assert_eq!(
             place_uids[0],
             fixture.query_places_by_tag(&entry_tags[0])[0].id
         );
-        assert!(fixture.entry_exists(&place_uids[1]));
+        assert!(fixture.place_exists(&place_uids[1]));
         assert_eq!(
             place_uids[1],
             fixture.query_places_by_tag(&entry_tags[1])[0].id
         );
-        assert!(fixture.entry_exists(&place_uids[2]));
+        assert!(fixture.place_exists(&place_uids[2]));
         assert_eq!(
             place_uids[2],
             fixture.query_places_by_tag(&entry_tags[2])[0].id
         );
 
-        assert!(archive_places(&fixture, &[&*place_uids[0], &*place_uids[2]]).is_ok());
+        assert_eq!(
+            2,
+            archive_places(
+                &fixture,
+                &[&*place_uids[0], &*place_uids[2]],
+                "test@example.com"
+            )
+            .unwrap()
+        );
 
         // Entries 0 and 2 disappeared
-        assert!(!fixture.entry_exists(&place_uids[0]));
+        assert!(!fixture.place_exists(&place_uids[0]));
         assert!(fixture.query_places_by_tag(&entry_tags[0]).is_empty());
-        assert!(fixture.entry_exists(&place_uids[1]));
+        assert!(fixture.place_exists(&place_uids[1]));
         assert_eq!(
             place_uids[1],
             fixture.query_places_by_tag(&entry_tags[1])[0].id
         );
-        assert!(!fixture.entry_exists(&place_uids[2]));
+        assert!(!fixture.place_exists(&place_uids[2]));
         assert!(fixture.query_places_by_tag(&entry_tags[2]).is_empty());
 
-        assert_not_found(archive_places(
-            &fixture,
-            &[&*place_uids[1], &*place_uids[2]],
-        ));
+        assert_eq!(
+            0,
+            archive_places(
+                &fixture,
+                &[&*place_uids[0], &*place_uids[2]],
+                "test@example.com",
+            )
+            .unwrap()
+        );
 
-        // No changes, i.e.entry 1 still exists in both database and index
-        assert!(!fixture.entry_exists(&place_uids[0]));
+        // No changes, i.e. entry 1 still exists in both database and index
+        assert!(!fixture.place_exists(&place_uids[0]));
         assert!(fixture.query_places_by_tag(&entry_tags[0]).is_empty());
-        assert!(fixture.entry_exists(&place_uids[1]));
+        assert!(fixture.place_exists(&place_uids[1]));
         assert_eq!(
             place_uids[1],
             fixture.query_places_by_tag(&entry_tags[1])[0].id
         );
-        assert!(!fixture.entry_exists(&place_uids[2]));
+        assert!(!fixture.place_exists(&place_uids[2]));
+        assert!(fixture.query_places_by_tag(&entry_tags[2]).is_empty());
+
+        // Archive all (remaining) places
+        assert_eq!(
+            1,
+            archive_places(
+                &fixture,
+                &place_uids.iter().map(String::as_str).collect::<Vec<_>>(),
+                "test@example.com",
+            )
+            .unwrap()
+        );
+
+        assert!(!fixture.place_exists(&place_uids[0]));
+        assert!(fixture.query_places_by_tag(&entry_tags[0]).is_empty());
+        assert!(!fixture.place_exists(&place_uids[1]));
+        assert!(fixture.query_places_by_tag(&entry_tags[1]).is_empty());
+        assert!(!fixture.place_exists(&place_uids[2]));
         assert!(fixture.query_places_by_tag(&entry_tags[2]).is_empty());
     }
 
     #[test]
     fn should_archive_places_with_ratings_and_comments() {
         let fixture = EnvFixture::new();
+
+        fixture.create_user(
+            usecases::NewUser {
+                email: "test@example.com".into(),
+                password: "test123".into(),
+            },
+            None,
+        );
+
         let place_uids = vec![
             fixture.create_place(0.into(), None),
             fixture.create_place(1.into(), None),
@@ -187,17 +243,20 @@ mod tests {
         ];
 
         for place_uid in &place_uids {
-            assert!(fixture.entry_exists(place_uid));
+            assert!(fixture.place_exists(place_uid));
         }
         for (rating_id, comment_id) in &rating_comment_ids {
             assert!(fixture.rating_exists(rating_id));
             assert!(fixture.comment_exists(comment_id));
         }
 
-        assert!(archive_places(&fixture, &[&*place_uids[0]]).is_ok());
+        assert_eq!(
+            1,
+            archive_places(&fixture, &[&*place_uids[0]], "test@example.com").unwrap()
+        );
 
-        assert!(!fixture.entry_exists(&place_uids[0]));
-        assert!(fixture.entry_exists(&place_uids[1]));
+        assert!(!fixture.place_exists(&place_uids[0]));
+        assert!(fixture.place_exists(&place_uids[1]));
 
         assert!(!fixture.rating_exists(&rating_comment_ids[0].0));
         assert!(!fixture.rating_exists(&rating_comment_ids[1].0));

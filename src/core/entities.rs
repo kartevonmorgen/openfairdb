@@ -172,7 +172,7 @@ impl fmt::Display for Email {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Activity {
     pub when: Timestamp,
     pub who: Option<Email>,
@@ -185,13 +185,31 @@ impl Activity {
             who,
         }
     }
+}
 
-    pub fn now_anonymous() -> Self {
-        Self::now(None)
+// An activity that must be triggered by a user
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UserActivity {
+    pub when: Timestamp,
+    pub who: Email,
+}
+
+impl UserActivity {
+    pub fn now(who: Email) -> Self {
+        Self {
+            when: Timestamp::now(),
+            who,
+        }
     }
+}
 
-    pub fn is_anonymous(&self) -> bool {
-        self.who.is_none()
+impl From<UserActivity> for Activity {
+    fn from(from: UserActivity) -> Self {
+        let UserActivity { when, who } = from;
+        Self {
+            when,
+            who: Some(who),
+        }
     }
 }
 
@@ -207,11 +225,11 @@ pub struct Status(i16);
 
 impl Status {
     pub const fn rejected() -> Self {
-        Self(-1)
+        Self(-1) // entity doesn't exist (<= 0)
     }
 
     pub const fn archived() -> Self {
-        Self(0)
+        Self(0) // entity doesn't exist (<= 0)
     }
 
     pub const fn created() -> Self {
@@ -224,6 +242,10 @@ impl Status {
 
     pub fn is_valid(self) -> bool {
         self.0 >= -1 && self.0 <= 2
+    }
+
+    pub fn exists(self) -> bool {
+        self.0 > 0
     }
 
     pub const fn default() -> Self {
@@ -851,7 +873,7 @@ pub mod place_builder {
                 place: Place {
                     uid: Uid::new_uuid(),
                     rev: Revision::initial(),
-                    created: Activity::now_anonymous(),
+                    created: Activity::now(None),
                     license: "".into(),
                     title: "".into(),
                     description: "".into(),

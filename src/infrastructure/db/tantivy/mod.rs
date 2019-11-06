@@ -424,8 +424,7 @@ impl TantivyPlaceIndex {
             } else {
                 let category = &categories[0];
                 debug!("Query single category: {:?}", category);
-                let tag_term =
-                    Term::from_field_text(self.fields.tag, &category.tag);
+                let tag_term = Term::from_field_text(self.fields.tag, &category.tag);
                 Box::new(TermQuery::new(tag_term, IndexRecordOption::Basic))
             };
             sub_queries.push((Occur::Must, categories_query));

@@ -162,7 +162,9 @@ mod tests {
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![(old, Status::created())].into();
         let now = Timestamp::now();
-        let storable = prepare_updated_place_rev(&mock_db, uid.clone(), new, Some("test@example.com")).unwrap();
+        let storable =
+            prepare_updated_place_rev(&mock_db, uid.clone(), new, Some("test@example.com"))
+                .unwrap();
         assert!(store_updated_place_rev(&mock_db, storable).is_ok());
         assert_eq!(mock_db.entries.borrow().len(), 1);
         let (x, _) = &mock_db.entries.borrow()[0];

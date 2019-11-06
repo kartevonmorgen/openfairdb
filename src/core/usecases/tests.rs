@@ -237,7 +237,12 @@ impl PlaceRepo for MockDb {
         self.all_places().map(|v| v.len())
     }
 
-    fn change_status_of_places(&self, _uids: &[&str], _status: Status, _activity: &Activity) -> RepoResult<usize> {
+    fn change_status_of_places(
+        &self,
+        _uids: &[&str],
+        _status: Status,
+        _activity: &UserActivity,
+    ) -> RepoResult<usize> {
         unimplemented!();
     }
 }
@@ -385,20 +390,20 @@ impl CommentRepository for MockDb {
             .collect())
     }
 
-    fn archive_comments(&self, _uids: &[&str], _activity: &Activity) -> RepoResult<usize> {
+    fn archive_comments(&self, _uids: &[&str], _activity: &UserActivity) -> RepoResult<usize> {
         unimplemented!();
     }
     fn archive_comments_of_ratings(
         &self,
         _rating_ids: &[&str],
-        _activity: &Activity,
+        _activity: &UserActivity,
     ) -> RepoResult<usize> {
         unimplemented!();
     }
     fn archive_comments_of_places(
         &self,
         _place_uids: &[&str],
-        _activity: &Activity,
+        _activity: &UserActivity,
     ) -> RepoResult<usize> {
         unimplemented!();
     }
@@ -463,13 +468,13 @@ impl RatingRepository for MockDb {
     fn load_place_uids_of_ratings(&self, _ids: &[&str]) -> RepoResult<Vec<String>> {
         unimplemented!();
     }
-    fn archive_ratings(&self, _ids: &[&str], _activity: &Activity) -> RepoResult<usize> {
+    fn archive_ratings(&self, _ids: &[&str], _activity: &UserActivity) -> RepoResult<usize> {
         unimplemented!();
     }
     fn archive_ratings_of_places(
         &self,
         _place_uids: &[&str],
-        _activity: &Activity,
+        _activity: &UserActivity,
     ) -> RepoResult<usize> {
         unimplemented!();
     }

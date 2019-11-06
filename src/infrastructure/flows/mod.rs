@@ -35,8 +35,6 @@ mod tests {
             ports::web::api,
         };
 
-        use super::super::Result;
-
         pub use rocket::{
             http::{ContentType, Cookie, Status as HttpStatus},
             local::Client,
@@ -121,16 +119,16 @@ mod tests {
                     .unwrap_or_default()
             }
 
-            pub fn try_get_entry(self: &EnvFixture, id: &str) -> Option<Place> {
+            pub fn try_get_place(self: &EnvFixture, id: &str) -> Option<(Place, Status)> {
                 match self.db_connections.shared().unwrap().get_place(id) {
-                    Ok((entry, _)) => Some(entry),
+                    Ok(x) => Some(x),
                     Err(RepoError::NotFound) => None,
                     x => x.map(|_| None).unwrap(),
                 }
             }
 
-            pub fn entry_exists(self: &EnvFixture, id: &str) -> bool {
-                self.try_get_entry(id).is_some()
+            pub fn place_exists(self: &EnvFixture, id: &str) -> bool {
+                self.try_get_place(id).filter(|(_, s)| s.exists()).is_some()
             }
 
             pub fn create_rating(
@@ -183,13 +181,6 @@ mod tests {
                 };
                 self.query_places(&query)
             }
-        }
-
-        pub fn assert_not_found<T: std::fmt::Debug>(res: Result<T>) {
-            assert_eq!(
-                Err(RepoError::NotFound.to_string()),
-                res.map(|t| format!("{:?}", t)).map_err(|e| e.to_string())
-            );
         }
 
         pub struct NewPlace {

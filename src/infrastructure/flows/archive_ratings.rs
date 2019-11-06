@@ -6,7 +6,7 @@ pub fn exec_archive_ratings(
     connections: &sqlite::Connections,
     account_email: &str,
     ids: &[&str],
-) -> Result<()> {
+) -> Result<usize> {
     //TODO: check if user is allowed to archive the ratings
     let mut repo_err = None;
     let connection = connections.exclusive()?;
@@ -78,17 +78,17 @@ pub fn archive_ratings(
     indexer: &mut dyn PlaceIndexer,
     account_email: &str,
     ids: &[&str],
-) -> Result<()> {
-    exec_archive_ratings(connections, account_email, ids)?;
+) -> Result<usize> {
+    let count = exec_archive_ratings(connections, account_email, ids)?;
     post_archive_ratings(connections, indexer, ids)?;
-    Ok(())
+    Ok(count)
 }
 
 #[cfg(test)]
 mod tests {
     use super::super::tests::prelude::*;
 
-    fn archive_ratings(fixture: &EnvFixture, ids: &[&str]) -> super::Result<()> {
+    fn archive_ratings(fixture: &EnvFixture, ids: &[&str]) -> super::Result<usize> {
         super::archive_ratings(
             &fixture.db_connections,
             &mut *fixture.search_engine.borrow_mut(),
@@ -140,8 +140,8 @@ mod tests {
             )),
         ];
 
-        assert!(fixture.entry_exists(&place_uids[0]));
-        assert!(fixture.entry_exists(&place_uids[1]));
+        assert!(fixture.place_exists(&place_uids[0]));
+        assert!(fixture.place_exists(&place_uids[1]));
 
         assert!(fixture.rating_exists(&rating_comment_ids[0].0));
         assert!(fixture.rating_exists(&rating_comment_ids[1].0));
@@ -154,15 +154,18 @@ mod tests {
         assert!(fixture.comment_exists(&rating_comment_ids[3].1));
 
         // Archive ratings 1 and 2
-        assert!(archive_ratings(
-            &fixture,
-            &[&*rating_comment_ids[1].0, &*rating_comment_ids[2].0]
-        )
-        .is_ok());
+        assert_eq!(
+            2,
+            archive_ratings(
+                &fixture,
+                &[&*rating_comment_ids[1].0, &*rating_comment_ids[2].0]
+            )
+            .unwrap()
+        );
 
         // Entries still exist
-        assert!(fixture.entry_exists(&place_uids[0]));
-        assert!(fixture.entry_exists(&place_uids[1]));
+        assert!(fixture.place_exists(&place_uids[0]));
+        assert!(fixture.place_exists(&place_uids[1]));
 
         // Ratings 1 and 2 disappeared
         assert!(fixture.rating_exists(&rating_comment_ids[0].0));
@@ -177,33 +180,31 @@ mod tests {
         assert!(fixture.comment_exists(&rating_comment_ids[3].1));
 
         // Try to archive ratings 0 and 1 (already archived)
-        assert_not_found(archive_ratings(
-            &fixture,
-            &[&*rating_comment_ids[0].0, &*rating_comment_ids[1].0],
-        ));
+        assert_eq!(
+            1,
+            archive_ratings(
+                &fixture,
+                &[&*rating_comment_ids[0].0, &*rating_comment_ids[1].0],
+            )
+            .unwrap()
+        );
 
-        // No changes due to rollback
-        assert!(fixture.entry_exists(&place_uids[0]));
-        assert!(fixture.entry_exists(&place_uids[1]));
-        assert!(fixture.rating_exists(&rating_comment_ids[0].0));
-        assert!(!fixture.rating_exists(&rating_comment_ids[1].0));
-        assert!(!fixture.rating_exists(&rating_comment_ids[2].0));
-        assert!(fixture.rating_exists(&rating_comment_ids[3].0));
-        assert!(fixture.comment_exists(&rating_comment_ids[0].1));
-        assert!(!fixture.comment_exists(&rating_comment_ids[1].1));
-        assert!(!fixture.comment_exists(&rating_comment_ids[2].1));
-        assert!(fixture.comment_exists(&rating_comment_ids[3].1));
-
-        // Archive remaining ratings
-        assert!(archive_ratings(
-            &fixture,
-            &[&*rating_comment_ids[0].0, &*rating_comment_ids[3].0]
-        )
-        .is_ok());
+        // Archive all (remaining) ratings
+        assert_eq!(
+            1,
+            archive_ratings(
+                &fixture,
+                &rating_comment_ids
+                    .iter()
+                    .map(|(r, _c)| r.as_str())
+                    .collect::<Vec<_>>()
+            )
+            .unwrap()
+        );
 
         // Entries still exist
-        assert!(fixture.entry_exists(&place_uids[0]));
-        assert!(fixture.entry_exists(&place_uids[1]));
+        assert!(fixture.place_exists(&place_uids[0]));
+        assert!(fixture.place_exists(&place_uids[1]));
 
         // All ratings disappeared
         assert!(!fixture.rating_exists(&rating_comment_ids[0].0));

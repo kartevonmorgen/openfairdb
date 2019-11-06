@@ -5,7 +5,7 @@ pub fn archive_comments(
     connections: &sqlite::Connections,
     account_email: &str,
     ids: &[&str],
-) -> Result<()> {
+) -> Result<usize> {
     let mut repo_err = None;
     let connection = connections.exclusive()?;
     Ok(connection
@@ -33,7 +33,7 @@ mod tests {
         fixture: &EnvFixture,
         account_email: &str,
         ids: &[&str],
-    ) -> super::Result<()> {
+    ) -> super::Result<usize> {
         super::archive_comments(&fixture.db_connections, account_email, ids)
     }
 
@@ -80,8 +80,8 @@ mod tests {
             )),
         ];
 
-        assert!(fixture.entry_exists(&place_uids[0]));
-        assert!(fixture.entry_exists(&place_uids[1]));
+        assert!(fixture.place_exists(&place_uids[0]));
+        assert!(fixture.place_exists(&place_uids[1]));
         assert!(fixture.rating_exists(&rating_comment_ids[0].0));
         assert!(fixture.rating_exists(&rating_comment_ids[1].0));
         assert!(fixture.rating_exists(&rating_comment_ids[2].0));
@@ -93,16 +93,19 @@ mod tests {
         assert!(fixture.comment_exists(&rating_comment_ids[3].1));
 
         // Archive comments 1 and 2
-        assert!(archive_comments(
-            &fixture,
-            "scout@foo.tld",
-            &[&*rating_comment_ids[1].1, &*rating_comment_ids[2].1]
-        )
-        .is_ok());
+        assert_eq!(
+            2,
+            archive_comments(
+                &fixture,
+                "scout@foo.tld",
+                &[&*rating_comment_ids[1].1, &*rating_comment_ids[2].1]
+            )
+            .unwrap()
+        );
 
         // Entries and ratings still exist
-        assert!(fixture.entry_exists(&place_uids[0]));
-        assert!(fixture.entry_exists(&place_uids[1]));
+        assert!(fixture.place_exists(&place_uids[0]));
+        assert!(fixture.place_exists(&place_uids[1]));
         assert!(fixture.rating_exists(&rating_comment_ids[0].0));
         assert!(fixture.rating_exists(&rating_comment_ids[1].0));
         assert!(fixture.rating_exists(&rating_comment_ids[2].0));
@@ -115,35 +118,33 @@ mod tests {
         assert!(fixture.comment_exists(&rating_comment_ids[3].1));
 
         // Try to archive comments 0 and 1 (already archived)
-        assert_not_found(archive_comments(
-            &fixture,
-            "scout@foo.tld",
-            &[&*rating_comment_ids[0].1, &*rating_comment_ids[1].1],
-        ));
+        assert_eq!(
+            1,
+            archive_comments(
+                &fixture,
+                "scout@foo.tld",
+                &[&*rating_comment_ids[0].1, &*rating_comment_ids[1].1],
+            )
+            .unwrap()
+        );
 
-        // No changes due to rollback
-        assert!(fixture.entry_exists(&place_uids[0]));
-        assert!(fixture.entry_exists(&place_uids[1]));
-        assert!(fixture.rating_exists(&rating_comment_ids[0].0));
-        assert!(fixture.rating_exists(&rating_comment_ids[1].0));
-        assert!(fixture.rating_exists(&rating_comment_ids[2].0));
-        assert!(fixture.rating_exists(&rating_comment_ids[3].0));
-        assert!(fixture.comment_exists(&rating_comment_ids[0].1));
-        assert!(!fixture.comment_exists(&rating_comment_ids[1].1));
-        assert!(!fixture.comment_exists(&rating_comment_ids[2].1));
-        assert!(fixture.comment_exists(&rating_comment_ids[3].1));
-
-        // Archive remaining comments
-        assert!(archive_comments(
-            &fixture,
-            "scout@foo.tld",
-            &[&*rating_comment_ids[0].1, &*rating_comment_ids[3].1]
-        )
-        .is_ok());
+        // Archive all (remaining) comments
+        assert_eq!(
+            1,
+            archive_comments(
+                &fixture,
+                "scout@foo.tld",
+                &rating_comment_ids
+                    .iter()
+                    .map(|(_r, c)| c.as_str())
+                    .collect::<Vec<_>>(),
+            )
+            .unwrap()
+        );
 
         // Entries and ratings still exist
-        assert!(fixture.entry_exists(&place_uids[0]));
-        assert!(fixture.entry_exists(&place_uids[1]));
+        assert!(fixture.place_exists(&place_uids[0]));
+        assert!(fixture.place_exists(&place_uids[1]));
         assert!(fixture.rating_exists(&rating_comment_ids[0].0));
         assert!(fixture.rating_exists(&rating_comment_ids[1].0));
         assert!(fixture.rating_exists(&rating_comment_ids[2].0));
