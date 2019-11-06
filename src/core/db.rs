@@ -47,7 +47,7 @@ pub trait PlaceRepo {
         &self,
         uids: &[&str],
         status: Status,
-        activity: &Activity,
+        activity: &ActivityLog,
     ) -> Result<usize>;
 
     fn create_place_rev(&self, place_rev: Place) -> Result<()>;

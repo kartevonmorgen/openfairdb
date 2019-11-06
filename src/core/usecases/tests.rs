@@ -241,7 +241,7 @@ impl PlaceRepo for MockDb {
         &self,
         _uids: &[&str],
         _status: Status,
-        _activity: &Activity,
+        _activity: &ActivityLog,
     ) -> RepoResult<usize> {
         unimplemented!();
     }
@@ -601,7 +601,7 @@ fn modify_bbox_subscription() {
         user_email: "abc@abc.de".into(),
         bbox: bbox_old,
     };
-    db.create_bbox_subscription(&bbox_subscription.clone())
+    db.create_bbox_subscription(&bbox_subscription)
         .unwrap();
 
     usecases::subscribe_to_bbox(&db, "abc@abc.de".into(), bbox_new).unwrap();
@@ -648,7 +648,7 @@ fn get_bbox_subscriptions() {
         bbox: bbox1,
     };
     assert!(db
-        .create_bbox_subscription(&bbox_subscription.clone())
+        .create_bbox_subscription(&bbox_subscription)
         .is_ok());
 
     assert!(db
@@ -665,7 +665,7 @@ fn get_bbox_subscriptions() {
         bbox: bbox2,
     };
     assert!(db
-        .create_bbox_subscription(&bbox_subscription2.clone())
+        .create_bbox_subscription(&bbox_subscription2)
         .is_ok());
     let bbox_subscriptions = usecases::get_bbox_subscriptions(&db, "b@abc.de");
     assert!(bbox_subscriptions.is_ok());

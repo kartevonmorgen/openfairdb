@@ -372,7 +372,7 @@ impl PlaceRepo for SqliteConnection {
         &self,
         uids: &[&str],
         status: Status,
-        activity: &Activity,
+        activity_log: &ActivityLog,
     ) -> Result<usize> {
         use schema::place::dsl as place_dsl;
         use schema::place_rev::dsl as rev_dsl;
@@ -386,6 +386,11 @@ impl PlaceRepo for SqliteConnection {
             .select(rev_dsl::id)
             .filter(place_dsl::uid.eq_any(uids))
             .load(self)?;
+        let ActivityLog {
+            activity,
+            context,
+            notes
+        } = activity_log;
         let changed_at = activity.when.into();
         let changed_by = if let Some(ref email) = activity.who {
             Some(resolve_user_id_by_email(self, email.as_ref())?)
@@ -409,8 +414,8 @@ impl PlaceRepo for SqliteConnection {
                     status,
                     created_at: changed_at,
                     created_by: changed_by,
-                    context: None,
-                    notes: Some("status changed"),
+                    context: context.as_ref().map(String::as_str),
+                    notes: notes.as_ref().map(String::as_str),
                 };
                 diesel::insert_into(schema::place_rev_activity_log::table)
                     .values(new_place_rev_log_status)

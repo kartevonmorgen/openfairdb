@@ -13,15 +13,20 @@ pub fn change_status_of_places<D: Db>(
             "Archiving {} places including ratings and comments",
             ids.len()
         );
-        let comment_count = db.archive_comments_of_places(ids, &activity)?;
+        let activity_log = ActivityLog {
+            activity,
+            context: None,
+            notes: Some("archived".into()),
+        };
+        let comment_count = db.archive_comments_of_places(ids, &activity_log.activity)?;
         info!(
             "Archived {} comments of {} places",
             comment_count,
             ids.len()
         );
-        let rating_count = db.archive_ratings_of_places(ids, &activity)?;
+        let rating_count = db.archive_ratings_of_places(ids, &activity_log.activity)?;
         info!("Archived {} ratings of {} places", rating_count, ids.len());
-        let place_count = db.change_status_of_places(ids, status, &activity)?;
+        let place_count = db.change_status_of_places(ids, status, &activity_log)?;
         info!(
             "Archived {} places including ratings and comments",
             place_count
@@ -33,7 +38,12 @@ pub fn change_status_of_places<D: Db>(
             ids.len(),
             status.into_inner()
         );
-        let place_count = db.change_status_of_places(ids, status, &activity)?;
+        let activity_log = ActivityLog {
+            activity,
+            context: None,
+            notes: Some("status changed".into()),
+        };
+        let place_count = db.change_status_of_places(ids, status, &activity_log)?;
         info!(
             "Changed status of {} places to {}",
             place_count,

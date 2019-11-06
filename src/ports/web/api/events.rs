@@ -750,6 +750,7 @@ mod tests {
             let uids: Vec<_> = ["foo@bar.com", "test@test.com", "bla@bla.bla"]
                 .iter()
                 .map(|m| {
+                    let m = *m;
                     let new_event = usecases::NewEvent {
                         title: m.to_string(),
                         created_by: Some(m.to_string()),

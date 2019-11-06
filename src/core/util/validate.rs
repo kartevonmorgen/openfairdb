@@ -229,7 +229,7 @@ mod tests {
         x.created_by = Some("".to_string());
         assert!(x.auto_correct().created_by.is_none());
 
-        let mut x = e.clone();
+        let mut x = e;
         x.location = Some(Location {
             pos: Default::default(),
             address: Some(Address {
@@ -263,7 +263,7 @@ mod tests {
         x.city = Some("".to_string());
         assert!(x.auto_correct().city.is_none());
 
-        let mut x = a.clone();
+        let mut x = a;
         x.country = Some("".to_string());
         assert!(x.auto_correct().country.is_none());
     }

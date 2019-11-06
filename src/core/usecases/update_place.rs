@@ -163,7 +163,7 @@ mod tests {
         mock_db.entries = vec![(old, Status::created())].into();
         let now = Timestamp::now();
         let storable =
-            prepare_updated_place_rev(&mock_db, uid.clone(), new, Some("test@example.com"))
+            prepare_updated_place_rev(&mock_db, uid, new, Some("test@example.com"))
                 .unwrap();
         assert!(store_updated_place_rev(&mock_db, storable).is_ok());
         assert_eq!(mock_db.entries.borrow().len(), 1);
@@ -218,7 +218,7 @@ mod tests {
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![(old, Status::created())].into();
-        let err = match prepare_updated_place_rev(&mock_db, uid.clone(), new, None) {
+        let err = match prepare_updated_place_rev(&mock_db, uid, new, None) {
             Ok(storable) => store_updated_place_rev(&mock_db, storable).err(),
             Err(err) => Some(err),
         };
@@ -261,7 +261,7 @@ mod tests {
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![].into();
-        let result = prepare_updated_place_rev(&mock_db, uid.clone(), new, None);
+        let result = prepare_updated_place_rev(&mock_db, uid, new, None);
         assert!(result.is_err());
         match result.err().unwrap() {
             Error::Repo(err) => match err {
