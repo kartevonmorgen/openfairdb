@@ -187,32 +187,6 @@ impl Activity {
     }
 }
 
-// An activity that must be triggered by a user
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct UserActivity {
-    pub when: Timestamp,
-    pub who: Email,
-}
-
-impl UserActivity {
-    pub fn now(who: Email) -> Self {
-        Self {
-            when: Timestamp::now(),
-            who,
-        }
-    }
-}
-
-impl From<UserActivity> for Activity {
-    fn from(from: UserActivity) -> Self {
-        let UserActivity { when, who } = from;
-        Self {
-            when,
-            who: Some(who),
-        }
-    }
-}
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct ActivityLog {
     pub activity: Activity,

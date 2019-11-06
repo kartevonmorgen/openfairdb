@@ -372,7 +372,7 @@ impl PlaceRepo for SqliteConnection {
         &self,
         uids: &[&str],
         status: Status,
-        activity: &UserActivity,
+        activity: &Activity,
     ) -> Result<usize> {
         use schema::place::dsl as place_dsl;
         use schema::place_rev::dsl as rev_dsl;
@@ -386,8 +386,12 @@ impl PlaceRepo for SqliteConnection {
             .select(rev_dsl::id)
             .filter(place_dsl::uid.eq_any(uids))
             .load(self)?;
-        let changed_by = resolve_user_id_by_email(self, activity.who.as_str())?;
         let changed_at = activity.when.into();
+        let changed_by = if let Some(ref email) = activity.who {
+            Some(resolve_user_id_by_email(self, email.as_ref())?)
+        } else {
+            None
+        };
         let status = status.into_inner();
         let mut total_update_count = 0;
         for rev_id in rev_ids {
@@ -404,7 +408,7 @@ impl PlaceRepo for SqliteConnection {
                     place_rev_id: rev_id,
                     status,
                     created_at: changed_at,
-                    created_by: Some(changed_by),
+                    created_by: changed_by,
                     context: None,
                     notes: Some("status changed"),
                 };
@@ -1172,18 +1176,22 @@ impl RatingRepository for SqliteConnection {
             .load::<String>(self)?)
     }
 
-    fn archive_ratings(&self, uids: &[&str], activity: &UserActivity) -> Result<usize> {
+    fn archive_ratings(&self, uids: &[&str], activity: &Activity) -> Result<usize> {
         use schema::place_rating::dsl;
-        let archived_at = activity.when.into_inner();
-        let archived_by = resolve_user_id_by_email(self, activity.who.as_str())?;
+        let archived_at = Some(activity.when.into_inner());
+        let archived_by = if let Some(ref email) = activity.who {
+            Some(resolve_user_id_by_email(self, email.as_ref())?)
+        } else {
+            None
+        };
         let count = diesel::update(
             schema::place_rating::table
                 .filter(dsl::uid.eq_any(uids))
                 .filter(dsl::archived_at.is_null()),
         )
         .set((
-            dsl::archived_at.eq(Some(archived_at)),
-            dsl::archived_by.eq(Some(archived_by)),
+            dsl::archived_at.eq(archived_at),
+            dsl::archived_by.eq(archived_by),
         ))
         .execute(self)?;
         debug_assert!(count <= uids.len());
@@ -1193,12 +1201,16 @@ impl RatingRepository for SqliteConnection {
     fn archive_ratings_of_places(
         &self,
         place_uids: &[&str],
-        activity: &UserActivity,
+        activity: &Activity,
     ) -> Result<usize> {
         use schema::place::dsl as place_dsl;
         use schema::place_rating::dsl as rating_dsl;
-        let archived_at = activity.when.into_inner();
-        let archived_by = resolve_user_id_by_email(self, activity.who.as_str())?;
+        let archived_at = Some(activity.when.into_inner());
+        let archived_by = if let Some(ref email) = activity.who {
+            Some(resolve_user_id_by_email(self, email.as_ref())?)
+        } else {
+            None
+        };
         Ok(diesel::update(
             schema::place_rating::table
                 .filter(
@@ -1211,8 +1223,8 @@ impl RatingRepository for SqliteConnection {
                 .filter(rating_dsl::archived_at.is_null()),
         )
         .set((
-            rating_dsl::archived_at.eq(Some(archived_at)),
-            rating_dsl::archived_by.eq(Some(archived_by)),
+            rating_dsl::archived_at.eq(archived_at),
+            rating_dsl::archived_by.eq(archived_by),
         ))
         .execute(self)?)
     }
@@ -1301,18 +1313,22 @@ impl CommentRepository for SqliteConnection {
             .collect())
     }
 
-    fn archive_comments(&self, uids: &[&str], activity: &UserActivity) -> Result<usize> {
+    fn archive_comments(&self, uids: &[&str], activity: &Activity) -> Result<usize> {
         use schema::place_rating_comment::dsl;
-        let archived_at = activity.when.into_inner();
-        let archived_by = resolve_user_id_by_email(self, activity.who.as_str())?;
+        let archived_at = Some(activity.when.into_inner());
+        let archived_by = if let Some(ref email) = activity.who {
+            Some(resolve_user_id_by_email(self, email.as_ref())?)
+        } else {
+            None
+        };
         let count = diesel::update(
             schema::place_rating_comment::table
                 .filter(dsl::uid.eq_any(uids))
                 .filter(dsl::archived_at.is_null()),
         )
         .set((
-            dsl::archived_at.eq(Some(archived_at)),
-            dsl::archived_by.eq(Some(archived_by)),
+            dsl::archived_at.eq(archived_at),
+            dsl::archived_by.eq(archived_by),
         ))
         .execute(self)?;
         debug_assert!(count <= uids.len());
@@ -1322,12 +1338,16 @@ impl CommentRepository for SqliteConnection {
     fn archive_comments_of_ratings(
         &self,
         rating_uids: &[&str],
-        activity: &UserActivity,
+        activity: &Activity,
     ) -> Result<usize> {
         use schema::place_rating::dsl as rating_dsl;
         use schema::place_rating_comment::dsl as comment_dsl;
-        let archived_at = activity.when.into_inner();
-        let archived_by = resolve_user_id_by_email(self, activity.who.as_str())?;
+        let archived_at = Some(activity.when.into_inner());
+        let archived_by = if let Some(ref email) = activity.who {
+            Some(resolve_user_id_by_email(self, email.as_ref())?)
+        } else {
+            None
+        };
         Ok(diesel::update(
             schema::place_rating_comment::table
                 .filter(
@@ -1340,8 +1360,8 @@ impl CommentRepository for SqliteConnection {
                 .filter(comment_dsl::archived_at.is_null()),
         )
         .set((
-            comment_dsl::archived_at.eq(Some(archived_at)),
-            comment_dsl::archived_by.eq(Some(archived_by)),
+            comment_dsl::archived_at.eq(archived_at),
+            comment_dsl::archived_by.eq(archived_by),
         ))
         .execute(self)?)
     }
@@ -1349,13 +1369,17 @@ impl CommentRepository for SqliteConnection {
     fn archive_comments_of_places(
         &self,
         place_uids: &[&str],
-        activity: &UserActivity,
+        activity: &Activity,
     ) -> Result<usize> {
         use schema::place::dsl as place_dsl;
         use schema::place_rating::dsl as rating_dsl;
         use schema::place_rating_comment::dsl as comment_dsl;
-        let archived_at = activity.when.into_inner();
-        let archived_by = resolve_user_id_by_email(self, activity.who.as_str())?;
+        let archived_at = Some(activity.when.into_inner());
+        let archived_by = if let Some(ref email) = activity.who {
+            Some(resolve_user_id_by_email(self, email.as_ref())?)
+        } else {
+            None
+        };
         Ok(diesel::update(
             schema::place_rating_comment::table
                 .filter(
@@ -1372,8 +1396,8 @@ impl CommentRepository for SqliteConnection {
                 .filter(comment_dsl::archived_at.is_null()),
         )
         .set((
-            comment_dsl::archived_at.eq(Some(archived_at)),
-            comment_dsl::archived_by.eq(Some(archived_by)),
+            comment_dsl::archived_at.eq(archived_at),
+            comment_dsl::archived_by.eq(archived_by),
         ))
         .execute(self)
         .optional()?

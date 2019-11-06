@@ -6,10 +6,9 @@ pub fn change_status_of_places<D: Db>(
     status: Status,
     email: &str,
 ) -> Result<usize> {
-    let activity = UserActivity::now(email.into());
+    let activity = Activity::now(Some(email.into()));
     //  TODO: Verify user role
     if status == Status::archived() {
-        let activity = UserActivity::now(email.into());
         info!(
             "Archiving {} places including ratings and comments",
             ids.len()
