@@ -480,7 +480,10 @@ paths:
                 type: string
   /export/entries.csv:
     get:
-      summary: Export data as CSV
+      summary: |
+        Export data as CSV.
+
+        The CSV export is only available for logged in users with the role _Admin_.
       description: |
         **Example**:
 
@@ -501,6 +504,8 @@ paths:
             text/csv:
               schema:
                 type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
 components:
   schemas:
     Entry:
