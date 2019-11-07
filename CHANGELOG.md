@@ -1,7 +1,8 @@
 # Changelog
 
-## v0.7.1 (2019-mm-dd)
+## v0.7.1 (2019-11-07)
 
+- fix(web): Re-enabled CSV export for Admin role
 - chore(cli): Removed OSM import
 
 ## v0.7.0 (2019-10-28)
