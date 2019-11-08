@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: OpenFairDB API
-  version: 0.7.1
+  version: 0.7.2
   contact:
     name: slowtec GmbH
     url: 'https://slowtec.de'
@@ -483,7 +483,7 @@ paths:
       summary: |
         Export data as CSV.
 
-        The CSV export is only available for logged in users with the role _Admin_.
+        The CSV export is only available for logged in users with the role _Admin_ or _Scout_.
       description: |
         **Example**:
 

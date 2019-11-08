@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.7.2 (2019-11-08)
+
+- fix(web): Re-enabled CSV export for Scout role
+
 ## v0.7.1 (2019-11-07)
 
 - fix(web): Re-enabled CSV export for Admin role

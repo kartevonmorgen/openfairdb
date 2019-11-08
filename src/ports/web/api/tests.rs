@@ -1405,7 +1405,7 @@ fn export_csv_authorization() {
         .dispatch();
     assert_eq!(login.status(), Status::Ok);
     let response = client.get("/export/entries.csv?bbox=-1,-1,1,1").dispatch();
-    assert_eq!(response.status(), Status::Unauthorized);
+    assert_eq!(response.status(), Status::Ok);
 
     let login = client
         .post("/login")

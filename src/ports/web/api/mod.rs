@@ -428,7 +428,7 @@ fn csv_export(
     };
 
     let db = connections.shared()?;
-    usecases::authorize_user_by_email(&*db, &login.0, Role::Admin)?;
+    usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
 
     let entries_categories_and_ratings = {
         let all_categories: Vec<_> = db.all_categories()?;
