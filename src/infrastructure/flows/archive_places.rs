@@ -11,17 +11,12 @@ fn exec_archive_places(
     let connection = connections.exclusive()?;
     Ok(connection
         .transaction::<_, diesel::result::Error, _>(|| {
-            usecases::change_status_of_places(
-                &*connection,
-                ids,
-                Status::archived(),
-                archived_by_email,
-            )
-            .map_err(|err| {
-                warn!("Failed to archive {} places: {}", ids.len(), err);
-                repo_err = Some(err);
-                diesel::result::Error::RollbackTransaction
-            })
+            usecases::review_places(&*connection, ids, ReviewStatus::Archived, archived_by_email)
+                .map_err(|err| {
+                    warn!("Failed to archive {} places: {}", ids.len(), err);
+                    repo_err = Some(err);
+                    diesel::result::Error::RollbackTransaction
+                })
         })
         .map_err(|err| {
             if let Some(repo_err) = repo_err {
@@ -36,7 +31,7 @@ fn post_archive_places(indexer: &mut dyn PlaceIndexer, ids: &[&str]) -> Result<(
     // Remove archived entries from search index
     // TODO: Move to a separate task/thread that doesn't delay this request
     for id in ids {
-        if let Err(err) = usecases::unindex_entry(indexer, id) {
+        if let Err(err) = usecases::unindex_place(indexer, id) {
             error!(
                 "Failed to remove archived place {} from search index: {}",
                 id, err

@@ -6,14 +6,14 @@ use std::collections::HashMap;
 type Ratings = Vec<(Rating, Vec<Comment>)>;
 
 pub struct EntryPresenter {
-    pub entry: Place,
+    pub place: Place,
     pub ratings: HashMap<RatingContext, Ratings>,
     pub allow_archiving: bool,
 }
 
 impl From<(Place, Vec<(Rating, Vec<Comment>)>, Role)> for EntryPresenter {
-    fn from((entry, rtngs, role): (Place, Vec<(Rating, Vec<Comment>)>, Role)) -> EntryPresenter {
-        let mut p: EntryPresenter = (entry, rtngs).into();
+    fn from((place, rtngs, role): (Place, Vec<(Rating, Vec<Comment>)>, Role)) -> EntryPresenter {
+        let mut p: EntryPresenter = (place, rtngs).into();
         p.allow_archiving = match role {
             Role::Admin | Role::Scout => true,
             _ => false,
@@ -23,7 +23,7 @@ impl From<(Place, Vec<(Rating, Vec<Comment>)>, Role)> for EntryPresenter {
 }
 
 impl From<(Place, Vec<(Rating, Vec<Comment>)>)> for EntryPresenter {
-    fn from((entry, rtngs): (Place, Vec<(Rating, Vec<Comment>)>)) -> EntryPresenter {
+    fn from((place, rtngs): (Place, Vec<(Rating, Vec<Comment>)>)) -> EntryPresenter {
         let mut ratings: HashMap<RatingContext, Ratings> = HashMap::new();
 
         for (r, comments) in rtngs {
@@ -35,7 +35,7 @@ impl From<(Place, Vec<(Rating, Vec<Comment>)>)> for EntryPresenter {
         }
         let allow_archiving = false;
         EntryPresenter {
-            entry,
+            place,
             ratings,
             allow_archiving,
         }
@@ -44,7 +44,7 @@ impl From<(Place, Vec<(Rating, Vec<Comment>)>)> for EntryPresenter {
 
 pub fn entry(email: Option<&str>, e: EntryPresenter) -> Markup {
     page(
-        &format!("{} | OpenFairDB", e.entry.title),
+        &format!("{} | OpenFairDB", e.place.title),
         email,
         None,
         Some(leaflet_css_link()),
@@ -54,17 +54,19 @@ pub fn entry(email: Option<&str>, e: EntryPresenter) -> Markup {
 
 fn entry_detail(e: EntryPresenter) -> Markup {
     html! {
-        h3 { (e.entry.title) }
-        p {(e.entry.description)}
+        h3 { (e.place.title) }
+        p {(e.place.description)}
         p {
             table {
-                @if let Some(ref h) = e.entry.homepage {
-                    tr {
-                        td { "Homepage" }
-                        td { a href=(h) { (h) } }
+                @if let Some(ref l) = e.place.links {
+                    @if let Some(ref h) = l.homepage {
+                        tr {
+                            td { "Homepage" }
+                            td { a href=(h) { (h) } }
+                        }
                     }
                 }
-                @if let Some(ref c) = e.entry.contact {
+                @if let Some(ref c) = e.place.contact {
                     @if let Some(ref m) = c.email {
                         tr {
                             td { "eMail" }
@@ -78,7 +80,7 @@ fn entry_detail(e: EntryPresenter) -> Markup {
                         }
                     }
                 }
-                @if let Some(ref a) = e.entry.location.address {
+                @if let Some(ref a) = e.place.location.address {
                     @if !a.is_empty() {
                         tr {
                             td { "Address" }
@@ -90,7 +92,7 @@ fn entry_detail(e: EntryPresenter) -> Markup {
         }
         p {
             ul {
-                @for t in &e.entry.tags{
+                @for t in &e.place.tags{
                     li{ (format!("#{}", t)) }
                 }
             }
@@ -102,13 +104,13 @@ fn entry_detail(e: EntryPresenter) -> Markup {
             ul {
                 @for (r,comments) in ratings {
                     li {
-                        (rating(e.entry.uid.as_ref(), e.allow_archiving, &r, &comments))
+                        (rating(e.place.uid.as_ref(), e.allow_archiving, &r, &comments))
                     }
                 }
             }
         }
         div id="map" style="height:300px;" { }
-        (map_scripts(&[e.entry.into()]))
+        (map_scripts(&[e.place.into()]))
     }
 }
 

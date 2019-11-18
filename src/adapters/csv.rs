@@ -1,5 +1,7 @@
 use crate::core::entities::*;
 
+use url::Url;
+
 #[derive(Debug, Serialize)]
 pub struct CsvRecord {
     pub id: String,
@@ -28,15 +30,13 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
 
         let Place {
             uid,
-            rev,
-            created,
             license,
+            revision,
+            created,
             title,
             description,
             location,
-            homepage,
-            image_url,
-            image_link_url,
+            links,
             tags,
             ..
         } = place;
@@ -52,6 +52,12 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
             country,
         } = address;
 
+        let (homepage_url, image_url, image_link_url) = if let Some(links) = links {
+            (links.homepage, links.image, links.image_href)
+        } else {
+            (None, None, None)
+        };
+
         let categories = categories
             .into_iter()
             .map(|c| c.uid)
@@ -61,7 +67,7 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
         CsvRecord {
             id: uid.into(),
             created: created.when.into(),
-            version: rev.into(),
+            version: revision.into(),
             title,
             description,
             lat: pos.lat().to_deg(),
@@ -70,10 +76,10 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
             zip,
             city,
             country,
-            homepage,
+            homepage: homepage_url.map(Url::into_string),
             license,
-            image_url,
-            image_link_url,
+            image_url: image_url.map(Url::into_string),
+            image_link_url: image_link_url.map(Url::into_string),
             categories,
             tags: tags.join(","),
             avg_rating: avg_rating.into(),

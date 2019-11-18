@@ -9,6 +9,18 @@ use crate::core::{
 };
 use chrono::prelude::*;
 use std::str::FromStr;
+use url::Url;
+
+pub(crate) fn load_url(url: String) -> Option<Url> {
+    match url.parse() {
+        Ok(url) => Some(url),
+        Err(err) => {
+            // The database should only contain valid URLs
+            log::error!("Failed to load URL '{}' from database: {}", url, err);
+            None
+        }
+    }
+}
 
 impl From<i16> for e::RegistrationType {
     fn from(i: i16) -> Self {
@@ -137,14 +149,14 @@ impl From<(EventEntity, &Vec<EventTag>)> for e::Event {
             end: end.map(|x| NaiveDateTime::from_timestamp(x, 0)),
             location,
             contact,
-            homepage,
+            homepage: homepage.and_then(load_url),
             tags,
             created_by: created_by_email,
             registration,
             organizer,
             archived: archived.map(Into::into),
-            image_url,
-            image_link_url,
+            image_url: image_url.and_then(load_url),
+            image_link_url: image_link_url.and_then(load_url),
         }
     }
 }

@@ -487,22 +487,22 @@ impl TantivyPlaceIndex {
 }
 
 impl PlaceIndexer for TantivyPlaceIndex {
-    fn add_or_update_place(&mut self, entry: &Place, ratings: &AvgRatings) -> Fallible<()> {
-        let id_term = Term::from_field_text(self.fields.id, entry.uid.as_ref());
+    fn add_or_update_place(&mut self, place: &Place, ratings: &AvgRatings) -> Fallible<()> {
+        let id_term = Term::from_field_text(self.fields.id, place.uid.as_ref());
         self.index_writer.delete_term(id_term);
         let mut doc = Document::default();
-        doc.add_text(self.fields.id, entry.uid.as_ref());
+        doc.add_text(self.fields.id, place.uid.as_ref());
         doc.add_i64(
             self.fields.lat,
-            i64::from(entry.location.pos.lat().to_raw()),
+            i64::from(place.location.pos.lat().to_raw()),
         );
         doc.add_i64(
             self.fields.lng,
-            i64::from(entry.location.pos.lng().to_raw()),
+            i64::from(place.location.pos.lng().to_raw()),
         );
-        doc.add_text(self.fields.title, &entry.title);
-        doc.add_text(self.fields.description, &entry.description);
-        if let Some(street) = entry
+        doc.add_text(self.fields.title, &place.title);
+        doc.add_text(self.fields.description, &place.description);
+        if let Some(street) = place
             .location
             .address
             .as_ref()
@@ -510,7 +510,7 @@ impl PlaceIndexer for TantivyPlaceIndex {
         {
             doc.add_text(self.fields.address_street, street);
         }
-        if let Some(city) = entry
+        if let Some(city) = place
             .location
             .address
             .as_ref()
@@ -518,7 +518,7 @@ impl PlaceIndexer for TantivyPlaceIndex {
         {
             doc.add_text(self.fields.address_city, city);
         }
-        if let Some(zip) = entry
+        if let Some(zip) = place
             .location
             .address
             .as_ref()
@@ -526,7 +526,7 @@ impl PlaceIndexer for TantivyPlaceIndex {
         {
             doc.add_text(self.fields.address_zip, zip);
         }
-        if let Some(country) = entry
+        if let Some(country) = place
             .location
             .address
             .as_ref()
@@ -534,7 +534,7 @@ impl PlaceIndexer for TantivyPlaceIndex {
         {
             doc.add_text(self.fields.address_country, country);
         }
-        for tag in &entry.tags {
+        for tag in &place.tags {
             doc.add_text(self.fields.tag, tag);
         }
         doc.add_u64(self.fields.total_rating, avg_rating_to_u64(ratings.total()));
@@ -689,12 +689,12 @@ impl PlaceIndex for SearchEngine {
 }
 
 impl PlaceIndexer for SearchEngine {
-    fn add_or_update_place(&mut self, entry: &Place, ratings: &AvgRatings) -> Fallible<()> {
+    fn add_or_update_place(&mut self, place: &Place, ratings: &AvgRatings) -> Fallible<()> {
         let mut inner = match self.0.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         };
-        inner.add_or_update_place(entry, ratings)
+        inner.add_or_update_place(place, ratings)
     }
 
     fn remove_place_by_uid(&mut self, id: &str) -> Fallible<()> {

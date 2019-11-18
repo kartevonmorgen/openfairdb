@@ -46,6 +46,9 @@ pub fn prepare_updated_place_rev<D: Db>(
         telephone: phone,
         categories,
         tags,
+        homepage,
+        image_url,
+        image_link_url,
         ..
     } = e;
     let pos = match MapPoint::try_from_lat_lng_deg(lat, lng) {
@@ -73,21 +76,41 @@ pub fn prepare_updated_place_rev<D: Db>(
         Some(address)
     };
     let (revision, license) = {
-        let old_place_rev = db.get_place(place_uid.as_str())?.0;
+        let (old_place, _) = db.get_place(place_uid.as_str())?;
         // Check for revision conflict (optimistic locking)
         let revision = Revision::from(version);
-        if old_place_rev.rev.next() != revision {
+        if old_place.revision.next() != revision {
             return Err(RepoError::InvalidVersion.into());
         }
         // The license is immutable
-        let license = old_place_rev.license;
+        let license = old_place.license;
         (revision, license)
     };
-    let plave_rev = Place {
+
+    let homepage = homepage
+        .and_then(|ref url| parse_url_param(url).transpose())
+        .transpose()?;
+    let image = image_url
+        .and_then(|ref url| parse_url_param(url).transpose())
+        .transpose()?;
+    let image_href = image_link_url
+        .and_then(|ref url| parse_url_param(url).transpose())
+        .transpose()?;
+    let links = if homepage.is_some() || image.is_some() || image_href.is_some() {
+        Some(Links {
+            homepage,
+            image,
+            image_href,
+        })
+    } else {
+        None
+    };
+
+    let place = Place {
         uid: place_uid,
-        rev: revision,
-        created: Activity::now(updated_by.map(Into::into)),
         license,
+        revision,
+        created: Activity::now(updated_by.map(Into::into)),
         title,
         description,
         location: Location { pos, address },
@@ -95,30 +118,22 @@ pub fn prepare_updated_place_rev<D: Db>(
             email: email.map(Into::into),
             phone,
         }),
-        homepage: e.homepage.map(|ref url| parse_url_param(url)).transpose()?,
-        image_url: e
-            .image_url
-            .map(|ref url| parse_url_param(url))
-            .transpose()?,
-        image_link_url: e
-            .image_link_url
-            .map(|ref url| parse_url_param(url))
-            .transpose()?,
+        links,
         tags,
     };
-    plave_rev.validate()?;
-    Ok(Storable(plave_rev))
+    place.validate()?;
+    Ok(Storable(place))
 }
 
 pub fn store_updated_place_rev<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>)> {
-    let Storable(place_rev) = s;
-    debug!("Storing updated place revision: {:?}", place_rev);
-    for t in &place_rev.tags {
+    let Storable(place) = s;
+    debug!("Storing updated place revision: {:?}", place);
+    for t in &place.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
-    db.create_place_rev(place_rev.clone())?;
-    let ratings = db.load_ratings_of_entry(place_rev.uid.as_ref())?;
-    Ok((place_rev, ratings))
+    db.create_place_rev(place.clone())?;
+    let ratings = db.load_ratings_of_place(place.uid.as_ref())?;
+    Ok((place, ratings))
 }
 
 #[cfg(test)]
@@ -126,6 +141,8 @@ mod tests {
 
     use super::super::tests::MockDb;
     use super::*;
+
+    use url::Url;
 
     #[test]
     fn update_valid_place_rev() {
@@ -157,14 +174,13 @@ mod tests {
             categories  : vec![],
             tags        : vec![],
             image_url     : Some("img2".into()),
-            image_link_url: old.image_link_url.clone(),
+            image_link_url: old.links.as_ref().and_then(|l| l.image_href.as_ref()).map(|url| url.as_str().to_string()),
         };
         let mut mock_db = MockDb::default();
-        mock_db.entries = vec![(old, Status::created())].into();
+        mock_db.entries = vec![(old, ReviewStatus::Created)].into();
         let now = Timestamp::now();
         let storable =
-            prepare_updated_place_rev(&mock_db, uid, new, Some("test@example.com"))
-                .unwrap();
+            prepare_updated_place_rev(&mock_db, uid, new, Some("test@example.com")).unwrap();
         assert!(store_updated_place_rev(&mock_db, storable).is_ok());
         assert_eq!(mock_db.entries.borrow().len(), 1);
         let (x, _) = &mock_db.entries.borrow()[0];
@@ -179,11 +195,26 @@ mod tests {
                 .unwrap()
         );
         assert_eq!("bar", x.description);
-        assert_eq!(Revision::from(2), x.rev);
+        assert_eq!(Revision::from(2), x.revision);
         assert!(x.created.when >= now);
-        assert_eq!(x.created.who, Some("test@example.com".into()));
-        assert_eq!("https://www.img2/", x.image_url.as_ref().unwrap());
-        assert_eq!("http://imglink/", x.image_link_url.as_ref().unwrap());
+        assert_eq!(
+            Some("test@example.com"),
+            x.created.who.as_ref().map(Email::as_ref)
+        );
+        assert_eq!(
+            Some("https://www.img2/"),
+            x.links
+                .as_ref()
+                .and_then(|l| l.image.as_ref())
+                .map(Url::as_str)
+        );
+        assert_eq!(
+            Some("http://imglink/"),
+            x.links
+                .as_ref()
+                .and_then(|l| l.image_href.as_ref())
+                .map(Url::as_str)
+        );
     }
 
     #[test]
@@ -217,7 +248,7 @@ mod tests {
             image_link_url: None,
         };
         let mut mock_db = MockDb::default();
-        mock_db.entries = vec![(old, Status::created())].into();
+        mock_db.entries = vec![(old, ReviewStatus::Created)].into();
         let err = match prepare_updated_place_rev(&mock_db, uid, new, None) {
             Ok(storable) => store_updated_place_rev(&mock_db, storable).err(),
             Err(err) => Some(err),
@@ -306,7 +337,7 @@ mod tests {
             image_link_url: None,
         };
         let mut mock_db = MockDb::default();
-        mock_db.entries = vec![(old, Status::created())].into();
+        mock_db.entries = vec![(old, ReviewStatus::Created)].into();
         mock_db.tags = vec![Tag { id: "bio".into() }, Tag { id: "fair".into() }].into();
         let storable = prepare_updated_place_rev(&mock_db, uid.clone(), new, None).unwrap();
         assert!(store_updated_place_rev(&mock_db, storable).is_ok());

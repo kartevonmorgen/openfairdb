@@ -34,8 +34,8 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: NewPlaceRating) -> Result<Storable> 
     let now = Timestamp::now();
     let rating_uid = Uid::new_uuid();
     let comment_uid = Uid::new_uuid();
-    let (place_rev, _) = db.get_place(&r.entry)?;
-    debug_assert_eq!(place_rev.uid, r.entry.as_str().into());
+    let (place, _) = db.get_place(&r.entry)?;
+    debug_assert_eq!(place.uid, r.entry.as_str().into());
     let rating = Rating {
         uid: rating_uid.clone(),
         place_uid: r.entry.into(),
@@ -53,17 +53,17 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: NewPlaceRating) -> Result<Storable> 
         archived_at: None,
         text: r.comment,
     };
-    Ok(Storable(place_rev, rating, comment))
+    Ok(Storable(place, rating, comment))
 }
 
 pub fn store_new_rating<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>)> {
-    let Storable(place_rev, rating, comment) = s;
-    debug_assert_eq!(place_rev.uid, rating.place_uid);
+    let Storable(place, rating, comment) = s;
+    debug_assert_eq!(place.uid, rating.place_uid);
     debug_assert_eq!(rating.uid, comment.rating_uid);
     db.create_rating(rating)?;
     db.create_comment(comment)?;
-    let ratings = db.load_ratings_of_entry(place_rev.uid.as_ref())?;
-    Ok((place_rev, ratings))
+    let ratings = db.load_ratings_of_place(place.uid.as_ref())?;
+    Ok((place, ratings))
 }
 
 #[cfg(test)]
@@ -94,8 +94,8 @@ mod tests {
     #[test]
     fn rate_with_empty_comment() {
         let mut db = MockDb::default();
-        let e = Place::build().id("foo").finish();
-        db.entries = vec![(e, Status::created())].into();
+        let place = Place::build().id("foo").finish();
+        db.entries = vec![(place, ReviewStatus::Created)].into();
         assert!(prepare_new_rating(
             &db,
             NewPlaceRating {
@@ -114,8 +114,8 @@ mod tests {
     #[test]
     fn rate_with_invalid_value_comment() {
         let mut db = MockDb::default();
-        let e = Place::build().id("foo").finish();
-        db.entries = vec![(e, Status::created())].into();
+        let p = Place::build().id("foo").finish();
+        db.entries = vec![(p, ReviewStatus::Created)].into();
         assert!(prepare_new_rating(
             &db,
             NewPlaceRating {
@@ -147,8 +147,8 @@ mod tests {
     #[test]
     fn rate_without_login() {
         let mut db = MockDb::default();
-        let e = Place::build().id("foo").finish();
-        db.entries = vec![(e, Status::created())].into();
+        let p = Place::build().id("foo").finish();
+        db.entries = vec![(p, ReviewStatus::Created)].into();
         let c = prepare_new_rating(
             &db,
             NewPlaceRating {

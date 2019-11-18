@@ -25,17 +25,17 @@ pub struct RecentlyChangedEntriesParams {
 }
 
 pub trait PlaceRepo {
-    fn get_place(&self, uid: &str) -> Result<(Place, Status)>;
-    fn get_places(&self, uids: &[&str]) -> Result<Vec<(Place, Status)>>;
+    fn get_place(&self, uid: &str) -> Result<(Place, ReviewStatus)>;
+    fn get_places(&self, uids: &[&str]) -> Result<Vec<(Place, ReviewStatus)>>;
 
-    fn all_places(&self) -> Result<Vec<(Place, Status)>>;
+    fn all_places(&self) -> Result<Vec<(Place, ReviewStatus)>>;
     fn count_places(&self) -> Result<usize>;
 
     fn recently_changed_places(
         &self,
         params: &RecentlyChangedEntriesParams,
         pagination: &Pagination,
-    ) -> Result<Vec<(Place, Status, ActivityLog)>>;
+    ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>>;
 
     fn most_popular_place_tags(
         &self,
@@ -43,14 +43,14 @@ pub trait PlaceRepo {
         pagination: &Pagination,
     ) -> Result<Vec<TagFrequency>>;
 
-    fn change_status_of_places(
+    fn review_places(
         &self,
         uids: &[&str],
-        status: Status,
+        status: ReviewStatus,
         activity: &ActivityLog,
     ) -> Result<usize>;
 
-    fn create_place_rev(&self, place_rev: Place) -> Result<()>;
+    fn create_place_rev(&self, place: Place) -> Result<()>;
 }
 
 pub trait EventGateway {
@@ -157,7 +157,7 @@ pub trait PlaceIndex {
 }
 
 pub trait PlaceIndexer: PlaceIndex {
-    fn add_or_update_place(&mut self, place_rev: &Place, ratings: &AvgRatings) -> Fallible<()>;
+    fn add_or_update_place(&mut self, place: &Place, ratings: &AvgRatings) -> Fallible<()>;
     fn remove_place_by_uid(&mut self, uid: &str) -> Fallible<()>;
     fn flush(&mut self) -> Fallible<()>;
 }

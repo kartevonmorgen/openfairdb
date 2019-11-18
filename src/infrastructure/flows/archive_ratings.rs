@@ -35,32 +35,32 @@ pub fn post_archive_ratings(
     let connection = connections.shared()?;
     let place_uids = connection.load_place_uids_of_ratings(ids)?;
     for place_uid in place_uids {
-        let (entry, _) = match connection.get_place(&place_uid) {
-            Ok(entry) => entry,
+        let (place, _) = match connection.get_place(&place_uid) {
+            Ok(place) => place,
             Err(err) => {
                 error!(
-                    "Failed to load entry {} for reindexing after archiving ratings: {}",
+                    "Failed to load place {} for reindexing after archiving ratings: {}",
                     place_uid, err
                 );
-                // Skip entry
+                // Skip place
                 continue;
             }
         };
-        let ratings = match connection.load_ratings_of_entry(entry.uid.as_ref()) {
+        let ratings = match connection.load_ratings_of_place(place.uid.as_ref()) {
             Ok(ratings) => ratings,
             Err(err) => {
                 error!(
-                    "Failed to load ratings for entry {} for reindexing after archiving ratings: {}",
-                    entry.uid, err
+                    "Failed to load ratings for place {} for reindexing after archiving ratings: {}",
+                    place.uid, err
                 );
-                // Skip entry
+                // Skip place
                 continue;
             }
         };
-        if let Err(err) = usecases::index_entry(indexer, &entry, &ratings) {
+        if let Err(err) = usecases::index_place(indexer, &place, &ratings) {
             error!(
-                "Failed to reindex entry {} after archiving ratings: {}",
-                entry.uid, err
+                "Failed to reindex place {} after archiving ratings: {}",
+                place.uid, err
             );
         }
     }

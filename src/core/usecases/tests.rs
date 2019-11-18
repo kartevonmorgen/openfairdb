@@ -14,7 +14,7 @@ trait Key {
     fn key(&self) -> &str;
 }
 
-impl Key for (Place, Status) {
+impl Key for (Place, ReviewStatus) {
     fn key(&self) -> &str {
         &self.0.uid.as_ref()
     }
@@ -70,7 +70,7 @@ impl Key for Organization {
 
 #[derive(Default)]
 pub struct MockDb {
-    pub entries: RefCell<Vec<(Place, Status)>>,
+    pub entries: RefCell<Vec<(Place, ReviewStatus)>>,
     pub events: RefCell<Vec<Event>>,
     pub tags: RefCell<Vec<Tag>>,
     pub users: RefCell<Vec<User>>,
@@ -124,10 +124,10 @@ impl UserTokenRepo for MockDb {
 }
 
 impl PlaceIndexer for MockDb {
-    fn add_or_update_place(&mut self, place_rev: &Place, _ratings: &AvgRatings) -> Fallible<()> {
+    fn add_or_update_place(&mut self, place: &Place, _ratings: &AvgRatings) -> Fallible<()> {
         // Nothing to do, the entry has already been stored
         // in the database.
-        debug_assert!(place_rev == &self.get_place(place_rev.uid.as_ref()).unwrap().0);
+        debug_assert_eq!(place, &self.get_place(place.uid.as_ref()).unwrap().0);
         Ok(())
     }
 
@@ -187,35 +187,38 @@ fn update<T: Clone + Key>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
 }
 
 impl PlaceRepo for MockDb {
-    fn create_place_rev(&self, e: Place) -> RepoResult<()> {
-        create_or_replace(&mut self.entries.borrow_mut(), (e, Status::created()))
+    fn create_place_rev(&self, place: Place) -> RepoResult<()> {
+        create_or_replace(
+            &mut self.entries.borrow_mut(),
+            (place, ReviewStatus::Created),
+        )
     }
-    fn get_place(&self, id: &str) -> RepoResult<(Place, Status)> {
-        get(&self.entries.borrow(), id).and_then(|(e, s)| {
-            if s != EntityStatus::archived() {
-                Ok((e, s))
+    fn get_place(&self, id: &str) -> RepoResult<(Place, ReviewStatus)> {
+        get(&self.entries.borrow(), id).and_then(|(p, s)| {
+            if s != ReviewStatus::Archived {
+                Ok((p, s))
             } else {
                 Err(RepoError::NotFound)
             }
         })
     }
-    fn get_places(&self, ids: &[&str]) -> RepoResult<Vec<(Place, Status)>> {
+    fn get_places(&self, ids: &[&str]) -> RepoResult<Vec<(Place, ReviewStatus)>> {
         Ok(self
             .entries
             .borrow()
             .iter()
-            .filter(|(e, s)| {
-                *s != EntityStatus::archived() && ids.iter().any(|id| e.uid.as_str() == *id)
+            .filter(|(p, s)| {
+                *s != ReviewStatus::Archived && ids.iter().any(|id| p.uid.as_str() == *id)
             })
             .cloned()
             .collect())
     }
-    fn all_places(&self) -> RepoResult<Vec<(Place, Status)>> {
+    fn all_places(&self) -> RepoResult<Vec<(Place, ReviewStatus)>> {
         Ok(self
             .entries
             .borrow()
             .iter()
-            .filter(|(_, s)| *s != EntityStatus::archived())
+            .filter(|(_, s)| *s != ReviewStatus::Archived)
             .cloned()
             .collect())
     }
@@ -223,7 +226,7 @@ impl PlaceRepo for MockDb {
         &self,
         _params: &RecentlyChangedEntriesParams,
         _pagination: &Pagination,
-    ) -> RepoResult<Vec<(Place, Status, ActivityLog)>> {
+    ) -> RepoResult<Vec<(Place, ReviewStatus, ActivityLog)>> {
         unimplemented!();
     }
     fn most_popular_place_tags(
@@ -237,10 +240,10 @@ impl PlaceRepo for MockDb {
         self.all_places().map(|v| v.len())
     }
 
-    fn change_status_of_places(
+    fn review_places(
         &self,
         _uids: &[&str],
-        _status: Status,
+        _status: ReviewStatus,
         _activity: &ActivityLog,
     ) -> RepoResult<usize> {
         unimplemented!();
@@ -455,7 +458,7 @@ impl RatingRepository for MockDb {
             .collect())
     }
 
-    fn load_ratings_of_entry(&self, place_uid: &str) -> RepoResult<Vec<Rating>> {
+    fn load_ratings_of_place(&self, place_uid: &str) -> RepoResult<Vec<Rating>> {
         Ok(self
             .ratings
             .borrow()
@@ -601,8 +604,7 @@ fn modify_bbox_subscription() {
         user_email: "abc@abc.de".into(),
         bbox: bbox_old,
     };
-    db.create_bbox_subscription(&bbox_subscription)
-        .unwrap();
+    db.create_bbox_subscription(&bbox_subscription).unwrap();
 
     usecases::subscribe_to_bbox(&db, "abc@abc.de".into(), bbox_new).unwrap();
 
@@ -647,9 +649,7 @@ fn get_bbox_subscriptions() {
         user_email: "a@abc.de".into(),
         bbox: bbox1,
     };
-    assert!(db
-        .create_bbox_subscription(&bbox_subscription)
-        .is_ok());
+    assert!(db.create_bbox_subscription(&bbox_subscription).is_ok());
 
     assert!(db
         .create_user(&User {
@@ -664,9 +664,7 @@ fn get_bbox_subscriptions() {
         user_email: "b@abc.de".into(),
         bbox: bbox2,
     };
-    assert!(db
-        .create_bbox_subscription(&bbox_subscription2)
-        .is_ok());
+    assert!(db.create_bbox_subscription(&bbox_subscription2).is_ok());
     let bbox_subscriptions = usecases::get_bbox_subscriptions(&db, "b@abc.de");
     assert!(bbox_subscriptions.is_ok());
     assert_eq!(bbox_subscriptions.unwrap()[0].uid, "2".into());

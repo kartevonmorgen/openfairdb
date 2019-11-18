@@ -119,7 +119,7 @@ mod tests {
                     .unwrap_or_default()
             }
 
-            pub fn try_get_place(self: &EnvFixture, id: &str) -> Option<(Place, Status)> {
+            pub fn try_get_place(self: &EnvFixture, id: &str) -> Option<(Place, ReviewStatus)> {
                 match self.db_connections.shared().unwrap().get_place(id) {
                     Ok(x) => Some(x),
                     Err(RepoError::NotFound) => None,

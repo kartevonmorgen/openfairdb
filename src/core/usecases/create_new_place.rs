@@ -27,7 +27,7 @@ pub struct NewPlace {
 #[derive(Debug, Clone)]
 pub struct Storable(Place);
 
-pub fn prepare_new_place_rev<D: Db>(
+pub fn prepare_new_place<D: Db>(
     db: &D,
     e: NewPlace,
     created_by_email: Option<&str>,
@@ -46,6 +46,9 @@ pub fn prepare_new_place_rev<D: Db>(
         country,
         tags,
         license,
+        homepage,
+        image_url,
+        image_link_url,
         ..
     } = e;
     let pos = match MapPoint::try_from_lat_lng_deg(lat, lng) {
@@ -67,6 +70,7 @@ pub fn prepare_new_place_rev<D: Db>(
         Some(address)
     };
     let location = Location { pos, address };
+
     let contact = if email.is_some() || telephone.is_some() {
         Some(Contact {
             email: email.map(Into::into),
@@ -75,44 +79,52 @@ pub fn prepare_new_place_rev<D: Db>(
     } else {
         None
     };
-    let homepage = e.homepage.map(|ref url| parse_url_param(url)).transpose()?;
-    let image_url = e
-        .image_url
-        .map(|ref url| parse_url_param(url))
-        .transpose()?;
-    let image_link_url = e
-        .image_link_url
-        .map(|ref url| parse_url_param(url))
-        .transpose()?;
 
-    let e = Place {
+    let homepage = homepage
+        .and_then(|ref url| parse_url_param(url).transpose())
+        .transpose()?;
+    let image = image_url
+        .and_then(|ref url| parse_url_param(url).transpose())
+        .transpose()?;
+    let image_href = image_link_url
+        .and_then(|ref url| parse_url_param(url).transpose())
+        .transpose()?;
+    let links = if homepage.is_some() || image.is_some() || image_href.is_some() {
+        Some(Links {
+            homepage,
+            image,
+            image_href,
+        })
+    } else {
+        None
+    };
+
+    let place = Place {
         uid: Uid::new_uuid(),
-        rev: Revision::initial(),
-        created: Activity::now(created_by_email.map(Into::into)),
         license,
+        revision: Revision::initial(),
+        created: Activity::now(created_by_email.map(Into::into)),
         title,
         description,
         location,
         contact,
-        homepage,
-        image_url,
-        image_link_url,
+        links,
         tags,
     };
-    e.validate()?;
-    Ok(Storable(e))
+    place.validate()?;
+    Ok(Storable(place))
 }
 
-pub fn store_new_place_rev<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>)> {
-    let Storable(place_rev) = s;
-    debug!("Storing new place revision: {:?}", place_rev);
-    for t in &place_rev.tags {
+pub fn store_new_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>)> {
+    let Storable(place) = s;
+    debug!("Storing new place revision: {:?}", place);
+    for t in &place.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
-    db.create_place_rev(place_rev.clone())?;
+    db.create_place_rev(place.clone())?;
     // No initial ratings so far
     let ratings = vec![];
-    Ok((place_rev, ratings))
+    Ok((place, ratings))
 }
 
 #[cfg(test)]
@@ -144,8 +156,8 @@ mod tests {
         };
         let mock_db = MockDb::default();
         let now = Timestamp::now();
-        let storable = prepare_new_place_rev(&mock_db, x, Some("test@example.com")).unwrap();
-        let (_, initial_ratings) = store_new_place_rev(&mock_db, storable).unwrap();
+        let storable = prepare_new_place(&mock_db, x, Some("test@example.com")).unwrap();
+        let (_, initial_ratings) = store_new_place(&mock_db, storable).unwrap();
         assert!(initial_ratings.is_empty());
         assert_eq!(mock_db.entries.borrow().len(), 1);
         let (x, _) = &mock_db.entries.borrow()[0];
@@ -153,7 +165,7 @@ mod tests {
         assert_eq!(x.description, "bar");
         assert!(x.created.when >= now);
         assert_eq!(x.created.who, Some("test@example.com".into()));
-        assert_eq!(x.rev, Revision::initial());
+        assert_eq!(x.revision, Revision::initial());
     }
 
     #[test]
@@ -178,7 +190,7 @@ mod tests {
             image_link_url: None,
         };
         let mock_db: MockDb = MockDb::default();
-        assert!(prepare_new_place_rev(&mock_db, x, None).is_err());
+        assert!(prepare_new_place(&mock_db, x, None).is_err());
     }
 
     #[test]
@@ -203,8 +215,8 @@ mod tests {
             image_link_url: None,
         };
         let mock_db = MockDb::default();
-        let e = prepare_new_place_rev(&mock_db, x, None).unwrap();
-        assert!(store_new_place_rev(&mock_db, e).is_ok());
+        let e = prepare_new_place(&mock_db, x, None).unwrap();
+        assert!(store_new_place(&mock_db, e).is_ok());
         assert_eq!(mock_db.tags.borrow().len(), 2);
         assert_eq!(mock_db.entries.borrow().len(), 1);
     }

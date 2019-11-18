@@ -25,7 +25,7 @@ pub mod tests {
     use super::*;
     use crate::test::Bencher;
 
-    fn new_place_rev(id: &str) -> Place {
+    fn new_place_rev(id: &str) -> (Place) {
         Place::build().id(id).finish()
     }
 
@@ -88,7 +88,7 @@ pub mod tests {
     }
 
     pub fn create_places_with_ratings(n: usize) -> (Vec<Place>, Vec<Rating>) {
-        let places: Vec<Place> = (0..n).map(|_| Place::build().finish()).collect();
+        let places: Vec<(Place)> = (0..n).map(|_| Place::build().finish()).collect();
 
         let ratings: Vec<_> = places
             .iter()

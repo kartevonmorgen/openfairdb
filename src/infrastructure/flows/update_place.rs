@@ -8,7 +8,7 @@ pub fn update_place(
     uid: Uid,
     update_place: usecases::UpdatePlace,
     account_email: Option<&str>,
-) -> Result<Place> {
+) -> Result<(Place)> {
     // Update existing entry
     let (place, ratings) = {
         let connection = connections.exclusive()?;
@@ -48,14 +48,14 @@ pub fn update_place(
 
     // Reindex updated place
     // TODO: Move to a separate task/thread that doesn't delay this request
-    if let Err(err) = usecases::index_entry(indexer, &place, &ratings).and_then(|_| indexer.flush())
+    if let Err(err) = usecases::index_place(indexer, &place, &ratings).and_then(|_| indexer.flush())
     {
         error!("Failed to reindex updated place {}: {}", place.uid, err);
     }
 
     // Send subscription e-mails
     // TODO: Move to a separate task/thread that doesn't delay this request
-    if let Err(err) = notify_entry_updated(connections, &place) {
+    if let Err(err) = notify_place_updated(connections, &place) {
         error!(
             "Failed to send notifications for updated place {}: {}",
             place.uid, err
@@ -65,7 +65,7 @@ pub fn update_place(
     Ok(place)
 }
 
-fn notify_entry_updated(connections: &sqlite::Connections, place: &Place) -> Result<()> {
+fn notify_place_updated(connections: &sqlite::Connections, place: &Place) -> Result<()> {
     let (email_addresses, all_categories) = {
         let connection = connections.shared()?;
         let email_addresses =
@@ -73,6 +73,6 @@ fn notify_entry_updated(connections: &sqlite::Connections, place: &Place) -> Res
         let all_categories = connection.all_categories()?;
         (email_addresses, all_categories)
     };
-    notify::entry_updated(&email_addresses, &place, all_categories);
+    notify::place_updated(&email_addresses, &place, all_categories);
     Ok(())
 }

@@ -38,7 +38,7 @@ CREATE TABLE place_rev (
     status         INTEGER NOT NULL,
     -- immutable body
     title          TEXT NOT NULL,
-    description    TEXT NOT NULL,
+    desc           TEXT NOT NULL,
     lat            FLOAT NOT NULL,
     lon            FLOAT NOT NULL,
     street         TEXT,

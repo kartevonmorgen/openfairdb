@@ -115,21 +115,21 @@ pub fn get_entry(
     account: Option<Account>,
 ) -> Result<Markup> {
     //TODO: dry out
-    let (user, e, ratings): (Option<User>, _, _) = {
+    let (user, place, ratings): (Option<User>, _, _) = {
         let db = pool.shared()?;
-        let (e, _) = db.get_place(id.as_str())?;
-        let ratings = db.load_ratings_of_entry(e.uid.as_ref())?;
+        let (place, _) = db.get_place(id.as_str())?;
+        let ratings = db.load_ratings_of_place(place.uid.as_ref())?;
         let ratings_with_comments = db.zip_ratings_with_comments(ratings)?;
         let user = if let Some(a) = account {
             db.try_get_user_by_email(a.email())?
         } else {
             None
         };
-        (user, e, ratings_with_comments)
+        (user, place, ratings_with_comments)
     };
     Ok(match user {
-        Some(u) => view::entry(Some(&u.email), (e, ratings, u.role).into()),
-        None => view::entry(None, (e, ratings).into()),
+        Some(u) => view::entry(Some(&u.email), (place, ratings, u.role).into()),
+        None => view::entry(None, (place, ratings).into()),
     })
 }
 

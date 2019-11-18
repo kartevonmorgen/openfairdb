@@ -1,4 +1,4 @@
-use super::*;
+use super::{util::load_url, *};
 
 use crate::core::prelude::*;
 use chrono::prelude::*;
@@ -8,10 +8,19 @@ use diesel::{
     result::{DatabaseErrorKind, Error as DieselError},
 };
 use std::result;
+use url::Url;
 
 type Result<T> = result::Result<T, RepoError>;
 
-fn load_place(conn: &SqliteConnection, place_rev: models::PlaceRev) -> Result<(Place, Status)> {
+fn load_status(status: ReviewStatusPrimitive) -> Result<ReviewStatus> {
+    ReviewStatus::try_from(status)
+        .ok_or_else(|| RepoError::Other(format!("Invalid status: {}", status).into()))
+}
+
+fn load_place(
+    conn: &SqliteConnection,
+    place_rev: models::PlaceRev,
+) -> Result<(Place, ReviewStatus)> {
     let models::PlaceRev {
         id,
         rev,
@@ -21,7 +30,7 @@ fn load_place(conn: &SqliteConnection, place_rev: models::PlaceRev) -> Result<(P
         created_by: created_by_id,
         status,
         title,
-        description,
+        desc: description,
         lat,
         lon,
         street,
@@ -68,12 +77,12 @@ fn load_place(conn: &SqliteConnection, place_rev: models::PlaceRev) -> Result<(P
 
     let place = Place {
         uid: place_uid.into(),
-        rev: Revision::from(rev as u64),
+        license,
+        revision: Revision::from(rev as u64),
         created: Activity {
             when: created_at.into(),
             who: created_by.map(Into::into),
         },
-        license,
         title,
         description,
         location,
@@ -81,19 +90,21 @@ fn load_place(conn: &SqliteConnection, place_rev: models::PlaceRev) -> Result<(P
             email: email.map(Into::into),
             phone,
         }),
-        homepage,
-        image_url,
-        image_link_url,
+        links: Some(Links {
+            homepage: homepage.and_then(load_url),
+            image: image_url.and_then(load_url),
+            image_href: image_link_url.and_then(load_url),
+        }),
         tags,
     };
 
-    Ok((place, status.into()))
+    Ok((place, load_status(status)?))
 }
 
 fn load_place_log(
     conn: &SqliteConnection,
     place_log: models::PlaceRevStatusLog,
-) -> Result<(Place, Status, ActivityLog)> {
+) -> Result<(Place, ReviewStatus, ActivityLog)> {
     let models::PlaceRevStatusLog {
         id,
         rev,
@@ -107,7 +118,7 @@ fn load_place_log(
         status_context,
         status_notes,
         title,
-        description,
+        desc: description,
         lat,
         lon,
         street,
@@ -152,6 +163,17 @@ fn load_place_log(
         None
     };
 
+    let links = Links {
+        homepage: homepage.and_then(load_url),
+        image: image_url.and_then(load_url),
+        image_href: image_link_url.and_then(load_url),
+    };
+
+    let contact = Contact {
+        email: email.map(Into::into),
+        phone,
+    };
+
     let status_created_by = if status_created_by_id == created_by_id {
         created_by.clone()
     } else if let Some(user_id) = status_created_by_id {
@@ -168,22 +190,17 @@ fn load_place_log(
 
     let place = Place {
         uid: place_uid.into(),
-        rev: Revision::from(rev as u64),
+        license,
+        revision: Revision::from(rev as u64),
         created: Activity {
             when: created_at.into(),
             who: created_by.map(Into::into),
         },
-        license,
         title,
         description,
         location,
-        contact: Some(Contact {
-            email: email.map(Into::into),
-            phone,
-        }),
-        homepage,
-        image_url,
-        image_link_url,
+        contact: Some(contact),
+        links: Some(links),
         tags,
     };
 
@@ -196,7 +213,7 @@ fn load_place_log(
         notes: status_notes,
     };
 
-    Ok((place, status.into(), activity_log))
+    Ok((place, load_status(status)?, activity_log))
 }
 
 #[derive(QueryableByName)]
@@ -239,17 +256,15 @@ fn into_new_place_rev(
 ) -> Result<(Uid, models::NewPlaceRev, Vec<String>)> {
     let Place {
         uid: place_uid,
-        rev: new_revision,
-        created,
         license,
+        revision: new_revision,
+        created,
         title,
-        description,
+        description: desc,
         location: Location { pos, address },
         contact,
-        homepage,
-        image_url,
-        image_link_url,
         tags,
+        links,
     } = place;
     let place_id = if new_revision.is_initial() {
         // Create a new place
@@ -294,14 +309,19 @@ fn into_new_place_rev(
         city,
         country,
     } = address.unwrap_or_default();
+    let Links {
+        homepage,
+        image: image_url,
+        image_href: image_link_url,
+    } = links.unwrap_or_default();
     let new_place_rev = models::NewPlaceRev {
         place_id,
         rev: u64::from(new_revision) as i64,
         created_at: created.when.into(),
         created_by,
-        status: Status::created().into(),
+        status: ReviewStatus::Created.into(),
         title,
-        description,
+        desc,
         lat: pos.lat().to_deg(),
         lon: pos.lng().to_deg(),
         street,
@@ -310,16 +330,16 @@ fn into_new_place_rev(
         country,
         email: email.map(Into::into),
         phone,
-        homepage,
-        image_url,
-        image_link_url,
+        homepage: homepage.map(Url::into_string),
+        image_url: image_url.map(Url::into_string),
+        image_link_url: image_link_url.map(Url::into_string),
     };
     Ok((place_uid, new_place_rev, tags))
 }
 
 impl PlaceRepo for SqliteConnection {
     fn create_place_rev(&self, place: Place) -> Result<()> {
-        let (_, new_place_rev, tags) = into_new_place_rev(self, place)?;
+        let (_place_uid, new_place_rev, tags) = into_new_place_rev(self, place)?;
         diesel::insert_into(schema::place_rev::table)
             .values(&new_place_rev)
             .execute(self)?;
@@ -368,10 +388,10 @@ impl PlaceRepo for SqliteConnection {
         Ok(())
     }
 
-    fn change_status_of_places(
+    fn review_places(
         &self,
         uids: &[&str],
-        status: Status,
+        status: ReviewStatus,
         activity_log: &ActivityLog,
     ) -> Result<usize> {
         use schema::place::dsl as place_dsl;
@@ -389,7 +409,7 @@ impl PlaceRepo for SqliteConnection {
         let ActivityLog {
             activity,
             context,
-            notes
+            notes,
         } = activity_log;
         let changed_at = activity.when.into();
         let changed_by = if let Some(ref email) = activity.who {
@@ -397,7 +417,7 @@ impl PlaceRepo for SqliteConnection {
         } else {
             None
         };
-        let status = status.into_inner();
+        let status = ReviewStatusPrimitive::from(status);
         let mut total_update_count = 0;
         for rev_id in rev_ids {
             let update_count = diesel::update(
@@ -426,7 +446,7 @@ impl PlaceRepo for SqliteConnection {
         Ok(total_update_count)
     }
 
-    fn get_places(&self, place_uids: &[&str]) -> Result<Vec<(Place, Status)>> {
+    fn get_places(&self, place_uids: &[&str]) -> Result<Vec<(Place, ReviewStatus)>> {
         use schema::place::dsl as place_dsl;
         use schema::place_rev::dsl as rev_dsl;
 
@@ -446,7 +466,7 @@ impl PlaceRepo for SqliteConnection {
                 rev_dsl::created_by,
                 rev_dsl::status,
                 rev_dsl::title,
-                rev_dsl::description,
+                rev_dsl::desc,
                 rev_dsl::lat,
                 rev_dsl::lon,
                 rev_dsl::street,
@@ -476,13 +496,13 @@ impl PlaceRepo for SqliteConnection {
         Ok(results)
     }
 
-    fn get_place(&self, place_uid: &str) -> Result<(Place, Status)> {
+    fn get_place(&self, place_uid: &str) -> Result<(Place, ReviewStatus)> {
         let places = self.get_places(&[place_uid])?;
         debug_assert!(places.len() <= 1);
         places.into_iter().next().ok_or(RepoError::NotFound)
     }
 
-    fn all_places(&self) -> Result<Vec<(Place, Status)>> {
+    fn all_places(&self) -> Result<Vec<(Place, ReviewStatus)>> {
         self.get_places(&[])
     }
 
@@ -490,7 +510,7 @@ impl PlaceRepo for SqliteConnection {
         &self,
         params: &RecentlyChangedEntriesParams,
         pagination: &Pagination,
-    ) -> Result<Vec<(Place, Status, ActivityLog)>> {
+    ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>> {
         use schema::place::dsl as place_dsl;
         use schema::place_rev::dsl as rev_dsl;
         use schema::place_rev_activity_log::dsl as log_dsl;
@@ -518,7 +538,7 @@ impl PlaceRepo for SqliteConnection {
                 log_dsl::context,
                 log_dsl::notes,
                 rev_dsl::title,
-                rev_dsl::description,
+                rev_dsl::desc,
                 rev_dsl::lat,
                 rev_dsl::lon,
                 rev_dsl::street,
@@ -604,7 +624,7 @@ impl PlaceRepo for SqliteConnection {
         use schema::place_rev::dsl;
         Ok(schema::place_rev::table
             .select(diesel::dsl::count(dsl::place_id))
-            .filter(dsl::status.ge(Status::created().into_inner()))
+            .filter(dsl::status.ge(ReviewStatusPrimitive::from(ReviewStatus::Created)))
             .first::<i64>(self)? as usize)
     }
 }
@@ -678,13 +698,13 @@ fn into_new_event_with_tags(
             country,
             telephone,
             email: email.map(Into::into),
-            homepage,
+            homepage: homepage.map(Url::into_string),
             created_by,
             registration,
             organizer,
             archived: archived.map(Into::into),
-            image_url,
-            image_link_url,
+            image_url: image_url.map(Url::into_string),
+            image_link_url: image_link_url.map(Url::into_string),
         },
         tags,
     ))
@@ -876,14 +896,14 @@ impl EventGateway for SqliteConnection {
             description,
             location,
             contact,
-            homepage,
+            homepage: homepage.and_then(load_url),
             tags,
             created_by: created_by_email,
             registration,
             organizer,
             archived: archived.map(Into::into),
-            image_url,
-            image_link_url,
+            image_url: image_url.and_then(load_url),
+            image_link_url: image_link_url.and_then(load_url),
         })
     }
 
@@ -1144,7 +1164,7 @@ impl RatingRepository for SqliteConnection {
         ratings.into_iter().next().ok_or(RepoError::NotFound)
     }
 
-    fn load_ratings_of_entry(&self, place_uid: &str) -> Result<Vec<Rating>> {
+    fn load_ratings_of_place(&self, place_uid: &str) -> Result<Vec<Rating>> {
         use schema::place::dsl as place_dsl;
         use schema::place_rating::dsl as rating_dsl;
         Ok(schema::place_rating::table
@@ -1203,11 +1223,7 @@ impl RatingRepository for SqliteConnection {
         Ok(count)
     }
 
-    fn archive_ratings_of_places(
-        &self,
-        place_uids: &[&str],
-        activity: &Activity,
-    ) -> Result<usize> {
+    fn archive_ratings_of_places(&self, place_uids: &[&str], activity: &Activity) -> Result<usize> {
         use schema::place::dsl as place_dsl;
         use schema::place_rating::dsl as rating_dsl;
         let archived_at = Some(activity.when.into_inner());

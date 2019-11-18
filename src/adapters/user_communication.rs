@@ -1,5 +1,7 @@
 use crate::core::prelude::*;
 
+use url::Url;
+
 pub struct EmailContent {
     pub subject: String,
     pub body: String,
@@ -23,27 +25,22 @@ pub fn user_reset_password_email(url: &str) -> EmailContent {
     EmailContent { subject, body }
 }
 
-pub fn entry_added_email(e: &Place, category_names: &[String]) -> EmailContent {
-    let subject = format!("Karte von morgen - neuer Eintrag: {}", e.title);
+pub fn entry_added_email(place: &Place, category_names: &[String]) -> EmailContent {
+    let subject = format!("Karte von morgen - neuer Eintrag: {}", place.title);
     let intro_sentence = "ein neuer Eintrag auf der Karte von morgen wurde erstellt";
-    let body = entry_email(&e, category_names, &e.tags, intro_sentence);
+    let body = entry_email(place, category_names, intro_sentence);
     EmailContent { subject, body }
 }
 
 //TODO: calc diff
-pub fn entry_changed_email(e: &Place, category_names: &[String]) -> EmailContent {
-    let subject = format!("Karte von morgen - Eintrag verändert: {}", e.title);
+pub fn entry_changed_email(place: &Place, category_names: &[String]) -> EmailContent {
+    let subject = format!("Karte von morgen - Eintrag verändert: {}", place.title);
     let intro_sentence = "folgender Eintrag der Karte von morgen wurde verändert";
-    let body = entry_email(&e, category_names, &e.tags, intro_sentence);
+    let body = entry_email(place, category_names, intro_sentence);
     EmailContent { subject, body }
 }
 
-pub fn entry_email(
-    e: &Place,
-    category_names: &[String],
-    tags: &[String],
-    intro_sentence: &str,
-) -> String {
+fn entry_email(place: &Place, category_names: &[String], intro_sentence: &str) -> String {
     let category = if !category_names.is_empty() {
         category_names[0].clone()
     } else {
@@ -55,7 +52,7 @@ pub fn entry_email(
         zip,
         city,
         country,
-    } = e.location.clone().address.unwrap_or_else(|| Address {
+    } = place.location.clone().address.unwrap_or_else(|| Address {
         street: None,
         zip: None,
         city: None,
@@ -73,7 +70,7 @@ pub fn entry_email(
     ]
     .join(", ");
 
-    let Contact { email, phone } = e.contact.clone().unwrap_or_else(|| Contact {
+    let Contact { email, phone } = place.contact.clone().unwrap_or_else(|| Contact {
         email: None,
         phone: None,
     });
@@ -94,14 +91,14 @@ Du kannst dein Abonnement des Kartenbereichs abbestellen indem du dich auf https
 euphorische Grüße
 das Karte von morgen-Team",
         introSentence = intro_sentence,
-        title = &e.title,
-        id = &e.uid,
-        description = &e.description,
+        title = &place.title,
+        id = &place.uid,
+        description = &place.description,
         address = address,
         email = email.map(|e| e.to_string()).unwrap_or_default(),
         phone = phone.unwrap_or_default(),
-        homepage = e.homepage.clone().unwrap_or_default(),
+        homepage = place.links.as_ref().and_then(|l| l.homepage.as_ref()).map(Url::as_str).unwrap_or_else(|| ""),
         category = category,
-        tags = tags.join(", ")
+        tags = place.tags.join(", ")
     )
 }

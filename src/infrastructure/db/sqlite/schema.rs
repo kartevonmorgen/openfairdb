@@ -110,7 +110,7 @@ table! {
         created_by -> Nullable<BigInt>,
         status -> SmallInt,
         title -> Text,
-        description -> Text,
+        desc -> Text,
         lat -> Double,
         lon -> Double,
         street -> Nullable<Text>,

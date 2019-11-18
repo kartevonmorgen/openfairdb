@@ -104,6 +104,7 @@ pub fn try_into_new_event<D: Db>(
         created_by,
         registration,
         organizer,
+        homepage,
         image_url,
         image_link_url,
         ..
@@ -198,11 +199,6 @@ pub fn try_into_new_event<D: Db>(
         None
     };
     let uid = Uid::new_uuid();
-    let homepage = e
-        .homepage
-        .filter(|h| !h.is_empty())
-        .map(|ref url| parse_url_param(url))
-        .transpose()?;
 
     let created_by = if let Some(ref email) = created_by {
         Some(create_user_from_email(db, email)?.email)
@@ -257,9 +253,14 @@ pub fn try_into_new_event<D: Db>(
     let start = NaiveDateTime::from_timestamp(start, 0);
     let end = end.map(|e| NaiveDateTime::from_timestamp(e, 0));
 
-    let image_url = image_url.map(|ref url| parse_url_param(url)).transpose()?;
+    let homepage = homepage
+        .and_then(|ref url| parse_url_param(url).transpose())
+        .transpose()?;
+    let image_url = image_url
+        .and_then(|ref url| parse_url_param(url).transpose())
+        .transpose()?;
     let image_link_url = image_link_url
-        .map(|ref url| parse_url_param(url))
+        .and_then(|ref url| parse_url_param(url).transpose())
         .transpose()?;
 
     let event = Event {
@@ -344,11 +345,11 @@ mod tests {
         assert_eq!(x.uid, uid);
         assert_eq!(
             "http://somewhere.com/image_url.jpg",
-            x.image_url.as_ref().unwrap()
+            x.image_url.as_ref().unwrap().as_str()
         );
         assert_eq!(
             "https://www.my.url/test.ext",
-            x.image_link_url.as_ref().unwrap()
+            x.image_link_url.as_ref().unwrap().as_str()
         );
     }
 

@@ -31,7 +31,7 @@ pub mod prelude {
 use self::prelude::*;
 
 #[test]
-fn create_place_rev() {
+fn create_place() {
     let (client, db) = setup();
     let req = client.post("/entries")
                     .header(ContentType::JSON)
@@ -108,15 +108,15 @@ fn update_place_with_tag_duplicates() {
                     .header(ContentType::JSON)
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","foo"]}"#);
     let _res = req.dispatch();
-    let (e, _) = db.exclusive().unwrap().all_places().unwrap()[0].clone();
+    let (place, _) = db.exclusive().unwrap().all_places().unwrap()[0].clone();
     let mut json = String::new();
     json.push_str(&format!(
         "{{\"version\":{},\"id\":\"{}\"",
-        u64::from(e.rev.next()),
-        e.uid
+        u64::from(place.revision.next()),
+        place.uid
     ));
     json.push_str(r#","title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["bar","bar"]}"#);
-    let url = format!("/entries/{}", e.uid);
+    let url = format!("/entries/{}", place.uid);
     let req = client.put(url).header(ContentType::JSON).body(json);
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -163,7 +163,7 @@ fn get_one_entry() {
     let rating = connections
         .shared()
         .unwrap()
-        .load_ratings_of_entry("get_one_entry_test")
+        .load_ratings_of_place("get_one_entry_test")
         .unwrap()[0]
         .clone();
     assert!(body_str.contains(&format!(r#""ratings":["{}"]"#, rating.uid)));
@@ -542,11 +542,11 @@ fn search_with_city() {
 #[ignore]
 #[bench]
 fn bench_search_in_10_000_rated_places(b: &mut Bencher) {
-    let (entries, ratings) = crate::core::util::sort::tests::create_places_with_ratings(10_000);
+    let (places, ratings) = crate::core::util::sort::tests::create_places_with_ratings(10_000);
     let (client, db) = setup();
     let conn = db.exclusive().unwrap();
-    for e in entries {
-        conn.create_place_rev(e).unwrap();
+    for p in places {
+        conn.create_place_rev(p).unwrap();
     }
     for r in ratings {
         conn.create_rating(r).unwrap();
@@ -991,7 +991,7 @@ fn create_rating() {
         connections
             .shared()
             .unwrap()
-            .load_ratings_of_entry("foo")
+            .load_ratings_of_place("foo")
             .unwrap()[0]
             .value,
         RatingValue::from(1)
@@ -1025,7 +1025,7 @@ fn get_one_rating() {
     let ruid = connections
         .shared()
         .unwrap()
-        .load_ratings_of_entry("foo")
+        .load_ratings_of_place("foo")
         .unwrap()[0]
         .uid
         .clone();
@@ -1087,7 +1087,7 @@ fn ratings_with_and_without_source() {
     let ruid = connections
         .shared()
         .unwrap()
-        .load_ratings_of_entry("bar")
+        .load_ratings_of_place("bar")
         .unwrap()[0]
         .uid
         .clone();
@@ -1353,8 +1353,6 @@ fn export_csv() {
             .title("title1")
             .description("desc1")
             .pos(MapPoint::from_lat_lng_deg(0.1, 0.2))
-            .image_url(Some("https://img"))
-            .image_link_url(Some("https://img,link"))
             .tags(vec![
                 "bli",
                 "bla",
@@ -1382,7 +1380,11 @@ fn export_csv() {
             .country("country1")
             .finish(),
     );
-    entries[0].homepage = Some("homepage1".to_string());
+    entries[0].links = Some(Links {
+        homepage: Some("http://homepage1".parse().unwrap()),
+        image: Some("https://img".parse().unwrap()),
+        image_href: Some("https://img,link".parse().unwrap()),
+    });
     entries[1].created.when = 2222.into();
 
     db.exclusive()
@@ -1442,7 +1444,7 @@ fn export_csv() {
         let ratings = db
             .shared()
             .unwrap()
-            .load_ratings_of_entry(e.uid.as_ref())
+            .load_ratings_of_place(e.uid.as_ref())
             .unwrap();
         search_engine
             .add_or_update_place(&e, &e.avg_ratings(&ratings))
@@ -1459,9 +1461,13 @@ fn export_csv() {
         }
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    //eprintln!("{}", body_str);
     assert!(body_str.starts_with("id,created,version,title,description,lat,lng,street,zip,city,country,homepage,categories,tags,license,image_url,image_link_url,avg_rating\n"));
-    assert!(body_str.contains(&format!("entry1,1111,0,title1,desc1,{lat},{lng},street1,zip1,city1,country1,homepage1,\"{cat1},{cat2}\",\"bla,bli\",license1,https://img,\"https://img,link\",0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg(), cat1 = Category::UID_NON_PROFIT, cat2 = Category::UID_COMMERCIAL)));
-    assert!(body_str.contains(&format!("entry2,2222,0,,,0.0,0.0,,,,,,{cat},,,,,0.0\n", cat = Category::UID_NON_PROFIT)));
+    assert!(body_str.contains(&format!("entry1,1111,0,title1,desc1,{lat},{lng},street1,zip1,city1,country1,http://homepage1/,\"{cat1},{cat2}\",\"bla,bli\",license1,https://img/,\"https://img,link/\",0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg(), cat1 = Category::UID_NON_PROFIT, cat2 = Category::UID_COMMERCIAL)));
+    assert!(body_str.contains(&format!(
+        "entry2,2222,0,,,0.0,0.0,,,,,,{cat},,,,,0.0\n",
+        cat = Category::UID_NON_PROFIT
+    )));
     assert!(!body_str.contains("entry3"));
 }
 

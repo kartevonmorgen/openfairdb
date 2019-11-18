@@ -4,7 +4,6 @@ use super::super::{
     util::geo::{MapBbox, MapPoint},
 };
 use fast_chemail::is_valid_email;
-use url::Url;
 
 pub trait Validate {
     fn validate(&self) -> Result<(), ParameterError>;
@@ -19,10 +18,6 @@ pub fn email(email: &str) -> Result<(), ParameterError> {
         return Err(ParameterError::Email);
     }
     Ok(())
-}
-
-fn homepage(url: &str) -> Result<(), ParameterError> {
-    Url::parse(url).map_err(|_| ParameterError::Url).map(|_| ())
 }
 
 fn license(s: &str) -> Result<(), ParameterError> {
@@ -41,19 +36,11 @@ pub fn bbox(bbox: &MapBbox) -> Result<(), ParameterError> {
 
 impl Validate for Place {
     fn validate(&self) -> Result<(), ParameterError> {
-        //TODO: check title
-
         license(&self.license)?;
 
-        if let Some(ref c) = self.contact {
-            if let Some(ref e) = c.email {
-                email(e.as_ref())?;
-            }
-        }
+        //TODO: check title
 
-        if let Some(ref h) = self.homepage {
-            homepage(h)?;
-        }
+        self.contact.as_ref().map(|c| c.validate()).transpose()?;
 
         Ok(())
     }
@@ -80,7 +67,6 @@ impl AutoCorrect for Event {
                 Some(l)
             }
         });
-        self.homepage = self.homepage.filter(|x| !x.is_empty());
         self.contact = self.contact.and_then(|c| {
             let c = c.auto_correct();
             if c.email.is_none() && c.phone.is_none() {
@@ -101,9 +87,6 @@ impl Validate for Event {
         }
         if let Some(ref c) = self.contact {
             c.validate()?;
-        }
-        if let Some(ref h) = self.homepage {
-            homepage(h)?;
         }
         if let Some(end) = self.end {
             if end < self.start {
@@ -162,12 +145,6 @@ mod tests {
     }
 
     #[test]
-    fn homepage_test() {
-        assert!(homepage("https://openfairdb.org").is_ok());
-        assert!(homepage("openfairdb.org/foo").is_err());
-    }
-
-    #[test]
     fn contact_email_test() {
         assert!(Contact {
             email: Some("foo".into()),
@@ -206,10 +183,6 @@ mod tests {
         let mut x = e.clone();
         x.description = Some("".to_string());
         assert!(x.auto_correct().description.is_none());
-
-        let mut x = e.clone();
-        x.homepage = Some("".to_string());
-        assert!(x.auto_correct().homepage.is_none());
 
         let mut x = e.clone();
         x.contact = Some(Contact {
@@ -302,28 +275,6 @@ mod tests {
             image_link_url: None,
         };
         assert!(e.validate().is_ok());
-    }
-
-    #[test]
-    fn event_with_invalid_homepage_test() {
-        let e = Event {
-            uid: "x".into(),
-            title: "foo".into(),
-            description: None,
-            start: NaiveDateTime::from_timestamp(0, 0),
-            end: None,
-            location: None,
-            contact: None,
-            tags: vec![],
-            homepage: Some("bla".into()),
-            created_by: None,
-            registration: None,
-            organizer: None,
-            archived: None,
-            image_url: None,
-            image_link_url: None,
-        };
-        assert!(e.validate().is_err());
     }
 
     #[test]

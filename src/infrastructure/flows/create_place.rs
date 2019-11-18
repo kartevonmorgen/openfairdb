@@ -7,7 +7,7 @@ use diesel::Connection;
 pub fn create_place(
     connections: &sqlite::Connections,
     indexer: &mut dyn PlaceIndexer,
-    new_entry: usecases::NewPlace,
+    new_place: usecases::NewPlace,
     account_email: Option<&str>,
 ) -> Result<Place> {
     // Create and add new entry
@@ -16,15 +16,13 @@ pub fn create_place(
         let mut prepare_err = None;
         connection
             .transaction::<_, diesel::result::Error, _>(|| {
-                match usecases::prepare_new_place_rev(&*connection, new_entry, account_email) {
+                match usecases::prepare_new_place(&*connection, new_place, account_email) {
                     Ok(storable) => {
-                        let (place, ratings) =
-                            usecases::store_new_place_rev(&*connection, storable).map_err(
-                                |err| {
-                                    warn!("Failed to store newly created place: {}", err);
-                                    diesel::result::Error::RollbackTransaction
-                                },
-                            )?;
+                        let (place, ratings) = usecases::store_new_place(&*connection, storable)
+                            .map_err(|err| {
+                                warn!("Failed to store newly created place: {}", err);
+                                diesel::result::Error::RollbackTransaction
+                            })?;
                         Ok((place, ratings))
                     }
                     Err(err) => {
@@ -44,14 +42,14 @@ pub fn create_place(
 
     // Index newly added place
     // TODO: Move to a separate task/thread that doesn't delay this request
-    if let Err(err) = usecases::index_entry(indexer, &place, &ratings).and_then(|_| indexer.flush())
+    if let Err(err) = usecases::index_place(indexer, &place, &ratings).and_then(|_| indexer.flush())
     {
         error!("Failed to index newly added place {}: {}", place.uid, err);
     }
 
     // Send subscription e-mails
     // TODO: Move to a separate task/thread that doesn't delay this request
-    if let Err(err) = notify_entry_added(connections, &place) {
+    if let Err(err) = notify_place_added(connections, &place) {
         error!(
             "Failed to send notifications for newly added place {}: {}",
             place.uid, err
@@ -61,7 +59,7 @@ pub fn create_place(
     Ok(place)
 }
 
-fn notify_entry_added(connections: &sqlite::Connections, place: &Place) -> Result<()> {
+fn notify_place_added(connections: &sqlite::Connections, place: &Place) -> Result<()> {
     let (email_addresses, all_categories) = {
         let connection = connections.shared()?;
         let email_addresses =
@@ -69,6 +67,6 @@ fn notify_entry_added(connections: &sqlite::Connections, place: &Place) -> Resul
         let all_categories = connection.all_categories()?;
         (email_addresses, all_categories)
     };
-    notify::entry_added(&email_addresses, place, all_categories);
+    notify::place_added(&email_addresses, place, all_categories);
     Ok(())
 }

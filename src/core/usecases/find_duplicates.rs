@@ -10,17 +10,17 @@ pub enum DuplicateType {
 // return vector of places like: (entry1ID, entry2ID, reason)
 // where entry1 and entry2 are similar places
 pub fn find_duplicates(
-    places: &[(Place, Status)],
-    all_places: &[(Place, Status)],
+    places: &[(Place, ReviewStatus)],
+    all_places: &[(Place, ReviewStatus)],
 ) -> Vec<(Uid, Uid, DuplicateType)> {
     let mut duplicates = Vec::new();
-    for (e1, _) in &places[..] {
-        for (e2, _) in &all_places[..] {
-            if e1.uid >= e2.uid {
+    for (p1, _) in &places[..] {
+        for (p2, _) in &all_places[..] {
+            if p1.uid >= p2.uid {
                 continue;
             }
-            if let Some(t) = is_duplicate(e1, e2) {
-                duplicates.push((e1.uid.clone(), e2.uid.clone(), t));
+            if let Some(t) = is_duplicate(p1, p2) {
+                duplicates.push((p1.uid.clone(), p2.uid.clone(), t));
             }
         }
     }
@@ -159,7 +159,7 @@ fn min3(s: usize, t: usize, u: usize) -> usize {
 mod tests {
     use super::*;
 
-    fn new_entry(title: String, description: String, pos: MapPoint) -> Place {
+    fn new_entry(title: String, description: String, pos: MapPoint) -> (Place) {
         Place::build()
             .id(&title)
             .title(&title)

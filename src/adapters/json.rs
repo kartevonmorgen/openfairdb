@@ -1,5 +1,7 @@
 use crate::core::{db::IndexedPlace, entities as e, util::geo::MapPoint};
 
+use url::Url;
+
 #[rustfmt::skip]
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Entry {
@@ -132,12 +134,12 @@ impl From<e::Event> for Event {
             country,
             email: email.map(Into::into),
             telephone,
-            homepage,
+            homepage: homepage.map(Url::into_string),
             tags,
             registration,
             organizer,
-            image_url,
-            image_link_url,
+            image_url: image_url.map(Url::into_string),
+            image_link_url: image_link_url.map(Url::into_string),
         }
     }
 }
@@ -268,18 +270,15 @@ impl Entry {
     pub fn from_entry_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -> Entry {
         let e::Place {
             uid,
-            rev,
-            created,
             license,
+            revision,
+            created,
             title,
             description,
             location,
             contact,
-            homepage,
+            links,
             tags,
-            image_url,
-            image_link_url,
-            ..
         } = place;
 
         let e::Location { pos, address } = location;
@@ -297,12 +296,18 @@ impl Entry {
             phone: telephone,
         } = contact.unwrap_or_default();
 
+        let (homepage_url, image_url, image_link_url) = if let Some(links) = links {
+            (links.homepage, links.image, links.image_href)
+        } else {
+            (None, None, None)
+        };
+
         let (tags, categories) = e::Category::split_from_tags(tags);
 
         Entry {
             id: uid.into(),
             created: created.when.into(),
-            version: rev.into(),
+            version: revision.into(),
             title,
             description,
             lat,
@@ -313,13 +318,13 @@ impl Entry {
             country,
             email: email.map(Into::into),
             telephone,
-            homepage,
+            homepage: homepage_url.map(Url::into_string),
             categories: categories.into_iter().map(|c| c.uid.to_string()).collect(),
             tags,
             ratings: ratings.into_iter().map(|r| r.uid.to_string()).collect(),
             license: Some(license),
-            image_url,
-            image_link_url,
+            image_url: image_url.map(Url::into_string),
+            image_link_url: image_link_url.map(Url::into_string),
         }
     }
 }
@@ -342,4 +347,193 @@ impl From<e::TagFrequency> for TagFrequency {
     fn from(from: e::TagFrequency) -> Self {
         Self(from.0, from.1)
     }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Activity {
+    pub when: i64,
+    pub who: Option<String>,
+}
+
+impl From<e::Activity> for Activity {
+    fn from(from: e::Activity) -> Self {
+        Self {
+            when: from.when.into_inner(),
+            who: from.who.map(Into::into),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct LatLonDegrees(f64, f64);
+
+impl From<MapPoint> for LatLonDegrees {
+    fn from(from: MapPoint) -> Self {
+        Self(from.lat().to_deg(), from.lng().to_deg())
+    }
+}
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct Address {
+    pub street: Option<String>,
+    pub zip: Option<String>,
+    pub city: Option<String>,
+    pub country: Option<String>,
+}
+
+impl From<e::Address> for Address {
+    fn from(from: e::Address) -> Self {
+        let e::Address {
+            street,
+            zip,
+            city,
+            country,
+        } = from;
+        Self {
+            street,
+            zip,
+            city,
+            country,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Location {
+    pub coords: LatLonDegrees,
+    pub address: Option<Address>,
+}
+
+impl From<e::Location> for Location {
+    fn from(from: e::Location) -> Self {
+        let e::Location { pos, address } = from;
+        Self {
+            coords: pos.into(),
+            address: address.map(Into::into),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Contact {
+    pub email: Option<String>,
+    pub phone: Option<String>,
+}
+
+impl From<e::Contact> for Contact {
+    fn from(from: e::Contact) -> Self {
+        let e::Contact { email, phone } = from;
+        Self {
+            email: email.map(Into::into),
+            phone,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Links {
+    pub home: Option<Url>,
+    pub img: Option<Url>,
+    pub img_href: Option<Url>,
+}
+
+impl From<e::Links> for Links {
+    fn from(from: e::Links) -> Self {
+        let e::Links {
+            homepage: home,
+            image: img,
+            image_href: img_href,
+        } = from;
+        Self {
+            home,
+            img,
+            img_href,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PlaceId {
+    pub uid: String,
+    pub lic: String,
+}
+
+impl From<e::PlaceId> for PlaceId {
+    fn from(from: e::PlaceId) -> Self {
+        let e::PlaceId { uid, license: lic } = from;
+        Self {
+            uid: uid.into(),
+            lic,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PlaceRev {
+    pub rev: u64,
+    pub created: Activity,
+    pub title: String,
+    pub desc: String,
+    pub location: Location,
+    pub contact: Option<Contact>,
+    pub links: Option<Links>,
+    pub tags: Vec<String>,
+}
+
+impl From<e::PlaceRev> for PlaceRev {
+    fn from(from: e::PlaceRev) -> Self {
+        let e::PlaceRev {
+            revision,
+            created,
+            title,
+            description: desc,
+            location,
+            contact,
+            links,
+            tags,
+        } = from;
+        Self {
+            rev: revision.into(),
+            created: created.into(),
+            title,
+            desc,
+            location: location.into(),
+            contact: contact.map(Into::into),
+            links: links.map(Into::into),
+            tags,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub enum ReviewStatus {
+    Rejected,
+    Archived,
+    Created,
+    Confirmed,
+}
+
+impl From<e::ReviewStatus> for ReviewStatus {
+    fn from(from: e::ReviewStatus) -> Self {
+        match from {
+            e::ReviewStatus::Rejected => ReviewStatus::Rejected,
+            e::ReviewStatus::Archived => ReviewStatus::Archived,
+            e::ReviewStatus::Created => ReviewStatus::Created,
+            e::ReviewStatus::Confirmed => ReviewStatus::Confirmed,
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ReviewStatusLog {
+    pub activity: Activity,
+    pub status: ReviewStatus,
+    pub context: Option<String>,
+    pub notes: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PlaceRevReviewStatusLog {
+    place_rev: PlaceRev,
+    status_logs: Vec<ReviewStatusLog>,
 }

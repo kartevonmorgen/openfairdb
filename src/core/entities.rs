@@ -7,7 +7,9 @@ use crate::core::util::{
 
 use chrono::prelude::*;
 use failure::{bail, format_err, Fallible};
+use num_traits::{FromPrimitive, ToPrimitive};
 use std::{borrow::Borrow, fmt, ops::Deref, str::FromStr};
+use url::Url;
 use uuid::Uuid;
 
 /// Universal, external/public identifier with a string representation.
@@ -194,75 +196,134 @@ pub struct ActivityLog {
     pub notes: Option<String>,
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub struct Status(i16);
+#[rustfmt::skip]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromPrimitive, ToPrimitive)]
+pub enum ReviewStatus {
+    Rejected  = -1,
+    Archived  =  0,
+    Created   =  1,
+    Confirmed =  2,
+}
 
-impl Status {
-    pub const fn rejected() -> Self {
-        Self(-1) // entity doesn't exist (<= 0)
-    }
+pub type ReviewStatusPrimitive = i16;
 
-    pub const fn archived() -> Self {
-        Self(0) // entity doesn't exist (<= 0)
-    }
-
-    pub const fn created() -> Self {
-        Self(1)
-    }
-
-    pub const fn confirmed() -> Self {
-        Self(2)
-    }
-
-    pub fn is_valid(self) -> bool {
-        self.0 >= -1 && self.0 <= 2
-    }
-
+impl ReviewStatus {
     pub fn exists(self) -> bool {
-        self.0 > 0
+        self >= Self::Created
     }
 
     pub const fn default() -> Self {
-        Self::created()
+        Self::Created
     }
 
-    pub const fn from_inner(inner: i16) -> Self {
-        Self(inner)
-    }
-
-    pub const fn into_inner(self) -> i16 {
-        self.0
+    pub fn try_from(from: ReviewStatusPrimitive) -> Option<Self> {
+        Self::from_i16(from)
     }
 }
 
-impl From<Status> for i16 {
-    fn from(from: Status) -> Self {
-        from.0
+impl From<ReviewStatus> for ReviewStatusPrimitive {
+    fn from(from: ReviewStatus) -> Self {
+        from.to_i16().unwrap()
     }
 }
 
-impl From<i16> for Status {
-    fn from(from: i16) -> Self {
-        let status = Status::from_inner(from);
-        debug_assert!(status.is_valid());
-        status
-    }
+#[derive(Debug, Clone, Default, PartialEq, Eq)]
+pub struct Links {
+    pub homepage: Option<Url>,
+    pub image: Option<Url>,
+    pub image_href: Option<Url>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PlaceId {
+    pub uid: Uid,
+    pub license: String,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct PlaceRev {
+    pub revision: Revision,
+    pub created: Activity,
+    pub title: String,
+    pub description: String,
+    pub location: Location,
+    pub contact: Option<Contact>,
+    pub links: Option<Links>,
+    pub tags: Vec<String>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Place {
     pub uid: Uid,
-    pub rev: Revision,
-    pub created: Activity,
     pub license: String,
+    pub revision: Revision,
+    pub created: Activity,
     pub title: String,
     pub description: String,
     pub location: Location,
     pub contact: Option<Contact>,
-    pub homepage: Option<String>,
-    pub image_url: Option<String>,
-    pub image_link_url: Option<String>,
+    pub links: Option<Links>,
     pub tags: Vec<String>,
+}
+
+impl From<(PlaceId, PlaceRev)> for Place {
+    fn from(from: (PlaceId, PlaceRev)) -> Self {
+        let (
+            PlaceId { uid, license },
+            PlaceRev {
+                revision,
+                created,
+                title,
+                description,
+                location,
+                contact,
+                links,
+                tags,
+            },
+        ) = from;
+        Self {
+            uid,
+            license,
+            revision,
+            created,
+            title,
+            description,
+            location,
+            contact,
+            links,
+            tags,
+        }
+    }
+}
+
+impl From<Place> for (PlaceId, PlaceRev) {
+    fn from(from: Place) -> Self {
+        let Place {
+            uid,
+            license,
+            revision,
+            created,
+            title,
+            description,
+            location,
+            contact,
+            links,
+            tags,
+        } = from;
+        (
+            PlaceId { uid, license },
+            PlaceRev {
+                revision,
+                created,
+                title,
+                description,
+                location,
+                contact,
+                links,
+                tags,
+            },
+        )
+    }
 }
 
 #[rustfmt::skip]
@@ -311,13 +372,13 @@ pub struct Event {
     pub location     : Option<Location>,
     pub contact      : Option<Contact>,
     pub tags         : Vec<String>,
-    pub homepage     : Option<String>,
+    pub homepage     : Option<Url>,
     pub created_by   : Option<String>,
     pub registration : Option<RegistrationType>,
     pub organizer    : Option<String>,
     pub archived     : Option<Timestamp>,
-    pub image_url     : Option<String>,
-    pub image_link_url: Option<String>,
+    pub image_url     : Option<Url>,
+    pub image_link_url: Option<Url>,
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -804,7 +865,7 @@ pub mod place_builder {
             self
         }
         pub fn revision(mut self, v: u64) -> Self {
-            self.place.rev = v.into();
+            self.place.revision = v.into();
             self
         }
         pub fn title(mut self, title: &str) -> Self {
@@ -828,11 +889,43 @@ pub mod place_builder {
             self
         }
         pub fn image_url(mut self, image_url: Option<&str>) -> Self {
-            self.place.image_url = image_url.map(Into::into);
+            self.place.links = match self.place.links {
+                Some(mut links) => {
+                    links.image = image_url.map(FromStr::from_str).transpose().unwrap();
+                    Some(links)
+                }
+                None => {
+                    if let Some(image_url) = image_url {
+                        let links = Links {
+                            image: Some(image_url.parse().unwrap()),
+                            ..Default::default()
+                        };
+                        Some(links)
+                    } else {
+                        None
+                    }
+                }
+            };
             self
         }
         pub fn image_link_url(mut self, image_link_url: Option<&str>) -> Self {
-            self.place.image_link_url = image_link_url.map(Into::into);
+            self.place.links = match self.place.links {
+                Some(mut links) => {
+                    links.image_href = image_link_url.map(FromStr::from_str).transpose().unwrap();
+                    Some(links)
+                }
+                None => {
+                    if let Some(image_link_url) = image_link_url {
+                        let links = Links {
+                            image_href: Some(image_link_url.parse().unwrap()),
+                            ..Default::default()
+                        };
+                        Some(links)
+                    } else {
+                        None
+                    }
+                }
+            };
             self
         }
         pub fn finish(self) -> Place {
@@ -846,9 +939,9 @@ pub mod place_builder {
             PlaceBuild {
                 place: Place {
                     uid: Uid::new_uuid(),
-                    rev: Revision::initial(),
-                    created: Activity::now(None),
                     license: "".into(),
+                    revision: Revision::initial(),
+                    created: Activity::now(None),
                     title: "".into(),
                     description: "".into(),
                     location: Location {
@@ -856,9 +949,7 @@ pub mod place_builder {
                         address: None,
                     },
                     contact: None,
-                    homepage: None,
-                    image_url: None,
-                    image_link_url: None,
+                    links: None,
                     tags: vec![],
                 },
             }

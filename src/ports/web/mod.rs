@@ -19,21 +19,21 @@ type Result<T> = result::Result<Json<T>, AppError>;
 
 fn index_all_places<D: PlaceRepo + RatingRepository>(
     db: &D,
-    entry_indexer: &mut dyn PlaceIndexer,
+    place_indexer: &mut dyn PlaceIndexer,
 ) -> Result<()> {
     // TODO: Split into chunks with fixed size instead of
     // loading all entries at once!
-    let entries = db.all_places()?;
-    for (entry, _) in entries {
-        let ratings = db.load_ratings_of_entry(entry.uid.as_ref())?;
+    let places = db.all_places()?;
+    for (place, _) in places {
+        let ratings = db.load_ratings_of_place(place.uid.as_ref())?;
         if let Err(err) =
-            entry_indexer.add_or_update_place(&entry, &entry.avg_ratings(&ratings[..]))
+            place_indexer.add_or_update_place(&place, &place.avg_ratings(&ratings[..]))
         {
-            error!("Failed to index entry {:?}: {}", entry, err);
+            error!("Failed to index place {:?}: {}", place, err);
         }
     }
-    if let Err(err) = entry_indexer.flush() {
-        error!("Failed to build entry index: {}", err);
+    if let Err(err) = place_indexer.flush() {
+        error!("Failed to build place index: {}", err);
     }
     Ok(Json(()))
 }
