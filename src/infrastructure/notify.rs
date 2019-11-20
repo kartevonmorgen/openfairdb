@@ -59,7 +59,11 @@ pub fn place_added(email_addresses: &[String], place: &Place, all_categories: Ve
     }
 }
 
-pub fn place_updated(email_addresses: &[String], place: &Place, all_categories: Vec<Category>) {
+pub fn place_updated(
+    email_addresses: &[String],
+    place: &Place,
+    all_categories: Vec<Category>,
+) {
     let mut place = place.clone();
     let (tags, categories) = Category::split_from_tags(place.tags);
     place.tags = tags;

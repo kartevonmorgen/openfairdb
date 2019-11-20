@@ -60,55 +60,22 @@ joinable!(user_tokens -> users (user_id));
 ///////////////////////////////////////////////////////////////////////
 
 table! {
-    place (id) {
+    place_root (id) {
         id -> BigInt,
+        current_rev -> BigInt,
         uid -> Text,
         lic -> Text,
+    }
+}
+
+table! {
+    place (id) {
+        id -> BigInt,
+        parent_id -> BigInt,
         rev -> BigInt,
-    }
-}
-
-table! {
-    place_rating (id) {
-        id -> BigInt,
-        uid -> Text,
-        place_id -> BigInt,
         created_at -> BigInt,
         created_by -> Nullable<BigInt>,
-        archived_at -> Nullable<BigInt>,
-        archived_by -> Nullable<BigInt>,
-        title -> Text,
-        value -> SmallInt,
-        context -> Text,
-        source -> Nullable<Text>,
-    }
-}
-
-joinable!(place_rating -> place (place_id));
-
-table! {
-    place_rating_comment (id) {
-        id -> BigInt,
-        uid -> Text,
-        rating_id -> BigInt,
-        created_at -> BigInt,
-        created_by -> Nullable<BigInt>,
-        archived_at -> Nullable<BigInt>,
-        archived_by -> Nullable<BigInt>,
-        text -> Text,
-    }
-}
-
-joinable!(place_rating_comment -> place_rating (rating_id));
-
-table! {
-    place_rev (id) {
-        id -> BigInt,
-        rev -> BigInt,
-        place_id -> BigInt,
-        created_at -> BigInt,
-        created_by -> Nullable<BigInt>,
-        status -> SmallInt,
+        current_status -> SmallInt,
         title -> Text,
         desc -> Text,
         lat -> Double,
@@ -125,12 +92,13 @@ table! {
     }
 }
 
-joinable!(place_rev -> place (place_id));
+joinable!(place -> place_root (parent_id));
 
 table! {
-    place_rev_activity_log (id) {
+    place_review (id) {
         id -> BigInt,
-        place_rev_id -> BigInt,
+        parent_id -> BigInt,
+        rev -> BigInt,
         created_at -> BigInt,
         created_by -> Nullable<BigInt>,
         status -> SmallInt,
@@ -139,16 +107,49 @@ table! {
     }
 }
 
-joinable!(place_rev_activity_log -> place_rev (place_rev_id));
+joinable!(place_review -> place (parent_id));
 
 table! {
-    place_rev_tag (place_rev_id, tag) {
-        place_rev_id -> BigInt,
+    place_rating (id) {
+        id -> BigInt,
+        parent_id -> BigInt,
+        created_at -> BigInt,
+        created_by -> Nullable<BigInt>,
+        archived_at -> Nullable<BigInt>,
+        archived_by -> Nullable<BigInt>,
+        uid -> Text,
+        title -> Text,
+        value -> SmallInt,
+        context -> Text,
+        source -> Nullable<Text>,
+    }
+}
+
+joinable!(place_rating -> place_root (parent_id));
+
+table! {
+    place_rating_comment (id) {
+        id -> BigInt,
+        parent_id -> BigInt,
+        created_at -> BigInt,
+        created_by -> Nullable<BigInt>,
+        archived_at -> Nullable<BigInt>,
+        archived_by -> Nullable<BigInt>,
+        uid -> Text,
+        text -> Text,
+    }
+}
+
+joinable!(place_rating_comment -> place_rating (parent_id));
+
+table! {
+    place_tag (parent_id, tag) {
+        parent_id -> BigInt,
         tag -> Text,
     }
 }
 
-joinable!(place_rev_tag -> place_rev (place_rev_id));
+joinable!(place_tag -> place (parent_id));
 
 ///////////////////////////////////////////////////////////////////////
 // Events
@@ -218,9 +219,9 @@ allow_tables_to_appear_in_same_query!(
     place,
     place_rating,
     place_rating_comment,
-    place_rev,
-    place_rev_activity_log,
-    place_rev_tag,
+    place_review,
+    place_root,
+    place_tag,
     org_tag_relations,
     organizations,
     tags,

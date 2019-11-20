@@ -15,7 +15,7 @@ pub fn update_place(
         let mut prepare_err = None;
         connection
             .transaction::<_, diesel::result::Error, _>(
-                || match usecases::prepare_updated_place_rev(
+                || match usecases::prepare_updated_place(
                     &*connection,
                     uid,
                     update_place,
@@ -23,7 +23,7 @@ pub fn update_place(
                 ) {
                     Ok(storable) => {
                         let (place, ratings) =
-                            usecases::store_updated_place_rev(&*connection, storable).map_err(
+                            usecases::store_updated_place(&*connection, storable).map_err(
                                 |err| {
                                     warn!("Failed to store updated place: {}", err);
                                     diesel::result::Error::RollbackTransaction

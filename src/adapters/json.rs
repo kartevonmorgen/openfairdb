@@ -306,7 +306,7 @@ impl Entry {
 
         Entry {
             id: uid.into(),
-            created: created.when.into(),
+            created: created.when.into_seconds(),
             version: revision.into(),
             title,
             description,
@@ -453,14 +453,14 @@ impl From<e::Links> for Links {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PlaceId {
+pub struct PlaceRoot {
     pub uid: String,
     pub lic: String,
 }
 
-impl From<e::PlaceId> for PlaceId {
-    fn from(from: e::PlaceId) -> Self {
-        let e::PlaceId { uid, license: lic } = from;
+impl From<e::PlaceRoot> for PlaceRoot {
+    fn from(from: e::PlaceRoot) -> Self {
+        let e::PlaceRoot { uid, license: lic } = from;
         Self {
             uid: uid.into(),
             lic,
@@ -469,20 +469,20 @@ impl From<e::PlaceId> for PlaceId {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PlaceRev {
+pub struct PlaceState {
     pub rev: u64,
     pub created: Activity,
     pub title: String,
     pub desc: String,
-    pub location: Location,
+    pub loc: Location,
     pub contact: Option<Contact>,
     pub links: Option<Links>,
-    pub tags: Vec<String>,
+    pub tag: Vec<String>,
 }
 
-impl From<e::PlaceRev> for PlaceRev {
-    fn from(from: e::PlaceRev) -> Self {
-        let e::PlaceRev {
+impl From<e::PlaceState> for PlaceState {
+    fn from(from: e::PlaceState) -> Self {
+        let e::PlaceState {
             revision,
             created,
             title,
@@ -490,17 +490,17 @@ impl From<e::PlaceRev> for PlaceRev {
             location,
             contact,
             links,
-            tags,
+            tags: tag,
         } = from;
         Self {
             rev: revision.into(),
             created: created.into(),
             title,
             desc,
-            location: location.into(),
+            loc: location.into(),
             contact: contact.map(Into::into),
             links: links.map(Into::into),
-            tags,
+            tag,
         }
     }
 }
@@ -530,10 +530,4 @@ pub struct ReviewStatusLog {
     pub status: ReviewStatus,
     pub context: Option<String>,
     pub notes: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct PlaceRevReviewStatusLog {
-    place_rev: PlaceRev,
-    status_logs: Vec<ReviewStatusLog>,
 }

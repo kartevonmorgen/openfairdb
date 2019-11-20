@@ -2,7 +2,7 @@ use crate::core::util::{
     geo::{MapBbox, MapPoint},
     nonce::Nonce,
     password::Password,
-    time::Timestamp,
+    time::{Timestamp, TimestampMs},
 };
 
 use chrono::prelude::*;
@@ -176,20 +176,20 @@ impl fmt::Display for Email {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Activity {
-    pub when: Timestamp,
+    pub when: TimestampMs,
     pub who: Option<Email>,
 }
 
 impl Activity {
     pub fn now(who: Option<Email>) -> Self {
         Self {
-            when: Timestamp::now(),
+            when: TimestampMs::now(),
             who,
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ActivityLog {
     pub activity: Activity,
     pub context: Option<String>,
@@ -234,14 +234,16 @@ pub struct Links {
     pub image_href: Option<Url>,
 }
 
+// Immutable properties of a place.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct PlaceId {
+pub struct PlaceRoot {
     pub uid: Uid,
     pub license: String,
 }
 
+// Mutable properties of a place.
 #[derive(Debug, Clone, PartialEq)]
-pub struct PlaceRev {
+pub struct PlaceState {
     pub revision: Revision,
     pub created: Activity,
     pub title: String,
@@ -266,11 +268,11 @@ pub struct Place {
     pub tags: Vec<String>,
 }
 
-impl From<(PlaceId, PlaceRev)> for Place {
-    fn from(from: (PlaceId, PlaceRev)) -> Self {
+impl From<(PlaceRoot, PlaceState)> for Place {
+    fn from(from: (PlaceRoot, PlaceState)) -> Self {
         let (
-            PlaceId { uid, license },
-            PlaceRev {
+            PlaceRoot { uid, license },
+            PlaceState {
                 revision,
                 created,
                 title,
@@ -296,7 +298,7 @@ impl From<(PlaceId, PlaceRev)> for Place {
     }
 }
 
-impl From<Place> for (PlaceId, PlaceRev) {
+impl From<Place> for (PlaceRoot, PlaceState) {
     fn from(from: Place) -> Self {
         let Place {
             uid,
@@ -311,8 +313,8 @@ impl From<Place> for (PlaceId, PlaceRev) {
             tags,
         } = from;
         (
-            PlaceId { uid, license },
-            PlaceRev {
+            PlaceRoot { uid, license },
+            PlaceState {
                 revision,
                 created,
                 title,
@@ -324,6 +326,21 @@ impl From<Place> for (PlaceId, PlaceRev) {
             },
         )
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReviewStatusLog {
+    pub revision: Revision,
+    pub activity: ActivityLog,
+    pub status: ReviewStatus,
+}
+
+// The complete history of a single place aggregate
+// without review status logs.
+#[derive(Debug, Clone, PartialEq)]
+pub struct PlaceHistory {
+    pub place: PlaceRoot,
+    pub revisions: Vec<(PlaceState, Vec<ReviewStatusLog>)>,
 }
 
 #[rustfmt::skip]

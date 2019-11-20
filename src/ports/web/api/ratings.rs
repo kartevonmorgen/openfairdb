@@ -29,13 +29,13 @@ pub fn load_rating(db: sqlite::Connections, ids: String) -> Result<Vec<json::Rat
                 .into_iter()
                 .map(|c| json::Comment {
                     id: c.uid.clone().into(),
-                    created: c.created_at.into(),
+                    created: c.created_at.into_seconds(),
                     text: c.text,
                 })
                 .collect();
             json::Rating {
                 id: r.uid.into(),
-                created: r.created_at.into(),
+                created: r.created_at.into_seconds(),
                 title: r.title,
                 value: r.value,
                 context: r.context,

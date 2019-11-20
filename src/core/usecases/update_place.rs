@@ -26,7 +26,7 @@ pub struct UpdatePlace {
 
 pub struct Storable(Place);
 
-pub fn prepare_updated_place_rev<D: Db>(
+pub fn prepare_updated_place<D: Db>(
     db: &D,
     place_uid: Uid,
     e: UpdatePlace,
@@ -125,13 +125,13 @@ pub fn prepare_updated_place_rev<D: Db>(
     Ok(Storable(place))
 }
 
-pub fn store_updated_place_rev<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>)> {
+pub fn store_updated_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>)> {
     let Storable(place) = s;
     debug!("Storing updated place revision: {:?}", place);
     for t in &place.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
-    db.create_place_rev(place.clone())?;
+    db.create_or_update_place(place.clone())?;
     let ratings = db.load_ratings_of_place(place.uid.as_ref())?;
     Ok((place, ratings))
 }
@@ -145,7 +145,7 @@ mod tests {
     use url::Url;
 
     #[test]
-    fn update_valid_place_rev() {
+    fn update_place_valid() {
         let uid = Uid::new_uuid();
         let old = Place::build()
             .id(uid.as_ref())
@@ -178,10 +178,10 @@ mod tests {
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![(old, ReviewStatus::Created)].into();
-        let now = Timestamp::now();
+        let now = TimestampMs::now();
         let storable =
-            prepare_updated_place_rev(&mock_db, uid, new, Some("test@example.com")).unwrap();
-        assert!(store_updated_place_rev(&mock_db, storable).is_ok());
+            prepare_updated_place(&mock_db, uid, new, Some("test@example.com")).unwrap();
+        assert!(store_updated_place(&mock_db, storable).is_ok());
         assert_eq!(mock_db.entries.borrow().len(), 1);
         let (x, _) = &mock_db.entries.borrow()[0];
         assert_eq!(
@@ -218,7 +218,7 @@ mod tests {
     }
 
     #[test]
-    fn update_place_rev_with_invalid_version() {
+    fn update_place_with_invalid_version() {
         let uid = Uid::new_uuid();
         let old = Place::build()
             .id(uid.as_ref())
@@ -249,8 +249,8 @@ mod tests {
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![(old, ReviewStatus::Created)].into();
-        let err = match prepare_updated_place_rev(&mock_db, uid, new, None) {
-            Ok(storable) => store_updated_place_rev(&mock_db, storable).err(),
+        let err = match prepare_updated_place(&mock_db, uid, new, None) {
+            Ok(storable) => store_updated_place(&mock_db, storable).err(),
             Err(err) => Some(err),
         };
         assert!(err.is_some());
@@ -269,7 +269,7 @@ mod tests {
     }
 
     #[test]
-    fn update_non_existing_place_rev() {
+    fn update_non_existing_place() {
         let uid = Uid::new_uuid();
         #[rustfmt::skip]
         let new = UpdatePlace {
@@ -292,7 +292,7 @@ mod tests {
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![].into();
-        let result = prepare_updated_place_rev(&mock_db, uid, new, None);
+        let result = prepare_updated_place(&mock_db, uid, new, None);
         assert!(result.is_err());
         match result.err().unwrap() {
             Error::Repo(err) => match err {
@@ -309,7 +309,7 @@ mod tests {
     }
 
     #[test]
-    fn update_valid_place_rev_with_tags() {
+    fn update_place_with_tags() {
         let uid = Uid::new_uuid();
         let old = Place::build()
             .id(uid.as_ref())
@@ -339,8 +339,8 @@ mod tests {
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![(old, ReviewStatus::Created)].into();
         mock_db.tags = vec![Tag { id: "bio".into() }, Tag { id: "fair".into() }].into();
-        let storable = prepare_updated_place_rev(&mock_db, uid.clone(), new, None).unwrap();
-        assert!(store_updated_place_rev(&mock_db, storable).is_ok());
+        let storable = prepare_updated_place(&mock_db, uid.clone(), new, None).unwrap();
+        assert!(store_updated_place(&mock_db, storable).is_ok());
         let (e, _) = mock_db.get_place(uid.as_ref()).unwrap();
         assert_eq!(e.tags, vec!["vegan"]);
         assert_eq!(mock_db.tags.borrow().len(), 3);

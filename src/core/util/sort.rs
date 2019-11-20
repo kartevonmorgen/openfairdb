@@ -25,7 +25,7 @@ pub mod tests {
     use super::*;
     use crate::test::Bencher;
 
-    fn new_place_rev(id: &str) -> (Place) {
+    fn new_place(id: &str) -> (Place) {
         Place::build().id(id).finish()
     }
 
@@ -44,9 +44,9 @@ pub mod tests {
 
     #[test]
     fn test_average_rating() {
-        let entry1 = new_place_rev("a");
-        let entry2 = new_place_rev("b");
-        let entry3 = new_place_rev("c");
+        let entry1 = new_place("a");
+        let entry2 = new_place("b");
+        let entry3 = new_place("c");
 
         let ratings1 = [
             new_rating("1", "a", -1, RatingContext::Diversity),
@@ -66,8 +66,8 @@ pub mod tests {
 
     #[test]
     fn test_average_rating_different_contexts() {
-        let entry1 = new_place_rev("a");
-        let entry2 = new_place_rev("b");
+        let entry1 = new_place("a");
+        let entry2 = new_place("b");
 
         let ratings1 = [
             new_rating("1", "a", -1, RatingContext::Diversity),

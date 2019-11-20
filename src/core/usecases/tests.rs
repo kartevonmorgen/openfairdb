@@ -187,7 +187,7 @@ fn update<T: Clone + Key>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
 }
 
 impl PlaceRepo for MockDb {
-    fn create_place_rev(&self, place: Place) -> RepoResult<()> {
+    fn create_or_update_place(&self, place: Place) -> RepoResult<()> {
         create_or_replace(
             &mut self.entries.borrow_mut(),
             (place, ReviewStatus::Created),
@@ -246,6 +246,10 @@ impl PlaceRepo for MockDb {
         _status: ReviewStatus,
         _activity: &ActivityLog,
     ) -> RepoResult<usize> {
+        unimplemented!();
+    }
+
+    fn get_place_history(&self, _uid: &str) -> RepoResult<PlaceHistory> {
         unimplemented!();
     }
 }

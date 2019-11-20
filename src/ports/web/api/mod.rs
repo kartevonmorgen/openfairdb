@@ -119,7 +119,7 @@ fn get_entries_recently_changed(
     mut limit: Option<u64>,
 ) -> Result<Vec<json::Entry>> {
     let since_min =
-        i64::from(Timestamp::now()) - ENTRIES_RECECENTLY_CHANGED_MAX_AGE_IN_DAYS * SECONDS_PER_DAY;
+        Timestamp::now().into_seconds() - ENTRIES_RECECENTLY_CHANGED_MAX_AGE_IN_DAYS * SECONDS_PER_DAY;
     let since = if let Some(since) = since {
         if since < since_min {
             log::warn!(
@@ -134,7 +134,7 @@ fn get_entries_recently_changed(
     } else {
         Some(since_min)
     }
-    .map(Into::into);
+    .map(Timestamp::from_seconds);
     debug_assert!(since.is_some());
     let mut total_count = 0;
     if let Some(offset) = offset {
@@ -161,7 +161,7 @@ fn get_entries_recently_changed(
     debug_assert!(limit.is_some());
     let params = RecentlyChangedEntriesParams {
         since,
-        until: until.map(Into::into),
+        until: until.map(Timestamp::from_seconds),
     };
     let pagination = Pagination { offset, limit };
     let results = {

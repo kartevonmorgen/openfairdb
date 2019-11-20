@@ -2,41 +2,41 @@
 -- into new tables with foreign keys.
 PRAGMA foreign_keys = OFF;
 
--- Predefined status values:
+-- Predefined review status values:
 --   -1 = rejected
 --    0 = archived
 --    1 = created
 --    2 = approved
 
-CREATE TABLE place (
-    -- immutable
+CREATE TABLE place_root (
     id  INTEGER PRIMARY KEY,
+    --
+    current_rev INTEGER NOT NULL, -- current revision (mutable)
+    --
     uid TEXT NOT NULL,
     lic TEXT NOT NULL, -- license
-    -- mutable
-    rev INTEGER NOT NULL, -- current revision = MAX(place_rev.rev)
     --
     UNIQUE (uid)
 );
 
-INSERT INTO place
-SELECT rowid, id, license, version
+INSERT INTO place_root
+SELECT rowid, version, id, license
 FROM entries
 WHERE current<>0
 GROUP BY id
 HAVING version=MAX(version);
 
 -- Different revisions of a place
-CREATE TABLE place_rev (
-    -- immutable header
+CREATE TABLE place (
     id             INTEGER PRIMARY KEY,
+    parent_id      INTEGER NOT NULL,
+    --
     rev            INTEGER NOT NULL,
-    place_id       INTEGER NOT NULL,
     created_at     INTEGER NOT NULL,
     created_by     INTEGER,
-    -- mutable header
-    status         INTEGER NOT NULL,
-    -- immutable body
+    --
+    current_status INTEGER NOT NULL, -- current status (mutable) from place_review
+    --
     title          TEXT NOT NULL,
     desc           TEXT NOT NULL,
     lat            FLOAT NOT NULL,
@@ -51,18 +51,18 @@ CREATE TABLE place_rev (
     image_url      TEXT,
     image_link_url TEXT,
     --
-    UNIQUE (place_id, rev),
-    FOREIGN KEY (place_id) REFERENCES place(id),
+    UNIQUE (parent_id, rev),
+    FOREIGN KEY (parent_id) REFERENCES place_root(id),
     FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
-INSERT INTO place_rev SELECT
+INSERT INTO place SELECT
 entries.rowid,
+place_root.id, -- parent_id
 entries.version, -- rev
-place.id,
-entries.created, -- created_at
+entries.created * 1000, -- created_at (seconds -> milliseconds)
 NULL, -- created_by -> user_id
-1, -- status = created (no archived entries yet!)
+1, -- current_status = created (no archived entries yet!)
 entries.title,
 entries.description,
 entries.lat,
@@ -77,127 +77,130 @@ entries.homepage,
 entries.image_url,
 entries.image_link_url
 FROM entries
-JOIN place ON entries.id=place.uid;
+JOIN place_root ON entries.id=place_root.uid
+WHERE archived IS NULL; -- no archived entries yet (otherwise ignored)!
 
-CREATE TABLE place_rev_activity_log (
+CREATE TABLE place_review (
     id           INTEGER PRIMARY KEY,
-    place_rev_id INTEGER NOT NULL,
+    parent_id    INTEGER NOT NULL,
+    --
+    rev          INTEGER NOT NULL,
     created_at   INTEGER NOT NULL,
     created_by   INTEGER,
+    --
     status       INTEGER NOT NULL,
-    context      TEXT, -- arbitrary technical or system context, e.g. client IP address, ...
+    context      TEXT, -- system context, e.g. client IP address, ...
     notes        TEXT, -- human-written informational notes
     --
-    FOREIGN KEY (place_rev_id) REFERENCES place_rev(id),
+    UNIQUE (parent_id, rev),
+    FOREIGN KEY (parent_id) REFERENCES place(id),
     FOREIGN KEY (created_by) REFERENCES users(id)
 );
 
-INSERT INTO place_rev_activity_log SELECT
+INSERT INTO place_review SELECT
 id,
-id,
+id, -- parent_id
+0,
 created_at,
 created_by,
-status,
+current_status,
 NULL,
 NULL
-FROM place_rev;
+FROM place;
 
-CREATE TABLE place_rev_tag (
-    place_rev_id INTEGER NOT NULL,
-    tag          TEXT NOT NULL,
-    --
-    PRIMARY KEY (place_rev_id, tag),
-    FOREIGN KEY (place_rev_id) REFERENCES place_rev(id)
+CREATE TABLE place_tag (
+    parent_id INTEGER NOT NULL,
+    tag       TEXT NOT NULL,
+    PRIMARY KEY (parent_id, tag),
+    FOREIGN KEY (parent_id) REFERENCES place(id)
 );
 
-INSERT OR IGNORE INTO place_rev_tag SELECT
-place_rev.id,
+INSERT OR IGNORE INTO place_tag SELECT
+place.id,
 trim(entry_tag_relations.tag_id)
 FROM entry_tag_relations
-JOIN place ON entry_tag_relations.entry_id=place.uid
-JOIN place_rev ON place_rev.place_id=place.id AND place_rev.rev=entry_tag_relations.entry_version;
+JOIN place_root ON place_root.uid=entry_tag_relations.entry_id
+JOIN place ON place.parent_id=place_root.id AND place.rev=entry_tag_relations.entry_version;
 
-INSERT OR IGNORE INTO place_rev_tag SELECT
-place_rev.id,
+INSERT OR IGNORE INTO place_tag SELECT
+place.id,
 'non-profit'
 FROM entry_category_relations
-JOIN place ON entry_category_relations.entry_id=place.uid
-JOIN place_rev ON place_rev.place_id=place.id AND place_rev.rev=entry_category_relations.entry_version
+JOIN place_root ON place_root.uid=entry_category_relations.entry_id
+JOIN place ON place.parent_id=place_root.id AND place.rev=entry_category_relations.entry_version
 WHERE entry_category_relations.category_id='2cd00bebec0c48ba9db761da48678134';
 
-INSERT OR IGNORE INTO place_rev_tag SELECT
-place_rev.id,
+INSERT OR IGNORE INTO place_tag SELECT
+place.id,
 'commercial'
 FROM entry_category_relations
-JOIN place ON entry_category_relations.entry_id=place.uid
-JOIN place_rev ON place_rev.place_id=place.id AND place_rev.rev=entry_category_relations.entry_version
+JOIN place_root ON place_root.uid=entry_category_relations.entry_id
+JOIN place ON place.parent_id=place_root.id AND place.rev=entry_category_relations.entry_version
 WHERE entry_category_relations.category_id='77b3c33a92554bcf8e8c2c86cedd6f6f';
 
--- Ratings apply to all revisions of a place
+-- Ratings apply to all revisions of a place, i.e. place_root
 CREATE TABLE place_rating (
-    -- immutable header
     id          INTEGER PRIMARY KEY,
-    uid         TEXT NOT NULL,
-    place_id    INTEGER NOT NULL,
+    parent_id   INTEGER NOT NULL,
+    --
     created_at  INTEGER NOT NULL,
     created_by  INTEGER,
-    -- mutable header
     archived_at INTEGER,
     archived_by INTEGER,
-    -- immutable body
+    --
+    uid         TEXT NOT NULL,
     title       TEXT NOT NULL,
     value       INTEGER NOT NULL,
     context     TEXT NOT NULL,
     source      TEXT,
     --
     UNIQUE (uid),
-    FOREIGN KEY (place_id) REFERENCES place(id),
+    FOREIGN KEY (parent_id) REFERENCES place_root(id),
     FOREIGN KEY (created_by) REFERENCES users(id),
     FOREIGN KEY (archived_by) REFERENCES users(id)
 );
 
 INSERT INTO place_rating SELECT
-ratings.rowid,
-ratings.id,
-place.id,
+ratings.rowid, -- id
+place_root.id, -- parent_id
 ratings.created, -- created_at
 NULL, -- created_by
 ratings.archived, -- archived_at
 NULL, -- archived_by
+ratings.id, -- uid
 ratings.title,
 ratings.value,
 ratings.context,
 ratings.source
 FROM ratings
-JOIN place ON place.uid=ratings.entry_id;
+JOIN place_root ON place_root.uid=ratings.entry_id;
 
 CREATE TABLE place_rating_comment (
-    -- immutable header
-    id              INTEGER PRIMARY KEY,
-    uid             TEXT NOT NULL,
-    rating_id INTEGER NOT NULL,
-    created_at      INTEGER NOT NULL,
-    created_by      INTEGER,
-    -- mutable header
-    archived_at     INTEGER,
-    archived_by     INTEGER,
-    -- immutable body
-    text            TEXT NOT NULL,
+    id          INTEGER PRIMARY KEY,
+    parent_id   INTEGER NOT NULL,
+    --
+    created_at  INTEGER NOT NULL,
+    created_by  INTEGER,
+    archived_at INTEGER,
+    archived_by INTEGER,
+    --
+    uid         TEXT NOT NULL,
+    text        TEXT NOT NULL,
     --
     UNIQUE (uid),
-    FOREIGN KEY (rating_id) REFERENCES place_rating(id),
+    FOREIGN KEY (parent_id) REFERENCES place_rating(id),
     FOREIGN KEY (created_by) REFERENCES users(id),
     FOREIGN KEY (archived_by) REFERENCES users(id)
 );
 
 INSERT INTO place_rating_comment SELECT
 comments.rowid,
-comments.id,
-place_rating.id,
+place_rating.id, -- parent_id
 comments.created, -- created_at
 NULL, -- created_by
 comments.archived, -- archived_at
 NULL, -- archived_by
+comments.id, -- uid
 comments.text
 FROM comments
 JOIN place_rating ON place_rating.uid=comments.rating_id;
@@ -209,17 +212,17 @@ DROP TABLE entry_category_relations;
 DROP TABLE entries;
 DROP TABLE categories;
 
-CREATE INDEX place_rev_idx_created_at ON place_rev (created_at);
-CREATE INDEX place_rev_idx_created_by ON place_rev (created_by);
-CREATE INDEX place_rev_activity_log_idx_created_at ON place_rev_activity_log (created_at);
-CREATE INDEX place_rev_activity_log_idx_created_by ON place_rev_activity_log (created_by);
-CREATE INDEX place_rev_tag_idx_tag ON place_rev_tag (tag);
-CREATE INDEX rating_idx_place_id ON place_rating (place_id);
-CREATE INDEX rating_idx_created_at ON place_rating (created_at);
-CREATE INDEX rating_idx_created_by ON place_rating (created_by);
-CREATE INDEX rating_idx_archived_at ON place_rating (archived_at);
-CREATE INDEX rating_idx_archived_by ON place_rating (archived_by);
-CREATE INDEX place_rating_comment_idx_rating_id ON place_rating_comment (rating_id);
+CREATE INDEX place_idx_created_at ON place (created_at);
+CREATE INDEX place_idx_created_by ON place (created_by);
+CREATE INDEX place_review_idx_created_at ON place_review (created_at);
+CREATE INDEX place_review_idx_created_by ON place_review (created_by);
+CREATE INDEX place_tag_idx_tag ON place_tag (tag);
+CREATE INDEX place_rating_idx_parent_id ON place_rating (parent_id);
+CREATE INDEX place_rating_idx_created_at ON place_rating (created_at);
+CREATE INDEX place_rating_idx_created_by ON place_rating (created_by);
+CREATE INDEX place_rating_idx_archived_at ON place_rating (archived_at);
+CREATE INDEX place_rating_idx_archived_by ON place_rating (archived_by);
+CREATE INDEX place_rating_comment_idx_parent_id ON place_rating_comment (parent_id);
 CREATE INDEX place_rating_comment_idx_created_at ON place_rating_comment (created_at);
 CREATE INDEX place_rating_comment_idx_created_by ON place_rating_comment (created_by);
 CREATE INDEX place_rating_comment_idx_archived_at ON place_rating_comment (archived_at);

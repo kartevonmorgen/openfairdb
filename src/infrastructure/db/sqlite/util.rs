@@ -5,6 +5,7 @@ use crate::core::{
     util::{
         geo::{MapBbox, MapPoint},
         nonce::Nonce,
+        time::Timestamp,
     },
 };
 use chrono::prelude::*;
@@ -154,7 +155,7 @@ impl From<(EventEntity, &Vec<EventTag>)> for e::Event {
             created_by: created_by_email,
             registration,
             organizer,
-            archived: archived.map(Into::into),
+            archived: archived.map(Timestamp::from_inner),
             image_url: image_url.and_then(load_url),
             image_link_url: image_link_url.and_then(load_url),
         }
@@ -227,8 +228,8 @@ impl From<PlaceRatingComment> for e::Comment {
         Self {
             uid: uid.into(),
             rating_uid: rating_uid.into(),
-            created_at: created_at.into(),
-            archived_at: archived_at.map(Into::into),
+            created_at: Timestamp::from_inner(created_at),
+            archived_at: archived_at.map(Timestamp::from_inner),
             text,
         }
     }
@@ -250,8 +251,8 @@ impl From<PlaceRating> for e::Rating {
         Self {
             uid: uid.into(),
             place_uid: place_uid.into(),
-            created_at: created_at.into(),
-            archived_at: archived_at.map(Into::into),
+            created_at: Timestamp::from_inner(created_at),
+            archived_at: archived_at.map(Timestamp::from_inner),
             title,
             value: (value as i8).into(),
             context: context.parse().unwrap(),
@@ -291,7 +292,7 @@ impl From<UserTokenEntity> for e::UserToken {
                 email: from.user_email,
                 nonce: from.nonce.parse::<Nonce>().unwrap_or_default(),
             },
-            expires_at: from.expires_at.into(),
+            expires_at: Timestamp::from_inner(from.expires_at),
         }
     }
 }

@@ -105,7 +105,7 @@ mod tests {
             Place::build()
                 .pos(MapPoint::from_lat_lng_deg(5.0, 5.0))
                 .finish(),
-            Place::build()
+                Place::build()
                 .pos(MapPoint::from_lat_lng_deg(-5.0, 5.0))
                 .finish(),
             Place::build()

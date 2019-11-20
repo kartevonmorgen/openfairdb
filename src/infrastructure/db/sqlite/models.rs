@@ -1,29 +1,51 @@
 use super::schema::*;
 
 #[derive(Insertable)]
-#[table_name = "place"]
-pub struct NewPlace<'a, 'b> {
+#[table_name = "place_root"]
+pub struct NewPlaceRoot<'a, 'b> {
+    pub current_rev: i64,
     pub uid: &'a str,
     pub lic: &'b str,
+}
+
+#[derive(Queryable)]
+pub struct PlaceRoot {
+    pub id: i64,
+    pub current_rev: i64,
+    pub uid: String,
+    pub lic: String,
+}
+
+#[derive(Insertable)]
+#[table_name = "place"]
+pub struct NewPlace {
+    pub parent_id: i64,
     pub rev: i64,
+    pub created_at: i64,
+    pub created_by: Option<i64>,
+    pub current_status: i16,
+    pub title: String,
+    pub desc: String,
+    pub lat: f64,
+    pub lon: f64,
+    pub street: Option<String>,
+    pub zip: Option<String>,
+    pub city: Option<String>,
+    pub country: Option<String>,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub homepage: Option<String>,
+    pub image_url: Option<String>,
+    pub image_link_url: Option<String>,
 }
 
 #[derive(Queryable)]
 pub struct Place {
     pub id: i64,
-    pub uid: String,
-    pub lic: String,
     pub rev: i64,
-}
-
-#[derive(Insertable)]
-#[table_name = "place_rev"]
-pub struct NewPlaceRev {
-    pub rev: i64,
-    pub place_id: i64,
     pub created_at: i64,
     pub created_by: Option<i64>,
-    pub status: i16,
+    pub current_status: i16,
     pub title: String,
     pub desc: String,
     pub lat: f64,
@@ -37,18 +59,17 @@ pub struct NewPlaceRev {
     pub homepage: Option<String>,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
+
+    pub place_uid: String,
+    pub place_lic: String,
 }
 
 #[derive(Queryable)]
-pub struct PlaceRev {
+pub struct PlaceWithStatusReview {
     pub id: i64,
     pub rev: i64,
-    pub place_id: i64,
-    pub place_uid: String,
-    pub place_lic: String,
     pub created_at: i64,
     pub created_by: Option<i64>,
-    pub status: i16,
     pub title: String,
     pub desc: String,
     pub lat: f64,
@@ -62,41 +83,23 @@ pub struct PlaceRev {
     pub homepage: Option<String>,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
-}
 
-#[derive(Queryable)]
-pub struct PlaceRevStatusLog {
-    pub id: i64,
-    pub rev: i64,
-    pub place_id: i64,
     pub place_uid: String,
     pub place_lic: String,
-    pub created_at: i64,
-    pub created_by: Option<i64>,
-    pub status: i16,
-    pub status_created_at: i64,
-    pub status_created_by: Option<i64>,
-    pub status_context: Option<String>,
-    pub status_notes: Option<String>,
-    pub title: String,
-    pub desc: String,
-    pub lat: f64,
-    pub lon: f64,
-    pub street: Option<String>,
-    pub zip: Option<String>,
-    pub city: Option<String>,
-    pub country: Option<String>,
-    pub email: Option<String>,
-    pub phone: Option<String>,
-    pub homepage: Option<String>,
-    pub image_url: Option<String>,
-    pub image_link_url: Option<String>,
+
+    pub review_rev: i64,
+    pub review_created_at: i64,
+    pub review_created_by: Option<i64>,
+    pub review_status: i16,
+    pub review_context: Option<String>,
+    pub review_notes: Option<String>,
 }
 
 #[derive(Insertable)]
-#[table_name = "place_rev_activity_log"]
-pub struct NewPlaceRevStatusLog<'a, 'b> {
-    pub place_rev_id: i64,
+#[table_name = "place_review"]
+pub struct NewPlaceReview<'a, 'b> {
+    pub parent_id: i64,
+    pub rev: i64,
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub status: i16,
@@ -105,27 +108,38 @@ pub struct NewPlaceRevStatusLog<'a, 'b> {
 }
 
 #[derive(Queryable)]
-pub struct PlaceRevTag {
-    pub place_rev_id: i64,
+pub struct PlaceReview {
+    pub rev: i64,
+    pub created_at: i64,
+    pub created_by: Option<i64>,
+    pub created_by_email: Option<String>,
+    pub status: i16,
+    pub context: Option<String>,
+    pub notes: Option<String>,
+}
+
+#[derive(Queryable)]
+pub struct PlaceTag {
+    pub parent_id: i64,
     pub tag: String,
 }
 
 #[derive(Insertable)]
-#[table_name = "place_rev_tag"]
-pub struct NewPlaceRevTag<'a> {
-    pub place_rev_id: i64,
+#[table_name = "place_tag"]
+pub struct NewPlaceTag<'a> {
+    pub parent_id: i64,
     pub tag: &'a str,
 }
 
 #[derive(Insertable)]
 #[table_name = "place_rating"]
 pub struct NewPlaceRating {
-    pub uid: String,
-    pub place_id: i64,
+    pub parent_id: i64,
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub archived_at: Option<i64>,
     pub archived_by: Option<i64>,
+    pub uid: String,
     pub title: String,
     pub value: i16,
     pub context: String,
@@ -135,42 +149,42 @@ pub struct NewPlaceRating {
 #[derive(Queryable)]
 pub struct PlaceRating {
     pub id: i64,
-    pub uid: String,
-    pub place_id: i64,
-    pub place_uid: String,
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub archived_at: Option<i64>,
     pub archived_by: Option<i64>,
+    pub uid: String,
     pub title: String,
     pub value: i16,
     pub context: String,
     pub source: Option<String>,
+
+    pub place_uid: String,
 }
 
 #[derive(Insertable)]
 #[table_name = "place_rating_comment"]
 pub struct NewPlaceRatingComment {
-    pub uid: String,
-    pub rating_id: i64,
+    pub parent_id: i64,
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub archived_at: Option<i64>,
     pub archived_by: Option<i64>,
+    pub uid: String,
     pub text: String,
 }
 
 #[derive(Queryable)]
 pub struct PlaceRatingComment {
     pub id: i64,
-    pub uid: String,
-    pub rating_id: i64,
-    pub rating_uid: String,
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub archived_at: Option<i64>,
     pub archived_by: Option<i64>,
+    pub uid: String,
     pub text: String,
+
+    pub rating_uid: String,
 }
 
 #[derive(Insertable, AsChangeset)]

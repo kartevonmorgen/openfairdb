@@ -121,7 +121,7 @@ pub fn store_new_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>
     for t in &place.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
-    db.create_place_rev(place.clone())?;
+    db.create_or_update_place(place.clone())?;
     // No initial ratings so far
     let ratings = vec![];
     Ok((place, ratings))
@@ -155,7 +155,7 @@ mod tests {
             image_link_url: None,
         };
         let mock_db = MockDb::default();
-        let now = Timestamp::now();
+        let now = TimestampMs::now();
         let storable = prepare_new_place(&mock_db, x, Some("test@example.com")).unwrap();
         let (_, initial_ratings) = store_new_place(&mock_db, storable).unwrap();
         assert!(initial_ratings.is_empty());

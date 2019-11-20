@@ -50,7 +50,9 @@ pub trait PlaceRepo {
         activity: &ActivityLog,
     ) -> Result<usize>;
 
-    fn create_place_rev(&self, place: Place) -> Result<()>;
+    fn create_or_update_place(&self, place: Place) -> Result<()>;
+
+    fn get_place_history(&self, uid: &str) -> Result<PlaceHistory>;
 }
 
 pub trait EventGateway {

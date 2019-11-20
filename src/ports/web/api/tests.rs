@@ -137,7 +137,7 @@ fn get_one_entry() {
     connections
         .exclusive()
         .unwrap()
-        .create_place_rev(e.clone())
+        .create_or_update_place(e.clone())
         .unwrap();
     flows::create_rating(
         &connections,
@@ -188,11 +188,11 @@ fn get_multiple_places() {
     let (client, db) = setup();
     db.exclusive()
         .unwrap()
-        .create_place_rev(one.clone())
+        .create_or_update_place(one.clone())
         .unwrap();
     db.exclusive()
         .unwrap()
-        .create_place_rev(two.clone())
+        .create_or_update_place(two.clone())
         .unwrap();
     let req = client.get("/entries/get_multiple_entry_test_one,get_multiple_entry_test_two");
     let mut response = req.dispatch();
@@ -546,7 +546,7 @@ fn bench_search_in_10_000_rated_places(b: &mut Bencher) {
     let (client, db) = setup();
     let conn = db.exclusive().unwrap();
     for p in places {
-        conn.create_place_rev(p).unwrap();
+        conn.create_or_update_place(p).unwrap();
     }
     for r in ratings {
         conn.create_rating(r).unwrap();
@@ -979,7 +979,7 @@ fn create_rating() {
         connections
             .exclusive()
             .unwrap()
-            .create_place_rev(e)
+            .create_or_update_place(e)
             .unwrap();
     }
     let req = client.post("/ratings")
@@ -1006,7 +1006,7 @@ fn get_one_rating() {
     connections
         .exclusive()
         .unwrap()
-        .create_place_rev(e)
+        .create_or_update_place(e)
         .unwrap();
     flows::create_rating(
         &connections,
@@ -1048,12 +1048,12 @@ fn ratings_with_and_without_source() {
     connections
         .exclusive()
         .unwrap()
-        .create_place_rev(e1)
+        .create_or_update_place(e1)
         .unwrap();
     connections
         .exclusive()
         .unwrap()
-        .create_place_rev(e2)
+        .create_or_update_place(e2)
         .unwrap();
     flows::create_rating(
         &connections,
@@ -1371,7 +1371,7 @@ fn export_csv() {
             .finish(),
     ];
     entries[0].location.address = Some(Address::build().street("street1").finish());
-    entries[0].created.when = 1111.into();
+    entries[0].created.when = TimestampMs::from_seconds(1111);
     entries[0].location.address = Some(
         Address::build()
             .street("street1")
@@ -1385,7 +1385,7 @@ fn export_csv() {
         image: Some("https://img".parse().unwrap()),
         image_href: Some("https://img,link".parse().unwrap()),
     });
-    entries[1].created.when = 2222.into();
+    entries[1].created.when = TimestampMs::from_seconds(2222);
 
     db.exclusive()
         .unwrap()
@@ -1409,7 +1409,7 @@ fn export_csv() {
         .unwrap();
     for e in entries {
         // Only works if all places have the default/initial revision!
-        db.exclusive().unwrap().create_place_rev(e).unwrap();
+        db.exclusive().unwrap().create_or_update_place(e).unwrap();
     }
     let diversity = RatingContext::Diversity;
     db.exclusive()
@@ -1417,7 +1417,7 @@ fn export_csv() {
         .create_rating(Rating {
             uid: "123".into(),
             place_uid: "entry1".into(),
-            created_at: 123.into(),
+            created_at: Timestamp::from_seconds(123),
             archived_at: None,
             title: "rating1".into(),
             value: RatingValue::from(2),
@@ -1430,7 +1430,7 @@ fn export_csv() {
         .create_rating(Rating {
             uid: "345".into(),
             place_uid: "entry1".into(),
-            created_at: 123.into(),
+            created_at: Timestamp::from_seconds(123),
             archived_at: None,
             title: "rating2".into(),
             value: RatingValue::from(1),
