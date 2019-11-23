@@ -49,6 +49,7 @@ pub fn routes() -> Vec<Route> {
         get_entry,
         get_entries_recently_changed,
         get_entries_most_popular_tags,
+        get_place,
         get_place_history,
         post_entry,
         put_entry,
@@ -210,6 +211,16 @@ pub fn get_entries_most_popular_tags(
         db.most_popular_place_tags(&params, &pagination)?
     };
     Ok(Json(results.into_iter().map(Into::into).collect()))
+}
+
+#[get("/places/<uid>")]
+pub fn get_place(db: sqlite::Connections, uid: String) -> Result<(json::PlaceRoot, json::PlaceState, json::ReviewStatus)> {
+    let (place, status) = {
+        let db = db.shared()?;
+        db.get_place(&uid)?
+    };
+    let (place_root, place_state) = place.into();
+    Ok(Json((place_root.into(), place_state.into(), status.into())))
 }
 
 #[get("/places/<uid>/history")]
