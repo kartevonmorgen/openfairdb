@@ -179,8 +179,7 @@ mod tests {
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![(old, ReviewStatus::Created)].into();
         let now = TimestampMs::now();
-        let storable =
-            prepare_updated_place(&mock_db, uid, new, Some("test@example.com")).unwrap();
+        let storable = prepare_updated_place(&mock_db, uid, new, Some("test@example.com")).unwrap();
         assert!(store_updated_place(&mock_db, storable).is_ok());
         assert_eq!(mock_db.entries.borrow().len(), 1);
         let (x, _) = &mock_db.entries.borrow()[0];
@@ -196,10 +195,10 @@ mod tests {
         );
         assert_eq!("bar", x.description);
         assert_eq!(Revision::from(2), x.revision);
-        assert!(x.created.when >= now);
+        assert!(x.created.at >= now);
         assert_eq!(
             Some("test@example.com"),
-            x.created.who.as_ref().map(Email::as_ref)
+            x.created.by.as_ref().map(Email::as_ref)
         );
         assert_eq!(
             Some("https://www.img2/"),

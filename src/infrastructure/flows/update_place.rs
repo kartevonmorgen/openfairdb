@@ -14,8 +14,8 @@ pub fn update_place(
         let connection = connections.exclusive()?;
         let mut prepare_err = None;
         connection
-            .transaction::<_, diesel::result::Error, _>(
-                || match usecases::prepare_updated_place(
+            .transaction::<_, diesel::result::Error, _>(|| {
+                match usecases::prepare_updated_place(
                     &*connection,
                     uid,
                     update_place,
@@ -35,8 +35,8 @@ pub fn update_place(
                         prepare_err = Some(err);
                         Err(diesel::result::Error::RollbackTransaction)
                     }
-                },
-            )
+                }
+            })
             .map_err(|err| {
                 if let Some(err) = prepare_err {
                     err

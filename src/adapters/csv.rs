@@ -66,7 +66,7 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
 
         CsvRecord {
             id: uid.into(),
-            created: created.when.into_seconds(),
+            created: created.at.into_seconds(),
             version: revision.into(),
             title,
             description,

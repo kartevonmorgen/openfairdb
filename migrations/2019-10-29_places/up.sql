@@ -35,7 +35,7 @@ CREATE TABLE place_root (
 );
 
 INSERT INTO place_root
-SELECT rowid, version, id, license
+SELECT rowid, version, id, trim(license)
 FROM entries
 WHERE current<>0
 GROUP BY id
@@ -78,19 +78,19 @@ entries.version, -- rev
 entries.created * 1000, -- created_at (seconds -> milliseconds)
 NULL, -- created_by -> user_id
 1, -- current_status = created (no archived entries yet!)
-entries.title,
-entries.description,
+trim(entries.title),
+trim(entries.description),
 entries.lat,
 entries.lng,
-entries.street,
-entries.zip,
-entries.city,
-entries.country,
-entries.email,
-entries.telephone,
-entries.homepage,
-entries.image_url,
-entries.image_link_url
+trim(entries.street),
+trim(entries.zip),
+trim(entries.city),
+trim(entries.country),
+trim(entries.email),
+trim(entries.telephone),
+trim(entries.homepage),
+trim(entries.image_url),
+trim(entries.image_link_url)
 FROM entries
 JOIN place_root ON entries.id=place_root.uid
 WHERE archived IS NULL; -- no archived entries yet (otherwise ignored)!
@@ -105,7 +105,7 @@ CREATE TABLE place_review (
     --
     status       INTEGER NOT NULL,
     context      TEXT, -- system context, e.g. client IP address, ...
-    notes        TEXT, -- human-written informational notes
+    memo        TEXT, -- human-written informational memo
     --
     UNIQUE (parent_id, rev),
     FOREIGN KEY (parent_id) REFERENCES place(id),
@@ -183,10 +183,10 @@ NULL, -- created_by
 ratings.archived, -- archived_at
 NULL, -- archived_by
 ratings.id, -- uid
-ratings.title,
+trim(ratings.title),
 ratings.value,
 ratings.context,
-ratings.source
+trim(ratings.source)
 FROM ratings
 JOIN place_root ON place_root.uid=ratings.entry_id;
 
@@ -216,7 +216,7 @@ NULL, -- created_by
 comments.archived, -- archived_at
 NULL, -- archived_by
 comments.id, -- uid
-comments.text
+trim(comments.text)
 FROM comments
 JOIN place_rating ON place_rating.uid=comments.rating_id;
 

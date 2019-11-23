@@ -306,7 +306,7 @@ impl Entry {
 
         Entry {
             id: uid.into(),
-            created: created.when.into_seconds(),
+            created: created.at.into_seconds(),
             version: revision.into(),
             title,
             description,
@@ -349,22 +349,7 @@ impl From<e::TagFrequency> for TagFrequency {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Activity {
-    pub when: i64,
-    pub who: Option<String>,
-}
-
-impl From<e::Activity> for Activity {
-    fn from(from: e::Activity) -> Self {
-        Self {
-            when: from.when.into_inner(),
-            who: from.who.map(Into::into),
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct LatLonDegrees(f64, f64);
 
 impl From<MapPoint> for LatLonDegrees {
@@ -373,12 +358,25 @@ impl From<MapPoint> for LatLonDegrees {
     }
 }
 
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Address {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub street: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub zip: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub city: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+}
+
+impl Address {
+    pub fn is_empty(&self) -> bool {
+        self.street.is_none() && self.zip.is_none() && self.city.is_none() && self.country.is_none()
+    }
 }
 
 impl From<e::Address> for Address {
@@ -398,26 +396,42 @@ impl From<e::Address> for Address {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Location {
-    pub coords: LatLonDegrees,
-    pub address: Option<Address>,
+    #[serde(rename = "deg")]
+    pub latlon: LatLonDegrees,
+
+    #[serde(
+        rename = "adr",
+        skip_serializing_if = "Address::is_empty",
+        default = "Default::default"
+    )]
+    pub address: Address,
 }
 
 impl From<e::Location> for Location {
     fn from(from: e::Location) -> Self {
         let e::Location { pos, address } = from;
         Self {
-            coords: pos.into(),
-            address: address.map(Into::into),
+            latlon: pos.into(),
+            address: address.map(Into::into).unwrap_or_default(),
         }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Contact {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub phone: Option<String>,
+}
+
+impl Contact {
+    pub fn is_empty(&self) -> bool {
+        self.email.is_none() && self.phone.is_none()
+    }
 }
 
 impl From<e::Contact> for Contact {
@@ -430,24 +444,83 @@ impl From<e::Contact> for Contact {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Links {
-    pub home: Option<Url>,
-    pub img: Option<Url>,
-    pub img_href: Option<Url>,
+    #[serde(rename = "www", skip_serializing_if = "Option::is_none")]
+    pub homepage: Option<Url>,
+
+    #[serde(rename = "img", skip_serializing_if = "Option::is_none")]
+    pub image: Option<Url>,
+
+    #[serde(rename = "img_href", skip_serializing_if = "Option::is_none")]
+    pub image_href: Option<Url>,
+}
+
+impl Links {
+    pub fn is_empty(&self) -> bool {
+        self.homepage.is_none() && self.image.is_none() && self.image_href.is_none()
+    }
 }
 
 impl From<e::Links> for Links {
     fn from(from: e::Links) -> Self {
         let e::Links {
-            homepage: home,
-            image: img,
-            image_href: img_href,
+            homepage,
+            image,
+            image_href,
         } = from;
         Self {
-            home,
-            img,
-            img_href,
+            homepage,
+            image,
+            image_href,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Activity {
+    pub at: i64,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub by: Option<String>,
+}
+
+impl From<e::Activity> for Activity {
+    fn from(from: e::Activity) -> Self {
+        let e::Activity { at, by } = from;
+        Self {
+            at: at.into_inner(),
+            by: by.map(Into::into),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ActivityLog {
+    pub at: i64,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub by: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ctx: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub memo: Option<String>,
+}
+
+impl From<e::ActivityLog> for ActivityLog {
+    fn from(from: e::ActivityLog) -> Self {
+        let e::ActivityLog {
+            activity: e::Activity { at, by },
+            context: ctx,
+            memo,
+        } = from;
+        Self {
+            at: at.into_inner(),
+            by: by.map(Into::into),
+            ctx,
+            memo,
         }
     }
 }
@@ -455,29 +528,58 @@ impl From<e::Links> for Links {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PlaceRoot {
     pub uid: String,
-    pub lic: String,
+
+    #[serde(rename = "lic")]
+    pub license: String,
 }
 
 impl From<e::PlaceRoot> for PlaceRoot {
     fn from(from: e::PlaceRoot) -> Self {
-        let e::PlaceRoot { uid, license: lic } = from;
+        let e::PlaceRoot { uid, license } = from;
         Self {
             uid: uid.into(),
-            lic,
+            license,
         }
     }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PlaceState {
-    pub rev: u64,
+    #[serde(rename = "rev")]
+    pub revision: u64,
+
+    #[serde(rename = "act")]
     pub created: Activity,
+
+    #[serde(rename = "tit")]
     pub title: String,
-    pub desc: String,
-    pub loc: Location,
-    pub contact: Option<Contact>,
-    pub links: Option<Links>,
-    pub tag: Vec<String>,
+
+    #[serde(rename = "dsc")]
+    pub description: String,
+
+    #[serde(rename = "loc")]
+    pub location: Location,
+
+    #[serde(
+        rename = "cnt",
+        skip_serializing_if = "Contact::is_empty",
+        default = "Default::default"
+    )]
+    pub contact: Contact,
+
+    #[serde(
+        rename = "lnk",
+        skip_serializing_if = "Links::is_empty",
+        default = "Default::default"
+    )]
+    pub links: Links,
+
+    #[serde(
+        rename = "tag",
+        skip_serializing_if = "Vec::is_empty",
+        default = "Default::default"
+    )]
+    pub tags: Vec<String>,
 }
 
 impl From<e::PlaceState> for PlaceState {
@@ -486,26 +588,27 @@ impl From<e::PlaceState> for PlaceState {
             revision,
             created,
             title,
-            description: desc,
+            description,
             location,
             contact,
             links,
-            tags: tag,
+            tags,
         } = from;
         Self {
-            rev: revision.into(),
+            revision: revision.into(),
             created: created.into(),
             title,
-            desc,
-            loc: location.into(),
-            contact: contact.map(Into::into),
-            links: links.map(Into::into),
-            tag,
+            description,
+            location: location.into(),
+            contact: contact.map(Into::into).unwrap_or_default(),
+            links: links.map(Into::into).unwrap_or_default(),
+            tags,
         }
     }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum ReviewStatus {
     Rejected,
     Archived,
@@ -526,8 +629,46 @@ impl From<e::ReviewStatus> for ReviewStatus {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ReviewStatusLog {
-    pub activity: Activity,
+    pub rev: u64,
+    pub act: ActivityLog,
     pub status: ReviewStatus,
-    pub context: Option<String>,
-    pub notes: Option<String>,
+}
+
+impl From<e::ReviewStatusLog> for ReviewStatusLog {
+    fn from(from: e::ReviewStatusLog) -> Self {
+        let e::ReviewStatusLog {
+            revision,
+            activity,
+            status,
+        } = from;
+        Self {
+            rev: revision.into(),
+            act: activity.into(),
+            status: status.into(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct PlaceHistory {
+    pub place: PlaceRoot,
+    pub revisions: Vec<(PlaceState, Vec<ReviewStatusLog>)>,
+}
+
+impl From<e::PlaceHistory> for PlaceHistory {
+    fn from(from: e::PlaceHistory) -> Self {
+        let e::PlaceHistory { place, revisions } = from;
+        Self {
+            place: place.into(),
+            revisions: revisions
+                .into_iter()
+                .map(|(place_state, reviews)| {
+                    (
+                        place_state.into(),
+                        reviews.into_iter().map(Into::into).collect(),
+                    )
+                })
+                .collect(),
+        }
+    }
 }

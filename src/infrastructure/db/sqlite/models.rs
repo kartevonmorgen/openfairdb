@@ -92,7 +92,7 @@ pub struct PlaceWithStatusReview {
     pub review_created_by: Option<i64>,
     pub review_status: i16,
     pub review_context: Option<String>,
-    pub review_notes: Option<String>,
+    pub review_memo: Option<String>,
 }
 
 #[derive(Insertable)]
@@ -104,7 +104,7 @@ pub struct NewPlaceReview<'a, 'b> {
     pub created_by: Option<i64>,
     pub status: i16,
     pub context: Option<&'a str>,
-    pub notes: Option<&'b str>,
+    pub memo: Option<&'b str>,
 }
 
 #[derive(Queryable)]
@@ -115,7 +115,7 @@ pub struct PlaceReview {
     pub created_by_email: Option<String>,
     pub status: i16,
     pub context: Option<String>,
-    pub notes: Option<String>,
+    pub memo: Option<String>,
 }
 
 #[derive(Queryable)]

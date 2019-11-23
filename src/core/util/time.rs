@@ -57,11 +57,15 @@ impl<C: InnerTimestampConverter> GenericTimestamp<C> {
     }
 
     pub fn from_seconds(seconds: i64) -> Self {
-        Self(C::into_inner(SecondsTimestampConverter::from_inner(seconds)))
+        Self(C::into_inner(SecondsTimestampConverter::from_inner(
+            seconds,
+        )))
     }
 
     pub fn from_milliseconds(milliseconds: i64) -> Self {
-        Self(C::into_inner(MillisecondsTimestampConverter::from_inner(milliseconds)))
+        Self(C::into_inner(MillisecondsTimestampConverter::from_inner(
+            milliseconds,
+        )))
     }
 
     pub fn into_seconds(self) -> i64 {

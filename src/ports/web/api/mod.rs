@@ -49,6 +49,7 @@ pub fn routes() -> Vec<Route> {
         get_entry,
         get_entries_recently_changed,
         get_entries_most_popular_tags,
+        get_place_history,
         post_entry,
         put_entry,
         events::post_event,
@@ -118,8 +119,8 @@ fn get_entries_recently_changed(
     offset: Option<u64>,
     mut limit: Option<u64>,
 ) -> Result<Vec<json::Entry>> {
-    let since_min =
-        Timestamp::now().into_seconds() - ENTRIES_RECECENTLY_CHANGED_MAX_AGE_IN_DAYS * SECONDS_PER_DAY;
+    let since_min = Timestamp::now().into_seconds()
+        - ENTRIES_RECECENTLY_CHANGED_MAX_AGE_IN_DAYS * SECONDS_PER_DAY;
     let since = if let Some(since) = since {
         if since < since_min {
             log::warn!(
@@ -209,6 +210,15 @@ pub fn get_entries_most_popular_tags(
         db.most_popular_place_tags(&params, &pagination)?
     };
     Ok(Json(results.into_iter().map(Into::into).collect()))
+}
+
+#[get("/places/<uid>/history")]
+pub fn get_place_history(db: sqlite::Connections, uid: String) -> Result<json::PlaceHistory> {
+    let place_history = {
+        let db = db.shared()?;
+        db.get_place_history(&uid)?
+    };
+    Ok(Json(place_history.into()))
 }
 
 #[get("/duplicates/<ids>")]

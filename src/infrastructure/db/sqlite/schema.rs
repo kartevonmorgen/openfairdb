@@ -103,7 +103,7 @@ table! {
         created_by -> Nullable<BigInt>,
         status -> SmallInt,
         context -> Nullable<Text>,
-        notes -> Nullable<Text>,
+        memo -> Nullable<Text>,
     }
 }
 

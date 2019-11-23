@@ -1371,7 +1371,7 @@ fn export_csv() {
             .finish(),
     ];
     entries[0].location.address = Some(Address::build().street("street1").finish());
-    entries[0].created.when = TimestampMs::from_seconds(1111);
+    entries[0].created.at = TimestampMs::from_seconds(1111);
     entries[0].location.address = Some(
         Address::build()
             .street("street1")
@@ -1385,7 +1385,7 @@ fn export_csv() {
         image: Some("https://img".parse().unwrap()),
         image_href: Some("https://img,link".parse().unwrap()),
     });
-    entries[1].created.when = TimestampMs::from_seconds(2222);
+    entries[1].created.at = TimestampMs::from_seconds(2222);
 
     db.exclusive()
         .unwrap()

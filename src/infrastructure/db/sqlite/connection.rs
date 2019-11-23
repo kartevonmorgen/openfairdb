@@ -17,10 +17,7 @@ fn load_review_status(status: ReviewStatusPrimitive) -> Result<ReviewStatus> {
         .ok_or_else(|| RepoError::Other(format!("Invalid review status: {}", status).into()))
 }
 
-fn load_place(
-    conn: &SqliteConnection,
-    place: models::Place,
-) -> Result<(Place, ReviewStatus)> {
+fn load_place(conn: &SqliteConnection, place: models::Place) -> Result<(Place, ReviewStatus)> {
     let models::Place {
         id,
         place_uid,
@@ -80,8 +77,8 @@ fn load_place(
         license,
         revision: Revision::from(rev as u64),
         created: Activity {
-            when: TimestampMs::from_inner(created_at),
-            who: created_by.map(Into::into),
+            at: TimestampMs::from_inner(created_at),
+            by: created_by.map(Into::into),
         },
         title,
         description,
@@ -129,7 +126,7 @@ fn load_place_with_status_review(
         review_created_by: review_created_by_id,
         review_status,
         review_context,
-        review_notes,
+        review_memo,
         ..
     } = place_with_status_review;
 
@@ -193,8 +190,8 @@ fn load_place_with_status_review(
         license,
         revision: Revision::from(rev as u64),
         created: Activity {
-            when: TimestampMs::from_inner(created_at),
-            who: created_by.map(Into::into),
+            at: TimestampMs::from_inner(created_at),
+            by: created_by.map(Into::into),
         },
         title,
         description,
@@ -206,11 +203,11 @@ fn load_place_with_status_review(
 
     let activity_log = ActivityLog {
         activity: Activity {
-            when: TimestampMs::from_inner(review_created_at),
-            who: review_created_by.map(Into::into),
+            at: TimestampMs::from_inner(review_created_at),
+            by: review_created_by.map(Into::into),
         },
         context: review_context,
-        notes: review_notes,
+        memo: review_memo,
     };
 
     Ok((place, load_review_status(review_status)?, activity_log))
@@ -297,7 +294,7 @@ fn into_new_place(
         debug_assert_eq!(1, _count);
         place_id
     };
-    let created_by = if let Some(ref email) = created.who {
+    let created_by = if let Some(ref email) = created.by {
         Some(resolve_user_created_by_email(conn, email.as_ref())?)
     } else {
         None
@@ -317,7 +314,7 @@ fn into_new_place(
     let new_place = models::NewPlace {
         parent_id: place_id,
         rev: u64::from(new_revision) as i64,
-        created_at: created.when.into_inner(),
+        created_at: created.at.into_inner(),
         created_by,
         current_status: ReviewStatus::Created.into(),
         title,
@@ -368,7 +365,7 @@ impl PlaceRepo for SqliteConnection {
             created_by: new_place.created_by,
             status: new_place.current_status,
             context: None,
-            notes: Some("created"),
+            memo: Some("created"),
         };
         diesel::insert_into(schema::place_review::table)
             .values(new_placeiew)
@@ -395,8 +392,8 @@ impl PlaceRepo for SqliteConnection {
         status: ReviewStatus,
         activity_log: &ActivityLog,
     ) -> Result<usize> {
-        use schema::place_root::dsl as root_dsl;
         use schema::place::dsl as place_dsl;
+        use schema::place_root::dsl as root_dsl;
 
         let rev_ids = schema::place::table
             .inner_join(
@@ -410,10 +407,10 @@ impl PlaceRepo for SqliteConnection {
         let ActivityLog {
             activity,
             context,
-            notes,
+            memo,
         } = activity_log;
-        let changed_at = activity.when.into_inner();
-        let changed_by = if let Some(ref email) = activity.who {
+        let changed_at = activity.at.into_inner();
+        let changed_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
         } else {
             None
@@ -446,7 +443,7 @@ impl PlaceRepo for SqliteConnection {
                     created_at: changed_at,
                     created_by: changed_by,
                     context: context.as_ref().map(String::as_str),
-                    notes: notes.as_ref().map(String::as_str),
+                    memo: memo.as_ref().map(String::as_str),
                 };
                 diesel::insert_into(schema::place_review::table)
                     .values(new_placeiew)
@@ -458,8 +455,8 @@ impl PlaceRepo for SqliteConnection {
     }
 
     fn get_places(&self, place_uids: &[&str]) -> Result<Vec<(Place, ReviewStatus)>> {
-        use schema::place_root::dsl as root_dsl;
         use schema::place::dsl as place_dsl;
+        use schema::place_root::dsl as root_dsl;
 
         let mut query = schema::place::table
             .inner_join(
@@ -521,9 +518,9 @@ impl PlaceRepo for SqliteConnection {
         params: &RecentlyChangedEntriesParams,
         pagination: &Pagination,
     ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>> {
-        use schema::place_root::dsl as root_dsl;
         use schema::place::dsl as place_dsl;
         use schema::place_review::dsl as review_dsl;
+        use schema::place_root::dsl as root_dsl;
 
         let mut query = schema::place::table
             .inner_join(
@@ -531,9 +528,7 @@ impl PlaceRepo for SqliteConnection {
                     .eq(root_dsl::id)
                     .and(place_dsl::rev.eq(root_dsl::current_rev))),
             )
-            .inner_join(
-                schema::place_review::table.on(review_dsl::parent_id.eq(place_dsl::id)),
-            )
+            .inner_join(schema::place_review::table.on(review_dsl::parent_id.eq(place_dsl::id)))
             .select((
                 place_dsl::id,
                 place_dsl::rev,
@@ -559,7 +554,7 @@ impl PlaceRepo for SqliteConnection {
                 review_dsl::created_by,
                 review_dsl::status,
                 review_dsl::context,
-                review_dsl::notes,
+                review_dsl::memo,
             ))
             .order_by(review_dsl::created_at.desc())
             .then_order_by(review_dsl::rev.desc()) // disambiguation of equal time stamps
@@ -639,15 +634,11 @@ impl PlaceRepo for SqliteConnection {
     }
 
     fn get_place_history(&self, uid: &str) -> Result<PlaceHistory> {
-        use schema::place_root::dsl as root_dsl;
         use schema::place::dsl as place_dsl;
+        use schema::place_root::dsl as root_dsl;
 
         let rows = schema::place::table
-            .inner_join(
-                schema::place_root::table.on(place_dsl::parent_id
-                    .eq(root_dsl::id)
-                    .and(place_dsl::rev.eq(root_dsl::current_rev))),
-            )
+            .inner_join(schema::place_root::table.on(place_dsl::parent_id.eq(root_dsl::id)))
             .select((
                 place_dsl::id,
                 place_dsl::rev,
@@ -698,7 +689,7 @@ impl PlaceRepo for SqliteConnection {
                     user_dsl::email.nullable(),
                     review_dsl::status,
                     review_dsl::context,
-                    review_dsl::notes,
+                    review_dsl::memo,
                 ))
                 .filter(review_dsl::parent_id.eq(parent_id))
                 .order_by(review_dsl::rev.desc())
@@ -709,11 +700,11 @@ impl PlaceRepo for SqliteConnection {
                     revision: Revision::from(row.rev as u64),
                     activity: ActivityLog {
                         activity: Activity {
-                            when: TimestampMs::from_inner(row.created_at),
-                            who: row.created_by_email.map(Into::into),
+                            at: TimestampMs::from_inner(row.created_at),
+                            by: row.created_by_email.map(Into::into),
                         },
                         context: row.context,
-                        notes: row.notes,
+                        memo: row.memo,
                     },
                     status: ReviewStatus::try_from(row.status).unwrap(),
                 };
@@ -1232,8 +1223,8 @@ impl RatingRepository for SqliteConnection {
     }
 
     fn load_ratings(&self, uids: &[&str]) -> Result<Vec<Rating>> {
-        use schema::place_root::dsl as root_dsl;
         use schema::place_rating::dsl as rating_dsl;
+        use schema::place_root::dsl as root_dsl;
         Ok(schema::place_rating::table
             .inner_join(schema::place_root::table)
             .select((
@@ -1264,8 +1255,8 @@ impl RatingRepository for SqliteConnection {
     }
 
     fn load_ratings_of_place(&self, place_uid: &str) -> Result<Vec<Rating>> {
-        use schema::place_root::dsl as root_dsl;
         use schema::place_rating::dsl as rating_dsl;
+        use schema::place_root::dsl as root_dsl;
         Ok(schema::place_rating::table
             .inner_join(schema::place_root::table)
             .select((
@@ -1290,8 +1281,8 @@ impl RatingRepository for SqliteConnection {
     }
 
     fn load_place_uids_of_ratings(&self, uids: &[&str]) -> Result<Vec<String>> {
-        use schema::place_root::dsl as root_dsl;
         use schema::place_rating::dsl as rating_dsl;
+        use schema::place_root::dsl as root_dsl;
         Ok(schema::place_rating::table
             .inner_join(schema::place_root::table)
             .select(root_dsl::uid)
@@ -1301,8 +1292,8 @@ impl RatingRepository for SqliteConnection {
 
     fn archive_ratings(&self, uids: &[&str], activity: &Activity) -> Result<usize> {
         use schema::place_rating::dsl;
-        let archived_at = Some(activity.when.into_inner());
-        let archived_by = if let Some(ref email) = activity.who {
+        let archived_at = Some(activity.at.into_inner());
+        let archived_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
         } else {
             None
@@ -1322,10 +1313,10 @@ impl RatingRepository for SqliteConnection {
     }
 
     fn archive_ratings_of_places(&self, place_uids: &[&str], activity: &Activity) -> Result<usize> {
-        use schema::place_root::dsl as root_dsl;
         use schema::place_rating::dsl as rating_dsl;
-        let archived_at = Some(activity.when.into_inner());
-        let archived_by = if let Some(ref email) = activity.who {
+        use schema::place_root::dsl as root_dsl;
+        let archived_at = Some(activity.at.into_inner());
+        let archived_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
         } else {
             None
@@ -1432,8 +1423,8 @@ impl CommentRepository for SqliteConnection {
 
     fn archive_comments(&self, uids: &[&str], activity: &Activity) -> Result<usize> {
         use schema::place_rating_comment::dsl;
-        let archived_at = Some(activity.when.into_inner());
-        let archived_by = if let Some(ref email) = activity.who {
+        let archived_at = Some(activity.at.into_inner());
+        let archived_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
         } else {
             None
@@ -1459,8 +1450,8 @@ impl CommentRepository for SqliteConnection {
     ) -> Result<usize> {
         use schema::place_rating::dsl as rating_dsl;
         use schema::place_rating_comment::dsl as comment_dsl;
-        let archived_at = Some(activity.when.into_inner());
-        let archived_by = if let Some(ref email) = activity.who {
+        let archived_at = Some(activity.at.into_inner());
+        let archived_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
         } else {
             None
@@ -1488,11 +1479,11 @@ impl CommentRepository for SqliteConnection {
         place_uids: &[&str],
         activity: &Activity,
     ) -> Result<usize> {
-        use schema::place_root::dsl as root_dsl;
         use schema::place_rating::dsl as rating_dsl;
         use schema::place_rating_comment::dsl as comment_dsl;
-        let archived_at = Some(activity.when.into_inner());
-        let archived_by = if let Some(ref email) = activity.who {
+        use schema::place_root::dsl as root_dsl;
+        let archived_at = Some(activity.at.into_inner());
+        let archived_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
         } else {
             None
@@ -1736,10 +1727,12 @@ impl UserTokenRepo for SqliteConnection {
 
     fn discard_expired_user_tokens(&self, expired_before: Timestamp) -> Result<usize> {
         use schema::user_tokens::dsl;
-        Ok(diesel::delete(
-            dsl::user_tokens.filter(dsl::expires_at.lt(expired_before.into_inner())),
+        Ok(
+            diesel::delete(
+                dsl::user_tokens.filter(dsl::expires_at.lt(expired_before.into_inner())),
+            )
+            .execute(self)?,
         )
-        .execute(self)?)
     }
 
     fn get_user_token_by_email(&self, email: &str) -> Result<UserToken> {

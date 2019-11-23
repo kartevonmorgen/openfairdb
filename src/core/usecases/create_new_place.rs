@@ -163,8 +163,8 @@ mod tests {
         let (x, _) = &mock_db.entries.borrow()[0];
         assert_eq!(x.title, "foo");
         assert_eq!(x.description, "bar");
-        assert!(x.created.when >= now);
-        assert_eq!(x.created.who, Some("test@example.com".into()));
+        assert!(x.created.at >= now);
+        assert_eq!(x.created.by, Some("test@example.com".into()));
         assert_eq!(x.revision, Revision::initial());
     }
 

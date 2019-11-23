@@ -176,15 +176,15 @@ impl fmt::Display for Email {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Activity {
-    pub when: TimestampMs,
-    pub who: Option<Email>,
+    pub at: TimestampMs,
+    pub by: Option<Email>,
 }
 
 impl Activity {
-    pub fn now(who: Option<Email>) -> Self {
+    pub fn now(by: Option<Email>) -> Self {
         Self {
-            when: TimestampMs::now(),
-            who,
+            at: TimestampMs::now(),
+            by,
         }
     }
 }
@@ -193,7 +193,7 @@ impl Activity {
 pub struct ActivityLog {
     pub activity: Activity,
     pub context: Option<String>,
-    pub notes: Option<String>,
+    pub memo: Option<String>,
 }
 
 #[rustfmt::skip]
@@ -335,8 +335,6 @@ pub struct ReviewStatusLog {
     pub status: ReviewStatus,
 }
 
-// The complete history of a single place aggregate
-// without review status logs.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PlaceHistory {
     pub place: PlaceRoot,

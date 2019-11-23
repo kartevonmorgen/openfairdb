@@ -110,7 +110,7 @@ fn levenshtein_distance(s: &str, t: &str) -> usize {
 
     // for all i and j, d[i,j] will hold the Levenshtein distance between
     // the first i characters of s and the first j characters of t
-    // note that d has (m+1)*(n+1) values
+    // memo that d has (m+1)*(n+1) values
     let mut d: Vec<Vec<usize>> = vec![];
     for _ in 0..max_s {
         d.push(vec![0; max_t]);

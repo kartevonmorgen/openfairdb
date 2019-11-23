@@ -16,7 +16,7 @@ pub fn review_places<D: Db>(
         let activity_log = ActivityLog {
             activity,
             context: None,
-            notes: Some("archived".into()),
+            memo: Some("archived".into()),
         };
         let comment_count = db.archive_comments_of_places(uids, &activity_log.activity)?;
         info!(
@@ -41,7 +41,7 @@ pub fn review_places<D: Db>(
         let activity_log = ActivityLog {
             activity,
             context: None,
-            notes: Some("status changed".into()),
+            memo: Some("status changed".into()),
         };
         let place_count = db.review_places(uids, review_status, &activity_log)?;
         info!(
