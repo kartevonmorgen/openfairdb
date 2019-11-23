@@ -213,9 +213,14 @@ pub fn get_entries_most_popular_tags(
 }
 
 #[get("/places/<uid>/history")]
-pub fn get_place_history(db: sqlite::Connections, uid: String) -> Result<json::PlaceHistory> {
+pub fn get_place_history(db: sqlite::Connections, login: Login, uid: String) -> Result<json::PlaceHistory> {
     let place_history = {
         let db = db.shared()?;
+
+        // The history contains e-mail addresses of registered users
+        // and is only permitted for scouts and admins!
+        usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+
         db.get_place_history(&uid)?
     };
     Ok(Json(place_history.into()))
