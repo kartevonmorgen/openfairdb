@@ -548,7 +548,6 @@ pub struct PlaceState {
     #[serde(rename = "rev")]
     pub revision: u64,
 
-    #[serde(rename = "act")]
     pub created: Activity,
 
     #[serde(rename = "tit")]
