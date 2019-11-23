@@ -1,3 +1,18 @@
+-- Normalize homepage and email
+UPDATE entries
+SET (homepage, email) = (trim(homepage), trim(email));
+
+-- Exchange email/homepage if URL contains '@'
+UPDATE entries
+SET (homepage, email) = (email, homepage)
+WHERE homepage LIKE '%@%'
+AND (email IS NULL OR email NOT LIKE '%@%');
+
+-- Fix incomplete URLs
+UPDATE entries
+SET homepage = 'https://' || homepage
+WHERE NOT (homepage IS NULL OR homepage LIKE 'http%');
+
 -- Disable fk constraints temporarily to allow inserting NULL references
 -- into new tables with foreign keys.
 PRAGMA foreign_keys = OFF;
