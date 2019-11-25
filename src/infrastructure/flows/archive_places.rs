@@ -87,14 +87,14 @@ mod tests {
             None,
         );
 
-        let place_uids = vec![
+        let place_ids = vec![
             fixture.create_place(0.into(), None),
             fixture.create_place(1.into(), None),
             fixture.create_place(2.into(), None),
         ];
         let entry_tags = vec![
             fixture
-                .try_get_place(&place_uids[0])
+                .try_get_place(&place_ids[0])
                 .unwrap()
                 .0
                 .tags
@@ -103,7 +103,7 @@ mod tests {
                 .next()
                 .unwrap(),
             fixture
-                .try_get_place(&place_uids[1])
+                .try_get_place(&place_ids[1])
                 .unwrap()
                 .0
                 .tags
@@ -112,7 +112,7 @@ mod tests {
                 .next()
                 .unwrap(),
             fixture
-                .try_get_place(&place_uids[2])
+                .try_get_place(&place_ids[2])
                 .unwrap()
                 .0
                 .tags
@@ -122,19 +122,19 @@ mod tests {
                 .unwrap(),
         ];
 
-        assert!(fixture.place_exists(&place_uids[0]));
+        assert!(fixture.place_exists(&place_ids[0]));
         assert_eq!(
-            place_uids[0],
+            place_ids[0],
             fixture.query_places_by_tag(&entry_tags[0])[0].id
         );
-        assert!(fixture.place_exists(&place_uids[1]));
+        assert!(fixture.place_exists(&place_ids[1]));
         assert_eq!(
-            place_uids[1],
+            place_ids[1],
             fixture.query_places_by_tag(&entry_tags[1])[0].id
         );
-        assert!(fixture.place_exists(&place_uids[2]));
+        assert!(fixture.place_exists(&place_ids[2]));
         assert_eq!(
-            place_uids[2],
+            place_ids[2],
             fixture.query_places_by_tag(&entry_tags[2])[0].id
         );
 
@@ -142,42 +142,42 @@ mod tests {
             2,
             archive_places(
                 &fixture,
-                &[&*place_uids[0], &*place_uids[2]],
+                &[&*place_ids[0], &*place_ids[2]],
                 "test@example.com"
             )
             .unwrap()
         );
 
         // Entries 0 and 2 disappeared
-        assert!(!fixture.place_exists(&place_uids[0]));
+        assert!(!fixture.place_exists(&place_ids[0]));
         assert!(fixture.query_places_by_tag(&entry_tags[0]).is_empty());
-        assert!(fixture.place_exists(&place_uids[1]));
+        assert!(fixture.place_exists(&place_ids[1]));
         assert_eq!(
-            place_uids[1],
+            place_ids[1],
             fixture.query_places_by_tag(&entry_tags[1])[0].id
         );
-        assert!(!fixture.place_exists(&place_uids[2]));
+        assert!(!fixture.place_exists(&place_ids[2]));
         assert!(fixture.query_places_by_tag(&entry_tags[2]).is_empty());
 
         assert_eq!(
             0,
             archive_places(
                 &fixture,
-                &[&*place_uids[0], &*place_uids[2]],
+                &[&*place_ids[0], &*place_ids[2]],
                 "test@example.com",
             )
             .unwrap()
         );
 
         // No changes, i.e. entry 1 still exists in both database and index
-        assert!(!fixture.place_exists(&place_uids[0]));
+        assert!(!fixture.place_exists(&place_ids[0]));
         assert!(fixture.query_places_by_tag(&entry_tags[0]).is_empty());
-        assert!(fixture.place_exists(&place_uids[1]));
+        assert!(fixture.place_exists(&place_ids[1]));
         assert_eq!(
-            place_uids[1],
+            place_ids[1],
             fixture.query_places_by_tag(&entry_tags[1])[0].id
         );
-        assert!(!fixture.place_exists(&place_uids[2]));
+        assert!(!fixture.place_exists(&place_ids[2]));
         assert!(fixture.query_places_by_tag(&entry_tags[2]).is_empty());
 
         // Archive all (remaining) places
@@ -185,17 +185,17 @@ mod tests {
             1,
             archive_places(
                 &fixture,
-                &place_uids.iter().map(String::as_str).collect::<Vec<_>>(),
+                &place_ids.iter().map(String::as_str).collect::<Vec<_>>(),
                 "test@example.com",
             )
             .unwrap()
         );
 
-        assert!(!fixture.place_exists(&place_uids[0]));
+        assert!(!fixture.place_exists(&place_ids[0]));
         assert!(fixture.query_places_by_tag(&entry_tags[0]).is_empty());
-        assert!(!fixture.place_exists(&place_uids[1]));
+        assert!(!fixture.place_exists(&place_ids[1]));
         assert!(fixture.query_places_by_tag(&entry_tags[1]).is_empty());
-        assert!(!fixture.place_exists(&place_uids[2]));
+        assert!(!fixture.place_exists(&place_ids[2]));
         assert!(fixture.query_places_by_tag(&entry_tags[2]).is_empty());
     }
 
@@ -211,7 +211,7 @@ mod tests {
             None,
         );
 
-        let place_uids = vec![
+        let place_ids = vec![
             fixture.create_place(0.into(), None),
             fixture.create_place(1.into(), None),
         ];
@@ -219,32 +219,32 @@ mod tests {
         let rating_comment_ids = vec![
             fixture.create_rating(new_entry_rating(
                 0,
-                &place_uids[0],
+                &place_ids[0],
                 RatingContext::Diversity,
                 RatingValue::new(-1),
             )),
             fixture.create_rating(new_entry_rating(
                 1,
-                &place_uids[0],
+                &place_ids[0],
                 RatingContext::Fairness,
                 RatingValue::new(0),
             )),
             fixture.create_rating(new_entry_rating(
                 2,
-                &place_uids[1],
+                &place_ids[1],
                 RatingContext::Transparency,
                 RatingValue::new(1),
             )),
             fixture.create_rating(new_entry_rating(
                 3,
-                &place_uids[1],
+                &place_ids[1],
                 RatingContext::Renewable,
                 RatingValue::new(2),
             )),
         ];
 
-        for place_uid in &place_uids {
-            assert!(fixture.place_exists(place_uid));
+        for place_id in &place_ids {
+            assert!(fixture.place_exists(place_id));
         }
         for (rating_id, comment_id) in &rating_comment_ids {
             assert!(fixture.rating_exists(rating_id));
@@ -253,11 +253,11 @@ mod tests {
 
         assert_eq!(
             1,
-            archive_places(&fixture, &[&*place_uids[0]], "test@example.com").unwrap()
+            archive_places(&fixture, &[&*place_ids[0]], "test@example.com").unwrap()
         );
 
-        assert!(!fixture.place_exists(&place_uids[0]));
-        assert!(fixture.place_exists(&place_uids[1]));
+        assert!(!fixture.place_exists(&place_ids[0]));
+        assert!(fixture.place_exists(&place_ids[1]));
 
         assert!(!fixture.rating_exists(&rating_comment_ids[0].0));
         assert!(!fixture.rating_exists(&rating_comment_ids[1].0));

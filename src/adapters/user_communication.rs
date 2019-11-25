@@ -92,7 +92,7 @@ euphorische Grüße
 das Karte von morgen-Team",
         introSentence = intro_sentence,
         title = &place.title,
-        id = &place.uid,
+        id = &place.id,
         description = &place.description,
         address = address,
         email = email.map(|e| e.to_string()).unwrap_or_default(),

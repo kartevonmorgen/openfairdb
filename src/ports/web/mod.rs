@@ -25,7 +25,7 @@ fn index_all_places<D: PlaceRepo + RatingRepository>(
     // loading all entries at once!
     let places = db.all_places()?;
     for (place, _) in places {
-        let ratings = db.load_ratings_of_place(place.uid.as_ref())?;
+        let ratings = db.load_ratings_of_place(place.id.as_ref())?;
         if let Err(err) =
             place_indexer.add_or_update_place(&place, &place.avg_ratings(&ratings[..]))
         {

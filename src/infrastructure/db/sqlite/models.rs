@@ -3,29 +3,29 @@ use super::schema::*;
 #[derive(Insertable)]
 #[table_name = "place"]
 pub struct NewPlace<'a, 'b> {
+    pub id: &'a str,
+    pub license: &'b str,
     pub current_rev: i64,
-    pub uid: &'a str,
-    pub lic: &'b str,
 }
 
 #[derive(Queryable)]
 pub struct Place {
-    pub id: i64,
+    pub rowid: i64,
     pub current_rev: i64,
-    pub uid: String,
-    pub lic: String,
+    pub id: String,
+    pub license: String,
 }
 
 #[derive(Insertable)]
 #[table_name = "place_revision"]
 pub struct NewPlaceRevision {
-    pub parent_id: i64,
+    pub parent_rowid: i64,
     pub rev: i64,
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub current_status: i16,
     pub title: String,
-    pub desc: String,
+    pub description: String,
     pub lat: f64,
     pub lon: f64,
     pub street: Option<String>,
@@ -59,9 +59,9 @@ pub struct JoinedPlaceRevision {
     pub homepage: Option<String>,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
-
-    pub place_uid: String,
-    pub place_lic: String,
+    // Joined columns
+    pub place_id: String,
+    pub place_license: String,
 }
 
 #[derive(Queryable)]
@@ -83,28 +83,27 @@ pub struct JoinedPlaceRevisionWithStatusReview {
     pub homepage: Option<String>,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
-
-    pub place_uid: String,
-    pub place_lic: String,
-
+    // Joined columns
+    pub place_id: String,
+    pub place_license: String,
     pub review_rev: i64,
     pub review_created_at: i64,
     pub review_created_by: Option<i64>,
     pub review_status: i16,
     pub review_context: Option<String>,
-    pub review_memo: Option<String>,
+    pub review_comment: Option<String>,
 }
 
 #[derive(Insertable)]
 #[table_name = "place_revision_review"]
 pub struct NewPlaceRevisionReview<'a, 'b> {
-    pub parent_id: i64,
+    pub parent_rowid: i64,
     pub rev: i64,
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub status: i16,
     pub context: Option<&'a str>,
-    pub memo: Option<&'b str>,
+    pub comment: Option<&'b str>,
 }
 
 #[derive(Queryable)]
@@ -115,31 +114,31 @@ pub struct PlaceRevisionReview {
     pub created_by_email: Option<String>,
     pub status: i16,
     pub context: Option<String>,
-    pub memo: Option<String>,
+    pub comment: Option<String>,
 }
 
 #[derive(Queryable)]
 pub struct PlaceRevisionTag {
-    pub parent_id: i64,
+    pub parent_rowid: i64,
     pub tag: String,
 }
 
 #[derive(Insertable)]
 #[table_name = "place_revision_tag"]
 pub struct NewPlaceRevisionTag<'a> {
-    pub parent_id: i64,
+    pub parent_rowid: i64,
     pub tag: &'a str,
 }
 
 #[derive(Insertable)]
 #[table_name = "place_rating"]
 pub struct NewPlaceRating {
-    pub parent_id: i64,
+    pub parent_rowid: i64,
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub archived_at: Option<i64>,
     pub archived_by: Option<i64>,
-    pub uid: String,
+    pub id: String,
     pub title: String,
     pub value: i16,
     pub context: String,
@@ -148,43 +147,43 @@ pub struct NewPlaceRating {
 
 #[derive(Queryable)]
 pub struct PlaceRating {
-    pub id: i64,
+    pub rowid: i64,
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub archived_at: Option<i64>,
     pub archived_by: Option<i64>,
-    pub uid: String,
+    pub id: String,
     pub title: String,
     pub value: i16,
     pub context: String,
     pub source: Option<String>,
-
-    pub place_uid: String,
+    // Joined columns
+    pub place_id: String,
 }
 
 #[derive(Insertable)]
 #[table_name = "place_rating_comment"]
 pub struct NewPlaceRatingComment {
-    pub parent_id: i64,
+    pub parent_rowid: i64,
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub archived_at: Option<i64>,
     pub archived_by: Option<i64>,
-    pub uid: String,
+    pub id: String,
     pub text: String,
 }
 
 #[derive(Queryable)]
 pub struct PlaceRatingComment {
-    pub id: i64,
+    pub rowid: i64,
     pub created_at: i64,
     pub created_by: Option<i64>,
     pub archived_at: Option<i64>,
     pub archived_by: Option<i64>,
-    pub uid: String,
+    pub id: String,
     pub text: String,
 
-    pub rating_uid: String,
+    pub rating_id: String,
 }
 
 #[derive(Insertable, AsChangeset)]
@@ -214,7 +213,6 @@ pub struct NewEvent {
 
 #[derive(Queryable)]
 pub struct EventEntity {
-    // Table columns
     pub id: i64,
     pub uid: String,
     pub title: String,
@@ -311,7 +309,6 @@ pub struct NewBboxSubscription<'a> {
 
 #[derive(Queryable)]
 pub struct BboxSubscriptionEntity {
-    // Table columns
     pub id: i64,
     pub uid: String,
     pub user_id: i64,
@@ -333,7 +330,6 @@ pub struct NewUserToken {
 
 #[derive(Queryable)]
 pub struct UserTokenEntity {
-    // Table columns
     pub user_id: i64,
     pub nonce: String,
     pub expires_at: i64,

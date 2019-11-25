@@ -143,7 +143,7 @@ impl From<(EventEntity, &Vec<EventTag>)> for e::Event {
         let registration = registration.map(Into::into);
 
         e::Event {
-            uid: uid.into(),
+            id: uid.into(),
             title,
             description,
             start: NaiveDateTime::from_timestamp(start, 0),
@@ -218,16 +218,16 @@ impl From<UserEntity> for e::User {
 impl From<PlaceRatingComment> for e::Comment {
     fn from(c: PlaceRatingComment) -> Self {
         let PlaceRatingComment {
-            uid,
-            rating_uid,
+            id,
+            rating_id,
             created_at,
             archived_at,
             text,
             ..
         } = c;
         Self {
-            uid: uid.into(),
-            rating_uid: rating_uid.into(),
+            id: id.into(),
+            rating_id: rating_id.into(),
             created_at: Timestamp::from_inner(created_at),
             archived_at: archived_at.map(Timestamp::from_inner),
             text,
@@ -238,8 +238,8 @@ impl From<PlaceRatingComment> for e::Comment {
 impl From<PlaceRating> for e::Rating {
     fn from(r: PlaceRating) -> Self {
         let PlaceRating {
-            uid,
-            place_uid,
+            id,
+            place_id,
             created_at,
             archived_at,
             title,
@@ -249,8 +249,8 @@ impl From<PlaceRating> for e::Rating {
             ..
         } = r;
         Self {
-            uid: uid.into(),
-            place_uid: place_uid.into(),
+            id: id.into(),
+            place_id: place_id.into(),
             created_at: Timestamp::from_inner(created_at),
             archived_at: archived_at.map(Timestamp::from_inner),
             title,
@@ -278,7 +278,7 @@ impl From<BboxSubscriptionEntity> for e::BboxSubscription {
             MapPoint::try_from_lat_lng_deg(north_east_lat, north_east_lng).unwrap_or_default();
         let bbox = MapBbox::new(south_west, north_east);
         Self {
-            uid: uid.into(),
+            id: uid.into(),
             user_email,
             bbox,
         }

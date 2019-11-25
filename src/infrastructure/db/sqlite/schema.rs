@@ -60,24 +60,24 @@ joinable!(user_tokens -> users (user_id));
 ///////////////////////////////////////////////////////////////////////
 
 table! {
-    place (id) {
-        id -> BigInt,
+    place (rowid) {
+        rowid -> BigInt,
         current_rev -> BigInt,
-        uid -> Text,
-        lic -> Text,
+        id -> Text,
+        license -> Text,
     }
 }
 
 table! {
-    place_revision (id) {
-        id -> BigInt,
-        parent_id -> BigInt,
+    place_revision (rowid) {
+        rowid -> BigInt,
+        parent_rowid -> BigInt,
         rev -> BigInt,
         created_at -> BigInt,
         created_by -> Nullable<BigInt>,
         current_status -> SmallInt,
         title -> Text,
-        desc -> Text,
+        description -> Text,
         lat -> Double,
         lon -> Double,
         street -> Nullable<Text>,
@@ -92,32 +92,41 @@ table! {
     }
 }
 
-joinable!(place_revision -> place (parent_id));
+joinable!(place_revision -> place (parent_rowid));
 
 table! {
-    place_revision_review (id) {
-        id -> BigInt,
-        parent_id -> BigInt,
+    place_revision_tag (parent_rowid, tag) {
+        parent_rowid -> BigInt,
+        tag -> Text,
+    }
+}
+
+joinable!(place_revision_tag -> place_revision (parent_rowid));
+
+table! {
+    place_revision_review (rowid) {
+        rowid -> BigInt,
+        parent_rowid -> BigInt,
         rev -> BigInt,
         created_at -> BigInt,
         created_by -> Nullable<BigInt>,
         status -> SmallInt,
         context -> Nullable<Text>,
-        memo -> Nullable<Text>,
+        comment -> Nullable<Text>,
     }
 }
 
-joinable!(place_revision_review -> place_revision (parent_id));
+joinable!(place_revision_review -> place_revision (parent_rowid));
 
 table! {
-    place_rating (id) {
-        id -> BigInt,
-        parent_id -> BigInt,
+    place_rating (rowid) {
+        rowid -> BigInt,
+        parent_rowid -> BigInt,
         created_at -> BigInt,
         created_by -> Nullable<BigInt>,
         archived_at -> Nullable<BigInt>,
         archived_by -> Nullable<BigInt>,
-        uid -> Text,
+        id -> Text,
         title -> Text,
         value -> SmallInt,
         context -> Text,
@@ -125,37 +134,30 @@ table! {
     }
 }
 
-joinable!(place_rating -> place (parent_id));
+joinable!(place_rating -> place (parent_rowid));
 
 table! {
-    place_rating_comment (id) {
-        id -> BigInt,
-        parent_id -> BigInt,
+    place_rating_comment (rowid) {
+        rowid -> BigInt,
+        parent_rowid -> BigInt,
         created_at -> BigInt,
         created_by -> Nullable<BigInt>,
         archived_at -> Nullable<BigInt>,
         archived_by -> Nullable<BigInt>,
-        uid -> Text,
+        id -> Text,
         text -> Text,
     }
 }
 
-joinable!(place_rating_comment -> place_rating (parent_id));
-
-table! {
-    place_revision_tag (parent_id, tag) {
-        parent_id -> BigInt,
-        tag -> Text,
-    }
-}
-
-joinable!(place_revision_tag -> place_revision (parent_id));
+joinable!(place_rating_comment -> place_rating (parent_rowid));
 
 ///////////////////////////////////////////////////////////////////////
 // Events
 ///////////////////////////////////////////////////////////////////////
 
-table! {
+    // TODO: Rename id -> rowid
+    // TODO: Rename uid -> id
+    table! {
     events (id) {
         id -> BigInt,
         uid -> Text,
@@ -196,7 +198,10 @@ joinable!(event_tags -> events (event_id));
 // Subscriptions
 ///////////////////////////////////////////////////////////////////////
 
-table! {
+    // TODO: Rename id -> rowid
+    // TODO: Rename uid -> id
+    // TODO: Rename user_id -> user_rowid
+    table! {
     bbox_subscriptions (id) {
         id -> BigInt,
         uid -> Text,

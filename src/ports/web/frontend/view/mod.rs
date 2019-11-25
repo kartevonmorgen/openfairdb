@@ -323,7 +323,7 @@ pub fn events(events: &[Event]) -> Markup {
                     ul class="event-list" {
                         @for e in events {
                             li {
-                                a href=(format!("/events/{}", e.uid)) {
+                                a href=(format!("/events/{}", e.id)) {
                                     div {
                                         h4 {
                                             span class="title" { (e.title) }

@@ -16,19 +16,19 @@ trait Key {
 
 impl Key for (Place, ReviewStatus) {
     fn key(&self) -> &str {
-        &self.0.uid.as_ref()
+        &self.0.id.as_ref()
     }
 }
 
 impl Key for Event {
     fn key(&self) -> &str {
-        self.uid.as_ref()
+        self.id.as_ref()
     }
 }
 
 impl Key for Category {
     fn key(&self) -> &str {
-        self.uid.as_ref()
+        self.id.as_ref()
     }
 }
 
@@ -46,19 +46,19 @@ impl Key for User {
 
 impl Key for Comment {
     fn key(&self) -> &str {
-        &self.uid.as_ref()
+        &self.id.as_ref()
     }
 }
 
 impl Key for Rating {
     fn key(&self) -> &str {
-        &self.uid.as_ref()
+        &self.id.as_ref()
     }
 }
 
 impl Key for BboxSubscription {
     fn key(&self) -> &str {
-        self.uid.as_ref()
+        self.id.as_ref()
     }
 }
 
@@ -127,15 +127,15 @@ impl PlaceIndexer for MockDb {
     fn add_or_update_place(&mut self, place: &Place, _ratings: &AvgRatings) -> Fallible<()> {
         // Nothing to do, the entry has already been stored
         // in the database.
-        debug_assert_eq!(place, &self.get_place(place.uid.as_ref()).unwrap().0);
+        debug_assert_eq!(place, &self.get_place(place.id.as_ref()).unwrap().0);
         Ok(())
     }
 
-    fn remove_place_by_uid(&mut self, uid: &str) -> Fallible<()> {
+    fn remove_place_by_id(&mut self, id: &str) -> Fallible<()> {
         // Nothing to do, the entry has already been stored
         // in the database.
         //debug_assert_eq!(Err(RepoError::NotFound), self.db.get_place(&id));
-        debug_assert!(self.get_place(&uid).is_err());
+        debug_assert!(self.get_place(&id).is_err());
         Ok(())
     }
 
@@ -145,7 +145,7 @@ impl PlaceIndexer for MockDb {
 }
 
 impl PlaceIndex for MockDb {
-    fn query_places(&self, _query: &PlaceIndexQuery, _limit: usize) -> Fallible<Vec<IndexedPlace>> {
+    fn query_places(&self, _query: &IndexQuery, _limit: usize) -> Fallible<Vec<IndexedPlace>> {
         unimplemented!();
     }
 }
@@ -208,7 +208,7 @@ impl PlaceRepo for MockDb {
             .borrow()
             .iter()
             .filter(|(p, s)| {
-                *s != ReviewStatus::Archived && ids.iter().any(|id| p.uid.as_str() == *id)
+                *s != ReviewStatus::Archived && ids.iter().any(|id| p.id.as_str() == *id)
             })
             .cloned()
             .collect())
@@ -242,14 +242,14 @@ impl PlaceRepo for MockDb {
 
     fn review_places(
         &self,
-        _uids: &[&str],
+        _ids: &[&str],
         _status: ReviewStatus,
         _activity: &ActivityLog,
     ) -> RepoResult<usize> {
         unimplemented!();
     }
 
-    fn get_place_history(&self, _uid: &str) -> RepoResult<PlaceHistory> {
+    fn get_place_history(&self, _id: &str) -> RepoResult<PlaceHistory> {
         unimplemented!();
     }
 }
@@ -259,8 +259,8 @@ impl EventGateway for MockDb {
         create(&mut self.events.borrow_mut(), e)
     }
 
-    fn get_event(&self, uid: &str) -> RepoResult<Event> {
-        get(&self.events.borrow(), uid).and_then(|e| {
+    fn get_event(&self, id: &str) -> RepoResult<Event> {
+        get(&self.events.borrow(), id).and_then(|e| {
             if e.archived.is_none() {
                 Ok(e)
             } else {
@@ -367,8 +367,8 @@ impl CommentRepository for MockDb {
         create(&mut self.comments.borrow_mut(), c)
     }
 
-    fn load_comment(&self, uid: &str) -> RepoResult<Comment> {
-        get(&self.comments.borrow(), uid).and_then(|c| {
+    fn load_comment(&self, id: &str) -> RepoResult<Comment> {
+        get(&self.comments.borrow(), id).and_then(|c| {
             if c.archived_at.is_none() {
                 Ok(c)
             } else {
@@ -377,27 +377,27 @@ impl CommentRepository for MockDb {
         })
     }
 
-    fn load_comments(&self, uids: &[&str]) -> RepoResult<Vec<Comment>> {
+    fn load_comments(&self, ids: &[&str]) -> RepoResult<Vec<Comment>> {
         Ok(self
             .comments
             .borrow()
             .iter()
-            .filter(|c| uids.iter().any(|uid| c.uid.as_str() == *uid) && c.archived_at.is_none())
+            .filter(|c| ids.iter().any(|id| c.id.as_str() == *id) && c.archived_at.is_none())
             .cloned()
             .collect())
     }
 
-    fn load_comments_of_rating(&self, rating_uid: &str) -> RepoResult<Vec<Comment>> {
+    fn load_comments_of_rating(&self, rating_id: &str) -> RepoResult<Vec<Comment>> {
         Ok(self
             .comments
             .borrow()
             .iter()
-            .filter(|c| c.rating_uid.as_str() == rating_uid && c.archived_at.is_none())
+            .filter(|c| c.rating_id.as_str() == rating_id && c.archived_at.is_none())
             .cloned()
             .collect())
     }
 
-    fn archive_comments(&self, _uids: &[&str], _activity: &Activity) -> RepoResult<usize> {
+    fn archive_comments(&self, _ids: &[&str], _activity: &Activity) -> RepoResult<usize> {
         unimplemented!();
     }
     fn archive_comments_of_ratings(
@@ -409,7 +409,7 @@ impl CommentRepository for MockDb {
     }
     fn archive_comments_of_places(
         &self,
-        _place_uids: &[&str],
+        _place_ids: &[&str],
         _activity: &Activity,
     ) -> RepoResult<usize> {
         unimplemented!();
@@ -457,22 +457,22 @@ impl RatingRepository for MockDb {
             .ratings
             .borrow()
             .iter()
-            .filter(|r| ids.iter().any(|uid| r.uid.as_str() == *uid) && r.archived_at.is_none())
+            .filter(|r| ids.iter().any(|id| r.id.as_str() == *id) && r.archived_at.is_none())
             .cloned()
             .collect())
     }
 
-    fn load_ratings_of_place(&self, place_uid: &str) -> RepoResult<Vec<Rating>> {
+    fn load_ratings_of_place(&self, place_id: &str) -> RepoResult<Vec<Rating>> {
         Ok(self
             .ratings
             .borrow()
             .iter()
-            .filter(|r| r.archived_at.is_none() && r.place_uid.as_str() == place_uid)
+            .filter(|r| r.archived_at.is_none() && r.place_id.as_str() == place_id)
             .cloned()
             .collect())
     }
 
-    fn load_place_uids_of_ratings(&self, _ids: &[&str]) -> RepoResult<Vec<String>> {
+    fn load_place_ids_of_ratings(&self, _ids: &[&str]) -> RepoResult<Vec<String>> {
         unimplemented!();
     }
     fn archive_ratings(&self, _ids: &[&str], _activity: &Activity) -> RepoResult<usize> {
@@ -480,7 +480,7 @@ impl RatingRepository for MockDb {
     }
     fn archive_ratings_of_places(
         &self,
-        _place_uids: &[&str],
+        _place_ids: &[&str],
         _activity: &Activity,
     ) -> RepoResult<usize> {
         unimplemented!();
@@ -604,7 +604,7 @@ fn modify_bbox_subscription() {
         .is_ok());
 
     let bbox_subscription = BboxSubscription {
-        uid: "123".into(),
+        id: "123".into(),
         user_email: "abc@abc.de".into(),
         bbox: bbox_old,
     };
@@ -649,7 +649,7 @@ fn get_bbox_subscriptions() {
         })
         .is_ok());
     let bbox_subscription = BboxSubscription {
-        uid: "1".into(),
+        id: "1".into(),
         user_email: "a@abc.de".into(),
         bbox: bbox1,
     };
@@ -664,14 +664,14 @@ fn get_bbox_subscriptions() {
         })
         .is_ok());
     let bbox_subscription2 = BboxSubscription {
-        uid: "2".into(),
+        id: "2".into(),
         user_email: "b@abc.de".into(),
         bbox: bbox2,
     };
     assert!(db.create_bbox_subscription(&bbox_subscription2).is_ok());
     let bbox_subscriptions = usecases::get_bbox_subscriptions(&db, "b@abc.de");
     assert!(bbox_subscriptions.is_ok());
-    assert_eq!(bbox_subscriptions.unwrap()[0].uid, "2".into());
+    assert_eq!(bbox_subscriptions.unwrap()[0].id, "2".into());
 }
 
 #[test]
@@ -739,7 +739,7 @@ fn receive_event_with_creators_email() {
     })
     .unwrap();
     db.create_event(Event {
-        uid: "x".into(),
+        id: "x".into(),
         title: "t".into(),
         description: None,
         start: NaiveDateTime::from_timestamp(0, 0),

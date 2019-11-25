@@ -104,7 +104,7 @@ fn entry_detail(e: EntryPresenter) -> Markup {
             ul {
                 @for (r,comments) in ratings {
                     li {
-                        (rating(e.place.uid.as_ref(), e.allow_archiving, &r, &comments))
+                        (rating(e.place.id.as_ref(), e.allow_archiving, &r, &comments))
                     }
                 }
             }
@@ -114,13 +114,13 @@ fn entry_detail(e: EntryPresenter) -> Markup {
     }
 }
 
-fn rating(place_uid: &str, archive: bool, r: &Rating, comments: &[Comment]) -> Markup {
+fn rating(place_id: &str, archive: bool, r: &Rating, comments: &[Comment]) -> Markup {
     html! {
       h5 { (r.title) " " span { (format!("({})",i8::from(r.value))) } }
       @if archive {
         form action = "/ratings/actions/archive" method = "POST" {
-            input type="hidden" name="ids" value=(r.uid.to_string());
-            input type="hidden" name="place_uid" value=(place_uid);
+            input type="hidden" name="ids" value=(r.id.to_string());
+            input type="hidden" name="place_id" value=(place_id);
             input type="submit" value="archive rating";
         }
       }
@@ -133,8 +133,8 @@ fn rating(place_uid: &str, archive: bool, r: &Rating, comments: &[Comment]) -> M
                   p { (c.text) }
                   @if archive {
                     form action = "/comments/actions/archive" method = "POST" {
-                        input type="hidden" name="ids" value=(c.uid.to_string());
-                        input type="hidden" name="place_uid" value=(place_uid);
+                        input type="hidden" name="ids" value=(c.id.to_string());
+                        input type="hidden" name="place_id" value=(place_id);
                         input type="submit" value="archive comment";
                     }
                   }

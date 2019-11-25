@@ -198,7 +198,7 @@ pub fn try_into_new_event<D: Db>(
     } else {
         None
     };
-    let uid = Uid::new_uuid();
+    let id = Id::new();
 
     let created_by = if let Some(ref email) = created_by {
         Some(create_user_from_email(db, email)?.email)
@@ -264,7 +264,7 @@ pub fn try_into_new_event<D: Db>(
         .transpose()?;
 
     let event = Event {
-        uid,
+        id,
         title,
         start,
         end,
@@ -288,17 +288,17 @@ pub fn try_into_new_event<D: Db>(
     Ok(event)
 }
 
-pub fn create_new_event<D: Db>(db: &mut D, token: Option<&str>, e: NewEvent) -> Result<Uid> {
+pub fn create_new_event<D: Db>(db: &mut D, token: Option<&str>, e: NewEvent) -> Result<Id> {
     let new_event = try_into_new_event(db, token, e, NewEventMode::Create)?;
     if new_event.created_by.is_none() {
         // NOTE: At the moment we require an email address,
         // but in the future we might allow anonymous creators
         return Err(ParameterError::CreatorEmail.into());
     }
-    let new_uid = new_event.uid.clone();
+    let new_id = new_event.id.clone();
     debug!("Creating new event: {:?}", new_event);
     db.create_event(new_event)?;
-    Ok(new_uid)
+    Ok(new_id)
 }
 
 #[cfg(test)]
@@ -332,8 +332,8 @@ mod tests {
             image_link_url: Some("my.url/test.ext".to_string()),
         };
         let mut mock_db = MockDb::default();
-        let uid = create_new_event(&mut mock_db, None, x).unwrap();
-        assert!(uid.is_valid());
+        let id = create_new_event(&mut mock_db, None, x).unwrap();
+        assert!(id.is_valid());
         assert_eq!(mock_db.events.borrow().len(), 1);
         assert_eq!(mock_db.tags.borrow().len(), 2);
         let x = &mock_db.events.borrow()[0];
@@ -341,8 +341,8 @@ mod tests {
         assert_eq!(x.start.timestamp(), 9999);
         assert!(x.location.is_none());
         assert_eq!(x.description.as_ref().unwrap(), "bar");
-        assert!(x.uid.is_valid());
-        assert_eq!(x.uid, uid);
+        assert!(x.id.is_valid());
+        assert_eq!(x.id, id);
         assert_eq!(
             "http://somewhere.com/image_url.jpg",
             x.image_url.as_ref().unwrap().as_str()

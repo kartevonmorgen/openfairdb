@@ -94,7 +94,7 @@ fn get_entry(db: sqlite::Connections, ids: String) -> Result<Vec<json::Entry>> {
         let mut results = Vec::with_capacity(ids.len());
         let db = db.shared()?;
         for (place, _) in db.get_places(&ids)?.into_iter() {
-            let r = db.load_ratings_of_place(place.uid.as_ref())?;
+            let r = db.load_ratings_of_place(place.id.as_ref())?;
             results.push(json::Entry::from_entry_with_ratings(place, r));
         }
         results
@@ -172,7 +172,7 @@ fn get_entries_recently_changed(
         if with_ratings.unwrap_or(false) {
             let mut results = Vec::with_capacity(entries.len());
             for (place, _, _) in entries.into_iter() {
-                let r = db.load_ratings_of_place(place.uid.as_ref())?;
+                let r = db.load_ratings_of_place(place.id.as_ref())?;
                 results.push(json::Entry::from_entry_with_ratings(place, r));
             }
             results
@@ -213,18 +213,18 @@ pub fn get_entries_most_popular_tags(
     Ok(Json(results.into_iter().map(Into::into).collect()))
 }
 
-#[get("/places/<uid>")]
-pub fn get_place(db: sqlite::Connections, uid: String) -> Result<(json::PlaceRoot, json::PlaceRevision, json::ReviewStatus)> {
+#[get("/places/<id>")]
+pub fn get_place(db: sqlite::Connections, id: String) -> Result<(json::PlaceRoot, json::PlaceRevision, json::ReviewStatus)> {
     let (place, status) = {
         let db = db.shared()?;
-        db.get_place(&uid)?
+        db.get_place(&id)?
     };
     let (place_root, place_revision) = place.into();
     Ok(Json((place_root.into(), place_revision.into(), status.into())))
 }
 
-#[get("/places/<uid>/history")]
-pub fn get_place_history(db: sqlite::Connections, login: Login, uid: String) -> Result<json::PlaceHistory> {
+#[get("/places/<id>/history")]
+pub fn get_place_history(db: sqlite::Connections, login: Login, id: String) -> Result<json::PlaceHistory> {
     let place_history = {
         let db = db.shared()?;
 
@@ -232,7 +232,7 @@ pub fn get_place_history(db: sqlite::Connections, login: Login, uid: String) -> 
         // and is only permitted for scouts and admins!
         usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
 
-        db.get_place_history(&uid)?
+        db.get_place_history(&id)?
     };
     Ok(Json(place_history.into()))
 }
@@ -254,7 +254,7 @@ fn get_duplicates(
     Ok(Json(
         results
             .into_iter()
-            .map(|(uid1, uid2, dup)| (uid1.to_string(), uid2.to_string(), dup))
+            .map(|(id1, id2, dup)| (id1.to_string(), id2.to_string(), dup))
             .collect(),
     ))
 }
@@ -355,7 +355,7 @@ fn get_bbox_subscriptions(
     let user_subscriptions = usecases::get_bbox_subscriptions(&*db.shared()?, &email)?
         .into_iter()
         .map(|s| json::BboxSubscription {
-            id: s.uid.into(),
+            id: s.id.into(),
             south_west_lat: s.bbox.south_west().lat().to_deg(),
             south_west_lng: s.bbox.south_west().lng().to_deg(),
             north_east_lat: s.bbox.north_east().lat().to_deg(),
@@ -379,28 +379,28 @@ fn post_entry(
             body.into_inner(),
             account.as_ref().map(|a| a.email()),
         )?
-        .uid
+        .id
         .to_string(),
     ))
 }
 
-#[put("/entries/<uid>", format = "application/json", data = "<data>")]
+#[put("/entries/<id>", format = "application/json", data = "<data>")]
 fn put_entry(
     account: Option<Account>,
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
-    uid: String,
+    id: String,
     data: Json<usecases::UpdatePlace>,
 ) -> Result<String> {
     Ok(Json(
         flows::update_place(
             &connections,
             &mut search_engine,
-            uid.into(),
+            id.into(),
             data.into_inner(),
             account.as_ref().map(|a| a.email()),
         )?
-        .uid
+        .id
         .into(),
     ))
 }
@@ -422,11 +422,11 @@ fn get_categories(connections: sqlite::Connections) -> Result<Vec<json::Category
     Ok(Json(categories))
 }
 
-#[get("/categories/<uids>")]
-fn get_category(connections: sqlite::Connections, uids: String) -> Result<Vec<json::Category>> {
+#[get("/categories/<ids>")]
+fn get_category(connections: sqlite::Connections, ids: String) -> Result<Vec<json::Category>> {
     // TODO: Only lookup and return a single entity
     // TODO: Add a new method for searching multiple ids
-    let uids = util::split_ids(&uids);
+    let uids = util::split_ids(&ids);
     if uids.is_empty() {
         return Ok(Json(vec![]));
     }
@@ -434,7 +434,7 @@ fn get_category(connections: sqlite::Connections, uids: String) -> Result<Vec<js
         .shared()?
         .all_categories()?
         .into_iter()
-        .filter(|c| uids.iter().any(|uid| c.uid.as_str() == *uid))
+        .filter(|c| uids.iter().any(|id| c.id.as_str() == *id))
         .map(Into::into)
         .collect();
     Ok(Json(categories))
@@ -487,7 +487,7 @@ fn csv_export(
                     place.tags = tags;
                     let categories = all_categories
                         .iter()
-                        .filter(|c1| categories.iter().any(|c2| c1.uid == c2.uid))
+                        .filter(|c1| categories.iter().any(|c2| c1.id == c2.id))
                         .cloned()
                         .collect::<Vec<Category>>();
                     Some((place, categories, ratings.total()))

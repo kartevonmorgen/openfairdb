@@ -92,7 +92,7 @@ mod tests {
                     account_email,
                 )
                 .unwrap()
-                .uid
+                .id
                 .into()
             }
 
@@ -167,7 +167,7 @@ mod tests {
                 self.try_get_comment(id).is_some()
             }
 
-            pub fn query_places(self: &EnvFixture, query: &PlaceIndexQuery) -> Vec<IndexedPlace> {
+            pub fn query_places(self: &EnvFixture, query: &IndexQuery) -> Vec<IndexedPlace> {
                 self.search_engine
                     .borrow_mut()
                     .query_places(query, 100)
@@ -175,7 +175,7 @@ mod tests {
             }
 
             pub fn query_places_by_tag(self: &EnvFixture, tag: &str) -> Vec<IndexedPlace> {
-                let query = PlaceIndexQuery {
+                let query = IndexQuery {
                     hash_tags: vec![tag.into()],
                     ..Default::default()
                 };
@@ -235,12 +235,12 @@ mod tests {
 
         pub fn new_entry_rating(
             i: i32,
-            place_uid: &str,
+            place_id: &str,
             context: RatingContext,
             value: RatingValue,
         ) -> usecases::NewPlaceRating {
             usecases::NewPlaceRating {
-                entry: place_uid.to_owned(),
+                entry: place_id.to_owned(),
                 context,
                 value,
                 title: format!("title_{}", i),

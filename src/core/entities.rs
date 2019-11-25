@@ -12,12 +12,12 @@ use std::{borrow::Borrow, fmt, ops::Deref, str::FromStr};
 use url::Url;
 use uuid::Uuid;
 
-/// Universal, external/public identifier with a string representation.
+/// Portable public identifier with a string representation.
 #[derive(Default, Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Uid(String);
+pub struct Id(String);
 
-impl Uid {
-    pub fn new_uuid() -> Self {
+impl Id {
+    pub fn new() -> Self {
         Uuid::new_v4().into()
     }
 
@@ -30,56 +30,56 @@ impl Uid {
     }
 }
 
-impl AsRef<String> for Uid {
+impl AsRef<String> for Id {
     fn as_ref(&self) -> &String {
         &self.0
     }
 }
 
-impl AsRef<str> for Uid {
+impl AsRef<str> for Id {
     fn as_ref(&self) -> &str {
         self.0.as_str()
     }
 }
 
-impl From<String> for Uid {
+impl From<String> for Id {
     fn from(from: String) -> Self {
         Self(from)
     }
 }
 
-impl From<&str> for Uid {
+impl From<&str> for Id {
     fn from(from: &str) -> Self {
         from.to_owned().into()
     }
 }
 
-impl From<Uuid> for Uid {
+impl From<Uuid> for Id {
     fn from(from: Uuid) -> Self {
         from.to_simple_ref().to_string().into()
     }
 }
 
-impl From<Uid> for String {
-    fn from(from: Uid) -> Self {
+impl From<Id> for String {
+    fn from(from: Id) -> Self {
         from.0
     }
 }
 
-impl FromStr for Uid {
+impl FromStr for Id {
     type Err = ();
-    fn from_str(s: &str) -> Result<Uid, Self::Err> {
+    fn from_str(s: &str) -> Result<Id, Self::Err> {
         Ok(s.into())
     }
 }
 
-impl Borrow<str> for Uid {
+impl Borrow<str> for Id {
     fn borrow(&self) -> &str {
         self.as_ref()
     }
 }
 
-impl fmt::Display for Uid {
+impl fmt::Display for Id {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         f.write_str(self.as_ref())
     }
@@ -193,7 +193,7 @@ impl Activity {
 pub struct ActivityLog {
     pub activity: Activity,
     pub context: Option<String>,
-    pub memo: Option<String>,
+    pub comment: Option<String>,
 }
 
 #[rustfmt::skip]
@@ -237,7 +237,7 @@ pub struct Links {
 // Immutable part of a place.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlaceRoot {
-    pub uid: Uid,
+    pub id: Id,
     pub license: String,
 }
 
@@ -258,7 +258,7 @@ pub struct PlaceRevision {
 // into a single, flat struct.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Place {
-    pub uid: Uid,
+    pub id: Id,
     pub license: String,
     pub revision: Revision,
     pub created: Activity,
@@ -273,7 +273,7 @@ pub struct Place {
 impl From<(PlaceRoot, PlaceRevision)> for Place {
     fn from(from: (PlaceRoot, PlaceRevision)) -> Self {
         let (
-            PlaceRoot { uid, license },
+            PlaceRoot { id, license },
             PlaceRevision {
                 revision,
                 created,
@@ -286,7 +286,7 @@ impl From<(PlaceRoot, PlaceRevision)> for Place {
             },
         ) = from;
         Self {
-            uid,
+            id,
             license,
             revision,
             created,
@@ -303,7 +303,7 @@ impl From<(PlaceRoot, PlaceRevision)> for Place {
 impl From<Place> for (PlaceRoot, PlaceRevision) {
     fn from(from: Place) -> Self {
         let Place {
-            uid,
+            id,
             license,
             revision,
             created,
@@ -315,7 +315,7 @@ impl From<Place> for (PlaceRoot, PlaceRevision) {
             tags,
         } = from;
         (
-            PlaceRoot { uid, license },
+            PlaceRoot { id, license },
             PlaceRevision {
                 revision,
                 created,
@@ -381,7 +381,7 @@ impl Contact {
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Event {
-    pub uid          : Uid,
+    pub id           : Id,
     pub title        : String,
     pub description  : Option<String>,
     pub start        : NaiveDateTime,
@@ -408,7 +408,7 @@ pub enum RegistrationType {
 #[rustfmt::skip]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Category {
-    pub uid : Uid,
+    pub id  : Id,
     pub tag : String
 }
 
@@ -429,21 +429,21 @@ impl Category {
 
     pub fn new_non_profit() -> Self {
         Self {
-            uid: Self::UID_NON_PROFIT.into(),
+            id: Self::UID_NON_PROFIT.into(),
             tag: Self::TAG_NON_PROFIT.into(),
         }
     }
 
     pub fn new_commercial() -> Self {
         Self {
-            uid: Self::UID_COMMERCIAL.into(),
+            id: Self::UID_COMMERCIAL.into(),
             tag: Self::TAG_COMMERCIAL.into(),
         }
     }
 
     pub fn new_event() -> Self {
         Self {
-            uid: Self::UID_EVENT.into(),
+            id: Self::UID_EVENT.into(),
             tag: Self::TAG_EVENT.into(),
         }
     }
@@ -471,10 +471,10 @@ impl Category {
         (tags, categories)
     }
 
-    pub fn merge_uids_into_tags(uids: Vec<Uid>, mut tags: Vec<String>) -> Vec<String> {
-        tags.reserve(uids.len());
-        tags = uids.iter().fold(tags, |mut tags, uid| {
-            match uid.as_ref() {
+    pub fn merge_ids_into_tags(ids: Vec<Id>, mut tags: Vec<String>) -> Vec<String> {
+        tags.reserve(ids.len());
+        tags = ids.iter().fold(tags, |mut tags, id| {
+            match id.as_ref() {
                 Self::UID_NON_PROFIT => tags.push(Self::TAG_NON_PROFIT.into()),
                 Self::UID_COMMERCIAL => tags.push(Self::TAG_COMMERCIAL.into()),
                 Self::UID_EVENT => tags.push(Self::TAG_EVENT.into()),
@@ -525,8 +525,8 @@ impl Default for Role {
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Comment {
-    pub uid         : Uid,
-    pub rating_uid  : Uid,
+    pub id          : Id,
+    pub rating_id   : Id,
     pub created_at  : Timestamp,
     pub archived_at : Option<Timestamp>,
     pub text        : String,
@@ -757,8 +757,8 @@ impl std::ops::AddAssign<(RatingContext, RatingValue)> for AvgRatingsBuilder {
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Rating {
-    pub uid         : Uid,
-    pub place_uid   : Uid,
+    pub id          : Id,
+    pub place_id    : Id,
     pub created_at  : Timestamp,
     pub archived_at : Option<Timestamp>,
     pub title       : String,
@@ -770,7 +770,7 @@ pub struct Rating {
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct BboxSubscription {
-    pub uid        : Uid,
+    pub id         : Id,
     pub user_email : String,
     pub bbox       : MapBbox,
 }
@@ -877,8 +877,8 @@ pub mod place_builder {
     }
 
     impl PlaceBuild {
-        pub fn id(mut self, uid: &str) -> Self {
-            self.place.uid = uid.into();
+        pub fn id(mut self, id: &str) -> Self {
+            self.place.id = id.into();
             self
         }
         pub fn revision(mut self, v: u64) -> Self {
@@ -955,7 +955,7 @@ pub mod place_builder {
         fn build() -> PlaceBuild {
             PlaceBuild {
                 place: Place {
-                    uid: Uid::new_uuid(),
+                    id: Id::new(),
                     license: "".into(),
                     revision: Revision::initial(),
                     created: Activity::now(None),

@@ -47,7 +47,7 @@ mod events {
         let (client, db, _) = setup();
         let events = vec![
             Event {
-                uid: "1234".into(),
+                id: "1234".into(),
                 title: "x".into(),
                 description: None,
                 start: chrono::Utc::now()
@@ -67,7 +67,7 @@ mod events {
                 image_link_url: None,
             },
             Event {
-                uid: "5678".into(),
+                id: "5678".into(),
                 title: "x".into(),
                 description: None,
                 start: chrono::Utc::now()
@@ -87,7 +87,7 @@ mod events {
                 image_link_url: None,
             },
             Event {
-                uid: "0000".into(),
+                id: "0000".into(),
                 title: "x".into(),
                 description: None,
                 start: chrono::Utc::now()
@@ -128,7 +128,7 @@ mod events {
         let (client, db, _) = setup();
         let events = vec![
             Event {
-                uid: "1234".into(),
+                id: "1234".into(),
                 title: "x".into(),
                 description: None,
                 start: chrono::Utc::now()
@@ -148,7 +148,7 @@ mod events {
                 image_link_url: None,
             },
             Event {
-                uid: "5678".into(),
+                id: "5678".into(),
                 title: "x".into(),
                 description: None,
                 start: chrono::Utc::now()
@@ -168,7 +168,7 @@ mod events {
                 image_link_url: None,
             },
             Event {
-                uid: "0000".into(),
+                id: "0000".into(),
                 title: "x".into(),
                 description: None,
                 start: chrono::Utc::now()
@@ -209,7 +209,7 @@ mod events {
     fn get_a_single_event() {
         let (client, db, _) = setup();
         let events = vec![Event {
-            uid: "1234".into(),
+            id: "1234".into(),
             title: "A great event".into(),
             description: Some("Foo bar baz".into()),
             start: NaiveDateTime::from_timestamp(0, 0),
@@ -290,7 +290,7 @@ mod entry {
         };
         let e_id = flows::prelude::create_place(db, search, e, None)
             .unwrap()
-            .uid;
+            .id;
         let r = usecases::NewPlaceRating {
             title: "A rating".into(),
             comment: "Foo".into(),
@@ -361,7 +361,7 @@ mod entry {
         let res = client
             .post("/comments/actions/archive")
             .header(ContentType::Form)
-            .body(format!("ids={}&place_uid={}", c_id, e_id))
+            .body(format!("ids={}&place_id={}", c_id, e_id))
             .dispatch();
         assert_eq!(res.status(), Status::SeeOther);
         //TODO: archived comments should be loaded too.
@@ -383,7 +383,7 @@ mod entry {
         let res = client
             .post("/comments/actions/archive")
             .header(ContentType::Form)
-            .body(format!("ids={}&place_uid={}", c_id, e_id))
+            .body(format!("ids={}&place_id={}", c_id, e_id))
             .dispatch();
         assert_eq!(res.status(), Status::SeeOther);
         //TODO: archived comments should be loaded too.
@@ -401,7 +401,7 @@ mod entry {
         let res = client
             .post("/comments/actions/archive")
             .header(ContentType::Form)
-            .body(format!("ids={}&place_uid={}", c_id, e_id))
+            .body(format!("ids={}&place_id={}", c_id, e_id))
             .dispatch();
         assert_eq!(res.status(), Status::NotFound);
         let comment = db.shared().unwrap().load_comment(&c_id).unwrap();
@@ -415,7 +415,7 @@ mod entry {
         let res = client
             .post("/ratings/actions/archive")
             .header(ContentType::Form)
-            .body(format!("ids={}&place_uid={}", r_id, e_id))
+            .body(format!("ids={}&place_id={}", r_id, e_id))
             .dispatch();
         assert_eq!(res.status(), Status::NotFound);
     }

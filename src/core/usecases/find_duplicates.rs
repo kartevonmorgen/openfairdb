@@ -12,15 +12,15 @@ pub enum DuplicateType {
 pub fn find_duplicates(
     places: &[(Place, ReviewStatus)],
     all_places: &[(Place, ReviewStatus)],
-) -> Vec<(Uid, Uid, DuplicateType)> {
+) -> Vec<(Id, Id, DuplicateType)> {
     let mut duplicates = Vec::new();
     for (p1, _) in &places[..] {
         for (p2, _) in &all_places[..] {
-            if p1.uid >= p2.uid {
+            if p1.id >= p2.id {
                 continue;
             }
             if let Some(t) = is_duplicate(p1, p2) {
-                duplicates.push((p1.uid.clone(), p2.uid.clone(), t));
+                duplicates.push((p1.id.clone(), p2.id.clone(), t));
             }
         }
     }
@@ -110,7 +110,7 @@ fn levenshtein_distance(s: &str, t: &str) -> usize {
 
     // for all i and j, d[i,j] will hold the Levenshtein distance between
     // the first i characters of s and the first j characters of t
-    // memo that d has (m+1)*(n+1) values
+    // comment that d has (m+1)*(n+1) values
     let mut d: Vec<Vec<usize>> = vec![];
     for _ in 0..max_s {
         d.push(vec![0; max_t]);

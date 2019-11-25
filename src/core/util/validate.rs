@@ -163,7 +163,7 @@ mod tests {
     #[test]
     fn event_autocorrect() {
         let e = Event {
-            uid: "x".into(),
+            id: "x".into(),
             title: "foo".into(),
             description: None,
             start: NaiveDateTime::from_timestamp(0, 0),
@@ -258,7 +258,7 @@ mod tests {
     #[test]
     fn event_test() {
         let e = Event {
-            uid: "x".into(),
+            id: "x".into(),
             title: "foo".into(),
             description: None,
             start: NaiveDateTime::from_timestamp(0, 0),
@@ -280,7 +280,7 @@ mod tests {
     #[test]
     fn event_with_invalid_end_test() {
         let e = Event {
-            uid: "x".into(),
+            id: "x".into(),
             title: "foo".into(),
             description: None,
             start: NaiveDateTime::from_timestamp(100, 0),

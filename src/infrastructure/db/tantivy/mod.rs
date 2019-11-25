@@ -1,6 +1,6 @@
 use crate::core::{
-    db::{IndexedPlace, PlaceIndex, PlaceIndexQuery, PlaceIndexer},
-    entities::{AvgRatingValue, AvgRatings, Category, Place, RatingContext, Uid},
+    db::{IndexedPlace, PlaceIndex, IndexQuery, PlaceIndexer},
+    entities::{AvgRatingValue, AvgRatings, Category, Place, RatingContext, Id},
     util::geo::{LatCoord, LngCoord, MapPoint, RawCoord},
 };
 
@@ -20,7 +20,8 @@ use tantivy::{
 
 const OVERALL_INDEX_HEAP_SIZE_IN_BYTES: usize = 50_000_000;
 
-struct IndexedPlaceFields {
+// Shared fields for both places and events
+struct IndexedFields {
     id: Field,
     lat: Field,
     lng: Field,
@@ -40,7 +41,7 @@ struct IndexedPlaceFields {
     total_rating: Field,
 }
 
-impl IndexedPlaceFields {
+impl IndexedFields {
     fn build_schema() -> (Self, Schema) {
         let id_options = TextOptions::default()
             .set_indexing_options(
@@ -76,27 +77,27 @@ impl IndexedPlaceFields {
         let fields = Self {
             id: schema_builder.add_text_field("id", id_options),
             lat: schema_builder.add_i64_field("lat", INDEXED | STORED),
-            lng: schema_builder.add_i64_field("lng", INDEXED | STORED),
-            title: schema_builder.add_text_field("title", text_options.clone()),
-            description: schema_builder.add_text_field("description", text_options),
+            lng: schema_builder.add_i64_field("lon", INDEXED | STORED),
+            title: schema_builder.add_text_field("tit", text_options.clone()),
+            description: schema_builder.add_text_field("dsc", text_options.clone()),
             address_street: schema_builder
-                .add_text_field("address_street", address_options.clone()),
-            address_city: schema_builder.add_text_field("address_city", address_options.clone()),
-            address_zip: schema_builder.add_text_field("address_zip", address_options.clone()),
-            address_country: schema_builder.add_text_field("address_country", address_options),
+                .add_text_field("adr_street", address_options.clone()),
+            address_city: schema_builder.add_text_field("adr_city", address_options.clone()),
+            address_zip: schema_builder.add_text_field("adr_zip", address_options.clone()),
+            address_country: schema_builder.add_text_field("adr_country", address_options),
             tag: schema_builder.add_text_field("tag", tag_options),
-            ratings_diversity: schema_builder.add_u64_field("ratings_diversity", STORED),
-            ratings_fairness: schema_builder.add_u64_field("ratings_fairness", STORED),
-            ratings_humanity: schema_builder.add_u64_field("ratings_humanity", STORED),
-            ratings_renewable: schema_builder.add_u64_field("ratings_renewable", STORED),
-            ratings_solidarity: schema_builder.add_u64_field("ratings_solidarity", STORED),
-            ratings_transparency: schema_builder.add_u64_field("ratings_transparency", STORED),
-            total_rating: schema_builder.add_u64_field("total_rating", STORED | FAST),
+            ratings_diversity: schema_builder.add_u64_field("rat_diversity", STORED),
+            ratings_fairness: schema_builder.add_u64_field("rat_fairness", STORED),
+            ratings_humanity: schema_builder.add_u64_field("rat_humanity", STORED),
+            ratings_renewable: schema_builder.add_u64_field("rat_renewable", STORED),
+            ratings_solidarity: schema_builder.add_u64_field("rat_solidarity", STORED),
+            ratings_transparency: schema_builder.add_u64_field("rat_transparency", STORED),
+            total_rating: schema_builder.add_u64_field("rat_total", STORED | FAST),
         };
         (fields, schema_builder.build())
     }
 
-    fn read_document(&self, doc: &Document) -> IndexedPlace {
+    fn read_indexed_place(&self, doc: &Document) -> IndexedPlace {
         let mut lat: Option<LatCoord> = Default::default();
         let mut lng: Option<LngCoord> = Default::default();
         let mut entry = IndexedPlace::default();
@@ -193,7 +194,7 @@ impl IndexedPlaceFields {
 }
 
 pub(crate) struct TantivyPlaceIndex {
-    fields: IndexedPlaceFields,
+    fields: IndexedFields,
     index_reader: IndexReader,
     index_writer: IndexWriter,
     text_query_parser: QueryParser,
@@ -270,7 +271,7 @@ impl TantivyPlaceIndex {
     }
 
     pub fn create<P: AsRef<Path>>(path: Option<P>) -> Fallible<Self> {
-        let (fields, schema) = IndexedPlaceFields::build_schema();
+        let (fields, schema) = IndexedFields::build_schema();
 
         // TODO: Open index from existing directory
         let index = if let Some(path) = path {
@@ -314,7 +315,7 @@ impl TantivyPlaceIndex {
         })
     }
 
-    fn build_query(&self, query: &PlaceIndexQuery) -> (BooleanQuery, TopDocsMode) {
+    fn build_query(&self, query: &IndexQuery) -> (BooleanQuery, TopDocsMode) {
         let mut sub_queries: Vec<(Occur, Box<dyn Query>)> = Vec::with_capacity(1 + 2 + 1 + 1 + 1);
 
         if !query.ids.is_empty() {
@@ -403,8 +404,8 @@ impl TantivyPlaceIndex {
             }
         }
 
-        let merged_tags = Category::merge_uids_into_tags(
-            query.categories.iter().map(|c| Uid::from(*c)).collect(),
+        let merged_tags = Category::merge_ids_into_tags(
+            query.categories.iter().map(|c| Id::from(*c)).collect(),
             query.hash_tags.clone(),
         );
         let (tags, categories) = Category::split_from_tags(merged_tags);
@@ -488,10 +489,10 @@ impl TantivyPlaceIndex {
 
 impl PlaceIndexer for TantivyPlaceIndex {
     fn add_or_update_place(&mut self, place: &Place, ratings: &AvgRatings) -> Fallible<()> {
-        let id_term = Term::from_field_text(self.fields.id, place.uid.as_ref());
+        let id_term = Term::from_field_text(self.fields.id, place.id.as_ref());
         self.index_writer.delete_term(id_term);
         let mut doc = Document::default();
-        doc.add_text(self.fields.id, place.uid.as_ref());
+        doc.add_text(self.fields.id, place.id.as_ref());
         doc.add_i64(
             self.fields.lat,
             i64::from(place.location.pos.lat().to_raw()),
@@ -566,7 +567,7 @@ impl PlaceIndexer for TantivyPlaceIndex {
         Ok(())
     }
 
-    fn remove_place_by_uid(&mut self, id: &str) -> Fallible<()> {
+    fn remove_place_by_id(&mut self, id: &str) -> Fallible<()> {
         let id_term = Term::from_field_text(self.fields.id, id);
         self.index_writer.delete_term(id_term);
         Ok(())
@@ -583,7 +584,7 @@ impl PlaceIndexer for TantivyPlaceIndex {
 
 impl PlaceIndex for TantivyPlaceIndex {
     #[allow(clippy::absurd_extreme_comparisons)]
-    fn query_places(&self, query: &PlaceIndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>> {
+    fn query_places(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>> {
         if limit <= 0 {
             bail!("Invalid limit: {}", limit);
         }
@@ -601,7 +602,7 @@ impl PlaceIndex for TantivyPlaceIndex {
                 for (_, doc_addr) in top_docs {
                     match searcher.doc(doc_addr) {
                         Ok(ref doc) => {
-                            entries.push(self.fields.read_document(doc));
+                            entries.push(self.fields.read_indexed_place(doc));
                         }
                         Err(err) => {
                             warn!("Failed to load document {:?}: {}", doc_addr, err);
@@ -650,7 +651,7 @@ impl PlaceIndex for TantivyPlaceIndex {
                 for (_, doc_addr) in top_docs {
                     match searcher.doc(doc_addr) {
                         Ok(ref doc) => {
-                            entries.push(self.fields.read_document(doc));
+                            entries.push(self.fields.read_indexed_place(doc));
                         }
                         Err(err) => {
                             warn!("Failed to load document {:?}: {}", doc_addr, err);
@@ -679,7 +680,7 @@ impl SearchEngine {
 }
 
 impl PlaceIndex for SearchEngine {
-    fn query_places(&self, query: &PlaceIndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>> {
+    fn query_places(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>> {
         let entry_index = match self.0.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
@@ -697,12 +698,12 @@ impl PlaceIndexer for SearchEngine {
         inner.add_or_update_place(place, ratings)
     }
 
-    fn remove_place_by_uid(&mut self, id: &str) -> Fallible<()> {
+    fn remove_place_by_id(&mut self, id: &str) -> Fallible<()> {
         let mut inner = match self.0.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         };
-        inner.remove_place_by_uid(id)
+        inner.remove_place_by_id(id)
     }
 
     fn flush(&mut self) -> Fallible<()> {

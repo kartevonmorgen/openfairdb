@@ -57,8 +57,8 @@ pub fn get_user<D: Db>(db: &D, logged_in_email: &str, requested_email: &str) -> 
     Ok(db.get_user_by_email(requested_email)?)
 }
 
-pub fn get_event<D: Db>(db: &D, uid: &str) -> Result<Event> {
-    Ok(db.get_event(uid)?)
+pub fn get_event<D: Db>(db: &D, id: &str) -> Result<Event> {
+    Ok(db.get_event(id)?)
 }
 
 pub fn delete_user(db: &dyn Db, login_email: &str, email: &str) -> Result<()> {
@@ -76,9 +76,9 @@ pub fn subscribe_to_bbox(db: &dyn Db, user_email: String, bbox: MapBbox) -> Resu
     // with a new one.
     unsubscribe_all_bboxes(db, &user_email)?;
 
-    let uid = Uid::new_uuid();
+    let id = Id::new();
     db.create_bbox_subscription(&BboxSubscription {
-        uid,
+        id,
         user_email,
         bbox,
     })?;

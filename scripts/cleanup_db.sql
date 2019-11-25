@@ -10,9 +10,9 @@ delete from tags where length(id) < 2;
 -- Delete orphaned tag relations
 delete from event_tags where event_id not in (select id from events);
 delete from org_tag_relations where org_id not in (select id from organizations);
-delete from place_revision_tag where parent_id not in (select id from place);
+delete from place_revision_tag where parent_rowid not in (select rowid from place);
 
 -- Insert missing tags (just in case some got lost along the way)
 insert or ignore into tags (id) select tag from event_tags;
 insert or ignore into tags (id) select tag_id from org_tag_relations;
-insert or ignore into tags (id) select tag from place_revision_tag where parent_id in (select id from place where current_status > 0);
+insert or ignore into tags (id) select tag from place_revision_tag where parent_rowid in (select rowid from place_revision where current_status > 0);

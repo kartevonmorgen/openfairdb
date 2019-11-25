@@ -16,11 +16,11 @@ pub struct NewPlaceRating {
 pub struct Storable(Place, Rating, Comment);
 
 impl Storable {
-    pub fn rating_uid(&self) -> &str {
-        &self.1.uid.as_ref()
+    pub fn rating_id(&self) -> &str {
+        &self.1.id.as_ref()
     }
-    pub fn comment_uid(&self) -> &str {
-        &self.2.uid.as_ref()
+    pub fn comment_id(&self) -> &str {
+        &self.2.id.as_ref()
     }
 }
 
@@ -32,13 +32,13 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: NewPlaceRating) -> Result<Storable> 
         return Err(Error::Parameter(ParameterError::RatingValue));
     }
     let now = Timestamp::now();
-    let rating_uid = Uid::new_uuid();
-    let comment_uid = Uid::new_uuid();
+    let rating_id = Id::new();
+    let comment_id = Id::new();
     let (place, _) = db.get_place(&r.entry)?;
-    debug_assert_eq!(place.uid, r.entry.as_str().into());
+    debug_assert_eq!(place.id, r.entry.as_str().into());
     let rating = Rating {
-        uid: rating_uid.clone(),
-        place_uid: r.entry.into(),
+        id: rating_id.clone(),
+        place_id: r.entry.into(),
         created_at: now,
         archived_at: None,
         title: r.title,
@@ -47,8 +47,8 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: NewPlaceRating) -> Result<Storable> 
         source: r.source,
     };
     let comment = Comment {
-        uid: comment_uid,
-        rating_uid,
+        id: comment_id,
+        rating_id,
         created_at: now,
         archived_at: None,
         text: r.comment,
@@ -58,11 +58,11 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: NewPlaceRating) -> Result<Storable> 
 
 pub fn store_new_rating<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>)> {
     let Storable(place, rating, comment) = s;
-    debug_assert_eq!(place.uid, rating.place_uid);
-    debug_assert_eq!(rating.uid, comment.rating_uid);
+    debug_assert_eq!(place.id, rating.place_id);
+    debug_assert_eq!(rating.id, comment.rating_id);
     db.create_rating(rating)?;
     db.create_comment(comment)?;
-    let ratings = db.load_ratings_of_place(place.uid.as_ref())?;
+    let ratings = db.load_ratings_of_place(place.id.as_ref())?;
     Ok((place, ratings))
 }
 
@@ -166,10 +166,10 @@ mod tests {
 
         assert_eq!(db.ratings.borrow().len(), 1);
         assert_eq!(db.comments.borrow().len(), 1);
-        assert_eq!(db.ratings.borrow()[0].place_uid, "foo".into());
+        assert_eq!(db.ratings.borrow()[0].place_id, "foo".into());
         assert_eq!(
-            db.comments.borrow()[0].rating_uid,
-            db.ratings.borrow()[0].uid
+            db.comments.borrow()[0].rating_id,
+            db.ratings.borrow()[0].id
         );
     }
 }

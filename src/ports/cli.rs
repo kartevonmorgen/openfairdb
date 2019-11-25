@@ -21,9 +21,9 @@ fn update_event_locations<D: Db>(db: &mut D) -> Result<()> {
                     if let Some(pos) = MapPoint::try_from_lat_lng_deg(lat, lng) {
                         if pos.is_valid() {
                             if let Err(err) = db.update_event(&e) {
-                                warn!("Failed to update location of event {}: {}", e.uid, err);
+                                warn!("Failed to update location of event {}: {}", e.id, err);
                             } else {
-                                info!("Updated location of event {}", e.uid);
+                                info!("Updated location of event {}", e.id);
                             }
                         }
                     }

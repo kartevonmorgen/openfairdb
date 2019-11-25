@@ -25,8 +25,8 @@ pub struct RecentlyChangedEntriesParams {
 }
 
 pub trait PlaceRepo {
-    fn get_place(&self, uid: &str) -> Result<(Place, ReviewStatus)>;
-    fn get_places(&self, uids: &[&str]) -> Result<Vec<(Place, ReviewStatus)>>;
+    fn get_place(&self, id: &str) -> Result<(Place, ReviewStatus)>;
+    fn get_places(&self, ids: &[&str]) -> Result<Vec<(Place, ReviewStatus)>>;
 
     fn all_places(&self) -> Result<Vec<(Place, ReviewStatus)>>;
     fn count_places(&self) -> Result<usize>;
@@ -45,22 +45,22 @@ pub trait PlaceRepo {
 
     fn review_places(
         &self,
-        uids: &[&str],
+        ids: &[&str],
         status: ReviewStatus,
         activity: &ActivityLog,
     ) -> Result<usize>;
 
     fn create_or_update_place(&self, place: Place) -> Result<()>;
 
-    fn get_place_history(&self, uid: &str) -> Result<PlaceHistory>;
+    fn get_place_history(&self, id: &str) -> Result<PlaceHistory>;
 }
 
 pub trait EventGateway {
     fn create_event(&self, _: Event) -> Result<()>;
     fn update_event(&self, _: &Event) -> Result<()>;
-    fn archive_events(&self, uids: &[&str], archived: Timestamp) -> Result<usize>;
+    fn archive_events(&self, ids: &[&str], archived: Timestamp) -> Result<usize>;
 
-    fn get_event(&self, uid: &str) -> Result<Event>;
+    fn get_event(&self, id: &str) -> Result<Event>;
 
     fn all_events(&self) -> Result<Vec<Event>>;
     fn count_events(&self) -> Result<usize>;
@@ -75,7 +75,7 @@ pub trait EventGateway {
     // Ok(Some(())) => Found and deleted
     // Ok(None)     => No matching tags
     // TODO: Use explicit result semantics
-    fn delete_event_with_matching_tags(&self, uid: &str, tags: &[&str]) -> Result<Option<()>>;
+    fn delete_event_with_matching_tags(&self, id: &str, tags: &[&str]) -> Result<Option<()>>;
 }
 
 pub trait UserGateway {
@@ -134,6 +134,21 @@ pub trait Db:
 }
 
 #[derive(Debug, Default, Clone)]
+pub struct IndexQuery<'a, 'b> {
+    pub include_bbox: Option<MapBbox>,
+    pub exclude_bbox: Option<MapBbox>,
+    pub categories: Vec<&'a str>,
+    pub ids: Vec<&'b str>,
+    pub hash_tags: Vec<String>,
+    pub text_tags: Vec<String>,
+    pub text: Option<String>,
+    pub ts_min_lb: Option<Timestamp>, // lower bound (inclusive)
+    pub ts_min_ub: Option<Timestamp>, // upper bound (inclusive)
+    pub ts_max_lb: Option<Timestamp>, // lower bound (inclusive)
+    pub ts_max_ub: Option<Timestamp>, // upper bound (inclusive)
+}
+
+#[derive(Debug, Default, Clone)]
 pub struct IndexedPlace {
     pub id: String,
     pub pos: MapPoint,
@@ -143,23 +158,12 @@ pub struct IndexedPlace {
     pub ratings: AvgRatings,
 }
 
-#[derive(Debug, Default, Clone)]
-pub struct PlaceIndexQuery<'a, 'b> {
-    pub include_bbox: Option<MapBbox>,
-    pub exclude_bbox: Option<MapBbox>,
-    pub categories: Vec<&'a str>,
-    pub ids: Vec<&'b str>,
-    pub hash_tags: Vec<String>,
-    pub text_tags: Vec<String>,
-    pub text: Option<String>,
-}
-
 pub trait PlaceIndex {
-    fn query_places(&self, query: &PlaceIndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>>;
+    fn query_places(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>>;
 }
 
 pub trait PlaceIndexer: PlaceIndex {
     fn add_or_update_place(&mut self, place: &Place, ratings: &AvgRatings) -> Fallible<()>;
-    fn remove_place_by_uid(&mut self, uid: &str) -> Fallible<()>;
+    fn remove_place_by_id(&mut self, id: &str) -> Fallible<()>;
     fn flush(&mut self) -> Fallible<()>;
 }

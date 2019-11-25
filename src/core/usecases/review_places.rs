@@ -2,7 +2,7 @@ use crate::core::prelude::*;
 
 pub fn review_places<D: Db>(
     db: &D,
-    uids: &[&str],
+    ids: &[&str],
     review_status: ReviewStatus,
     reviewer_email: &str,
 ) -> Result<usize> {
@@ -11,22 +11,22 @@ pub fn review_places<D: Db>(
     if review_status == ReviewStatus::Archived {
         info!(
             "Archiving {} places including ratings and comments",
-            uids.len()
+            ids.len()
         );
         let activity_log = ActivityLog {
             activity,
             context: None,
-            memo: Some("archived".into()),
+            comment: Some("archived".into()),
         };
-        let comment_count = db.archive_comments_of_places(uids, &activity_log.activity)?;
+        let comment_count = db.archive_comments_of_places(ids, &activity_log.activity)?;
         info!(
             "Archived {} comments of {} places",
             comment_count,
-            uids.len()
+            ids.len()
         );
-        let rating_count = db.archive_ratings_of_places(uids, &activity_log.activity)?;
-        info!("Archived {} ratings of {} places", rating_count, uids.len());
-        let place_count = db.review_places(uids, review_status, &activity_log)?;
+        let rating_count = db.archive_ratings_of_places(ids, &activity_log.activity)?;
+        info!("Archived {} ratings of {} places", rating_count, ids.len());
+        let place_count = db.review_places(ids, review_status, &activity_log)?;
         info!(
             "Archived {} places including ratings and comments",
             place_count
@@ -35,15 +35,15 @@ pub fn review_places<D: Db>(
     } else {
         info!(
             "Changing review status of {} places to {}",
-            uids.len(),
+            ids.len(),
             ReviewStatusPrimitive::from(review_status),
         );
         let activity_log = ActivityLog {
             activity,
             context: None,
-            memo: Some("status changed".into()),
+            comment: Some("status changed".into()),
         };
-        let place_count = db.review_places(uids, review_status, &activity_log)?;
+        let place_count = db.review_places(ids, review_status, &activity_log)?;
         info!(
             "Changed review status of {} places to {}",
             place_count,

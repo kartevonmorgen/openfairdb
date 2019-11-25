@@ -12,7 +12,7 @@ pub fn index_place(
     Ok(avg_ratings)
 }
 
-pub fn unindex_place(indexer: &mut dyn PlaceIndexer, uid: &str) -> Fallible<()> {
-    indexer.remove_place_by_uid(uid)?;
+pub fn unindex_place(indexer: &mut dyn PlaceIndexer, id: &str) -> Fallible<()> {
+    indexer.remove_place_by_id(id)?;
     Ok(())
 }

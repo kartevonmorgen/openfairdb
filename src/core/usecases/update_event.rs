@@ -6,12 +6,12 @@ pub use super::NewEvent as UpdateEvent;
 pub fn update_event<D: Db>(
     db: &mut D,
     token: Option<&str>,
-    uid: &str,
+    id: &str,
     e: UpdateEvent,
 ) -> Result<()> {
-    let mut updated_event = try_into_new_event(db, token, e, NewEventMode::Update(uid))?;
+    let mut updated_event = try_into_new_event(db, token, e, NewEventMode::Update(id))?;
     debug!("Updating event: {:?}", updated_event);
-    updated_event.uid = uid.into();
+    updated_event.id = id.into();
     db.update_event(&updated_event)?;
     Ok(())
 }

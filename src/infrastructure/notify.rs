@@ -43,7 +43,7 @@ pub fn place_added(email_addresses: &[String], place: &Place, all_categories: Ve
     place.tags = tags;
     let category_names: Vec<String> = all_categories
         .into_iter()
-        .filter(|c1| categories.iter().any(|c2| c1.uid == c2.uid))
+        .filter(|c1| categories.iter().any(|c2| c1.id == c2.id))
         .map(|c| c.name())
         .collect();
     let content = user_communication::entry_added_email(&place, &category_names);
@@ -53,7 +53,7 @@ pub fn place_added(email_addresses: &[String], place: &Place, all_categories: Ve
         info!(
             "Sending e-mails to {} recipients after new place {} added",
             email_addresses.len(),
-            place.uid,
+            place.id,
         );
         compose_and_send_emails(email_addresses, &content.subject, &content.body);
     }
@@ -65,7 +65,7 @@ pub fn place_updated(email_addresses: &[String], place: &Place, all_categories: 
     place.tags = tags;
     let category_names: Vec<String> = all_categories
         .into_iter()
-        .filter(|c1| categories.iter().any(|c2| c1.uid == c2.uid))
+        .filter(|c1| categories.iter().any(|c2| c1.id == c2.id))
         .map(|c| c.name())
         .collect();
     let content = user_communication::entry_changed_email(&place, &category_names);
@@ -75,7 +75,7 @@ pub fn place_updated(email_addresses: &[String], place: &Place, all_categories: 
         info!(
             "Sending e-mails to {} recipients after place {} updated",
             email_addresses.len(),
-            place.uid
+            place.id
         );
         compose_and_send_emails(email_addresses, &content.subject, &content.body);
     }

@@ -118,7 +118,7 @@ pub fn get_entry(
     let (user, place, ratings): (Option<User>, _, _) = {
         let db = pool.shared()?;
         let (place, _) = db.get_place(id.as_str())?;
-        let ratings = db.load_ratings_of_place(place.uid.as_ref())?;
+        let ratings = db.load_ratings_of_place(place.id.as_ref())?;
         let ratings_with_comments = db.zip_ratings_with_comments(ratings)?;
         let user = if let Some(a) = account {
             db.try_get_user_by_email(a.email())?
@@ -196,7 +196,7 @@ pub fn get_dashboard(db: sqlite::Connections, account: Account) -> Result<Markup
 #[derive(FromForm)]
 pub struct ArchiveAction {
     ids: String,
-    place_uid: String,
+    place_id: String,
 }
 
 #[post("/comments/actions/archive", data = "<data>")]
@@ -210,10 +210,10 @@ pub fn post_comments_archive(
     let ids: Vec<_> = d.ids.split(',').filter(|id| !id.is_empty()).collect();
     match archive_comments(&db, account.email(), &ids) {
         Err(_) => Err(Flash::error(
-            Redirect::to(uri!(get_entry:d.place_uid)),
+            Redirect::to(uri!(get_entry:d.place_id)),
             "Failed to achive the comment.",
         )),
-        Ok(_) => Ok(Redirect::to(uri!(get_entry:d.place_uid))),
+        Ok(_) => Ok(Redirect::to(uri!(get_entry:d.place_id))),
     }
 }
 
@@ -228,10 +228,10 @@ pub fn post_ratings_archive(
     let ids: Vec<_> = d.ids.split(',').filter(|id| !id.is_empty()).collect();
     match archive_ratings(&db, &mut search_engine, account.email(), &ids) {
         Err(_) => Err(Flash::error(
-            Redirect::to(uri!(get_entry:d.place_uid)),
+            Redirect::to(uri!(get_entry:d.place_id)),
             "Failed to archive the rating.",
         )),
-        Ok(_) => Ok(Redirect::to(uri!(get_entry:d.place_uid))),
+        Ok(_) => Ok(Redirect::to(uri!(get_entry:d.place_id))),
     }
 }
 

@@ -29,7 +29,7 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
         let (place, categories, avg_rating) = from;
 
         let Place {
-            uid,
+            id,
             license,
             revision,
             created,
@@ -60,12 +60,12 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
 
         let categories = categories
             .into_iter()
-            .map(|c| c.uid)
+            .map(|c| c.id)
             .collect::<Vec<_>>()
             .join(",");
 
         CsvRecord {
-            id: uid.into(),
+            id: id.into(),
             created: created.at.into_seconds(),
             version: revision.into(),
             title,

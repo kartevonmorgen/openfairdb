@@ -68,7 +68,7 @@ pub struct Event {
 impl From<e::Event> for Event {
     fn from(e: e::Event) -> Self {
         let e::Event {
-            uid,
+            id,
             title,
             description,
             start,
@@ -121,7 +121,7 @@ impl From<e::Event> for Event {
         let end = end.map(|end| end.timestamp());
 
         Event {
-            id: uid.into(),
+            id: id.into(),
             title,
             description,
             start,
@@ -195,7 +195,7 @@ impl From<e::Category> for Category {
     fn from(from: e::Category) -> Self {
         let name = from.name();
         Self {
-            id: from.uid.into(),
+            id: from.id.into(),
             name,
         }
     }
@@ -222,7 +222,7 @@ impl From<IndexedPlace> for EntrySearchResult {
             lng: from.pos.lng().to_deg(),
             title: from.title,
             description: from.description,
-            categories: categories.into_iter().map(|c| c.uid.to_string()).collect(),
+            categories: categories.into_iter().map(|c| c.id.to_string()).collect(),
             tags,
             ratings: EntrySearchRatings {
                 total: from.ratings.total(),
@@ -269,7 +269,7 @@ pub struct BboxSubscription {
 impl Entry {
     pub fn from_entry_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -> Entry {
         let e::Place {
-            uid,
+            id,
             license,
             revision,
             created,
@@ -305,7 +305,7 @@ impl Entry {
         let (tags, categories) = e::Category::split_from_tags(tags);
 
         Entry {
-            id: uid.into(),
+            id: id.into(),
             created: created.at.into_seconds(),
             version: revision.into(),
             title,
@@ -319,9 +319,9 @@ impl Entry {
             email: email.map(Into::into),
             telephone,
             homepage: homepage_url.map(Url::into_string),
-            categories: categories.into_iter().map(|c| c.uid.to_string()).collect(),
+            categories: categories.into_iter().map(|c| c.id.to_string()).collect(),
             tags,
-            ratings: ratings.into_iter().map(|r| r.uid.to_string()).collect(),
+            ratings: ratings.into_iter().map(|r| r.id.to_string()).collect(),
             license: Some(license),
             image_url: image_url.map(Url::into_string),
             image_link_url: image_link_url.map(Url::into_string),
@@ -506,7 +506,7 @@ pub struct ActivityLog {
     pub ctx: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub memo: Option<String>,
+    pub comment: Option<String>,
 }
 
 impl From<e::ActivityLog> for ActivityLog {
@@ -514,20 +514,20 @@ impl From<e::ActivityLog> for ActivityLog {
         let e::ActivityLog {
             activity: e::Activity { at, by },
             context: ctx,
-            memo,
+            comment,
         } = from;
         Self {
             at: at.into_inner(),
             by: by.map(Into::into),
             ctx,
-            memo,
+            comment,
         }
     }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PlaceRoot {
-    pub uid: String,
+    pub id: String,
 
     #[serde(rename = "lic")]
     pub license: String,
@@ -535,9 +535,9 @@ pub struct PlaceRoot {
 
 impl From<e::PlaceRoot> for PlaceRoot {
     fn from(from: e::PlaceRoot) -> Self {
-        let e::PlaceRoot { uid, license } = from;
+        let e::PlaceRoot { id, license } = from;
         Self {
-            uid: uid.into(),
+            id: id.into(),
             license,
         }
     }

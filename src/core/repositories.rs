@@ -24,7 +24,7 @@ pub trait CommentRepository {
         let mut results = Vec::with_capacity(ratings.len());
         for rating in ratings {
             debug_assert!(rating.archived_at.is_none());
-            let comments = self.load_comments_of_rating(rating.uid.as_ref())?;
+            let comments = self.load_comments_of_rating(rating.id.as_ref())?;
             results.push((rating, comments));
         }
         Ok(results)
@@ -36,7 +36,7 @@ pub trait CommentRepository {
         rating_ids: &[&str],
         activity: &Activity,
     ) -> Result<usize>;
-    fn archive_comments_of_places(&self, place_uids: &[&str], activity: &Activity)
+    fn archive_comments_of_places(&self, place_ids: &[&str], activity: &Activity)
         -> Result<usize>;
 }
 
@@ -46,12 +46,12 @@ pub trait RatingRepository {
     // Only unarchived ratings without comments
     fn load_rating(&self, id: &str) -> Result<Rating>;
     fn load_ratings(&self, ids: &[&str]) -> Result<Vec<Rating>>;
-    fn load_ratings_of_place(&self, place_uid: &str) -> Result<Vec<Rating>>;
+    fn load_ratings_of_place(&self, place_id: &str) -> Result<Vec<Rating>>;
 
     fn archive_ratings(&self, ids: &[&str], activity: &Activity) -> Result<usize>;
-    fn archive_ratings_of_places(&self, place_uids: &[&str], activity: &Activity) -> Result<usize>;
+    fn archive_ratings_of_places(&self, place_ids: &[&str], activity: &Activity) -> Result<usize>;
 
-    fn load_place_uids_of_ratings(&self, ids: &[&str]) -> Result<Vec<String>>;
+    fn load_place_ids_of_ratings(&self, ids: &[&str]) -> Result<Vec<String>>;
 }
 
 pub trait UserTokenRepo {

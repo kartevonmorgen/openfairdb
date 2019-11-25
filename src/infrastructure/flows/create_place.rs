@@ -44,7 +44,7 @@ pub fn create_place(
     // TODO: Move to a separate task/thread that doesn't delay this request
     if let Err(err) = usecases::index_place(indexer, &place, &ratings).and_then(|_| indexer.flush())
     {
-        error!("Failed to index newly added place {}: {}", place.uid, err);
+        error!("Failed to index newly added place {}: {}", place.id, err);
     }
 
     // Send subscription e-mails
@@ -52,7 +52,7 @@ pub fn create_place(
     if let Err(err) = notify_place_added(connections, &place) {
         error!(
             "Failed to send notifications for newly added place {}: {}",
-            place.uid, err
+            place.id, err
         );
     }
 

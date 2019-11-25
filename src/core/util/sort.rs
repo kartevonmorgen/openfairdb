@@ -8,7 +8,7 @@ impl Rated for Place {
     fn avg_ratings(&self, ratings: &[Rating]) -> AvgRatings {
         debug_assert_eq!(
             ratings.len(),
-            ratings.iter().filter(|r| r.place_uid == self.uid).count()
+            ratings.iter().filter(|r| r.place_id == self.id).count()
         );
         ratings
             .iter()
@@ -29,10 +29,10 @@ pub mod tests {
         Place::build().id(id).finish()
     }
 
-    fn new_rating(uid: &str, place_uid: &str, value: i8, context: RatingContext) -> Rating {
+    fn new_rating(id: &str, place_id: &str, value: i8, context: RatingContext) -> Rating {
         Rating {
-            uid: uid.into(),
-            place_uid: place_uid.into(),
+            id: id.into(),
+            place_id: place_id.into(),
             created_at: Timestamp::now(),
             archived_at: None,
             title: "blubb".into(),
@@ -93,7 +93,7 @@ pub mod tests {
         let ratings: Vec<_> = places
             .iter()
             .map(|e| {
-                let ratings = create_ratings_of_entry(e.uid.as_ref(), 1);
+                let ratings = create_ratings_of_entry(e.id.as_ref(), 1);
                 ratings[0].clone()
             })
             .collect();
@@ -103,15 +103,15 @@ pub mod tests {
 
     fn create_place_with_multiple_ratings(n: usize) -> (Place, Vec<Rating>) {
         let entry = Place::build().finish();
-        let ratings = create_ratings_of_entry(entry.uid.as_ref(), n);
+        let ratings = create_ratings_of_entry(entry.id.as_ref(), n);
         (entry, ratings)
     }
 
-    fn create_ratings_of_entry(place_uid: &str, n: usize) -> Vec<Rating> {
+    fn create_ratings_of_entry(place_id: &str, n: usize) -> Vec<Rating> {
         (0..n)
             .map(|_| Rating {
-                uid: Uid::new_uuid(),
-                place_uid: place_uid.into(),
+                id: Id::new(),
+                place_id: place_id.into(),
                 created_at: Timestamp::now(),
                 archived_at: None,
                 title: "".into(),

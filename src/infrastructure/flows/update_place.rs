@@ -5,7 +5,7 @@ use diesel::connection::Connection;
 pub fn update_place(
     connections: &sqlite::Connections,
     indexer: &mut dyn PlaceIndexer,
-    uid: Uid,
+    id: Id,
     update_place: usecases::UpdatePlace,
     account_email: Option<&str>,
 ) -> Result<(Place)> {
@@ -17,7 +17,7 @@ pub fn update_place(
             .transaction::<_, diesel::result::Error, _>(|| {
                 match usecases::prepare_updated_place(
                     &*connection,
-                    uid,
+                    id,
                     update_place,
                     account_email,
                 ) {
@@ -50,7 +50,7 @@ pub fn update_place(
     // TODO: Move to a separate task/thread that doesn't delay this request
     if let Err(err) = usecases::index_place(indexer, &place, &ratings).and_then(|_| indexer.flush())
     {
-        error!("Failed to reindex updated place {}: {}", place.uid, err);
+        error!("Failed to reindex updated place {}: {}", place.id, err);
     }
 
     // Send subscription e-mails
@@ -58,7 +58,7 @@ pub fn update_place(
     if let Err(err) = notify_place_updated(connections, &place) {
         error!(
             "Failed to send notifications for updated place {}: {}",
-            place.uid, err
+            place.id, err
         );
     }
 

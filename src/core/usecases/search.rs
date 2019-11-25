@@ -38,7 +38,7 @@ pub fn search(
         .map(filter::split_text_to_words)
         .unwrap_or_default();
 
-    let visible_places_query = PlaceIndexQuery {
+    let visible_places_query = IndexQuery {
         include_bbox: Some(visible_bbox),
         exclude_bbox: None,
         categories: req.categories,
@@ -46,6 +46,7 @@ pub fn search(
         hash_tags,
         text_tags,
         text,
+        ..Default::default()
     };
 
     // 1st query: Search for visible results only
@@ -60,7 +61,7 @@ pub fn search(
 
     // 2nd query: Search for remaining invisible results
     let invisible_places = if visible_places.len() < limit {
-        let invisible_places_query = PlaceIndexQuery {
+        let invisible_places_query = IndexQuery {
             include_bbox: Some(filter::extend_bbox(&visible_bbox)),
             exclude_bbox: visible_places_query.include_bbox,
             ..visible_places_query
@@ -84,7 +85,7 @@ pub fn search(
 /// So here we don't care about tags, categories etc.
 /// We also ignore the rating of an entry for now.
 pub fn global_search(index: &dyn PlaceIndex, txt: &str, limit: usize) -> Result<Vec<IndexedPlace>> {
-    let index_query = PlaceIndexQuery {
+    let index_query = IndexQuery {
         text: Some(txt.into()),
         ..Default::default()
     };
