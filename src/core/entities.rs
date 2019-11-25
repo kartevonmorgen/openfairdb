@@ -234,14 +234,14 @@ pub struct Links {
     pub image_href: Option<Url>,
 }
 
-// Immutable properties of a place.
+// Immutable part of a place.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlaceRoot {
     pub uid: Uid,
     pub license: String,
 }
 
-// Mutable properties of a place.
+// Mutable part of a place.
 #[derive(Debug, Clone, PartialEq)]
 pub struct PlaceRevision {
     pub revision: Revision,
@@ -254,6 +254,8 @@ pub struct PlaceRevision {
     pub tags: Vec<String>,
 }
 
+// Convenience type that merges the tuple (PlaceRoot, PlaceRevision)
+// into a single, flat struct.
 #[derive(Debug, Clone, PartialEq)]
 pub struct Place {
     pub uid: Uid,

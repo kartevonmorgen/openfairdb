@@ -208,7 +208,7 @@ pub fn get_entries_most_popular_tags(
     let pagination = Pagination { offset, limit };
     let results = {
         let db = db.shared()?;
-        db.most_popular_place_tags(&params, &pagination)?
+        db.most_popular_place_revision_tags(&params, &pagination)?
     };
     Ok(Json(results.into_iter().map(Into::into).collect()))
 }

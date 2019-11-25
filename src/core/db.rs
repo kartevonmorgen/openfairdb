@@ -37,7 +37,7 @@ pub trait PlaceRepo {
         pagination: &Pagination,
     ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>>;
 
-    fn most_popular_place_tags(
+    fn most_popular_place_revision_tags(
         &self,
         params: &MostPopularTagsParams,
         pagination: &Pagination,

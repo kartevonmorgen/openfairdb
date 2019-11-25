@@ -229,7 +229,7 @@ impl PlaceRepo for MockDb {
     ) -> RepoResult<Vec<(Place, ReviewStatus, ActivityLog)>> {
         unimplemented!();
     }
-    fn most_popular_place_tags(
+    fn most_popular_place_revision_tags(
         &self,
         _params: &MostPopularTagsParams,
         _pagination: &Pagination,

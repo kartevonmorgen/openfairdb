@@ -4,15 +4,15 @@ update events set archived=archived/1000 where archived not null and archived>10
 -- Delete invalid tags with less than 2 characters (= empty or single character)
 delete from event_tags where length(tag) < 2;
 delete from org_tag_relations where length(tag_id) < 2;
-delete from place_tag where length(tag) < 2;
+delete from place_revision_tag where length(tag) < 2;
 delete from tags where length(id) < 2;
 
 -- Delete orphaned tag relations
 delete from event_tags where event_id not in (select id from events);
 delete from org_tag_relations where org_id not in (select id from organizations);
-delete from place_tag where parent_id not in (select id from place);
+delete from place_revision_tag where parent_id not in (select id from place);
 
 -- Insert missing tags (just in case some got lost along the way)
 insert or ignore into tags (id) select tag from event_tags;
 insert or ignore into tags (id) select tag_id from org_tag_relations;
-insert or ignore into tags (id) select tag from place_tag where parent_id in (select id from place where current_status > 0);
+insert or ignore into tags (id) select tag from place_revision_tag where parent_id in (select id from place where current_status > 0);

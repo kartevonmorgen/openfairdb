@@ -1,15 +1,15 @@
 use super::schema::*;
 
 #[derive(Insertable)]
-#[table_name = "place_root"]
-pub struct NewPlaceRoot<'a, 'b> {
+#[table_name = "place"]
+pub struct NewPlace<'a, 'b> {
     pub current_rev: i64,
     pub uid: &'a str,
     pub lic: &'b str,
 }
 
 #[derive(Queryable)]
-pub struct PlaceRoot {
+pub struct Place {
     pub id: i64,
     pub current_rev: i64,
     pub uid: String,
@@ -17,8 +17,8 @@ pub struct PlaceRoot {
 }
 
 #[derive(Insertable)]
-#[table_name = "place"]
-pub struct NewPlace {
+#[table_name = "place_revision"]
+pub struct NewPlaceRevision {
     pub parent_id: i64,
     pub rev: i64,
     pub created_at: i64,
@@ -40,7 +40,7 @@ pub struct NewPlace {
 }
 
 #[derive(Queryable)]
-pub struct Place {
+pub struct JoinedPlaceRevision {
     pub id: i64,
     pub rev: i64,
     pub created_at: i64,
@@ -65,7 +65,7 @@ pub struct Place {
 }
 
 #[derive(Queryable)]
-pub struct PlaceWithStatusReview {
+pub struct JoinedPlaceRevisionWithStatusReview {
     pub id: i64,
     pub rev: i64,
     pub created_at: i64,
@@ -96,8 +96,8 @@ pub struct PlaceWithStatusReview {
 }
 
 #[derive(Insertable)]
-#[table_name = "place_review"]
-pub struct NewPlaceReview<'a, 'b> {
+#[table_name = "place_revision_review"]
+pub struct NewPlaceRevisionReview<'a, 'b> {
     pub parent_id: i64,
     pub rev: i64,
     pub created_at: i64,
@@ -108,7 +108,7 @@ pub struct NewPlaceReview<'a, 'b> {
 }
 
 #[derive(Queryable)]
-pub struct PlaceReview {
+pub struct PlaceRevisionReview {
     pub rev: i64,
     pub created_at: i64,
     pub created_by: Option<i64>,
@@ -119,14 +119,14 @@ pub struct PlaceReview {
 }
 
 #[derive(Queryable)]
-pub struct PlaceTag {
+pub struct PlaceRevisionTag {
     pub parent_id: i64,
     pub tag: String,
 }
 
 #[derive(Insertable)]
-#[table_name = "place_tag"]
-pub struct NewPlaceTag<'a> {
+#[table_name = "place_revision_tag"]
+pub struct NewPlaceRevisionTag<'a> {
     pub parent_id: i64,
     pub tag: &'a str,
 }

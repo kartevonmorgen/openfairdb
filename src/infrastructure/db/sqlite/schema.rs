@@ -60,7 +60,7 @@ joinable!(user_tokens -> users (user_id));
 ///////////////////////////////////////////////////////////////////////
 
 table! {
-    place_root (id) {
+    place (id) {
         id -> BigInt,
         current_rev -> BigInt,
         uid -> Text,
@@ -69,7 +69,7 @@ table! {
 }
 
 table! {
-    place (id) {
+    place_revision (id) {
         id -> BigInt,
         parent_id -> BigInt,
         rev -> BigInt,
@@ -92,10 +92,10 @@ table! {
     }
 }
 
-joinable!(place -> place_root (parent_id));
+joinable!(place_revision -> place (parent_id));
 
 table! {
-    place_review (id) {
+    place_revision_review (id) {
         id -> BigInt,
         parent_id -> BigInt,
         rev -> BigInt,
@@ -107,7 +107,7 @@ table! {
     }
 }
 
-joinable!(place_review -> place (parent_id));
+joinable!(place_revision_review -> place_revision (parent_id));
 
 table! {
     place_rating (id) {
@@ -125,7 +125,7 @@ table! {
     }
 }
 
-joinable!(place_rating -> place_root (parent_id));
+joinable!(place_rating -> place (parent_id));
 
 table! {
     place_rating_comment (id) {
@@ -143,13 +143,13 @@ table! {
 joinable!(place_rating_comment -> place_rating (parent_id));
 
 table! {
-    place_tag (parent_id, tag) {
+    place_revision_tag (parent_id, tag) {
         parent_id -> BigInt,
         tag -> Text,
     }
 }
 
-joinable!(place_tag -> place (parent_id));
+joinable!(place_revision_tag -> place_revision (parent_id));
 
 ///////////////////////////////////////////////////////////////////////
 // Events
@@ -219,9 +219,9 @@ allow_tables_to_appear_in_same_query!(
     place,
     place_rating,
     place_rating_comment,
-    place_review,
-    place_root,
-    place_tag,
+    place_revision,
+    place_revision_review,
+    place_revision_tag,
     org_tag_relations,
     organizations,
     tags,
