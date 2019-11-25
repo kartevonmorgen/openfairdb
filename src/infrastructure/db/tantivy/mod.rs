@@ -25,12 +25,15 @@ struct IndexedFields {
     id: Field,
     lat: Field,
     lng: Field,
+    ts_min: Field, // minimum timestamp, e.g. event start
+    ts_max: Field, // maximum timestamp, e.g. event end
     title: Field,
     description: Field,
     address_street: Field,
     address_city: Field,
     address_zip: Field,
     address_country: Field,
+    organizer: Field,
     tag: Field,
     ratings_diversity: Field,
     ratings_fairness: Field,
@@ -78,8 +81,11 @@ impl IndexedFields {
             id: schema_builder.add_text_field("id", id_options),
             lat: schema_builder.add_i64_field("lat", INDEXED | STORED),
             lng: schema_builder.add_i64_field("lon", INDEXED | STORED),
+            ts_min: schema_builder.add_i64_field("ts_min", INDEXED | STORED),
+            ts_max: schema_builder.add_i64_field("ts_max", INDEXED | STORED),
             title: schema_builder.add_text_field("tit", text_options.clone()),
             description: schema_builder.add_text_field("dsc", text_options.clone()),
+            organizer: schema_builder.add_text_field("org", text_options),
             address_street: schema_builder
                 .add_text_field("adr_street", address_options.clone()),
             address_city: schema_builder.add_text_field("adr_city", address_options.clone()),
@@ -469,6 +475,28 @@ impl TantivyPlaceIndex {
             let tag_term = Term::from_field_text(self.fields.tag, &tag.to_lowercase());
             let tag_query = TermQuery::new(tag_term, IndexRecordOption::Basic);
             text_and_tags_queries.push((Occur::Should, Box::new(tag_query)));
+        }
+
+        // ts_min
+        let ts_min_lb = query.ts_min_lb.map(|x| Bound::Included(x.into_inner())).unwrap_or(Bound::Unbounded);
+        let ts_min_ub = query.ts_min_ub.map(|x| Bound::Included(x.into_inner())).unwrap_or(Bound::Unbounded);
+        if (ts_min_lb, ts_min_ub) != (Bound::Unbounded, Bound::Unbounded) {
+            let ts_min_query = RangeQuery::new_i64_bounds(
+                self.fields.ts_min,
+                ts_min_lb,
+                ts_min_ub);
+            sub_queries.push((Occur::Must, Box::new(ts_min_query)));
+        }
+
+        // ts_max
+        let ts_max_lb = query.ts_max_lb.map(|x| Bound::Included(x.into_inner())).unwrap_or(Bound::Unbounded);
+        let ts_max_ub = query.ts_max_ub.map(|x| Bound::Included(x.into_inner())).unwrap_or(Bound::Unbounded);
+        if (ts_max_lb, ts_max_ub) != (Bound::Unbounded, Bound::Unbounded) {
+            let ts_max_query = RangeQuery::new_i64_bounds(
+                self.fields.ts_max,
+                ts_max_lb,
+                ts_max_ub);
+            sub_queries.push((Occur::Must, Box::new(ts_max_query)));
         }
 
         // Boosting the score by the rating does only make sense if the
