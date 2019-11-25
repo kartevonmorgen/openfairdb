@@ -243,7 +243,7 @@ pub struct PlaceRoot {
 
 // Mutable properties of a place.
 #[derive(Debug, Clone, PartialEq)]
-pub struct PlaceState {
+pub struct PlaceRevision {
     pub revision: Revision,
     pub created: Activity,
     pub title: String,
@@ -268,11 +268,11 @@ pub struct Place {
     pub tags: Vec<String>,
 }
 
-impl From<(PlaceRoot, PlaceState)> for Place {
-    fn from(from: (PlaceRoot, PlaceState)) -> Self {
+impl From<(PlaceRoot, PlaceRevision)> for Place {
+    fn from(from: (PlaceRoot, PlaceRevision)) -> Self {
         let (
             PlaceRoot { uid, license },
-            PlaceState {
+            PlaceRevision {
                 revision,
                 created,
                 title,
@@ -298,7 +298,7 @@ impl From<(PlaceRoot, PlaceState)> for Place {
     }
 }
 
-impl From<Place> for (PlaceRoot, PlaceState) {
+impl From<Place> for (PlaceRoot, PlaceRevision) {
     fn from(from: Place) -> Self {
         let Place {
             uid,
@@ -314,7 +314,7 @@ impl From<Place> for (PlaceRoot, PlaceState) {
         } = from;
         (
             PlaceRoot { uid, license },
-            PlaceState {
+            PlaceRevision {
                 revision,
                 created,
                 title,
@@ -338,7 +338,7 @@ pub struct ReviewStatusLog {
 #[derive(Debug, Clone, PartialEq)]
 pub struct PlaceHistory {
     pub place: PlaceRoot,
-    pub revisions: Vec<(PlaceState, Vec<ReviewStatusLog>)>,
+    pub revisions: Vec<(PlaceRevision, Vec<ReviewStatusLog>)>,
 }
 
 #[rustfmt::skip]

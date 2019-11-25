@@ -214,13 +214,13 @@ pub fn get_entries_most_popular_tags(
 }
 
 #[get("/places/<uid>")]
-pub fn get_place(db: sqlite::Connections, uid: String) -> Result<(json::PlaceRoot, json::PlaceState, json::ReviewStatus)> {
+pub fn get_place(db: sqlite::Connections, uid: String) -> Result<(json::PlaceRoot, json::PlaceRevision, json::ReviewStatus)> {
     let (place, status) = {
         let db = db.shared()?;
         db.get_place(&uid)?
     };
-    let (place_root, place_state) = place.into();
-    Ok(Json((place_root.into(), place_state.into(), status.into())))
+    let (place_root, place_revision) = place.into();
+    Ok(Json((place_root.into(), place_revision.into(), status.into())))
 }
 
 #[get("/places/<uid>/history")]

@@ -544,7 +544,7 @@ impl From<e::PlaceRoot> for PlaceRoot {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct PlaceState {
+pub struct PlaceRevision {
     #[serde(rename = "rev")]
     pub revision: u64,
 
@@ -581,9 +581,9 @@ pub struct PlaceState {
     pub tags: Vec<String>,
 }
 
-impl From<e::PlaceState> for PlaceState {
-    fn from(from: e::PlaceState) -> Self {
-        let e::PlaceState {
+impl From<e::PlaceRevision> for PlaceRevision {
+    fn from(from: e::PlaceRevision) -> Self {
+        let e::PlaceRevision {
             revision,
             created,
             title,
@@ -651,7 +651,7 @@ impl From<e::ReviewStatusLog> for ReviewStatusLog {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PlaceHistory {
     pub place: PlaceRoot,
-    pub revisions: Vec<(PlaceState, Vec<ReviewStatusLog>)>,
+    pub revisions: Vec<(PlaceRevision, Vec<ReviewStatusLog>)>,
 }
 
 impl From<e::PlaceHistory> for PlaceHistory {
@@ -661,9 +661,9 @@ impl From<e::PlaceHistory> for PlaceHistory {
             place: place.into(),
             revisions: revisions
                 .into_iter()
-                .map(|(place_state, reviews)| {
+                .map(|(place_revision, reviews)| {
                     (
-                        place_state.into(),
+                        place_revision.into(),
                         reviews.into_iter().map(Into::into).collect(),
                     )
                 })

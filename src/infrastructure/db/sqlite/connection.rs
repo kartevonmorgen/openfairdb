@@ -669,7 +669,7 @@ impl PlaceRepo for SqliteConnection {
         for row in rows {
             let parent_id = row.id;
             let (place, _) = load_place(self, row)?;
-            let (place, place_state) = place.into();
+            let (place, place_revision) = place.into();
             if place_history.is_none() {
                 place_history = Some(PlaceHistory {
                     place,
@@ -714,7 +714,7 @@ impl PlaceRepo for SqliteConnection {
                 .as_mut()
                 .unwrap()
                 .revisions
-                .push((place_state, review_logs));
+                .push((place_revision, review_logs));
         }
         place_history.ok_or(RepoError::NotFound)
     }
