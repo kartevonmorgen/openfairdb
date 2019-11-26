@@ -1,6 +1,6 @@
 use crate::core::{
-    db::{IndexedPlace, PlaceIndex, IndexQuery, PlaceIndexer},
-    entities::{AvgRatingValue, AvgRatings, Category, Place, RatingContext, Id},
+    db::{IdIndex, IdIndexer, IndexQuery, IndexedPlace, PlaceIndex, PlaceIndexer},
+    entities::{AvgRatingValue, AvgRatings, Category, Id, Place, RatingContext},
     util::geo::{LatCoord, LngCoord, MapPoint, RawCoord},
 };
 
@@ -15,7 +15,8 @@ use tantivy::{
     query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
     schema::*,
     tokenizer::{LowerCaser, RawTokenizer, Tokenizer},
-    DocId, Document, Index, IndexReader, IndexWriter, ReloadPolicy, Score, SegmentReader,
+    DocAddress, DocId, Document, Index, IndexReader, IndexWriter, ReloadPolicy, Score,
+    SegmentReader,
 };
 
 const OVERALL_INDEX_HEAP_SIZE_IN_BYTES: usize = 50_000_000;
@@ -86,8 +87,7 @@ impl IndexedFields {
             title: schema_builder.add_text_field("tit", text_options.clone()),
             description: schema_builder.add_text_field("dsc", text_options.clone()),
             organizer: schema_builder.add_text_field("org", text_options),
-            address_street: schema_builder
-                .add_text_field("adr_street", address_options.clone()),
+            address_street: schema_builder.add_text_field("adr_street", address_options.clone()),
             address_city: schema_builder.add_text_field("adr_city", address_options.clone()),
             address_zip: schema_builder.add_text_field("adr_zip", address_options.clone()),
             address_country: schema_builder.add_text_field("adr_country", address_options),
@@ -199,7 +199,7 @@ impl IndexedFields {
     }
 }
 
-pub(crate) struct TantivyPlaceIndex {
+pub(crate) struct TantivyIndex {
     fields: IndexedFields,
     index_reader: IndexReader,
     index_writer: IndexWriter,
@@ -270,7 +270,7 @@ enum TopDocsMode {
     ScoreBoostedByRating,
 }
 
-impl TantivyPlaceIndex {
+impl TantivyIndex {
     pub fn create_in_ram() -> Fallible<Self> {
         let no_path: Option<&Path> = None;
         Self::create(no_path)
@@ -479,24 +479,30 @@ impl TantivyPlaceIndex {
         }
 
         // ts_min
-        let ts_min_lb = query.ts_min_lb.map(|x| Bound::Included(x.into_inner())).unwrap_or(Bound::Unbounded);
-        let ts_min_ub = query.ts_min_ub.map(|x| Bound::Included(x.into_inner())).unwrap_or(Bound::Unbounded);
+        let ts_min_lb = query
+            .ts_min_lb
+            .map(|x| Bound::Included(x.into_inner()))
+            .unwrap_or(Bound::Unbounded);
+        let ts_min_ub = query
+            .ts_min_ub
+            .map(|x| Bound::Included(x.into_inner()))
+            .unwrap_or(Bound::Unbounded);
         if (ts_min_lb, ts_min_ub) != (Bound::Unbounded, Bound::Unbounded) {
-            let ts_min_query = RangeQuery::new_i64_bounds(
-                self.fields.ts_min,
-                ts_min_lb,
-                ts_min_ub);
+            let ts_min_query = RangeQuery::new_i64_bounds(self.fields.ts_min, ts_min_lb, ts_min_ub);
             sub_queries.push((Occur::Must, Box::new(ts_min_query)));
         }
 
         // ts_max
-        let ts_max_lb = query.ts_max_lb.map(|x| Bound::Included(x.into_inner())).unwrap_or(Bound::Unbounded);
-        let ts_max_ub = query.ts_max_ub.map(|x| Bound::Included(x.into_inner())).unwrap_or(Bound::Unbounded);
+        let ts_max_lb = query
+            .ts_max_lb
+            .map(|x| Bound::Included(x.into_inner()))
+            .unwrap_or(Bound::Unbounded);
+        let ts_max_ub = query
+            .ts_max_ub
+            .map(|x| Bound::Included(x.into_inner()))
+            .unwrap_or(Bound::Unbounded);
         if (ts_max_lb, ts_max_ub) != (Bound::Unbounded, Bound::Unbounded) {
-            let ts_max_query = RangeQuery::new_i64_bounds(
-                self.fields.ts_max,
-                ts_max_lb,
-                ts_max_ub);
+            let ts_max_query = RangeQuery::new_i64_bounds(self.fields.ts_max, ts_max_lb, ts_max_ub);
             sub_queries.push((Occur::Must, Box::new(ts_max_query)));
         }
 
@@ -514,9 +520,181 @@ impl TantivyPlaceIndex {
             (sub_queries.into(), TopDocsMode::ScoreBoostedByRating)
         }
     }
+
+    #[allow(clippy::absurd_extreme_comparisons)]
+    fn query_documents<D>(
+        &self,
+        query: &IndexQuery,
+        limit: usize,
+        mut doc_collector: D,
+    ) -> Fallible<D>
+    where
+        D: DocumentCollector,
+    {
+        if limit <= 0 {
+            bail!("Invalid limit: {}", limit);
+        }
+
+        let (search_query, top_docs_mode) = self.build_query(query);
+        let searcher = self.index_reader.searcher();
+        // TODO: Try to combine redundant code from different search strategies
+        match top_docs_mode {
+            TopDocsMode::Rating => {
+                let collector =
+                    TopDocs::with_limit(limit).order_by_u64_field(self.fields.total_rating);
+                searcher.search(&search_query, &collector)?;
+                let top_docs = searcher.search(&search_query, &collector)?;
+                for (_, doc_addr) in top_docs {
+                    match searcher.doc(doc_addr) {
+                        Ok(doc) => {
+                            doc_collector.collect_document(&doc_addr, doc);
+                        }
+                        Err(err) => {
+                            warn!("Failed to load document {:?}: {}", doc_addr, err);
+                        }
+                    }
+                }
+                Ok(doc_collector)
+            }
+            TopDocsMode::ScoreBoostedByRating => {
+                let collector = {
+                    let total_rating_field = self.fields.total_rating;
+                    TopDocs::with_limit(limit).tweak_score(move |segment_reader: &SegmentReader| {
+                        let total_rating_reader = segment_reader
+                            .fast_fields()
+                            .u64(total_rating_field)
+                            .unwrap();
+
+                        move |doc: DocId, original_score: Score| {
+                            let total_rating =
+                                f64::from(u64_to_avg_rating(total_rating_reader.get(doc)));
+                            let boost_factor =
+                                if total_rating < f64::from(AvgRatingValue::default()) {
+                                    // Negative ratings result in a boost factor < 1
+                                    (total_rating - f64::from(AvgRatingValue::min()))
+                                        / (f64::from(AvgRatingValue::default())
+                                            - f64::from(AvgRatingValue::min()))
+                                } else {
+                                    // Default rating results in a boost factor of 1
+                                    // Positive ratings result in a boost factor > 1
+                                    // The total rating is scaled by the number of different rating context
+                                    // variants to achieve better results by emphasizing the rating factor.
+                                    1.0 + f64::from(RatingContext::total_count())
+                                        * (total_rating - f64::from(AvgRatingValue::default()))
+                                };
+                            // Transform the original score by log2() to narrow the range. Otherwise
+                            // the rating boost factor is not powerful enough to promote highly
+                            // rated entries over entries that received a much higher score.
+                            debug_assert!(original_score >= 0.0);
+                            let unboosted_score = (1.0 + original_score).log2();
+                            unboosted_score * (boost_factor as f32)
+                        }
+                    })
+                };
+                let top_docs = searcher.search(&search_query, &collector)?;
+                for (_, doc_addr) in top_docs {
+                    match searcher.doc(doc_addr) {
+                        Ok(doc) => {
+                            doc_collector.collect_document(&doc_addr, doc);
+                        }
+                        Err(err) => {
+                            warn!("Failed to load document {:?}: {}", doc_addr, err);
+                        }
+                    }
+                }
+                Ok(doc_collector)
+            }
+        }
+    }
 }
 
-impl PlaceIndexer for TantivyPlaceIndex {
+trait DocumentCollector {
+    fn collect_document(&mut self, doc_addr: &DocAddress, doc: Document);
+}
+
+struct IdCollector {
+    id_field: Field,
+    collected_ids: Vec<Id>,
+}
+
+impl IdCollector {
+    fn with_capacity(id_field: Field, capacity: usize) -> Self {
+        Self {
+            id_field,
+            collected_ids: Vec::with_capacity(capacity),
+        }
+    }
+}
+
+impl From<IdCollector> for Vec<Id> {
+    fn from(from: IdCollector) -> Self {
+        from.collected_ids
+    }
+}
+
+impl DocumentCollector for IdCollector {
+    fn collect_document(&mut self, doc_addr: &DocAddress, doc: Document) {
+        if let Some(id) = doc.get_first(self.id_field).and_then(Value::text) {
+            self.collected_ids.push(Id::from(id));
+        } else {
+            error!(
+                "Document ({:?}) has no id field ({:?}) value",
+                doc_addr, self.id_field
+            );
+        }
+    }
+}
+
+struct IndexedPlaceCollector<'a> {
+    fields: &'a IndexedFields,
+    collected_places: Vec<IndexedPlace>,
+}
+
+impl<'a> IndexedPlaceCollector<'a> {
+    fn with_capacity(fields: &'a IndexedFields, capacity: usize) -> Self {
+        Self {
+            fields,
+            collected_places: Vec::with_capacity(capacity),
+        }
+    }
+}
+
+impl<'a> From<IndexedPlaceCollector<'a>> for Vec<IndexedPlace> {
+    fn from(from: IndexedPlaceCollector<'a>) -> Self {
+        from.collected_places
+    }
+}
+
+impl<'a> DocumentCollector for IndexedPlaceCollector<'a> {
+    fn collect_document(&mut self, _doc_addr: &DocAddress, doc: Document) {
+        self.collected_places.push(self.fields.read_indexed_place(&doc));
+    }
+}
+
+impl IdIndex for TantivyIndex {
+    #[allow(clippy::absurd_extreme_comparisons)]
+    fn query_ids(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<Id>> {
+        unimplemented!()
+    }
+}
+
+impl IdIndexer for TantivyIndex {
+    fn remove_by_id(&mut self, id: &Id) -> Fallible<()> {
+        let id_term = Term::from_field_text(self.fields.id, id.as_str());
+        self.index_writer.delete_term(id_term);
+        Ok(())
+    }
+
+    fn flush_index(&mut self) -> Fallible<()> {
+        self.index_writer.commit()?;
+        // Manually reload the reader to ensure that all committed changes
+        // become visible immediately.
+        self.index_reader.reload()?;
+        Ok(())
+    }
+}
+
+impl PlaceIndexer for TantivyIndex {
     fn add_or_update_place(&mut self, place: &Place, ratings: &AvgRatings) -> Fallible<()> {
         let id_term = Term::from_field_text(self.fields.id, place.id.as_ref());
         self.index_writer.delete_term(id_term);
@@ -595,101 +773,13 @@ impl PlaceIndexer for TantivyPlaceIndex {
         self.index_writer.add_document(doc);
         Ok(())
     }
-
-    fn remove_place_by_id(&mut self, id: &str) -> Fallible<()> {
-        let id_term = Term::from_field_text(self.fields.id, id);
-        self.index_writer.delete_term(id_term);
-        Ok(())
-    }
-
-    fn flush(&mut self) -> Fallible<()> {
-        self.index_writer.commit()?;
-        // Manually reload the reader to ensure that all committed changes
-        // become visible immediately.
-        self.index_reader.reload()?;
-        Ok(())
-    }
 }
 
-impl PlaceIndex for TantivyPlaceIndex {
+impl PlaceIndex for TantivyIndex {
     #[allow(clippy::absurd_extreme_comparisons)]
     fn query_places(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>> {
-        if limit <= 0 {
-            bail!("Invalid limit: {}", limit);
-        }
-
-        let (search_query, top_docs_mode) = self.build_query(query);
-        let searcher = self.index_reader.searcher();
-        // TODO: Try to combine redundant code from different search strategies
-        match top_docs_mode {
-            TopDocsMode::Rating => {
-                let collector =
-                    TopDocs::with_limit(limit).order_by_u64_field(self.fields.total_rating);
-                searcher.search(&search_query, &collector)?;
-                let top_docs = searcher.search(&search_query, &collector)?;
-                let mut entries = Vec::with_capacity(top_docs.len());
-                for (_, doc_addr) in top_docs {
-                    match searcher.doc(doc_addr) {
-                        Ok(ref doc) => {
-                            entries.push(self.fields.read_indexed_place(doc));
-                        }
-                        Err(err) => {
-                            warn!("Failed to load document {:?}: {}", doc_addr, err);
-                        }
-                    }
-                }
-                Ok(entries)
-            }
-            TopDocsMode::ScoreBoostedByRating => {
-                let collector = {
-                    let total_rating_field = self.fields.total_rating;
-                    TopDocs::with_limit(limit).tweak_score(move |segment_reader: &SegmentReader| {
-                        let total_rating_reader = segment_reader
-                            .fast_fields()
-                            .u64(total_rating_field)
-                            .unwrap();
-
-                        move |doc: DocId, original_score: Score| {
-                            let total_rating =
-                                f64::from(u64_to_avg_rating(total_rating_reader.get(doc)));
-                            let boost_factor =
-                                if total_rating < f64::from(AvgRatingValue::default()) {
-                                    // Negative ratings result in a boost factor < 1
-                                    (total_rating - f64::from(AvgRatingValue::min()))
-                                        / (f64::from(AvgRatingValue::default())
-                                            - f64::from(AvgRatingValue::min()))
-                                } else {
-                                    // Default rating results in a boost factor of 1
-                                    // Positive ratings result in a boost factor > 1
-                                    // The total rating is scaled by the number of different rating context
-                                    // variants to achieve better results by emphasizing the rating factor.
-                                    1.0 + f64::from(RatingContext::total_count())
-                                        * (total_rating - f64::from(AvgRatingValue::default()))
-                                };
-                            // Transform the original score by log2() to narrow the range. Otherwise
-                            // the rating boost factor is not powerful enough to promote highly
-                            // rated entries over entries that received a much higher score.
-                            debug_assert!(original_score >= 0.0);
-                            let unboosted_score = (1.0 + original_score).log2();
-                            unboosted_score * (boost_factor as f32)
-                        }
-                    })
-                };
-                let top_docs = searcher.search(&search_query, &collector)?;
-                let mut entries = Vec::with_capacity(top_docs.len());
-                for (_, doc_addr) in top_docs {
-                    match searcher.doc(doc_addr) {
-                        Ok(ref doc) => {
-                            entries.push(self.fields.read_indexed_place(doc));
-                        }
-                        Err(err) => {
-                            warn!("Failed to load document {:?}: {}", doc_addr, err);
-                        }
-                    }
-                }
-                Ok(entries)
-            }
-        }
+        let collector = IndexedPlaceCollector::with_capacity(&self.fields, limit);
+        self.query_documents(query, limit, collector).map(Into::into)
     }
 }
 
@@ -698,13 +788,41 @@ pub struct SearchEngine(Arc<Mutex<Box<dyn PlaceIndexer + Send>>>);
 
 impl SearchEngine {
     pub fn init_in_ram() -> Fallible<SearchEngine> {
-        let entry_index = TantivyPlaceIndex::create_in_ram()?;
+        let entry_index = TantivyIndex::create_in_ram()?;
         Ok(SearchEngine(Arc::new(Mutex::new(Box::new(entry_index)))))
     }
 
     pub fn init_with_path<P: AsRef<Path>>(path: Option<P>) -> Fallible<SearchEngine> {
-        let entry_index = TantivyPlaceIndex::create(path)?;
+        let entry_index = TantivyIndex::create(path)?;
         Ok(SearchEngine(Arc::new(Mutex::new(Box::new(entry_index)))))
+    }
+}
+
+impl IdIndex for SearchEngine {
+    fn query_ids(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<Id>> {
+        let mut inner = match self.0.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        inner.query_ids(query, limit)
+    }
+}
+
+impl IdIndexer for SearchEngine {
+    fn remove_by_id(&mut self, id: &Id) -> Fallible<()> {
+        let mut inner = match self.0.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        inner.remove_by_id(id)
+    }
+
+    fn flush_index(&mut self) -> Fallible<()> {
+        let mut inner = match self.0.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        inner.flush_index()
     }
 }
 
@@ -725,21 +843,5 @@ impl PlaceIndexer for SearchEngine {
             Err(poisoned) => poisoned.into_inner(),
         };
         inner.add_or_update_place(place, ratings)
-    }
-
-    fn remove_place_by_id(&mut self, id: &str) -> Fallible<()> {
-        let mut inner = match self.0.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
-        inner.remove_place_by_id(id)
-    }
-
-    fn flush(&mut self) -> Fallible<()> {
-        let mut inner = match self.0.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
-        inner.flush()
     }
 }

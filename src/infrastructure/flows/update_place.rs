@@ -15,12 +15,8 @@ pub fn update_place(
         let mut prepare_err = None;
         connection
             .transaction::<_, diesel::result::Error, _>(|| {
-                match usecases::prepare_updated_place(
-                    &*connection,
-                    id,
-                    update_place,
-                    account_email,
-                ) {
+                match usecases::prepare_updated_place(&*connection, id, update_place, account_email)
+                {
                     Ok(storable) => {
                         let (place, ratings) =
                             usecases::store_updated_place(&*connection, storable).map_err(
@@ -48,7 +44,8 @@ pub fn update_place(
 
     // Reindex updated place
     // TODO: Move to a separate task/thread that doesn't delay this request
-    if let Err(err) = usecases::index_place(indexer, &place, &ratings).and_then(|_| indexer.flush())
+    if let Err(err) =
+        usecases::index_place(indexer, &place, &ratings).and_then(|_| indexer.flush_index())
     {
         error!("Failed to reindex updated place {}: {}", place.id, err);
     }

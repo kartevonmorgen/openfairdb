@@ -32,7 +32,7 @@ fn index_all_places<D: PlaceRepo + RatingRepository>(
             error!("Failed to index place {:?}: {}", place, err);
         }
     }
-    if let Err(err) = place_indexer.flush() {
+    if let Err(err) = place_indexer.flush_index() {
         error!("Failed to build place index: {}", err);
     }
     Ok(Json(()))

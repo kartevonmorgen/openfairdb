@@ -64,7 +64,7 @@ pub fn post_archive_ratings(
             );
         }
     }
-    if let Err(err) = indexer.flush() {
+    if let Err(err) = indexer.flush_index() {
         error!(
             "Failed to finish updating the search index after archiving ratings: {}",
             err

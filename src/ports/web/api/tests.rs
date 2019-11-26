@@ -257,7 +257,7 @@ fn search_with_categories_and_bbox() {
                 .to_string()
         })
         .collect();
-    search_engine.flush().unwrap();
+    search_engine.flush_index().unwrap();
 
     let req = client.get(format!(
         "/search?bbox=-10,-10,10,10&categories={}",
@@ -346,7 +346,7 @@ fn search_with_text() {
                 .to_string()
         })
         .collect();
-    search_engine.flush().unwrap();
+    search_engine.flush_index().unwrap();
 
     // Search case insensitive "Foo" and "foo"
     // Limit is required, because all entries match the query and their
@@ -423,7 +423,7 @@ fn search_with_text_terms_inclusive_exclusive() {
                 .to_string()
         })
         .collect();
-    search_engine.flush().unwrap();
+    search_engine.flush_index().unwrap();
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=+Foo");
     let mut response = req.dispatch();
@@ -524,7 +524,7 @@ fn search_with_city() {
                 .to_string()
         })
         .collect();
-    search_engine.flush().unwrap();
+    search_engine.flush_index().unwrap();
 
     // Limit is required, because all entries match the query and their
     // rating is equal. The match score is currently not considered when
@@ -1450,7 +1450,7 @@ fn export_csv() {
             .add_or_update_place(&e, &e.avg_ratings(&ratings))
             .unwrap();
     }
-    search_engine.flush().unwrap();
+    search_engine.flush_index().unwrap();
 
     let req = client.get("/export/entries.csv?bbox=-1,-1,1,1");
     let mut response = req.dispatch();

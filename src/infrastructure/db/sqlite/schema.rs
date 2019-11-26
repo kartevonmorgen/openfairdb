@@ -155,9 +155,9 @@ joinable!(place_rating_comment -> place_rating (parent_rowid));
 // Events
 ///////////////////////////////////////////////////////////////////////
 
-    // TODO: Rename id -> rowid
-    // TODO: Rename uid -> id
-    table! {
+// TODO: Rename id -> rowid
+// TODO: Rename uid -> id
+table! {
     events (id) {
         id -> BigInt,
         uid -> Text,
@@ -198,10 +198,10 @@ joinable!(event_tags -> events (event_id));
 // Subscriptions
 ///////////////////////////////////////////////////////////////////////
 
-    // TODO: Rename id -> rowid
-    // TODO: Rename uid -> id
-    // TODO: Rename user_id -> user_rowid
-    table! {
+// TODO: Rename id -> rowid
+// TODO: Rename uid -> id
+// TODO: Rename user_id -> user_rowid
+table! {
     bbox_subscriptions (id) {
         id -> BigInt,
         uid -> Text,

@@ -41,7 +41,8 @@ pub fn create_rating(
 
     // Reindex entry after adding the new rating
     // TODO: Move to a separate task/thread that doesn't delay this request
-    if let Err(err) = usecases::index_place(indexer, &place, &ratings).and_then(|_| indexer.flush())
+    if let Err(err) =
+        usecases::index_place(indexer, &place, &ratings).and_then(|_| indexer.flush_index())
     {
         error!(
             "Failed to reindex place {} after adding a new rating: {}",

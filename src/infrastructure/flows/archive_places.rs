@@ -38,7 +38,7 @@ fn post_archive_places(indexer: &mut dyn PlaceIndexer, ids: &[&str]) -> Result<(
             );
         }
     }
-    if let Err(err) = indexer.flush() {
+    if let Err(err) = indexer.flush_index() {
         error!(
             "Failed to finish updating the search index after archiving places: {}",
             err

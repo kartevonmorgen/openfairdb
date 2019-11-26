@@ -17,7 +17,10 @@ fn load_review_status(status: ReviewStatusPrimitive) -> Result<ReviewStatus> {
         .ok_or_else(|| RepoError::Other(format!("Invalid review status: {}", status).into()))
 }
 
-fn load_place(conn: &SqliteConnection, place: models::JoinedPlaceRevision) -> Result<(Place, ReviewStatus)> {
+fn load_place(
+    conn: &SqliteConnection,
+    place: models::JoinedPlaceRevision,
+) -> Result<(Place, ReviewStatus)> {
     let models::JoinedPlaceRevision {
         id,
         place_id,
@@ -392,7 +395,7 @@ impl PlaceRepo for SqliteConnection {
         status: ReviewStatus,
         activity_log: &ActivityLog,
     ) -> Result<usize> {
-        use schema::place::dsl as dsl;
+        use schema::place::dsl;
         use schema::place_revision::dsl as rev_dsl;
 
         let rev_ids = schema::place_revision::table
@@ -455,8 +458,8 @@ impl PlaceRepo for SqliteConnection {
     }
 
     fn get_places(&self, place_ids: &[&str]) -> Result<Vec<(Place, ReviewStatus)>> {
+        use schema::place::dsl;
         use schema::place_revision::dsl as rev_dsl;
-        use schema::place::dsl as dsl;
 
         let mut query = schema::place_revision::table
             .inner_join(
@@ -518,9 +521,9 @@ impl PlaceRepo for SqliteConnection {
         params: &RecentlyChangedEntriesParams,
         pagination: &Pagination,
     ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>> {
+        use schema::place::dsl;
         use schema::place_revision::dsl as rev_dsl;
         use schema::place_revision_review::dsl as review_dsl;
-        use schema::place::dsl as dsl;
 
         let mut query = schema::place_revision::table
             .inner_join(
@@ -528,7 +531,10 @@ impl PlaceRepo for SqliteConnection {
                     .eq(dsl::rowid)
                     .and(rev_dsl::rev.eq(dsl::current_rev))),
             )
-            .inner_join(schema::place_revision_review::table.on(review_dsl::parent_rowid.eq(rev_dsl::rowid)))
+            .inner_join(
+                schema::place_revision_review::table
+                    .on(review_dsl::parent_rowid.eq(rev_dsl::rowid)),
+            )
             .select((
                 rev_dsl::rowid,
                 rev_dsl::rev,
@@ -634,8 +640,8 @@ impl PlaceRepo for SqliteConnection {
     }
 
     fn get_place_history(&self, id: &str) -> Result<PlaceHistory> {
+        use schema::place::dsl;
         use schema::place_revision::dsl as rev_dsl;
-        use schema::place::dsl as dsl;
 
         let rows = schema::place_revision::table
             .inner_join(schema::place::table.on(rev_dsl::parent_rowid.eq(dsl::rowid)))
@@ -1224,8 +1230,8 @@ impl RatingRepository for SqliteConnection {
     }
 
     fn load_ratings(&self, ids: &[&str]) -> Result<Vec<Rating>> {
+        use schema::place::dsl;
         use schema::place_rating::dsl as rating_dsl;
-        use schema::place::dsl as dsl;
         Ok(schema::place_rating::table
             .inner_join(schema::place::table)
             .select((
@@ -1256,8 +1262,8 @@ impl RatingRepository for SqliteConnection {
     }
 
     fn load_ratings_of_place(&self, place_id: &str) -> Result<Vec<Rating>> {
+        use schema::place::dsl;
         use schema::place_rating::dsl as rating_dsl;
-        use schema::place::dsl as dsl;
         Ok(schema::place_rating::table
             .inner_join(schema::place::table)
             .select((
@@ -1282,8 +1288,8 @@ impl RatingRepository for SqliteConnection {
     }
 
     fn load_place_ids_of_ratings(&self, ids: &[&str]) -> Result<Vec<String>> {
+        use schema::place::dsl;
         use schema::place_rating::dsl as rating_dsl;
-        use schema::place::dsl as dsl;
         Ok(schema::place_rating::table
             .inner_join(schema::place::table)
             .select(dsl::id)
@@ -1314,8 +1320,8 @@ impl RatingRepository for SqliteConnection {
     }
 
     fn archive_ratings_of_places(&self, place_ids: &[&str], activity: &Activity) -> Result<usize> {
+        use schema::place::dsl;
         use schema::place_rating::dsl as rating_dsl;
-        use schema::place::dsl as dsl;
         let archived_at = Some(activity.at.into_inner());
         let archived_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
@@ -1475,14 +1481,10 @@ impl CommentRepository for SqliteConnection {
         .execute(self)?)
     }
 
-    fn archive_comments_of_places(
-        &self,
-        place_ids: &[&str],
-        activity: &Activity,
-    ) -> Result<usize> {
+    fn archive_comments_of_places(&self, place_ids: &[&str], activity: &Activity) -> Result<usize> {
+        use schema::place::dsl;
         use schema::place_rating::dsl as rating_dsl;
         use schema::place_rating_comment::dsl as comment_dsl;
-        use schema::place::dsl as dsl;
         let archived_at = Some(activity.at.into_inner());
         let archived_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
@@ -1493,13 +1495,15 @@ impl CommentRepository for SqliteConnection {
             schema::place_rating_comment::table
                 .filter(
                     comment_dsl::parent_rowid.eq_any(
-                        schema::place_rating::table.select(rating_dsl::rowid).filter(
-                            rating_dsl::parent_rowid.eq_any(
-                                schema::place::table
-                                    .select(dsl::rowid)
-                                    .filter(dsl::id.eq_any(place_ids)),
+                        schema::place_rating::table
+                            .select(rating_dsl::rowid)
+                            .filter(
+                                rating_dsl::parent_rowid.eq_any(
+                                    schema::place::table
+                                        .select(dsl::rowid)
+                                        .filter(dsl::id.eq_any(place_ids)),
+                                ),
                             ),
-                        ),
                     ),
                 )
                 .filter(comment_dsl::archived_at.is_null()),

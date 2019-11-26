@@ -148,6 +148,15 @@ pub struct IndexQuery<'a, 'b> {
     pub ts_max_ub: Option<Timestamp>, // upper bound (inclusive)
 }
 
+pub trait IdIndex {
+    fn query_ids(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<Id>>;
+}
+
+pub trait IdIndexer: IdIndex {
+    fn flush_index(&mut self) -> Fallible<()>;
+    fn remove_by_id(&mut self, id: &Id) -> Fallible<()>;
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct IndexedPlace {
     pub id: String,
@@ -162,8 +171,10 @@ pub trait PlaceIndex {
     fn query_places(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>>;
 }
 
-pub trait PlaceIndexer: PlaceIndex {
+pub trait PlaceIndexer: IdIndexer + PlaceIndex {
     fn add_or_update_place(&mut self, place: &Place, ratings: &AvgRatings) -> Fallible<()>;
-    fn remove_place_by_id(&mut self, id: &str) -> Fallible<()>;
-    fn flush(&mut self) -> Fallible<()>;
+}
+
+pub trait EventIndexer: IdIndexer {
+    fn add_or_update_event(&mut self, event: &Event) -> Fallible<()>;
 }

@@ -167,9 +167,6 @@ mod tests {
         assert_eq!(db.ratings.borrow().len(), 1);
         assert_eq!(db.comments.borrow().len(), 1);
         assert_eq!(db.ratings.borrow()[0].place_id, "foo".into());
-        assert_eq!(
-            db.comments.borrow()[0].rating_id,
-            db.ratings.borrow()[0].id
-        );
+        assert_eq!(db.comments.borrow()[0].rating_id, db.ratings.borrow()[0].id);
     }
 }

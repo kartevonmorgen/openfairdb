@@ -36,8 +36,7 @@ pub trait CommentRepository {
         rating_ids: &[&str],
         activity: &Activity,
     ) -> Result<usize>;
-    fn archive_comments_of_places(&self, place_ids: &[&str], activity: &Activity)
-        -> Result<usize>;
+    fn archive_comments_of_places(&self, place_ids: &[&str], activity: &Activity) -> Result<usize>;
 }
 
 pub trait RatingRepository {

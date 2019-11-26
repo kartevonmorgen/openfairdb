@@ -214,17 +214,28 @@ pub fn get_entries_most_popular_tags(
 }
 
 #[get("/places/<id>")]
-pub fn get_place(db: sqlite::Connections, id: String) -> Result<(json::PlaceRoot, json::PlaceRevision, json::ReviewStatus)> {
+pub fn get_place(
+    db: sqlite::Connections,
+    id: String,
+) -> Result<(json::PlaceRoot, json::PlaceRevision, json::ReviewStatus)> {
     let (place, status) = {
         let db = db.shared()?;
         db.get_place(&id)?
     };
     let (place_root, place_revision) = place.into();
-    Ok(Json((place_root.into(), place_revision.into(), status.into())))
+    Ok(Json((
+        place_root.into(),
+        place_revision.into(),
+        status.into(),
+    )))
 }
 
 #[get("/places/<id>/history")]
-pub fn get_place_history(db: sqlite::Connections, login: Login, id: String) -> Result<json::PlaceHistory> {
+pub fn get_place_history(
+    db: sqlite::Connections,
+    login: Login,
+    id: String,
+) -> Result<json::PlaceHistory> {
     let place_history = {
         let db = db.shared()?;
 
