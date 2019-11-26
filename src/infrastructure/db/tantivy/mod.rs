@@ -311,6 +311,7 @@ impl TantivyPlaceIndex {
                 fields.address_city,
                 fields.address_zip,
                 fields.address_country,
+                fields.organizer,
             ],
         );
         Ok(Self {

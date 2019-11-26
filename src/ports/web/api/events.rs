@@ -539,7 +539,7 @@ mod tests {
             }
 
             #[test]
-            fn with_phone_registraion_but_without_phone_nr() {
+            fn with_phone_registration_but_without_phone_nr() {
                 let (client, db) = setup();
                 db.exclusive()
                     .unwrap()
