@@ -58,7 +58,7 @@ pub trait UserTokenRepo {
 
     fn consume_user_token(&self, email_nonce: &EmailNonce) -> Result<UserToken>;
 
-    fn discard_expired_user_tokens(&self, expired_before: Timestamp) -> Result<usize>;
+    fn delete_expired_user_tokens(&self, expired_before: Timestamp) -> Result<usize>;
 
     fn get_user_token_by_email(&self, email: &str) -> Result<UserToken>;
 }

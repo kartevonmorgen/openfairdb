@@ -3,7 +3,7 @@ use crate::core::{prelude::*, util::sort::Rated};
 use failure::Fallible;
 
 pub fn index_place(
-    indexer: &mut dyn PlaceIndexer,
+    indexer: &dyn PlaceIndexer,
     place: &Place,
     ratings: &[Rating],
 ) -> Fallible<AvgRatings> {
@@ -12,7 +12,14 @@ pub fn index_place(
     Ok(avg_ratings)
 }
 
-pub fn unindex_place(indexer: &mut dyn PlaceIndexer, id: &str) -> Fallible<()> {
-    indexer.remove_place_by_id(id)?;
-    Ok(())
+pub fn unindex_place(indexer: &dyn PlaceIndexer, id: &Id) -> Fallible<()> {
+    indexer.remove_by_id(id)
+}
+
+pub fn index_event(indexer: &dyn EventIndexer, event: &Event) -> Fallible<()> {
+    indexer.add_or_update_event(event)
+}
+
+pub fn unindex_event(indexer: &dyn EventIndexer, id: &Id) -> Fallible<()> {
+    indexer.remove_by_id(id)
 }

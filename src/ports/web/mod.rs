@@ -1,5 +1,10 @@
 use crate::{
-    core::{db::PlaceIndexer, prelude::*, usecases, util::sort::Rated},
+    core::{
+        db::{EventIndexer, PlaceIndexer},
+        prelude::*,
+        usecases,
+        util::sort::Rated,
+    },
     infrastructure::error::AppError,
 };
 use rocket::{config::Config, Rocket, Route};
@@ -19,21 +24,37 @@ type Result<T> = result::Result<Json<T>, AppError>;
 
 fn index_all_places<D: PlaceRepo + RatingRepository>(
     db: &D,
-    place_indexer: &mut dyn PlaceIndexer,
+    indexer: &mut dyn PlaceIndexer,
 ) -> Result<()> {
     // TODO: Split into chunks with fixed size instead of
-    // loading all entries at once!
+    // loading all places at once!
     let places = db.all_places()?;
     for (place, _) in places {
         let ratings = db.load_ratings_of_place(place.id.as_ref())?;
-        if let Err(err) =
-            place_indexer.add_or_update_place(&place, &place.avg_ratings(&ratings[..]))
-        {
+        if let Err(err) = indexer.add_or_update_place(&place, &place.avg_ratings(&ratings[..])) {
             error!("Failed to index place {:?}: {}", place, err);
         }
     }
-    if let Err(err) = place_indexer.flush_index() {
+    if let Err(err) = indexer.flush_index() {
         error!("Failed to build place index: {}", err);
+    }
+    Ok(Json(()))
+}
+
+fn index_all_events_chronologically<D: EventGateway>(
+    db: &D,
+    indexer: &mut dyn EventIndexer,
+) -> Result<()> {
+    // TODO: Split into chunks with fixed size instead of
+    // loading all events at once!
+    let events = db.all_events_chronologically()?;
+    for event in events {
+        if let Err(err) = indexer.add_or_update_event(&event) {
+            error!("Failed to index event {:?}: {}", event, err);
+        }
+    }
+    if let Err(err) = indexer.flush_index() {
+        error!("Failed to build event index: {}", err);
     }
     Ok(Json(()))
 }
@@ -44,11 +65,15 @@ pub(crate) fn rocket_instance(
     mounts: Vec<(&str, Vec<Route>)>,
     cfg: Option<Config>,
 ) -> Rocket {
-    info!("Indexing all entries...");
+    info!("Indexing all places...");
     index_all_places(&*connections.exclusive().unwrap(), &mut search_engine).unwrap();
 
-    info!("Discarding expired user e-mail nonces...");
-    usecases::discard_expired_user_tokens(&*connections.exclusive().unwrap()).unwrap();
+    info!("Indexing all events...");
+    index_all_events_chronologically(&*connections.exclusive().unwrap(), &mut search_engine)
+        .unwrap();
+
+    info!("Deleting expired user e-mail tokens...");
+    usecases::delete_expired_user_tokens(&*connections.exclusive().unwrap()).unwrap();
 
     info!("Initialization finished");
     let r = match cfg {

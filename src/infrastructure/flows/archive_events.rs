@@ -2,7 +2,11 @@ use super::*;
 
 use diesel::connection::Connection;
 
-pub fn archive_events(connections: &sqlite::Connections, ids: &[&str]) -> Result<()> {
+fn exec_archive_events(
+    connections: &sqlite::Connections,
+    ids: &[&str],
+    _archived_by_email: &str,
+) -> Result<usize> {
     let mut repo_err = None;
     let connection = connections.exclusive()?;
     Ok(connection
@@ -20,4 +24,35 @@ pub fn archive_events(connections: &sqlite::Connections, ids: &[&str]) -> Result
                 RepoError::from(err).into()
             }
         })?)
+}
+
+fn post_archive_events(indexer: &mut dyn EventIndexer, ids: &[&str]) -> Result<()> {
+    // Remove archived events from search index
+    for id in ids {
+        if let Err(err) = usecases::unindex_event(indexer, &Id::from(*id)) {
+            error!(
+                "Failed to remove archived event {} from search index: {}",
+                id, err
+            );
+        }
+    }
+    if let Err(err) = indexer.flush_index() {
+        error!(
+            "Failed to finish updating the search index after archiving events: {}",
+            err
+        );
+    }
+    Ok(())
+}
+
+pub fn archive_events(
+    connections: &sqlite::Connections,
+    indexer: &mut dyn EventIndexer,
+    ids: &[&str],
+    archived_by_email: &str,
+) -> Result<usize> {
+    let count = exec_archive_events(connections, ids, archived_by_email)?;
+    // TODO: Move post processing to a separate task/thread that doesn't delay this request
+    post_archive_events(indexer, ids)?;
+    Ok(count)
 }

@@ -41,168 +41,154 @@ fn login_user(client: &Client, name: &str) {
 
 mod events {
     use super::*;
+    use chrono::prelude::*;
 
     #[test]
-    fn get_a_list_of_all_events() {
-        let (client, db, _) = setup();
-        let events = vec![
-            Event {
-                id: "1234".into(),
+    fn get_a_list_of_all_events_chronologically() {
+        let (client, db, mut search_engine) = setup();
+        let new_events = vec![
+            usecases::NewEvent {
                 title: "x".into(),
-                description: None,
-                start: chrono::Utc::now()
-                    .checked_sub_signed(chrono::Duration::hours(2))
-                    .unwrap()
-                    .naive_utc(),
-                end: None,
-                location: None,
-                contact: None,
-                tags: vec!["bla".into()],
-                homepage: None,
-                created_by: None,
-                registration: Some(RegistrationType::Email),
-                organizer: None,
-                archived: None,
-                image_url: None,
-                image_link_url: None,
+                start: Timestamp::from(
+                    chrono::Utc::now()
+                        .checked_sub_signed(chrono::Duration::hours(2))
+                        .unwrap(),
+                )
+                .into_inner(),
+                tags: Some(vec!["bla".into()]),
+                registration: Some("email".into()),
+                email: Some("test@example.com".into()),
+                created_by: Some("test@example.com".into()),
+                ..Default::default()
             },
-            Event {
-                id: "5678".into(),
+            usecases::NewEvent {
                 title: "x".into(),
-                description: None,
-                start: chrono::Utc::now()
-                    .checked_add_signed(chrono::Duration::days(2))
-                    .unwrap()
-                    .naive_utc(),
-                end: None,
-                location: None,
-                contact: None,
-                tags: vec!["bla".into()],
-                homepage: None,
-                created_by: None,
-                registration: Some(RegistrationType::Email),
-                organizer: None,
-                archived: None,
-                image_url: None,
-                image_link_url: None,
+                start: Timestamp::from(
+                    chrono::Utc::now()
+                        .checked_add_signed(chrono::Duration::days(2))
+                        .unwrap(),
+                )
+                .into_inner(),
+                tags: Some(vec!["bla".into()]),
+                registration: Some("email".into()),
+                email: Some("test@example.com".into()),
+                created_by: Some("test@example.com".into()),
+                ..Default::default()
             },
-            Event {
-                id: "0000".into(),
+            usecases::NewEvent {
                 title: "x".into(),
-                description: None,
-                start: chrono::Utc::now()
-                    .checked_sub_signed(chrono::Duration::days(2))
-                    .unwrap()
-                    .naive_utc(),
-                end: None,
-                location: None,
-                contact: None,
-                tags: vec!["bla".into()],
-                homepage: None,
-                created_by: None,
-                registration: Some(RegistrationType::Email),
-                organizer: None,
-                archived: None,
-                image_url: None,
-                image_link_url: None,
+                start: Timestamp::from(
+                    chrono::Utc::now()
+                        .checked_sub_signed(chrono::Duration::days(2))
+                        .unwrap(),
+                )
+                .into_inner(),
+                tags: Some(vec!["bla".into()]),
+                registration: Some("email".into()),
+                email: Some("test@example.com".into()),
+                created_by: Some("test@example.com".into()),
+                ..Default::default()
             },
         ];
-
-        {
-            let db_conn = db.exclusive().unwrap();
-            for e in events {
-                db_conn.create_event(e).unwrap();
+        let event_ids = {
+            let mut event_ids = Vec::with_capacity(new_events.len());
+            for e in new_events {
+                let e = usecases::create_new_event(
+                    &*db.exclusive().unwrap(),
+                    &mut search_engine,
+                    None,
+                    e,
+                )
+                .unwrap();
+                event_ids.push(e.id);
             }
-        }
+            event_ids
+        };
 
         let mut res = client.get("/events").dispatch();
         assert_eq!(res.status(), Status::Ok);
         let body_str = res.body().and_then(|b| b.into_string()).unwrap();
-        assert!(body_str.contains("<li><a href=\"/events/1234\">"));
-        assert!(body_str.contains("<li><a href=\"/events/5678\">"));
-        assert!(!body_str.contains("<li><a href=\"/events/0000\">"));
+        assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
+        assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
+        // too old
     }
 
     #[test]
     fn get_a_list_of_events_filtered_by_tags() {
-        let (client, db, _) = setup();
-        let events = vec![
-            Event {
-                id: "1234".into(),
+        let (client, db, mut search_engine) = setup();
+        let new_events = vec![
+            usecases::NewEvent {
                 title: "x".into(),
-                description: None,
-                start: chrono::Utc::now()
-                    .checked_sub_signed(chrono::Duration::hours(2))
-                    .unwrap()
-                    .naive_utc(),
-                end: None,
-                location: None,
-                contact: None,
-                tags: vec!["bla".into()],
-                homepage: None,
-                created_by: None,
-                registration: Some(RegistrationType::Email),
-                organizer: None,
-                archived: None,
-                image_url: None,
-                image_link_url: None,
+                start: Timestamp::from(
+                    chrono::Utc::now()
+                        .checked_sub_signed(chrono::Duration::hours(2))
+                        .unwrap(),
+                )
+                .into_inner(),
+                tags: Some(vec!["bla".into(), "blub".into()]),
+                registration: Some("email".into()),
+                email: Some("test@example.com".into()),
+                created_by: Some("test@example.com".into()),
+                ..Default::default()
             },
-            Event {
-                id: "5678".into(),
+            usecases::NewEvent {
                 title: "x".into(),
-                description: None,
-                start: chrono::Utc::now()
-                    .checked_add_signed(chrono::Duration::days(2))
-                    .unwrap()
-                    .naive_utc(),
-                end: None,
-                location: None,
-                contact: None,
-                tags: vec!["bli".into()],
-                homepage: None,
-                created_by: None,
-                registration: Some(RegistrationType::Email),
-                organizer: None,
-                archived: None,
-                image_url: None,
-                image_link_url: None,
+                start: Timestamp::from(
+                    chrono::Utc::now()
+                        .checked_add_signed(chrono::Duration::days(2))
+                        .unwrap(),
+                )
+                .into_inner(),
+                tags: Some(vec!["bli".into(), "blub".into()]),
+                registration: Some("email".into()),
+                email: Some("test@example.com".into()),
+                created_by: Some("test@example.com".into()),
+                ..Default::default()
             },
-            Event {
-                id: "0000".into(),
+            usecases::NewEvent {
                 title: "x".into(),
-                description: None,
-                start: chrono::Utc::now()
-                    .checked_sub_signed(chrono::Duration::days(2))
-                    .unwrap()
-                    .naive_utc(),
-                end: None,
-                location: None,
-                contact: None,
-                tags: vec!["blub".into()],
-                homepage: None,
-                created_by: None,
-                registration: Some(RegistrationType::Email),
-                organizer: None,
-                archived: None,
-                image_url: None,
-                image_link_url: None,
+                start: Timestamp::from(
+                    chrono::Utc::now()
+                        .checked_sub_signed(chrono::Duration::days(2))
+                        .unwrap(),
+                )
+                .into_inner(),
+                tags: Some(vec!["blub".into()]),
+                registration: Some("email".into()),
+                email: Some("test@example.com".into()),
+                created_by: Some("test@example.com".into()),
+                ..Default::default()
             },
         ];
-
-        {
-            let db_conn = db.exclusive().unwrap();
-            for e in events {
-                db_conn.create_event(e).unwrap();
+        let event_ids = {
+            let mut event_ids = Vec::with_capacity(new_events.len());
+            for e in new_events {
+                let e = usecases::create_new_event(
+                    &*db.exclusive().unwrap(),
+                    &mut search_engine,
+                    None,
+                    e,
+                )
+                .unwrap();
+                event_ids.push(e.id);
             }
-        }
+            event_ids
+        };
 
         let mut res = client.get("/events?tag=blub&tag=bli").dispatch();
         assert_eq!(res.status(), Status::Ok);
         let body_str = res.body().and_then(|b| b.into_string()).unwrap();
-        assert!(!body_str.contains("<li><a href=\"/events/1234\">"));
-        assert!(body_str.contains("<li><a href=\"/events/5678\">"));
-        // '0000' has "blub" but its too old
-        assert!(!body_str.contains("<li><a href=\"/events/0000\">"));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
+        assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
+
+        let mut res = client.get("/events?tag=blub").dispatch();
+        assert_eq!(res.status(), Status::Ok);
+        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
+        assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
     }
 
     #[test]

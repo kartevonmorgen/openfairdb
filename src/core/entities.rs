@@ -419,9 +419,9 @@ impl Category {
 }
 
 impl Category {
-    pub const UID_NON_PROFIT: &'static str = "2cd00bebec0c48ba9db761da48678134";
-    pub const UID_COMMERCIAL: &'static str = "77b3c33a92554bcf8e8c2c86cedd6f6f";
-    pub const UID_EVENT: &'static str = "c2dc278a2d6a4b9b8a50cb606fc017ed";
+    pub const ID_NON_PROFIT: &'static str = "2cd00bebec0c48ba9db761da48678134";
+    pub const ID_COMMERCIAL: &'static str = "77b3c33a92554bcf8e8c2c86cedd6f6f";
+    pub const ID_EVENT: &'static str = "c2dc278a2d6a4b9b8a50cb606fc017ed";
 
     pub const TAG_NON_PROFIT: &'static str = "non-profit";
     pub const TAG_COMMERCIAL: &'static str = "commercial";
@@ -429,21 +429,21 @@ impl Category {
 
     pub fn new_non_profit() -> Self {
         Self {
-            id: Self::UID_NON_PROFIT.into(),
+            id: Self::ID_NON_PROFIT.into(),
             tag: Self::TAG_NON_PROFIT.into(),
         }
     }
 
     pub fn new_commercial() -> Self {
         Self {
-            id: Self::UID_COMMERCIAL.into(),
+            id: Self::ID_COMMERCIAL.into(),
             tag: Self::TAG_COMMERCIAL.into(),
         }
     }
 
     pub fn new_event() -> Self {
         Self {
-            id: Self::UID_EVENT.into(),
+            id: Self::ID_EVENT.into(),
             tag: Self::TAG_EVENT.into(),
         }
     }
@@ -471,13 +471,13 @@ impl Category {
         (tags, categories)
     }
 
-    pub fn merge_ids_into_tags(ids: Vec<Id>, mut tags: Vec<String>) -> Vec<String> {
+    pub fn merge_ids_into_tags(ids: &[Id], mut tags: Vec<String>) -> Vec<String> {
         tags.reserve(ids.len());
         tags = ids.iter().fold(tags, |mut tags, id| {
             match id.as_ref() {
-                Self::UID_NON_PROFIT => tags.push(Self::TAG_NON_PROFIT.into()),
-                Self::UID_COMMERCIAL => tags.push(Self::TAG_COMMERCIAL.into()),
-                Self::UID_EVENT => tags.push(Self::TAG_EVENT.into()),
+                Self::ID_NON_PROFIT => tags.push(Self::TAG_NON_PROFIT.into()),
+                Self::ID_COMMERCIAL => tags.push(Self::TAG_COMMERCIAL.into()),
+                Self::ID_EVENT => tags.push(Self::TAG_EVENT.into()),
                 _ => (),
             }
             tags

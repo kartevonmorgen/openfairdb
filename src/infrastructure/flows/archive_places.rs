@@ -28,10 +28,9 @@ fn exec_archive_places(
 }
 
 fn post_archive_places(indexer: &mut dyn PlaceIndexer, ids: &[&str]) -> Result<()> {
-    // Remove archived entries from search index
-    // TODO: Move to a separate task/thread that doesn't delay this request
+    // Remove archived places from search index
     for id in ids {
-        if let Err(err) = usecases::unindex_place(indexer, id) {
+        if let Err(err) = usecases::unindex_place(indexer, &Id::from(*id)) {
             error!(
                 "Failed to remove archived place {} from search index: {}",
                 id, err
@@ -54,6 +53,7 @@ pub fn archive_places(
     archived_by_email: &str,
 ) -> Result<usize> {
     let count = exec_archive_places(connections, ids, archived_by_email)?;
+    // TODO: Move post processing to a separate task/thread that doesn't delay this request
     post_archive_places(indexer, ids)?;
     Ok(count)
 }

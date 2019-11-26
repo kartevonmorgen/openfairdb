@@ -61,16 +61,11 @@ pub trait EventGateway {
     fn archive_events(&self, ids: &[&str], archived: Timestamp) -> Result<usize>;
 
     fn get_event(&self, id: &str) -> Result<Event>;
+    fn get_events(&self, ids: &[&str]) -> Result<Vec<Event>>;
 
-    fn all_events(&self) -> Result<Vec<Event>>;
+    fn all_events_chronologically(&self) -> Result<Vec<Event>>;
+
     fn count_events(&self) -> Result<usize>;
-
-    fn get_events(
-        &self,
-        start_min: Option<Timestamp>,
-        start_max: Option<Timestamp>,
-    ) -> Result<Vec<Event>>;
-
     // Delete an event, but only if tagged with at least one of the given tags
     // Ok(Some(())) => Found and deleted
     // Ok(None)     => No matching tags
@@ -148,13 +143,16 @@ pub struct IndexQuery<'a, 'b> {
     pub ts_max_ub: Option<Timestamp>, // upper bound (inclusive)
 }
 
+pub trait Indexer {
+    fn flush_index(&mut self) -> Fallible<()>;
+}
+
 pub trait IdIndex {
     fn query_ids(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<Id>>;
 }
 
-pub trait IdIndexer: IdIndex {
-    fn flush_index(&mut self) -> Fallible<()>;
-    fn remove_by_id(&mut self, id: &Id) -> Fallible<()>;
+pub trait IdIndexer: Indexer + IdIndex {
+    fn remove_by_id(&self, id: &Id) -> Fallible<()>;
 }
 
 #[derive(Debug, Default, Clone)]
@@ -172,9 +170,11 @@ pub trait PlaceIndex {
 }
 
 pub trait PlaceIndexer: IdIndexer + PlaceIndex {
-    fn add_or_update_place(&mut self, place: &Place, ratings: &AvgRatings) -> Fallible<()>;
+    fn add_or_update_place(&self, place: &Place, ratings: &AvgRatings) -> Fallible<()>;
 }
 
 pub trait EventIndexer: IdIndexer {
-    fn add_or_update_event(&mut self, event: &Event) -> Fallible<()>;
+    fn add_or_update_event(&self, event: &Event) -> Fallible<()>;
 }
+
+pub trait EventAndPlaceIndexer: PlaceIndexer + EventIndexer {}

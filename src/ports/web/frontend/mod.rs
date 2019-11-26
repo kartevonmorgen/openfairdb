@@ -5,9 +5,8 @@ use crate::{
         usecases,
     },
     infrastructure::{db::sqlite, error::*, flows::prelude::*},
-    ports::web::{api::events::EventQuery, guards::*, tantivy::SearchEngine},
+    ports::web::{guards::*, tantivy::SearchEngine},
 };
-use chrono::NaiveDateTime;
 use maud::Markup;
 use num_traits::FromPrimitive;
 use rocket::{
@@ -143,30 +142,24 @@ pub fn get_event(db: sqlite::Connections, id: &RawStr) -> Result<Markup> {
 }
 
 #[get("/events?<query..>")]
-pub fn get_events(db: sqlite::Connections, query: EventQuery) -> Result<Markup> {
+pub fn get_events(
+    db: sqlite::Connections,
+    search_engine: SearchEngine,
+    mut query: usecases::EventQuery,
+) -> Result<Markup> {
     if query.created_by.is_some() {
         return Err(Error::Parameter(ParameterError::Unauthorized).into());
     }
 
-    let start_min = query
-        .start_min
-        .map(|x| NaiveDateTime::from_timestamp(x, 0))
-        .unwrap_or_else(|| {
-            chrono::Utc::now()
-                .checked_sub_signed(chrono::Duration::days(1))
-                .unwrap()
-                .naive_utc()
-        });
+    if query.start_min.is_none() && query.start_max.is_none() {
+        let start_min = chrono::Utc::now()
+            .checked_sub_signed(chrono::Duration::days(1))
+            .unwrap()
+            .naive_utc();
+        query.start_min = Some(start_min.into());
+    }
 
-    let events = usecases::query_events(
-        &*db.shared()?,
-        query.tags,
-        query.bbox,
-        Some(start_min),
-        query.start_max.map(|x| NaiveDateTime::from_timestamp(x, 0)),
-        query.created_by,
-        None,
-    )?;
+    let events = usecases::query_events(&*db.shared()?, &search_engine, query, None)?;
 
     Ok(view::events(&events))
 }

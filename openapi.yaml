@@ -220,6 +220,8 @@ paths:
         - Events
       summary: Receive events
       parameters:
+        - $ref: '#/components/parameters/BoundingBox'
+        - $ref: '#/components/parameters/PaginationLimit'
         - name: tag
           in: query
           description: Filter events by tags
@@ -227,12 +229,6 @@ paths:
             type: array
             items:
               type: string
-        - $ref: '#/components/parameters/BoundingBox'
-        - name: created_by
-          in: query
-          description: The email address of the event creator (only available with valid API token)
-          schema:
-            type: string
         - name: start_min
           in: query
           description: Filter events by `event.start` >= `start_min`
@@ -243,6 +239,20 @@ paths:
           description: Filter events by `event.start` <= `start_max`
           schema:
             type: number
+        - name: text
+          in: query
+          description: |
+            Filter events by textual terms. Hashtags starting with '#' will
+            be extracted from the given text and handled as tag filters.
+          schema:
+            type: string
+        - name: created_by
+          in: query
+          description: |
+            The email address of the event creator. Requests with this parameter
+            will be rejected without a valid API token!
+          schema:
+            type: string
       responses:
         '200':
           description: Successful response

@@ -53,6 +53,11 @@ pub fn get_search(
         .as_ref()
         .map(String::as_str)
         .map(util::split_ids)
+        .map(|ids| {
+            ids.into_iter()
+                .filter(|id| id != &Category::ID_EVENT)
+                .collect()
+        })
         .unwrap_or_default();
 
     let hash_tags = search

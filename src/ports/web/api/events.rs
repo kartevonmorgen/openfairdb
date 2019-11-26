@@ -2,7 +2,6 @@ use super::{super::guards::Bearer, geocoding::*, *};
 
 use crate::core::util::{geo::MapBbox, validate};
 
-use chrono::prelude::*;
 use rocket::{
     http::{RawStr, Status as HttpStatus},
     request::{FromQuery, Query},
@@ -25,13 +24,15 @@ fn check_and_set_address_location(e: &mut usecases::NewEvent) {
 #[post("/events", format = "application/json", data = "<e>")]
 pub fn post_event_with_token(
     db: sqlite::Connections,
+    mut search_engine: tantivy::SearchEngine,
     token: Bearer,
     e: Json<usecases::NewEvent>,
 ) -> Result<String> {
     let mut e = e.into_inner();
     check_and_set_address_location(&mut e);
-    let id = usecases::create_new_event(&mut *db.exclusive()?, Some(&token.0), e)?;
-    Ok(Json(id.to_string()))
+    let event =
+        usecases::create_new_event(&*db.exclusive()?, &mut search_engine, Some(&token.0), e)?;
+    Ok(Json(event.id.to_string()))
 }
 
 #[post("/events", format = "application/json", data = "<_e>", rank = 2)]
@@ -47,7 +48,7 @@ pub fn post_event(mut _db: sqlite::Connections, _e: Json<usecases::NewEvent>) ->
 //     let mut e = e.into_inner();
 //     e.created_by = None; // ignore because of missing authorization
 //     e.token = None; // ignore token
-//     let id = usecases::create_new_event(&mut *db, e.clone())?;
+//     let id = usecases::create_new_event(&*db, &search_engine, e.clone())?;
 //     Ok(Json(id))
 // }
 
@@ -72,30 +73,28 @@ pub fn put_event(
 #[put("/events/<id>", format = "application/json", data = "<e>")]
 pub fn put_event_with_token(
     db: sqlite::Connections,
+    mut search_engine: tantivy::SearchEngine,
     token: Bearer,
     id: &RawStr,
     e: Json<usecases::UpdateEvent>,
 ) -> Result<()> {
     let mut e = e.into_inner();
     check_and_set_address_location(&mut e);
-    usecases::update_event(&mut *db.exclusive()?, Some(&token.0), &id.to_string(), e)?;
+    usecases::update_event(
+        &*db.exclusive()?,
+        &mut search_engine,
+        Some(&token.0),
+        &id.to_string(),
+        e,
+    )?;
     Ok(Json(()))
 }
 
-#[derive(Clone, Default)]
-pub struct EventQuery {
-    pub tags: Option<Vec<String>>,
-    pub created_by: Option<String>,
-    pub bbox: Option<MapBbox>,
-    pub start_min: Option<i64>,
-    pub start_max: Option<i64>,
-}
-
-impl<'q> FromQuery<'q> for EventQuery {
+impl<'q> FromQuery<'q> for usecases::EventQuery {
     type Error = crate::core::prelude::Error;
 
     fn from_query(query: Query<'q>) -> std::result::Result<Self, Self::Error> {
-        let mut q = EventQuery::default();
+        let mut q = usecases::EventQuery::default();
 
         let tags: Vec<_> = query
             .clone()
@@ -113,7 +112,10 @@ impl<'q> FromQuery<'q> for EventQuery {
             .filter(|i| i.key == "created_by")
             .map(|i| i.value.url_decode_lossy())
             .filter(|v| !v.is_empty())
-            .nth(0);
+            .nth(0)
+            .map(|s| s.parse())
+            .transpose()
+            .map_err(|_| ParameterError::Email)?;
 
         let start_min = query
             .clone()
@@ -122,8 +124,8 @@ impl<'q> FromQuery<'q> for EventQuery {
             .filter(|v| !v.is_empty())
             .nth(0);
         if let Some(s) = start_min {
-            let x = s.parse()?;
-            q.start_min = Some(x);
+            let x: i64 = s.parse()?;
+            q.start_min = Some(Timestamp::from_inner(x));
         }
 
         let start_max = query
@@ -133,11 +135,12 @@ impl<'q> FromQuery<'q> for EventQuery {
             .filter(|v| !v.is_empty())
             .nth(0);
         if let Some(e) = start_max {
-            let x = e.parse()?;
-            q.start_max = Some(x);
+            let x: i64 = e.parse()?;
+            q.start_max = Some(Timestamp::from_inner(x));
         }
 
         let bbox = query
+            .clone()
             .filter(|i| i.key == "bbox")
             .map(|i| i.value.url_decode_lossy())
             .filter(|v| !v.is_empty())
@@ -150,6 +153,12 @@ impl<'q> FromQuery<'q> for EventQuery {
             q.bbox = Some(bbox);
         }
 
+        q.text = query
+            .filter(|i| i.key == "text")
+            .map(|i| i.value.url_decode_lossy())
+            .filter(|v| !v.is_empty())
+            .nth(0);
+
         Ok(q)
     }
 }
@@ -157,38 +166,39 @@ impl<'q> FromQuery<'q> for EventQuery {
 #[get("/events?<query..>")]
 pub fn get_events_with_token(
     db: sqlite::Connections,
+    search_engine: tantivy::SearchEngine,
     token: Bearer,
-    query: EventQuery,
+    query: usecases::EventQuery,
 ) -> Result<Vec<json::Event>> {
     //TODO: check token
-    let events = usecases::query_events(
-        &*db.shared()?,
-        query.tags,
-        query.bbox,
-        query.start_min.map(|x| NaiveDateTime::from_timestamp(x, 0)),
-        query.start_max.map(|x| NaiveDateTime::from_timestamp(x, 0)),
-        query.created_by,
-        Some(token.0),
-    )?;
-    let events = events.into_iter().map(json::Event::from).collect();
+    let events = usecases::query_events(&*db.shared()?, &search_engine, query, Some(token.0))?
+        .into_iter()
+        .map(json::Event::from)
+        .collect();
     Ok(Json(events))
 }
 
 #[get("/events?<query..>", rank = 2)]
-pub fn get_events(db: sqlite::Connections, query: EventQuery) -> Result<Vec<json::Event>> {
+pub fn get_events(
+    db: sqlite::Connections,
+    search_engine: tantivy::SearchEngine,
+    query: usecases::EventQuery,
+) -> Result<Vec<json::Event>> {
     if query.created_by.is_some() {
         return Err(Error::Parameter(ParameterError::Unauthorized).into());
     }
-    let events = usecases::query_events(
-        &*db.shared()?,
-        query.tags,
-        query.bbox,
-        query.start_min.map(|x| NaiveDateTime::from_timestamp(x, 0)),
-        query.start_max.map(|x| NaiveDateTime::from_timestamp(x, 0)),
-        query.created_by,
-        None,
-    )?;
-    let events = events.into_iter().map(json::Event::from).collect();
+    let events: Vec<_> = usecases::query_events(&*db.shared()?, &search_engine, query, None)?
+        .into_iter()
+        .map(|e| {
+            // TODO:Make sure within usecase that the creator email
+            // is not shown to unregistered users
+            Event {
+                created_by: None,
+                ..e
+            }
+        })
+        .map(json::Event::from)
+        .collect();
     Ok(Json(events))
 }
 
@@ -230,7 +240,7 @@ mod tests {
             // assert_eq!(response.status(), HttpStatus::Ok);
             // test_json(&response);
             // let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-            // let eid = db.get().unwrap().all_events().unwrap()[0].id.clone();
+            // let eid = db.get().unwrap().all_events_chronologically().unwrap()[0].id.clone();
             // assert_eq!(body_str, format!("\"{}\"", eid));
         }
 
@@ -251,7 +261,7 @@ mod tests {
             // assert_eq!(response.status(), HttpStatus::Ok);
             // test_json(&response);
             // let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-            // let ev = db.get().unwrap().all_events().unwrap()[0].clone();
+            // let ev = db.get().unwrap().all_events_chronologically().unwrap()[0].clone();
             // let eid = ev.id.clone();
             // assert!(ev.created_by.is_none());
             // assert_eq!(body_str, format!("\"{}\"", eid));
@@ -316,7 +326,7 @@ mod tests {
                 assert_eq!(res.status(), HttpStatus::Ok);
                 test_json(&res);
                 let body_str = res.body().and_then(|b| b.into_string()).unwrap();
-                let ev = db.shared().unwrap().all_events().unwrap()[0].clone();
+                let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
                 let eid = ev.id.clone();
                 assert_eq!(ev.created_by.unwrap(), "foo@bar.com");
                 assert_eq!(body_str, format!("\"{}\"", eid));
@@ -368,7 +378,7 @@ mod tests {
                     .dispatch();
                 assert_eq!(res.status(), HttpStatus::Ok);
                 test_json(&res);
-                let ev = db.shared().unwrap().all_events().unwrap()[0].clone();
+                let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
                 assert!(ev.contact.is_none());
                 assert!(ev.homepage.is_none());
                 assert!(ev.description.is_none());
@@ -394,7 +404,7 @@ mod tests {
                     .dispatch();
                 assert_eq!(res.status(), HttpStatus::Ok);
                 test_json(&res);
-                let ev = db.shared().unwrap().all_events().unwrap()[0].clone();
+                let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
                 assert_eq!(ev.registration.unwrap(), RegistrationType::Phone);
             }
 
@@ -462,7 +472,7 @@ mod tests {
                     .dispatch();
                 assert_eq!(res.status(), HttpStatus::Ok);
                 test_json(&res);
-                let ev = db.shared().unwrap().all_events().unwrap()[0].clone();
+                let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
                 assert_eq!(
                     ev.tags,
                     // Including the implicitly added org tag
@@ -575,36 +585,33 @@ mod tests {
 
     mod read {
         use super::*;
+        use chrono::prelude::*;
 
         #[test]
         fn by_id() {
-            let (client, db) = setup();
-            let e = Event {
-                id: "1234".into(),
+            let (client, db, mut search_engine) = setup2();
+            let e = usecases::NewEvent {
                 title: "x".into(),
-                description: None,
-                start: NaiveDateTime::from_timestamp(0, 0),
-                end: None,
-                location: None,
-                contact: None,
-                tags: vec!["bla".into()],
-                homepage: None,
-                created_by: None,
-                registration: Some(RegistrationType::Email),
-                organizer: None,
-                archived: None,
-                image_url: None,
-                image_link_url: None,
+                start: 0,
+                tags: Some(vec!["bla".into()]),
+                registration: Some("email".into()),
+                email: Some("test@example.com".into()),
+                created_by: Some("test@example.com".into()),
+                ..Default::default()
             };
-            db.exclusive().unwrap().create_event(e).unwrap();
-            let req = client.get("/events/1234").header(ContentType::JSON);
+            let e =
+                usecases::create_new_event(&*db.exclusive().unwrap(), &mut search_engine, None, e)
+                    .unwrap();
+            let req = client
+                .get(format!("/events/{}", e.id))
+                .header(ContentType::JSON);
             let mut response = req.dispatch();
             assert_eq!(response.status(), HttpStatus::Ok);
             test_json(&response);
             let body_str = response.body().and_then(|b| b.into_string()).unwrap();
             assert_eq!(
                 body_str,
-                r#"{"id":"1234","title":"x","start":0,"tags":["bla"],"registration":"email"}"#
+                format!("{{\"id\":\"{}\",\"title\":\"x\",\"start\":0,\"email\":\"test@example.com\",\"tags\":[\"bla\"],\"registration\":\"email\"}}", e.id)
             );
         }
 
@@ -644,29 +651,16 @@ mod tests {
 
         #[test]
         fn sorted_by_start() {
-            let (client, db) = setup();
+            let (client, db, mut search_engine) = setup2();
             let event_start_times = vec![100, 0, 300, 50, 200];
-            for s in event_start_times {
-                let start = NaiveDateTime::from_timestamp(s, 0);
-                db.exclusive()
-                    .unwrap()
-                    .create_event(Event {
-                        id: s.to_string().into(),
-                        title: s.to_string(),
-                        description: None,
-                        start,
-                        end: None,
-                        location: None,
-                        contact: None,
-                        tags: vec![],
-                        homepage: None,
-                        created_by: None,
-                        registration: None,
-                        organizer: None,
-                        archived: None,
-                        image_url: None,
-                        image_link_url: None,
-                    })
+            for start in event_start_times {
+                let e = usecases::NewEvent {
+                    title: start.to_string(),
+                    start,
+                    created_by: Some("test@example.com".into()),
+                    ..Default::default()
+                };
+                usecases::create_new_event(&*db.exclusive().unwrap(), &mut search_engine, None, e)
                     .unwrap();
             }
             let mut res = client.get("/events").header(ContentType::JSON).dispatch();
@@ -674,55 +668,65 @@ mod tests {
             test_json(&res);
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
             let objects: Vec<_> = body_str.split("},{").collect();
-            assert!(objects[0].contains("\"id\":\"0\""));
-            assert!(objects[1].contains("\"id\":\"50\""));
-            assert!(objects[2].contains("\"id\":\"100\""));
-            assert!(objects[3].contains("\"id\":\"200\""));
-            assert!(objects[4].contains("\"id\":\"300\""));
+            assert!(objects[0].contains("\"start\":0"));
+            assert!(objects[1].contains("\"start\":50"));
+            assert!(objects[2].contains("\"start\":100"));
+            assert!(objects[3].contains("\"start\":200"));
+            assert!(objects[4].contains("\"start\":300"));
         }
 
         #[test]
         fn filtered_by_tags() {
-            let (client, db) = setup();
-            let event_ids = vec!["a", "b", "c"];
-            for id in event_ids {
-                db.exclusive()
-                    .unwrap()
-                    .create_event(Event {
-                        id: id.into(),
-                        title: id.into(),
-                        description: None,
-                        start: NaiveDateTime::from_timestamp(0, 0),
-                        end: None,
-                        location: None,
-                        contact: None,
-                        tags: vec![id.into()],
-                        homepage: None,
-                        created_by: None,
-                        registration: None,
-                        organizer: None,
-                        archived: None,
-                        image_url: None,
-                        image_link_url: None,
-                    })
+            let (client, db, mut search_engine) = setup2();
+            let tags = vec![vec!["a"], vec!["b"], vec!["c"], vec!["a", "b"]];
+            for tags in tags {
+                let e = usecases::NewEvent {
+                    title: format!("{:?}", tags),
+                    start: 0,
+                    tags: Some(tags.into_iter().map(str::to_string).collect()),
+                    created_by: Some("test@example.com".into()),
+                    ..Default::default()
+                };
+                usecases::create_new_event(&*db.exclusive().unwrap(), &mut search_engine, None, e)
                     .unwrap();
             }
-            let req = client.get("/events?tag=a&tag=c").header(ContentType::JSON);
+
+            let req = client.get("/events?tag=a").header(ContentType::JSON);
             let mut response = req.dispatch();
             assert_eq!(response.status(), HttpStatus::Ok);
             test_json(&response);
             let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-            assert!(body_str.contains("\"id\":\"a\""));
-            assert!(!body_str.contains("\"id\":\"b\""));
-            assert!(body_str.contains("\"id\":\"c\""));
+            assert!(body_str.contains("\"tags\":[\"a\"]"));
+            assert!(!body_str.contains("\"tags\":[\"b\"]"));
+            assert!(!body_str.contains("\"tags\":[\"c\"]"));
+            assert!(body_str.contains("\"tags\":[\"a\",\"b\"]"));
 
             let req = client.get("/events?tag=b").header(ContentType::JSON);
             let mut response = req.dispatch();
             assert_eq!(response.status(), HttpStatus::Ok);
             let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-            assert!(!body_str.contains("\"id\":\"a\""));
-            assert!(body_str.contains("\"id\":\"b\""));
-            assert!(!body_str.contains("\"id\":\"c\""));
+            assert!(!body_str.contains("\"tags\":[\"a\"]"));
+            assert!(body_str.contains("\"tags\":[\"b\"]"));
+            assert!(!body_str.contains("\"tags\":[\"c\"]"));
+            assert!(body_str.contains("\"tags\":[\"a\",\"b\"]"));
+
+            let req = client.get("/events?tag=c").header(ContentType::JSON);
+            let mut response = req.dispatch();
+            assert_eq!(response.status(), HttpStatus::Ok);
+            let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+            assert!(!body_str.contains("\"tags\":[\"a\"]"));
+            assert!(!body_str.contains("\"tags\":[\"b\"]"));
+            assert!(body_str.contains("\"tags\":[\"c\"]"));
+            assert!(!body_str.contains("\"tags\":[\"a\",\"b\"]"));
+
+            let req = client.get("/events?tag=a&tag=b").header(ContentType::JSON);
+            let mut response = req.dispatch();
+            assert_eq!(response.status(), HttpStatus::Ok);
+            let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+            assert!(!body_str.contains("\"tags\":[\"a\"]"));
+            assert!(!body_str.contains("\"tags\":[\"b\"]"));
+            assert!(!body_str.contains("\"tags\":[\"c\"]"));
+            assert!(body_str.contains("\"tags\":[\"a\",\"b\"]"));
         }
 
         #[test]
@@ -737,7 +741,7 @@ mod tests {
 
         #[test]
         fn filtered_by_creator_with_valid_api_token() {
-            let (client, db) = setup();
+            let (client, db, mut search_engine) = setup2();
             db.exclusive()
                 .unwrap()
                 .create_org(Organization {
@@ -757,11 +761,13 @@ mod tests {
                         ..Default::default()
                     };
                     usecases::create_new_event(
-                        &mut *db.exclusive().unwrap(),
+                        &*db.exclusive().unwrap(),
+                        &mut search_engine,
                         Some("foo"),
                         new_event,
                     )
                     .unwrap()
+                    .id
                 })
                 .collect();
             let mut res = client
@@ -799,29 +805,16 @@ mod tests {
 
         #[test]
         fn filtered_by_start_min() {
-            let (client, db) = setup();
+            let (client, db, mut search_engine) = setup2();
             let event_start_times = vec![100, 0, 300, 50, 200];
-            for s in event_start_times {
-                let start = NaiveDateTime::from_timestamp(s, 0);
-                db.exclusive()
-                    .unwrap()
-                    .create_event(Event {
-                        id: s.to_string().into(),
-                        title: s.to_string(),
-                        description: None,
-                        start,
-                        end: None,
-                        location: None,
-                        contact: None,
-                        tags: vec![],
-                        homepage: None,
-                        created_by: None,
-                        registration: None,
-                        organizer: None,
-                        archived: None,
-                        image_url: None,
-                        image_link_url: None,
-                    })
+            for start in event_start_times {
+                let e = usecases::NewEvent {
+                    title: start.to_string(),
+                    start,
+                    created_by: Some("test@example.com".into()),
+                    ..Default::default()
+                };
+                usecases::create_new_event(&*db.exclusive().unwrap(), &mut search_engine, None, e)
                     .unwrap();
             }
             let mut res = client
@@ -833,35 +826,22 @@ mod tests {
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
             let objects: Vec<_> = body_str.split("},{").collect();
             assert_eq!(objects.len(), 2);
-            assert!(objects[0].contains("\"id\":\"200\""));
-            assert!(objects[1].contains("\"id\":\"300\""));
+            assert!(objects[0].contains("\"title\":\"200\""));
+            assert!(objects[1].contains("\"title\":\"300\""));
         }
 
         #[test]
         fn filtered_by_start_max() {
-            let (client, db) = setup();
+            let (client, db, mut search_engine) = setup2();
             let event_start_times = vec![100, 0, 300, 50, 200];
-            for s in event_start_times {
-                let start = NaiveDateTime::from_timestamp(s, 0);
-                db.exclusive()
-                    .unwrap()
-                    .create_event(Event {
-                        id: s.to_string().into(),
-                        title: s.to_string(),
-                        description: None,
-                        start,
-                        end: None,
-                        location: None,
-                        contact: None,
-                        tags: vec![],
-                        homepage: None,
-                        created_by: None,
-                        registration: None,
-                        organizer: None,
-                        archived: None,
-                        image_url: None,
-                        image_link_url: None,
-                    })
+            for start in event_start_times {
+                let e = usecases::NewEvent {
+                    title: start.to_string(),
+                    start,
+                    created_by: Some("test@example.com".into()),
+                    ..Default::default()
+                };
+                usecases::create_new_event(&*db.exclusive().unwrap(), &mut search_engine, None, e)
                     .unwrap();
             }
             let mut res = client
@@ -873,39 +853,26 @@ mod tests {
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
             let objects: Vec<_> = body_str.split("},{").collect();
             assert_eq!(objects.len(), 4);
-            assert!(objects[0].contains("\"id\":\"0\""));
-            assert!(objects[1].contains("\"id\":\"50\""));
-            assert!(objects[2].contains("\"id\":\"100\""));
-            assert!(objects[3].contains("\"id\":\"200\""));
+            assert!(objects[0].contains("\"title\":\"0\""));
+            assert!(objects[1].contains("\"title\":\"50\""));
+            assert!(objects[2].contains("\"title\":\"100\""));
+            assert!(objects[3].contains("\"title\":\"200\""));
         }
 
         #[test]
         fn filtered_by_bounding_box() {
-            let (client, db) = setup();
+            let (client, db, mut search_engine) = setup2();
             let coordinates = &[(-8.0, 0.0), (0.3, 5.0), (7.0, 7.9), (12.0, 0.0)];
             for &(lat, lng) in coordinates {
-                db.exclusive()
-                    .unwrap()
-                    .create_event(Event {
-                        id: format!("{}-{}", lat, lng).into(),
-                        title: format!("{}-{}", lat, lng),
-                        description: None,
-                        start: NaiveDateTime::from_timestamp(0, 0),
-                        end: None,
-                        location: Some(Location {
-                            pos: MapPoint::from_lat_lng_deg(lat, lng),
-                            address: None,
-                        }),
-                        contact: None,
-                        tags: vec![],
-                        homepage: None,
-                        created_by: None,
-                        registration: None,
-                        organizer: None,
-                        archived: None,
-                        image_url: None,
-                        image_link_url: None,
-                    })
+                let e = usecases::NewEvent {
+                    title: format!("{}-{}", lat, lng),
+                    start: 0,
+                    lat: Some(lat),
+                    lng: Some(lng),
+                    created_by: Some("test@example.com".into()),
+                    ..Default::default()
+                };
+                usecases::create_new_event(&*db.exclusive().unwrap(), &mut search_engine, None, e)
                     .unwrap();
             }
             let mut res = client
@@ -915,11 +882,22 @@ mod tests {
             assert_eq!(res.status(), HttpStatus::Ok);
             test_json(&res);
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
-            let objects: Vec<_> = body_str.split("},{").collect();
-            assert_eq!(objects.len(), 3);
-            assert!(objects[0].contains("\"id\":\"-8-0\""));
-            assert!(objects[1].contains("\"id\":\"0.3-5\""));
-            assert!(objects[2].contains("\"id\":\"7-7.9\""));
+            assert!(body_str.contains("\"title\":\"-8-0\""));
+            assert!(body_str.contains("\"title\":\"7-7.9\""));
+            assert!(body_str.contains("\"title\":\"0.3-5\""));
+            assert!(!body_str.contains("\"title\":\"12-0\""));
+
+            let mut res = client
+                .get("/events?bbox=10,-1,13,1")
+                .header(ContentType::JSON)
+                .dispatch();
+            assert_eq!(res.status(), HttpStatus::Ok);
+            test_json(&res);
+            let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+            assert!(!body_str.contains("\"title\":\"-8-0\""));
+            assert!(!body_str.contains("\"title\":\"7-7.9\""));
+            assert!(!body_str.contains("\"title\":\"0.3-5\""));
+            assert!(body_str.contains("\"title\":\"12-0\""));
         }
     }
 
@@ -960,7 +938,7 @@ mod tests {
 
         #[test]
         fn with_api_token() {
-            let (client, db) = setup();
+            let (client, db, mut search_engine) = setup2();
             db.exclusive()
                 .unwrap()
                 .create_org(Organization {
@@ -976,8 +954,14 @@ mod tests {
                 created_by: Some("foo@bar.com".into()),
                 ..Default::default()
             };
-            let id =
-                usecases::create_new_event(&mut *db.exclusive().unwrap(), Some("foo"), e).unwrap();
+            let id = usecases::create_new_event(
+                &*db.exclusive().unwrap(),
+                &mut search_engine,
+                Some("foo"),
+                e,
+            )
+            .unwrap()
+            .id;
             assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
             let res = client
                 .put(format!("/events/{}", id))
@@ -986,7 +970,7 @@ mod tests {
                 .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com"}"#)
                 .dispatch();
             assert_eq!(res.status(), HttpStatus::Ok);
-            let new = db.exclusive().unwrap().get_event(id.as_ref()).unwrap();
+            let new = db.shared().unwrap().get_event(id.as_ref()).unwrap();
             assert_eq!(new.title, "new");
             assert_eq!(new.start.timestamp(), 5);
             assert_eq!(new.created_by.unwrap(), "changed@bar.com");
@@ -994,7 +978,7 @@ mod tests {
 
         #[test]
         fn with_api_token_but_mismatching_tag() {
-            let (client, db) = setup();
+            let (client, db, mut search_engine) = setup2();
             db.exclusive()
                 .unwrap()
                 .create_org(Organization {
@@ -1021,8 +1005,14 @@ mod tests {
                 created_by: Some("foo@bar.com".into()),
                 ..Default::default()
             };
-            let id =
-                usecases::create_new_event(&mut *db.exclusive().unwrap(), Some("bar"), e).unwrap();
+            let id = usecases::create_new_event(
+                &*db.exclusive().unwrap(),
+                &mut search_engine,
+                Some("bar"),
+                e,
+            )
+            .unwrap()
+            .id;
             assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
             let res = client
                 .put(format!("/events/{}", id))
@@ -1035,7 +1025,7 @@ mod tests {
 
         #[test]
         fn with_api_token_keep_org_tag() {
-            let (client, db) = setup();
+            let (client, db, mut search_engine) = setup2();
             db.exclusive()
                 .unwrap()
                 .create_org(Organization {
@@ -1051,8 +1041,14 @@ mod tests {
                 created_by: Some("foo@bar.com".into()),
                 ..Default::default()
             };
-            let id =
-                usecases::create_new_event(&mut *db.exclusive().unwrap(), Some("foo"), e).unwrap();
+            let id = usecases::create_new_event(
+                &*db.exclusive().unwrap(),
+                &mut search_engine,
+                Some("foo"),
+                e,
+            )
+            .unwrap()
+            .id;
             assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
             let res = client
                 .put(format!("/events/{}", id))
@@ -1067,7 +1063,7 @@ mod tests {
 
         #[test]
         fn with_api_token_and_removing_tag() {
-            let (client, db) = setup();
+            let (client, db, mut search_engine) = setup2();
             db.exclusive()
                 .unwrap()
                 .create_org(Organization {
@@ -1089,8 +1085,14 @@ mod tests {
                 created_by: Some("foo@bar.com".into()),
                 ..Default::default()
             };
-            let id =
-                usecases::create_new_event(&mut *db.exclusive().unwrap(), Some("foo"), e).unwrap();
+            let id = usecases::create_new_event(
+                &*db.exclusive().unwrap(),
+                &mut search_engine,
+                Some("foo"),
+                e,
+            )
+            .unwrap()
+            .id;
             assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
             let res = client
                 .put(format!("/events/{}", id))
@@ -1105,7 +1107,7 @@ mod tests {
 
         #[test]
         fn with_api_token_without_created_by() {
-            let (client, db) = setup();
+            let (client, db, mut search_engine) = setup2();
             db.exclusive()
                 .unwrap()
                 .create_org(Organization {
@@ -1122,8 +1124,14 @@ mod tests {
                 created_by: created_by.clone(),
                 ..Default::default()
             };
-            let id =
-                usecases::create_new_event(&mut *db.exclusive().unwrap(), Some("foo"), e).unwrap();
+            let id = usecases::create_new_event(
+                &*db.exclusive().unwrap(),
+                &mut search_engine,
+                Some("foo"),
+                e,
+            )
+            .unwrap()
+            .id;
             assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
             let res = client
                 .put(format!("/events/{}", id))
@@ -1173,7 +1181,7 @@ mod tests {
 
         #[test]
         fn with_api_token() {
-            let (client, db) = setup();
+            let (client, db, mut search_engine) = setup2();
             db.exclusive()
                 .unwrap()
                 .create_org(Organization {
@@ -1189,8 +1197,14 @@ mod tests {
                 created_by: Some("foo@bar.com".into()),
                 ..Default::default()
             };
-            let uid1 =
-                usecases::create_new_event(&mut *db.exclusive().unwrap(), Some("foo"), e1).unwrap();
+            let id1 = usecases::create_new_event(
+                &*db.exclusive().unwrap(),
+                &mut search_engine,
+                Some("foo"),
+                e1,
+            )
+            .unwrap()
+            .id;
             let e2 = usecases::NewEvent {
                 title: "x".into(),
                 start: 0,
@@ -1198,23 +1212,29 @@ mod tests {
                 created_by: Some("foo@bar.com".into()),
                 ..Default::default()
             };
-            let uid2 =
-                usecases::create_new_event(&mut *db.exclusive().unwrap(), Some("foo"), e2).unwrap();
+            let id2 = usecases::create_new_event(
+                &*db.exclusive().unwrap(),
+                &mut search_engine,
+                Some("foo"),
+                e2,
+            )
+            .unwrap()
+            .id;
             // Manually delete the implicitly added org tag from the 2nd event!
-            let mut e2 = db.shared().unwrap().get_event(uid2.as_ref()).unwrap();
+            let mut e2 = db.shared().unwrap().get_event(id2.as_ref()).unwrap();
             e2.tags.retain(|t| t != "tag");
             db.exclusive().unwrap().update_event(&e2).unwrap();
             assert_eq!(db.shared().unwrap().count_events().unwrap(), 2);
             // The 1st event has the owned tag and should be deleted.
             let res = client
-                .delete(format!("/events/{}", uid1))
+                .delete(format!("/events/{}", id1))
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
                 .dispatch();
             assert_eq!(res.status(), HttpStatus::Ok);
             // The 2nd event is not tagged with one of the owned tags.
             let res = client
-                .delete(format!("/events/{}", uid2))
+                .delete(format!("/events/{}", id2))
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
                 .dispatch();

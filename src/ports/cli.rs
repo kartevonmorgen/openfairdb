@@ -13,7 +13,7 @@ const DB_CONNECTION_POOL_SIZE: u32 = 10;
 embed_migrations!();
 
 fn update_event_locations<D: Db>(db: &mut D) -> Result<()> {
-    let events = db.all_events()?;
+    let events = db.all_events_chronologically()?;
     for mut e in events {
         if let Some(ref mut loc) = e.location {
             if let Some(ref addr) = loc.address {

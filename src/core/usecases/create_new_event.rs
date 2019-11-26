@@ -1,4 +1,4 @@
-use super::create_user_from_email;
+use super::{create_user_from_email, index_event};
 use crate::core::{
     prelude::*,
     util::{
@@ -82,7 +82,7 @@ pub enum NewEventMode<'a> {
 }
 
 pub fn try_into_new_event<D: Db>(
-    db: &mut D,
+    db: &D,
     token: Option<&str>,
     e: NewEvent,
     mode: NewEventMode,
@@ -198,7 +198,11 @@ pub fn try_into_new_event<D: Db>(
     } else {
         None
     };
-    let id = Id::new();
+
+    let id = match mode {
+        NewEventMode::Create => Id::new(),
+        NewEventMode::Update(id) => Id::from(id),
+    };
 
     let created_by = if let Some(ref email) = created_by {
         Some(create_user_from_email(db, email)?.email)
@@ -288,23 +292,34 @@ pub fn try_into_new_event<D: Db>(
     Ok(event)
 }
 
-pub fn create_new_event<D: Db>(db: &mut D, token: Option<&str>, e: NewEvent) -> Result<Id> {
-    let new_event = try_into_new_event(db, token, e, NewEventMode::Create)?;
-    if new_event.created_by.is_none() {
+pub fn create_new_event<D: Db>(
+    db: &D,
+    indexer: &mut dyn EventIndexer,
+    token: Option<&str>,
+    e: NewEvent,
+) -> Result<Event> {
+    let event = try_into_new_event(db, token, e, NewEventMode::Create)?;
+    if event.created_by.is_none() {
         // NOTE: At the moment we require an email address,
         // but in the future we might allow anonymous creators
         return Err(ParameterError::CreatorEmail.into());
     }
-    let new_id = new_event.id.clone();
-    debug!("Creating new event: {:?}", new_event);
-    db.create_event(new_event)?;
-    Ok(new_id)
+    debug!("Creating new event: {:?}", event);
+    db.create_event(event.clone())?;
+
+    // Index newly added event
+    // TODO: Move to a separate task/thread that doesn't delay this request
+    if let Err(err) = index_event(indexer, &event).and_then(|_| indexer.flush_index()) {
+        error!("Failed to index newly added event {}: {}", event.id, err);
+    }
+
+    Ok(event)
 }
 
 #[cfg(test)]
 mod tests {
 
-    use super::super::tests::MockDb;
+    use super::super::tests::{DummySearchEngine, MockDb};
     use super::*;
 
     #[test]
@@ -331,8 +346,10 @@ mod tests {
             image_url     : Some("http://somewhere.com/image_url.jpg".to_string()),
             image_link_url: Some("my.url/test.ext".to_string()),
         };
-        let mut mock_db = MockDb::default();
-        let id = create_new_event(&mut mock_db, None, x).unwrap();
+        let mock_db = MockDb::default();
+        let id = create_new_event(&mock_db, &mut DummySearchEngine, None, x)
+            .unwrap()
+            .id;
         assert!(id.is_valid());
         assert_eq!(mock_db.events.borrow().len(), 1);
         assert_eq!(mock_db.tags.borrow().len(), 2);
@@ -377,8 +394,8 @@ mod tests {
             image_url     : None,
             image_link_url: None,
         };
-        let mut mock_db: MockDb = MockDb::default();
-        assert!(create_new_event(&mut mock_db, None, x).is_err());
+        let mock_db: MockDb = MockDb::default();
+        assert!(create_new_event(&mock_db, &mut DummySearchEngine, None, x).is_err());
     }
 
     #[test]
@@ -405,8 +422,8 @@ mod tests {
             image_url     : None,
             image_link_url: None,
         };
-        let mut mock_db: MockDb = MockDb::default();
-        assert!(create_new_event(&mut mock_db, None, x).is_ok());
+        let mock_db: MockDb = MockDb::default();
+        assert!(create_new_event(&mock_db, &mut DummySearchEngine, None, x).is_ok());
         let users = mock_db.all_users().unwrap();
         assert_eq!(users.len(), 1);
         assert_eq!(&users[0].email, "fooo@bar.tld");
@@ -414,7 +431,7 @@ mod tests {
 
     #[test]
     fn create_event_with_valid_existing_creator_email() {
-        let mut mock_db: MockDb = MockDb::default();
+        let mock_db: MockDb = MockDb::default();
         mock_db
             .create_user(&User {
                 email: "fooo@bar.tld".into(),
@@ -447,7 +464,7 @@ mod tests {
             image_url     : None,
             image_link_url: None,
         };
-        assert!(create_new_event(&mut mock_db, None, x).is_ok());
+        assert!(create_new_event(&mock_db, &mut DummySearchEngine, None, x).is_ok());
         let users = mock_db.all_users().unwrap();
         assert_eq!(users.len(), 1);
     }

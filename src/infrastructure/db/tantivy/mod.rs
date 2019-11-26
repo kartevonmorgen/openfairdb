@@ -1,7 +1,13 @@
 use crate::core::{
-    db::{IdIndex, IdIndexer, IndexQuery, IndexedPlace, PlaceIndex, PlaceIndexer},
-    entities::{AvgRatingValue, AvgRatings, Category, Id, Place, RatingContext},
-    util::geo::{LatCoord, LngCoord, MapPoint, RawCoord},
+    db::{
+        EventAndPlaceIndexer, EventIndexer, IdIndex, IdIndexer, IndexQuery, IndexedPlace, Indexer,
+        PlaceIndex, PlaceIndexer,
+    },
+    entities::{AvgRatingValue, AvgRatings, Category, Event, Id, Place, RatingContext},
+    util::{
+        geo::{LatCoord, LngCoord, MapPoint, RawCoord},
+        time::Timestamp,
+    },
 };
 
 use failure::{bail, Fallible};
@@ -21,8 +27,21 @@ use tantivy::{
 
 const OVERALL_INDEX_HEAP_SIZE_IN_BYTES: usize = 50_000_000;
 
+const PLACE_KIND_FLAG: i64 = 1;
+const EVENT_KIND_FLAG: i64 = 2;
+const ALL_KINDS_MASK: i64 = PLACE_KIND_FLAG | EVENT_KIND_FLAG;
+
+fn get_category_kind_flag(category: &Category) -> i64 {
+    if category.id.as_str() == Category::ID_EVENT {
+        EVENT_KIND_FLAG
+    } else {
+        PLACE_KIND_FLAG
+    }
+}
+
 // Shared fields for both places and events
 struct IndexedFields {
+    kind: Field,
     id: Field,
     lat: Field,
     lng: Field,
@@ -79,6 +98,7 @@ impl IndexedFields {
             .set_stored();
         let mut schema_builder = SchemaBuilder::default();
         let fields = Self {
+            kind: schema_builder.add_i64_field("kind", INDEXED),
             id: schema_builder.add_text_field("id", id_options),
             lat: schema_builder.add_i64_field("lat", INDEXED | STORED),
             lng: schema_builder.add_i64_field("lon", INDEXED | STORED),
@@ -412,30 +432,70 @@ impl TantivyIndex {
         }
 
         let merged_tags = Category::merge_ids_into_tags(
-            query.categories.iter().map(|c| Id::from(*c)).collect(),
+            &query
+                .categories
+                .iter()
+                .map(|c| Id::from(*c))
+                .collect::<Vec<_>>(),
             query.hash_tags.clone(),
         );
         let (tags, categories) = Category::split_from_tags(merged_tags);
 
-        // Categories (= mapped to predefined tags + separate sub-query)
-        if !categories.is_empty() {
-            let categories_query: Box<dyn Query> = if categories.len() > 1 {
-                debug!("Query multiple categories: {:?}", categories);
+        // Categories (= mapped to predefined tags + separate sub-query + kind)
+        let mut kinds_mask = 0i64;
+        // Special handling of place categories for backwards compatibility
+        let place_categories =
+            categories
+                .into_iter()
+                .fold(Vec::with_capacity(2), |mut place_categories, category| {
+                    let kind_flag = get_category_kind_flag(&category);
+                    kinds_mask |= kind_flag;
+                    if kind_flag == PLACE_KIND_FLAG {
+                        place_categories.push(category);
+                    }
+                    place_categories
+                });
+        if !place_categories.is_empty() {
+            let categories_query: Box<dyn Query> = if place_categories.len() > 1 {
+                debug!("Query multiple place categories: {:?}", place_categories);
                 let mut category_queries: Vec<(Occur, Box<dyn Query>)> =
-                    Vec::with_capacity(categories.len());
-                for category in &categories {
+                    Vec::with_capacity(place_categories.len());
+                for category in &place_categories {
                     let tag_term = Term::from_field_text(self.fields.tag, &category.tag);
                     let tag_query = TermQuery::new(tag_term, IndexRecordOption::Basic);
                     category_queries.push((Occur::Should, Box::new(tag_query)));
                 }
                 Box::new(BooleanQuery::from(category_queries))
             } else {
-                let category = &categories[0];
-                debug!("Query single category: {:?}", category);
+                let category = &place_categories[0];
+                debug!("Query single place category: {:?}", category);
                 let tag_term = Term::from_field_text(self.fields.tag, &category.tag);
                 Box::new(TermQuery::new(tag_term, IndexRecordOption::Basic))
             };
             sub_queries.push((Occur::Must, categories_query));
+        }
+        // Select the requested partitions by kind
+        if kinds_mask != 0 {
+            if kinds_mask.count_ones() == 1 {
+                // must match one kind
+                let kind_term = Term::from_field_i64(self.fields.kind, kinds_mask);
+                let query = TermQuery::new(kind_term, IndexRecordOption::Basic);
+                sub_queries.push((Occur::Must, Box::new(query)));
+            } else {
+                // most not match all other kinds
+                let inverse_mask = ALL_KINDS_MASK ^ kinds_mask;
+                let num_terms = inverse_mask.count_ones() as usize;
+                let mut kind_terms = Vec::with_capacity(num_terms);
+                let mut single_kind_mask = 1i64;
+                while kind_terms.len() < num_terms {
+                    if inverse_mask & single_kind_mask == single_kind_mask {
+                        kind_terms.push(Term::from_field_i64(self.fields.kind, single_kind_mask));
+                    }
+                    single_kind_mask <<= 1;
+                }
+                let query = BooleanQuery::new_multiterms_query(kind_terms);
+                sub_queries.push((Occur::MustNot, Box::new(query)));
+            };
         }
 
         // Hash tags (mandatory)
@@ -547,7 +607,7 @@ impl TantivyIndex {
                 for (_, doc_addr) in top_docs {
                     match searcher.doc(doc_addr) {
                         Ok(doc) => {
-                            doc_collector.collect_document(&doc_addr, doc);
+                            doc_collector.collect_document(doc_addr, doc);
                         }
                         Err(err) => {
                             warn!("Failed to load document {:?}: {}", doc_addr, err);
@@ -595,7 +655,7 @@ impl TantivyIndex {
                 for (_, doc_addr) in top_docs {
                     match searcher.doc(doc_addr) {
                         Ok(doc) => {
-                            doc_collector.collect_document(&doc_addr, doc);
+                            doc_collector.collect_document(doc_addr, doc);
                         }
                         Err(err) => {
                             warn!("Failed to load document {:?}: {}", doc_addr, err);
@@ -609,7 +669,7 @@ impl TantivyIndex {
 }
 
 trait DocumentCollector {
-    fn collect_document(&mut self, doc_addr: &DocAddress, doc: Document);
+    fn collect_document(&mut self, doc_addr: DocAddress, doc: Document);
 }
 
 struct IdCollector {
@@ -633,7 +693,7 @@ impl From<IdCollector> for Vec<Id> {
 }
 
 impl DocumentCollector for IdCollector {
-    fn collect_document(&mut self, doc_addr: &DocAddress, doc: Document) {
+    fn collect_document(&mut self, doc_addr: DocAddress, doc: Document) {
         if let Some(id) = doc.get_first(self.id_field).and_then(Value::text) {
             self.collected_ids.push(Id::from(id));
         } else {
@@ -666,25 +726,21 @@ impl<'a> From<IndexedPlaceCollector<'a>> for Vec<IndexedPlace> {
 }
 
 impl<'a> DocumentCollector for IndexedPlaceCollector<'a> {
-    fn collect_document(&mut self, _doc_addr: &DocAddress, doc: Document) {
-        self.collected_places.push(self.fields.read_indexed_place(&doc));
+    fn collect_document(&mut self, _doc_addr: DocAddress, doc: Document) {
+        self.collected_places
+            .push(self.fields.read_indexed_place(&doc));
     }
 }
 
 impl IdIndex for TantivyIndex {
-    #[allow(clippy::absurd_extreme_comparisons)]
     fn query_ids(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<Id>> {
-        unimplemented!()
+        let collector = IdCollector::with_capacity(self.fields.id, limit);
+        self.query_documents(query, limit, collector)
+            .map(Into::into)
     }
 }
 
-impl IdIndexer for TantivyIndex {
-    fn remove_by_id(&mut self, id: &Id) -> Fallible<()> {
-        let id_term = Term::from_field_text(self.fields.id, id.as_str());
-        self.index_writer.delete_term(id_term);
-        Ok(())
-    }
-
+impl Indexer for TantivyIndex {
     fn flush_index(&mut self) -> Fallible<()> {
         self.index_writer.commit()?;
         // Manually reload the reader to ensure that all committed changes
@@ -694,11 +750,20 @@ impl IdIndexer for TantivyIndex {
     }
 }
 
+impl IdIndexer for TantivyIndex {
+    fn remove_by_id(&self, id: &Id) -> Fallible<()> {
+        let id_term = Term::from_field_text(self.fields.id, id.as_str());
+        self.index_writer.delete_term(id_term);
+        Ok(())
+    }
+}
+
 impl PlaceIndexer for TantivyIndex {
-    fn add_or_update_place(&mut self, place: &Place, ratings: &AvgRatings) -> Fallible<()> {
+    fn add_or_update_place(&self, place: &Place, ratings: &AvgRatings) -> Fallible<()> {
         let id_term = Term::from_field_text(self.fields.id, place.id.as_ref());
         self.index_writer.delete_term(id_term);
         let mut doc = Document::default();
+        doc.add_i64(self.fields.kind, PLACE_KIND_FLAG);
         doc.add_text(self.fields.id, place.id.as_ref());
         doc.add_i64(
             self.fields.lat,
@@ -775,48 +840,80 @@ impl PlaceIndexer for TantivyIndex {
     }
 }
 
-impl PlaceIndex for TantivyIndex {
-    #[allow(clippy::absurd_extreme_comparisons)]
-    fn query_places(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>> {
-        let collector = IndexedPlaceCollector::with_capacity(&self.fields, limit);
-        self.query_documents(query, limit, collector).map(Into::into)
+impl EventIndexer for TantivyIndex {
+    fn add_or_update_event(&self, event: &Event) -> Fallible<()> {
+        let id_term = Term::from_field_text(self.fields.id, event.id.as_ref());
+        self.index_writer.delete_term(id_term);
+        let mut doc = Document::default();
+        doc.add_i64(self.fields.kind, EVENT_KIND_FLAG);
+        doc.add_text(self.fields.id, event.id.as_ref());
+        if let Some(ref location) = event.location {
+            doc.add_i64(self.fields.lat, i64::from(location.pos.lat().to_raw()));
+            doc.add_i64(self.fields.lng, i64::from(location.pos.lng().to_raw()));
+            if let Some(ref address) = location.address {
+                if let Some(ref street) = address.street {
+                    doc.add_text(self.fields.address_street, street);
+                }
+                if let Some(ref city) = address.city {
+                    doc.add_text(self.fields.address_city, city);
+                }
+                if let Some(ref zip) = address.zip {
+                    doc.add_text(self.fields.address_zip, zip);
+                }
+                if let Some(ref country) = address.country {
+                    doc.add_text(self.fields.address_country, country);
+                }
+            }
+        }
+        doc.add_i64(
+            self.fields.ts_min,
+            Timestamp::from(event.start).into_inner(),
+        );
+        if let Some(end) = event.end {
+            debug_assert!(event.start <= end);
+            doc.add_i64(self.fields.ts_max, Timestamp::from(end).into_inner());
+        }
+        doc.add_text(self.fields.title, &event.title);
+        if let Some(ref description) = event.description {
+            doc.add_text(self.fields.description, description);
+        }
+        if let Some(ref organizer) = event.organizer {
+            doc.add_text(self.fields.organizer, organizer);
+        }
+        for tag in &event.tags {
+            doc.add_text(self.fields.tag, tag);
+        }
+        self.index_writer.add_document(doc);
+        Ok(())
     }
 }
 
+impl PlaceIndex for TantivyIndex {
+    fn query_places(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>> {
+        let collector = IndexedPlaceCollector::with_capacity(&self.fields, limit);
+        self.query_documents(query, limit, collector)
+            .map(Into::into)
+    }
+}
+
+impl EventAndPlaceIndexer for TantivyIndex {}
+
 #[derive(Clone)]
-pub struct SearchEngine(Arc<Mutex<Box<dyn PlaceIndexer + Send>>>);
+pub struct SearchEngine(Arc<Mutex<Box<dyn EventAndPlaceIndexer + Send>>>);
 
 impl SearchEngine {
     pub fn init_in_ram() -> Fallible<SearchEngine> {
-        let entry_index = TantivyIndex::create_in_ram()?;
-        Ok(SearchEngine(Arc::new(Mutex::new(Box::new(entry_index)))))
+        let index = TantivyIndex::create_in_ram()?;
+        Ok(SearchEngine(Arc::new(Mutex::new(Box::new(index)))))
     }
 
     pub fn init_with_path<P: AsRef<Path>>(path: Option<P>) -> Fallible<SearchEngine> {
-        let entry_index = TantivyIndex::create(path)?;
-        Ok(SearchEngine(Arc::new(Mutex::new(Box::new(entry_index)))))
+        let index = TantivyIndex::create(path)?;
+        Ok(SearchEngine(Arc::new(Mutex::new(Box::new(index)))))
     }
 }
 
-impl IdIndex for SearchEngine {
-    fn query_ids(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<Id>> {
-        let mut inner = match self.0.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
-        inner.query_ids(query, limit)
-    }
-}
-
-impl IdIndexer for SearchEngine {
-    fn remove_by_id(&mut self, id: &Id) -> Fallible<()> {
-        let mut inner = match self.0.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
-        inner.remove_by_id(id)
-    }
-
+impl Indexer for SearchEngine {
     fn flush_index(&mut self) -> Fallible<()> {
         let mut inner = match self.0.lock() {
             Ok(guard) => guard,
@@ -826,22 +923,54 @@ impl IdIndexer for SearchEngine {
     }
 }
 
-impl PlaceIndex for SearchEngine {
-    fn query_places(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>> {
-        let entry_index = match self.0.lock() {
+impl IdIndex for SearchEngine {
+    fn query_ids(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<Id>> {
+        let inner = match self.0.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         };
-        entry_index.query_places(query, limit)
+        inner.query_ids(query, limit)
+    }
+}
+
+impl IdIndexer for SearchEngine {
+    fn remove_by_id(&self, id: &Id) -> Fallible<()> {
+        let inner = match self.0.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        inner.remove_by_id(id)
+    }
+}
+
+impl PlaceIndex for SearchEngine {
+    fn query_places(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>> {
+        let inner = match self.0.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        inner.query_places(query, limit)
     }
 }
 
 impl PlaceIndexer for SearchEngine {
-    fn add_or_update_place(&mut self, place: &Place, ratings: &AvgRatings) -> Fallible<()> {
-        let mut inner = match self.0.lock() {
+    fn add_or_update_place(&self, place: &Place, ratings: &AvgRatings) -> Fallible<()> {
+        let inner = match self.0.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         };
         inner.add_or_update_place(place, ratings)
     }
 }
+
+impl EventIndexer for SearchEngine {
+    fn add_or_update_event(&self, event: &Event) -> Fallible<()> {
+        let inner = match self.0.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        };
+        inner.add_or_update_event(event)
+    }
+}
+
+impl EventAndPlaceIndexer for SearchEngine {}

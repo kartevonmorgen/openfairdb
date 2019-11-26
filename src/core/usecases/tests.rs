@@ -108,7 +108,7 @@ impl UserTokenRepo for MockDb {
         }
     }
 
-    fn discard_expired_user_tokens(&self, expired_before: Timestamp) -> RepoResult<usize> {
+    fn delete_expired_user_tokens(&self, expired_before: Timestamp) -> RepoResult<usize> {
         let len_before = self.token.borrow().len();
         self.token
             .borrow_mut()
@@ -123,32 +123,45 @@ impl UserTokenRepo for MockDb {
     }
 }
 
-impl PlaceIndexer for MockDb {
-    fn add_or_update_place(&mut self, place: &Place, _ratings: &AvgRatings) -> Fallible<()> {
-        // Nothing to do, the entry has already been stored
-        // in the database.
-        debug_assert_eq!(place, &self.get_place(place.id.as_ref()).unwrap().0);
-        Ok(())
-    }
+pub struct DummySearchEngine;
 
-    fn remove_place_by_id(&mut self, id: &str) -> Fallible<()> {
-        // Nothing to do, the entry has already been stored
-        // in the database.
-        //debug_assert_eq!(Err(RepoError::NotFound), self.db.get_place(&id));
-        debug_assert!(self.get_place(&id).is_err());
-        Ok(())
-    }
-
-    fn flush(&mut self) -> Fallible<()> {
+impl Indexer for DummySearchEngine {
+    fn flush_index(&mut self) -> Fallible<()> {
         Ok(())
     }
 }
 
-impl PlaceIndex for MockDb {
+impl IdIndex for DummySearchEngine {
+    fn query_ids(&self, _query: &IndexQuery, _limit: usize) -> Fallible<Vec<Id>> {
+        unimplemented!();
+    }
+}
+
+impl IdIndexer for DummySearchEngine {
+    fn remove_by_id(&self, _id: &Id) -> Fallible<()> {
+        Ok(())
+    }
+}
+
+impl PlaceIndex for DummySearchEngine {
     fn query_places(&self, _query: &IndexQuery, _limit: usize) -> Fallible<Vec<IndexedPlace>> {
         unimplemented!();
     }
 }
+
+impl PlaceIndexer for DummySearchEngine {
+    fn add_or_update_place(&self, _place: &Place, _ratings: &AvgRatings) -> Fallible<()> {
+        Ok(())
+    }
+}
+
+impl EventIndexer for DummySearchEngine {
+    fn add_or_update_event(&self, _event: &Event) -> Fallible<()> {
+        Ok(())
+    }
+}
+
+impl EventAndPlaceIndexer for DummySearchEngine {}
 
 fn get<T: Clone + Key>(objects: &[T], id: &str) -> RepoResult<T> {
     match objects.iter().find(|x| x.key() == id) {
@@ -269,46 +282,31 @@ impl EventGateway for MockDb {
         })
     }
 
-    fn all_events(&self) -> RepoResult<Vec<Event>> {
-        Ok(self
+    fn all_events_chronologically(&self) -> RepoResult<Vec<Event>> {
+        let mut events: Vec<_> = self
             .events
             .borrow()
             .iter()
             .filter(|e| e.archived.is_none())
             .cloned()
-            .collect())
+            .collect();
+        events.sort_by(|a, b| a.start.cmp(&b.start));
+        Ok(events)
     }
 
-    fn get_events(
-        &self,
-        start_min: Option<Timestamp>,
-        start_max: Option<Timestamp>,
-    ) -> RepoResult<Vec<Event>> {
+    fn get_events(&self, ids: &[&str]) -> RepoResult<Vec<Event>> {
         Ok(self
             .events
             .borrow()
             .iter()
+            .filter(|e| ids.iter().any(|id| e.id.as_str() == *id))
             .filter(|e| e.archived.is_none())
-            .filter(|e| {
-                if let Some(start_min) = start_min {
-                    e.start >= start_min.into()
-                } else {
-                    true
-                }
-            })
-            .filter(|e| {
-                if let Some(start_max) = start_max {
-                    e.start <= start_max.into()
-                } else {
-                    true
-                }
-            })
             .cloned()
             .collect())
     }
 
     fn count_events(&self) -> RepoResult<usize> {
-        self.all_events().map(|v| v.len())
+        self.all_events_chronologically().map(|v| v.len())
     }
 
     fn update_event(&self, e: &Event) -> RepoResult<()> {

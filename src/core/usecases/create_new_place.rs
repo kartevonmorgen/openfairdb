@@ -55,8 +55,8 @@ pub fn prepare_new_place<D: Db>(
         None => return Err(ParameterError::InvalidPosition.into()),
         Some(pos) => pos,
     };
-    let categories = categories.into_iter().map(Id::from).collect();
-    let tags = super::prepare_tag_list(Category::merge_ids_into_tags(categories, tags));
+    let categories: Vec<_> = categories.into_iter().map(Id::from).collect();
+    let tags = super::prepare_tag_list(Category::merge_ids_into_tags(&categories, tags));
     super::check_and_count_owned_tags(db, &tags, None)?;
     let address = Address {
         street,

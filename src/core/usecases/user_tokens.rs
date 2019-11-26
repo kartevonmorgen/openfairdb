@@ -23,7 +23,7 @@ pub fn consume_user_token<D: Db>(db: &D, email_nonce: &EmailNonce) -> Result<Use
     Ok(token)
 }
 
-pub fn discard_expired_user_tokens<D: Db>(db: &D) -> Result<usize> {
+pub fn delete_expired_user_tokens<D: Db>(db: &D) -> Result<usize> {
     let expired_before = Timestamp::now();
-    Ok(db.discard_expired_user_tokens(expired_before)?)
+    Ok(db.delete_expired_user_tokens(expired_before)?)
 }

@@ -243,9 +243,9 @@ fn new_entry_with_category(category: &str, lat: f64, lng: f64) -> usecases::NewP
 #[test]
 fn search_with_categories_and_bbox() {
     let entries = vec![
-        new_entry_with_category(Category::UID_NON_PROFIT, 1.0, 1.0),
-        new_entry_with_category(Category::UID_NON_PROFIT, 2.0, 2.0),
-        new_entry_with_category(Category::UID_COMMERCIAL, 3.0, 3.0),
+        new_entry_with_category(Category::ID_NON_PROFIT, 1.0, 1.0),
+        new_entry_with_category(Category::ID_NON_PROFIT, 2.0, 2.0),
+        new_entry_with_category(Category::ID_COMMERCIAL, 3.0, 3.0),
     ];
     let (client, connections, mut search_engine) = setup2();
     let place_ids: Vec<_> = entries
@@ -257,11 +257,10 @@ fn search_with_categories_and_bbox() {
                 .to_string()
         })
         .collect();
-    search_engine.flush_index().unwrap();
 
     let req = client.get(format!(
         "/search?bbox=-10,-10,10,10&categories={}",
-        Category::UID_NON_PROFIT
+        Category::ID_NON_PROFIT
     ));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -273,7 +272,7 @@ fn search_with_categories_and_bbox() {
 
     let req = client.get(format!(
         "/search?bbox=1.8,0.5,3.0,3.0&categories={}",
-        Category::UID_NON_PROFIT
+        Category::ID_NON_PROFIT
     ));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -285,7 +284,7 @@ fn search_with_categories_and_bbox() {
 
     let req = client.get(format!(
         "/search?bbox=-10,-10,10,10&categories={}",
-        Category::UID_COMMERCIAL
+        Category::ID_COMMERCIAL
     ));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -296,8 +295,8 @@ fn search_with_categories_and_bbox() {
 
     let req = client.get(format!(
         "/search?bbox=-10,-10,10,10&categories={},{}",
-        Category::UID_NON_PROFIT,
-        Category::UID_COMMERCIAL
+        Category::ID_NON_PROFIT,
+        Category::ID_COMMERCIAL
     ));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -308,8 +307,8 @@ fn search_with_categories_and_bbox() {
 
     let req = client.get(format!(
         "/search?bbox=0.9,0.5,2.5,2.0&categories={},{}",
-        Category::UID_NON_PROFIT,
-        Category::UID_COMMERCIAL
+        Category::ID_NON_PROFIT,
+        Category::ID_COMMERCIAL
     ));
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -346,7 +345,6 @@ fn search_with_text() {
                 .to_string()
         })
         .collect();
-    search_engine.flush_index().unwrap();
 
     // Search case insensitive "Foo" and "foo"
     // Limit is required, because all entries match the query and their
@@ -423,7 +421,6 @@ fn search_with_text_terms_inclusive_exclusive() {
                 .to_string()
         })
         .collect();
-    search_engine.flush_index().unwrap();
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=+Foo");
     let mut response = req.dispatch();
@@ -558,16 +555,16 @@ fn bench_search_in_10_000_rated_places(b: &mut Bencher) {
 fn search_with_tags() {
     let entries = vec![
         usecases::NewPlace {
-            categories: vec![Category::UID_NON_PROFIT.to_string()],
+            categories: vec![Category::ID_NON_PROFIT.to_string()],
             ..default_new_entry()
         },
         usecases::NewPlace {
-            categories: vec![Category::UID_NON_PROFIT.to_string()],
+            categories: vec![Category::ID_NON_PROFIT.to_string()],
             tags: vec!["bla-blubb".to_string(), "foo-bar".to_string()],
             ..default_new_entry()
         },
         usecases::NewPlace {
-            categories: vec![Category::UID_NON_PROFIT.to_string()],
+            categories: vec![Category::ID_NON_PROFIT.to_string()],
             tags: vec!["foo-bar".to_string()],
             ..default_new_entry()
         },
@@ -612,7 +609,7 @@ fn search_with_tags() {
     assert!(body_str.contains(&format!(
         "\"visible\":[{{\"id\":\"{}\",\"lat\":0.0,\"lng\":0.0,\"title\":\"\",\"description\":\"\",\"categories\":[\"{}\"],\"tags\":[\"bla-blubb\",\"foo-bar\"],\"ratings\":{{\"total\":0.0,\"diversity\":0.0,\"fairness\":0.0,\"humanity\":0.0,\"renewable\":0.0,\"solidarity\":0.0,\"transparency\":0.0}}}}]",
         place_ids[1],
-        Category::UID_NON_PROFIT,
+        Category::ID_NON_PROFIT,
     )));
 
     let req = client.get("/search?bbox=-10,-10,10,10&tags=foo-bar");
@@ -1463,10 +1460,10 @@ fn export_csv() {
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     //eprintln!("{}", body_str);
     assert!(body_str.starts_with("id,created,version,title,description,lat,lng,street,zip,city,country,homepage,categories,tags,license,image_url,image_link_url,avg_rating\n"));
-    assert!(body_str.contains(&format!("entry1,1111,0,title1,desc1,{lat},{lng},street1,zip1,city1,country1,http://homepage1/,\"{cat1},{cat2}\",\"bla,bli\",license1,https://img/,\"https://img,link/\",0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg(), cat1 = Category::UID_NON_PROFIT, cat2 = Category::UID_COMMERCIAL)));
+    assert!(body_str.contains(&format!("entry1,1111,0,title1,desc1,{lat},{lng},street1,zip1,city1,country1,http://homepage1/,\"{cat1},{cat2}\",\"bla,bli\",license1,https://img/,\"https://img,link/\",0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg(), cat1 = Category::ID_NON_PROFIT, cat2 = Category::ID_COMMERCIAL)));
     assert!(body_str.contains(&format!(
         "entry2,2222,0,,,0.0,0.0,,,,,,{cat},,,,,0.0\n",
-        cat = Category::UID_NON_PROFIT
+        cat = Category::ID_NON_PROFIT
     )));
     assert!(!body_str.contains("entry3"));
 }

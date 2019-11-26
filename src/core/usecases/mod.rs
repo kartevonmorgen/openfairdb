@@ -61,6 +61,39 @@ pub fn get_event<D: Db>(db: &D, id: &str) -> Result<Event> {
     Ok(db.get_event(id)?)
 }
 
+#[derive(Clone, Debug, Default)]
+pub struct EventQuery {
+    pub bbox: Option<MapBbox>,
+    pub created_by: Option<Email>,
+    pub start_min: Option<Timestamp>,
+    pub start_max: Option<Timestamp>,
+    pub tags: Option<Vec<String>>,
+    pub text: Option<String>,
+
+    pub limit: Option<usize>,
+}
+
+impl EventQuery {
+    pub fn is_empty(&self) -> bool {
+        let Self {
+            ref bbox,
+            ref created_by,
+            ref start_min,
+            ref start_max,
+            ref tags,
+            ref text,
+            ref limit,
+        } = self;
+        bbox.is_none()
+            && created_by.is_none()
+            && start_min.is_none()
+            && start_max.is_none()
+            && tags.is_none()
+            && text.is_none()
+            && limit.is_none()
+    }
+}
+
 pub fn delete_user(db: &dyn Db, login_email: &str, email: &str) -> Result<()> {
     if login_email != email {
         return Err(Error::Parameter(ParameterError::Forbidden));

@@ -888,33 +888,10 @@ impl EventGateway for SqliteConnection {
         Ok(())
     }
 
-    fn get_event(&self, id: &str) -> Result<Event> {
+    fn get_events(&self, ids: &[&str]) -> Result<Vec<Event>> {
         use schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl, users::dsl as u_dsl};
 
-        let models::EventEntity {
-            id,
-            uid,
-            title,
-            description,
-            start,
-            end,
-            lat,
-            lng,
-            street,
-            zip,
-            city,
-            country,
-            email,
-            telephone,
-            homepage,
-            registration,
-            organizer,
-            archived,
-            image_url,
-            image_link_url,
-            created_by_email,
-            ..
-        } = e_dsl::events
+        let rows = e_dsl::events
             .left_outer_join(u_dsl::users)
             .select((
                 e_dsl::id,
@@ -940,72 +917,109 @@ impl EventGateway for SqliteConnection {
                 e_dsl::image_link_url,
                 u_dsl::email.nullable(),
             ))
-            .filter(e_dsl::uid.eq(id))
+            .filter(e_dsl::uid.eq_any(ids))
             .filter(e_dsl::archived.is_null())
-            .first(self)?;
+            .load::<models::EventEntity>(self)?;
+        debug_assert!(rows.len() <= ids.len());
+        let mut events = Vec::with_capacity(rows.len());
+        for row in rows.into_iter() {
+            let models::EventEntity {
+                id,
+                uid,
+                title,
+                description,
+                start,
+                end,
+                lat,
+                lng,
+                street,
+                zip,
+                city,
+                country,
+                email,
+                telephone,
+                homepage,
+                registration,
+                organizer,
+                archived,
+                image_url,
+                image_link_url,
+                created_by_email,
+                ..
+            } = row;
 
-        let tags = et_dsl::event_tags
-            .select(et_dsl::tag)
-            .filter(et_dsl::event_id.eq(id))
-            .load::<String>(self)?;
+            let tags = et_dsl::event_tags
+                .select(et_dsl::tag)
+                .filter(et_dsl::event_id.eq(id))
+                .load::<String>(self)?;
 
-        let address = Address {
-            street,
-            zip,
-            city,
-            country,
-        };
+            let address = Address {
+                street,
+                zip,
+                city,
+                country,
+            };
 
-        let address = if address.is_empty() {
-            None
-        } else {
-            Some(address)
-        };
+            let address = if address.is_empty() {
+                None
+            } else {
+                Some(address)
+            };
 
-        let pos = if let (Some(lat), Some(lng)) = (lat, lng) {
-            MapPoint::try_from_lat_lng_deg(lat, lng)
-        } else {
-            None
-        };
-        let location = if pos.is_some() || address.is_some() {
-            Some(Location {
-                pos: pos.unwrap_or_default(),
-                address,
-            })
-        } else {
-            None
-        };
-        let contact = if email.is_some() || telephone.is_some() {
-            Some(Contact {
-                email: email.map(Into::into),
-                phone: telephone,
-            })
-        } else {
-            None
-        };
+            let pos = if let (Some(lat), Some(lng)) = (lat, lng) {
+                MapPoint::try_from_lat_lng_deg(lat, lng)
+            } else {
+                None
+            };
+            let location = if pos.is_some() || address.is_some() {
+                Some(Location {
+                    pos: pos.unwrap_or_default(),
+                    address,
+                })
+            } else {
+                None
+            };
+            let contact = if email.is_some() || telephone.is_some() {
+                Some(Contact {
+                    email: email.map(Into::into),
+                    phone: telephone,
+                })
+            } else {
+                None
+            };
 
-        let registration = registration.map(Into::into);
+            let registration = registration.map(Into::into);
 
-        Ok(Event {
-            id: uid.into(),
-            title,
-            start: NaiveDateTime::from_timestamp(start, 0),
-            end: end.map(|x| NaiveDateTime::from_timestamp(x, 0)),
-            description,
-            location,
-            contact,
-            homepage: homepage.and_then(load_url),
-            tags,
-            created_by: created_by_email,
-            registration,
-            organizer,
-            archived: archived.map(Timestamp::from_inner),
-            image_url: image_url.and_then(load_url),
-            image_link_url: image_link_url.and_then(load_url),
-        })
+            let event = Event {
+                id: uid.into(),
+                title,
+                start: NaiveDateTime::from_timestamp(start, 0),
+                end: end.map(|x| NaiveDateTime::from_timestamp(x, 0)),
+                description,
+                location,
+                contact,
+                homepage: homepage.and_then(load_url),
+                tags,
+                created_by: created_by_email,
+                registration,
+                organizer,
+                archived: archived.map(Timestamp::from_inner),
+                image_url: image_url.and_then(load_url),
+                image_link_url: image_link_url.and_then(load_url),
+            };
+            events.push(event);
+        }
+
+        Ok(events)
     }
 
-    fn all_events(&self) -> Result<Vec<Event>> {
+    fn get_event(&self, id: &str) -> Result<Event> {
+        let events = self.get_events(&[id])?;
+        debug_assert!(events.len() <= 1);
+        events.into_iter().next().ok_or(RepoError::NotFound)
+    }
+
+    fn all_events_chronologically(&self) -> Result<Vec<Event>> {
         use schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl, users::dsl as u_dsl};
         let events: Vec<_> = e_dsl::events
             .left_outer_join(u_dsl::users)
@@ -1034,52 +1048,8 @@ impl EventGateway for SqliteConnection {
                 u_dsl::email.nullable(),
             ))
             .filter(e_dsl::archived.is_null())
+            .order_by(e_dsl::start)
             .load::<models::EventEntity>(self)?;
-        let tag_rels = et_dsl::event_tags.load(self)?;
-        Ok(events.into_iter().map(|e| (e, &tag_rels).into()).collect())
-    }
-
-    fn get_events(
-        &self,
-        start_min: Option<Timestamp>,
-        start_max: Option<Timestamp>,
-    ) -> Result<Vec<Event>> {
-        use schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl, users::dsl as u_dsl};
-        let mut query = e_dsl::events
-            .left_outer_join(u_dsl::users)
-            .select((
-                e_dsl::id,
-                e_dsl::uid,
-                e_dsl::title,
-                e_dsl::description,
-                e_dsl::start,
-                e_dsl::end,
-                e_dsl::lat,
-                e_dsl::lng,
-                e_dsl::street,
-                e_dsl::zip,
-                e_dsl::city,
-                e_dsl::country,
-                e_dsl::email,
-                e_dsl::telephone,
-                e_dsl::homepage,
-                e_dsl::created_by,
-                e_dsl::registration,
-                e_dsl::organizer,
-                e_dsl::archived,
-                e_dsl::image_url,
-                e_dsl::image_link_url,
-                u_dsl::email.nullable(),
-            ))
-            .filter(e_dsl::archived.is_null())
-            .into_boxed();
-        if let Some(start_min) = start_min {
-            query = query.filter(e_dsl::start.ge(start_min.into_inner()));
-        }
-        if let Some(start_max) = start_max {
-            query = query.filter(e_dsl::start.le(start_max.into_inner()));
-        }
-        let events: Vec<_> = query.load::<models::EventEntity>(self)?;
         let tag_rels = et_dsl::event_tags.load(self)?;
         Ok(events.into_iter().map(|e| (e, &tag_rels).into()).collect())
     }
@@ -1730,7 +1700,7 @@ impl UserTokenRepo for SqliteConnection {
         Ok(token)
     }
 
-    fn discard_expired_user_tokens(&self, expired_before: Timestamp) -> Result<usize> {
+    fn delete_expired_user_tokens(&self, expired_before: Timestamp) -> Result<usize> {
         use schema::user_tokens::dsl;
         Ok(
             diesel::delete(
