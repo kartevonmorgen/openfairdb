@@ -1,7 +1,9 @@
 # Changelog
 
-## v0.x.y (2019-11-dd)
+## v0.8.0 (2019-11-dd)
 
+- web(db): Events are now indexed and searchable
+- web(db): Query revision/version history of places
 - new(db): Renamed and transformed "entries" into "places"
 - new(db): Added status log for place revisions
 - fix(db): Removed categories from database
