@@ -56,7 +56,7 @@ pub fn routes() -> Vec<Route> {
         events::post_event,
         events::post_event_with_token,
         events::get_event,
-        events::get_events,
+        events::get_events_chronologically,
         events::get_events_with_token,
         events::put_event,
         events::put_event_with_token,

@@ -61,7 +61,7 @@ pub trait EventGateway {
     fn archive_events(&self, ids: &[&str], archived: Timestamp) -> Result<usize>;
 
     fn get_event(&self, id: &str) -> Result<Event>;
-    fn get_events(&self, ids: &[&str]) -> Result<Vec<Event>>;
+    fn get_events_chronologically(&self, ids: &[&str]) -> Result<Vec<Event>>;
 
     fn all_events_chronologically(&self) -> Result<Vec<Event>>;
 

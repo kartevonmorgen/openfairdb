@@ -142,7 +142,7 @@ pub fn get_event(db: sqlite::Connections, id: &RawStr) -> Result<Markup> {
 }
 
 #[get("/events?<query..>")]
-pub fn get_events(
+pub fn get_events_chronologically(
     db: sqlite::Connections,
     search_engine: SearchEngine,
     mut query: usecases::EventQuery,
@@ -236,7 +236,7 @@ pub fn routes() -> Vec<Route> {
         get_dashboard,
         get_search,
         get_entry,
-        get_events,
+        get_events_chronologically,
         get_event,
         get_main_css,
         get_map_js,

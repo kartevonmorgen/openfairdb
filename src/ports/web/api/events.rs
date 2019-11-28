@@ -179,7 +179,7 @@ pub fn get_events_with_token(
 }
 
 #[get("/events?<query..>", rank = 2)]
-pub fn get_events(
+pub fn get_events_chronologically(
     db: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     query: usecases::EventQuery,

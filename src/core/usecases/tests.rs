@@ -294,15 +294,17 @@ impl EventGateway for MockDb {
         Ok(events)
     }
 
-    fn get_events(&self, ids: &[&str]) -> RepoResult<Vec<Event>> {
-        Ok(self
+    fn get_events_chronologically(&self, ids: &[&str]) -> RepoResult<Vec<Event>> {
+        let mut events: Vec<_> = self
             .events
             .borrow()
             .iter()
             .filter(|e| ids.iter().any(|id| e.id.as_str() == *id))
             .filter(|e| e.archived.is_none())
             .cloned()
-            .collect())
+            .collect();
+        events.sort_by(|a, b| a.start.cmp(&b.start));
+        Ok(events)
     }
 
     fn count_events(&self) -> RepoResult<usize> {

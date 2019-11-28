@@ -133,7 +133,7 @@ pub fn query_events<D: Db>(
         .chain(invisible_event_ids.iter())
         .map(Id::as_str)
         .collect();
-    let mut events = db.get_events(&event_ids)?;
+    let mut events = db.get_events_chronologically(&event_ids)?;
 
     if let Some(ref email) = created_by {
         if let Some(user) = db.try_get_user_by_email(email)? {
@@ -145,8 +145,6 @@ pub fn query_events<D: Db>(
             events = vec![];
         }
     }
-
-    events.sort_by(|a, b| a.start.cmp(&b.start));
 
     Ok(events)
 }

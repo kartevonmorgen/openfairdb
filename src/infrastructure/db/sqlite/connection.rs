@@ -888,7 +888,7 @@ impl EventGateway for SqliteConnection {
         Ok(())
     }
 
-    fn get_events(&self, ids: &[&str]) -> Result<Vec<Event>> {
+    fn get_events_chronologically(&self, ids: &[&str]) -> Result<Vec<Event>> {
         use schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl, users::dsl as u_dsl};
 
         let rows = e_dsl::events
@@ -919,6 +919,7 @@ impl EventGateway for SqliteConnection {
             ))
             .filter(e_dsl::uid.eq_any(ids))
             .filter(e_dsl::archived.is_null())
+            .order_by(e_dsl::start)
             .load::<models::EventEntity>(self)?;
         debug_assert!(rows.len() <= ids.len());
         let mut events = Vec::with_capacity(rows.len());
@@ -1014,7 +1015,7 @@ impl EventGateway for SqliteConnection {
     }
 
     fn get_event(&self, id: &str) -> Result<Event> {
-        let events = self.get_events(&[id])?;
+        let events = self.get_events_chronologically(&[id])?;
         debug_assert!(events.len() <= 1);
         events.into_iter().next().ok_or(RepoError::NotFound)
     }
