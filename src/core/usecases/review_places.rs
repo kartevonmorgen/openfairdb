@@ -1,22 +1,30 @@
 use crate::core::prelude::*;
 
-pub fn review_places<D: Db>(
-    db: &D,
-    ids: &[&str],
-    review_status: ReviewStatus,
-    reviewer_email: &str,
-) -> Result<usize> {
-    let activity = Activity::now(Some(reviewer_email.into()));
+pub struct Review {
+    pub context: Option<String>,
+    pub reviewer_email: Email,
+    pub status: ReviewStatus,
+    pub comment: Option<String>,
+}
+
+pub fn review_places<D: Db>(db: &D, ids: &[&str], review: Review) -> Result<usize> {
+    let Review {
+        context,
+        reviewer_email,
+        status,
+        comment,
+    } = review;
+    let activity = Activity::now(Some(reviewer_email));
     //  TODO: Verify user role
-    if review_status == ReviewStatus::Archived {
+    if status == ReviewStatus::Archived {
         info!(
             "Archiving {} places including ratings and comments",
             ids.len()
         );
         let activity_log = ActivityLog {
             activity,
-            context: None,
-            comment: Some("archived".into()),
+            context,
+            comment,
         };
         let comment_count = db.archive_comments_of_places(ids, &activity_log.activity)?;
         info!(
@@ -26,7 +34,7 @@ pub fn review_places<D: Db>(
         );
         let rating_count = db.archive_ratings_of_places(ids, &activity_log.activity)?;
         info!("Archived {} ratings of {} places", rating_count, ids.len());
-        let place_count = db.review_places(ids, review_status, &activity_log)?;
+        let place_count = db.review_places(ids, status, &activity_log)?;
         info!(
             "Archived {} places including ratings and comments",
             place_count
@@ -36,18 +44,18 @@ pub fn review_places<D: Db>(
         info!(
             "Changing review status of {} places to {}",
             ids.len(),
-            ReviewStatusPrimitive::from(review_status),
+            ReviewStatusPrimitive::from(status),
         );
         let activity_log = ActivityLog {
             activity,
-            context: None,
-            comment: Some("status changed".into()),
+            context,
+            comment,
         };
-        let place_count = db.review_places(ids, review_status, &activity_log)?;
+        let place_count = db.review_places(ids, status, &activity_log)?;
         info!(
             "Changed review status of {} places to {}",
             place_count,
-            ReviewStatusPrimitive::from(review_status)
+            ReviewStatusPrimitive::from(status)
         );
         Ok(place_count)
     }

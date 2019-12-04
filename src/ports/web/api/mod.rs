@@ -51,6 +51,7 @@ pub fn routes() -> Vec<Route> {
         get_entries_most_popular_tags,
         get_place,
         get_place_history,
+        post_places_review,
         post_entry,
         put_entry,
         events::post_event,
@@ -246,6 +247,47 @@ pub fn get_place_history(
         db.get_place_history(&id)?
     };
     Ok(Json(place_history.into()))
+}
+
+#[post("/places/<ids>/review", data = "<review>")]
+pub fn post_places_review(
+    login: Login,
+    db: sqlite::Connections,
+    mut search_engine: tantivy::SearchEngine,
+    ids: String,
+    review: Json<json::Review>,
+) -> Result<()> {
+    let ids = util::split_ids(&ids);
+    if ids.is_empty() {
+        return Err(Error::Parameter(ParameterError::EmptyIdList).into());
+    }
+    let reviewer_email = {
+        let db = db.shared()?;
+        // Only scouts and admins are entitled to review places
+        usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?.email
+    };
+    let json::Review { status, comment } = review.into_inner();
+    // TODO: Record context information
+    let context = None;
+    let review = usecases::Review {
+        context,
+        reviewer_email: reviewer_email.into(),
+        status: status.into(),
+        comment,
+    };
+    let update_count = flows::review_places(&db, &mut search_engine, &ids, review)?;
+    if update_count < ids.len() {
+        log::warn!(
+            "Applied review to only {} of {} place(s): {:?}",
+            update_count,
+            ids.len(),
+            ids
+        );
+    }
+    if update_count == 0 {
+        return Err(Error::Repo(RepoError::NotFound).into());
+    }
+    Ok(Json(()))
 }
 
 #[get("/duplicates/<ids>")]

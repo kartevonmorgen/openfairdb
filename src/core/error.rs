@@ -85,6 +85,9 @@ quick_error! {
         InvalidNonce{
             description("Invalid nonce")
         }
+        EmptyIdList{
+            description("Missing id list")
+        }
     }
 }
 

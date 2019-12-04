@@ -30,11 +30,7 @@ paths:
             We currently use the following two:
             - Initiative (non-commercial): `2cd00bebec0c48ba9db761da48678134`
             - Company (commercial): `77b3c33a92554bcf8e8c2c86cedd6f6f`
-        - name: ids
-          description: Comma-separated list of entry identifiers
-          in: query
-          schema:
-            type: string
+        - $ref: '#/components/parameters/IdListPath'
         - name: tags
           description: Comma-separated list of tags
           in: query
@@ -77,12 +73,7 @@ paths:
       tags:
         - Entries
       parameters:
-        - name: ids
-          description: Comma-separated list of entry identifiers
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/IdListPath'
       responses:
         '200':
           description: Successful response
@@ -162,18 +153,41 @@ paths:
               schema:
                 $ref: '#/components/schemas/TagCounts'
 
+  '/places/{ids}/review':
+    post:
+      tags:
+        - Places
+      summary: Review multiple places
+      description: |
+        Reviews the latest revision of multiple places at once. An audit log
+        is written into the history of all place revisions.
+        Dependening on the review status the affected places might be
+        hidden from search results (archived, rejected) or re-appear
+        (created, confirmed).
+        Only scouts and admins are entitled to invoke this function.
+      parameters:
+        - $ref: '#/components/parameters/IdListPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Review'
+      responses:
+        '201':
+          description: Created a review for all places.
+        '400':
+          $ref: '#/components/responses/ParameterError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
   '/ratings/{ids}':
     get:
       summary: Get multiple ratings
       tags:
         - Ratings
       parameters:
-        - name: ids
-          description: Comma-separated list of rating identifiers
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/IdListPath'
       responses:
         '200':
           description: Successful response
@@ -181,6 +195,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Rating'
+
   /categories/:
     get:
       summary: Get available categories
@@ -201,12 +216,7 @@ paths:
       tags:
         - Categories
       parameters:
-        - name: ids
-          description: Comma-separated list of category identifiers
-          in: path
-          required: true
-          schema:
-            type: string
+        - $ref: '#/components/parameters/IdListPath'
       responses:
         '200':
           description: Successful response
@@ -671,6 +681,31 @@ components:
           type: number
         transparency:
           type: number
+    Review:
+      properties:
+        status:
+          $ref: '#/components/schemas/ReviewStatus'
+        comment:
+          $ref: '#/components/schemas/ReviewComment'
+      required:
+        - status
+    ReviewStatus:
+      type: string
+      enum:
+        - created
+        - confirmed
+        - rejected
+        - archived
+      description: |
+        * created = initial status of each revision
+        * confirmed/rejected = after positive/negative review
+        * archived = final status
+      example: rejected
+    ReviewComment:
+      type: string
+      description: |
+        Free text that describes the motivation for a review
+      example: "Inappropriate content"
     Event:
       properties:
         id:
@@ -762,6 +797,15 @@ components:
       schema:
         type: string
         example: '42.27,-7.97,52.58,38.25'
+    IdListPath:
+      name: ids
+      in: path
+      required: true
+      description: |
+        Comma-separated list of identifiers
+      schema:
+        type: string
+        example: 7cee99c287094a94acbdcf29ffff2e85,0884c4e86e404072b6874b99b7e32640,ed8a2aef20054102b20950b1b78eb581
     PaginationLimit:
       name: limit
       in: query
@@ -785,5 +829,7 @@ components:
       type: http
       scheme: bearer
   responses:
+    ParameterError:
+      description: Parameters are missing or invalid
     UnauthorizedError:
-      description: Access token is missing or invalid
+      description: Access token is missing or invalid or the user has insufficient permissions

@@ -626,6 +626,23 @@ impl From<e::ReviewStatus> for ReviewStatus {
     }
 }
 
+impl From<ReviewStatus> for e::ReviewStatus {
+    fn from(from: ReviewStatus) -> Self {
+        match from {
+            ReviewStatus::Rejected => e::ReviewStatus::Rejected,
+            ReviewStatus::Archived => e::ReviewStatus::Archived,
+            ReviewStatus::Created => e::ReviewStatus::Created,
+            ReviewStatus::Confirmed => e::ReviewStatus::Confirmed,
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct Review {
+    pub status: ReviewStatus,
+    pub comment: Option<String>,
+}
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ReviewStatusLog {
     pub rev: u64,

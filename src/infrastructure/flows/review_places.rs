@@ -2,21 +2,20 @@ use super::*;
 
 use diesel::connection::Connection;
 
-fn exec_archive_places(
+fn exec_review_places(
     connections: &sqlite::Connections,
     ids: &[&str],
-    archived_by_email: &str,
+    review: usecases::Review,
 ) -> Result<usize> {
     let mut repo_err = None;
     let connection = connections.exclusive()?;
     Ok(connection
         .transaction::<_, diesel::result::Error, _>(|| {
-            usecases::review_places(&*connection, ids, ReviewStatus::Archived, archived_by_email)
-                .map_err(|err| {
-                    warn!("Failed to archive {} places: {}", ids.len(), err);
-                    repo_err = Some(err);
-                    diesel::result::Error::RollbackTransaction
-                })
+            usecases::review_places(&*connection, ids, review).map_err(|err| {
+                warn!("Failed to review {} places: {}", ids.len(), err);
+                repo_err = Some(err);
+                diesel::result::Error::RollbackTransaction
+            })
         })
         .map_err(|err| {
             if let Some(repo_err) = repo_err {
@@ -27,34 +26,76 @@ fn exec_archive_places(
         })?)
 }
 
-fn post_archive_places(indexer: &mut dyn PlaceIndexer, ids: &[&str]) -> Result<()> {
-    // Remove archived places from search index
+fn is_visible_in_search_results(status: ReviewStatus) -> bool {
+    status.exists()
+}
+
+fn post_review_places(
+    connections: &sqlite::Connections,
+    indexer: &mut dyn PlaceIndexer,
+    ids: &[&str],
+    status: ReviewStatus,
+) -> Result<()> {
     for id in ids {
         if let Err(err) = usecases::unindex_place(indexer, &Id::from(*id)) {
             error!(
-                "Failed to remove archived place {} from search index: {}",
+                "Failed to remove place {} from search index after reviewing: {}",
                 id, err
             );
         }
     }
+    // TODO: The status of the recently reviewed places might have been changed
+    // again before we start iterating over the list of ids. This is a very rare
+    // and unlikely race condition that might prevent that previously archived
+    // or rejected places become visible again after a positive re-review.
+    if is_visible_in_search_results(status) {
+        // TODO: How to avoid reloading all places and ratings from the database?
+        let db = connections.shared()?;
+        let places_with_status = db.get_places(ids)?;
+        for (place, status) in places_with_status {
+            // The status might have changed again in the mean time
+            if !is_visible_in_search_results(status) {
+                log::warn!("Place {} has become invisible after reviewing", place.id);
+                continue;
+            }
+            let ratings = match db.load_ratings_of_place(place.id.as_str()) {
+                Ok(ratings) => ratings,
+                Err(err) => {
+                    log::error!(
+                        "Failed to load ratings of place {} after reviewing: {}",
+                        place.id,
+                        err
+                    );
+                    continue;
+                }
+            };
+            if let Err(err) = usecases::index_place(indexer, &place, &ratings) {
+                error!(
+                    "Failed to (re-)index place {} after reviewing: {}",
+                    place.id, err
+                );
+            }
+        }
+    }
     if let Err(err) = indexer.flush_index() {
         error!(
-            "Failed to finish updating the search index after archiving places: {}",
+            "Failed to flush search index after reviewing places: {}",
             err
         );
     }
     Ok(())
 }
 
-pub fn archive_places(
+pub fn review_places(
     connections: &sqlite::Connections,
     indexer: &mut dyn PlaceIndexer,
     ids: &[&str],
-    archived_by_email: &str,
+    review: usecases::Review,
 ) -> Result<usize> {
-    let count = exec_archive_places(connections, ids, archived_by_email)?;
-    // TODO: Move post processing to a separate task/thread that doesn't delay this request
-    post_archive_places(indexer, ids)?;
+    let status = review.status;
+    let count = exec_review_places(connections, ids, review)?;
+    // TODO: Move post processing to a separate task/thread that doesn't delay this request?
+    post_review_places(connections, indexer, ids, status)?;
     Ok(count)
 }
 
@@ -62,17 +103,26 @@ pub fn archive_places(
 mod tests {
     use super::super::tests::prelude::*;
 
-    fn archive_places(
+    fn review_places(
         fixture: &EnvFixture,
         ids: &[&str],
-        archived_by_email: &str,
+        review: usecases::Review,
     ) -> super::Result<usize> {
-        super::archive_places(
+        super::review_places(
             &fixture.db_connections,
             &mut *fixture.search_engine.borrow_mut(),
             ids,
-            archived_by_email,
+            review,
         )
+    }
+
+    fn archived_by(reviewer_email: &str) -> usecases::Review {
+        usecases::Review {
+            context: None,
+            reviewer_email: reviewer_email.into(),
+            status: ReviewStatus::Archived,
+            comment: Some("Archived".into()),
+        }
     }
 
     #[test]
@@ -140,10 +190,10 @@ mod tests {
 
         assert_eq!(
             2,
-            archive_places(
+            review_places(
                 &fixture,
                 &[&*place_ids[0], &*place_ids[2]],
-                "test@example.com"
+                archived_by("test@example.com"),
             )
             .unwrap()
         );
@@ -161,10 +211,10 @@ mod tests {
 
         assert_eq!(
             0,
-            archive_places(
+            review_places(
                 &fixture,
                 &[&*place_ids[0], &*place_ids[2]],
-                "test@example.com",
+                archived_by("test@example.com"),
             )
             .unwrap()
         );
@@ -183,10 +233,10 @@ mod tests {
         // Archive all (remaining) places
         assert_eq!(
             1,
-            archive_places(
+            review_places(
                 &fixture,
                 &place_ids.iter().map(String::as_str).collect::<Vec<_>>(),
-                "test@example.com",
+                archived_by("test@example.com"),
             )
             .unwrap()
         );
@@ -253,7 +303,7 @@ mod tests {
 
         assert_eq!(
             1,
-            archive_places(&fixture, &[&*place_ids[0]], "test@example.com").unwrap()
+            review_places(&fixture, &[&*place_ids[0]], archived_by("test@example.com")).unwrap()
         );
 
         assert!(!fixture.place_exists(&place_ids[0]));
