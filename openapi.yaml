@@ -367,7 +367,7 @@ paths:
               $ref: '#/components/schemas/Event'
       responses:
         '200':
-          description: Sucessfully updated the event
+          description: Sucessfuly updated the event
         '401':
           $ref: '#/components/responses/UnauthorizedError'
     delete:
@@ -387,7 +387,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Sucessfully deleted the event
+          description: Sucessfuly deleted the event
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 
@@ -409,7 +409,7 @@ paths:
                   type: string
       responses:
         '200':
-          description: Sucessfull response
+          description: Sucessful response
   '/logout':
     post:
       summary: User logout
@@ -417,7 +417,19 @@ paths:
         - Users
       responses:
         '200':
-          description: Sucessfull response
+          description: Sucessful response
+  '/users/current':
+    get:
+      summary: Get the current user
+      tags:
+        - Users
+      responses:
+        '200':
+          description: The current user
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
   '/users/reset-password-request':
     post:
       summary: Request a password reset
@@ -434,7 +446,7 @@ paths:
                   type: string
       responses:
         '200':
-           description: Sucessfull response
+           description: Sucessful response
   '/users/reset-password':
     post:
       summary: Request a users password
@@ -455,7 +467,7 @@ paths:
                   type: string
       responses:
         '200':
-           description: Sucessfull response
+           description: Sucessful response
   /tags:
     get:
       summary: Get tags
@@ -463,7 +475,7 @@ paths:
         - Tags
       responses:
         '200':
-          description: Sucessfull response
+          description: Sucessful response
           content:
             application/json:
               schema:
@@ -478,7 +490,7 @@ paths:
         - Stats
       responses:
         '200':
-          description: Sucessfull response
+          description: Sucessful response
           content:
             application/json:
               schema:
@@ -923,6 +935,27 @@ components:
         * confirmed/rejected = after positive/negative review
         * archived = final status
       example: rejected
+    UserRole:
+      type: string
+      enum:
+        - guest
+        - user
+        - scout
+        - admin
+      description: |
+        A user's role
+    User:
+      properties:
+        email:
+          $ref: '#/components/schemas/Email'
+        email_confirmed:
+          type: boolean
+        role:
+          $ref: '#/components/schemas/UserRole'
+      required:
+        - email
+        - email_confirmed
+        - role
     Event:
       properties:
         id:

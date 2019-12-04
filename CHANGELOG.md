@@ -1,7 +1,10 @@
 # Changelog
 
-## v0.8.0 (2019-11-dd)
+## v0.8.0 (2019-12-dd)
 
+- new(web): Query the current user with GET /users/current
+- new(web): Query the history of all place revisions with GET /places/<id>/history
+- new(web): Review multiple places with POST /places/<ids>/review
 - web(db): Events are now indexed and searchable
 - web(db): Query revision/version history of places
 - new(db): Renamed and transformed "entries" into "places"

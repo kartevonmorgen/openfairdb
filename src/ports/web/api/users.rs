@@ -50,7 +50,13 @@ pub fn delete_user(db: sqlite::Connections, user: Login, email: String) -> Resul
     Ok(Json(()))
 }
 
-#[get("/users/<email>", format = "application/json")]
+#[get("/users/current", format = "application/json")]
+pub fn get_current_user(db: sqlite::Connections, user: Login) -> Result<json::User> {
+    let user = usecases::get_user(&*db.shared()?, &user.0, &user.0)?;
+    Ok(Json(user.into()))
+}
+
+#[get("/users/<email>", format = "application/json", rank = 2)]
 pub fn get_user(db: sqlite::Connections, user: Login, email: String) -> Result<json::User> {
     let user = usecases::get_user(&*db.shared()?, &user.0, &email)?;
     Ok(Json(user.into()))
@@ -113,5 +119,42 @@ mod tests {
             .body(r#"{"email":"user@example.com","password":"12345678"}"#)
             .dispatch();
         assert_eq!(res.status(), Status::Ok);
+    }
+
+    #[test]
+    fn current_user() {
+        let (client, db) = setup();
+
+        let email = Email::from("user@example.com");
+        let email_confirmed = true;
+
+        register_user(&db, email.as_str(), "secret", email_confirmed);
+
+        // Before login
+        let res = client
+            .get("/users/current")
+            .header(ContentType::JSON)
+            .dispatch();
+        assert_eq!(res.status(), Status::Unauthorized);
+
+        // Login
+        let res = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(r#"{"email":"user@example.com","password":"secret"}"#)
+            .dispatch();
+        assert_eq!(res.status(), Status::Ok);
+
+        // After login
+        let mut res = client
+            .get("/users/current")
+            .header(ContentType::JSON)
+            .dispatch();
+        assert_eq!(res.status(), Status::Ok);
+        let body = res.body().and_then(|b| b.into_string()).unwrap();
+        let current_user: json::User = serde_json::from_str(&body).unwrap();
+        assert_eq!(email, current_user.email.into());
+        assert_eq!(email_confirmed, current_user.email_confirmed);
+        assert_eq!(Role::User, current_user.role.into());
     }
 }

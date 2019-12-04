@@ -69,6 +69,7 @@ pub fn routes() -> Vec<Route> {
         ratings::post_rating,
         ratings::load_rating,
         users::get_user,
+        users::get_current_user,
         users::delete_user,
         get_categories,
         get_category,

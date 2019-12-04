@@ -243,15 +243,59 @@ pub struct SearchResponse {
     pub invisible: Vec<EntrySearchResult>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct User {
     pub email: String,
+    pub email_confirmed: bool,
+    pub role: UserRole,
 }
 
 impl From<e::User> for User {
     fn from(from: e::User) -> Self {
-        let e::User { email, .. } = from;
-        Self { email }
+        let e::User {
+            email,
+            email_confirmed,
+            role,
+            password: _password,
+        } = from;
+        Self {
+            email,
+            email_confirmed,
+            role: role.into(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum UserRole {
+    Guest,
+    User,
+    Scout,
+    Admin,
+}
+
+impl From<e::Role> for UserRole {
+    fn from(from: e::Role) -> Self {
+        use e::Role::*;
+        match from {
+            Guest => UserRole::Guest,
+            User => UserRole::User,
+            Scout => UserRole::Scout,
+            Admin => UserRole::Admin,
+        }
+    }
+}
+
+impl From<UserRole> for e::Role {
+    fn from(from: UserRole) -> Self {
+        use e::Role::*;
+        match from {
+            UserRole::Guest => Guest,
+            UserRole::User => User,
+            UserRole::Scout => Scout,
+            UserRole::Admin => Admin,
+        }
     }
 }
 
