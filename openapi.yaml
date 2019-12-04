@@ -153,6 +153,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/TagCounts'
 
+  '/places/{id}/history':
+    get:
+      tags:
+        - Places
+      summary: History of place revisions
+      description: |
+        Loads the history of all history of place revisions including all reviews.
+        Sorted in descending order of activity time stamps, i.e. the most recent
+        changes appear first.
+        Only scouts and admins are entitled to invoke this function.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PlaceHistory'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   '/places/{ids}/review':
     post:
       tags:
@@ -681,12 +702,213 @@ components:
           type: number
         transparency:
           type: number
+    Id:
+      type: string
+      minLength: 32
+      maxLength: 32
+      description: |
+        A single identifier
+      example: 7cee99c287094a94acbdcf29ffff2e85
+    Revision:
+      type: integer
+      format: i64
+      minimum: 0
+      description: |
+        A revision number
+      example: 23
+    IdList:
+      type: string
+      description: |
+        Comma-separated list of identifiers
+      example: 7cee99c287094a94acbdcf29ffff2e85,0884c4e86e404072b6874b99b7e32640,ed8a2aef20054102b20950b1b78eb581
+    License:
+      type: string
+      minLength: 1
+      example: CC0-1.0
+    Email:
+      type: string
+      minLength: 3
+      description: |
+        An e-mail address of a user
+      example: user@example.com
+    Title:
+      type: string
+      minLength: 1
+      example: A non-empty title
+    Description:
+      type: string
+      minLength: 1
+      example: A non-empty description
+    Street:
+      type: string
+      example: Friedrichsberg 55
+    City:
+      type: string
+      example: Stuttgart
+    ZipCode:
+      type: string
+      example: 70567
+    Country:
+      type: string
+      example: Germany
+    Phone:
+      type: string
+      example: 001 123456789
+    Tag:
+      type: string
+      minLength: 1
+      example: non-profit
+    TagArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/Tag'
+    Url:
+      type: string
+      minLength: 8
+      example: https://www.slowtec.de/
+    Activity:
+      properties:
+        at:
+          $ref: '#/components/schemas/UnixTime'
+        by:
+          $ref: '#/components/schemas/Email'
+      required:
+        - at
+    ActivityContext:
+      type: string
+      description: |
+        Implicitly recorded context of an activity
+    ActivityComment:
+      type: string
+      description: |
+        Free text that describes the motivation or trigger for an activity
+      example: Action performed, because ...
+    ActivityLog:
+      properties:
+        at:
+          $ref: '#/components/schemas/UnixTime'
+        by:
+          $ref: '#/components/schemas/Email'
+        ctx:
+          $ref: '#/components/schemas/ActivityContext'
+        comment:
+          $ref: '#/components/schemas/ActivityComment'
+      required:
+        - at
+    Location:
+      properties:
+        deg:
+          $ref: '#/components/schemas/LatLonDeg'
+        adr:
+          $ref: '#/components/schemas/Address'
+      required:
+        - deg
+    Contact:
+      properties:
+        phone:
+          $ref: '#/components/schemas/Phone'
+        email:
+          $ref: '#/components/schemas/Email'
+    Address:
+      properties:
+        street:
+          $ref: '#/components/schemas/Street'
+        city:
+          $ref: '#/components/schemas/City'
+        zip:
+          $ref: '#/components/schemas/ZipCode'
+        country:
+          $ref: '#/components/schemas/Country'
+    PlaceLinks:
+      properties:
+        www:
+          $ref: '#/components/schemas/Url'
+        img:
+          $ref: '#/components/schemas/Url'
+        img_href:
+          $ref: '#/components/schemas/Url'
+    LatLonDeg:
+      type: array
+      minLength: 2
+      maxLength: 2
+      items:
+        type: number
+        format: double
+      description: |
+        WGS 84 coordinates (latitude, longitude) in degrees
+      example: [48.720334,9.152239]
+    PlaceRoot:
+      description: |
+        Immutable properties of a place
+      properties:
+        id:
+          $ref: '#/components/schemas/Id'
+        lic:
+          $ref: '#/components/schemas/License'
+      required:
+        - id
+        - lic
+    PlaceRevision:
+      properties:
+        created:
+          $ref: '#/components/schemas/Activity'
+        rev:
+          $ref: '#/components/schemas/Revision'
+        tit:
+          $ref: '#/components/schemas/Title'
+        dsc:
+          $ref: '#/components/schemas/Description'
+        loc:
+          $ref: '#/components/schemas/Location'
+        cnt:
+          $ref: '#/components/schemas/Contact'
+        lnk:
+          $ref: '#/components/schemas/PlaceLinks'
+        tag:
+          $ref: '#/components/schemas/TagArray'
+      required:
+        - created
+        - rev
+        - tit
+        - dsc
+    PlaceRevisionLog:
+      type: array
+      minLength: 2
+      maxLength: 2
+      items:
+        oneOf:
+          - $ref: '#/components/schemas/PlaceRevision'
+          - $ref: '#/components/schemas/ReviewStatusLogArray'
+    PlaceRevisionLogArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/PlaceRevisionLog'
+    ReviewStatusLog:
+      properties:
+        rev:
+          $ref: '#/components/schemas/Revision'
+        act:
+          $ref: '#/components/schemas/ActivityLog'
+        status:
+          $ref: '#/components/schemas/ReviewStatus'
+    ReviewStatusLogArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/ReviewStatusLog'
+    PlaceHistory:
+      properties:
+        place:
+          $ref: '#/components/schemas/PlaceRoot'
+        revisions:
+          $ref: '#/components/schemas/PlaceRevisionLogArray'
+      required:
+        - place
     Review:
       properties:
         status:
           $ref: '#/components/schemas/ReviewStatus'
         comment:
-          $ref: '#/components/schemas/ReviewComment'
+          $ref: '#/components/schemas/ActivityComment'
       required:
         - status
     ReviewStatus:
@@ -701,11 +923,6 @@ components:
         * confirmed/rejected = after positive/negative review
         * archived = final status
       example: rejected
-    ReviewComment:
-      type: string
-      description: |
-        Free text that describes the motivation for a review
-      example: "Inappropriate content"
     Event:
       properties:
         id:
@@ -797,15 +1014,18 @@ components:
       schema:
         type: string
         example: '42.27,-7.97,52.58,38.25'
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Id'
     IdListPath:
       name: ids
       in: path
       required: true
-      description: |
-        Comma-separated list of identifiers
       schema:
-        type: string
-        example: 7cee99c287094a94acbdcf29ffff2e85,0884c4e86e404072b6874b99b7e32640,ed8a2aef20054102b20950b1b78eb581
+        $ref: '#/components/schemas/IdList'
     PaginationLimit:
       name: limit
       in: query
