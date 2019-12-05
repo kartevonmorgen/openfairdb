@@ -1327,6 +1327,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "ofdb-boundary"
+version = "0.0.0"
+dependencies = [
+ "serde 1.0.103 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
 name = "once_cell"
 version = "0.2.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1360,6 +1367,7 @@ dependencies = [
  "maud 0.21.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-derive 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "num-traits 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
+ "ofdb-boundary 0.0.0",
  "openssl 0.10.26 (registry+https://github.com/rust-lang/crates.io-index)",
  "owning_ref 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "passwords 1.1.5 (registry+https://github.com/rust-lang/crates.io-index)",

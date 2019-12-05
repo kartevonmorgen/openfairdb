@@ -10,6 +10,7 @@
 - new(db): Renamed and transformed "entries" into "places"
 - new(db): Added status log for place revisions
 - fix(db): Removed categories from database
+- refactor(web): Extract JSON objects into a separate crate (`ofdb-boundary`)
 
 ## v0.7.2 (2019-11-08)
 

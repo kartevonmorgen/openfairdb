@@ -169,7 +169,7 @@ fn get_one_entry() {
     assert!(body_str.contains(&format!(r#""ratings":["{}"]"#, rating.id)));
     assert_eq!(
         entries[0],
-        json::Entry::from_entry_with_ratings(e, vec![rating])
+        json::entry_from_place_with_ratings(e, vec![rating])
     );
 }
 
@@ -204,10 +204,10 @@ fn get_multiple_places() {
     assert_eq!(entries.len(), 2);
     assert!(entries
         .iter()
-        .any(|x| *x == json::Entry::from_entry_with_ratings(one.clone(), vec![])));
+        .any(|x| *x == json::entry_from_place_with_ratings(one.clone(), vec![])));
     assert!(entries
         .iter()
-        .any(|x| *x == json::Entry::from_entry_with_ratings(two.clone(), vec![])));
+        .any(|x| *x == json::entry_from_place_with_ratings(two.clone(), vec![])));
 }
 
 fn default_new_entry() -> usecases::NewPlace {

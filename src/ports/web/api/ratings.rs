@@ -37,8 +37,8 @@ pub fn load_rating(db: sqlite::Connections, ids: String) -> Result<Vec<json::Rat
                 id: r.id.into(),
                 created: r.created_at.into_seconds(),
                 title: r.title,
-                value: r.value,
-                context: r.context,
+                value: r.value.into(),
+                context: r.context.into(),
                 source: r.source.unwrap_or_default(),
                 comments,
             }

@@ -1,69 +1,6 @@
 use crate::core::{db::IndexedPlace, entities as e, util::geo::MapPoint};
-
+pub use ofdb_boundary::*;
 use url::Url;
-
-#[rustfmt::skip]
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct Entry {
-    pub id             : String,
-    pub created        : i64,
-    pub version        : u64,
-    pub title          : String,
-    pub description    : String,
-    pub lat            : f64,
-    pub lng            : f64,
-    pub street         : Option<String>,
-    pub zip            : Option<String>,
-    pub city           : Option<String>,
-    pub country        : Option<String>,
-    pub email          : Option<String>,
-    pub telephone      : Option<String>,
-    pub homepage       : Option<String>,
-    pub categories     : Vec<String>,
-    pub tags           : Vec<String>,
-    pub ratings        : Vec<String>,
-    pub license        : Option<String>,
-    pub image_url      : Option<String>,
-    pub image_link_url : Option<String>,
-}
-
-#[derive(Debug, PartialEq, Serialize, Deserialize)]
-pub struct Event {
-    pub id: String,
-    pub title: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub description: Option<String>,
-    pub start: i64,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub end: Option<i64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub lat: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub lng: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub street: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub zip: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub city: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub country: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub email: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub telephone: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub homepage: Option<String>,
-    pub tags: Vec<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub registration: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub organizer: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub image_url: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub image_link_url: Option<String>,
-}
 
 impl From<e::Event> for Event {
     fn from(e: e::Event) -> Self {
@@ -144,51 +81,25 @@ impl From<e::Event> for Event {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct Coordinate {
-    pub lat: f64,
-    pub lng: f64,
-}
-
 impl From<Coordinate> for MapPoint {
     fn from(c: Coordinate) -> Self {
         MapPoint::try_from_lat_lng_deg(c.lat, c.lng).unwrap_or_default()
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct Rating {
-    pub id: String,
-    pub title: String,
-    pub created: i64,
-    pub value: e::RatingValue,
-    pub context: e::RatingContext,
-    pub comments: Vec<Comment>,
-    pub source: String,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Comment {
-    pub id: String,
-    pub created: i64,
-    pub text: String,
-}
-
-#[derive(Serialize)]
-pub struct EntrySearchRatings {
-    pub total: e::AvgRatingValue,
-    pub diversity: e::AvgRatingValue,
-    pub fairness: e::AvgRatingValue,
-    pub humanity: e::AvgRatingValue,
-    pub renewable: e::AvgRatingValue,
-    pub solidarity: e::AvgRatingValue,
-    pub transparency: e::AvgRatingValue,
-}
-
-#[derive(Serialize)]
-pub struct Category {
-    pub id: String,
-    pub name: String,
+impl From<e::RatingContext> for RatingContext {
+    fn from(from: e::RatingContext) -> Self {
+        use e::RatingContext as E;
+        use RatingContext as C;
+        match from {
+            E::Diversity => C::Diversity,
+            E::Renewable => C::Renewable,
+            E::Fairness => C::Fairness,
+            E::Humanity => C::Humanity,
+            E::Transparency => C::Transparency,
+            E::Solidarity => C::Solidarity,
+        }
+    }
 }
 
 impl From<e::Category> for Category {
@@ -201,53 +112,50 @@ impl From<e::Category> for Category {
     }
 }
 
-#[derive(Serialize)]
-pub struct EntrySearchResult {
-    pub id: String,
-    pub lat: f64,
-    pub lng: f64,
-    pub title: String,
-    pub description: String,
-    pub categories: Vec<String>,
-    pub tags: Vec<String>,
-    pub ratings: EntrySearchRatings,
-}
-
 impl From<IndexedPlace> for EntrySearchResult {
     fn from(from: IndexedPlace) -> Self {
-        let (tags, categories) = e::Category::split_from_tags(from.tags);
-        Self {
-            id: from.id,
-            lat: from.pos.lat().to_deg(),
-            lng: from.pos.lng().to_deg(),
-            title: from.title,
-            description: from.description,
-            categories: categories.into_iter().map(|c| c.id.to_string()).collect(),
+        let IndexedPlace {
+            id,
+            title,
+            description,
             tags,
-            ratings: EntrySearchRatings {
-                total: from.ratings.total(),
-                diversity: from.ratings.diversity,
-                fairness: from.ratings.fairness,
-                humanity: from.ratings.humanity,
-                renewable: from.ratings.renewable,
-                solidarity: from.ratings.solidarity,
-                transparency: from.ratings.transparency,
-            },
+            pos,
+            ratings,
+            ..
+        } = from;
+        let (tags, categories) = e::Category::split_from_tags(tags);
+        let categories = categories.into_iter().map(|c| c.id.to_string()).collect();
+        let lat = pos.lat().to_deg();
+        let lng = pos.lng().to_deg();
+        let e::AvgRatings {
+            diversity,
+            fairness,
+            humanity,
+            renewable,
+            solidarity,
+            transparency,
+        } = ratings;
+        let total = ratings.total().into();
+        let ratings = EntrySearchRatings {
+            total,
+            diversity: diversity.into(),
+            fairness: fairness.into(),
+            humanity: humanity.into(),
+            renewable: renewable.into(),
+            solidarity: solidarity.into(),
+            transparency: transparency.into(),
+        };
+        Self {
+            id,
+            lat,
+            lng,
+            title,
+            description,
+            categories,
+            tags,
+            ratings,
         }
     }
-}
-
-#[derive(Serialize)]
-pub struct SearchResponse {
-    pub visible: Vec<EntrySearchResult>,
-    pub invisible: Vec<EntrySearchResult>,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct User {
-    pub email: String,
-    pub email_confirmed: bool,
-    pub role: UserRole,
 }
 
 impl From<e::User> for User {
@@ -264,15 +172,6 @@ impl From<e::User> for User {
             role: role.into(),
         }
     }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum UserRole {
-    Guest,
-    User,
-    Scout,
-    Admin,
 }
 
 impl From<e::Role> for UserRole {
@@ -299,93 +198,68 @@ impl From<UserRole> for e::Role {
     }
 }
 
-#[derive(Serialize)]
-pub struct BboxSubscription {
-    pub id: String,
-    pub south_west_lat: f64,
-    pub south_west_lng: f64,
-    pub north_east_lat: f64,
-    pub north_east_lng: f64,
-}
-
 // Entity -> JSON
 
-impl Entry {
-    pub fn from_entry_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -> Entry {
-        let e::Place {
-            id,
-            license,
-            revision,
-            created,
-            title,
-            description,
-            location,
-            contact,
-            links,
-            tags,
-        } = place;
+pub fn entry_from_place_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -> Entry {
+    let e::Place {
+        id,
+        license,
+        revision,
+        created,
+        title,
+        description,
+        location,
+        contact,
+        links,
+        tags,
+    } = place;
 
-        let e::Location { pos, address } = location;
-        let lat = pos.lat().to_deg();
-        let lng = pos.lng().to_deg();
-        let e::Address {
-            street,
-            zip,
-            city,
-            country,
-        } = address.unwrap_or_default();
+    let e::Location { pos, address } = location;
+    let lat = pos.lat().to_deg();
+    let lng = pos.lng().to_deg();
+    let e::Address {
+        street,
+        zip,
+        city,
+        country,
+    } = address.unwrap_or_default();
 
-        let e::Contact {
-            email,
-            phone: telephone,
-        } = contact.unwrap_or_default();
+    let e::Contact {
+        email,
+        phone: telephone,
+    } = contact.unwrap_or_default();
 
-        let (homepage_url, image_url, image_link_url) = if let Some(links) = links {
-            (links.homepage, links.image, links.image_href)
-        } else {
-            (None, None, None)
-        };
+    let (homepage_url, image_url, image_link_url) = if let Some(links) = links {
+        (links.homepage, links.image, links.image_href)
+    } else {
+        (None, None, None)
+    };
 
-        let (tags, categories) = e::Category::split_from_tags(tags);
+    let (tags, categories) = e::Category::split_from_tags(tags);
 
-        Entry {
-            id: id.into(),
-            created: created.at.into_seconds(),
-            version: revision.into(),
-            title,
-            description,
-            lat,
-            lng,
-            street,
-            zip,
-            city,
-            country,
-            email: email.map(Into::into),
-            telephone,
-            homepage: homepage_url.map(Url::into_string),
-            categories: categories.into_iter().map(|c| c.id.to_string()).collect(),
-            tags,
-            ratings: ratings.into_iter().map(|r| r.id.to_string()).collect(),
-            license: Some(license),
-            image_url: image_url.map(Url::into_string),
-            image_link_url: image_link_url.map(Url::into_string),
-        }
+    Entry {
+        id: id.into(),
+        created: created.at.into_seconds(),
+        version: revision.into(),
+        title,
+        description,
+        lat,
+        lng,
+        street,
+        zip,
+        city,
+        country,
+        email: email.map(Into::into),
+        telephone,
+        homepage: homepage_url.map(Url::into_string),
+        categories: categories.into_iter().map(|c| c.id.to_string()).collect(),
+        tags,
+        ratings: ratings.into_iter().map(|r| r.id.to_string()).collect(),
+        license: Some(license),
+        image_url: image_url.map(Url::into_string),
+        image_link_url: image_link_url.map(Url::into_string),
     }
 }
-
-#[derive(Deserialize)]
-pub struct RequestPasswordReset {
-    pub email: String,
-}
-
-#[derive(Deserialize)]
-pub struct ResetPassword {
-    pub token: String,
-    pub new_password: String,
-}
-
-#[derive(Serialize)]
-pub struct TagFrequency(pub String, pub u64);
 
 impl From<e::TagFrequency> for TagFrequency {
     fn from(from: e::TagFrequency) -> Self {
@@ -730,5 +604,19 @@ impl From<e::PlaceHistory> for PlaceHistory {
                 })
                 .collect(),
         }
+    }
+}
+
+impl From<e::AvgRatingValue> for AvgRatingValue {
+    fn from(v: e::AvgRatingValue) -> Self {
+        let v: f64 = v.into();
+        AvgRatingValue::from(v)
+    }
+}
+
+impl From<e::RatingValue> for RatingValue {
+    fn from(v: e::RatingValue) -> Self {
+        let v: i8 = v.into();
+        RatingValue::from(v)
     }
 }
