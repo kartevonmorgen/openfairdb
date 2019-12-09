@@ -1,5 +1,7 @@
 use crate::core::{db::IndexedPlace, entities as e, util::geo::MapPoint};
+
 pub use ofdb_boundary::*;
+
 use url::Url;
 
 impl From<e::Event> for Event {

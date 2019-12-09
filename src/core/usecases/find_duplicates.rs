@@ -159,7 +159,7 @@ fn min3(s: usize, t: usize, u: usize) -> usize {
 mod tests {
     use super::*;
 
-    fn new_entry(title: String, description: String, pos: MapPoint) -> (Place) {
+    fn new_place(title: String, description: String, pos: MapPoint) -> Place {
         Place::build()
             .id(&title)
             .title(&title)
@@ -170,12 +170,12 @@ mod tests {
 
     #[test]
     fn test_in_close_proximity() {
-        let e1 = new_entry(
+        let e1 = new_place(
             "Entry 1".to_string(),
             "Punkt1".to_string(),
             MapPoint::from_lat_lng_deg(48.23153745093964, 8.003816366195679),
         );
-        let e2 = new_entry(
+        let e2 = new_place(
             "Entry 2".to_string(),
             "Punkt2".to_string(),
             MapPoint::from_lat_lng_deg(48.23167056421013, 8.003558874130248),
@@ -187,22 +187,22 @@ mod tests {
 
     #[test]
     fn test_similar_title() {
-        let e1 = new_entry(
+        let e1 = new_place(
             "0123456789".to_string(),
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(48.23153745093964, 6.003816366195679),
         );
-        let e2 = new_entry(
+        let e2 = new_place(
             "01234567".to_string(),
             "allo! Ein Eintra".to_string(),
             MapPoint::from_lat_lng_deg(48.23153745093964, 6.003816366195679),
         );
-        let e3 = new_entry(
+        let e3 = new_place(
             "eins zwei drei".to_string(),
             "allo! Ein Eintra".to_string(),
             MapPoint::from_lat_lng_deg(48.23153745093964, 6.003816366195679),
         );
-        let e4 = new_entry(
+        let e4 = new_place(
             "eins zwei fünf sechs".to_string(),
             "allo! Ein Eintra".to_string(),
             MapPoint::from_lat_lng_deg(48.23153745093964, 6.003816366195679),
@@ -216,27 +216,27 @@ mod tests {
 
     #[test]
     fn test_is_duplicate() {
-        let e1 = new_entry(
+        let e1 = new_place(
             "Ein Eintrag Blablabla".to_string(),
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(47.23153745093964, 5.003816366195679),
         );
-        let e2 = new_entry(
+        let e2 = new_place(
             "Eintrag".to_string(),
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(47.23153745093970, 5.003816366195679),
         );
-        let e3 = new_entry(
+        let e3 = new_place(
             "Enn Eintrxg Blablalx".to_string(),
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(47.23153745093955, 5.003816366195679),
         );
-        let e4 = new_entry(
+        let e4 = new_place(
             "En Eintrg Blablala".to_string(),
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(47.23153745093955, 5.003816366195679),
         );
-        let e5 = new_entry(
+        let e5 = new_place(
             "Ein Eintrag Blabla".to_string(),
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(40.23153745093960, 5.003816366195670),

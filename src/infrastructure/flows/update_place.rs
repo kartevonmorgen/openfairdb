@@ -8,7 +8,7 @@ pub fn update_place(
     id: Id,
     update_place: usecases::UpdatePlace,
     account_email: Option<&str>,
-) -> Result<(Place)> {
+) -> Result<Place> {
     // Update existing entry
     let (place, ratings) = {
         let connection = connections.exclusive()?;
