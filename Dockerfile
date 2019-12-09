@@ -36,36 +36,57 @@ WORKDIR ${WORKDIR_ROOT}
 # if unchanged.
 RUN USER=root cargo new --bin ${PROJECT_NAME}
 WORKDIR ${WORKDIR_ROOT}/${PROJECT_NAME}
+
+RUN USER=root cargo new --lib ofdb-boundary
+
 COPY [ \
     "Cargo.toml", \
     "Cargo.lock", \
     "./" ]
+COPY [ \
+    "ofdb-boundary/Cargo.toml", \
+    "./ofdb-boundary/" ]
+
 # Build the dummy project(s), then delete all build artefacts that must(!) not be cached
-RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --all \
+RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
     && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/${PROJECT_NAME}* \
     && \
-    rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/${PROJECT_NAME}* \
+    rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/${PROJECT_NAME}-* \
     && \
-    rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/${PROJECT_NAME}*
+    rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_boundary-* \
+    && \
+    rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/${PROJECT_NAME}-* \
+    && \
+    rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-boundary-*
 
 # Copy all project (re-)sources that are required for building
 COPY [ \
-    "./migrations", \
+    "migrations", \
     "./migrations/" ]
 COPY [ \
-    "./src", \
+    "src", \
     "./src/" ]
 COPY [ \
-    "./openapi.yaml", \
+    "ofdb-boundary/src", \
+    "./ofdb-boundary/src/" ]
+COPY [ \
+    "openapi.yaml", \
     "./" ]
 
 # Test and build the actual project
-RUN cargo test --${BUILD_MODE} --target ${BUILD_TARGET} --all \
+RUN cargo test --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
     && \
     cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --bin ${BUILD_BIN} \
     && \
     strip ./target/${BUILD_TARGET}/${BUILD_MODE}/${BUILD_BIN}
+
+# Switch back to the root directory
+#
+# NOTE(2019-08-30, uklotzde): Otherwise copying from the build image fails
+# during all subsequent builds of the 2nd stage with an unchanged 1st stage
+# image. Tested with podman 1.5.x on Fedora 30.
+WORKDIR /
 
 
 ###############################################################################
