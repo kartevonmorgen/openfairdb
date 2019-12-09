@@ -5,12 +5,12 @@
 - new(web): Query the current user with GET /users/current
 - new(web): Query the history of all place revisions with GET /places/<id>/history
 - new(web): Review multiple places with POST /places/<ids>/review
-- web(db): Events are now indexed and searchable
-- web(db): Query revision/version history of places
+- new(web/db): Events are now indexed and searchable
+- refactor(web): Extract JSON objects into a separate crate (`ofdb-boundary`)
+- new(db): Query revision/version history of places
 - new(db): Renamed and transformed "entries" into "places"
 - new(db): Added status log for place revisions
 - fix(db): Removed categories from database
-- refactor(web): Extract JSON objects into a separate crate (`ofdb-boundary`)
 
 ## v0.7.2 (2019-11-08)
 
