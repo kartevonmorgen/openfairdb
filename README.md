@@ -26,37 +26,15 @@ tools of your browser and see the requests that are made to `https://kartevonmor
 If you want to use the API in your project, please contact us at helmut@bildungsagenten.com.
 The API might still change sometimes. We will try to let you know in that case.
 
--  `GET /entries/:ID_1,:ID_2,...,:ID_n`
--  `PUT /entries/:ID`
--  `GET /categories/`
--  `GET /categories/:ID_1,:ID_2,...,:ID_n`
--  `POST /ratings`
--  `GET /ratings`
--  `GET /ratings/:ID_1,:ID_2,...,:ID_n`
--  `POST /users`
--  `POST /confirm-email-address`
--  `GET /bbox-subscriptions`
--  `POST /subscribe-to-bbox`
--  `POST /unsubscribe-all-bboxes`
-
-### Login & Subscriptions
-
-For the following requests one must be logged in:
-`GET /bbox-subscriptions`
-`POST /subscribe-to-bbox`
-`POST /unsubscribe-all-bboxes`
-
-`bbox-subscriptions` are subscriptions to a certain map area (bounding box,`bbox`): whenever a new entry is created or an entry is changed within that area, an email notification is sent to the user.
-
 ## Quick start
 
 Download the latest build
-[openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz](https://github.com/kartevonmorgen/openfairdb/releases/download/v0.5.1/openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz),
+[openfairdb_x86_64-unknown-linux-musl_v0.7.2.tar.xz](https://github.com/kartevonmorgen/openfairdb/releases/download/v0.7.2/openfairdb_x86_64-unknown-linux-musl_v0.7.2.tar.xz),
 unpack and start it:
 
 ```sh
-wget https://github.com/kartevonmorgen/openfairdb/releases/download/v0.5.1/openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz
-tar xJf openfairdb_x86_64-unknown-linux-musl_v0.5.1.tar.xz
+wget https://github.com/kartevonmorgen/openfairdb/releases/download/v0.7.2/openfairdb_x86_64-unknown-linux-musl_v0.7.2.tar.xz
+tar xJf openfairdb_x86_64-unknown-linux-musl_v0.7.2.tar.xz
 RUST_LOG=info ./openfairdb
 ```
 
@@ -69,7 +47,7 @@ Requirements:
 
 ### Installing Rust & Cargo
 
-If you're using Ubuntu 16.04 LTS you can run
+If you're using Ubuntu 18.04 LTS you can run
 
 ```sh
 sudo apt-get install curl libssl-dev gcc
@@ -178,6 +156,7 @@ Note: Currently the rendered class diagram must be updated manually by uploading
 
 # License
 
-Copyright (c) 2015 - 2018 Markus Kohlhase
+Copyright (c) 2015 - 2018 Markus Kohlhase  
+Copyright (c) 2018 - 2019 [slowtec GmbH](https://slowtec.de)
 
 This project is licensed under the AGPLv3 license.
