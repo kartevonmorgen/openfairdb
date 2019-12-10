@@ -2,13 +2,12 @@ let
   moz_overlay = import (builtins.fetchTarball https://github.com/mozilla/nixpkgs-mozilla/archive/master.tar.gz);
   pkgs = import <nixpkgs> { overlays = [ moz_overlay ]; };
   rustChannel = pkgs.rustChannelOf {
-     date = "2019-11-01";
+     date = "2019-12-07";
      channel = "nightly";
   };
 in
   with pkgs;
-  stdenv.mkDerivation {
-    name = "rust-ofdb-dev-env";
+  mkShell {
     buildInputs = [
       rustChannel.rust
       cmake
