@@ -107,6 +107,22 @@ pub fn get_main_css() -> Css<&'static str> {
     Css(MAIN_CSS)
 }
 
+#[get("/places/<id>/history")]
+pub fn get_place_history(db: sqlite::Connections, id: &RawStr, account: Account) -> Result<Markup> {
+    let db = db.shared()?;
+    let user = db
+        .try_get_user_by_email(account.email())?
+        .ok_or(Error::Parameter(ParameterError::Unauthorized))?;
+    let place_history = {
+        // The history contains e-mail addresses of registered users
+        // and is only permitted for scouts and admins!
+        usecases::authorize_user_by_email(&*db, &account.email(), Role::Scout)?;
+
+        db.get_place_history(&id)?
+    };
+    Ok(view::place_history(&user, &place_history))
+}
+
 #[get("/entries/<id>")]
 pub fn get_entry(
     pool: sqlite::Connections,
@@ -236,6 +252,7 @@ pub fn routes() -> Vec<Route> {
         get_dashboard,
         get_search,
         get_entry,
+        get_place_history,
         get_events_chronologically,
         get_event,
         get_main_css,

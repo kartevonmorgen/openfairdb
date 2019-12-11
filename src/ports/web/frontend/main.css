@@ -204,15 +204,68 @@ fieldset {
   color: rgb(229, 98, 146);
 }
 
-.details ul.tags {
-  font-size: 0.8em;
+ul.tags, ul.log {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+ul.tags {
+  font-size: 0.8em;
+}
+
+.details ul.tags {
   background: #ddd;
   padding:0.2em;
   padding-left:0.4em;
   padding-right:0.4em;
   border-radius: 0.4em;
   color: #333;
+}
+
+.revisions {
+  padding: 1em;
+}
+
+.revisions table {
+  border-collapse: collapse;
+  font-size: 0.8em;
+}
+
+.revisions tr {
+  border-bottom: 1px solid #ccc;
+  padding: 1em;
+}
+
+.revisions td {
+  padding: 0 0.8em;
+}
+
+.revisions td img {
+  max-width: 10em;
+  max-height: 10em;
+}
+
+.revisions ul.tags li {
+  display: inline-block;
+  background: #ddd;
+  margin: 0.1em 0.1em;
+  border-radius: 0.3em;
+  padding: 0.1em 0.3em
+}
+
+.rev {
+  font-weight: normal;
+  color: #ccc;
+}
+
+.rev a {
+  font-size: 0.9em;
+  text-decoration: none;
+  color: #aaa;
+}
+
+.rev a:hover {
+  text-decoration: underline;
+  color: #000;
 }

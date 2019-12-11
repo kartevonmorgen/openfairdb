@@ -53,8 +53,21 @@ pub fn entry(email: Option<&str>, e: EntryPresenter) -> Markup {
 }
 
 fn entry_detail(e: EntryPresenter) -> Markup {
+    let rev = format!("v{}", u64::from(e.place.revision));
     html! {
-        h3 { (e.place.title) }
+        h3 {
+            (e.place.title)
+            " "
+            span class="rev" {
+                "("
+                @if e.allow_archiving {
+                     a href=(format!("/places/{}/history", e.place.id)) { (rev) }
+                } @else {
+                    (rev)
+                }
+                ")"
+            }
+        }
         p {(e.place.description)}
         p {
             table {

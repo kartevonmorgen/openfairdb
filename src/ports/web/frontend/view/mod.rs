@@ -13,6 +13,7 @@ mod entry;
 mod login;
 mod page;
 mod password;
+mod place;
 mod register;
 
 pub use dashboard::*;
@@ -20,6 +21,7 @@ pub use entry::*;
 pub use login::*;
 use page::*;
 pub use password::*;
+pub use place::*;
 pub use register::*;
 
 pub fn index(email: Option<&str>) -> Markup {
