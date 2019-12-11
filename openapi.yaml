@@ -11,12 +11,16 @@ info:
 servers:
   - url: 'https://api.ofdb.io/v0/'
     description: Public production server
-  - url: 'https://nightly.ofdb.io/v0/'
+  - url: 'https://dev.ofdb.io/v0/'
     description: Public unstable development server
 paths:
   /search:
     get:
-      summary: Search for entries ordered by their total rating
+      summary: |
+        Search for entries ordered by their total rating.
+        The default result contains up to 100 entries. Use the `limit` parameter
+        to customize the desired amount. The server may decide to deliver less
+        results than requested up to some internal upper limit (currently 500).
       tags:
         - Search
       parameters:
@@ -30,22 +34,13 @@ paths:
             We currently use the following two:
             - Initiative (non-commercial): `2cd00bebec0c48ba9db761da48678134`
             - Company (commercial): `77b3c33a92554bcf8e8c2c86cedd6f6f`
-        - $ref: '#/components/parameters/IdListPath'
-        - name: tags
-          description: Comma-separated list of tags
-          in: query
-          schema:
-            type: string
+        - $ref: '#/components/parameters/IdList'
+        - $ref: '#/components/parameters/TagList'
         - name: text
           in: query
           schema:
             type: string
-        - name: limit
-          description: Maximum number of entries that should be returned. The upper bound for all requests is 250!
-          in: query
-          schema:
-            type: integer
-            default: 100
+        - $ref: '#/components/parameters/PaginationLimit'
       responses:
         '200':
           description: Successful response
@@ -253,23 +248,17 @@ paths:
       parameters:
         - $ref: '#/components/parameters/BoundingBox'
         - $ref: '#/components/parameters/PaginationLimit'
-        - name: tag
-          in: query
-          description: Filter events by tags
-          schema:
-            type: array
-            items:
-              type: string
+        - $ref: '#/components/parameters/EventTagList'
         - name: start_min
           in: query
           description: Filter events by `event.start` >= `start_min`
           schema:
-            type: number
+            $ref: '#/components/schemas/UnixTime'
         - name: start_max
           in: query
           description: Filter events by `event.start` <= `start_max`
           schema:
-            type: number
+            $ref: '#/components/schemas/UnixTime'
         - name: text
           in: query
           description: |
@@ -283,7 +272,7 @@ paths:
             The email address of the event creator. Requests with this parameter
             will be rejected without a valid API token!
           schema:
-            type: string
+            $ref: '#/components/schemas/Email'
       responses:
         '200':
           description: Successful response
@@ -404,7 +393,7 @@ paths:
               type: object
               properties:
                 email:
-                  type: string
+                  $ref: '#/components/schemas/Email'
                 password:
                   type: string
       responses:
@@ -443,7 +432,7 @@ paths:
               type: object
               properties:
                 email:
-                  type: string
+                  $ref: '#/components/schemas/Email'
       responses:
         '200':
            description: Sucessful response
@@ -460,7 +449,7 @@ paths:
               type: object
               properties:
                 email:
-                  type: string
+                  $ref: '#/components/schemas/Email'
                 token:
                   type: string
                 new_password:
@@ -564,8 +553,7 @@ components:
     Entry:
       properties:
         id:
-          type: string
-          readOnly: true
+          $ref: '#/components/schemas/Id'
         version:
           type: integer
         created:
@@ -575,9 +563,9 @@ components:
         description:
           type: string
         lat:
-          type: number
+          $ref: '#/components/schemas/Latitude'
         lng:
-          type: number
+          $ref: '#/components/schemas/Longitude'
         street:
           type: string
         zip:
@@ -587,34 +575,31 @@ components:
         country:
           type: string
         email:
-          type: string
+          $ref: '#/components/schemas/Email'
         telephone:
-          type: string
+          $ref: '#/components/schemas/Phone'
         homepage:
-          type: string
+          $ref: '#/components/schemas/Url'
         categories:
           type: array
           items:
             type: string
         tags:
-          type: array
-          items:
-            type: string
+          $ref: '#/components/schemas/TagArray'
         ratings:
           type: array
           items:
             type: string
         image_url:
-          type: string
+          $ref: '#/components/schemas/Url'
         image_link_url:
-          type: string
+          $ref: '#/components/schemas/Url'
         license:
-          type: string
+          $ref: '#/components/schemas/License'
     Category:
       properties:
         id:
-          type: string
-          readOnly: true
+          $ref: '#/components/schemas/Id'
         created:
           type: integer
         version:
@@ -624,8 +609,7 @@ components:
     Rating:
       properties:
         id:
-          type: string
-          readOnly: true
+          $ref: '#/components/schemas/Id'
         title:
           type: string
         created:
@@ -643,25 +627,23 @@ components:
     RatingComment:
       properties:
         id:
-          type: string
-          readOnly: true
+          $ref: '#/components/schemas/Id'
         created:
-          $ref: '#/components/schemas/UnixTime'
+          $ref: '#/components/schemas/UnixTimeMillis'
         text:
           type: string
     BboxSubscription:
       properties:
         id:
-          type: string
-          readOnly: true
+          $ref: '#/components/schemas/Id'
         south_west_lat:
-          type: number
+          $ref: '#/components/schemas/Latitude'
         south_west_lng:
-          type: number
+          $ref: '#/components/schemas/Longitude'
         north_east_lat:
-          type: number
+          $ref: '#/components/schemas/Latitude'
         north_east_lng:
-          type: number
+          $ref: '#/components/schemas/Longitude'
     SearchResponse:
       properties:
         visible:
@@ -678,11 +660,11 @@ components:
       description: The compact view of an entry as returned in search results.
       properties:
         id:
-          type: string
+          $ref: '#/components/schemas/Id'
         lat:
-          type: number
+          $ref: '#/components/schemas/Latitude'
         lng:
-          type: number
+          $ref: '#/components/schemas/Longitude'
         title:
           type: string
         description:
@@ -692,9 +674,7 @@ components:
           items:
             type: string
         tags:
-          type: array
-          items:
-            type: string
+          $ref: '#/components/schemas/TagArray'
         ratings:
           $ref: '#/components/schemas/AvgRatings'
     AvgRatings:
@@ -719,8 +699,12 @@ components:
       minLength: 32
       maxLength: 32
       description: |
-        A single identifier
+        Identifier of a resource
       example: 7cee99c287094a94acbdcf29ffff2e85
+    IdArray:
+      type: array
+      items:
+        $ref: '#/components/schemas/Id'
     Revision:
       type: integer
       format: i64
@@ -733,6 +717,11 @@ components:
       description: |
         Comma-separated list of identifiers
       example: 7cee99c287094a94acbdcf29ffff2e85,0884c4e86e404072b6874b99b7e32640,ed8a2aef20054102b20950b1b78eb581
+    TagList:
+      type: string
+      description: |
+        Comma-separated list of tags
+      example: organic,non-profit
     License:
       type: string
       minLength: 1
@@ -774,6 +763,7 @@ components:
       type: array
       items:
         $ref: '#/components/schemas/Tag'
+      example: [organic, non-profit]
     Url:
       type: string
       minLength: 8
@@ -781,7 +771,7 @@ components:
     Activity:
       properties:
         at:
-          $ref: '#/components/schemas/UnixTime'
+          $ref: '#/components/schemas/UnixTimeMillis'
         by:
           $ref: '#/components/schemas/Email'
       required:
@@ -798,7 +788,7 @@ components:
     ActivityLog:
       properties:
         at:
-          $ref: '#/components/schemas/UnixTime'
+          $ref: '#/components/schemas/UnixTimeMillis'
         by:
           $ref: '#/components/schemas/Email'
         ctx:
@@ -959,29 +949,28 @@ components:
     Event:
       properties:
         id:
-          type: string
-          readOnly: true
+          $ref: '#/components/schemas/Id'
         title:
           type: string
+          example: A great event
         description:
           type: string
+          example: Detailed description of the event
         start:
           $ref: '#/components/schemas/UnixTime'
         end:
           $ref: '#/components/schemas/UnixTime'
         created_at:
-          $ref: '#/components/schemas/UnixTime'
+          $ref: '#/components/schemas/UnixTimeMillis'
         created_by:
           type: string
           description: |
             The email address of the user who is responsible for the content.
             This information is only available for authorized organizations.
         lat:
-          type: number
-          format: float
+          $ref: '#/components/schemas/Latitude'
         lng:
-          type: number
-          format: float
+          $ref: '#/components/schemas/Longitude'
         street:
           type: string
         zip:
@@ -991,18 +980,13 @@ components:
         country:
           type: string
         email:
-          type: string
-          description: The public email address
-          example: info@example.com
+          $ref: '#/components/schemas/Email'
         telephone:
-          type: string
+          $ref: '#/components/schemas/Phone'
         tags:
-          type: array
-          items:
-            type: string
-          example: [organic, csa]
+          $ref: '#/components/schemas/TagArray'
         homepage:
-          type: string
+          $ref: '#/components/schemas/Url'
         registration:
           type: string
           enum:
@@ -1014,21 +998,23 @@ components:
         organizer:
           type: string
         image_url:
-          type: string
+          $ref: '#/components/schemas/Url'
         image_link_url:
-          type: string
-      example:
-        title: A great event
-        start: 1547403505
-        created_by: testuser@example.com
-        telephone: '0123456789'
-        tags: [awesome, organic]
-        registration: 'telephone'
+          $ref: '#/components/schemas/Url'
     UnixTime:
       type: integer
       format: int64
-      description: 'Unix Time (number of seconds since 00:00::00 1. January, 1970, UTC)'
+      description: |
+        Unix time (number of seconds since 00:00::00 1. January, 1970, UTC)
       example: 1547403509
+    UnixTimeMillis:
+      type: integer
+      format: int64
+      readOnly: true
+      description: |
+        Precise Unix time (number of milliseconds since 00:00::00.000 1. January, 1970, UTC)
+        for system-generated time stamps
+      example: 1547403509000
     TagCounts:
       type: array
       items:
@@ -1039,6 +1025,20 @@ components:
             - type: integer
               format: in64
       example: [["tag1", 52], ["tag2", 0]]
+    Latitude:
+      type: number
+      format: double
+      minimum: -90.0
+      maximum: 90.0
+      example: 37.2
+      description: Geographic latitude (in degrees)
+    Longitude:
+      type: number
+      format: double
+      minimum: -180.0
+      maximum: 180.0
+      example: 120.7
+      description: Geographic longitude (in degrees)
   parameters:
     BoundingBox:
       name: bbox
@@ -1059,20 +1059,39 @@ components:
       required: true
       schema:
         $ref: '#/components/schemas/IdList'
-    PaginationLimit:
-      name: limit
+    IdList:
+      name: ids
       in: query
       required: false
+      schema:
+        $ref: '#/components/schemas/IdList'
+    TagList:
+      name: tags
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/TagList'
+    EventTagList:
+      name: tag
+      description: Filter events by tags
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/TagList'
+    PaginationLimit:
+      name: limit
       description: Maximum number of items to return or implicit/unlimited if unspecified.
+      in: query
+      required: false
       schema:
         type: integer
         format: int64
         example: 100
     PaginationOffset:
       name: offset
+      description: Number of items to skip in the result list or 0 if unspecified.
       in: query
       required: false
-      description: Number of items to skip in the result list or 0 if unspecified.
       schema:
         type: integer
         format: int64
