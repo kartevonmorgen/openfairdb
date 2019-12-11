@@ -200,7 +200,7 @@ fieldset {
   margin-bottom: 0.8em;
 }
 
-.details.event .entity-type{
+.details.event .entity-type {
   color: rgb(229, 98, 146);
 }
 
@@ -212,6 +212,15 @@ ul.tags, ul.log {
 
 ul.tags {
   font-size: 0.8em;
+}
+
+ul.log li {
+  border-top: 1px solid #ddd;
+  padding: 0.5em 0;
+}
+
+ul.log li:first-child {
+  border-top: none;
 }
 
 .details ul.tags {
@@ -268,4 +277,8 @@ ul.tags {
 .rev a:hover {
   text-decoration: underline;
   color: #000;
+}
+
+.review {
+  padding: 1em 2em;
 }

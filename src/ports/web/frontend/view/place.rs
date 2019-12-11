@@ -124,13 +124,50 @@ fn review_status_log(place_rev: &Revision, l: &ReviewStatusLog) -> Markup {
         } @else {
             "anonymous visitor"
         }
-        @if let Some(c) = &l.activity.context {
-            span class="delimiter" { " | " }
-            (c)
-        }
         @if let Some(c) = &l.activity.comment {
-            span class="delimiter" { " | " }
-            (c)
+            span class="comment" { " \"" (c) "\"" }
+        }
+        @if let Some(c) = &l.activity.context {
+            span class="context" { " (" (c) ")" }
         }
     }
+}
+
+pub fn place_review(email: &str, place: &Place, status: ReviewStatus) -> Markup {
+    use ReviewStatus as S;
+    let options = [
+        (S::Rejected, "reject"),
+        (S::Archived, "archive"),
+        (S::Confirmed, "confirm"),
+    ];
+    page(
+        "Place Review",
+        Some(&email),
+        None,
+        None,
+        html! {
+            div class="review" {
+                h2 { (format!("Add Review for \"{}\"", place.title)) }
+                form action=(format!("/places/{}/review", place.id)) method="POST" {
+                    fieldset {
+                        label {
+                            "Comment:"
+                            br;
+                            input required? name="comment" placeholder="Comment";
+                        }
+                        br;
+                        label { "Action:"
+                            br;
+                            select name="status" {
+                                @for (o, label) in options.iter() {
+                                    option value=(i16::from(*o)) disabled?[*o==status] { (label) }
+                                }
+                            }
+                        }
+                    }
+                    input type="submit" value="change";
+                }
+            }
+        },
+    )
 }
