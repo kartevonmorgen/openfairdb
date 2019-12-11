@@ -123,6 +123,71 @@ pub fn get_place_history(db: sqlite::Connections, id: &RawStr, account: Account)
     Ok(view::place_history(&user, &place_history))
 }
 
+#[get("/places/<id>/review")]
+pub fn get_place_review(db: sqlite::Connections, id: &RawStr, account: Account) -> Result<Markup> {
+    let db = db.shared()?;
+    // Only scouts and admins are entitled to review places
+    let reviewer_email =
+        usecases::authorize_user_by_email(&*db, &account.email(), Role::Scout)?.email;
+    let (place, review_status) = db.get_place(&id)?;
+    Ok(view::place_review(&reviewer_email, &place, review_status))
+}
+
+#[derive(FromForm)]
+pub struct Review {
+    pub comment: String,
+    pub status: i16,
+}
+
+#[post("/places/<id>/review", data = "<review>")]
+pub fn post_place_review(
+    db: sqlite::Connections,
+    search_engine: SearchEngine,
+    id: &RawStr,
+    review: Form<Review>,
+    account: Account,
+) -> std::result::Result<Redirect, Flash<Redirect>> {
+    let Review { status, comment } = review.into_inner();
+    let id = id.as_str();
+    review_place(&db, account.email(), status, comment, id, search_engine)
+        .map(|_| Redirect::to(uri!(get_entry: id)))
+        .map_err(|_| {
+            Flash::error(
+                Redirect::to(uri!(get_place_review: id)),
+                "Failed to archive the place.",
+            )
+        })
+}
+
+fn review_place(
+    db: &sqlite::Connections,
+    email: &str,
+    status: i16,
+    comment: String,
+    id: &str,
+    mut search_engine: SearchEngine,
+) -> Result<()> {
+    let reviewer_email = {
+        let db = db.shared()?;
+        usecases::authorize_user_by_email(&*db, email, Role::Scout)?.email
+    };
+    let status = ReviewStatus::try_from(status)
+        .ok_or_else(|| Error::Parameter(ParameterError::RatingContext(status.to_string())))?;
+    // TODO: Record context information
+    let context = None;
+    let review = usecases::Review {
+        context,
+        reviewer_email: reviewer_email.into(),
+        status: status.into(),
+        comment: Some(comment),
+    };
+    let update_count = review_places(&db, &mut search_engine, &[&id], review)?;
+    if update_count == 0 {
+        return Err(Error::Repo(RepoError::NotFound).into());
+    }
+    Ok(())
+}
+
 #[get("/entries/<id>")]
 pub fn get_entry(
     pool: sqlite::Connections,
@@ -253,6 +318,8 @@ pub fn routes() -> Vec<Route> {
         get_search,
         get_entry,
         get_place_history,
+        get_place_review,
+        post_place_review,
         get_events_chronologically,
         get_event,
         get_main_css,
