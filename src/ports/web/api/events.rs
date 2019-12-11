@@ -222,13 +222,15 @@ mod tests {
     mod create {
         use super::*;
 
+        // Magic time constant: 4132508400 ~= 2030-01-01 00:00:00 + 70 years
+
         #[test]
         fn without_creator_email() {
             let (client, _db) = setup();
             let req = client
                 .post("/events")
                 .header(ContentType::JSON)
-                .body(r#"{"title":"foo","start":1234}"#);
+                .body(r#"{"title":"foo","start":4132508400}"#);
             let response = req.dispatch();
 
             // NOTE:
@@ -250,7 +252,7 @@ mod tests {
             let req = client
                 .post("/events")
                 .header(ContentType::JSON)
-                .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com"}"#);
+                .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com"}"#);
             let response = req.dispatch();
             // NOTE:
             // At the moment we don't want to allow anonymous event creation.
@@ -300,7 +302,7 @@ mod tests {
                     .post("/events")
                     .header(ContentType::JSON)
                     .header(Header::new("Authorization", "Bearer foo"))
-                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com"}"#)
+                    .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com"}"#)
                     .dispatch();
                 assert_eq!(res.status(), HttpStatus::Forbidden);
             }
@@ -321,7 +323,7 @@ mod tests {
                     .post("/events")
                     .header(ContentType::JSON)
                     .header(Header::new("Authorization", "Bearer foo"))
-                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com"}"#)
+                    .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com"}"#)
                     .dispatch();
                 assert_eq!(res.status(), HttpStatus::Ok);
                 test_json(&res);
@@ -348,7 +350,7 @@ mod tests {
                     .post("/events")
                     .header(ContentType::JSON)
                     .header(Header::new("Authorization", "Bearer foo"))
-                    .body(r#"{"title":"Reginaltreffen","start":0,"created_by":"a-very-super-long-email-address@a-super-long-domain.com"}"#)
+                    .body(r#"{"title":"Reginaltreffen","start":4132508400,"created_by":"a-very-super-long-email-address@a-super-long-domain.com"}"#)
                     .dispatch();
                 assert_eq!(res.status(), HttpStatus::Ok);
                 let u = db.shared().unwrap().all_users().unwrap()[0].clone();
@@ -374,7 +376,7 @@ mod tests {
                     .post("/events")
                     .header(ContentType::JSON)
                     .header(Header::new("Authorization", "Bearer foo"))
-                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","email":"","homepage":"","description":"","registration":""}"#)
+                    .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com","email":"","homepage":"","description":"","registration":""}"#)
                     .dispatch();
                 assert_eq!(res.status(), HttpStatus::Ok);
                 test_json(&res);
@@ -400,7 +402,7 @@ mod tests {
                     .post("/events")
                     .header(ContentType::JSON)
                     .header(Header::new("Authorization", "Bearer foo"))
-                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","registration":"telephone","telephone":"12345"}"#)
+                    .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com","registration":"telephone","telephone":"12345"}"#)
                     .dispatch();
                 assert_eq!(res.status(), HttpStatus::Ok);
                 test_json(&res);
@@ -433,21 +435,21 @@ mod tests {
                     .post("/events")
                     .header(ContentType::JSON)
                     .header(Header::new("Authorization", "Bearer a"))
-                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","tags":["a"] }"#)
+                    .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com","tags":["a"] }"#)
                     .dispatch();
                 assert_eq!(res.status(), HttpStatus::Ok);
                 let res = client
                     .post("/events")
                     .header(ContentType::JSON)
                     .header(Header::new("Authorization", "Bearer a"))
-                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","tags":["b"] }"#)
+                    .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com","tags":["b"] }"#)
                     .dispatch();
                 assert_eq!(res.status(), HttpStatus::Forbidden);
                 let res = client
                     .post("/events")
                     .header(ContentType::JSON)
                     .header(Header::new("Authorization", "Bearer b"))
-                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","tags":["b"] }"#)
+                    .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com","tags":["b"] }"#)
                     .dispatch();
                 assert_eq!(res.status(), HttpStatus::Ok);
             }
@@ -468,7 +470,7 @@ mod tests {
                     .post("/events")
                     .header(ContentType::JSON)
                     .header(Header::new("Authorization", "Bearer foo"))
-                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","tags":["", " "," tag","tag ","two tags", "tag"]}"#)
+                    .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com","tags":["", " "," tag","tag ","two tags", "tag"]}"#)
                     .dispatch();
                 assert_eq!(res.status(), HttpStatus::Ok);
                 test_json(&res);
@@ -501,7 +503,7 @@ mod tests {
                     .post("/events")
                     .header(ContentType::JSON)
                     .header(Header::new("Authorization", "Bearer foo"))
-                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","registration":"foo"}"#)
+                    .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com","registration":"foo"}"#)
                     .dispatch();
                 assert_eq!(res.status(), HttpStatus::BadRequest);
             }
@@ -522,7 +524,7 @@ mod tests {
                     .post("/events")
                     .header(ContentType::JSON)
                     .header(Header::new("Authorization", "Bearer foo"))
-                    .body(r#"{"title":"x","start":0}"#)
+                    .body(r#"{"title":"x","start":4132508400}"#)
                     .dispatch();
                 assert_eq!(res.status(), HttpStatus::BadRequest);
             }
@@ -543,7 +545,7 @@ mod tests {
                     .post("/events")
                     .header(ContentType::JSON)
                     .header(Header::new("Authorization", "Bearer foo"))
-                    .body(r#"{"title":"","start":0,"created_by":"foo@bar.com"}"#)
+                    .body(r#"{"title":"","start":4132508400,"created_by":"foo@bar.com"}"#)
                     .dispatch();
                 assert_eq!(res.status(), HttpStatus::BadRequest);
             }
@@ -564,7 +566,7 @@ mod tests {
                     .post("/events")
                     .header(ContentType::JSON)
                     .header(Header::new("Authorization", "Bearer foo"))
-                    .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com","registration":"telephone"}"#)
+                    .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com","registration":"telephone"}"#)
                     .dispatch();
                 assert_eq!(res.status(), HttpStatus::BadRequest);
             }
@@ -577,7 +579,7 @@ mod tests {
                 .post("/events")
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer not-valid"))
-                .body(r#"{"title":"x","start":0}"#)
+                .body(r#"{"title":"x","start":4132508400}"#)
                 .dispatch();
             assert_eq!(res.status(), HttpStatus::Unauthorized);
         }
@@ -590,9 +592,10 @@ mod tests {
         #[test]
         fn by_id() {
             let (client, db, mut search_engine) = setup2();
+            let now = Utc::now().naive_utc().timestamp();
             let e = usecases::NewEvent {
                 title: "x".into(),
-                start: 0,
+                start: now,
                 tags: Some(vec!["bla".into()]),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
@@ -611,7 +614,7 @@ mod tests {
             let body_str = response.body().and_then(|b| b.into_string()).unwrap();
             assert_eq!(
                 body_str,
-                format!("{{\"id\":\"{}\",\"title\":\"x\",\"start\":0,\"email\":\"test@example.com\",\"tags\":[\"bla\"],\"registration\":\"email\"}}", e.id)
+                format!("{{\"id\":\"{}\",\"title\":\"x\",\"start\":{},\"email\":\"test@example.com\",\"tags\":[\"bla\"],\"registration\":\"email\"}}", e.id, now)
             );
         }
 
@@ -626,7 +629,7 @@ mod tests {
                         id: id.into(),
                         title: id.into(),
                         description: None,
-                        start: NaiveDateTime::from_timestamp(0, 0),
+                        start: Utc::now().naive_utc(),
                         end: None,
                         location: None,
                         contact: None,
@@ -652,10 +655,12 @@ mod tests {
         #[test]
         fn sorted_by_start() {
             let (client, db, mut search_engine) = setup2();
-            let event_start_times = vec![100, 0, 300, 50, 200];
-            for start in event_start_times {
+            let now = Utc::now().naive_utc().timestamp();
+            let start_offsets = vec![100, 0, 300, 50, 200];
+            for start_offset in start_offsets {
+                let start = now + start_offset;
                 let e = usecases::NewEvent {
-                    title: start.to_string(),
+                    title: start_offset.to_string(),
                     start,
                     created_by: Some("test@example.com".into()),
                     ..Default::default()
@@ -668,11 +673,11 @@ mod tests {
             test_json(&res);
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
             let objects: Vec<_> = body_str.split("},{").collect();
-            assert!(objects[0].contains("\"start\":0"));
-            assert!(objects[1].contains("\"start\":50"));
-            assert!(objects[2].contains("\"start\":100"));
-            assert!(objects[3].contains("\"start\":200"));
-            assert!(objects[4].contains("\"start\":300"));
+            assert!(objects[0].contains(&format!("\"start\":{}", now)));
+            assert!(objects[1].contains(&format!("\"start\":{}", now + 50)));
+            assert!(objects[2].contains(&format!("\"start\":{}", now + 100)));
+            assert!(objects[3].contains(&format!("\"start\":{}", now + 200)));
+            assert!(objects[4].contains(&format!("\"start\":{}", now + 300)));
         }
 
         #[test]
@@ -682,7 +687,7 @@ mod tests {
             for tags in tags {
                 let e = usecases::NewEvent {
                     title: format!("{:?}", tags),
-                    start: 0,
+                    start: Utc::now().naive_utc().timestamp(),
                     tags: Some(tags.into_iter().map(str::to_string).collect()),
                     created_by: Some("test@example.com".into()),
                     ..Default::default()
@@ -758,6 +763,7 @@ mod tests {
                     let new_event = usecases::NewEvent {
                         title: m.to_string(),
                         created_by: Some(m.to_string()),
+                        start: Utc::now().naive_utc().timestamp(),
                         ..Default::default()
                     };
                     usecases::create_new_event(
@@ -806,10 +812,12 @@ mod tests {
         #[test]
         fn filtered_by_start_min() {
             let (client, db, mut search_engine) = setup2();
-            let event_start_times = vec![100, 0, 300, 50, 200];
-            for start in event_start_times {
+            let now = Utc::now().naive_utc().timestamp();
+            let start_offsets = vec![100, 0, 300, 50, 200];
+            for start_offset in start_offsets {
+                let start = now + start_offset;
                 let e = usecases::NewEvent {
-                    title: start.to_string(),
+                    title: start_offset.to_string(),
                     start,
                     created_by: Some("test@example.com".into()),
                     ..Default::default()
@@ -818,7 +826,7 @@ mod tests {
                     .unwrap();
             }
             let mut res = client
-                .get("/events?start_min=150")
+                .get(format!("/events?start_min={}", now + 150))
                 .header(ContentType::JSON)
                 .dispatch();
             assert_eq!(res.status(), HttpStatus::Ok);
@@ -826,15 +834,17 @@ mod tests {
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
             let objects: Vec<_> = body_str.split("},{").collect();
             assert_eq!(objects.len(), 2);
-            assert!(objects[0].contains("\"title\":\"200\""));
-            assert!(objects[1].contains("\"title\":\"300\""));
+            assert!(objects[0].contains(&format!("\"start\":{}", now + 200)));
+            assert!(objects[1].contains(&format!("\"start\":{}", now + 300)));
         }
 
         #[test]
         fn filtered_by_start_max() {
             let (client, db, mut search_engine) = setup2();
-            let event_start_times = vec![100, 0, 300, 50, 200];
-            for start in event_start_times {
+            let now = Utc::now().naive_utc().timestamp();
+            let start_offsets = vec![100, 0, 300, 50, 200];
+            for start_offset in start_offsets {
+                let start = now + start_offset;
                 let e = usecases::NewEvent {
                     title: start.to_string(),
                     start,
@@ -845,7 +855,7 @@ mod tests {
                     .unwrap();
             }
             let mut res = client
-                .get("/events?start_max=250")
+                .get(format!("/events?start_max={}", now + 250))
                 .header(ContentType::JSON)
                 .dispatch();
             assert_eq!(res.status(), HttpStatus::Ok);
@@ -853,10 +863,10 @@ mod tests {
             let body_str = res.body().and_then(|b| b.into_string()).unwrap();
             let objects: Vec<_> = body_str.split("},{").collect();
             assert_eq!(objects.len(), 4);
-            assert!(objects[0].contains("\"title\":\"0\""));
-            assert!(objects[1].contains("\"title\":\"50\""));
-            assert!(objects[2].contains("\"title\":\"100\""));
-            assert!(objects[3].contains("\"title\":\"200\""));
+            assert!(objects[0].contains(&format!("\"start\":{}", now)));
+            assert!(objects[1].contains(&format!("\"start\":{}", now + 50)));
+            assert!(objects[2].contains(&format!("\"start\":{}", now + 100)));
+            assert!(objects[3].contains(&format!("\"start\":{}", now + 200)));
         }
 
         #[test]
@@ -866,7 +876,7 @@ mod tests {
             for &(lat, lng) in coordinates {
                 let e = usecases::NewEvent {
                     title: format!("{}-{}", lat, lng),
-                    start: 0,
+                    start: Utc::now().naive_utc().timestamp(),
                     lat: Some(lat),
                     lng: Some(lng),
                     created_by: Some("test@example.com".into()),
@@ -903,6 +913,7 @@ mod tests {
 
     mod update {
         use super::*;
+        use chrono::prelude::*;
 
         #[test]
         fn without_api_token() {
@@ -910,7 +921,7 @@ mod tests {
             let res = client
                 .put("/events/foo")
                 .header(ContentType::JSON)
-                .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com"}"#)
+                .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com"}"#)
                 .dispatch();
             assert_eq!(res.status(), HttpStatus::Unauthorized);
         }
@@ -931,7 +942,7 @@ mod tests {
                 .put("/events/foo")
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer bar"))
-                .body(r#"{"title":"x","start":0,"created_by":"foo@bar.com"}"#)
+                .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com"}"#)
                 .dispatch();
             assert_eq!(res.status(), HttpStatus::Unauthorized);
         }
@@ -952,6 +963,7 @@ mod tests {
                 title: "x".into(),
                 tags: Some(vec!["bla".into(), "org-tag".into()]),
                 created_by: Some("foo@bar.com".into()),
+                start: Utc::now().naive_utc().timestamp(),
                 ..Default::default()
             };
             let id = usecases::create_new_event(
@@ -967,12 +979,12 @@ mod tests {
                 .put(format!("/events/{}", id))
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
-                .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com"}"#)
+                .body(r#"{"title":"new","start":4132508400,"created_by":"changed@bar.com"}"#)
                 .dispatch();
             assert_eq!(res.status(), HttpStatus::Ok);
             let new = db.shared().unwrap().get_event(id.as_ref()).unwrap();
             assert_eq!(new.title, "new");
-            assert_eq!(new.start.timestamp(), 5);
+            assert_eq!(new.start.timestamp(), 4132508400);
             assert_eq!(new.created_by.unwrap(), "changed@bar.com");
         }
 
@@ -1003,6 +1015,7 @@ mod tests {
                 title: "x".into(),
                 tags: Some(vec!["bla".into()]),
                 created_by: Some("foo@bar.com".into()),
+                start: Utc::now().naive_utc().timestamp(),
                 ..Default::default()
             };
             let id = usecases::create_new_event(
@@ -1018,7 +1031,7 @@ mod tests {
                 .put(format!("/events/{}", id))
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
-                .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com"}"#)
+                .body(r#"{"title":"new","start":4132508400,"created_by":"changed@bar.com"}"#)
                 .dispatch();
             assert_eq!(res.status(), HttpStatus::Forbidden);
         }
@@ -1039,6 +1052,7 @@ mod tests {
                 title: "x".into(),
                 tags: Some(vec!["bla".into(), "org-tag".into()]),
                 created_by: Some("foo@bar.com".into()),
+                start: Utc::now().naive_utc().timestamp(),
                 ..Default::default()
             };
             let id = usecases::create_new_event(
@@ -1054,7 +1068,7 @@ mod tests {
                 .put(format!("/events/{}", id))
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
-                .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com","tags":["bla2"]}"#)
+                .body(r#"{"title":"new","start":4132508400,"created_by":"changed@bar.com","tags":["bla2"]}"#)
                 .dispatch();
             assert_eq!(res.status(), HttpStatus::Ok);
             let new = db.exclusive().unwrap().get_event(id.as_ref()).unwrap();
@@ -1083,6 +1097,7 @@ mod tests {
                     "blub".into(),
                 ]),
                 created_by: Some("foo@bar.com".into()),
+                start: Utc::now().naive_utc().timestamp(),
                 ..Default::default()
             };
             let id = usecases::create_new_event(
@@ -1098,7 +1113,7 @@ mod tests {
                 .put(format!("/events/{}", id))
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
-                .body(r#"{"title":"new","start":5,"created_by":"changed@bar.com","tags":["blub","new","org-tag2"]}"#)
+                .body(r#"{"title":"new","start":4132508400,"created_by":"changed@bar.com","tags":["blub","new","org-tag2"]}"#)
                 .dispatch();
             assert_eq!(res.status(), HttpStatus::Ok);
             let new = db.exclusive().unwrap().get_event(id.as_ref()).unwrap();
@@ -1122,6 +1137,7 @@ mod tests {
                 title: "x".into(),
                 tags: Some(vec!["bla".into()]),
                 created_by: created_by.clone(),
+                start: Utc::now().naive_utc().timestamp(),
                 ..Default::default()
             };
             let id = usecases::create_new_event(
@@ -1137,7 +1153,7 @@ mod tests {
                 .put(format!("/events/{}", id))
                 .header(ContentType::JSON)
                 .header(Header::new("Authorization", "Bearer foo"))
-                .body("{\"title\":\"Changed\",\"start\":99}")
+                .body("{\"title\":\"Changed\",\"start\":4132508400}")
                 .dispatch();
             assert_eq!(res.status(), HttpStatus::Ok);
             let new = db.shared().unwrap().get_event(id.as_ref()).unwrap();
@@ -1148,6 +1164,7 @@ mod tests {
 
     mod delete {
         use super::*;
+        use chrono::prelude::*;
 
         #[test]
         fn without_api_token() {
@@ -1193,6 +1210,7 @@ mod tests {
                 .unwrap();
             let e1 = usecases::NewEvent {
                 title: "x".into(),
+                start: Utc::now().naive_utc().timestamp(),
                 tags: Some(vec!["bla".into()]), // org tag will be added implicitly!
                 created_by: Some("foo@bar.com".into()),
                 ..Default::default()
@@ -1207,7 +1225,7 @@ mod tests {
             .id;
             let e2 = usecases::NewEvent {
                 title: "x".into(),
-                start: 0,
+                start: Utc::now().naive_utc().timestamp(),
                 tags: Some(vec!["bla".into()]), // org tag will be added implicitly!
                 created_by: Some("foo@bar.com".into()),
                 ..Default::default()

@@ -58,6 +58,9 @@ quick_error! {
         Unauthorized{
             description("This is not allowed without auth")
         }
+        DateTimeOutOfRange{
+            description("The date/time is out of range")
+        }
         EndDateBeforeStart{
             description("The end date is before the start")
         }

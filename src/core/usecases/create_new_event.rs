@@ -324,11 +324,12 @@ mod tests {
 
     #[test]
     fn create_new_valid_event() {
+        let now = Utc::now().naive_utc().timestamp();
         #[rustfmt::skip]
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),
-            start        : 9999,
+            start        : now,
             end          : None,
             lat          : None,
             lng          : None,
@@ -355,7 +356,7 @@ mod tests {
         assert_eq!(mock_db.tags.borrow().len(), 2);
         let x = &mock_db.events.borrow()[0];
         assert_eq!(x.title, "foo");
-        assert_eq!(x.start.timestamp(), 9999);
+        assert_eq!(x.start.timestamp(), now);
         assert!(x.location.is_none());
         assert_eq!(x.description.as_ref().unwrap(), "bar");
         assert!(x.id.is_valid());
@@ -376,7 +377,7 @@ mod tests {
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),
-            start        : 9999,
+            start        : Utc::now().naive_utc().timestamp(),
             end          : None,
             lat          : None,
             lng          : None,
@@ -404,7 +405,7 @@ mod tests {
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),
-            start        : 9999,
+            start        : Utc::now().naive_utc().timestamp(),
             end          : None,
             lat          : None,
             lng          : None,
@@ -446,7 +447,7 @@ mod tests {
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),
-            start        : 9999,
+            start        : Utc::now().naive_utc().timestamp(),
             end          : None,
             lat          : None,
             lng          : None,

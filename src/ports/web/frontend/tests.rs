@@ -110,8 +110,8 @@ mod events {
         let body_str = res.body().and_then(|b| b.into_string()).unwrap();
         assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
         assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
-        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
         // too old
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
     }
 
     #[test]
