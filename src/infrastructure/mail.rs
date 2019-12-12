@@ -135,8 +135,7 @@ mod tests {
             "My veeeeerrrrryyyyy looooonnnnnggggg Subject with äöüÄÖÜß Umlaute and even more characters that are distributed onto multiple lines",
             "Hello Mail",
         ).unwrap();
-        let expected =
-            "From:\"Karte von morgen\" <no-reply@kartevonmorgen.org>\r\n\
+        let expected = "From:\"Karte von morgen\" <no-reply@kartevonmorgen.org>\r\n\
              To:mail@test.org\r\n\
              Subject:=?UTF-8?Q?My veeeeerrrrryyyyy looooonnnnnggggg Subject with =C3=A4?=\r\n \
              =?UTF-8?Q?=C3=B6=C3=BC=C3=84=C3=96=C3=9C=C3=9F Umlaute and even more char?=\r\n \

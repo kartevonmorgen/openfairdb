@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.8.0 (2019-12-dd)
+## v0.8.0 (2019-12-13)
 
 - new(web): Query the current user with GET /users/current
 - new(web): Query the history of all place revisions with GET /places/<id>/history
