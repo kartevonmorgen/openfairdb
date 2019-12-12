@@ -17,7 +17,7 @@ addons:
       - kalakris-cmake
 
 rust:
-  - nightly-2019-12-07
+  - nightly-2019-12-12
 
 matrix:
   fast_finish: true
