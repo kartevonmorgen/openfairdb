@@ -66,7 +66,7 @@ pub struct Event {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, Copy))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, Copy, PartialEq))]
 pub struct Coordinate {
     pub lat: f64,
     pub lng: f64,
