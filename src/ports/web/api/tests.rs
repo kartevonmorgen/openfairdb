@@ -917,7 +917,7 @@ fn search_without_specifying_hashtag_symbol() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
 
