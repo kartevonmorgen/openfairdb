@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.8.1 (2019-12-16)
+
+- chore(db): Updated search engine (Tantivy v0.11)
+
 ## v0.8.0 (2019-12-13)
 
 - new(web): Query the current user with GET /users/current
