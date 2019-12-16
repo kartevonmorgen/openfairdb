@@ -5,7 +5,7 @@ use crate::core::{
     },
     entities::{AvgRatingValue, AvgRatings, Category, Event, Id, Place, RatingContext},
     util::{
-        geo::{LatCoord, LngCoord, MapPoint, RawCoord},
+        geo::{LatCoord, LngCoord, MapPoint},
         time::Timestamp,
     },
 };
@@ -100,8 +100,8 @@ impl IndexedFields {
         let fields = Self {
             kind: schema_builder.add_i64_field("kind", INDEXED),
             id: schema_builder.add_text_field("id", id_options),
-            lat: schema_builder.add_i64_field("lat", INDEXED | STORED),
-            lng: schema_builder.add_i64_field("lon", INDEXED | STORED),
+            lat: schema_builder.add_f64_field("lat", INDEXED | STORED),
+            lng: schema_builder.add_f64_field("lon", INDEXED | STORED),
             ts_min: schema_builder.add_i64_field("ts_min", INDEXED | STORED),
             ts_max: schema_builder.add_i64_field("ts_max", INDEXED | STORED),
             title: schema_builder.add_text_field("tit", text_options.clone()),
@@ -112,12 +112,12 @@ impl IndexedFields {
             address_zip: schema_builder.add_text_field("adr_zip", address_options.clone()),
             address_country: schema_builder.add_text_field("adr_country", address_options),
             tag: schema_builder.add_text_field("tag", tag_options),
-            ratings_diversity: schema_builder.add_u64_field("rat_diversity", STORED),
-            ratings_fairness: schema_builder.add_u64_field("rat_fairness", STORED),
-            ratings_humanity: schema_builder.add_u64_field("rat_humanity", STORED),
-            ratings_renewable: schema_builder.add_u64_field("rat_renewable", STORED),
-            ratings_solidarity: schema_builder.add_u64_field("rat_solidarity", STORED),
-            ratings_transparency: schema_builder.add_u64_field("rat_transparency", STORED),
+            ratings_diversity: schema_builder.add_f64_field("rat_diversity", STORED),
+            ratings_fairness: schema_builder.add_f64_field("rat_fairness", STORED),
+            ratings_humanity: schema_builder.add_f64_field("rat_humanity", STORED),
+            ratings_renewable: schema_builder.add_f64_field("rat_renewable", STORED),
+            ratings_solidarity: schema_builder.add_f64_field("rat_solidarity", STORED),
+            ratings_transparency: schema_builder.add_f64_field("rat_transparency", STORED),
             total_rating: schema_builder.add_u64_field("rat_total", STORED | FAST),
         };
         (fields, schema_builder.build())
@@ -132,17 +132,11 @@ impl IndexedFields {
             match field_value {
                 fv if fv.field() == self.lat => {
                     debug_assert!(lat.is_none());
-                    let raw_val = fv.value().i64_value();
-                    debug_assert!(raw_val >= LatCoord::min().to_raw().into());
-                    debug_assert!(raw_val <= LatCoord::max().to_raw().into());
-                    lat = Some(LatCoord::from_raw(raw_val as RawCoord));
+                    lat = Some(LatCoord::from_deg(fv.value().f64_value()));
                 }
                 fv if fv.field() == self.lng => {
                     debug_assert!(lng.is_none());
-                    let raw_val = fv.value().i64_value();
-                    debug_assert!(raw_val >= LngCoord::min().to_raw().into());
-                    debug_assert!(raw_val <= LngCoord::max().to_raw().into());
-                    lng = Some(LngCoord::from_raw(raw_val as RawCoord));
+                    lng = Some(LngCoord::from_deg(fv.value().f64_value()));
                 }
                 fv if fv.field() == self.id => {
                     debug_assert!(entry.id.is_empty());
@@ -177,27 +171,27 @@ impl IndexedFields {
                 }
                 fv if fv.field() == self.ratings_diversity => {
                     debug_assert!(entry.ratings.diversity == Default::default());
-                    entry.ratings.diversity = u64_to_avg_rating(fv.value().u64_value());
+                    entry.ratings.diversity = fv.value().f64_value().into();
                 }
                 fv if fv.field() == self.ratings_fairness => {
                     debug_assert!(entry.ratings.fairness == Default::default());
-                    entry.ratings.fairness = u64_to_avg_rating(fv.value().u64_value());
+                    entry.ratings.fairness = fv.value().f64_value().into();
                 }
                 fv if fv.field() == self.ratings_humanity => {
                     debug_assert!(entry.ratings.humanity == Default::default());
-                    entry.ratings.humanity = u64_to_avg_rating(fv.value().u64_value());
+                    entry.ratings.humanity = fv.value().f64_value().into();
                 }
                 fv if fv.field() == self.ratings_renewable => {
                     debug_assert!(entry.ratings.renewable == Default::default());
-                    entry.ratings.renewable = u64_to_avg_rating(fv.value().u64_value());
+                    entry.ratings.renewable = fv.value().f64_value().into();
                 }
                 fv if fv.field() == self.ratings_solidarity => {
                     debug_assert!(entry.ratings.solidarity == Default::default());
-                    entry.ratings.solidarity = u64_to_avg_rating(fv.value().u64_value());
+                    entry.ratings.solidarity = fv.value().f64_value().into();
                 }
                 fv if fv.field() == self.ratings_transparency => {
                     debug_assert!(entry.ratings.transparency == Default::default());
-                    entry.ratings.transparency = u64_to_avg_rating(fv.value().u64_value());
+                    entry.ratings.transparency = fv.value().f64_value().into();
                 }
                 fv if fv.field() == self.total_rating => (),
                 // Address fields are currently not stored
@@ -372,28 +366,28 @@ impl TantivyIndex {
             debug!("Query bbox (include): {}", bbox);
             debug_assert!(bbox.is_valid());
             debug_assert!(!bbox.is_empty());
-            let lat_query = RangeQuery::new_i64_bounds(
+            let lat_query = RangeQuery::new_f64_bounds(
                 self.fields.lat,
-                Bound::Included(i64::from(bbox.south_west().lat().to_raw())),
-                Bound::Included(i64::from(bbox.north_east().lat().to_raw())),
+                Bound::Included(bbox.south_west().lat().to_deg()),
+                Bound::Included(bbox.north_east().lat().to_deg()),
             );
             // Latitude query: Always inclusive
             sub_queries.push((Occur::Must, Box::new(lat_query)));
             // Longitude query: Either inclusive or exclusive (wrap around)
             if bbox.south_west().lng() <= bbox.north_east().lng() {
                 // regular (inclusive)
-                let lng_query = RangeQuery::new_i64_bounds(
+                let lng_query = RangeQuery::new_f64_bounds(
                     self.fields.lng,
-                    Bound::Included(i64::from(bbox.south_west().lng().to_raw())),
-                    Bound::Included(i64::from(bbox.north_east().lng().to_raw())),
+                    Bound::Included(bbox.south_west().lng().to_deg()),
+                    Bound::Included(bbox.north_east().lng().to_deg()),
                 );
                 sub_queries.push((Occur::Must, Box::new(lng_query)));
             } else {
                 // inverse (exclusive)
-                let lng_query = RangeQuery::new_i64_bounds(
+                let lng_query = RangeQuery::new_f64_bounds(
                     self.fields.lng,
-                    Bound::Excluded(i64::from(bbox.north_east().lng().to_raw())),
-                    Bound::Excluded(i64::from(bbox.south_west().lng().to_raw())),
+                    Bound::Excluded(bbox.north_east().lng().to_deg()),
+                    Bound::Excluded(bbox.south_west().lng().to_deg()),
                 );
                 sub_queries.push((Occur::MustNot, Box::new(lng_query)));
             }
@@ -404,28 +398,28 @@ impl TantivyIndex {
             debug!("Query bbox (exclude): {}", bbox);
             debug_assert!(bbox.is_valid());
             debug_assert!(!bbox.is_empty());
-            let lat_query = RangeQuery::new_i64_bounds(
+            let lat_query = RangeQuery::new_f64_bounds(
                 self.fields.lat,
-                Bound::Included(i64::from(bbox.south_west().lat().to_raw())),
-                Bound::Included(i64::from(bbox.north_east().lat().to_raw())),
+                Bound::Included(bbox.south_west().lat().to_deg()),
+                Bound::Included(bbox.north_east().lat().to_deg()),
             );
             // Latitude query: Always exclusive
             sub_queries.push((Occur::MustNot, Box::new(lat_query)));
             // Longitude query: Either exclusive or inclusive (wrap around)
             if bbox.south_west().lng() <= bbox.north_east().lng() {
                 // regular (exclusive)
-                let lng_query = RangeQuery::new_i64_bounds(
+                let lng_query = RangeQuery::new_f64_bounds(
                     self.fields.lng,
-                    Bound::Included(i64::from(bbox.south_west().lng().to_raw())),
-                    Bound::Included(i64::from(bbox.north_east().lng().to_raw())),
+                    Bound::Included(bbox.south_west().lng().to_deg()),
+                    Bound::Included(bbox.north_east().lng().to_deg()),
                 );
                 sub_queries.push((Occur::MustNot, Box::new(lng_query)));
             } else {
                 // inverse (inclusive)
-                let lng_query = RangeQuery::new_i64_bounds(
+                let lng_query = RangeQuery::new_f64_bounds(
                     self.fields.lng,
-                    Bound::Excluded(i64::from(bbox.north_east().lng().to_raw())),
-                    Bound::Excluded(i64::from(bbox.south_west().lng().to_raw())),
+                    Bound::Excluded(bbox.north_east().lng().to_deg()),
+                    Bound::Excluded(bbox.south_west().lng().to_deg()),
                 );
                 sub_queries.push((Occur::Must, Box::new(lng_query)));
             }
@@ -765,13 +759,13 @@ impl PlaceIndexer for TantivyIndex {
         let mut doc = Document::default();
         doc.add_i64(self.fields.kind, PLACE_KIND_FLAG);
         doc.add_text(self.fields.id, place.id.as_ref());
-        doc.add_i64(
+        doc.add_f64(
             self.fields.lat,
-            i64::from(place.location.pos.lat().to_raw()),
+            place.location.pos.lat().to_deg(),
         );
-        doc.add_i64(
+        doc.add_f64(
             self.fields.lng,
-            i64::from(place.location.pos.lng().to_raw()),
+            place.location.pos.lng().to_deg(),
         );
         doc.add_text(self.fields.title, &place.title);
         doc.add_text(self.fields.description, &place.description);
@@ -811,29 +805,29 @@ impl PlaceIndexer for TantivyIndex {
             doc.add_text(self.fields.tag, tag);
         }
         doc.add_u64(self.fields.total_rating, avg_rating_to_u64(ratings.total()));
-        doc.add_u64(
+        doc.add_f64(
             self.fields.ratings_diversity,
-            avg_rating_to_u64(ratings.diversity),
+            ratings.diversity.into(),
         );
-        doc.add_u64(
+        doc.add_f64(
             self.fields.ratings_fairness,
-            avg_rating_to_u64(ratings.fairness),
+            ratings.fairness.into(),
         );
-        doc.add_u64(
+        doc.add_f64(
             self.fields.ratings_humanity,
-            avg_rating_to_u64(ratings.humanity),
+            ratings.humanity.into(),
         );
-        doc.add_u64(
+        doc.add_f64(
             self.fields.ratings_renewable,
-            avg_rating_to_u64(ratings.renewable),
+            ratings.renewable.into(),
         );
-        doc.add_u64(
+        doc.add_f64(
             self.fields.ratings_solidarity,
-            avg_rating_to_u64(ratings.solidarity),
+            ratings.solidarity.into(),
         );
-        doc.add_u64(
+        doc.add_f64(
             self.fields.ratings_transparency,
-            avg_rating_to_u64(ratings.transparency),
+            ratings.transparency.into(),
         );
         self.index_writer.add_document(doc);
         Ok(())
@@ -848,8 +842,8 @@ impl EventIndexer for TantivyIndex {
         doc.add_i64(self.fields.kind, EVENT_KIND_FLAG);
         doc.add_text(self.fields.id, event.id.as_ref());
         if let Some(ref location) = event.location {
-            doc.add_i64(self.fields.lat, i64::from(location.pos.lat().to_raw()));
-            doc.add_i64(self.fields.lng, i64::from(location.pos.lng().to_raw()));
+            doc.add_f64(self.fields.lat, location.pos.lat().to_deg());
+            doc.add_f64(self.fields.lng, location.pos.lng().to_deg());
             if let Some(ref address) = location.address {
                 if let Some(ref street) = address.street {
                     doc.add_text(self.fields.address_street, street);
