@@ -178,7 +178,7 @@ fn review_place(
     let review = usecases::Review {
         context,
         reviewer_email: reviewer_email.into(),
-        status: status.into(),
+        status,
         comment: Some(comment),
     };
     let update_count = review_places(&db, &mut search_engine, &[&id], review)?;

@@ -43,7 +43,7 @@ pub fn place_history(user: &User, h: &PlaceHistory) -> Markup {
                                 td{
                                     ul class="log" {
                                         @for l in logs {
-                                            li { (review_status_log(&r.revision, &l)) }
+                                            li { (review_status_log(r.revision, &l)) }
                                         }
                                     }
                                 }
@@ -100,7 +100,7 @@ pub fn place_history(user: &User, h: &PlaceHistory) -> Markup {
     )
 }
 
-fn review_status_log(place_rev: &Revision, l: &ReviewStatusLog) -> Markup {
+fn review_status_log(place_rev: Revision, l: &ReviewStatusLog) -> Markup {
     use ReviewStatus as S;
     let status = match l.status {
         S::Rejected => "Rejected",
