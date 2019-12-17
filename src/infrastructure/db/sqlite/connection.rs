@@ -361,7 +361,7 @@ impl PlaceRepo for SqliteConnection {
             })?;
 
         // Insert into place_revision_review
-        let new_placeiew = models::NewPlaceRevisionReview {
+        let new_review = models::NewPlaceRevisionReview {
             parent_rowid,
             rev: u64::from(Revision::initial()) as i64,
             created_at: new_place.created_at,
@@ -371,7 +371,7 @@ impl PlaceRepo for SqliteConnection {
             comment: Some("created"),
         };
         diesel::insert_into(schema::place_revision_review::table)
-            .values(new_placeiew)
+            .values(new_review)
             .execute(self)?;
 
         // Insert into place_revision_tag
@@ -406,6 +406,7 @@ impl PlaceRepo for SqliteConnection {
             )
             .select(rev_dsl::rowid)
             .filter(dsl::id.eq_any(ids))
+            .filter(rev_dsl::current_status.ne(ReviewStatusPrimitive::from(status)))
             .load(self)?;
         let ActivityLog {
             activity,
@@ -439,7 +440,7 @@ impl PlaceRepo for SqliteConnection {
                         .ok_or(RepoError::NotFound)? as u64,
                 );
                 let next_rev = prev_rev.next();
-                let new_placeiew = models::NewPlaceRevisionReview {
+                let new_review = models::NewPlaceRevisionReview {
                     parent_rowid: rev_id,
                     rev: u64::from(next_rev) as i64,
                     status,
@@ -449,7 +450,7 @@ impl PlaceRepo for SqliteConnection {
                     comment: comment.as_ref().map(String::as_str),
                 };
                 diesel::insert_into(schema::place_revision_review::table)
-                    .values(new_placeiew)
+                    .values(new_review)
                     .execute(self)?;
                 total_update_count += update_count;
             }
