@@ -45,7 +45,7 @@ pub fn update_place(
     // Reindex updated place
     // TODO: Move to a separate task/thread that doesn't delay this request
     if let Err(err) =
-        usecases::index_place(indexer, &place, &ratings).and_then(|_| indexer.flush_index())
+        usecases::reindex_place(indexer, &place, ReviewStatus::Created, &ratings).and_then(|_| indexer.flush_index())
     {
         error!("Failed to reindex updated place {}: {}", place.id, err);
     }

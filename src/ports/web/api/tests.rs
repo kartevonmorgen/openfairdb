@@ -607,7 +607,7 @@ fn search_with_tags() {
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_str.contains(&format!(
-        "\"visible\":[{{\"id\":\"{}\",\"lat\":0.0,\"lng\":0.0,\"title\":\"\",\"description\":\"\",\"categories\":[\"{}\"],\"tags\":[\"bla-blubb\",\"foo-bar\"],\"ratings\":{{\"total\":0.0,\"diversity\":0.0,\"fairness\":0.0,\"humanity\":0.0,\"renewable\":0.0,\"solidarity\":0.0,\"transparency\":0.0}}}}]",
+        "\"visible\":[{{\"id\":\"{}\",\"status\":\"created\",\"lat\":0.0,\"lng\":0.0,\"title\":\"\",\"description\":\"\",\"categories\":[\"{}\"],\"tags\":[\"bla-blubb\",\"foo-bar\"],\"ratings\":{{\"total\":0.0,\"diversity\":0.0,\"fairness\":0.0,\"humanity\":0.0,\"renewable\":0.0,\"solidarity\":0.0,\"transparency\":0.0}}}}]",
         place_ids[1],
         Category::ID_NON_PROFIT,
     )));
@@ -1436,15 +1436,15 @@ fn export_csv() {
         })
         .unwrap();
 
-    let entries = db.shared().unwrap().all_places().unwrap();
-    for (e, _) in &entries {
+    let places = db.shared().unwrap().all_places().unwrap();
+    for (place, status) in &places {
         let ratings = db
             .shared()
             .unwrap()
-            .load_ratings_of_place(e.id.as_ref())
+            .load_ratings_of_place(place.id.as_ref())
             .unwrap();
         search_engine
-            .add_or_update_place(&e, &e.avg_ratings(&ratings))
+            .add_or_update_place(&place, *status, &place.avg_ratings(&ratings))
             .unwrap();
     }
     search_engine.flush_index().unwrap();

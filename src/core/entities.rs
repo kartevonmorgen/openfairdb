@@ -9,6 +9,7 @@ use chrono::prelude::*;
 use failure::{bail, format_err, Fallible};
 use num_traits::{FromPrimitive, ToPrimitive};
 use std::{borrow::Borrow, fmt, ops::Deref, str::FromStr};
+use strum_macros::{EnumIter, EnumCount};
 use url::Url;
 use uuid::Uuid;
 
@@ -197,7 +198,7 @@ pub struct ActivityLog {
 }
 
 #[rustfmt::skip]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromPrimitive, ToPrimitive)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromPrimitive, ToPrimitive, EnumIter, EnumCount)]
 pub enum ReviewStatus {
     Rejected  = -1,
     Archived  =  0,

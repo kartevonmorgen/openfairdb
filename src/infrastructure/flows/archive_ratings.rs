@@ -35,7 +35,7 @@ pub fn post_archive_ratings(
     let connection = connections.shared()?;
     let place_ids = connection.load_place_ids_of_ratings(ids)?;
     for place_id in place_ids {
-        let (place, _) = match connection.get_place(&place_id) {
+        let (place, status) = match connection.get_place(&place_id) {
             Ok(place) => place,
             Err(err) => {
                 error!(
@@ -57,7 +57,7 @@ pub fn post_archive_ratings(
                 continue;
             }
         };
-        if let Err(err) = usecases::index_place(indexer, &place, &ratings) {
+        if let Err(err) = usecases::reindex_place(indexer, &place, status, &ratings) {
             error!(
                 "Failed to reindex place {} after archiving ratings: {}",
                 place.id, err

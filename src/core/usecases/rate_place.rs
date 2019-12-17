@@ -13,14 +13,15 @@ pub struct NewPlaceRating {
 }
 
 #[derive(Debug, Clone)]
-pub struct Storable(Place, Rating, Comment);
+
+pub struct Storable(Place, ReviewStatus, Rating, Comment);
 
 impl Storable {
     pub fn rating_id(&self) -> &str {
-        &self.1.id.as_ref()
+        &self.2.id.as_ref()
     }
     pub fn comment_id(&self) -> &str {
-        &self.2.id.as_ref()
+        &self.3.id.as_ref()
     }
 }
 
@@ -34,7 +35,7 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: NewPlaceRating) -> Result<Storable> 
     let now = Timestamp::now();
     let rating_id = Id::new();
     let comment_id = Id::new();
-    let (place, _) = db.get_place(&r.entry)?;
+    let (place, status) = db.get_place(&r.entry)?;
     debug_assert_eq!(place.id, r.entry.as_str().into());
     let rating = Rating {
         id: rating_id.clone(),
@@ -53,17 +54,17 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: NewPlaceRating) -> Result<Storable> 
         archived_at: None,
         text: r.comment,
     };
-    Ok(Storable(place, rating, comment))
+    Ok(Storable(place, status, rating, comment))
 }
 
-pub fn store_new_rating<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>)> {
-    let Storable(place, rating, comment) = s;
+pub fn store_new_rating<D: Db>(db: &D, s: Storable) -> Result<(Place, ReviewStatus, Vec<Rating>)> {
+    let Storable(place, status, rating, comment) = s;
     debug_assert_eq!(place.id, rating.place_id);
     debug_assert_eq!(rating.id, comment.rating_id);
     db.create_rating(rating)?;
     db.create_comment(comment)?;
     let ratings = db.load_ratings_of_place(place.id.as_ref())?;
-    Ok((place, ratings))
+    Ok((place, status, ratings))
 }
 
 #[cfg(test)]

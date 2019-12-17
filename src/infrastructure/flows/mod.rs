@@ -177,6 +177,7 @@ mod tests {
             pub fn query_places_by_tag(self: &EnvFixture, tag: &str) -> Vec<IndexedPlace> {
                 let query = IndexQuery {
                     hash_tags: vec![tag.into()],
+                    status: Some(vec![]), // only visible/existent places
                     ..Default::default()
                 };
                 self.query_places(&query)

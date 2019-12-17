@@ -46,6 +46,7 @@ pub fn search(
         hash_tags,
         text_tags,
         text,
+        status: Some(vec![]),
         ..Default::default()
     };
 

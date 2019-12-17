@@ -150,7 +150,7 @@ impl PlaceIndex for DummySearchEngine {
 }
 
 impl PlaceIndexer for DummySearchEngine {
-    fn add_or_update_place(&self, _place: &Place, _ratings: &AvgRatings) -> Fallible<()> {
+    fn add_or_update_place(&self, _place: &Place, _status: ReviewStatus, _ratings: &AvgRatings) -> Fallible<()> {
         Ok(())
     }
 }

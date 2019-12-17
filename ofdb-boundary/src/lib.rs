@@ -150,8 +150,9 @@ pub struct Category {
 
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
-pub struct EntrySearchResult {
+pub struct PlaceSearchResult {
     pub id: String,
+    pub status: Option<ReviewStatus>,
     pub lat: f64,
     pub lng: f64,
     pub title: String,
@@ -162,10 +163,23 @@ pub struct EntrySearchResult {
 }
 
 #[derive(Serialize, Deserialize)]
+#[cfg_attr(
+    feature = "extra-derive",
+    derive(Debug, Clone, Copy, PartialEq, Eq, Hash)
+)]
+#[serde(rename_all = "lowercase")]
+pub enum ReviewStatus {
+    Archived,
+    Confirmed,
+    Created,
+    Rejected,
+}
+
+#[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
 pub struct SearchResponse {
-    pub visible: Vec<EntrySearchResult>,
-    pub invisible: Vec<EntrySearchResult>,
+    pub visible: Vec<PlaceSearchResult>,
+    pub invisible: Vec<PlaceSearchResult>,
 }
 
 #[derive(Serialize, Deserialize)]

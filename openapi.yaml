@@ -661,6 +661,8 @@ components:
       properties:
         id:
           $ref: '#/components/schemas/Id'
+        status:
+          $ref: '#/components/schemas/ReviewStatus'
         lat:
           $ref: '#/components/schemas/Latitude'
         lng:

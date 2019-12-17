@@ -130,6 +130,7 @@ pub trait Db:
 
 #[derive(Debug, Default, Clone)]
 pub struct IndexQuery<'a, 'b> {
+    pub status: Option<Vec<ReviewStatus>>,
     pub include_bbox: Option<MapBbox>,
     pub exclude_bbox: Option<MapBbox>,
     pub categories: Vec<&'a str>,
@@ -158,6 +159,7 @@ pub trait IdIndexer: Indexer + IdIndex {
 #[derive(Debug, Default, Clone)]
 pub struct IndexedPlace {
     pub id: String,
+    pub status: Option<ReviewStatus>,
     pub pos: MapPoint,
     pub title: String,
     pub description: String,
@@ -170,7 +172,7 @@ pub trait PlaceIndex {
 }
 
 pub trait PlaceIndexer: IdIndexer + PlaceIndex {
-    fn add_or_update_place(&self, place: &Place, ratings: &AvgRatings) -> Fallible<()>;
+    fn add_or_update_place(&self, place: &Place, status: ReviewStatus, ratings: &AvgRatings) -> Fallible<()>;
 }
 
 pub trait EventIndexer: IdIndexer {

@@ -114,10 +114,35 @@ impl From<e::Category> for Category {
     }
 }
 
-impl From<IndexedPlace> for EntrySearchResult {
+impl From<e::ReviewStatus> for ReviewStatus {
+    fn from(from: e::ReviewStatus) -> Self {
+        use e::ReviewStatus::*;
+        match from {
+            Archived => ReviewStatus::Archived,
+            Confirmed => ReviewStatus::Confirmed,
+            Created => ReviewStatus::Created,
+            Rejected => ReviewStatus::Rejected,
+        }
+    }
+}
+
+impl From<ReviewStatus> for e::ReviewStatus {
+    fn from(from: ReviewStatus) -> Self {
+        use e::ReviewStatus::*;
+        match from {
+            ReviewStatus::Archived => Archived,
+            ReviewStatus::Confirmed => Confirmed,
+            ReviewStatus::Created => Created,
+            ReviewStatus::Rejected => Rejected,
+        }
+    }
+}
+
+impl From<IndexedPlace> for PlaceSearchResult {
     fn from(from: IndexedPlace) -> Self {
         let IndexedPlace {
             id,
+            status,
             title,
             description,
             tags,
@@ -125,6 +150,10 @@ impl From<IndexedPlace> for EntrySearchResult {
             ratings,
             ..
         } = from;
+        // The status should never be undefined! It is optional only
+        // for technical reasons.
+        debug_assert!(status.is_some());
+        let status = status.map(Into::into);
         let (tags, categories) = e::Category::split_from_tags(tags);
         let categories = categories.into_iter().map(|c| c.id.to_string()).collect();
         let lat = pos.lat().to_deg();
@@ -149,6 +178,7 @@ impl From<IndexedPlace> for EntrySearchResult {
         };
         Self {
             id,
+            status,
             lat,
             lng,
             title,
@@ -522,37 +552,6 @@ impl From<e::PlaceRevision> for PlaceRevision {
             contact: contact.map(Into::into).unwrap_or_default(),
             links: links.map(Into::into).unwrap_or_default(),
             tags,
-        }
-    }
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "lowercase")]
-pub enum ReviewStatus {
-    Rejected,
-    Archived,
-    Created,
-    Confirmed,
-}
-
-impl From<e::ReviewStatus> for ReviewStatus {
-    fn from(from: e::ReviewStatus) -> Self {
-        match from {
-            e::ReviewStatus::Rejected => ReviewStatus::Rejected,
-            e::ReviewStatus::Archived => ReviewStatus::Archived,
-            e::ReviewStatus::Created => ReviewStatus::Created,
-            e::ReviewStatus::Confirmed => ReviewStatus::Confirmed,
-        }
-    }
-}
-
-impl From<ReviewStatus> for e::ReviewStatus {
-    fn from(from: ReviewStatus) -> Self {
-        match from {
-            ReviewStatus::Rejected => e::ReviewStatus::Rejected,
-            ReviewStatus::Archived => e::ReviewStatus::Archived,
-            ReviewStatus::Created => e::ReviewStatus::Created,
-            ReviewStatus::Confirmed => e::ReviewStatus::Confirmed,
         }
     }
 }

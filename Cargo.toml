@@ -49,6 +49,8 @@ rocket = "*"
 rocket_contrib = "*"
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
+strum = "*"
+strum_macros = "*"
 tantivy = "*"
 url = { version = "*", features = ["serde"] }
 uuid = { version = "*", features = ["v4"] }

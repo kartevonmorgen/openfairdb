@@ -26,55 +26,30 @@ fn exec_review_places(
         })?)
 }
 
-fn is_visible_in_search_results(status: ReviewStatus) -> bool {
-    status.exists()
-}
-
 fn post_review_places(
     connections: &sqlite::Connections,
     indexer: &mut dyn PlaceIndexer,
     ids: &[&str],
-    status: ReviewStatus,
 ) -> Result<()> {
-    for id in ids {
-        if let Err(err) = usecases::unindex_place(indexer, &Id::from(*id)) {
-            error!(
-                "Failed to remove place {} from search index after reviewing: {}",
-                id, err
-            );
-        }
-    }
-    // TODO: The status of the recently reviewed places might have been changed
-    // again before we start iterating over the list of ids. This is a very rare
-    // and unlikely race condition that might prevent that previously archived
-    // or rejected places become visible again after a positive re-review.
-    if is_visible_in_search_results(status) {
-        // TODO: How to avoid reloading all places and ratings from the database?
-        let db = connections.shared()?;
-        let places_with_status = db.get_places(ids)?;
-        for (place, status) in places_with_status {
-            // The status might have changed again in the mean time
-            if !is_visible_in_search_results(status) {
-                log::warn!("Place {} has become invisible after reviewing", place.id);
+    let db = connections.shared()?;
+    let places_with_status = db.get_places(ids)?;
+    for (place, status) in places_with_status {
+        let ratings = match db.load_ratings_of_place(place.id.as_str()) {
+            Ok(ratings) => ratings,
+            Err(err) => {
+                log::error!(
+                    "Failed to load ratings of place {} after reviewing: {}",
+                    place.id,
+                    err
+                );
                 continue;
             }
-            let ratings = match db.load_ratings_of_place(place.id.as_str()) {
-                Ok(ratings) => ratings,
-                Err(err) => {
-                    log::error!(
-                        "Failed to load ratings of place {} after reviewing: {}",
-                        place.id,
-                        err
-                    );
-                    continue;
-                }
-            };
-            if let Err(err) = usecases::index_place(indexer, &place, &ratings) {
-                error!(
-                    "Failed to (re-)index place {} after reviewing: {}",
-                    place.id, err
-                );
-            }
+        };
+        if let Err(err) = usecases::reindex_place(indexer, &place, status, &ratings) {
+            error!(
+                "Failed to (re-)index place {} after reviewing: {}",
+                place.id, err
+            );
         }
     }
     if let Err(err) = indexer.flush_index() {
@@ -92,10 +67,9 @@ pub fn review_places(
     ids: &[&str],
     review: usecases::Review,
 ) -> Result<usize> {
-    let status = review.status;
     let count = exec_review_places(connections, ids, review)?;
     // TODO: Move post processing to a separate task/thread that doesn't delay this request?
-    post_review_places(connections, indexer, ids, status)?;
+    post_review_places(connections, indexer, ids)?;
     Ok(count)
 }
 

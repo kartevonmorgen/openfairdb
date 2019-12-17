@@ -3,7 +3,10 @@ use crate::core::{
         EventAndPlaceIndexer, EventIndexer, IdIndex, IdIndexer, IndexQuery, IndexedPlace, Indexer,
         PlaceIndex, PlaceIndexer,
     },
-    entities::{AvgRatingValue, AvgRatings, Category, Event, Id, Place, RatingContext},
+    entities::{
+        AvgRatingValue, AvgRatings, Category, Event, Id, Place, RatingContext, ReviewStatus,
+        ReviewStatusPrimitive,
+    },
     util::{
         geo::{LatCoord, LngCoord, MapPoint},
         time::Timestamp,
@@ -11,11 +14,13 @@ use crate::core::{
 };
 
 use failure::{bail, Fallible};
+use num_traits::ToPrimitive;
 use std::{
     ops::Bound,
     path::Path,
     sync::{Arc, Mutex},
 };
+use strum::IntoEnumIterator;
 use tantivy::{
     collector::TopDocs,
     query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
@@ -43,6 +48,7 @@ fn get_category_kind_flag(category: &Category) -> i64 {
 struct IndexedFields {
     kind: Field,
     id: Field,
+    status: Field,
     lat: Field,
     lng: Field,
     ts_min: Field, // minimum timestamp, e.g. event start
@@ -100,6 +106,7 @@ impl IndexedFields {
         let fields = Self {
             kind: schema_builder.add_i64_field("kind", INDEXED),
             id: schema_builder.add_text_field("id", id_options),
+            status: schema_builder.add_i64_field("status", INDEXED | STORED),
             lat: schema_builder.add_f64_field("lat", INDEXED | STORED),
             lng: schema_builder.add_f64_field("lon", INDEXED | STORED),
             ts_min: schema_builder.add_i64_field("ts_min", INDEXED | STORED),
@@ -126,10 +133,14 @@ impl IndexedFields {
     fn read_indexed_place(&self, doc: &Document) -> IndexedPlace {
         let mut lat: Option<LatCoord> = Default::default();
         let mut lng: Option<LngCoord> = Default::default();
-        let mut entry = IndexedPlace::default();
-        entry.tags.reserve(32);
+        let mut place = IndexedPlace::default();
+        place.tags.reserve(32);
         for field_value in doc.field_values() {
             match field_value {
+                fv if fv.field() == self.status => {
+                    let status = fv.value().i64_value() as ReviewStatusPrimitive;
+                    place.status = ReviewStatus::try_from(status);
+                }
                 fv if fv.field() == self.lat => {
                     debug_assert!(lat.is_none());
                     lat = Some(LatCoord::from_deg(fv.value().f64_value()));
@@ -139,59 +150,59 @@ impl IndexedFields {
                     lng = Some(LngCoord::from_deg(fv.value().f64_value()));
                 }
                 fv if fv.field() == self.id => {
-                    debug_assert!(entry.id.is_empty());
+                    debug_assert!(place.id.is_empty());
                     if let Some(id) = fv.value().text() {
-                        entry.id = id.into();
+                        place.id = id.into();
                     } else {
                         error!("Invalid id value: {:?}", fv.value());
                     }
                 }
                 fv if fv.field() == self.title => {
-                    debug_assert!(entry.title.is_empty());
+                    debug_assert!(place.title.is_empty());
                     if let Some(title) = fv.value().text() {
-                        entry.title = title.into();
+                        place.title = title.into();
                     } else {
                         error!("Invalid title value: {:?}", fv.value());
                     }
                 }
                 fv if fv.field() == self.description => {
-                    debug_assert!(entry.description.is_empty());
+                    debug_assert!(place.description.is_empty());
                     if let Some(description) = fv.value().text() {
-                        entry.description = description.into();
+                        place.description = description.into();
                     } else {
                         error!("Invalid description value: {:?}", fv.value());
                     }
                 }
                 fv if fv.field() == self.tag => {
                     if let Some(tag) = fv.value().text() {
-                        entry.tags.push(tag.into());
+                        place.tags.push(tag.into());
                     } else {
                         error!("Invalid tag value: {:?}", fv.value());
                     }
                 }
                 fv if fv.field() == self.ratings_diversity => {
-                    debug_assert!(entry.ratings.diversity == Default::default());
-                    entry.ratings.diversity = fv.value().f64_value().into();
+                    debug_assert!(place.ratings.diversity == Default::default());
+                    place.ratings.diversity = fv.value().f64_value().into();
                 }
                 fv if fv.field() == self.ratings_fairness => {
-                    debug_assert!(entry.ratings.fairness == Default::default());
-                    entry.ratings.fairness = fv.value().f64_value().into();
+                    debug_assert!(place.ratings.fairness == Default::default());
+                    place.ratings.fairness = fv.value().f64_value().into();
                 }
                 fv if fv.field() == self.ratings_humanity => {
-                    debug_assert!(entry.ratings.humanity == Default::default());
-                    entry.ratings.humanity = fv.value().f64_value().into();
+                    debug_assert!(place.ratings.humanity == Default::default());
+                    place.ratings.humanity = fv.value().f64_value().into();
                 }
                 fv if fv.field() == self.ratings_renewable => {
-                    debug_assert!(entry.ratings.renewable == Default::default());
-                    entry.ratings.renewable = fv.value().f64_value().into();
+                    debug_assert!(place.ratings.renewable == Default::default());
+                    place.ratings.renewable = fv.value().f64_value().into();
                 }
                 fv if fv.field() == self.ratings_solidarity => {
-                    debug_assert!(entry.ratings.solidarity == Default::default());
-                    entry.ratings.solidarity = fv.value().f64_value().into();
+                    debug_assert!(place.ratings.solidarity == Default::default());
+                    place.ratings.solidarity = fv.value().f64_value().into();
                 }
                 fv if fv.field() == self.ratings_transparency => {
-                    debug_assert!(entry.ratings.transparency == Default::default());
-                    entry.ratings.transparency = fv.value().f64_value().into();
+                    debug_assert!(place.ratings.transparency == Default::default());
+                    place.ratings.transparency = fv.value().f64_value().into();
                 }
                 fv if fv.field() == self.total_rating => (),
                 // Address fields are currently not stored
@@ -205,11 +216,11 @@ impl IndexedFields {
             }
         }
         if let (Some(lat), Some(lng)) = (lat, lng) {
-            entry.pos = MapPoint::new(lat, lng);
+            place.pos = MapPoint::new(lat, lng);
         } else {
             error!("Invalid position: lat = {:?}, lng = {:?}", lat, lng);
         }
-        entry
+        place
     }
 }
 
@@ -359,6 +370,47 @@ impl TantivyIndex {
                 Box::new(TermQuery::new(id_term, IndexRecordOption::Basic))
             };
             sub_queries.push((Occur::Must, ids_query));
+        }
+
+        // Status
+        // NOTE(2019-12-17, Tantivy v0.11.1): A boolean query that contains
+        // only MustNot sub-queries does not work as expected, especially
+        // for events that do not have a status (yet). Therefore we need to
+        // also query for all other variants that are not explicitly excluded
+        // with a Should occurence.
+        if let Some(ref status) = query.status {
+            let status: Vec<_> = if status.is_empty() {
+                ReviewStatus::iter().map(|s|
+                    if s.exists() {
+                        (Occur::Should, s)
+                    } else {
+                        (Occur::MustNot, s)
+                    }).collect()
+            } else {
+                ReviewStatus::iter()
+                    .map(|s1| if status.iter().any(|s2| s1 == *s2) {
+                        (Occur::Should, s1)
+                    } else {
+                        (Occur::MustNot, s1)
+                    })
+                    .collect()
+            };
+            let status_queries: Vec<_> = status
+                .into_iter()
+                .map(|(occur, status)| {
+                    let status = status.to_i64().unwrap();
+                    let boxed_query: Box<dyn Query> = Box::new(RangeQuery::new_i64_bounds(
+                        self.fields.status,
+                        Bound::Included(status),
+                        Bound::Included(status),
+                    ));
+                    (occur, boxed_query)
+                })
+                .collect();
+            sub_queries.push((
+                Occur::Must,
+                Box::new(BooleanQuery::from(status_queries)),
+            ));
         }
 
         // Bbox (include)
@@ -753,20 +805,22 @@ impl IdIndexer for TantivyIndex {
 }
 
 impl PlaceIndexer for TantivyIndex {
-    fn add_or_update_place(&self, place: &Place, ratings: &AvgRatings) -> Fallible<()> {
+    fn add_or_update_place(
+        &self,
+        place: &Place,
+        status: ReviewStatus,
+        ratings: &AvgRatings,
+    ) -> Fallible<()> {
         let id_term = Term::from_field_text(self.fields.id, place.id.as_ref());
         self.index_writer.delete_term(id_term);
         let mut doc = Document::default();
         doc.add_i64(self.fields.kind, PLACE_KIND_FLAG);
+        if let Some(status) = status.to_i64() {
+            doc.add_i64(self.fields.status, status);
+        }
         doc.add_text(self.fields.id, place.id.as_ref());
-        doc.add_f64(
-            self.fields.lat,
-            place.location.pos.lat().to_deg(),
-        );
-        doc.add_f64(
-            self.fields.lng,
-            place.location.pos.lng().to_deg(),
-        );
+        doc.add_f64(self.fields.lat, place.location.pos.lat().to_deg());
+        doc.add_f64(self.fields.lng, place.location.pos.lng().to_deg());
         doc.add_text(self.fields.title, &place.title);
         doc.add_text(self.fields.description, &place.description);
         if let Some(street) = place
@@ -805,26 +859,11 @@ impl PlaceIndexer for TantivyIndex {
             doc.add_text(self.fields.tag, tag);
         }
         doc.add_u64(self.fields.total_rating, avg_rating_to_u64(ratings.total()));
-        doc.add_f64(
-            self.fields.ratings_diversity,
-            ratings.diversity.into(),
-        );
-        doc.add_f64(
-            self.fields.ratings_fairness,
-            ratings.fairness.into(),
-        );
-        doc.add_f64(
-            self.fields.ratings_humanity,
-            ratings.humanity.into(),
-        );
-        doc.add_f64(
-            self.fields.ratings_renewable,
-            ratings.renewable.into(),
-        );
-        doc.add_f64(
-            self.fields.ratings_solidarity,
-            ratings.solidarity.into(),
-        );
+        doc.add_f64(self.fields.ratings_diversity, ratings.diversity.into());
+        doc.add_f64(self.fields.ratings_fairness, ratings.fairness.into());
+        doc.add_f64(self.fields.ratings_humanity, ratings.humanity.into());
+        doc.add_f64(self.fields.ratings_renewable, ratings.renewable.into());
+        doc.add_f64(self.fields.ratings_solidarity, ratings.solidarity.into());
         doc.add_f64(
             self.fields.ratings_transparency,
             ratings.transparency.into(),
@@ -948,12 +987,17 @@ impl PlaceIndex for SearchEngine {
 }
 
 impl PlaceIndexer for SearchEngine {
-    fn add_or_update_place(&self, place: &Place, ratings: &AvgRatings) -> Fallible<()> {
+    fn add_or_update_place(
+        &self,
+        place: &Place,
+        status: ReviewStatus,
+        ratings: &AvgRatings,
+    ) -> Fallible<()> {
         let inner = match self.0.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         };
-        inner.add_or_update_place(place, ratings)
+        inner.add_or_update_place(place, status, ratings)
     }
 }
 
