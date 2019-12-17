@@ -9,7 +9,7 @@ use chrono::prelude::*;
 use failure::{bail, format_err, Fallible};
 use num_traits::{FromPrimitive, ToPrimitive};
 use std::{borrow::Borrow, fmt, ops::Deref, str::FromStr};
-use strum_macros::{EnumIter, EnumCount};
+use strum_macros::{EnumCount, EnumIter};
 use url::Url;
 use uuid::Uuid;
 

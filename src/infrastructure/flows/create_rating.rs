@@ -17,11 +17,11 @@ pub fn create_rating(
                     Ok(storable) => {
                         let rating_id = storable.rating_id().to_owned();
                         let comment_id = storable.comment_id().to_owned();
-                        let (place, status, ratings) = usecases::store_new_rating(&*connection, storable)
-                            .map_err(|err| {
-                            warn!("Failed to store new rating for entry: {}", err);
-                            diesel::result::Error::RollbackTransaction
-                        })?;
+                        let (place, status, ratings) =
+                            usecases::store_new_rating(&*connection, storable).map_err(|err| {
+                                warn!("Failed to store new rating for entry: {}", err);
+                                diesel::result::Error::RollbackTransaction
+                            })?;
                         Ok((rating_id, comment_id, place, status, ratings))
                     }
                     Err(err) => {
@@ -41,8 +41,8 @@ pub fn create_rating(
 
     // Reindex entry after adding the new rating
     // TODO: Move to a separate task/thread that doesn't delay this request
-    if let Err(err) =
-        usecases::reindex_place(indexer, &place, status, &ratings).and_then(|_| indexer.flush_index())
+    if let Err(err) = usecases::reindex_place(indexer, &place, status, &ratings)
+        .and_then(|_| indexer.flush_index())
     {
         error!(
             "Failed to reindex place {} after adding a new rating: {}",

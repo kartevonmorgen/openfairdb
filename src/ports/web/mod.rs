@@ -31,7 +31,9 @@ fn index_all_places<D: PlaceRepo + RatingRepository>(
     let places = db.all_places()?;
     for (place, status) in places {
         let ratings = db.load_ratings_of_place(place.id.as_ref())?;
-        if let Err(err) = indexer.add_or_update_place(&place, status, &place.avg_ratings(&ratings[..])) {
+        if let Err(err) =
+            indexer.add_or_update_place(&place, status, &place.avg_ratings(&ratings[..]))
+        {
             error!("Failed to index place {:?}: {}", place, err);
         }
     }

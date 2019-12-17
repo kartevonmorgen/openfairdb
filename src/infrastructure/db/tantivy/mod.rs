@@ -380,18 +380,23 @@ impl TantivyIndex {
         // with a Should occurence.
         if let Some(ref status) = query.status {
             let status: Vec<_> = if status.is_empty() {
-                ReviewStatus::iter().map(|s|
-                    if s.exists() {
-                        (Occur::Should, s)
-                    } else {
-                        (Occur::MustNot, s)
-                    }).collect()
+                ReviewStatus::iter()
+                    .map(|s| {
+                        if s.exists() {
+                            (Occur::Should, s)
+                        } else {
+                            (Occur::MustNot, s)
+                        }
+                    })
+                    .collect()
             } else {
                 ReviewStatus::iter()
-                    .map(|s1| if status.iter().any(|s2| s1 == *s2) {
-                        (Occur::Should, s1)
-                    } else {
-                        (Occur::MustNot, s1)
+                    .map(|s1| {
+                        if status.iter().any(|s2| s1 == *s2) {
+                            (Occur::Should, s1)
+                        } else {
+                            (Occur::MustNot, s1)
+                        }
                     })
                     .collect()
             };
@@ -407,10 +412,7 @@ impl TantivyIndex {
                     (occur, boxed_query)
                 })
                 .collect();
-            sub_queries.push((
-                Occur::Must,
-                Box::new(BooleanQuery::from(status_queries)),
-            ));
+            sub_queries.push((Occur::Must, Box::new(BooleanQuery::from(status_queries))));
         }
 
         // Bbox (include)

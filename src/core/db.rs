@@ -172,7 +172,12 @@ pub trait PlaceIndex {
 }
 
 pub trait PlaceIndexer: IdIndexer + PlaceIndex {
-    fn add_or_update_place(&self, place: &Place, status: ReviewStatus, ratings: &AvgRatings) -> Fallible<()>;
+    fn add_or_update_place(
+        &self,
+        place: &Place,
+        status: ReviewStatus,
+        ratings: &AvgRatings,
+    ) -> Fallible<()>;
 }
 
 pub trait EventIndexer: IdIndexer {
