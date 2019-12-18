@@ -130,6 +130,12 @@ pub trait Db:
 
 #[derive(Debug, Default, Clone)]
 pub struct IndexQuery<'a, 'b> {
+    // status = None: Don't filter by review status, i.e. return all entries
+    //          independent of their current review status
+    // status = Some(empty vector): Exclude all invisible/inexistent entries, i.e.
+    //          return only visible/existent entries
+    // status = Some(non-empty vector): Include entries only if their current review
+    //          status matches one of the given values
     pub status: Option<Vec<ReviewStatus>>,
     pub include_bbox: Option<MapBbox>,
     pub exclude_bbox: Option<MapBbox>,

@@ -21,6 +21,9 @@ paths:
         The default result contains up to 100 entries. Use the `limit` parameter
         to customize the desired amount. The server may decide to deliver less
         results than requested up to some internal upper limit (currently 500).
+
+        If no particular review status are requested only visible places
+        (created, confirmed) are returned.
       tags:
         - Search
       parameters:
@@ -30,16 +33,17 @@ paths:
           schema:
             type: string
           description: |
-            Comma-separated list if category identifiers.
+            Comma-separated list of category identifiers.
             We currently use the following two:
             - Initiative (non-commercial): `2cd00bebec0c48ba9db761da48678134`
             - Company (commercial): `77b3c33a92554bcf8e8c2c86cedd6f6f`
-        - $ref: '#/components/parameters/IdList'
-        - $ref: '#/components/parameters/TagList'
         - name: text
           in: query
           schema:
             type: string
+        - $ref: '#/components/parameters/IdList'
+        - $ref: '#/components/parameters/TagList'
+        - $ref: '#/components/parameters/ReviewStatusList'
         - $ref: '#/components/parameters/PaginationLimit'
       responses:
         '200':
@@ -927,6 +931,11 @@ components:
         * confirmed/rejected = after positive/negative review
         * archived = final status
       example: rejected
+    ReviewStatusList:
+      type: string
+      description: |
+        Comma-separated list of multiple review status names
+      example: created,confirmed
     UserRole:
       type: string
       enum:
@@ -1080,6 +1089,12 @@ components:
       required: false
       schema:
         $ref: '#/components/schemas/TagList'
+    ReviewStatusList:
+      name: status
+      in: query
+      required: false
+      schema:
+        $ref: '#/components/schemas/ReviewStatusList'
     PaginationLimit:
       name: limit
       description: Maximum number of items to return or implicit/unlimited if unspecified.

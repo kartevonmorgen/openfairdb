@@ -19,7 +19,7 @@ pub struct SearchQuery {
     ids: Option<String>,
     tags: Option<String>,
     text: Option<String>,
-
+    status: Option<String>,
     limit: Option<usize>,
 }
 
@@ -55,6 +55,7 @@ pub fn get_search(
         .map(util::split_ids)
         .map(|ids| {
             ids.into_iter()
+                // Only places, not events
                 .filter(|id| id != &Category::ID_EVENT)
                 .collect()
         })
@@ -69,12 +70,31 @@ pub fn get_search(
 
     let text = search.text.as_ref().map(String::as_str);
 
+    let status = search
+        .status
+        .as_ref()
+        .map(String::as_str)
+        .map(util::split_ids)
+        .unwrap_or_default()
+        .into_iter()
+        .filter_map(|s| {
+            serde_json::from_str::<json::ReviewStatus>(&format!("\"{}\"", s))
+                .map_err(|e| {
+                    log::warn!("Failed to parse status '{}' from search query: {}", s, e);
+                    e
+                })
+                .map(ReviewStatus::from)
+                .ok()
+        })
+        .collect();
+
     let req = usecases::SearchRequest {
         bbox,
         ids,
         categories,
         hash_tags,
         text,
+        status,
     };
 
     let search_limit = if let Some(limit) = search.limit {

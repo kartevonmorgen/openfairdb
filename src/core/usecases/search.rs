@@ -9,6 +9,7 @@ pub struct SearchRequest<'a, 'b, 'c, 'd> {
     pub categories : Vec<&'a str>,
     pub hash_tags  : Vec<&'c str>,
     pub text       : Option<&'d str>,
+    pub status     : Vec<ReviewStatus>,
 }
 
 pub fn search(
@@ -16,15 +17,22 @@ pub fn search(
     req: SearchRequest,
     limit: usize,
 ) -> Result<(Vec<IndexedPlace>, Vec<IndexedPlace>)> {
-    let visible_bbox: MapBbox = req.bbox;
+    let SearchRequest {
+        bbox: visible_bbox,
+        ids,
+        categories,
+        hash_tags: req_hash_tags,
+        text,
+        status,
+    } = req;
 
-    let mut hash_tags = req.text.map(util::extract_hash_tags).unwrap_or_default();
-    hash_tags.reserve(hash_tags.len() + req.hash_tags.len());
-    for hashtag in req.hash_tags {
-        hash_tags.push(hashtag.to_owned());
+    let mut hash_tags = text.map(util::extract_hash_tags).unwrap_or_default();
+    hash_tags.reserve(req_hash_tags.len());
+    for hash_tag in req_hash_tags {
+        hash_tags.push(hash_tag.to_owned());
     }
 
-    let text = req.text.map(util::remove_hash_tags).and_then(|text| {
+    let text = text.map(util::remove_hash_tags).and_then(|text| {
         if text.trim().is_empty() {
             None
         } else {
@@ -41,12 +49,12 @@ pub fn search(
     let visible_places_query = IndexQuery {
         include_bbox: Some(visible_bbox),
         exclude_bbox: None,
-        categories: req.categories,
-        ids: req.ids,
+        categories,
+        ids,
         hash_tags,
         text_tags,
         text,
-        status: Some(vec![]),
+        status: Some(status),
         ..Default::default()
     };
 

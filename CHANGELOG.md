@@ -1,7 +1,8 @@
 # Changelog
 
-## v0.8.1 (2019-12-16)
+## v0.8.1 (2019-12-18)
 
+- new(web): Filter search results of places by their current review status
 - chore(db): Updated search engine (Tantivy v0.11)
 
 ## v0.8.0 (2019-12-13)

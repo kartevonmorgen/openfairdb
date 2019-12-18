@@ -516,6 +516,7 @@ fn csv_export(
         categories: vec![],
         hash_tags: vec![],
         text: None,
+        status: vec![],
     };
 
     let db = connections.shared()?;

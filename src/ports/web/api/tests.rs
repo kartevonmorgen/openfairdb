@@ -950,6 +950,95 @@ fn search_without_specifying_hashtag_symbol() {
 }
 
 #[test]
+fn search_with_status() {
+    let places = vec![
+        usecases::NewPlace {
+            title: "created".into(),
+            ..default_new_entry()
+        },
+        usecases::NewPlace {
+            title: "confirmed".into(),
+            ..default_new_entry()
+        },
+        usecases::NewPlace {
+            title: "rejected".into(),
+            ..default_new_entry()
+        },
+        usecases::NewPlace {
+            title: "archived".into(),
+            ..default_new_entry()
+        },
+    ];
+    let (client, connections, mut search_engine) = setup2();
+
+    let places: Vec<_> = places
+        .into_iter()
+        .map(|p| {
+            let status = p.title.clone();
+            let id = flows::create_place(&connections, &mut search_engine, p, None)
+                .unwrap()
+                .id
+                .to_string();
+            (id, status)
+        })
+        .collect();
+
+    let user = User {
+        email: "foo@bar".into(),
+        email_confirmed: true,
+        password: "secret".parse::<Password>().unwrap(),
+        role: Role::Admin,
+    };
+    connections.exclusive().unwrap().create_user(&user).unwrap();
+    let response = client
+        .post("/login")
+        .header(ContentType::JSON)
+        .body(r#"{"email": "foo@bar", "password": "secret"}"#)
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    for (id, status) in &places {
+        let req = client
+            .post(format!("/places/{}/review", id))
+            .header(ContentType::JSON)
+            .body(&format!(
+                "{{\"status\":\"{}\",\"comment\":\"{}\"}}",
+                status, id
+            ));
+        let response = req.dispatch();
+        assert_eq!(response.status(), Status::Ok);
+    }
+
+    // All visible = created + confirmed
+    let req = client.get("/search?bbox=-10,-10,10,10");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(body_str.contains(&format!("\"{}\"", places[0].0)));
+    assert!(body_str.contains(&format!("\"{}\"", places[0].1)));
+    assert!(body_str.contains(&format!("\"{}\"", places[1].0)));
+    assert!(body_str.contains(&format!("\"{}\"", places[1].1)));
+    assert!(!body_str.contains(&format!("\"{}\"", places[2].0)));
+    assert!(!body_str.contains(&format!("\"{}\"", places[2].1)));
+    assert!(!body_str.contains(&format!("\"{}\"", places[3].0)));
+    assert!(!body_str.contains(&format!("\"{}\"", places[3].1)));
+
+    // Single status search
+    for (id, status) in &places {
+        let req = client.get(format!("/search?bbox=-10,-10,10,10&status={}", status));
+        let mut response = req.dispatch();
+        assert_eq!(response.status(), Status::Ok);
+        let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+        assert!(body_str.contains(&format!("\"{}\"", id)));
+        assert!(body_str.contains(&format!("\"{}\"", status)));
+        for (other_id, other_status) in places.iter().filter(|(other_id, _)| other_id != id) {
+            assert!(!body_str.contains(&format!("\"{}\"", other_id)));
+            assert!(!body_str.contains(&format!("\"{}\"", other_status)));
+        }
+    }
+}
+
+#[test]
 fn create_new_user() {
     let (client, db) = setup();
     let req = client
