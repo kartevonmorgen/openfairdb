@@ -224,7 +224,7 @@ mod tests {
     }
 
     #[test]
-    fn should_archive_places_with_ratings_and_comments() {
+    fn should_archive_places_and_leaving_ratings_and_comments_unchanged() {
         let fixture = EnvFixture::new();
 
         fixture.create_user(
@@ -283,13 +283,13 @@ mod tests {
         assert!(!fixture.place_exists(&place_ids[0]));
         assert!(fixture.place_exists(&place_ids[1]));
 
-        assert!(!fixture.rating_exists(&rating_comment_ids[0].0));
-        assert!(!fixture.rating_exists(&rating_comment_ids[1].0));
+        assert!(fixture.rating_exists(&rating_comment_ids[0].0));
+        assert!(fixture.rating_exists(&rating_comment_ids[1].0));
         assert!(fixture.rating_exists(&rating_comment_ids[2].0));
         assert!(fixture.rating_exists(&rating_comment_ids[3].0));
 
-        assert!(!fixture.comment_exists(&rating_comment_ids[0].1));
-        assert!(!fixture.comment_exists(&rating_comment_ids[1].1));
+        assert!(fixture.comment_exists(&rating_comment_ids[0].1));
+        assert!(fixture.comment_exists(&rating_comment_ids[1].1));
         assert!(fixture.comment_exists(&rating_comment_ids[2].1));
         assert!(fixture.comment_exists(&rating_comment_ids[3].1));
     }

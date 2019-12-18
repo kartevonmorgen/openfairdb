@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.8.2 (2019-12-18)
+
+- Fix(web): Preserve ratings and comments when archiving places to allow restoring later
+
 ## v0.8.1 (2019-12-18)
 
 - new(web): Filter search results of places by their current review status
