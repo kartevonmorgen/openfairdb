@@ -373,12 +373,37 @@ impl TantivyIndex {
         }
 
         // Status
-        // NOTE(2019-12-17, Tantivy v0.11.1): A boolean query that contains
-        // only MustNot sub-queries does not work as expected, especially
-        // for events that do not have a status (yet). Therefore we need to
-        // also query for all other variants that are not explicitly excluded
-        // with a Should occurence.
         if let Some(ref status) = query.status {
+            // NOTE(2019-12-17, Tantivy v0.11.1): A boolean query that contains
+            // only MustNot sub-queries does not work as expected, especially
+            // for events that do not have a status (yet). Therefore we need to
+            // also query for all other variants that are not explicitly excluded
+            // with a Should occurence.
+            //
+            // Desired implementation (...that didn't work as intended):
+            // let exclude_status: Vec<_> = if status.is_empty() {
+            //     // Exclude all invisible/inexistent entries
+            //     ReviewStatus::iter().filter(|s| !s.exists()).collect()
+            // } else {
+            //     // Exclude all entries with a different status than requested
+            //     ReviewStatus::iter()
+            //         .filter(|s1| status.iter().any(|s2| s1 != s2))
+            //         .collect()
+            // };
+            // debug_assert!(!exclude_status.is_empty());
+            // let exclude_status_queries: Vec<_> = exclude_status
+            //     .into_iter()
+            //     .map(|status| {
+            //         let status = status.to_i64().unwrap();
+            //         let boxed_query: Box<dyn Query> = Box::new(RangeQuery::new_i64_bounds(
+            //             self.fields.status,
+            //             Bound::Included(status),
+            //             Bound::Included(status),
+            //         ));
+            //         (Occur::MustNot, boxed_query)
+            //     })
+            //     .collect();
+            // sub_queries.push((Occur::Must, Box::new(BooleanQuery::from(exclude_status_queries))));
             let status: Vec<_> = if status.is_empty() {
                 ReviewStatus::iter()
                     .map(|s| {
