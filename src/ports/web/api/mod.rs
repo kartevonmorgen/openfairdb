@@ -285,9 +285,6 @@ pub fn post_places_review(
             ids
         );
     }
-    if update_count == 0 {
-        return Err(Error::Repo(RepoError::NotFound).into());
-    }
     Ok(Json(()))
 }
 
