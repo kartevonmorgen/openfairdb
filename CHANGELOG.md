@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.8.3 (2019-12-21)
+
+- Fix(web): Count places with multiple revisions only once on dashboard
+
 ## v0.8.2 (2019-12-18)
 
 - Fix(web): Preserve ratings and comments when archiving places to allow restoring later

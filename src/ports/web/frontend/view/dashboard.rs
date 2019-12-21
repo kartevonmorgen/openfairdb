@@ -4,7 +4,7 @@ use maud::{html, Markup};
 
 pub struct DashBoardPresenter {
     pub user: User,
-    pub entry_count: usize,
+    pub place_count: usize,
     pub event_count: usize,
     pub tag_count: usize,
     pub user_count: usize,
@@ -21,8 +21,8 @@ pub fn dashboard(data: DashBoardPresenter) -> Markup {
                 h3 { "Database Statistics" }
                 table {
                     tr {
-                        td {"Number of Entries"}
-                        td {(data.entry_count)}
+                        td {"Number of Places"}
+                        td {(data.place_count)}
                     }
                     tr {
                         td {"Number of Events"}

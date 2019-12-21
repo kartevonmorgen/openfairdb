@@ -633,10 +633,16 @@ impl PlaceRepo for SqliteConnection {
     }
 
     fn count_places(&self) -> Result<usize> {
-        use schema::place_revision::dsl;
+        use schema::place::dsl;
+        use schema::place_revision::dsl as rev_dsl;
         Ok(schema::place_revision::table
-            .select(diesel::dsl::count(dsl::parent_rowid))
-            .filter(dsl::current_status.ge(ReviewStatusPrimitive::from(ReviewStatus::Created)))
+            .inner_join(
+                schema::place::table.on(rev_dsl::parent_rowid
+                    .eq(dsl::rowid)
+                    .and(rev_dsl::rev.eq(dsl::current_rev))),
+            )
+            .select(diesel::dsl::count(rev_dsl::parent_rowid))
+            .filter(rev_dsl::current_status.ge(ReviewStatusPrimitive::from(ReviewStatus::Created)))
             .first::<i64>(self)? as usize)
     }
 

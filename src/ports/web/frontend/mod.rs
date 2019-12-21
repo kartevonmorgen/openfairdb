@@ -249,7 +249,7 @@ pub fn get_events_chronologically(
 pub fn get_dashboard(db: sqlite::Connections, account: Account) -> Result<Markup> {
     let db = db.shared()?;
     let tag_count = db.count_tags()?;
-    let entry_count = db.count_places()?;
+    let place_count = db.count_places()?;
     let user_count = db.count_users()?;
     let event_count = db.count_events()?;
     let user = db
@@ -258,7 +258,7 @@ pub fn get_dashboard(db: sqlite::Connections, account: Account) -> Result<Markup
     if user.role == Role::Admin {
         return Ok(view::dashboard(view::DashBoardPresenter {
             user,
-            entry_count,
+            place_count,
             event_count,
             tag_count,
             user_count,
