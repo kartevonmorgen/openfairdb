@@ -1398,6 +1398,20 @@ fn subscribe_to_bbox() {
 }
 
 #[test]
+fn count_most_popular_tags_on_empty_db_to_verify_sql() {
+    // Check that the requests succeeds on an empty database just
+    // to verify that the literal SQL query that is not verified
+    // at compile-time still matches the current database schema!
+    let (client, _) = setup();
+    let mut response = client
+        .get("/entries/most-popular-tags?offset=0&limit=1000&min_count=10&max_count=100")
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert_eq!(body_str, "[]");
+}
+
+#[test]
 fn openapi() {
     let (client, _) = setup();
     let req = client.get("/server/api.yaml");
