@@ -385,6 +385,7 @@ pub struct Event {
     pub id           : Id,
     pub title        : String,
     pub description  : Option<String>,
+    // Both start/end time stamps are stored with second precision!
     pub start        : NaiveDateTime,
     pub end          : Option<NaiveDateTime>,
     pub location     : Option<Location>,
@@ -394,6 +395,7 @@ pub struct Event {
     pub created_by   : Option<String>,
     pub registration : Option<RegistrationType>,
     pub organizer    : Option<String>,
+    // TODO: Switch archived time stamp to millisecond precision?
     pub archived     : Option<Timestamp>,
     pub image_url     : Option<Url>,
     pub image_link_url: Option<Url>,
@@ -528,6 +530,7 @@ impl Default for Role {
 pub struct Comment {
     pub id          : Id,
     pub rating_id   : Id,
+    // TODO: Convert time stamps from second to millisecond precision?
     pub created_at  : Timestamp,
     pub archived_at : Option<Timestamp>,
     pub text        : String,
@@ -760,6 +763,7 @@ impl std::ops::AddAssign<(RatingContext, RatingValue)> for AvgRatingsBuilder {
 pub struct Rating {
     pub id          : Id,
     pub place_id    : Id,
+    // TODO: Convert time stamps from second to millisecond precision?
     pub created_at  : Timestamp,
     pub archived_at : Option<Timestamp>,
     pub title       : String,
@@ -787,6 +791,7 @@ pub struct Organization {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct UserToken {
     pub email_nonce: EmailNonce,
+    // TODO: Convert time stamps from second to millisecond precision?
     pub expires_at: Timestamp,
 }
 

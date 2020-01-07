@@ -51,8 +51,8 @@ struct IndexedFields {
     status: Field,
     lat: Field,
     lng: Field,
-    ts_min: Field, // minimum timestamp, e.g. event start
-    ts_max: Field, // maximum timestamp, e.g. event end
+    ts_min: Field, // minimum time stamp with second precision, e.g. event start
+    ts_max: Field, // maximum time stamp with second precision, e.g. event end
     title: Field,
     description: Field,
     address_street: Field,
