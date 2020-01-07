@@ -604,7 +604,7 @@ impl PlaceRepo for SqliteConnection {
         let mut sql = "SELECT tag, COUNT(*) as count \
                        FROM place_revision_tag \
                        WHERE parent_rowid IN \
-                       (SELECT id FROM place WHERE (place_id, rev) IN (SELECT id, rev FROM place) AND status > 0) \
+                       (SELECT rowid FROM place_revision WHERE (parent_rowid, rev) IN (SELECT rowid, current_rev FROM place) AND current_status > 0) \
                        GROUP BY tag"
             .to_string();
         if params.min_count.is_some() || params.max_count.is_some() {
