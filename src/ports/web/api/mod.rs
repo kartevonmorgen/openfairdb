@@ -116,8 +116,8 @@ const SECONDS_PER_DAY: i64 = 24 * 60 * 60;
 #[get("/entries/recently-changed?<since>&<until>&<with_ratings>&<offset>&<limit>")]
 fn get_entries_recently_changed(
     db: sqlite::Connections,
-    since: Option<i64>,
-    until: Option<i64>,
+    since: Option<i64>, // in seconds
+    until: Option<i64>, // in seconds
     with_ratings: Option<bool>,
     offset: Option<u64>,
     mut limit: Option<u64>,
@@ -137,8 +137,7 @@ fn get_entries_recently_changed(
         }
     } else {
         Some(since_min)
-    }
-    .map(Timestamp::from_seconds);
+    };
     debug_assert!(since.is_some());
     let mut total_count = 0;
     if let Some(offset) = offset {
@@ -163,9 +162,10 @@ fn get_entries_recently_changed(
         limit = Some(limit.unwrap_or(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT - offset.unwrap_or(0)));
     }
     debug_assert!(limit.is_some());
+    // Conversion from seconds (external) to milliseconds (internal)
     let params = RecentlyChangedEntriesParams {
-        since,
-        until: until.map(Timestamp::from_seconds),
+        since: since.map(TimestampMs::from_seconds),
+        until: until.map(TimestampMs::from_seconds),
     };
     let pagination = Pagination { offset, limit };
     let results = {

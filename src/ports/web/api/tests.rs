@@ -1398,38 +1398,79 @@ fn subscribe_to_bbox() {
 }
 
 #[test]
-fn recently_changed_entries_since() {
+fn recently_changed_entries() {
     // Check that the requests succeeds on an empty database just
     // to verify that the literal SQL query that is not verified
     // at compile-time still matches the current database schema!
     let (client, db) = setup();
-    let old_entries = vec![Place::build().id("foo").finish()];
+
+    let old_entries = vec![Place::build().id("old").finish()];
     for e in old_entries {
-        db
-            .exclusive()
-            .unwrap()
-            .create_or_update_place(e)
-            .unwrap();
+        db.exclusive().unwrap().create_or_update_place(e).unwrap();
     }
+
     // Resolution of time stamps in the query is 1 sec
+    // TODO: Don't waste time by sleeping
     std::thread::sleep(std::time::Duration::from_millis(1001));
-    let now = Timestamp::now();
-    let new_entries = vec![Place::build().id("bar").finish()];
-    for e in new_entries {
-        db
-            .exclusive()
-            .unwrap()
-            .create_or_update_place(e)
-            .unwrap();
+    let since_inclusive = Timestamp::now();
+    let recent_entries = vec![Place::build().id("recent").finish()];
+    for e in recent_entries {
+        db.exclusive().unwrap().create_or_update_place(e).unwrap();
     }
-    let mut response = client
-        .get(format!("/entries/recently-changed?since={}", now.into_inner()))
+
+    // Resolution of time stamps in the query is 1 sec
+    // TODO: Don't waste time by sleeping
+    std::thread::sleep(std::time::Duration::from_millis(1001));
+
+    let until_exclusive = Timestamp::now();
+    assert!(since_inclusive < until_exclusive);
+    let new_entries = vec![Place::build().id("new").finish()];
+    for e in new_entries {
+        db.exclusive().unwrap().create_or_update_place(e).unwrap();
+    }
+
+    let mut response_since = client
+        .get(format!(
+            "/entries/recently-changed?since={}",
+            since_inclusive.into_inner(),
+        ))
         .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    eprintln!("{}", body_str);
-    assert!(!body_str.contains("\"id\":\"foo\""));
-    assert!(body_str.contains("\"id\":\"bar\""));
+    assert_eq!(response_since.status(), Status::Ok);
+    let body_since_str = response_since.body().and_then(|b| b.into_string()).unwrap();
+    assert!(!body_since_str.contains("\"id\":\"old\""));
+    assert!(body_since_str.contains("\"id\":\"recent\""));
+    assert!(body_since_str.contains("\"id\":\"new\""));
+
+    let mut response_until = client
+        .get(format!(
+            "/entries/recently-changed?until={}",
+            until_exclusive.into_inner(),
+        ))
+        .dispatch();
+    assert_eq!(response_until.status(), Status::Ok);
+    let body_until_str = response_until
+        .body()
+        .and_then(|b| b.into_string())
+        .unwrap();
+    assert!(body_until_str.contains("\"id\":\"old\""));
+    assert!(body_until_str.contains("\"id\":\"recent\""));
+    assert!(!body_until_str.contains("\"id\":\"new\""));
+
+    let mut response_since_until = client
+        .get(format!(
+            "/entries/recently-changed?since={}&until={}",
+            since_inclusive.into_inner(),
+            until_exclusive.into_inner()
+        ))
+        .dispatch();
+    assert_eq!(response_since_until.status(), Status::Ok);
+    let body_since_until_str = response_since_until
+        .body()
+        .and_then(|b| b.into_string())
+        .unwrap();
+    assert!(!body_since_until_str.contains("\"id\":\"old\""));
+    assert!(body_since_until_str.contains("\"id\":\"recent\""));
+    assert!(!body_since_until_str.contains("\"id\":\"new\""));
 }
 
 #[test]

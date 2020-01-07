@@ -4,7 +4,7 @@ use super::{
     repositories::*,
     util::{
         geo::{MapBbox, MapPoint},
-        time::Timestamp,
+        time::{Timestamp, TimestampMs},
     },
 };
 
@@ -20,8 +20,8 @@ pub struct MostPopularTagsParams {
 
 #[derive(Clone, Debug)]
 pub struct RecentlyChangedEntriesParams {
-    pub since: Option<Timestamp>,
-    pub until: Option<Timestamp>,
+    pub since: Option<TimestampMs>,
+    pub until: Option<TimestampMs>,
 }
 
 pub trait PlaceRepo {
