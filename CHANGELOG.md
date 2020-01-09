@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.8.5 (2020-01-09)
+
+- Fix(web): Fix broken /entries/recently-changed with query parameter `since` in seconds
+
 ## v0.8.4 (2020-01-07)
 
 - Fix(web): Fix broken GET /entries/most-popular-tags
