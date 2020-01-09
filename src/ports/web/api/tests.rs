@@ -1398,6 +1398,41 @@ fn subscribe_to_bbox() {
 }
 
 #[test]
+fn recently_changed_entries_since() {
+    // Check that the requests succeeds on an empty database just
+    // to verify that the literal SQL query that is not verified
+    // at compile-time still matches the current database schema!
+    let (client, db) = setup();
+    let old_entries = vec![Place::build().id("foo").finish()];
+    for e in old_entries {
+        db
+            .exclusive()
+            .unwrap()
+            .create_or_update_place(e)
+            .unwrap();
+    }
+    // Resolution of time stamps in the query is 1 sec
+    std::thread::sleep(std::time::Duration::from_millis(1001));
+    let now = Timestamp::now();
+    let new_entries = vec![Place::build().id("bar").finish()];
+    for e in new_entries {
+        db
+            .exclusive()
+            .unwrap()
+            .create_or_update_place(e)
+            .unwrap();
+    }
+    let mut response = client
+        .get(format!("/entries/recently-changed?since={}", now.into_inner()))
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    eprintln!("{}", body_str);
+    assert!(!body_str.contains("\"id\":\"foo\""));
+    assert!(body_str.contains("\"id\":\"bar\""));
+}
+
+#[test]
 fn count_most_popular_tags_on_empty_db_to_verify_sql() {
     // Check that the requests succeeds on an empty database just
     // to verify that the literal SQL query that is not verified
