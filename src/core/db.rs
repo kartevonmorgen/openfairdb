@@ -8,7 +8,7 @@ use super::{
     },
 };
 
-use failure::Fallible;
+use anyhow::Result as Fallible;
 
 type Result<T> = std::result::Result<T, RepoError>;
 

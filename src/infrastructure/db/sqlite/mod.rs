@@ -3,8 +3,8 @@ mod models;
 mod schema;
 mod util;
 
+use anyhow::Result as Fallible;
 use diesel::{r2d2, sqlite::SqliteConnection};
-use failure::Fallible;
 use owning_ref::{RwLockReadGuardRef, RwLockWriteGuardRefMut};
 use std::{
     ops::{Deref, DerefMut},

@@ -105,7 +105,7 @@ pub fn query_events<D: Db>(
     // See also: https://github.com/slowtec/openfairdb/issues/183
     let visible_event_ids = index
         .query_ids(&visible_events_query, search_limit)
-        .map_err(|err| RepoError::Other(Box::new(err.compat())))?;
+        .map_err(RepoError::Other)?;
 
     // 2nd query: Search for remaining invisible results
     let invisible_event_ids = if let Some(visible_bbox) = visible_bbox {
@@ -120,7 +120,7 @@ pub fn query_events<D: Db>(
                     &invisible_events_query,
                     search_limit - visible_event_ids.len(),
                 )
-                .map_err(|err| RepoError::Other(Box::new(err.compat())))?
+                .map_err(RepoError::Other)?
         } else {
             vec![]
         }

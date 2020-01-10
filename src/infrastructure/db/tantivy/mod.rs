@@ -13,7 +13,8 @@ use crate::core::{
     },
 };
 
-use failure::{bail, Fallible};
+use anyhow::{bail, Result as Fallible};
+use failure::Fail;
 use num_traits::ToPrimitive;
 use std::{
     ops::Bound,
@@ -310,7 +311,7 @@ impl TantivyIndex {
                 "Creating full-text search index in directory: {}",
                 path.as_ref().to_string_lossy()
             );
-            Index::create_in_dir(path, schema)?
+            Index::create_in_dir(path, schema).map_err(Fail::compat)?
         } else {
             warn!("Creating full-text search index in RAM");
             Index::create_in_ram(schema)
@@ -325,8 +326,11 @@ impl TantivyIndex {
         let index_reader = index
             .reader_builder()
             .reload_policy(ReloadPolicy::Manual)
-            .try_into()?;
-        let index_writer = index.writer(OVERALL_INDEX_HEAP_SIZE_IN_BYTES)?;
+            .try_into()
+            .map_err(Fail::compat)?;
+        let index_writer = index
+            .writer(OVERALL_INDEX_HEAP_SIZE_IN_BYTES)
+            .map_err(Fail::compat)?;
         let text_query_parser = QueryParser::for_index(
             &index,
             vec![
@@ -675,8 +679,12 @@ impl TantivyIndex {
             TopDocsMode::Rating => {
                 let collector =
                     TopDocs::with_limit(limit).order_by_u64_field(self.fields.total_rating);
-                searcher.search(&search_query, &collector)?;
-                let top_docs = searcher.search(&search_query, &collector)?;
+                searcher
+                    .search(&search_query, &collector)
+                    .map_err(Fail::compat)?;
+                let top_docs = searcher
+                    .search(&search_query, &collector)
+                    .map_err(Fail::compat)?;
                 for (_, doc_addr) in top_docs {
                     match searcher.doc(doc_addr) {
                         Ok(doc) => {
@@ -724,7 +732,9 @@ impl TantivyIndex {
                         }
                     })
                 };
-                let top_docs = searcher.search(&search_query, &collector)?;
+                let top_docs = searcher
+                    .search(&search_query, &collector)
+                    .map_err(Fail::compat)?;
                 for (_, doc_addr) in top_docs {
                     match searcher.doc(doc_addr) {
                         Ok(doc) => {
@@ -815,10 +825,10 @@ impl IdIndex for TantivyIndex {
 
 impl Indexer for TantivyIndex {
     fn flush_index(&mut self) -> Fallible<()> {
-        self.index_writer.commit()?;
+        self.index_writer.commit().map_err(Fail::compat)?;
         // Manually reload the reader to ensure that all committed changes
         // become visible immediately.
-        self.index_reader.reload()?;
+        self.index_reader.reload().map_err(Fail::compat)?;
         Ok(())
     }
 }

@@ -5,8 +5,8 @@ use crate::core::util::{
     time::{Timestamp, TimestampMs},
 };
 
+use anyhow::{bail, format_err, Result as Fallible};
 use chrono::prelude::*;
-use failure::{bail, format_err, Fallible};
 use num_traits::{FromPrimitive, ToPrimitive};
 use std::{borrow::Borrow, fmt, ops::Deref, str::FromStr};
 use strum_macros::{EnumCount, EnumIter};

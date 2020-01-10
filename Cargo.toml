@@ -19,6 +19,7 @@ members = [
 ]
 
 [dependencies]
+anyhow = "*"
 bs58 = "*"
 chrono = "*"
 # clap 3 is supposed to introduce breaking changes
@@ -28,6 +29,7 @@ diesel = { version = "*", features = ["sqlite", "r2d2"] }
 diesel_migrations = { version = "*", features = ["sqlite"] }
 dotenv = "*"
 env_logger = "*"
+# failure is only required for TantivyError
 failure = "*"
 fast_chemail = "*"
 geocoding = "*"

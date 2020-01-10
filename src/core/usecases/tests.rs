@@ -2,8 +2,8 @@ use super::*;
 
 use crate::core::{usecases, util::geo};
 
+use anyhow::Result as Fallible;
 use chrono::prelude::*;
-use failure::Fallible;
 use std::{cell::RefCell, result};
 
 //TODO: move tests to corresponding usecase

@@ -1448,10 +1448,7 @@ fn recently_changed_entries() {
         ))
         .dispatch();
     assert_eq!(response_until.status(), Status::Ok);
-    let body_until_str = response_until
-        .body()
-        .and_then(|b| b.into_string())
-        .unwrap();
+    let body_until_str = response_until.body().and_then(|b| b.into_string()).unwrap();
     assert!(body_until_str.contains("\"id\":\"old\""));
     assert!(body_until_str.contains("\"id\":\"recent\""));
     assert!(!body_until_str.contains("\"id\":\"new\""));

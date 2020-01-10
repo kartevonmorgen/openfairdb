@@ -1,6 +1,8 @@
 use super::{util::load_url, *};
 
 use crate::core::prelude::*;
+
+use anyhow::anyhow;
 use chrono::prelude::*;
 use diesel::{
     self,
@@ -14,7 +16,7 @@ type Result<T> = result::Result<T, RepoError>;
 
 fn load_review_status(status: ReviewStatusPrimitive) -> Result<ReviewStatus> {
     ReviewStatus::try_from(status)
-        .ok_or_else(|| RepoError::Other(format!("Invalid review status: {}", status).into()))
+        .ok_or_else(|| RepoError::Other(anyhow!("Invalid review status: {}", status)))
 }
 
 fn load_place(

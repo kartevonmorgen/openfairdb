@@ -63,7 +63,7 @@ pub fn search(
     // See also: https://github.com/slowtec/openfairdb/issues/183
     let visible_places = index
         .query_places(&visible_places_query, limit)
-        .map_err(|err| RepoError::Other(Box::new(err.compat())))?;
+        .map_err(RepoError::Other)?;
     debug_assert!(visible_places
         .iter()
         .all(|e| visible_bbox.contains_point(e.pos)));
@@ -77,7 +77,7 @@ pub fn search(
         };
         index
             .query_places(&invisible_places_query, limit - visible_places.len())
-            .map_err(|err| RepoError::Other(Box::new(err.compat())))?
+            .map_err(RepoError::Other)?
     } else {
         vec![]
     };
@@ -101,7 +101,7 @@ pub fn global_search(index: &dyn PlaceIndex, txt: &str, limit: usize) -> Result<
 
     let entries = index
         .query_places(&index_query, limit)
-        .map_err(|err| RepoError::Other(Box::new(err.compat())))?;
+        .map_err(RepoError::Other)?;
 
     Ok(entries)
 }

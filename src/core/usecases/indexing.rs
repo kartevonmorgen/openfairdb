@@ -1,6 +1,6 @@
 use crate::core::{prelude::*, util::sort::Rated};
 
-use failure::Fallible;
+use anyhow::Result as Fallible;
 
 pub fn reindex_place(
     indexer: &dyn PlaceIndexer,

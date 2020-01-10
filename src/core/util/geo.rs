@@ -1,3 +1,4 @@
+use anyhow::bail;
 use itertools::Itertools;
 
 pub type RawCoord = i32;
@@ -281,7 +282,7 @@ impl MapPoint {
         }
     }
 
-    fn parse_lat_lng_deg(lat_deg_str: &str, lng_dec_str: &str) -> Result<Self, failure::Error> {
+    fn parse_lat_lng_deg(lat_deg_str: &str, lng_dec_str: &str) -> Result<Self, anyhow::Error> {
         match (lat_deg_str.parse::<f64>(), lng_dec_str.parse::<f64>()) {
             (Ok(lat_deg), Ok(lng_deg)) => {
                 let lat = LatCoord::try_from_deg(lat_deg);
@@ -292,14 +293,14 @@ impl MapPoint {
                         debug_assert!(lng.is_valid());
                         Ok(MapPoint::new(lat, lng))
                     } else {
-                        failure::bail!("Invalid longitude degrees: {}", lng_deg);
+                        bail!("Invalid longitude degrees: {}", lng_deg);
                     }
                 } else {
-                    failure::bail!("Invalid latitude degrees: {}", lat_deg);
+                    bail!("Invalid latitude degrees: {}", lat_deg);
                 }
             }
-            (Err(err), _) => failure::bail!("Invalid latitude '{}': {}", lat_deg_str, err),
-            (_, Err(err)) => failure::bail!("Invalid longitude '{}': {}", lng_dec_str, err),
+            (Err(err), _) => bail!("Invalid latitude '{}': {}", lat_deg_str, err),
+            (_, Err(err)) => bail!("Invalid longitude '{}': {}", lng_dec_str, err),
         }
     }
 }
@@ -311,13 +312,13 @@ impl std::fmt::Display for MapPoint {
 }
 
 impl std::str::FromStr for MapPoint {
-    type Err = failure::Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some((lat_deg_str, lng_deg_str)) = s.split(',').collect_tuple() {
             MapPoint::parse_lat_lng_deg(lat_deg_str, lng_deg_str)
         } else {
-            failure::bail!("Failed to parse MapPoint: {}", s);
+            bail!("Failed to parse MapPoint: {}", s);
         }
     }
 }
@@ -428,7 +429,7 @@ impl std::fmt::Display for MapBbox {
 }
 
 impl std::str::FromStr for MapBbox {
-    type Err = failure::Error;
+    type Err = anyhow::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some((sw_lat_deg_str, sw_lng_deg_str, ne_lat_deg_str, ne_lng_deg_str)) =
@@ -438,11 +439,11 @@ impl std::str::FromStr for MapBbox {
             let ne = MapPoint::parse_lat_lng_deg(ne_lat_deg_str, ne_lng_deg_str);
             match (sw, ne) {
                 (Ok(sw), Ok(ne)) => Ok(MapBbox::new(sw, ne)),
-                (Err(err), _) => failure::bail!("Invalid south-west point: {}", err),
-                (_, Err(err)) => failure::bail!("Invalid north-east point: {}", err),
+                (Err(err), _) => bail!("Invalid south-west point: {}", err),
+                (_, Err(err)) => bail!("Invalid north-east point: {}", err),
             }
         } else {
-            failure::bail!("Failed to parse MapBbox: {}", s);
+            bail!("Failed to parse MapBbox: {}", s);
         }
     }
 }

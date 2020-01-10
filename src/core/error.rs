@@ -1,5 +1,5 @@
 use pwhash;
-use std::{error, io};
+use std::io;
 
 quick_error! {
     #[derive(Debug)]
@@ -101,23 +101,23 @@ quick_error! {
         NotFound{
             description("The requested object could not be found")
         }
-        TooManyFound{
+        TooManyFound {
             description("Too many instead of only one requested object has been found")
         }
         #[cfg(test)]
-        AlreadyExists{
+        AlreadyExists {
             description("The object already exists")
         }
-        InvalidVersion{
+        InvalidVersion {
             description("The version of the object is invalid")
         }
         Io(err: io::Error) {
             from()
             cause(err)
-            description(err.description())
+            description(err.to_string())
         }
-        Other(err: Box<dyn error::Error>){
-            description(err.description())
+        Other(err: anyhow::Error) {
+            description(err.to_string())
         }
     }
 }
@@ -125,34 +125,34 @@ quick_error! {
 quick_error! {
     #[derive(Debug)]
     pub enum Error {
-        Parameter(err: ParameterError){
+        Parameter(err: ParameterError) {
             from()
             cause(err)
             description(err.description())
         }
-        ParseInt(err: std::num::ParseIntError){
+        ParseInt(err: std::num::ParseIntError) {
             from()
             cause(err)
             description(err.description())
         }
-        Repo(err: RepoError){
+        Repo(err: RepoError) {
             from()
             cause(err)
             description(err.description())
         }
-        Pwhash(err: pwhash::error::Error){
+        Pwhash(err: pwhash::error::Error) {
             from()
             cause(err)
             description(err.description())
         }
-        Internal(msg: String){
+        Internal(msg: String) {
             from()
         }
     }
 }
 
-impl From<failure::Error> for RepoError {
-    fn from(from: failure::Error) -> Self {
-        RepoError::Other(Box::new(from.compat()))
+impl From<anyhow::Error> for RepoError {
+    fn from(from: anyhow::Error) -> Self {
+        RepoError::Other(from)
     }
 }

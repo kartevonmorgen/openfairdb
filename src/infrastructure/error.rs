@@ -2,7 +2,7 @@ use crate::core::error::{Error as BError, RepoError};
 use diesel::r2d2;
 use diesel_migrations::RunMigrationsError;
 use serde_json;
-use std::{error, io};
+use std::io;
 
 use diesel::result::Error as DieselError;
 
@@ -16,14 +16,14 @@ impl From<DieselError> for RepoError {
     fn from(err: DieselError) -> RepoError {
         match err {
             DieselError::NotFound => RepoError::NotFound,
-            _ => RepoError::Other(Box::new(err)),
+            _ => RepoError::Other(err.into()),
         }
     }
 }
 
 impl From<RunMigrationsError> for AppError {
     fn from(err: RunMigrationsError) -> AppError {
-        AppError::Other(Box::new(err))
+        AppError::Other(err.into())
     }
 }
 
@@ -40,10 +40,10 @@ quick_error! {
             cause(err)
             description(err.description())
         }
-        Other(err: Box<dyn error::Error + Send + Sync>){
+        Other(err: anyhow::Error){
             from()
             description(err.description())
-            from(err: io::Error) -> (Box::new(err))
+            from(err: io::Error) -> (err.into())
         }
         R2d2(err: r2d2::PoolError){
             from()
@@ -60,11 +60,5 @@ quick_error! {
         Csv(err: ::csv::Error){
             from()
         }
-    }
-}
-
-impl From<failure::Error> for AppError {
-    fn from(from: failure::Error) -> Self {
-        AppError::Other(Box::new(from.compat()))
     }
 }
