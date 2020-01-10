@@ -128,6 +128,12 @@ pub trait Db:
     fn delete_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<()>;
 }
 
+#[derive(Copy, Clone, Debug)]
+pub enum IndexQueryMode {
+    WithRating,
+    WithoutRating,
+}
+
 #[derive(Debug, Default, Clone)]
 pub struct IndexQuery<'a, 'b> {
     // status = None: Don't filter by review status, i.e. return all entries
@@ -155,7 +161,12 @@ pub trait Indexer {
 }
 
 pub trait IdIndex {
-    fn query_ids(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<Id>>;
+    fn query_ids(
+        &self,
+        mode: IndexQueryMode,
+        query: &IndexQuery,
+        limit: usize,
+    ) -> Fallible<Vec<Id>>;
 }
 
 pub trait IdIndexer: Indexer + IdIndex {

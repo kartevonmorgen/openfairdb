@@ -104,7 +104,11 @@ pub fn query_events<D: Db>(
     // This is required to reliably retrieve all available results!
     // See also: https://github.com/slowtec/openfairdb/issues/183
     let visible_event_ids = index
-        .query_ids(&visible_events_query, search_limit)
+        .query_ids(
+            IndexQueryMode::WithoutRating,
+            &visible_events_query,
+            search_limit,
+        )
         .map_err(RepoError::Other)?;
 
     // 2nd query: Search for remaining invisible results
@@ -117,6 +121,7 @@ pub fn query_events<D: Db>(
             };
             index
                 .query_ids(
+                    IndexQueryMode::WithoutRating,
                     &invisible_events_query,
                     search_limit - visible_event_ids.len(),
                 )

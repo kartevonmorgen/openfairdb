@@ -1,7 +1,7 @@
 use crate::core::{
     db::{
-        EventAndPlaceIndexer, EventIndexer, IdIndex, IdIndexer, IndexQuery, IndexedPlace, Indexer,
-        PlaceIndex, PlaceIndexer,
+        EventAndPlaceIndexer, EventIndexer, IdIndex, IdIndexer, IndexQuery, IndexQueryMode,
+        IndexedPlace, Indexer, PlaceIndex, PlaceIndexer,
     },
     entities::{
         AvgRatingValue, AvgRatings, Category, Event, Id, Place, RatingContext, ReviewStatus,
@@ -292,6 +292,7 @@ fn u64_to_avg_rating(val: u64) -> AvgRatingValue {
 
 #[derive(Copy, Clone, Debug)]
 enum TopDocsMode {
+    Score,
     Rating,
     ScoreBoostedByRating,
 }
@@ -351,7 +352,11 @@ impl TantivyIndex {
         })
     }
 
-    fn build_query(&self, query: &IndexQuery) -> (BooleanQuery, TopDocsMode) {
+    fn build_query(
+        &self,
+        query_mode: IndexQueryMode,
+        query: &IndexQuery,
+    ) -> (BooleanQuery, TopDocsMode) {
         let mut sub_queries: Vec<(Occur, Box<dyn Query>)> = Vec::with_capacity(1 + 2 + 1 + 1 + 1);
 
         if !query.ids.is_empty() {
@@ -648,19 +653,28 @@ impl TantivyIndex {
         // results are sorted only by their rating, e.g. if the query
         // contains just the bounding box or ids.
         if text_and_tags_queries.is_empty() {
-            (sub_queries.into(), TopDocsMode::Rating)
+            let mode = match query_mode {
+                IndexQueryMode::WithRating => TopDocsMode::Rating,
+                IndexQueryMode::WithoutRating => TopDocsMode::Score,
+            };
+            (sub_queries.into(), mode)
         } else {
             sub_queries.push((
                 Occur::Must,
                 Box::new(BooleanQuery::from(text_and_tags_queries)),
             ));
-            (sub_queries.into(), TopDocsMode::ScoreBoostedByRating)
+            let mode = match query_mode {
+                IndexQueryMode::WithRating => TopDocsMode::ScoreBoostedByRating,
+                IndexQueryMode::WithoutRating => TopDocsMode::Score,
+            };
+            (sub_queries.into(), mode)
         }
     }
 
     #[allow(clippy::absurd_extreme_comparisons)]
     fn query_documents<D>(
         &self,
+        query_mode: IndexQueryMode,
         query: &IndexQuery,
         limit: usize,
         mut doc_collector: D,
@@ -672,10 +686,27 @@ impl TantivyIndex {
             bail!("Invalid limit: {}", limit);
         }
 
-        let (search_query, top_docs_mode) = self.build_query(query);
+        let (search_query, top_docs_mode) = self.build_query(query_mode, query);
         let searcher = self.index_reader.searcher();
         // TODO: Try to combine redundant code from different search strategies
         match top_docs_mode {
+            TopDocsMode::Score => {
+                let collector = TopDocs::with_limit(limit);
+                let top_docs = searcher
+                    .search(&search_query, &collector)
+                    .map_err(Fail::compat)?;
+                for (_, doc_addr) in top_docs {
+                    match searcher.doc(doc_addr) {
+                        Ok(doc) => {
+                            doc_collector.collect_document(doc_addr, doc);
+                        }
+                        Err(err) => {
+                            warn!("Failed to load document {:?}: {}", doc_addr, err);
+                        }
+                    }
+                }
+                Ok(doc_collector)
+            }
             TopDocsMode::Rating => {
                 let collector =
                     TopDocs::with_limit(limit).order_by_u64_field(self.fields.total_rating);
@@ -816,9 +847,14 @@ impl<'a> DocumentCollector for IndexedPlaceCollector<'a> {
 }
 
 impl IdIndex for TantivyIndex {
-    fn query_ids(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<Id>> {
+    fn query_ids(
+        &self,
+        query_mode: IndexQueryMode,
+        query: &IndexQuery,
+        limit: usize,
+    ) -> Fallible<Vec<Id>> {
         let collector = IdCollector::with_capacity(self.fields.id, limit);
-        self.query_documents(query, limit, collector)
+        self.query_documents(query_mode, query, limit, collector)
             .map(Into::into)
     }
 }
@@ -961,7 +997,7 @@ impl EventIndexer for TantivyIndex {
 impl PlaceIndex for TantivyIndex {
     fn query_places(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>> {
         let collector = IndexedPlaceCollector::with_capacity(&self.fields, limit);
-        self.query_documents(query, limit, collector)
+        self.query_documents(IndexQueryMode::WithRating, query, limit, collector)
             .map(Into::into)
     }
 }
@@ -994,12 +1030,17 @@ impl Indexer for SearchEngine {
 }
 
 impl IdIndex for SearchEngine {
-    fn query_ids(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<Id>> {
+    fn query_ids(
+        &self,
+        mode: IndexQueryMode,
+        query: &IndexQuery,
+        limit: usize,
+    ) -> Fallible<Vec<Id>> {
         let inner = match self.0.lock() {
             Ok(guard) => guard,
             Err(poisoned) => poisoned.into_inner(),
         };
-        inner.query_ids(query, limit)
+        inner.query_ids(mode, query, limit)
     }
 }
 

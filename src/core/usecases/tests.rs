@@ -132,7 +132,12 @@ impl Indexer for DummySearchEngine {
 }
 
 impl IdIndex for DummySearchEngine {
-    fn query_ids(&self, _query: &IndexQuery, _limit: usize) -> Fallible<Vec<Id>> {
+    fn query_ids(
+        &self,
+        _mode: IndexQueryMode,
+        _query: &IndexQuery,
+        _limit: usize,
+    ) -> Fallible<Vec<Id>> {
         unimplemented!();
     }
 }
