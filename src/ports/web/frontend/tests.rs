@@ -44,9 +44,23 @@ mod events {
     use chrono::prelude::*;
 
     #[test]
-    fn get_a_list_of_all_events_chronologically() {
+    fn search_events() {
         let (client, db, mut search_engine) = setup();
         let new_events = vec![
+            usecases::NewEvent {
+                title: "x".into(),
+                start: Timestamp::from(
+                    chrono::Utc::now()
+                        .checked_sub_signed(chrono::Duration::days(2))
+                        .unwrap(),
+                )
+                .into_inner(),
+                tags: Some(vec!["foo".into()]),
+                registration: Some("email".into()),
+                email: Some("test@example.com".into()),
+                created_by: Some("test@example.com".into()),
+                ..Default::default()
+            },
             usecases::NewEvent {
                 title: "x".into(),
                 start: Timestamp::from(
@@ -62,14 +76,13 @@ mod events {
                 ..Default::default()
             },
             usecases::NewEvent {
-                title: "x".into(),
+                title: "foo".into(),
                 start: Timestamp::from(
                     chrono::Utc::now()
-                        .checked_add_signed(chrono::Duration::days(2))
+                        .checked_add_signed(chrono::Duration::days(1))
                         .unwrap(),
                 )
                 .into_inner(),
-                tags: Some(vec!["bla".into()]),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
                 created_by: Some("test@example.com".into()),
@@ -79,11 +92,11 @@ mod events {
                 title: "x".into(),
                 start: Timestamp::from(
                     chrono::Utc::now()
-                        .checked_sub_signed(chrono::Duration::days(2))
+                        .checked_add_signed(chrono::Duration::days(2))
                         .unwrap(),
                 )
                 .into_inner(),
-                tags: Some(vec!["bla".into()]),
+                tags: Some(vec!["foo".into()]),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
                 created_by: Some("test@example.com".into()),
@@ -105,13 +118,68 @@ mod events {
             event_ids
         };
 
+        // All events
         let mut res = client.get("/events").dispatch();
         assert_eq!(res.status(), Status::Ok);
         let body_str = res.body().and_then(|b| b.into_string()).unwrap();
-        assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
         assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
-        // too old
+        assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
+        assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[3])));
+
+        // Search with simple text
+        let mut res = client.get("/events?text=foo").dispatch();
+        assert_eq!(res.status(), Status::Ok);
+        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
+        assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
+        assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[3])));
+
+        // Search with hashtag text
+        let mut res = client.get("/events?text=%23foo").dispatch();
+        assert_eq!(res.status(), Status::Ok);
+        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
+        assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[3])));
+
+        // Search with tag
+        let mut res = client.get("/events?tag=foo").dispatch();
+        assert_eq!(res.status(), Status::Ok);
+        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
+        assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[3])));
+
+        // Search with simple text (not found)
+        let mut res = client.get("/events?text=bar").dispatch();
+        assert_eq!(res.status(), Status::Ok);
+        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[3])));
+
+        // Search with hashtag text (not found)
+        let mut res = client.get("/events?text=%23bar").dispatch();
+        assert_eq!(res.status(), Status::Ok);
+        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[3])));
+
+        // Search with tag (not found)
+        let mut res = client.get("/events?tag=bar").dispatch();
+        assert_eq!(res.status(), Status::Ok);
+        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
+        assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[3])));
     }
 
     #[test]
