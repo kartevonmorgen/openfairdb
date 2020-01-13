@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.8.6 (2020-01-dd)
+
+- New(web): POST /events/\<ids>/archive for scouts and admins to archive multiple events
+
 ## v0.8.5 (2020-01-09)
 
 - Fix(web): Fix broken /entries/recently-changed with query parameter `since` in seconds

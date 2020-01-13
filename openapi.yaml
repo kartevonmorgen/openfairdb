@@ -360,7 +360,7 @@ paths:
               $ref: '#/components/schemas/Event'
       responses:
         '200':
-          description: Sucessfuly updated the event
+          description: Sucessfully updated the event
         '401':
           $ref: '#/components/responses/UnauthorizedError'
     delete:
@@ -380,7 +380,26 @@ paths:
             type: string
       responses:
         '200':
-          description: Sucessfuly deleted the event
+          description: Sucessfully deleted the event
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  '/events/{ids}/archive':
+    post:
+      tags:
+        - Events
+      summary: Archive multiple events
+      description: |
+        Marks the given events as *archived* and excludes them from
+        all search results.
+
+        Only scouts and admins are entitled to invoke this function.
+      parameters:
+        - $ref: '#/components/parameters/IdListPath'
+      responses:
+        '204':
+          description: Archived the given events if not already archived.
+        '400':
+          $ref: '#/components/responses/ParameterError'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
 

@@ -38,6 +38,8 @@ mod users;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
+type StatusResult = result::Result<Status, AppError>;
+
 pub fn routes() -> Vec<Route> {
     routes![
         login,
@@ -61,6 +63,7 @@ pub fn routes() -> Vec<Route> {
         events::get_events_with_token,
         events::put_event,
         events::put_event_with_token,
+        events::post_events_archive,
         events::delete_event,
         events::delete_event_with_token,
         users::post_request_password_reset,

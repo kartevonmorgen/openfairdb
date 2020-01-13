@@ -202,15 +202,48 @@ pub fn get_events_chronologically(
     Ok(Json(events))
 }
 
+#[post("/events/<ids>/archive")]
+pub fn post_events_archive(
+    login: Login,
+    db: sqlite::Connections,
+    mut search_engine: tantivy::SearchEngine,
+    ids: String,
+) -> StatusResult {
+    let ids = util::split_ids(&ids);
+    if ids.is_empty() {
+        return Err(Error::Parameter(ParameterError::EmptyIdList).into());
+    }
+    let archived_by_email = {
+        let db = db.shared()?;
+        // Only scouts and admins are entitled to review events
+        usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?.email
+    };
+    let update_count = flows::archive_events(&db, &mut search_engine, &ids, &archived_by_email)?;
+    if update_count < ids.len() {
+        log::info!(
+            "Archived only {} of {} event(s): {:?}",
+            update_count,
+            ids.len(),
+            ids
+        );
+    }
+    Ok(HttpStatus::NoContent)
+}
+
 #[delete("/events/<_id>", rank = 2)]
 pub fn delete_event(mut _db: sqlite::Connections, _id: &RawStr) -> HttpStatus {
     HttpStatus::Unauthorized
 }
 
 #[delete("/events/<id>")]
-pub fn delete_event_with_token(db: sqlite::Connections, token: Bearer, id: &RawStr) -> Result<()> {
+pub fn delete_event_with_token(
+    db: sqlite::Connections,
+    token: Bearer,
+    id: &RawStr,
+) -> StatusResult {
     usecases::delete_event(&mut *db.exclusive()?, &token.0, &id.to_string())?;
-    Ok(Json(()))
+    // TODO: Replace with HttpStatus::NoContent
+    Ok(HttpStatus::Ok)
 }
 
 #[cfg(test)]
@@ -1159,6 +1192,157 @@ mod tests {
             let new = db.shared().unwrap().get_event(id.as_ref()).unwrap();
             assert_eq!(new.title, "Changed");
             assert_eq!(new.created_by, created_by);
+        }
+    }
+
+    mod archive {
+        use super::*;
+        use chrono::prelude::*;
+
+        #[test]
+        fn only_scouts_and_admins_can_archive_events() {
+            let (client, db) = setup();
+
+            let users = vec![
+                User {
+                    email: "admin@example.com".into(),
+                    email_confirmed: true,
+                    password: "secret".parse::<Password>().unwrap(),
+                    role: Role::Admin,
+                },
+                User {
+                    email: "scout@example.com".into(),
+                    email_confirmed: true,
+                    password: "secret".parse::<Password>().unwrap(),
+                    role: Role::Scout,
+                },
+                User {
+                    email: "user@example.com".into(),
+                    email_confirmed: true,
+                    password: "secret".parse::<Password>().unwrap(),
+                    role: Role::User,
+                },
+            ];
+            for u in users {
+                db.exclusive().unwrap().create_user(&u).unwrap();
+            }
+
+            let response = client.post("/events/foo/archive").dispatch();
+            assert_eq!(response.status(), Status::Unauthorized);
+
+            let login = client
+                .post("/login")
+                .header(ContentType::JSON)
+                .body(r#"{"email": "user@example.com", "password": "secret"}"#)
+                .dispatch();
+            assert_eq!(login.status(), Status::Ok);
+            let response = client.post("/events/foo/archive").dispatch();
+            assert_eq!(response.status(), Status::Unauthorized);
+
+            let login = client
+                .post("/login")
+                .header(ContentType::JSON)
+                .body(r#"{"email": "scout@example.com", "password": "secret"}"#)
+                .dispatch();
+            assert_eq!(login.status(), Status::Ok);
+            let response = client.post("/events/foo/archive").dispatch();
+            assert_eq!(response.status(), Status::NoContent);
+
+            let login = client
+                .post("/login")
+                .header(ContentType::JSON)
+                .body(r#"{"email": "admin@example.com", "password": "secret"}"#)
+                .dispatch();
+            assert_eq!(login.status(), Status::Ok);
+            let response = client.post("/events/foo/archive").dispatch();
+            assert_eq!(response.status(), Status::NoContent);
+        }
+
+        #[test]
+        fn archive_events() {
+            let (client, db, mut search_engine) = setup2();
+
+            let admin = User {
+                email: "admin@example.com".into(),
+                email_confirmed: true,
+                password: "secret".parse::<Password>().unwrap(),
+                role: Role::Admin,
+            };
+            db.exclusive().unwrap().create_user(&admin).unwrap();
+
+            // Create 2 events
+            db.exclusive()
+                .unwrap()
+                .create_org(Organization {
+                    id: "foo".into(),
+                    name: "bar".into(),
+                    owned_tags: vec!["tag".into()],
+                    api_token: "foo".into(),
+                })
+                .unwrap();
+            let e1 = usecases::NewEvent {
+                title: "x".into(),
+                start: Utc::now().naive_utc().timestamp(),
+                tags: Some(vec!["bla".into()]), // org tag will be added implicitly!
+                created_by: Some("foo@bar.com".into()),
+                ..Default::default()
+            };
+            let id1 = usecases::create_new_event(
+                &*db.exclusive().unwrap(),
+                &mut search_engine,
+                Some("foo"),
+                e1,
+            )
+            .unwrap()
+            .id;
+            let e2 = usecases::NewEvent {
+                title: "x".into(),
+                start: Utc::now().naive_utc().timestamp(),
+                tags: Some(vec!["bla".into()]), // org tag will be added implicitly!
+                created_by: Some("foo@bar.com".into()),
+                ..Default::default()
+            };
+            let id2 = usecases::create_new_event(
+                &*db.exclusive().unwrap(),
+                &mut search_engine,
+                Some("foo"),
+                e2,
+            )
+            .unwrap()
+            .id;
+
+            let mut response = client.get("/events").dispatch();
+            assert_eq!(response.status(), Status::Ok);
+            let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+            assert!(body_str.contains(&format!("\"id\":\"{}\"", id1)));
+            assert!(body_str.contains(&format!("\"id\":\"{}\"", id2)));
+
+            let login = client
+                .post("/login")
+                .header(ContentType::JSON)
+                .body(r#"{"email": "admin@example.com", "password": "secret"}"#)
+                .dispatch();
+            assert_eq!(login.status(), Status::Ok);
+
+            let response = client.post(format!("/events/{}/archive", id2)).dispatch();
+            assert_eq!(response.status(), Status::NoContent);
+
+            let mut response = client.get("/events").dispatch();
+            assert_eq!(response.status(), Status::Ok);
+            let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+            assert!(body_str.contains(&format!("\"id\":\"{}\"", id1)));
+            assert!(!body_str.contains(&format!("\"id\":\"{}\"", id2)));
+
+            let response = client
+                .post(format!("/events/{},{}/archive", id1, id2))
+                .dispatch();
+            assert_eq!(response.status(), Status::NoContent);
+
+            let mut response = client.get("/events").dispatch();
+            assert_eq!(response.status(), Status::Ok);
+            let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+            assert!(!body_str.contains(&format!("\"id\":\"{}\"", id1)));
+            assert!(!body_str.contains(&format!("\"id\":\"{}\"", id2)));
         }
     }
 
