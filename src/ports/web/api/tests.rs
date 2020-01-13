@@ -1487,7 +1487,7 @@ fn count_most_popular_tags_on_empty_db_to_verify_sql() {
 #[test]
 fn openapi() {
     let (client, _) = setup();
-    let req = client.get("/server/api.yaml");
+    let req = client.get("/server/openapi.yaml");
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(

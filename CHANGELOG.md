@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.8.7 (2020-01-14)
+
+- fix(test): Fix broken OpenAPI download test
+
 ## v0.8.6 (2020-01-13)
 
 - new(web): POST /events/\<ids>/archive for scouts and admins to archive multiple events
