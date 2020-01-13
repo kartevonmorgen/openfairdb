@@ -257,12 +257,12 @@ paths:
           in: query
           description: Filter events by `event.start` >= `start_min`
           schema:
-            $ref: '#/components/schemas/UnixTime'
+            $ref: '#/components/schemas/EventTime'
         - name: start_max
           in: query
           description: Filter events by `event.start` <= `start_max`
           schema:
-            $ref: '#/components/schemas/UnixTime'
+            $ref: '#/components/schemas/EventTime'
         - name: text
           in: query
           description: |
@@ -968,9 +968,9 @@ components:
           type: string
           example: Detailed description of the event
         start:
-          $ref: '#/components/schemas/UnixTime'
+          $ref: '#/components/schemas/EventTime'
         end:
-          $ref: '#/components/schemas/UnixTime'
+          $ref: '#/components/schemas/EventTime'
         created_at:
           $ref: '#/components/schemas/UnixTimeMillis'
         created_by:
@@ -1018,6 +1018,25 @@ components:
       description: |
         Unix time (number of seconds since 00:00::00 1. January, 1970, UTC)
       example: 1547403509
+    EventTime:
+      type: integer
+      format: int64
+      description: |
+        The start/end time of an event.
+
+        Event times are always specified in UTC, independent of the geographical
+        location and the actual time zone at this location at the given time.
+        Therfore these time stamps should be interpreted as a *naive* date time
+        without any time zone. The calculation of the actual, absolute point that
+        is needed for chronological ordering of events at different geographical
+        locations would require a time zone database to perform this conversion.
+
+        Frontends should display and edit event times as if the event is located
+        in the UTC time zone, neither taking into account the actual time at the
+        geographical location of the event nor the current local time zone of the
+        client itself!
+      oneOf:
+        - $ref: '#/components/schemas/UnixTime'
     UnixTimeMillis:
       type: integer
       format: int64
