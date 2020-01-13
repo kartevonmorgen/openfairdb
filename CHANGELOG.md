@@ -2,23 +2,24 @@
 
 ## v0.8.6 (2020-01-dd)
 
-- New(web): POST /events/\<ids>/archive for scouts and admins to archive multiple events
+- new(web): POST /events/\<ids>/archive for scouts and admins to archive multiple events
+- new(web): GET /export/events.csv?<query-params> for scouts and admins to export events as CSV
 
 ## v0.8.5 (2020-01-09)
 
-- Fix(web): Fix broken /entries/recently-changed with query parameter `since` in seconds
+- fix(web): Fix broken /entries/recently-changed with query parameter `since` in seconds
 
 ## v0.8.4 (2020-01-07)
 
-- Fix(web): Fix broken GET /entries/most-popular-tags
+- fix(web): Fix broken GET /entries/most-popular-tags
 
 ## v0.8.3 (2019-12-21)
 
-- Fix(web): Count places with multiple revisions only once on dashboard
+- fix(web): Count places with multiple revisions only once on dashboard
 
 ## v0.8.2 (2019-12-18)
 
-- Fix(web): Preserve ratings and comments when archiving places to allow restoring later
+- fix(web): Preserve ratings and comments when archiving places to allow restoring later
 
 ## v0.8.1 (2019-12-18)
 

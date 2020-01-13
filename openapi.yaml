@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: OpenFairDB API
-  version: 0.8.5
+  version: 0.8.6
   contact:
     name: slowtec GmbH
     url: 'https://slowtec.de'
@@ -248,35 +248,15 @@ paths:
     get:
       tags:
         - Events
-      summary: Receive events
+      summary: Search events
       parameters:
         - $ref: '#/components/parameters/BoundingBox'
         - $ref: '#/components/parameters/PaginationLimit'
         - $ref: '#/components/parameters/EventTagList'
-        - name: start_min
-          in: query
-          description: Filter events by `event.start` >= `start_min`
-          schema:
-            $ref: '#/components/schemas/EventTime'
-        - name: start_max
-          in: query
-          description: Filter events by `event.start` <= `start_max`
-          schema:
-            $ref: '#/components/schemas/EventTime'
-        - name: text
-          in: query
-          description: |
-            Filter events by textual terms. Hashtags starting with '#' will
-            be extracted from the given text and handled as tag filters.
-          schema:
-            type: string
-        - name: created_by
-          in: query
-          description: |
-            The email address of the event creator. Requests with this parameter
-            will be rejected without a valid API token!
-          schema:
-            $ref: '#/components/schemas/Email'
+        - $ref: '#/components/parameters/EventStartMin'
+        - $ref: '#/components/parameters/EventStartMax'
+        - $ref: '#/components/parameters/EventFilterText'
+        - $ref: '#/components/parameters/EventCreatedBy'
       responses:
         '200':
           description: Successful response
@@ -546,7 +526,7 @@ paths:
   /export/entries.csv:
     get:
       summary: |
-        Export data as CSV.
+        Export places as CSV.
 
         The CSV export is only available for logged in users with the role _Admin_ or _Scout_.
       description: |
@@ -562,6 +542,38 @@ paths:
         - Export
       parameters:
         - $ref: '#/components/parameters/BoundingBox'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            text/csv:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  /export/events.csv:
+    get:
+      summary: |
+        Export events as CSV.
+
+        The CSV export is only available for logged in users with the role _Admin_ or _Scout_.
+      description: |
+        This request supports the same paramaters as the corresponding search request.
+
+        **Example**:
+
+        Export all events in Germany:
+        `/export/events.csv?bbox=47.49,0.79,54.63,18.30`
+      tags:
+        - Export
+      parameters:
+        - $ref: '#/components/parameters/BoundingBox'
+        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: '#/components/parameters/EventTagList'
+        - $ref: '#/components/parameters/EventStartMin'
+        - $ref: '#/components/parameters/EventStartMax'
+        - $ref: '#/components/parameters/EventFilterText'
+        - $ref: '#/components/parameters/EventCreatedBy'
       responses:
         '200':
           description: Successful response
@@ -1120,6 +1132,34 @@ components:
       required: false
       schema:
         $ref: '#/components/schemas/TagList'
+    EventStartMin:
+      name: start_min
+      in: query
+      description: Filter events by `event.start` >= `start_min`
+      schema:
+        $ref: '#/components/schemas/EventTime'
+    EventStartMax:
+      name: start_max
+      in: query
+      description: Filter events by `event.start` <= `start_max`
+      schema:
+        $ref: '#/components/schemas/EventTime'
+    EventFilterText:
+      name: text
+      in: query
+      description: |
+        Filter events by textual terms. Hashtags starting with '#' will
+        be extracted from the given text and handled as tag filters.
+      schema:
+        type: string
+    EventCreatedBy:
+      name: created_by
+      in: query
+      description: |
+        The email address of the event creator. Requests with this parameter
+        will be rejected without a valid API token!
+      schema:
+        $ref: '#/components/schemas/Email'
     EventTagList:
       name: tag
       description: Filter events by tags

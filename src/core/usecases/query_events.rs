@@ -5,7 +5,6 @@ use crate::core::{
 };
 
 const DEFAULT_RESULT_LIMIT: usize = 100;
-const MAX_RESULT_LIMIT: usize = 500;
 
 #[allow(clippy::absurd_extreme_comparisons)]
 pub fn query_events<D: Db>(
@@ -79,41 +78,24 @@ pub fn query_events<D: Db>(
         ..Default::default()
     };
 
-    let search_limit = if let Some(limit) = limit {
-        if limit > MAX_RESULT_LIMIT {
-            info!(
-                "Requested limit {} exceeds maximum limit {} for search results",
-                limit, MAX_RESULT_LIMIT
-            );
-            MAX_RESULT_LIMIT
-        } else if limit <= 0 {
-            warn!("Invalid search limit: {}", limit);
-            return Err(Error::Parameter(ParameterError::InvalidLimit));
-        } else {
-            limit
-        }
-    } else {
+    let limit = limit.unwrap_or_else(|| {
         info!(
-            "No limit requested - Using default limit {} for search results",
+            "No limit requested - Using default limit {} for event search results",
             DEFAULT_RESULT_LIMIT
         );
         DEFAULT_RESULT_LIMIT
-    };
+    });
 
     // 1st query: Search for visible results only
     // This is required to reliably retrieve all available results!
     // See also: https://github.com/slowtec/openfairdb/issues/183
     let visible_event_ids = index
-        .query_ids(
-            IndexQueryMode::WithoutRating,
-            &visible_events_query,
-            search_limit,
-        )
+        .query_ids(IndexQueryMode::WithoutRating, &visible_events_query, limit)
         .map_err(RepoError::Other)?;
 
     // 2nd query: Search for remaining invisible results
     let invisible_event_ids = if let Some(visible_bbox) = visible_bbox {
-        if visible_event_ids.len() < search_limit {
+        if visible_event_ids.len() < limit {
             let invisible_events_query = IndexQuery {
                 include_bbox: Some(filter::extend_bbox(&visible_bbox)),
                 exclude_bbox: visible_events_query.include_bbox,
@@ -123,7 +105,7 @@ pub fn query_events<D: Db>(
                 .query_ids(
                     IndexQueryMode::WithoutRating,
                     &invisible_events_query,
-                    search_limit - visible_event_ids.len(),
+                    limit - visible_event_ids.len(),
                 )
                 .map_err(RepoError::Other)?
         } else {

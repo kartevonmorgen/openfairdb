@@ -1,6 +1,12 @@
 use super::{super::guards::Bearer, geocoding::*, *};
 
-use crate::core::util::{geo::MapBbox, validate};
+use crate::{
+    adapters,
+    core::{
+        prelude::Result as CoreResult,
+        util::{geo::MapBbox, validate},
+    },
+};
 
 use rocket::{
     http::{RawStr, Status as HttpStatus},
@@ -163,15 +169,40 @@ impl<'q> FromQuery<'q> for usecases::EventQuery {
     }
 }
 
+const MAX_RESULT_LIMIT: usize = 500;
+
+#[allow(clippy::absurd_extreme_comparisons)]
+fn validate_and_adjust_query_limit(limit: Option<usize>) -> CoreResult<Option<usize>> {
+    let limit = if let Some(limit) = limit {
+        if limit > MAX_RESULT_LIMIT {
+            info!(
+                "Requested limit {} exceeds maximum limit {} for event search results",
+                limit, MAX_RESULT_LIMIT
+            );
+            Some(MAX_RESULT_LIMIT)
+        } else if limit <= 0 {
+            warn!("Invalid search limit: {}", limit);
+            return Err(Error::Parameter(ParameterError::InvalidLimit));
+        } else {
+            Some(limit)
+        }
+    } else {
+        None
+    };
+    Ok(limit)
+}
+
 #[get("/events?<query..>")]
 pub fn get_events_with_token(
-    db: sqlite::Connections,
+    connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     token: Bearer,
-    query: usecases::EventQuery,
+    mut query: usecases::EventQuery,
 ) -> Result<Vec<json::Event>> {
-    //TODO: check token
-    let events = usecases::query_events(&*db.shared()?, &search_engine, query, Some(token.0))?
+    query.limit = validate_and_adjust_query_limit(query.limit)?;
+    let token = token.0;
+    let db = connections.shared()?;
+    let events = usecases::query_events(&*db, &search_engine, query, Some(token))?
         .into_iter()
         .map(json::Event::from)
         .collect();
@@ -180,17 +211,19 @@ pub fn get_events_with_token(
 
 #[get("/events?<query..>", rank = 2)]
 pub fn get_events_chronologically(
-    db: sqlite::Connections,
+    connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
-    query: usecases::EventQuery,
+    mut query: usecases::EventQuery,
 ) -> Result<Vec<json::Event>> {
     if query.created_by.is_some() {
         return Err(Error::Parameter(ParameterError::Unauthorized).into());
     }
-    let events: Vec<_> = usecases::query_events(&*db.shared()?, &search_engine, query, None)?
+    query.limit = validate_and_adjust_query_limit(query.limit)?;
+    let db = connections.shared()?;
+    let events: Vec<_> = usecases::query_events(&*db, &search_engine, query, None)?
         .into_iter()
         .map(|e| {
-            // TODO:Make sure within usecase that the creator email
+            // TODO: Make sure within usecase that the creator email
             // is not shown to unregistered users
             Event {
                 created_by: None,
@@ -200,6 +233,82 @@ pub fn get_events_chronologically(
         .map(json::Event::from)
         .collect();
     Ok(Json(events))
+}
+
+#[get("/export/events.csv?<query..>")]
+pub fn csv_export_with_token(
+    connections: sqlite::Connections,
+    search_engine: tantivy::SearchEngine,
+    token: Bearer,
+    login: Login,
+    query: usecases::EventQuery,
+) -> result::Result<Content<String>, AppError> {
+    csv_export(connections, search_engine, Some(token.0), login, query)
+}
+
+#[get("/export/events.csv?<query..>", rank = 2)]
+pub fn csv_export_without_token(
+    connections: sqlite::Connections,
+    search_engine: tantivy::SearchEngine,
+    login: Login,
+    query: usecases::EventQuery,
+) -> result::Result<Content<String>, AppError> {
+    csv_export(connections, search_engine, None, login, query)
+}
+
+fn csv_export(
+    connections: sqlite::Connections,
+    search_engine: tantivy::SearchEngine,
+    token: Option<String>,
+    login: Login,
+    mut query: usecases::EventQuery,
+) -> result::Result<Content<String>, AppError> {
+    let db = connections.shared()?;
+
+    let user = usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+
+    let max_limit = db.count_events()? + 100;
+    query.limit = Some(query.limit.unwrap_or(max_limit).min(max_limit));
+
+    // The token is validated implicitly during the following query if available!
+    let with_token = token.is_some();
+
+    let records: Vec<_> = usecases::query_events(&*db, &search_engine, query, token)?
+        .into_iter()
+        .map(|e| {
+            // Hide created_by e-mail if no valid token has been provided
+            // TODO: Move code into query_events use case (see above)
+            if with_token {
+                e
+            } else {
+                Event {
+                    created_by: None,
+                    ..e
+                }
+            }
+        })
+        .map(|e| {
+            // Hide contact data for everyone except admins
+            // TODO: Move code into query_events use case (see above)
+            if user.role == Role::Admin {
+                e
+            } else {
+                Event { contact: None, ..e }
+            }
+        })
+        .map(adapters::csv::EventRecord::from)
+        .collect();
+
+    let buff: Vec<u8> = vec![];
+    let mut wtr = csv::Writer::from_writer(buff);
+
+    for r in records {
+        wtr.serialize(r)?;
+    }
+    wtr.flush()?;
+    let data = String::from_utf8(wtr.into_inner()?)?;
+
+    Ok(Content(ContentType::CSV, data))
 }
 
 #[post("/events/<ids>/archive")]
@@ -1443,5 +1552,180 @@ mod tests {
             assert_eq!(res.status(), HttpStatus::Forbidden);
             assert_eq!(db.shared().unwrap().count_events().unwrap(), 1);
         }
+    }
+
+    use chrono::prelude::*;
+    #[test]
+    fn export_csv() {
+        let (client, db, mut search_engine) = setup2();
+
+        let users = vec![
+            User {
+                email: "admin@example.com".into(),
+                email_confirmed: true,
+                password: "secret".parse::<Password>().unwrap(),
+                role: Role::Admin,
+            },
+            User {
+                email: "scout@example.com".into(),
+                email_confirmed: true,
+                password: "secret".parse::<Password>().unwrap(),
+                role: Role::Scout,
+            },
+            User {
+                email: "user@example.com".into(),
+                email_confirmed: true,
+                password: "secret".parse::<Password>().unwrap(),
+                role: Role::User,
+            },
+        ];
+        for u in users {
+            db.exclusive().unwrap().create_user(&u).unwrap();
+        }
+
+        db.exclusive()
+            .unwrap()
+            .create_org(Organization {
+                id: "foo".into(),
+                name: "bar".into(),
+                owned_tags: vec!["tag".into()],
+                api_token: "foo".into(),
+            })
+            .unwrap();
+        let start1 = Utc::now().naive_utc().timestamp();
+        let e1 = usecases::NewEvent {
+            title: "title1".into(),
+            start: start1,
+            tags: Some(vec!["bla".into()]), // org tag will be added implicitly!
+            created_by: Some("createdby1@example.com".into()),
+            email: Some("email1@example.com".into()),
+            telephone: Some("phone1".into()),
+            ..Default::default()
+        };
+        let id1 = usecases::create_new_event(
+            &*db.exclusive().unwrap(),
+            &mut search_engine,
+            Some("foo"),
+            e1,
+        )
+        .unwrap()
+        .id;
+        let start2 = Utc::now().naive_utc().timestamp();
+        let e2 = usecases::NewEvent {
+            title: "title2".into(),
+            start: start2,
+            tags: Some(vec!["bli".into()]), // org tag will be added implicitly!
+            created_by: Some("createdby2@example.com".into()),
+            email: Some("email2@example.com".into()),
+            telephone: Some("phone2".into()),
+            ..Default::default()
+        };
+        let id2 = usecases::create_new_event(
+            &*db.exclusive().unwrap(),
+            &mut search_engine,
+            Some("foo"),
+            e2,
+        )
+        .unwrap()
+        .id;
+
+        let response = client.get("/export/events.csv").dispatch();
+        assert_eq!(response.status(), Status::Unauthorized);
+
+        let login = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(r#"{"email": "user@example.com", "password": "secret"}"#)
+            .dispatch();
+        assert_eq!(login.status(), Status::Ok);
+        let req = client.get("/export/events.csv");
+        let response = req.dispatch();
+        assert_eq!(response.status(), Status::Unauthorized);
+
+        // Scout without token
+        let login = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(r#"{"email": "scout@example.com", "password": "secret"}"#)
+            .dispatch();
+        assert_eq!(login.status(), Status::Ok);
+        let mut response = client.get("/export/events.csv").dispatch();
+        assert_eq!(response.status(), Status::Ok);
+        // Check the expected headers only once for text/csv
+        for h in response.headers().iter() {
+            if h.name.as_str() == "Content-Type" {
+                assert_eq!(h.value, "text/csv; charset=utf-8");
+            }
+        }
+        let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+        assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,email,phone,homepage,image_url,image_link_url,tags\n"));
+        assert!(body_str.contains(&format!(
+            "{},,,title1,,{},,,,,,,,,,,,,\"bla,tag\"\n",
+            id1, start1
+        )));
+        assert!(body_str.contains(&format!(
+            "{},,,title2,,{},,,,,,,,,,,,,\"bli,tag\"\n",
+            id2, start2
+        )));
+        assert!(!body_str.contains("createdby1@example.com"));
+        assert!(!body_str.contains("email1@example.com"));
+        assert!(!body_str.contains("phone1"));
+        assert!(!body_str.contains("createdby2@example.com"));
+        assert!(!body_str.contains("email2@example.com"));
+        assert!(!body_str.contains("phone2"));
+
+        // Scout with token
+        let mut response = client
+            .get("/export/events.csv")
+            .header(Header::new("Authorization", "Bearer foo"))
+            .dispatch();
+        assert_eq!(response.status(), Status::Ok);
+        let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+        assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,email,phone,homepage,image_url,image_link_url,tags\n"));
+        assert!(body_str.contains(&format!(
+            "{},createdby1@example.com,,title1,,{},,,,,,,,,,,,,\"bla,tag\"\n",
+            id1, start1
+        )));
+        assert!(body_str.contains(&format!(
+            "{},createdby2@example.com,,title2,,{},,,,,,,,,,,,,\"bli,tag\"\n",
+            id2, start2
+        )));
+        assert!(!body_str.contains("email1@example.com"));
+        assert!(!body_str.contains("phone1"));
+        assert!(!body_str.contains("email2@example.com"));
+        assert!(!body_str.contains("phone2"));
+
+        // Admin without token
+        let login = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(r#"{"email": "admin@example.com", "password": "secret"}"#)
+            .dispatch();
+        assert_eq!(login.status(), Status::Ok);
+        let mut response = client.get("/export/events.csv").dispatch();
+        assert_eq!(response.status(), Status::Ok);
+        let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+        assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,email,phone,homepage,image_url,image_link_url,tags\n"));
+        assert!(body_str.contains(&format!(
+            "{},,,title1,,{},,,,,,,,email1@example.com,phone1,,,,\"bla,tag\"\n",
+            id1, start1
+        )));
+        assert!(body_str.contains(&format!(
+            "{},,,title2,,{},,,,,,,,email2@example.com,phone2,,,,\"bli,tag\"\n",
+            id2, start2
+        )));
+        assert!(!body_str.contains("createdby1@example.com"));
+        assert!(!body_str.contains("createdby2@example.com"));
+
+        // Admin with token
+        let mut response = client
+            .get("/export/events.csv")
+            .header(Header::new("Authorization", "Bearer foo"))
+            .dispatch();
+        assert_eq!(response.status(), Status::Ok);
+        let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+        assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,email,phone,homepage,image_url,image_link_url,tags\n"));
+        assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1)));
+        assert!(body_str.contains(&format!("{},createdby2@example.com,,title2,,{},,,,,,,,email2@example.com,phone2,,,,\"bli,tag\"\n", id2, start2)));
     }
 }

@@ -66,6 +66,8 @@ pub fn routes() -> Vec<Route> {
         events::post_events_archive,
         events::delete_event,
         events::delete_event_with_token,
+        events::csv_export_with_token,
+        events::csv_export_without_token,
         users::post_request_password_reset,
         users::post_reset_password,
         users::post_user,
@@ -83,7 +85,7 @@ pub fn routes() -> Vec<Route> {
         count::get_count_tags,
         get_version,
         get_api,
-        csv_export,
+        entries_csv_export,
     ]
 }
 
@@ -500,7 +502,7 @@ struct CsvExport {
 }
 
 #[get("/export/entries.csv?<export..>")]
-fn csv_export(
+fn entries_csv_export(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     login: Login,
@@ -553,7 +555,7 @@ fn csv_export(
             .collect::<Vec<_>>()
     };
 
-    let records: Vec<adapters::csv::CsvRecord> = entries_categories_and_ratings
+    let records: Vec<_> = entries_categories_and_ratings
         .into_iter()
         .map(adapters::csv::CsvRecord::from)
         .collect();

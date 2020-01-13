@@ -1499,7 +1499,7 @@ fn openapi() {
 }
 
 #[test]
-fn export_csv() {
+fn entries_export_csv() {
     let (client, db, mut search_engine) = setup2();
 
     let users = vec![User {
@@ -1645,7 +1645,7 @@ fn export_csv() {
 }
 
 #[test]
-fn export_csv_authorization() {
+fn entries_export_csv_authorization() {
     let (client, db) = setup();
 
     let users = vec![

@@ -1,4 +1,4 @@
-use crate::core::entities::*;
+use crate::core::{entities::*, util::time::Timestamp};
 
 use url::Url;
 
@@ -83,6 +83,88 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
             categories,
             tags: tags.join(","),
             avg_rating: avg_rating.into(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct EventRecord {
+    pub id: String,
+    pub created_by: Option<String>,
+    pub organizer: Option<String>,
+    pub title: String,
+    pub description: Option<String>,
+    pub start: i64,
+    pub end: Option<i64>,
+    pub lat: Option<f64>,
+    pub lng: Option<f64>,
+    pub street: Option<String>,
+    pub zip: Option<String>,
+    pub city: Option<String>,
+    pub country: Option<String>,
+    pub email: Option<String>,
+    pub phone: Option<String>,
+    pub homepage: Option<String>,
+    pub image_url: Option<String>,
+    pub image_link_url: Option<String>,
+    pub tags: String,
+}
+
+impl From<Event> for EventRecord {
+    fn from(from: Event) -> Self {
+        let Event {
+            id,
+            created_by,
+            organizer,
+            title,
+            description,
+            start,
+            end,
+            location,
+            contact,
+            homepage,
+            image_url,
+            image_link_url,
+            tags,
+            ..
+        } = from;
+
+        let (pos, address) = location.map_or((None, None), |l| (Some(l.pos), l.address));
+
+        let (lat, lng) = pos.map_or((None, None), |p| {
+            (Some(p.lat().to_deg()), Some(p.lng().to_deg()))
+        });
+
+        let address = address.unwrap_or_default();
+        let Address {
+            street,
+            zip,
+            city,
+            country,
+        } = address;
+
+        let Contact { email, phone } = contact.unwrap_or_default();
+
+        Self {
+            id: id.into(),
+            created_by,
+            title,
+            description,
+            start: Timestamp::from(start).into_seconds(),
+            end: end.map(|end| Timestamp::from(end).into_seconds()),
+            lat,
+            lng,
+            street,
+            zip,
+            city,
+            country,
+            organizer,
+            email: email.map(Into::into),
+            phone,
+            homepage: homepage.map(Url::into_string),
+            image_url: image_url.map(Url::into_string),
+            image_link_url: image_link_url.map(Url::into_string),
+            tags: tags.join(","),
         }
     }
 }
