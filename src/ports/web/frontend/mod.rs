@@ -214,12 +214,62 @@ pub fn get_entry(
 }
 
 #[get("/events/<id>")]
-pub fn get_event(db: sqlite::Connections, id: &RawStr) -> Result<Markup> {
-    let mut ev = usecases::get_event(&*db.shared()?, &id)?;
+pub fn get_event(
+    pool: sqlite::Connections,
+    id: &RawStr,
+    account: Option<Account>,
+) -> Result<Markup> {
+    let (user, mut ev): (Option<User>, _) = {
+        let db = pool.shared()?;
+        let ev = usecases::get_event(&*db, &id)?;
+        let user = if let Some(a) = account {
+            db.try_get_user_by_email(a.email())?
+        } else {
+            None
+        };
+        (user, ev)
+    };
+
     // TODO:Make sure within usecase that the creator email
     // is not shown to unregistered users
     ev.created_by = None;
-    Ok(view::event(None, ev))
+
+    Ok(view::event(user, ev))
+}
+
+#[post("/events/<id>/archive")]
+pub fn post_archive_event(
+    account: Account,
+    pool: sqlite::Connections,
+    mut search_engine: SearchEngine,
+    id: &RawStr,
+) -> std::result::Result<Redirect, Flash<Redirect>> {
+    let archived_by_email = pool
+        .shared()
+        .and_then(|db| {
+            // Only scouts and admins are entitled to review events
+            let user = usecases::authorize_user_by_email(&*db, &account.email(), Role::Scout)?;
+            Ok(user.email)
+        })
+        .map_err(|_| {
+            Flash::error(
+                Redirect::to(uri!(get_event: id)),
+                "Failed to achive the event.",
+            )
+        })?;
+    archive_events(&pool, &mut search_engine, &[id], &archived_by_email)
+        .map_err(|_| {
+            Flash::error(
+                Redirect::to(uri!(get_event: id)),
+                "Failed to achive the event.",
+            )
+        })
+        .map(|update_count| {
+            if update_count != 1 {
+                log::info!("Archived more than one event: {}", update_count);
+            }
+            Redirect::to("/events") //TODO: use uri! macro
+        })
 }
 
 #[get("/events?<query..>")]
@@ -227,6 +277,7 @@ pub fn get_events_chronologically(
     db: sqlite::Connections,
     search_engine: SearchEngine,
     mut query: usecases::EventQuery,
+    account: Option<Account>,
 ) -> Result<Markup> {
     if query.created_by.is_some() {
         return Err(Error::Parameter(ParameterError::Unauthorized).into());
@@ -241,8 +292,8 @@ pub fn get_events_chronologically(
     }
 
     let events = usecases::query_events(&*db.shared()?, &search_engine, query, None)?;
-
-    Ok(view::events(&events))
+    let email = account.as_ref().map(Account::email);
+    Ok(view::events(email, &events))
 }
 
 #[get("/dashboard")]
@@ -328,6 +379,7 @@ pub fn routes() -> Vec<Route> {
         post_comments_archive,
         post_ratings_archive,
         post_change_user_role,
+        post_archive_event,
         login::get_login,
         login::get_login_user,
         login::post_login,
