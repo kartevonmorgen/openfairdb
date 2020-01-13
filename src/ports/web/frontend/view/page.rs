@@ -44,16 +44,16 @@ fn header(email: Option<&str>) -> Markup {
     header {
         @if let Some(email) = email {
             div class="msg" { "Your are logged in as " span class="email" { (email) } }
-            nav {
-                a href="/" { "search" }
+        }
+        nav {
+            a href="/" { "places" }
+            a href="/events" { "events" }
+            @if email.is_some() {
                 a href="/dashboard" { "dashboard" }
                 form class="logout" action="/logout" method ="POST" {
                     input type="submit" value="logout";
                 }
-            }
-        }
-        @ else {
-            nav {
+            } @else {
                 a href="/login"  { "login" }
                 a href="/register" { "register" }
             }

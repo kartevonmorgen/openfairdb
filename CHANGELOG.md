@@ -5,6 +5,7 @@
 - new(web): POST /events/\<ids>/archive for scouts and admins to archive multiple events
 - new(web): GET /export/events.csv?<query-params> for scouts and admins to export events as CSV
 - new(frontend): Add button to archive events (visible for Admins and Scouts)
+- new(frontend): Add "places" and "events" to menu
 
 ## v0.8.5 (2020-01-09)
 
