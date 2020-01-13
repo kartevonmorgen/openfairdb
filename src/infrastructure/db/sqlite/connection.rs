@@ -781,7 +781,7 @@ fn into_new_event_with_tags(
         (None, None)
     };
 
-    let registration = registration.map(Into::into);
+    let registration = registration.map(util::registration_type_into_i16);
 
     let created_by = if let Some(ref email) = created_by {
         Some(resolve_user_created_by_email(conn, email)?)
@@ -998,7 +998,7 @@ impl EventGateway for SqliteConnection {
                 None
             };
 
-            let registration = registration.map(Into::into);
+            let registration = registration.map(util::registration_type_from_i16);
 
             let event = Event {
                 id: uid.into(),
@@ -1061,7 +1061,10 @@ impl EventGateway for SqliteConnection {
             .order_by(e_dsl::start)
             .load::<models::EventEntity>(self)?;
         let tag_rels = et_dsl::event_tags.load(self)?;
-        Ok(events.into_iter().map(|e| (e, &tag_rels).into()).collect())
+        Ok(events
+            .into_iter()
+            .map(|e| util::event_from_event_entity_and_event_tags(e, &tag_rels))
+            .collect())
     }
 
     fn count_events(&self) -> Result<usize> {
@@ -1199,7 +1202,7 @@ impl RatingRepository for SqliteConnection {
             archived_by: None,
             title,
             value: i8::from(value).into(),
-            context: context.into(),
+            context: util::rating_context_to_string(context),
             source,
         };
         let _count = diesel::insert_into(schema::place_rating::table)

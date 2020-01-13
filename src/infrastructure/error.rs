@@ -62,3 +62,9 @@ quick_error! {
         }
     }
 }
+
+impl From<ofdb_core::password::Error> for AppError {
+    fn from(err: ofdb_core::password::Error) -> Self {
+        AppError::Business(err.into())
+    }
+}

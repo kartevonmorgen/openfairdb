@@ -1,8 +1,5 @@
 use super::*;
-
-use crate::{adapters::json, core::usecases, test::Bencher};
-
-use crate::core::util::sort::Rated;
+use crate::{adapters::json, core::usecases, core::util::sort::Rated, test::Bencher};
 
 pub mod prelude {
     pub use crate::core::db::*;
@@ -142,7 +139,7 @@ fn get_one_entry() {
     flows::create_rating(
         &connections,
         &mut search_engine,
-        usecases::NewPlaceRating {
+        ofdb_core::NewPlaceRating {
             context: RatingContext::Humanity,
             value: RatingValue::from(2),
             title: "title".into(),
@@ -1097,7 +1094,7 @@ fn get_one_rating() {
     flows::create_rating(
         &connections,
         &mut search_engine,
-        usecases::NewPlaceRating {
+        ofdb_core::NewPlaceRating {
             context: RatingContext::Humanity,
             value: RatingValue::from(2),
             user: None,
@@ -1144,7 +1141,7 @@ fn ratings_with_and_without_source() {
     flows::create_rating(
         &connections,
         &mut search_engine,
-        usecases::NewPlaceRating {
+        ofdb_core::NewPlaceRating {
             context: RatingContext::Humanity,
             value: RatingValue::from(2),
             user: None,
@@ -1158,7 +1155,7 @@ fn ratings_with_and_without_source() {
     flows::create_rating(
         &connections,
         &mut search_engine,
-        usecases::NewPlaceRating {
+        ofdb_core::NewPlaceRating {
             context: RatingContext::Humanity,
             value: RatingValue::from(2),
             user: None,
@@ -1543,16 +1540,16 @@ fn entries_export_csv() {
             .tags(vec![Category::TAG_COMMERCIAL])
             .finish(),
     ];
-    entries[0].location.address = Some(Address::build().street("street1").finish());
+    let mut addr = Address::default();
+    addr.street = Some("street1".into());
+    entries[0].location.address = Some(addr);
     entries[0].created.at = TimestampMs::from_seconds(1111);
-    entries[0].location.address = Some(
-        Address::build()
-            .street("street1")
-            .zip("zip1")
-            .city("city1")
-            .country("country1")
-            .finish(),
-    );
+    let mut addr = Address::default();
+    addr.street = Some("street1".into());
+    addr.zip = Some("zip1".into());
+    addr.city = Some("city1".into());
+    addr.country = Some("country1".into());
+    entries[0].location.address = Some(addr);
     entries[0].links = Some(Links {
         homepage: Some("http://homepage1".parse().unwrap()),
         image: Some("https://img".parse().unwrap()),

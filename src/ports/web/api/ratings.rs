@@ -6,9 +6,10 @@ use crate::{core::util, infrastructure::flows::prelude as flows};
 pub fn post_rating(
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
-    data: Json<usecases::NewPlaceRating>,
+    data: Json<json::NewPlaceRating>,
 ) -> Result<()> {
-    let _ = flows::create_rating(&connections, &mut search_engine, data.into_inner())?;
+    let data = data.into_inner();
+    let _ = flows::create_rating(&connections, &mut search_engine, data.into())?;
     Ok(Json(()))
 }
 

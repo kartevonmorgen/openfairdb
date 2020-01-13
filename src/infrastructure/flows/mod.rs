@@ -133,7 +133,7 @@ mod tests {
 
             pub fn create_rating(
                 self: &EnvFixture,
-                rate_entry: usecases::NewPlaceRating,
+                rate_entry: ofdb_core::NewPlaceRating,
             ) -> (String, String) {
                 flows::create_rating(
                     &self.db_connections,
@@ -239,8 +239,8 @@ mod tests {
             place_id: &str,
             context: RatingContext,
             value: RatingValue,
-        ) -> usecases::NewPlaceRating {
-            usecases::NewPlaceRating {
+        ) -> ofdb_core::NewPlaceRating {
+            ofdb_core::NewPlaceRating {
                 entry: place_id.to_owned(),
                 context,
                 value,

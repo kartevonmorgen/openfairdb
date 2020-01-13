@@ -1,19 +1,6 @@
 use crate::core::prelude::*;
 
-#[rustfmt::skip]
-#[derive(Deserialize, Debug, Clone)]
-pub struct NewPlaceRating {
-    pub entry   : String,
-    pub title   : String,
-    pub value   : RatingValue,
-    pub context : RatingContext,
-    pub comment : String,
-    pub source  : Option<String>,
-    pub user    : Option<String>,
-}
-
 #[derive(Debug, Clone)]
-
 pub struct Storable(Place, ReviewStatus, Rating, Comment);
 
 impl Storable {

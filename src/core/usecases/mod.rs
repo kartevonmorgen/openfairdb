@@ -17,7 +17,6 @@ mod create_new_event;
 mod create_new_place;
 mod create_new_user;
 mod delete_event;
-mod strip_event_details;
 mod find_duplicates;
 mod indexing;
 mod login;
@@ -26,6 +25,7 @@ mod rate_place;
 mod register;
 mod review_places;
 mod search;
+mod strip_event_details;
 mod update_event;
 mod update_place;
 mod user_tokens;
@@ -37,8 +37,8 @@ pub use self::{
     archive_comments::*, archive_events::*, archive_ratings::*, authorize_organization::*,
     change_user_role::*, confirm_email::*, confirm_email_and_reset_password::*,
     create_new_event::*, create_new_place::*, create_new_user::*, delete_event::*,
-    strip_event_details::*, find_duplicates::*, indexing::*, login::*, query_events::*,
-    rate_place::*, register::*, review_places::*, search::*, update_event::*, update_place::*,
+    find_duplicates::*, indexing::*, login::*, query_events::*, rate_place::*, register::*,
+    review_places::*, search::*, strip_event_details::*, update_event::*, update_place::*,
     user_tokens::*,
 };
 

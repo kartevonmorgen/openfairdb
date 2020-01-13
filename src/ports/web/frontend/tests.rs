@@ -345,7 +345,7 @@ mod entry {
         let e_id = flows::prelude::create_place(db, search, e, None)
             .unwrap()
             .id;
-        let r = usecases::NewPlaceRating {
+        let r = ofdb_core::NewPlaceRating {
             title: "A rating".into(),
             comment: "Foo".into(),
             context: RatingContext::Diversity,

@@ -156,3 +156,15 @@ impl From<anyhow::Error> for RepoError {
         RepoError::Other(from)
     }
 }
+
+impl From<ofdb_core::password::Error> for Error {
+    fn from(_: ofdb_core::password::Error) -> Self {
+        Error::Parameter(ParameterError::Password)
+    }
+}
+
+impl From<ofdb_core::RegistrationTypeParseError> for Error {
+    fn from(_: ofdb_core::RegistrationTypeParseError) -> Self {
+        Error::Parameter(ParameterError::RegistrationType)
+    }
+}
