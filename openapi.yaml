@@ -1050,8 +1050,6 @@ components:
         Unix time (number of seconds since 00:00::00 1. January, 1970, UTC)
       example: 1547403509
     EventTime:
-      type: integer
-      format: int64
       description: |
         The start/end time of an event.
 
