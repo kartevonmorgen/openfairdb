@@ -16,8 +16,10 @@ servers:
 paths:
   /search:
     get:
-      summary: |
-        Search for entries ordered by their total rating.
+      summary: Search for entries
+      description: |
+        Search results are ordered by total rating.
+
         The default result contains up to 100 entries. Use the `limit` parameter
         to customize the desired amount. The server may decide to deliver less
         results than requested up to some internal upper limit (currently 500).
@@ -511,9 +513,9 @@ paths:
             text/plain:
               schema:
                 type: string
-  /server/api.yaml:
+  /server/openapi.yaml:
     get:
-      summary: Get current API documentation
+      summary: Download the current API documentation
       tags:
         - Stats
       responses:
@@ -525,11 +527,10 @@ paths:
                 type: string
   /export/entries.csv:
     get:
-      summary: |
-        Export places as CSV.
-
-        The CSV export is only available for logged in users with the role _Admin_ or _Scout_.
+      summary: Export places as CSV.
       description: |
+        The CSV export is only available for logged in users with the role _Admin_ or _Scout_.
+
         **Example**:
 
         Export all entries in Germany:
@@ -553,11 +554,10 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
   /export/events.csv:
     get:
-      summary: |
-        Export events as CSV.
-
-        The CSV export is only available for logged in users with the role _Admin_ or _Scout_.
+      summary: Export events as CSV.
       description: |
+        The CSV export is only available for logged in users with the role _Admin_ or _Scout_.
+
         This request supports the same paramaters as the corresponding search request.
 
         **Example**:

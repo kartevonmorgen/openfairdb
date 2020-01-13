@@ -320,7 +320,7 @@ fn get_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
-#[get("/server/api.yaml")]
+#[get("/server/openapi.yaml")]
 fn get_api() -> Content<&'static str> {
     let data = include_str!("../../../../openapi.yaml");
     let c_type = ContentType::new("text", "yaml");

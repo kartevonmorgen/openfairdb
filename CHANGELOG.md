@@ -1,9 +1,10 @@
 # Changelog
 
-## v0.8.6 (2020-01-dd)
+## v0.8.6 (2020-01-13)
 
 - new(web): POST /events/\<ids>/archive for scouts and admins to archive multiple events
 - new(web): GET /export/events.csv?<query-params> for scouts and admins to export events as CSV
+- chore(web): Change OpenAPI download endpoint from /server/api.yaml to /server/openapi.yaml
 - new(frontend): Add button to archive events (visible for Admins and Scouts)
 - new(frontend): Add "places" and "events" to menu
 
