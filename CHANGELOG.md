@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.8.8 (2020-01-14)
+
+- fix(web): Fix privacy-relevant loophole on event export
+
 ## v0.8.7 (2020-01-14)
 
 - fix(test): Fix broken OpenAPI download test

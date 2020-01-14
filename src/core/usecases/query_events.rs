@@ -11,7 +11,6 @@ pub fn query_events<D: Db>(
     db: &D,
     index: &dyn IdIndex,
     query: EventQuery,
-    token: Option<String>,
 ) -> Result<Vec<Event>> {
     if query.is_empty() {
         // Special case for backwards compatibility
@@ -26,15 +25,6 @@ pub fn query_events<D: Db>(
         text,
         limit,
     } = query;
-    let _org = if let Some(ref token) = token {
-        let org = db.get_org_by_api_token(token).map_err(|e| match e {
-            RepoError::NotFound => Error::Parameter(ParameterError::Unauthorized),
-            _ => Error::Repo(e),
-        })?;
-        Some(org)
-    } else {
-        None
-    };
 
     let mut hash_tags = text
         .as_ref()

@@ -9,13 +9,15 @@ use crate::core::{
 mod archive_comments;
 mod archive_events;
 mod archive_ratings;
+mod authorize_organization;
 mod change_user_role;
 mod confirm_email;
 mod confirm_email_and_reset_password;
 mod create_new_event;
 mod create_new_place;
-pub mod create_new_user;
+mod create_new_user;
 mod delete_event;
+mod strip_event_details;
 mod find_duplicates;
 mod indexing;
 mod login;
@@ -32,11 +34,12 @@ mod user_tokens;
 pub mod tests;
 
 pub use self::{
-    archive_comments::*, archive_events::*, archive_ratings::*, change_user_role::*,
-    confirm_email::*, confirm_email_and_reset_password::*, create_new_event::*,
-    create_new_place::*, create_new_user::*, delete_event::*, find_duplicates::*, indexing::*,
-    login::*, query_events::*, rate_place::*, register::*, review_places::*, search::*,
-    update_event::*, update_place::*, user_tokens::*,
+    archive_comments::*, archive_events::*, archive_ratings::*, authorize_organization::*,
+    change_user_role::*, confirm_email::*, confirm_email_and_reset_password::*,
+    create_new_event::*, create_new_place::*, create_new_user::*, delete_event::*,
+    strip_event_details::*, find_duplicates::*, indexing::*, login::*, query_events::*,
+    rate_place::*, register::*, review_places::*, search::*, update_event::*, update_place::*,
+    user_tokens::*,
 };
 
 //TODO: move usecases into separate files

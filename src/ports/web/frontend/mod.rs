@@ -291,7 +291,7 @@ pub fn get_events_chronologically(
         query.start_min = Some(start_min.into());
     }
 
-    let events = usecases::query_events(&*db.shared()?, &search_engine, query, None)?;
+    let events = usecases::query_events(&*db.shared()?, &search_engine, query)?;
     let email = account.as_ref().map(Account::email);
     Ok(view::events(email, &events))
 }

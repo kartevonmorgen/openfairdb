@@ -200,12 +200,18 @@ pub fn get_events_with_token(
     mut query: usecases::EventQuery,
 ) -> Result<Vec<json::Event>> {
     query.limit = validate_and_adjust_query_limit(query.limit)?;
-    let token = token.0;
+
     let db = connections.shared()?;
-    let events = usecases::query_events(&*db, &search_engine, query, Some(token))?
+
+    let _org = usecases::authorize_organization_by_token(&*db, &token.0)?;
+    let events = usecases::query_events(&*db, &search_engine, query)?
         .into_iter()
         .map(json::Event::from)
         .collect();
+
+    // Release the database connection asap
+    drop(db);
+
     Ok(Json(events))
 }
 
@@ -220,7 +226,7 @@ pub fn get_events_chronologically(
     }
     query.limit = validate_and_adjust_query_limit(query.limit)?;
     let db = connections.shared()?;
-    let events: Vec<_> = usecases::query_events(&*db, &search_engine, query, None)?
+    let events: Vec<_> = usecases::query_events(&*db, &search_engine, query)?
         .into_iter()
         .map(|e| {
             // TODO: Make sure within usecase that the creator email
@@ -243,7 +249,9 @@ pub fn csv_export_with_token(
     login: Login,
     query: usecases::EventQuery,
 ) -> result::Result<Content<String>, AppError> {
-    csv_export(connections, search_engine, Some(token.0), login, query)
+    let organization =
+        usecases::authorize_organization_by_token(&*connections.shared()?, &token.0)?;
+    csv_export(connections, search_engine, Some(organization), login, query)
 }
 
 #[get("/export/events.csv?<query..>", rank = 2)]
@@ -259,7 +267,7 @@ pub fn csv_export_without_token(
 fn csv_export(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
-    token: Option<String>,
+    owner: Option<Organization>,
     login: Login,
     mut query: usecases::EventQuery,
 ) -> result::Result<Content<String>, AppError> {
@@ -270,34 +278,16 @@ fn csv_export(
     let max_limit = db.count_events()? + 100;
     query.limit = Some(query.limit.unwrap_or(max_limit).min(max_limit));
 
-    // The token is validated implicitly during the following query if available!
-    let with_token = token.is_some();
+    let events = usecases::query_events(&*db, &search_engine, query)?.into_iter();
 
-    let records: Vec<_> = usecases::query_events(&*db, &search_engine, query, token)?
-        .into_iter()
-        .map(|e| {
-            // Hide created_by e-mail if no valid token has been provided
-            // TODO: Move code into query_events use case (see above)
-            if with_token {
-                e
-            } else {
-                Event {
-                    created_by: None,
-                    ..e
-                }
-            }
-        })
-        .map(|e| {
-            // Hide contact data for everyone except admins
-            // TODO: Move code into query_events use case (see above)
-            if user.role == Role::Admin {
-                e
-            } else {
-                Event { contact: None, ..e }
-            }
-        })
-        .map(adapters::csv::EventRecord::from)
-        .collect();
+    // Release the database connection asap
+    drop(db);
+
+    let events = usecases::strip_event_details_on_export_by_role(events, user.role);
+    let owned_tags = owner.map(|owner| owner.owned_tags).unwrap_or_default();
+    let events = usecases::strip_event_details_by_owned_tags(events, owned_tags);
+
+    let records: Vec<_> = events.map(adapters::csv::EventRecord::from).collect();
 
     let buff: Vec<u8> = vec![];
     let mut wtr = csv::Writer::from_writer(buff);
@@ -1587,9 +1577,18 @@ mod tests {
             .unwrap()
             .create_org(Organization {
                 id: "foo".into(),
-                name: "bar".into(),
+                name: "foo_name".into(),
                 owned_tags: vec!["tag".into()],
                 api_token: "foo".into(),
+            })
+            .unwrap();
+        db.exclusive()
+            .unwrap()
+            .create_org(Organization {
+                id: "bar".into(),
+                name: "bar_name".into(),
+                owned_tags: vec!["tag2".into()],
+                api_token: "bar".into(),
             })
             .unwrap();
         let start1 = Utc::now().naive_utc().timestamp();
@@ -1623,7 +1622,7 @@ mod tests {
         let id2 = usecases::create_new_event(
             &*db.exclusive().unwrap(),
             &mut search_engine,
-            Some("foo"),
+            Some("bar"),
             e2,
         )
         .unwrap()
@@ -1664,7 +1663,7 @@ mod tests {
             id1, start1
         )));
         assert!(body_str.contains(&format!(
-            "{},,,title2,,{},,,,,,,,,,,,,\"bli,tag\"\n",
+            "{},,,title2,,{},,,,,,,,,,,,,\"bli,tag2\"\n",
             id2, start2
         )));
         assert!(!body_str.contains("createdby1@example.com"));
@@ -1687,11 +1686,12 @@ mod tests {
             id1, start1
         )));
         assert!(body_str.contains(&format!(
-            "{},createdby2@example.com,,title2,,{},,,,,,,,,,,,,\"bli,tag\"\n",
+            "{},,,title2,,{},,,,,,,,,,,,,\"bli,tag2\"\n",
             id2, start2
         )));
         assert!(!body_str.contains("email1@example.com"));
         assert!(!body_str.contains("phone1"));
+        assert!(!body_str.contains("createdby2@example.com"));
         assert!(!body_str.contains("email2@example.com"));
         assert!(!body_str.contains("phone2"));
 
@@ -1711,7 +1711,7 @@ mod tests {
             id1, start1
         )));
         assert!(body_str.contains(&format!(
-            "{},,,title2,,{},,,,,,,,email2@example.com,phone2,,,,\"bli,tag\"\n",
+            "{},,,title2,,{},,,,,,,,email2@example.com,phone2,,,,\"bli,tag2\"\n",
             id2, start2
         )));
         assert!(!body_str.contains("createdby1@example.com"));
@@ -1726,6 +1726,7 @@ mod tests {
         let body_str = response.body().and_then(|b| b.into_string()).unwrap();
         assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,email,phone,homepage,image_url,image_link_url,tags\n"));
         assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1)));
-        assert!(body_str.contains(&format!("{},createdby2@example.com,,title2,,{},,,,,,,,email2@example.com,phone2,,,,\"bli,tag\"\n", id2, start2)));
+        assert!(body_str.contains(&format!("{},,,title2,,{},,,,,,,,email2@example.com,phone2,,,,\"bli,tag2\"\n", id2, start2)));
+        assert!(!body_str.contains("createdby2@example.com"));
     }
 }
