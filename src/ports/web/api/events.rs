@@ -202,15 +202,15 @@ pub fn get_events_with_token(
     query.limit = validate_and_adjust_query_limit(query.limit)?;
 
     let db = connections.shared()?;
-
-    let _org = usecases::authorize_organization_by_token(&*db, &token.0)?;
-    let events = usecases::query_events(&*db, &search_engine, query)?
-        .into_iter()
-        .map(json::Event::from)
-        .collect();
-
+    let org = usecases::authorize_organization_by_token(&*db, &token.0)?;
+    let events = usecases::query_events(&*db, &search_engine, query)?;
     // Release the database connection asap
     drop(db);
+
+    let owned_tags = org.owned_tags;
+    let events: Vec<_> = usecases::strip_event_details_on_search(events.into_iter(), owned_tags)
+        .map(json::Event::from)
+        .collect();
 
     Ok(Json(events))
 }
@@ -225,19 +225,17 @@ pub fn get_events_chronologically(
         return Err(Error::Parameter(ParameterError::Unauthorized).into());
     }
     query.limit = validate_and_adjust_query_limit(query.limit)?;
+
     let db = connections.shared()?;
-    let events: Vec<_> = usecases::query_events(&*db, &search_engine, query)?
-        .into_iter()
-        .map(|e| {
-            // TODO: Make sure within usecase that the creator email
-            // is not shown to unregistered users
-            Event {
-                created_by: None,
-                ..e
-            }
-        })
+    let events = usecases::query_events(&*db, &search_engine, query)?;
+    // Release the database connection asap
+    drop(db);
+
+    let owned_tags = vec![];
+    let events: Vec<_> = usecases::strip_event_details_on_search(events.into_iter(), owned_tags)
         .map(json::Event::from)
         .collect();
+
     Ok(Json(events))
 }
 
@@ -267,25 +265,21 @@ pub fn csv_export_without_token(
 fn csv_export(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
-    owner: Option<Organization>,
+    org: Option<Organization>,
     login: Login,
     mut query: usecases::EventQuery,
 ) -> result::Result<Content<String>, AppError> {
+    let owned_tags = org.map(|org| org.owned_tags).unwrap_or_default();
+
     let db = connections.shared()?;
-
     let user = usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
-
     let max_limit = db.count_events()? + 100;
     query.limit = Some(query.limit.unwrap_or(max_limit).min(max_limit));
-
     let events = usecases::query_events(&*db, &search_engine, query)?.into_iter();
-
     // Release the database connection asap
     drop(db);
 
-    let events = usecases::strip_event_details_on_export_by_role(events, user.role);
-    let owned_tags = owner.map(|owner| owner.owned_tags).unwrap_or_default();
-    let events = usecases::strip_event_details_by_owned_tags(events, owned_tags);
+    let events = usecases::strip_event_details_on_export(events, user.role, owned_tags);
 
     let records: Vec<_> = events.map(adapters::csv::EventRecord::from).collect();
 
@@ -1641,60 +1635,6 @@ mod tests {
         let response = req.dispatch();
         assert_eq!(response.status(), Status::Unauthorized);
 
-        // Scout without token
-        let login = client
-            .post("/login")
-            .header(ContentType::JSON)
-            .body(r#"{"email": "scout@example.com", "password": "secret"}"#)
-            .dispatch();
-        assert_eq!(login.status(), Status::Ok);
-        let mut response = client.get("/export/events.csv").dispatch();
-        assert_eq!(response.status(), Status::Ok);
-        // Check the expected headers only once for text/csv
-        for h in response.headers().iter() {
-            if h.name.as_str() == "Content-Type" {
-                assert_eq!(h.value, "text/csv; charset=utf-8");
-            }
-        }
-        let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-        assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,email,phone,homepage,image_url,image_link_url,tags\n"));
-        assert!(body_str.contains(&format!(
-            "{},,,title1,,{},,,,,,,,,,,,,\"bla,tag\"\n",
-            id1, start1
-        )));
-        assert!(body_str.contains(&format!(
-            "{},,,title2,,{},,,,,,,,,,,,,\"bli,tag2\"\n",
-            id2, start2
-        )));
-        assert!(!body_str.contains("createdby1@example.com"));
-        assert!(!body_str.contains("email1@example.com"));
-        assert!(!body_str.contains("phone1"));
-        assert!(!body_str.contains("createdby2@example.com"));
-        assert!(!body_str.contains("email2@example.com"));
-        assert!(!body_str.contains("phone2"));
-
-        // Scout with token
-        let mut response = client
-            .get("/export/events.csv")
-            .header(Header::new("Authorization", "Bearer foo"))
-            .dispatch();
-        assert_eq!(response.status(), Status::Ok);
-        let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-        assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,email,phone,homepage,image_url,image_link_url,tags\n"));
-        assert!(body_str.contains(&format!(
-            "{},createdby1@example.com,,title1,,{},,,,,,,,,,,,,\"bla,tag\"\n",
-            id1, start1
-        )));
-        assert!(body_str.contains(&format!(
-            "{},,,title2,,{},,,,,,,,,,,,,\"bli,tag2\"\n",
-            id2, start2
-        )));
-        assert!(!body_str.contains("email1@example.com"));
-        assert!(!body_str.contains("phone1"));
-        assert!(!body_str.contains("createdby2@example.com"));
-        assert!(!body_str.contains("email2@example.com"));
-        assert!(!body_str.contains("phone2"));
-
         // Admin without token
         let login = client
             .post("/login")
@@ -1717,7 +1657,13 @@ mod tests {
         assert!(!body_str.contains("createdby1@example.com"));
         assert!(!body_str.contains("createdby2@example.com"));
 
-        // Admin with token
+        // Scout with token
+        let login = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(r#"{"email": "scout@example.com", "password": "secret"}"#)
+            .dispatch();
+        assert_eq!(login.status(), Status::Ok);
         let mut response = client
             .get("/export/events.csv")
             .header(Header::new("Authorization", "Bearer foo"))
@@ -1726,7 +1672,10 @@ mod tests {
         let body_str = response.body().and_then(|b| b.into_string()).unwrap();
         assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,email,phone,homepage,image_url,image_link_url,tags\n"));
         assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1)));
-        assert!(body_str.contains(&format!("{},,,title2,,{},,,,,,,,email2@example.com,phone2,,,,\"bli,tag2\"\n", id2, start2)));
+        assert!(body_str.contains(&format!(
+            "{},,,title2,,{},,,,,,,,email2@example.com,phone2,,,,\"bli,tag2\"\n",
+            id2, start2
+        )));
         assert!(!body_str.contains("createdby2@example.com"));
     }
 }

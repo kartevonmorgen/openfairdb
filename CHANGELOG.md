@@ -1,8 +1,9 @@
 # Changelog
 
-## v0.8.8 (2020-01-14)
+## v0.8.8 (2020-01-17)
 
 - fix(web): Fix privacy-relevant loophole on event export
+- fix(web): Enable export of event details for scouts and organizations as owners
 
 ## v0.8.7 (2020-01-14)
 
