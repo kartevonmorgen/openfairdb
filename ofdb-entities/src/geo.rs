@@ -292,18 +292,14 @@ impl MapPoint {
                         debug_assert!(lng.is_valid());
                         Ok(MapPoint::new(lat, lng))
                     } else {
-                        return Err(MapPointParseError::LongitudeDegree(lng_deg));
+                        Err(MapPointParseError::LongitudeDegree(lng_deg))
                     }
                 } else {
-                    return Err(MapPointParseError::LatitudeDegree(lat_deg));
+                    Err(MapPointParseError::LatitudeDegree(lat_deg))
                 }
             }
-            (Err(err), _) => {
-                return Err(MapPointParseError::LatitudeString(lat_deg_str.into(), err));
-            }
-            (_, Err(err)) => {
-                return Err(MapPointParseError::LongitudeString(lng_deg_str.into(), err));
-            }
+            (Err(err), _) => Err(MapPointParseError::LatitudeString(lat_deg_str.into(), err)),
+            (_, Err(err)) => Err(MapPointParseError::LongitudeString(lng_deg_str.into(), err)),
         }
     }
 }
