@@ -1,5 +1,7 @@
 use crate::core::prelude::*;
 
+use itertools::Either;
+
 fn is_event_owned(event: &Event, owned_tags: &[String]) -> bool {
     // Exclusive ownership of events is determined by the associated
     // tags.
@@ -32,24 +34,33 @@ pub fn strip_event_details_on_export(
     role: Role,
     owned_tags: Vec<String>,
 ) -> impl Iterator<Item = Event> {
-    event_iter.map(move |e| {
-        // Hide contact data for everyone except admins on batch exports
-        let owned = is_event_owned(&e, &owned_tags);
-        if role >= Role::Scout || owned {
-            // Include contact details
-            if owned {
-                // Include created_by
-                e
+    if role == Role::Admin {
+        // Admin sees everything even if no owned tags are provided
+        Either::Left(event_iter)
+    } else {
+        Either::Right(event_iter.map(move |e| {
+            // Contact details are only visible for scouts and admins
+            if role >= Role::Scout {
+                // Include contact details
+                let owned = is_event_owned(&e, &owned_tags);
+                if owned {
+                    // Include created_by
+                    e
+                } else {
+                    // Exclude created_by
+                    Event {
+                        created_by: None,
+                        ..e
+                    }
+                }
             } else {
-                // Exclude created_by
+                // Exclude both contact details and created_by
                 Event {
+                    contact: None,
                     created_by: None,
                     ..e
                 }
             }
-        } else {
-            // Exclude contact details
-            Event { contact: None, ..e }
-        }
-    })
+        }))
+    }
 }

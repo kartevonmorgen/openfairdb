@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.8.9 (2020-01-dd)
+
+- fix(web): Enable export of all event details for admins
+
 ## v0.8.8 (2020-01-17)
 
 - fix(web): Fix privacy-relevant loophole on event export

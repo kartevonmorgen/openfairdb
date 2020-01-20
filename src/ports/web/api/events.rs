@@ -1625,6 +1625,7 @@ mod tests {
         let response = client.get("/export/events.csv").dispatch();
         assert_eq!(response.status(), Status::Unauthorized);
 
+        // Regular users are not allowed to export events
         let login = client
             .post("/login")
             .header(ContentType::JSON)
@@ -1635,11 +1636,11 @@ mod tests {
         let response = req.dispatch();
         assert_eq!(response.status(), Status::Unauthorized);
 
-        // Admin without token
+        // Scout without token sees contact details of all events, but not created_by
         let login = client
             .post("/login")
             .header(ContentType::JSON)
-            .body(r#"{"email": "admin@example.com", "password": "secret"}"#)
+            .body(r#"{"email": "scout@example.com", "password": "secret"}"#)
             .dispatch();
         assert_eq!(login.status(), Status::Ok);
         let mut response = client.get("/export/events.csv").dispatch();
@@ -1657,7 +1658,7 @@ mod tests {
         assert!(!body_str.contains("createdby1@example.com"));
         assert!(!body_str.contains("createdby2@example.com"));
 
-        // Scout with token
+        // Scout with token sees contact details of all events and created_by for their owned events
         let login = client
             .post("/login")
             .header(ContentType::JSON)
@@ -1677,5 +1678,22 @@ mod tests {
             id2, start2
         )));
         assert!(!body_str.contains("createdby2@example.com"));
+
+        // Admin without token sees everything
+        let login = client
+            .post("/login")
+            .header(ContentType::JSON)
+            .body(r#"{"email": "admin@example.com", "password": "secret"}"#)
+            .dispatch();
+        assert_eq!(login.status(), Status::Ok);
+        let mut response = client.get("/export/events.csv").dispatch();
+        assert_eq!(response.status(), Status::Ok);
+        let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+        assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,email,phone,homepage,image_url,image_link_url,tags\n"));
+        assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1)));
+        assert!(body_str.contains(&format!(
+            "{},createdby2@example.com,,title2,,{},,,,,,,,email2@example.com,phone2,,,,\"bli,tag2\"\n",
+            id2, start2
+        )));
     }
 }
