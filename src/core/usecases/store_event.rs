@@ -1,4 +1,4 @@
-use super::{create_user_from_email, index_event};
+use super::create_user_from_email;
 use crate::core::{
     prelude::*,
     util::{
@@ -81,12 +81,15 @@ pub enum NewEventMode<'a> {
     Update(&'a str),
 }
 
-pub fn try_into_new_event<D: Db>(
+#[derive(Debug, Clone)]
+pub struct Storable(Event);
+
+pub fn import_new_event<D: Db>(
     db: &D,
     token: Option<&str>,
     e: NewEvent,
     mode: NewEventMode,
-) -> Result<Event> {
+) -> Result<Storable> {
     let NewEvent {
         title,
         description,
@@ -133,6 +136,11 @@ pub fn try_into_new_event<D: Db>(
             // undefined ownership!
             match mode {
                 NewEventMode::Create => {
+                    if created_by.is_none() {
+                        // NOTE: At the moment we require an email address,
+                        // but in the future we might allow anonymous creators
+                        return Err(ParameterError::CreatorEmail.into());
+                    }
                     // Ensure that the newly created event is owned by the authorized org
                     log::info!(
                         "Implicitly adding all {} tag(s) owned by {} while creating event",
@@ -286,41 +294,39 @@ pub fn try_into_new_event<D: Db>(
     };
     let event = event.auto_correct();
     event.validate()?;
+    Ok(Storable(event))
+}
+
+pub fn store_created_event<D: Db>(db: &D, storable: Storable) -> Result<Event> {
+    let Storable(event) = storable;
+    debug!("Storing newly created event: {:?}", event);
     for t in &event.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
+    db.create_event(event.clone())?;
     Ok(event)
 }
 
-pub fn create_new_event<D: Db>(
-    db: &D,
-    indexer: &mut dyn EventIndexer,
-    token: Option<&str>,
-    e: NewEvent,
-) -> Result<Event> {
-    let event = try_into_new_event(db, token, e, NewEventMode::Create)?;
-    if event.created_by.is_none() {
-        // NOTE: At the moment we require an email address,
-        // but in the future we might allow anonymous creators
-        return Err(ParameterError::CreatorEmail.into());
+pub fn store_updated_event<D: Db>(db: &D, storable: Storable) -> Result<Event> {
+    let Storable(event) = storable;
+    debug!("Storing updated event: {:?}", event);
+    for t in &event.tags {
+        db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
-    debug!("Creating new event: {:?}", event);
-    db.create_event(event.clone())?;
-
-    // Index newly added event
-    // TODO: Move to a separate task/thread that doesn't delay this request
-    if let Err(err) = index_event(indexer, &event).and_then(|_| indexer.flush_index()) {
-        error!("Failed to index newly added event {}: {}", event.id, err);
-    }
-
+    db.update_event(&event)?;
     Ok(event)
 }
 
 #[cfg(test)]
 mod tests {
 
-    use super::super::tests::{DummySearchEngine, MockDb};
+    use super::super::tests::MockDb;
     use super::*;
+
+    fn create_new_event<D: Db>(db: &D, token: Option<&str>, e: NewEvent) -> Result<Event> {
+        let s = import_new_event(db, token, e, NewEventMode::Create)?;
+        store_created_event(db, s)
+    }
 
     #[test]
     fn create_new_valid_event() {
@@ -348,9 +354,7 @@ mod tests {
             image_link_url: Some("my.url/test.ext".to_string()),
         };
         let mock_db = MockDb::default();
-        let id = create_new_event(&mock_db, &mut DummySearchEngine, None, x)
-            .unwrap()
-            .id;
+        let id = create_new_event(&mock_db, None, x).unwrap().id;
         assert!(id.is_valid());
         assert_eq!(mock_db.events.borrow().len(), 1);
         assert_eq!(mock_db.tags.borrow().len(), 2);
@@ -396,7 +400,7 @@ mod tests {
             image_link_url: None,
         };
         let mock_db: MockDb = MockDb::default();
-        assert!(create_new_event(&mock_db, &mut DummySearchEngine, None, x).is_err());
+        assert!(create_new_event(&mock_db, None, x).is_err());
     }
 
     #[test]
@@ -424,7 +428,7 @@ mod tests {
             image_link_url: None,
         };
         let mock_db: MockDb = MockDb::default();
-        assert!(create_new_event(&mock_db, &mut DummySearchEngine, None, x).is_ok());
+        assert!(create_new_event(&mock_db, None, x).is_ok());
         let users = mock_db.all_users().unwrap();
         assert_eq!(users.len(), 1);
         assert_eq!(&users[0].email, "fooo@bar.tld");
@@ -465,7 +469,7 @@ mod tests {
             image_url     : None,
             image_link_url: None,
         };
-        assert!(create_new_event(&mock_db, &mut DummySearchEngine, None, x).is_ok());
+        assert!(create_new_event(&mock_db, None, x).is_ok());
         let users = mock_db.all_users().unwrap();
         assert_eq!(users.len(), 1);
     }

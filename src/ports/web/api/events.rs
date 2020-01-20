@@ -6,6 +6,7 @@ use crate::{
         prelude::Result as CoreResult,
         util::{geo::MapBbox, validate},
     },
+    infrastructure::flows::prelude as flows,
 };
 
 use rocket::{
@@ -29,15 +30,14 @@ fn check_and_set_address_location(e: &mut usecases::NewEvent) {
 
 #[post("/events", format = "application/json", data = "<e>")]
 pub fn post_event_with_token(
-    db: sqlite::Connections,
+    connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
     token: Bearer,
     e: Json<usecases::NewEvent>,
 ) -> Result<String> {
     let mut e = e.into_inner();
     check_and_set_address_location(&mut e);
-    let event =
-        usecases::create_new_event(&*db.exclusive()?, &mut search_engine, Some(&token.0), e)?;
+    let event = flows::create_event(&connections, &mut search_engine, Some(&token.0), e)?;
     Ok(Json(event.id.to_string()))
 }
 
@@ -54,7 +54,7 @@ pub fn post_event(mut _db: sqlite::Connections, _e: Json<usecases::NewEvent>) ->
 //     let mut e = e.into_inner();
 //     e.created_by = None; // ignore because of missing authorization
 //     e.token = None; // ignore token
-//     let id = usecases::create_new_event(&*db, &search_engine, e.clone())?;
+//     let id = flows::create_event(&*db, &search_engine, e.clone())?;
 //     Ok(Json(id))
 // }
 
@@ -71,26 +71,26 @@ pub fn get_event(db: sqlite::Connections, id: String) -> Result<json::Event> {
 pub fn put_event(
     mut _db: sqlite::Connections,
     _id: &RawStr,
-    _e: Json<usecases::UpdateEvent>,
+    _e: Json<usecases::NewEvent>,
 ) -> HttpStatus {
     HttpStatus::Unauthorized
 }
 
 #[put("/events/<id>", format = "application/json", data = "<e>")]
 pub fn put_event_with_token(
-    db: sqlite::Connections,
+    connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
     token: Bearer,
     id: &RawStr,
-    e: Json<usecases::UpdateEvent>,
+    e: Json<usecases::NewEvent>,
 ) -> Result<()> {
     let mut e = e.into_inner();
     check_and_set_address_location(&mut e);
-    usecases::update_event(
-        &*db.exclusive()?,
+    flows::update_event(
+        &connections,
         &mut search_engine,
         Some(&token.0),
-        &id.to_string(),
+        id.to_string().into(),
         e,
     )?;
     Ok(Json(()))
@@ -728,9 +728,7 @@ mod tests {
                 created_by: Some("test@example.com".into()),
                 ..Default::default()
             };
-            let e =
-                usecases::create_new_event(&*db.exclusive().unwrap(), &mut search_engine, None, e)
-                    .unwrap();
+            let e = flows::create_event(&db, &mut search_engine, None, e).unwrap();
             let req = client
                 .get(format!("/events/{}", e.id))
                 .header(ContentType::JSON);
@@ -791,8 +789,7 @@ mod tests {
                     created_by: Some("test@example.com".into()),
                     ..Default::default()
                 };
-                usecases::create_new_event(&*db.exclusive().unwrap(), &mut search_engine, None, e)
-                    .unwrap();
+                flows::create_event(&db, &mut search_engine, None, e).unwrap();
             }
             let mut res = client.get("/events").header(ContentType::JSON).dispatch();
             assert_eq!(res.status(), HttpStatus::Ok);
@@ -818,8 +815,7 @@ mod tests {
                     created_by: Some("test@example.com".into()),
                     ..Default::default()
                 };
-                usecases::create_new_event(&*db.exclusive().unwrap(), &mut search_engine, None, e)
-                    .unwrap();
+                flows::create_event(&db, &mut search_engine, None, e).unwrap();
             }
 
             let req = client.get("/events?tag=a").header(ContentType::JSON);
@@ -892,14 +888,9 @@ mod tests {
                         start: Utc::now().naive_utc().timestamp(),
                         ..Default::default()
                     };
-                    usecases::create_new_event(
-                        &*db.exclusive().unwrap(),
-                        &mut search_engine,
-                        Some("foo"),
-                        new_event,
-                    )
-                    .unwrap()
-                    .id
+                    flows::create_event(&db, &mut search_engine, Some("foo"), new_event)
+                        .unwrap()
+                        .id
                 })
                 .collect();
             let mut res = client
@@ -948,8 +939,7 @@ mod tests {
                     created_by: Some("test@example.com".into()),
                     ..Default::default()
                 };
-                usecases::create_new_event(&*db.exclusive().unwrap(), &mut search_engine, None, e)
-                    .unwrap();
+                flows::create_event(&db, &mut search_engine, None, e).unwrap();
             }
             let mut res = client
                 .get(format!("/events?start_min={}", now + 150))
@@ -977,8 +967,7 @@ mod tests {
                     created_by: Some("test@example.com".into()),
                     ..Default::default()
                 };
-                usecases::create_new_event(&*db.exclusive().unwrap(), &mut search_engine, None, e)
-                    .unwrap();
+                flows::create_event(&db, &mut search_engine, None, e).unwrap();
             }
             let mut res = client
                 .get(format!("/events?start_max={}", now + 250))
@@ -1008,8 +997,7 @@ mod tests {
                     created_by: Some("test@example.com".into()),
                     ..Default::default()
                 };
-                usecases::create_new_event(&*db.exclusive().unwrap(), &mut search_engine, None, e)
-                    .unwrap();
+                flows::create_event(&db, &mut search_engine, None, e).unwrap();
             }
             let mut res = client
                 .get("/events?bbox=-8,-5,10,7.9")
@@ -1092,14 +1080,9 @@ mod tests {
                 start: Utc::now().naive_utc().timestamp(),
                 ..Default::default()
             };
-            let id = usecases::create_new_event(
-                &*db.exclusive().unwrap(),
-                &mut search_engine,
-                Some("foo"),
-                e,
-            )
-            .unwrap()
-            .id;
+            let id = flows::create_event(&db, &mut search_engine, Some("foo"), e)
+                .unwrap()
+                .id;
             assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
             let res = client
                 .put(format!("/events/{}", id))
@@ -1144,14 +1127,9 @@ mod tests {
                 start: Utc::now().naive_utc().timestamp(),
                 ..Default::default()
             };
-            let id = usecases::create_new_event(
-                &*db.exclusive().unwrap(),
-                &mut search_engine,
-                Some("bar"),
-                e,
-            )
-            .unwrap()
-            .id;
+            let id = flows::create_event(&db, &mut search_engine, Some("bar"), e)
+                .unwrap()
+                .id;
             assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
             let res = client
                 .put(format!("/events/{}", id))
@@ -1181,14 +1159,9 @@ mod tests {
                 start: Utc::now().naive_utc().timestamp(),
                 ..Default::default()
             };
-            let id = usecases::create_new_event(
-                &*db.exclusive().unwrap(),
-                &mut search_engine,
-                Some("foo"),
-                e,
-            )
-            .unwrap()
-            .id;
+            let id = flows::create_event(&db, &mut search_engine, Some("foo"), e)
+                .unwrap()
+                .id;
             assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
             let res = client
                 .put(format!("/events/{}", id))
@@ -1226,14 +1199,9 @@ mod tests {
                 start: Utc::now().naive_utc().timestamp(),
                 ..Default::default()
             };
-            let id = usecases::create_new_event(
-                &*db.exclusive().unwrap(),
-                &mut search_engine,
-                Some("foo"),
-                e,
-            )
-            .unwrap()
-            .id;
+            let id = flows::create_event(&db, &mut search_engine, Some("foo"), e)
+                .unwrap()
+                .id;
             assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
             let res = client
                 .put(format!("/events/{}", id))
@@ -1247,7 +1215,7 @@ mod tests {
         }
 
         #[test]
-        fn with_api_token_without_created_by() {
+        fn with_api_token_created_by() {
             let (client, db, mut search_engine) = setup2();
             db.exclusive()
                 .unwrap()
@@ -1259,22 +1227,20 @@ mod tests {
                 })
                 .unwrap();
             let created_by = Some("foo@bar.com".into());
+            let start = Utc::now().naive_utc().timestamp();
             let e = usecases::NewEvent {
                 title: "x".into(),
                 tags: Some(vec!["bla".into()]),
                 created_by: created_by.clone(),
-                start: Utc::now().naive_utc().timestamp(),
+                start,
                 ..Default::default()
             };
-            let id = usecases::create_new_event(
-                &*db.exclusive().unwrap(),
-                &mut search_engine,
-                Some("foo"),
-                e,
-            )
-            .unwrap()
-            .id;
+            let id = flows::create_event(&db, &mut search_engine, Some("foo"), e)
+                .unwrap()
+                .id;
             assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
+
+            // Without created_by
             let res = client
                 .put(format!("/events/{}", id))
                 .header(ContentType::JSON)
@@ -1284,7 +1250,21 @@ mod tests {
             assert_eq!(res.status(), HttpStatus::Ok);
             let new = db.shared().unwrap().get_event(id.as_ref()).unwrap();
             assert_eq!(new.title, "Changed");
+            // created_by is unmodified
             assert_eq!(new.created_by, created_by);
+
+            // With created_by
+            let res = client
+                .put(format!("/events/{}", id))
+                .header(ContentType::JSON)
+                .header(Header::new("Authorization", "Bearer foo"))
+                .body(&format!("{{\"title\":\"Changed again\",\"created_by\":\"changed@bar.com\",\"start\":{}}}", start))
+                .dispatch();
+            assert_eq!(res.status(), HttpStatus::Ok);
+            let new = db.shared().unwrap().get_event(id.as_ref()).unwrap();
+            assert_eq!(new.title, "Changed again");
+            // created_by has been updated
+            assert_eq!(new.created_by, Some("changed@bar.com".into()));
         }
     }
 
@@ -1380,14 +1360,9 @@ mod tests {
                 created_by: Some("foo@bar.com".into()),
                 ..Default::default()
             };
-            let id1 = usecases::create_new_event(
-                &*db.exclusive().unwrap(),
-                &mut search_engine,
-                Some("foo"),
-                e1,
-            )
-            .unwrap()
-            .id;
+            let id1 = flows::create_event(&db, &mut search_engine, Some("foo"), e1)
+                .unwrap()
+                .id;
             let e2 = usecases::NewEvent {
                 title: "x".into(),
                 start: Utc::now().naive_utc().timestamp(),
@@ -1395,14 +1370,9 @@ mod tests {
                 created_by: Some("foo@bar.com".into()),
                 ..Default::default()
             };
-            let id2 = usecases::create_new_event(
-                &*db.exclusive().unwrap(),
-                &mut search_engine,
-                Some("foo"),
-                e2,
-            )
-            .unwrap()
-            .id;
+            let id2 = flows::create_event(&db, &mut search_engine, Some("foo"), e2)
+                .unwrap()
+                .id;
 
             let mut response = client.get("/events").dispatch();
             assert_eq!(response.status(), Status::Ok);
@@ -1492,14 +1462,9 @@ mod tests {
                 created_by: Some("foo@bar.com".into()),
                 ..Default::default()
             };
-            let id1 = usecases::create_new_event(
-                &*db.exclusive().unwrap(),
-                &mut search_engine,
-                Some("foo"),
-                e1,
-            )
-            .unwrap()
-            .id;
+            let id1 = flows::create_event(&db, &mut search_engine, Some("foo"), e1)
+                .unwrap()
+                .id;
             let e2 = usecases::NewEvent {
                 title: "x".into(),
                 start: Utc::now().naive_utc().timestamp(),
@@ -1507,14 +1472,9 @@ mod tests {
                 created_by: Some("foo@bar.com".into()),
                 ..Default::default()
             };
-            let id2 = usecases::create_new_event(
-                &*db.exclusive().unwrap(),
-                &mut search_engine,
-                Some("foo"),
-                e2,
-            )
-            .unwrap()
-            .id;
+            let id2 = flows::create_event(&db, &mut search_engine, Some("foo"), e2)
+                .unwrap()
+                .id;
             // Manually delete the implicitly added org tag from the 2nd event!
             let mut e2 = db.shared().unwrap().get_event(id2.as_ref()).unwrap();
             e2.tags.retain(|t| t != "tag");
@@ -1595,14 +1555,9 @@ mod tests {
             telephone: Some("phone1".into()),
             ..Default::default()
         };
-        let id1 = usecases::create_new_event(
-            &*db.exclusive().unwrap(),
-            &mut search_engine,
-            Some("foo"),
-            e1,
-        )
-        .unwrap()
-        .id;
+        let id1 = flows::create_event(&db, &mut search_engine, Some("foo"), e1)
+            .unwrap()
+            .id;
         let start2 = Utc::now().naive_utc().timestamp();
         let e2 = usecases::NewEvent {
             title: "title2".into(),
@@ -1613,14 +1568,9 @@ mod tests {
             telephone: Some("phone2".into()),
             ..Default::default()
         };
-        let id2 = usecases::create_new_event(
-            &*db.exclusive().unwrap(),
-            &mut search_engine,
-            Some("bar"),
-            e2,
-        )
-        .unwrap()
-        .id;
+        let id2 = flows::create_event(&db, &mut search_engine, Some("bar"), e2)
+            .unwrap()
+            .id;
 
         let response = client.get("/export/events.csv").dispatch();
         assert_eq!(response.status(), Status::Unauthorized);

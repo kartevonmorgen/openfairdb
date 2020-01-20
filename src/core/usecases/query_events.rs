@@ -7,11 +7,7 @@ use crate::core::{
 const DEFAULT_RESULT_LIMIT: usize = 100;
 
 #[allow(clippy::absurd_extreme_comparisons)]
-pub fn query_events<D: Db>(
-    db: &D,
-    index: &dyn IdIndex,
-    query: EventQuery,
-) -> Result<Vec<Event>> {
+pub fn query_events<D: Db>(db: &D, index: &dyn IdIndex, query: EventQuery) -> Result<Vec<Event>> {
     if query.is_empty() {
         // Special case for backwards compatibility
         return Ok(db.all_events_chronologically()?);

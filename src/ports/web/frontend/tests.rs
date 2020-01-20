@@ -1,6 +1,6 @@
 use super::*;
 use crate::{
-    infrastructure::{db::sqlite::Connections, db::tantivy},
+    infrastructure::db::{sqlite::Connections, tantivy},
     ports::web::tests::{prelude::*, register_user},
 };
 
@@ -42,6 +42,8 @@ fn login_user(client: &Client, name: &str) {
 mod events {
     use super::*;
     use chrono::prelude::*;
+
+    use crate::infrastructure::flows::prelude as flows;
 
     #[test]
     fn search_events() {
@@ -106,13 +108,7 @@ mod events {
         let event_ids = {
             let mut event_ids = Vec::with_capacity(new_events.len());
             for e in new_events {
-                let e = usecases::create_new_event(
-                    &*db.exclusive().unwrap(),
-                    &mut search_engine,
-                    None,
-                    e,
-                )
-                .unwrap();
+                let e = flows::create_event(&db, &mut search_engine, None, e).unwrap();
                 event_ids.push(e.id);
             }
             event_ids
@@ -232,13 +228,7 @@ mod events {
         let event_ids = {
             let mut event_ids = Vec::with_capacity(new_events.len());
             for e in new_events {
-                let e = usecases::create_new_event(
-                    &*db.exclusive().unwrap(),
-                    &mut search_engine,
-                    None,
-                    e,
-                )
-                .unwrap();
+                let e = flows::create_event(&db, &mut search_engine, None, e).unwrap();
                 event_ids.push(e.id);
             }
             event_ids
