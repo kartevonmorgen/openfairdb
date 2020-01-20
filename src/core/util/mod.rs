@@ -4,10 +4,10 @@ pub mod nonce;
 pub mod parse;
 pub mod password;
 pub mod sort;
-pub mod time;
 pub mod validate;
-
 use regex::Regex;
+
+pub use ofdb_entities::time;
 
 pub const ID_LIST_SEPARATOR: char = ',';
 

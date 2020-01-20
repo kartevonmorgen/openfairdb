@@ -2,238 +2,15 @@ use crate::core::util::{
     geo::{MapBbox, MapPoint},
     nonce::Nonce,
     password::Password,
-    time::{Timestamp, TimestampMs},
 };
-
 use anyhow::{bail, format_err, Result as Fallible};
 use chrono::prelude::*;
-use num_traits::{FromPrimitive, ToPrimitive};
-use std::{borrow::Borrow, fmt, ops::Deref, str::FromStr};
-use strum_macros::{EnumCount, EnumIter};
 use url::Url;
-use uuid::Uuid;
 
-/// Portable public identifier with a string representation.
-#[derive(Default, Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Id(String);
-
-impl Id {
-    pub fn new() -> Self {
-        Uuid::new_v4().into()
-    }
-
-    pub fn is_valid(&self) -> bool {
-        !self.0.is_empty()
-    }
-
-    pub fn as_str(&self) -> &str {
-        self.0.as_str()
-    }
-}
-
-impl AsRef<String> for Id {
-    fn as_ref(&self) -> &String {
-        &self.0
-    }
-}
-
-impl AsRef<str> for Id {
-    fn as_ref(&self) -> &str {
-        self.0.as_str()
-    }
-}
-
-impl From<String> for Id {
-    fn from(from: String) -> Self {
-        Self(from)
-    }
-}
-
-impl From<&str> for Id {
-    fn from(from: &str) -> Self {
-        from.to_owned().into()
-    }
-}
-
-impl From<Uuid> for Id {
-    fn from(from: Uuid) -> Self {
-        from.to_simple_ref().to_string().into()
-    }
-}
-
-impl From<Id> for String {
-    fn from(from: Id) -> Self {
-        from.0
-    }
-}
-
-impl FromStr for Id {
-    type Err = ();
-    fn from_str(s: &str) -> Result<Id, Self::Err> {
-        Ok(s.into())
-    }
-}
-
-impl Borrow<str> for Id {
-    fn borrow(&self) -> &str {
-        self.as_ref()
-    }
-}
-
-impl fmt::Display for Id {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        f.write_str(self.as_ref())
-    }
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Revision(u64);
-
-impl Revision {
-    pub const fn initial() -> Self {
-        Self(0)
-    }
-
-    pub fn is_initial(self) -> bool {
-        self == Self::initial()
-    }
-
-    pub fn next(self) -> Self {
-        Self(self.0.saturating_add(1))
-    }
-}
-
-impl From<Revision> for u64 {
-    fn from(from: Revision) -> Self {
-        from.0
-    }
-}
-
-impl From<u64> for Revision {
-    fn from(from: u64) -> Self {
-        Self(from)
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Email(String);
-
-impl AsRef<String> for Email {
-    fn as_ref(&self) -> &String {
-        &self.0
-    }
-}
-
-impl AsRef<str> for Email {
-    fn as_ref(&self) -> &str {
-        self.0.as_str()
-    }
-}
-
-impl From<Email> for String {
-    fn from(from: Email) -> Self {
-        from.0
-    }
-}
-
-impl From<String> for Email {
-    fn from(from: String) -> Self {
-        Self(from)
-    }
-}
-
-impl From<&str> for Email {
-    fn from(from: &str) -> Self {
-        from.to_owned().into()
-    }
-}
-
-impl FromStr for Email {
-    type Err = ();
-    fn from_str(s: &str) -> Result<Email, Self::Err> {
-        Ok(s.into())
-    }
-}
-
-impl Borrow<str> for Email {
-    fn borrow(&self) -> &str {
-        self.as_ref()
-    }
-}
-
-impl Deref for Email {
-    type Target = String;
-
-    fn deref(&self) -> &String {
-        self.as_ref()
-    }
-}
-
-impl fmt::Display for Email {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        f.write_str(self.as_ref())
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Activity {
-    pub at: TimestampMs,
-    pub by: Option<Email>,
-}
-
-impl Activity {
-    pub fn now(by: Option<Email>) -> Self {
-        Self {
-            at: TimestampMs::now(),
-            by,
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ActivityLog {
-    pub activity: Activity,
-    pub context: Option<String>,
-    pub comment: Option<String>,
-}
-
-#[rustfmt::skip]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromPrimitive, ToPrimitive, EnumIter, EnumCount)]
-pub enum ReviewStatus {
-    Rejected  = -1,
-    Archived  =  0,
-    Created   =  1,
-    Confirmed =  2,
-}
-
-pub type ReviewStatusPrimitive = i16;
-
-impl ReviewStatus {
-    pub fn exists(self) -> bool {
-        self >= Self::Created
-    }
-
-    pub const fn default() -> Self {
-        Self::Created
-    }
-
-    pub fn try_from(from: ReviewStatusPrimitive) -> Option<Self> {
-        Self::from_i16(from)
-    }
-}
-
-impl From<ReviewStatus> for ReviewStatusPrimitive {
-    fn from(from: ReviewStatus) -> Self {
-        from.to_i16().unwrap()
-    }
-}
-
-#[derive(Debug, Clone, Default, PartialEq, Eq)]
-pub struct Links {
-    pub homepage: Option<Url>,
-    pub image: Option<Url>,
-    pub image_href: Option<Url>,
-}
+pub use ofdb_entities::{
+    activity::*, address::*, category::*, contact::*, email::*, id::*, links::*, organization::*,
+    review_status::*, revision::*, time::*,
+};
 
 // Immutable part of a place.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -352,34 +129,6 @@ pub struct Location {
 }
 
 #[rustfmt::skip]
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct Address {
-    pub street  : Option<String>,
-    pub zip     : Option<String>,
-    pub city    : Option<String>,
-    pub country : Option<String>,
-}
-
-impl Address {
-    pub fn is_empty(&self) -> bool {
-        self.street.is_none() && self.zip.is_none() && self.city.is_none() && self.country.is_none()
-    }
-}
-
-#[rustfmt::skip]
-#[derive(Debug, Clone, PartialEq, Eq, Default)]
-pub struct Contact {
-    pub email : Option<Email>,
-    pub phone : Option<String>,
-}
-
-impl Contact {
-    pub fn is_empty(&self) -> bool {
-        self.email.is_none() && self.phone.is_none()
-    }
-}
-
-#[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]
 pub struct Event {
     pub id           : Id,
@@ -406,89 +155,6 @@ pub enum RegistrationType {
     Email,
     Phone,
     Homepage,
-}
-
-#[rustfmt::skip]
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct Category {
-    pub id  : Id,
-    pub tag : String
-}
-
-impl Category {
-    pub fn name(&self) -> String {
-        format!("#{}", self.tag)
-    }
-}
-
-impl Category {
-    pub const ID_NON_PROFIT: &'static str = "2cd00bebec0c48ba9db761da48678134";
-    pub const ID_COMMERCIAL: &'static str = "77b3c33a92554bcf8e8c2c86cedd6f6f";
-    pub const ID_EVENT: &'static str = "c2dc278a2d6a4b9b8a50cb606fc017ed";
-
-    pub const TAG_NON_PROFIT: &'static str = "non-profit";
-    pub const TAG_COMMERCIAL: &'static str = "commercial";
-    pub const TAG_EVENT: &'static str = "event";
-
-    pub fn new_non_profit() -> Self {
-        Self {
-            id: Self::ID_NON_PROFIT.into(),
-            tag: Self::TAG_NON_PROFIT.into(),
-        }
-    }
-
-    pub fn new_commercial() -> Self {
-        Self {
-            id: Self::ID_COMMERCIAL.into(),
-            tag: Self::TAG_COMMERCIAL.into(),
-        }
-    }
-
-    pub fn new_event() -> Self {
-        Self {
-            id: Self::ID_EVENT.into(),
-            tag: Self::TAG_EVENT.into(),
-        }
-    }
-
-    pub fn split_from_tags(tags: Vec<String>) -> (Vec<String>, Vec<Category>) {
-        let mut categories = Vec::with_capacity(3);
-        let tags = tags
-            .into_iter()
-            .filter(|t| match t.as_str() {
-                Self::TAG_NON_PROFIT => {
-                    categories.push(Self::new_non_profit());
-                    false
-                }
-                Self::TAG_COMMERCIAL => {
-                    categories.push(Self::new_commercial());
-                    false
-                }
-                Self::TAG_EVENT => {
-                    categories.push(Self::new_event());
-                    false
-                }
-                _ => true,
-            })
-            .collect();
-        (tags, categories)
-    }
-
-    pub fn merge_ids_into_tags(ids: &[Id], mut tags: Vec<String>) -> Vec<String> {
-        tags.reserve(ids.len());
-        tags = ids.iter().fold(tags, |mut tags, id| {
-            match id.as_ref() {
-                Self::ID_NON_PROFIT => tags.push(Self::TAG_NON_PROFIT.into()),
-                Self::ID_COMMERCIAL => tags.push(Self::TAG_COMMERCIAL.into()),
-                Self::ID_EVENT => tags.push(Self::TAG_EVENT.into()),
-                _ => (),
-            }
-            tags
-        });
-        tags.sort_unstable();
-        tags.dedup();
-        tags
-    }
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -780,14 +446,6 @@ pub struct BboxSubscription {
     pub bbox       : MapBbox,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Organization {
-    pub id: String,
-    pub name: String,
-    pub owned_tags: Vec<String>,
-    pub api_token: String,
-}
-
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct UserToken {
     pub email_nonce: EmailNonce,
@@ -877,6 +535,7 @@ pub use self::place_builder::*;
 pub mod place_builder {
 
     use super::*;
+    use std::str::FromStr;
 
     pub struct PlaceBuild {
         place: Place,
@@ -1029,16 +688,5 @@ pub mod address_builder {
         assert_eq!(Address::build().zip("x").finish().is_empty(), false);
         assert_eq!(Address::build().city("x").finish().is_empty(), false);
         assert_eq!(Address::build().country("x").finish().is_empty(), false);
-    }
-
-    #[test]
-    fn empty_contact() {
-        assert!(Contact::default().is_empty());
-        let mut c = Contact::default();
-        c.email = Some("foo@bar".into());
-        assert_eq!(c.is_empty(), false);
-        let mut c = Contact::default();
-        c.phone = Some("123".into());
-        assert_eq!(c.is_empty(), false);
     }
 }

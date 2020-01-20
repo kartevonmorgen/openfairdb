@@ -1,14 +1,15 @@
 [package]
-name = "ofdb-boundary"
+name = "ofdb-entities"
 version = "0.0.0" # will stay 0.0.0 until published
 authors = ["slowtec GmbH <post@slowtec.de>"]
 edition = "2018"
 publish = false
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
-ofdb-entities = "*"
-
-[features]
-default = []
-extra-derive = []
+chrono = "*"
+num-derive = "*"
+num-traits = "*"
+uuid = { version = "*", features = ["v4"] }
+url = "2"
+strum = "*"
+strum_macros = "*"

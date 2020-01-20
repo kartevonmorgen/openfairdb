@@ -104,40 +104,6 @@ impl From<e::RatingContext> for RatingContext {
     }
 }
 
-impl From<e::Category> for Category {
-    fn from(from: e::Category) -> Self {
-        let name = from.name();
-        Self {
-            id: from.id.into(),
-            name,
-        }
-    }
-}
-
-impl From<e::ReviewStatus> for ReviewStatus {
-    fn from(from: e::ReviewStatus) -> Self {
-        use e::ReviewStatus::*;
-        match from {
-            Archived => ReviewStatus::Archived,
-            Confirmed => ReviewStatus::Confirmed,
-            Created => ReviewStatus::Created,
-            Rejected => ReviewStatus::Rejected,
-        }
-    }
-}
-
-impl From<ReviewStatus> for e::ReviewStatus {
-    fn from(from: ReviewStatus) -> Self {
-        use e::ReviewStatus::*;
-        match from {
-            ReviewStatus::Archived => Archived,
-            ReviewStatus::Confirmed => Confirmed,
-            ReviewStatus::Created => Created,
-            ReviewStatus::Rejected => Rejected,
-        }
-    }
-}
-
 impl From<IndexedPlace> for PlaceSearchResult {
     fn from(from: IndexedPlace) -> Self {
         let IndexedPlace {
