@@ -74,10 +74,7 @@ mod tests {
     }
 }
 
-pub(crate) fn event_from_event_entity_and_tags(
-    e: EventEntity,
-    tag_rels: &Vec<EventTag>,
-) -> e::Event {
+pub(crate) fn event_from_event_entity_and_tags(e: EventEntity, tag_rels: &[EventTag]) -> e::Event {
     let EventEntity {
         id,
         uid,
