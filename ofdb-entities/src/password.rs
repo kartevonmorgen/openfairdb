@@ -1,6 +1,4 @@
-use crate::core::error::{Error, ParameterError};
-
-use pwhash;
+use pwhash::bcrypt;
 use std::{fmt, str::FromStr};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
@@ -34,14 +32,23 @@ impl AsRef<str> for Password {
     }
 }
 
+#[derive(Debug)]
+pub enum ParseError {
+    InsufficientLength,
+    Invalid,
+}
+
 impl FromStr for Password {
-    type Err = Error;
+    type Err = ParseError;
 
     fn from_str(password: &str) -> Result<Self, Self::Err> {
         if password.len() < Password::min_len() {
-            return Err(Error::from(ParameterError::Password));
+            return Err(ParseError::InsufficientLength);
         }
-        let res = Self(pwhash::bcrypt::hash(password)?);
+        let res = Self(bcrypt::hash(password).map_err(|e| match e {
+            pwhash::error::Error::InsufficientLength => ParseError::InsufficientLength,
+            _ => ParseError::Invalid,
+        })?);
         debug_assert!(res.verify(password));
         Ok(res)
     }

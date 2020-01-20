@@ -1,108 +1,7 @@
 use crate::core::{db::IndexedPlace, entities as e, util::geo::MapPoint};
-
-pub use ofdb_boundary::*;
-
 use url::Url;
 
-impl From<e::Event> for Event {
-    fn from(e: e::Event) -> Self {
-        let e::Event {
-            id,
-            title,
-            description,
-            start,
-            end,
-            location,
-            contact,
-            tags,
-            homepage,
-            registration,
-            organizer,
-            image_url,
-            image_link_url,
-            ..
-        } = e;
-
-        let (lat, lng, address) = if let Some(location) = location {
-            if location.pos.is_valid() {
-                let lat = location.pos.lat().to_deg();
-                let lng = location.pos.lng().to_deg();
-                (Some(lat), Some(lng), location.address)
-            } else {
-                (None, None, location.address)
-            }
-        } else {
-            (None, None, None)
-        };
-
-        let e::Address {
-            street,
-            zip,
-            city,
-            country,
-        } = address.unwrap_or_default();
-
-        let e::Contact {
-            email,
-            phone: telephone,
-        } = contact.unwrap_or_default();
-
-        let registration = registration.map(|r| {
-            match r {
-                e::RegistrationType::Email => "email",
-                e::RegistrationType::Phone => "telephone",
-                e::RegistrationType::Homepage => "homepage",
-            }
-            .to_string()
-        });
-
-        let start = start.timestamp();
-        let end = end.map(|end| end.timestamp());
-
-        Event {
-            id: id.into(),
-            title,
-            description,
-            start,
-            end,
-            lat,
-            lng,
-            street,
-            zip,
-            city,
-            country,
-            email: email.map(Into::into),
-            telephone,
-            homepage: homepage.map(Url::into_string),
-            tags,
-            registration,
-            organizer,
-            image_url: image_url.map(Url::into_string),
-            image_link_url: image_link_url.map(Url::into_string),
-        }
-    }
-}
-
-impl From<Coordinate> for MapPoint {
-    fn from(c: Coordinate) -> Self {
-        MapPoint::try_from_lat_lng_deg(c.lat, c.lng).unwrap_or_default()
-    }
-}
-
-impl From<e::RatingContext> for RatingContext {
-    fn from(from: e::RatingContext) -> Self {
-        use e::RatingContext as E;
-        use RatingContext as C;
-        match from {
-            E::Diversity => C::Diversity,
-            E::Renewable => C::Renewable,
-            E::Fairness => C::Fairness,
-            E::Humanity => C::Humanity,
-            E::Transparency => C::Transparency,
-            E::Solidarity => C::Solidarity,
-        }
-    }
-}
+pub use ofdb_boundary::*;
 
 impl From<IndexedPlace> for PlaceSearchResult {
     fn from(from: IndexedPlace) -> Self {
@@ -152,46 +51,6 @@ impl From<IndexedPlace> for PlaceSearchResult {
             categories,
             tags,
             ratings,
-        }
-    }
-}
-
-impl From<e::User> for User {
-    fn from(from: e::User) -> Self {
-        let e::User {
-            email,
-            email_confirmed,
-            role,
-            password: _password,
-        } = from;
-        Self {
-            email,
-            email_confirmed,
-            role: role.into(),
-        }
-    }
-}
-
-impl From<e::Role> for UserRole {
-    fn from(from: e::Role) -> Self {
-        use e::Role::*;
-        match from {
-            Guest => UserRole::Guest,
-            User => UserRole::User,
-            Scout => UserRole::Scout,
-            Admin => UserRole::Admin,
-        }
-    }
-}
-
-impl From<UserRole> for e::Role {
-    fn from(from: UserRole) -> Self {
-        use e::Role::*;
-        match from {
-            UserRole::Guest => Guest,
-            UserRole::User => User,
-            UserRole::Scout => Scout,
-            UserRole::Admin => Admin,
         }
     }
 }
@@ -256,12 +115,6 @@ pub fn entry_from_place_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -
         license: Some(license),
         image_url: image_url.map(Url::into_string),
         image_link_url: image_link_url.map(Url::into_string),
-    }
-}
-
-impl From<e::TagFrequency> for TagFrequency {
-    fn from(from: e::TagFrequency) -> Self {
-        Self(from.0, from.1)
     }
 }
 
@@ -571,19 +424,5 @@ impl From<e::PlaceHistory> for PlaceHistory {
                 })
                 .collect(),
         }
-    }
-}
-
-impl From<e::AvgRatingValue> for AvgRatingValue {
-    fn from(v: e::AvgRatingValue) -> Self {
-        let v: f64 = v.into();
-        AvgRatingValue::from(v)
-    }
-}
-
-impl From<e::RatingValue> for RatingValue {
-    fn from(v: e::RatingValue) -> Self {
-        let v: i8 = v.into();
-        RatingValue::from(v)
     }
 }

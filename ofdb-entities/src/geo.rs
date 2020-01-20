@@ -1,5 +1,4 @@
-use anyhow::bail;
-use itertools::Itertools;
+use itertools::*;
 
 pub type RawCoord = i32;
 
@@ -282,8 +281,8 @@ impl MapPoint {
         }
     }
 
-    fn parse_lat_lng_deg(lat_deg_str: &str, lng_dec_str: &str) -> Result<Self, anyhow::Error> {
-        match (lat_deg_str.parse::<f64>(), lng_dec_str.parse::<f64>()) {
+    fn parse_lat_lng_deg(lat_deg_str: &str, lng_deg_str: &str) -> Result<Self, MapPointParseError> {
+        match (lat_deg_str.parse::<f64>(), lng_deg_str.parse::<f64>()) {
             (Ok(lat_deg), Ok(lng_deg)) => {
                 let lat = LatCoord::try_from_deg(lat_deg);
                 if let Some(lat) = lat {
@@ -293,16 +292,29 @@ impl MapPoint {
                         debug_assert!(lng.is_valid());
                         Ok(MapPoint::new(lat, lng))
                     } else {
-                        bail!("Invalid longitude degrees: {}", lng_deg);
+                        return Err(MapPointParseError::LongitudeDegree(lng_deg));
                     }
                 } else {
-                    bail!("Invalid latitude degrees: {}", lat_deg);
+                    return Err(MapPointParseError::LatitudeDegree(lat_deg));
                 }
             }
-            (Err(err), _) => bail!("Invalid latitude '{}': {}", lat_deg_str, err),
-            (_, Err(err)) => bail!("Invalid longitude '{}': {}", lng_dec_str, err),
+            (Err(err), _) => {
+                return Err(MapPointParseError::LatitudeString(lat_deg_str.into(), err));
+            }
+            (_, Err(err)) => {
+                return Err(MapPointParseError::LongitudeString(lng_deg_str.into(), err));
+            }
         }
     }
+}
+
+#[derive(Debug)]
+pub enum MapPointParseError {
+    LatitudeDegree(f64),
+    LongitudeDegree(f64),
+    LatitudeString(String, std::num::ParseFloatError),
+    LongitudeString(String, std::num::ParseFloatError),
+    Other,
 }
 
 impl std::fmt::Display for MapPoint {
@@ -312,13 +324,13 @@ impl std::fmt::Display for MapPoint {
 }
 
 impl std::str::FromStr for MapPoint {
-    type Err = anyhow::Error;
+    type Err = MapPointParseError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some((lat_deg_str, lng_deg_str)) = s.split(',').collect_tuple() {
             MapPoint::parse_lat_lng_deg(lat_deg_str, lng_deg_str)
         } else {
-            bail!("Failed to parse MapPoint: {}", s);
+            Err(MapPointParseError::Other)
         }
     }
 }
@@ -429,7 +441,7 @@ impl std::fmt::Display for MapBbox {
 }
 
 impl std::str::FromStr for MapBbox {
-    type Err = anyhow::Error;
+    type Err = MapBboxParseErr;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some((sw_lat_deg_str, sw_lng_deg_str, ne_lat_deg_str, ne_lng_deg_str)) =
@@ -439,13 +451,20 @@ impl std::str::FromStr for MapBbox {
             let ne = MapPoint::parse_lat_lng_deg(ne_lat_deg_str, ne_lng_deg_str);
             match (sw, ne) {
                 (Ok(sw), Ok(ne)) => Ok(MapBbox::new(sw, ne)),
-                (Err(err), _) => bail!("Invalid south-west point: {}", err),
-                (_, Err(err)) => bail!("Invalid north-east point: {}", err),
+                (Err(err), _) => Err(MapBboxParseErr::SouthWest(err)),
+                (_, Err(err)) => Err(MapBboxParseErr::NorthEast(err)),
             }
         } else {
-            bail!("Failed to parse MapBbox: {}", s);
+            Err(MapBboxParseErr::Other(s.into()))
         }
     }
+}
+
+#[derive(Debug)]
+pub enum MapBboxParseErr {
+    SouthWest(MapPointParseError),
+    NorthEast(MapPointParseError),
+    Other(String),
 }
 
 #[cfg(test)]
@@ -658,24 +677,38 @@ mod tests {
         assert!(bbox4.contains_point(MapPoint::from_lat_lng_deg(lat4, lng4)));
     }
 
-    use crate::test::Bencher;
-
-    fn random_map_point<T: rand::Rng>(rng: &mut T) -> MapPoint {
-        let lat = rng.gen_range(LatCoord::min().to_deg(), LatCoord::max().to_deg());
-        let lng = rng.gen_range(LngCoord::min().to_deg(), LngCoord::max().to_deg());
-        MapPoint::from_lat_lng_deg(lat, lng)
-    }
-
-    #[bench]
-    fn bench_distance_of_100_000_map_points(b: &mut Bencher) {
-        let mut rng = rand::thread_rng();
-        b.iter(|| {
-            for _ in 0..100_000 {
-                let p1 = random_map_point(&mut rng);
-                let p2 = random_map_point(&mut rng);
-                let d = MapPoint::distance(p1, p2);
-                assert!(d.unwrap().to_meters() >= 0.0);
-            }
-        });
-    }
+    // ---- BENCHMARKS ---- //
+    //
+    // To run the benchmarks you need Rust nightly.
+    // Add the following to lib.rs:
+    //
+    // ```
+    // #![feature(test)]
+    //
+    // #[cfg(test)]
+    // extern crate test;
+    // ```
+    //
+    // Then comment out the following:
+    //
+    // use crate::test::Bencher;
+    //
+    // fn random_map_point<T: rand::Rng>(rng: &mut T) -> MapPoint {
+    //     let lat = rng.gen_range(LatCoord::min().to_deg(), LatCoord::max().to_deg());
+    //     let lng = rng.gen_range(LngCoord::min().to_deg(), LngCoord::max().to_deg());
+    //     MapPoint::from_lat_lng_deg(lat, lng)
+    // }
+    //
+    // #[bench]
+    // fn bench_distance_of_100_000_map_points(b: &mut Bencher) {
+    //     let mut rng = rand::thread_rng();
+    //     b.iter(|| {
+    //         for _ in 0..100_000 {
+    //             let p1 = random_map_point(&mut rng);
+    //             let p2 = random_map_point(&mut rng);
+    //             let d = MapPoint::distance(p1, p2);
+    //             assert!(d.unwrap().to_meters() >= 0.0);
+    //         }
+    //     });
+    // }
 }

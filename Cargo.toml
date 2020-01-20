@@ -21,7 +21,6 @@ members = [
 
 [dependencies]
 anyhow = "*"
-bs58 = "*"
 chrono = "*"
 # clap 3 is supposed to introduce breaking changes
 clap = "2"
@@ -37,7 +36,6 @@ geocoding = "*"
 itertools = "*"
 lazy_static = "*"
 log = "*"
-num-derive = "*"
 num-traits = "*"
 maud = { version = "*", optional = true, features = ["rocket"] }
 ofdb-boundary = "*"

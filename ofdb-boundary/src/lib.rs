@@ -1,5 +1,6 @@
 use ofdb_entities as e;
 use serde::{Deserialize, Serialize};
+use url::Url;
 
 #[rustfmt::skip]
 #[derive(Serialize, Deserialize)]
@@ -245,9 +246,9 @@ impl From<e::category::Category> for Category {
     }
 }
 
-impl From<e::review_status::ReviewStatus> for ReviewStatus {
-    fn from(from: e::review_status::ReviewStatus) -> Self {
-        use e::review_status::ReviewStatus::*;
+impl From<e::review::ReviewStatus> for ReviewStatus {
+    fn from(from: e::review::ReviewStatus) -> Self {
+        use e::review::ReviewStatus::*;
         match from {
             Archived => ReviewStatus::Archived,
             Confirmed => ReviewStatus::Confirmed,
@@ -257,14 +258,195 @@ impl From<e::review_status::ReviewStatus> for ReviewStatus {
     }
 }
 
-impl From<ReviewStatus> for e::review_status::ReviewStatus {
+impl From<ReviewStatus> for e::review::ReviewStatus {
     fn from(from: ReviewStatus) -> Self {
-        use e::review_status::ReviewStatus::*;
+        use e::review::ReviewStatus::*;
         match from {
             ReviewStatus::Archived => Archived,
             ReviewStatus::Confirmed => Confirmed,
             ReviewStatus::Created => Created,
             ReviewStatus::Rejected => Rejected,
+        }
+    }
+}
+
+impl From<e::user::User> for User {
+    fn from(from: e::user::User) -> Self {
+        let e::user::User {
+            email,
+            email_confirmed,
+            role,
+            password: _password,
+        } = from;
+        Self {
+            email,
+            email_confirmed,
+            role: role.into(),
+        }
+    }
+}
+
+impl From<e::user::Role> for UserRole {
+    fn from(from: e::user::Role) -> Self {
+        use e::user::Role::*;
+        match from {
+            Guest => UserRole::Guest,
+            User => UserRole::User,
+            Scout => UserRole::Scout,
+            Admin => UserRole::Admin,
+        }
+    }
+}
+
+impl From<UserRole> for e::user::Role {
+    fn from(from: UserRole) -> Self {
+        use e::user::Role::*;
+        match from {
+            UserRole::Guest => Guest,
+            UserRole::User => User,
+            UserRole::Scout => Scout,
+            UserRole::Admin => Admin,
+        }
+    }
+}
+
+impl From<Coordinate> for e::geo::MapPoint {
+    fn from(c: Coordinate) -> Self {
+        e::geo::MapPoint::try_from_lat_lng_deg(c.lat, c.lng).unwrap_or_default()
+    }
+}
+
+impl From<e::tag::TagFrequency> for TagFrequency {
+    fn from(from: e::tag::TagFrequency) -> Self {
+        Self(from.0, from.1)
+    }
+}
+
+impl From<e::rating::RatingContext> for RatingContext {
+    fn from(from: e::rating::RatingContext) -> Self {
+        use e::rating::RatingContext as E;
+        use RatingContext as C;
+        match from {
+            E::Diversity => C::Diversity,
+            E::Renewable => C::Renewable,
+            E::Fairness => C::Fairness,
+            E::Humanity => C::Humanity,
+            E::Transparency => C::Transparency,
+            E::Solidarity => C::Solidarity,
+        }
+    }
+}
+
+impl From<RatingContext> for e::rating::RatingContext {
+    fn from(from: RatingContext) -> Self {
+        use e::rating::RatingContext as E;
+        use RatingContext as C;
+        match from {
+            C::Diversity => E::Diversity,
+            C::Renewable => E::Renewable,
+            C::Fairness => E::Fairness,
+            C::Humanity => E::Humanity,
+            C::Transparency => E::Transparency,
+            C::Solidarity => E::Solidarity,
+        }
+    }
+}
+
+impl From<e::rating::AvgRatingValue> for AvgRatingValue {
+    fn from(v: e::rating::AvgRatingValue) -> Self {
+        let v: f64 = v.into();
+        AvgRatingValue::from(v)
+    }
+}
+
+impl From<e::rating::RatingValue> for RatingValue {
+    fn from(v: e::rating::RatingValue) -> Self {
+        let v: i8 = v.into();
+        RatingValue::from(v)
+    }
+}
+
+impl From<RatingValue> for e::rating::RatingValue {
+    fn from(v: RatingValue) -> Self {
+        e::rating::RatingValue::from(v.0)
+    }
+}
+
+impl From<e::event::Event> for Event {
+    fn from(e: e::event::Event) -> Self {
+        let e::event::Event {
+            id,
+            title,
+            description,
+            start,
+            end,
+            location,
+            contact,
+            tags,
+            homepage,
+            registration,
+            organizer,
+            image_url,
+            image_link_url,
+            ..
+        } = e;
+
+        let (lat, lng, address) = if let Some(location) = location {
+            if location.pos.is_valid() {
+                let lat = location.pos.lat().to_deg();
+                let lng = location.pos.lng().to_deg();
+                (Some(lat), Some(lng), location.address)
+            } else {
+                (None, None, location.address)
+            }
+        } else {
+            (None, None, None)
+        };
+
+        let e::address::Address {
+            street,
+            zip,
+            city,
+            country,
+        } = address.unwrap_or_default();
+
+        let e::contact::Contact {
+            email,
+            phone: telephone,
+        } = contact.unwrap_or_default();
+
+        let registration = registration.map(|r| {
+            match r {
+                e::event::RegistrationType::Email => "email",
+                e::event::RegistrationType::Phone => "telephone",
+                e::event::RegistrationType::Homepage => "homepage",
+            }
+            .to_string()
+        });
+
+        let start = start.timestamp();
+        let end = end.map(|end| end.timestamp());
+
+        Event {
+            id: id.into(),
+            title,
+            description,
+            start,
+            end,
+            lat,
+            lng,
+            street,
+            zip,
+            city,
+            country,
+            email: email.map(Into::into),
+            telephone,
+            homepage: homepage.map(Url::into_string),
+            tags,
+            registration,
+            organizer,
+            image_url: image_url.map(Url::into_string),
+            image_link_url: image_link_url.map(Url::into_string),
         }
     }
 }

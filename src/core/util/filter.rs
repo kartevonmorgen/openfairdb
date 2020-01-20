@@ -1,5 +1,4 @@
 use super::super::entities::*;
-use super::geo::*;
 
 const BBOX_LAT_DEG_EXT: f64 = 0.02;
 const BBOX_LNG_DEG_EXT: f64 = 0.04;

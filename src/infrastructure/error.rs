@@ -62,3 +62,15 @@ quick_error! {
         }
     }
 }
+
+impl From<ofdb_entities::password::ParseError> for AppError {
+    fn from(err: ofdb_entities::password::ParseError) -> Self {
+        BError::from(err).into()
+    }
+}
+
+impl From<ofdb_entities::nonce::EmailNonceDecodingError> for AppError {
+    fn from(err: ofdb_entities::nonce::EmailNonceDecodingError) -> Self {
+        BError::from(err).into()
+    }
+}

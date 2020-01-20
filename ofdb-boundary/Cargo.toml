@@ -6,8 +6,9 @@ edition = "2018"
 publish = false
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
 ofdb-entities = "*"
+serde = { version = "1", features = ["derive"] }
+url = "2"
 
 [features]
 default = []

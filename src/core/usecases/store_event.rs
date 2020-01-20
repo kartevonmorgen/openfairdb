@@ -33,49 +33,6 @@ pub struct NewEvent {
     pub image_link_url: Option<String>,
 }
 
-// TODO: move this into an adapter
-impl FromStr for RegistrationType {
-    type Err = Error;
-    fn from_str(s: &str) -> Result<RegistrationType> {
-        match &*s.to_lowercase() {
-            "email" => Ok(RegistrationType::Email),
-            "telephone" => Ok(RegistrationType::Phone),
-            "homepage" => Ok(RegistrationType::Homepage),
-            _ => Err(ParameterError::RegistrationType.into()),
-        }
-    }
-}
-
-#[test]
-fn registration_type_from_str() {
-    assert_eq!(
-        RegistrationType::from_str("email").unwrap(),
-        RegistrationType::Email
-    );
-    assert_eq!(
-        RegistrationType::from_str("eMail").unwrap(),
-        RegistrationType::Email
-    );
-    assert_eq!(
-        RegistrationType::from_str("telephone").unwrap(),
-        RegistrationType::Phone
-    );
-    assert_eq!(
-        RegistrationType::from_str("Telephone").unwrap(),
-        RegistrationType::Phone
-    );
-    assert_eq!(
-        RegistrationType::from_str("homepage").unwrap(),
-        RegistrationType::Homepage
-    );
-    assert_eq!(
-        RegistrationType::from_str("Homepage").unwrap(),
-        RegistrationType::Homepage
-    );
-    assert!(RegistrationType::from_str("foo").is_err());
-    assert!(RegistrationType::from_str("").is_err());
-}
-
 pub enum NewEventMode<'a> {
     Create,
     Update(&'a str),

@@ -16,9 +16,9 @@ pub mod prelude {
     pub use super::util::{
         geo::{Distance, LatCoord, LngCoord, MapPoint},
         nonce::Nonce,
-        password::Password,
         time::{Timestamp, TimestampMs},
     };
+    pub use ofdb_entities::password::Password;
 
     pub type Result<T> = result::Result<T, super::error::Error>;
 }
