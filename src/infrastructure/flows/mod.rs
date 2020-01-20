@@ -243,6 +243,8 @@ mod tests {
             context: RatingContext,
             value: RatingValue,
         ) -> usecases::NewPlaceRating {
+            let context = context.into();
+            let value = value.into();
             usecases::NewPlaceRating {
                 entry: place_id.to_owned(),
                 context,

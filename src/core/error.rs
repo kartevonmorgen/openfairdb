@@ -156,3 +156,21 @@ impl From<anyhow::Error> for RepoError {
         RepoError::Other(from)
     }
 }
+
+impl From<ofdb_entities::password::ParseError> for Error {
+    fn from(_: ofdb_entities::password::ParseError) -> Self {
+        Error::Parameter(ParameterError::Password)
+    }
+}
+
+impl From<ofdb_entities::event::RegistrationTypeParseError> for Error {
+    fn from(_: ofdb_entities::event::RegistrationTypeParseError) -> Self {
+        Error::Parameter(ParameterError::RegistrationType)
+    }
+}
+
+impl From<ofdb_entities::nonce::EmailNonceDecodingError> for Error {
+    fn from(_: ofdb_entities::nonce::EmailNonceDecodingError) -> Self {
+        Error::Parameter(ParameterError::InvalidNonce)
+    }
+}

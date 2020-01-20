@@ -6,10 +6,16 @@ edition = "2018"
 publish = false
 
 [dependencies]
+bs58 = "*"
 chrono = "*"
+itertools = "*"
 num-derive = "*"
 num-traits = "*"
+pwhash = "*"
 uuid = { version = "*", features = ["v4"] }
 url = "2"
 strum = "*"
 strum_macros = "*"
+
+[dev-dependencies]
+rand = "*"

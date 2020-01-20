@@ -1,3 +1,4 @@
+use crate::{activity::*, revision::*};
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::*;
 use strum_macros::{EnumCount, EnumIter};
@@ -31,4 +32,11 @@ impl From<ReviewStatus> for ReviewStatusPrimitive {
     fn from(from: ReviewStatus) -> Self {
         from.to_i16().unwrap()
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ReviewStatusLog {
+    pub revision: Revision,
+    pub activity: ActivityLog,
+    pub status: ReviewStatus,
 }

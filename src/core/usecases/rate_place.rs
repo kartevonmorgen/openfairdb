@@ -5,8 +5,8 @@ use crate::core::prelude::*;
 pub struct NewPlaceRating {
     pub entry   : String,
     pub title   : String,
-    pub value   : RatingValue,
-    pub context : RatingContext,
+    pub value   : ofdb_boundary::RatingValue,
+    pub context : ofdb_boundary::RatingContext,
     pub comment : String,
     pub source  : Option<String>,
     pub user    : Option<String>,
@@ -29,7 +29,8 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: NewPlaceRating) -> Result<Storable> 
     if r.comment.is_empty() {
         return Err(Error::Parameter(ParameterError::EmptyComment));
     }
-    if !r.value.is_valid() {
+    let r_value: RatingValue = r.value.into();
+    if !r_value.is_valid() {
         return Err(Error::Parameter(ParameterError::RatingValue));
     }
     let now = Timestamp::now();
@@ -43,8 +44,8 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: NewPlaceRating) -> Result<Storable> 
         created_at: now,
         archived_at: None,
         title: r.title,
-        value: r.value,
-        context: r.context,
+        value: r_value,
+        context: r.context.into(),
         source: r.source,
     };
     let comment = Comment {
@@ -83,9 +84,9 @@ mod tests {
                 entry: "does_not_exist".into(),
                 title: "title".into(),
                 comment: "a comment".into(),
-                context: RatingContext::Fairness,
+                context: ofdb_boundary::RatingContext::Fairness,
                 user: None,
-                value: RatingValue::from(2),
+                value: ofdb_boundary::RatingValue::from(2),
                 source: Some("source".into()),
             },
         )
@@ -103,9 +104,9 @@ mod tests {
                 entry: "foo".into(),
                 comment: "".into(),
                 title: "title".into(),
-                context: RatingContext::Fairness,
+                context: ofdb_boundary::RatingContext::Fairness,
                 user: None,
-                value: RatingValue::from(2),
+                value: ofdb_boundary::RatingValue::from(2),
                 source: Some("source".into()),
             },
         )
@@ -123,9 +124,9 @@ mod tests {
                 entry: "foo".into(),
                 comment: "comment".into(),
                 title: "title".into(),
-                context: RatingContext::Fairness,
+                context: ofdb_boundary::RatingContext::Fairness,
                 user: None,
-                value: RatingValue::from(3),
+                value: ofdb_boundary::RatingValue::from(3),
                 source: Some("source".into()),
             },
         )
@@ -136,9 +137,9 @@ mod tests {
                 entry: "foo".into(),
                 title: "title".into(),
                 comment: "comment".into(),
-                context: RatingContext::Fairness,
+                context: ofdb_boundary::RatingContext::Fairness,
                 user: None,
-                value: RatingValue::from(-2),
+                value: ofdb_boundary::RatingValue::from(-2),
                 source: Some("source".into()),
             },
         )
@@ -156,9 +157,9 @@ mod tests {
                 entry: "foo".into(),
                 comment: "comment".into(),
                 title: "title".into(),
-                context: RatingContext::Fairness,
+                context: ofdb_boundary::RatingContext::Fairness,
                 user: None,
-                value: RatingValue::from(2),
+                value: ofdb_boundary::RatingValue::from(2),
                 source: Some("source".into()),
             },
         )
