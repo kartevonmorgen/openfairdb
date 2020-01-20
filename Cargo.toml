@@ -9,7 +9,6 @@ license = "AGPL-3.0-or-later"
 edition = "2018"
 
 [patch.crates-io]
-geocoding = { git = "https://github.com/georust/geocoding" }
 ofdb-boundary = { path = "ofdb-boundary" }
 
 [workspace]
