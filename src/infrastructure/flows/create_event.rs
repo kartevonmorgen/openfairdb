@@ -66,12 +66,11 @@ pub fn create_event(
 
 fn notify_event_created(connections: &sqlite::Connections, event: &Event) -> Result<()> {
     if let Some(ref location) = event.location {
-        let _email_addresses = {
+        let email_addresses = {
             let conn = connections.shared()?;
             usecases::email_addresses_by_coordinate(&*conn, location.pos)?
         };
-        error!("TODO: notify::event_created {:?}", event);
-        //notify::event_created(&email_addresses, event, all_categories);
+        notify::event_created(&email_addresses, event);
     }
     Ok(())
 }
