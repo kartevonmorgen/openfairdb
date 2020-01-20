@@ -197,3 +197,154 @@ das Karte von morgen-Team\n
         tags = event.tags.join(", ")
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use chrono::Utc;
+
+    // To verify the formatting manually run these tests and examine
+    // the output on stdout:
+    //
+    // ```sh
+    // cargo test --tests user_communication -- --nocapture
+    // ```
+
+    fn print_email(email: &EmailContent) {
+        // 72 column ruler
+        println!(
+            "========================================================================
+{subject}
+------------------------------------------------------------------------
+{body}
+========================================================================",
+            subject = email.subject,
+            body = email.body,
+        );
+    }
+
+    fn new_place() -> Place {
+        Place {
+            id: "<id>".into(),
+            license: "<license>".into(),
+            revision: Revision::initial(),
+            created: Activity {
+                at: TimestampMs::now(),
+                by: Some("created_by@example.com".into()),
+            },
+            title: "<title>".into(),
+            description: "<description>".into(),
+            location: Location {
+                pos: MapPoint::try_from_lat_lng_deg(42.27, -7.97).unwrap(),
+                address: Some(Address {
+                    street: Some("<street>".into()),
+                    zip: Some("<zip>".into()),
+                    city: Some("<city>".into()),
+                    country: Some("<country>".into()),
+                }),
+            },
+            contact: Some(Contact {
+                email: Some("<email>".into()),
+                phone: Some("<phone>".into()),
+            }),
+            links: Some(Links {
+                homepage: Some("https://kartevonmorgen.org".parse().unwrap()),
+                ..Default::default()
+            }),
+            tags: vec!["<tag1>".into(), "<tag2>".into()],
+        }
+    }
+
+    fn new_event() -> Event {
+        Event {
+            id: "<id>".into(),
+            created_by: Some("created_by@example.com".into()),
+            archived: None,
+            start: Utc::now().naive_utc(),
+            end: None,
+            registration: None,
+            organizer: Some("<organizer>".into()),
+            title: "<title>".into(),
+            description: Some("<description>".into()),
+            location: Some(Location {
+                pos: MapPoint::try_from_lat_lng_deg(42.27, -7.97).unwrap(),
+                address: Some(Address {
+                    street: Some("<street>".into()),
+                    zip: Some("<zip>".into()),
+                    city: Some("<city>".into()),
+                    country: Some("<country>".into()),
+                }),
+            }),
+            contact: Some(Contact {
+                email: Some("<email>".into()),
+                phone: Some("<phone>".into()),
+            }),
+            homepage: Some("https://kartevonmorgen.org".parse().unwrap()),
+            image_url: None,
+            image_link_url: None,
+            tags: vec!["<tag1>".into(), "<tag2>".into()],
+        }
+    }
+
+    #[test]
+    fn print_user_registration_email() {
+        let url = "https://kartevonmorgen.org/confirm-email/";
+        let email = user_registration_email(url);
+        assert!(email.body.contains(OUTRO_HINT));
+        assert!(email.body.contains(url));
+        print_email(&email);
+    }
+
+    #[test]
+    fn print_user_reset_password_email() {
+        let url = "https://kartevonmorgen.org/reset-password/";
+        let email = user_reset_password_email(url);
+        assert!(email.body.contains(url));
+        print_email(&email);
+    }
+
+    #[test]
+    fn print_place_created_email() {
+        let place = new_place();
+        let email = place_created_email(&place, &["<category>".into()]);
+        assert!(email.body.contains(INTRO_ENTRY_CREATED));
+        assert!(email.body.contains(OUTRO_HINT));
+        assert!(email.body.contains(place.id.as_str()));
+        assert!(email.body.contains(&place.title));
+        print_email(&email);
+    }
+
+    #[test]
+    fn print_place_updated_email() {
+        let place = new_place();
+        let email = place_updated_email(&place, &["<category>".into()]);
+        assert!(email.body.contains(INTRO_ENTRY_UPDATED));
+        assert!(email.body.contains(OUTRO_HINT));
+        assert!(email.body.contains(place.id.as_str()));
+        assert!(email.body.contains(&place.title));
+        print_email(&email);
+    }
+
+    #[test]
+    fn print_event_created_email() {
+        let event = new_event();
+        let email = event_created_email(&event);
+        assert!(email.body.contains(INTRO_ENTRY_CREATED));
+        assert!(email.body.contains(OUTRO_HINT));
+        assert!(email.body.contains(event.id.as_str()));
+        assert!(email.body.contains(&event.title));
+        print_email(&email);
+    }
+
+    #[test]
+    fn print_event_updated_email() {
+        let event = new_event();
+        let email = event_updated_email(&event);
+        assert!(email.body.contains(INTRO_ENTRY_UPDATED));
+        assert!(email.body.contains(OUTRO_HINT));
+        assert!(email.body.contains(event.id.as_str()));
+        assert!(email.body.contains(&event.title));
+        print_email(&email);
+    }
+}
