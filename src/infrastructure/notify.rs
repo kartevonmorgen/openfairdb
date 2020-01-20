@@ -81,6 +81,34 @@ pub fn place_updated(email_addresses: &[String], place: &Place, all_categories: 
     }
 }
 
+pub fn event_created(email_addresses: &[String], event: &Event) {
+    let content = user_communication::event_created_email(&event);
+
+    #[cfg(feature = "email")]
+    {
+        info!(
+            "Sending e-mails to {} recipients after new event {} created",
+            email_addresses.len(),
+            event.id,
+        );
+        compose_and_send_emails(email_addresses, &content.subject, &content.body);
+    }
+}
+
+pub fn event_updated(email_addresses: &[String], event: &Event) {
+    let content = user_communication::event_updated_email(&event);
+
+    #[cfg(feature = "email")]
+    {
+        info!(
+            "Sending e-mails to {} recipients after event {} updated",
+            email_addresses.len(),
+            event.id
+        );
+        compose_and_send_emails(email_addresses, &content.subject, &content.body);
+    }
+}
+
 pub fn user_registered_kvm(user: &User) {
     let token = EmailNonce {
         email: user.email.clone(),
