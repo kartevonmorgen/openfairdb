@@ -46,7 +46,7 @@ pub fn place_added(email_addresses: &[String], place: &Place, all_categories: Ve
         .filter(|c1| categories.iter().any(|c2| c1.id == c2.id))
         .map(|c| c.name())
         .collect();
-    let content = user_communication::entry_added_email(&place, &category_names);
+    let content = user_communication::place_created_email(&place, &category_names);
 
     #[cfg(feature = "email")]
     {
@@ -68,7 +68,7 @@ pub fn place_updated(email_addresses: &[String], place: &Place, all_categories: 
         .filter(|c1| categories.iter().any(|c2| c1.id == c2.id))
         .map(|c| c.name())
         .collect();
-    let content = user_communication::entry_changed_email(&place, &category_names);
+    let content = user_communication::place_updated_email(&place, &category_names);
 
     #[cfg(feature = "email")]
     {
