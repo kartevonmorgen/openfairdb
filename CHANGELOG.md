@@ -1,8 +1,9 @@
 # Changelog
 
-## v0.8.9 (2020-01-dd)
+## v0.8.9 (2020-01-20)
 
 - fix(web): Enable export of all event details for admins
+- new(db): Send subscription e-mails after creating/updating events
 
 ## v0.8.8 (2020-01-17)
 
