@@ -10,11 +10,13 @@ edition = "2018"
 
 [patch.crates-io]
 ofdb-boundary = { path = "ofdb-boundary" }
+ofdb-entities = { path = "ofdb-entities" }
 
 [workspace]
 members = [
   ".",
   "ofdb-boundary",
+  "ofdb-entities",
 ]
 
 [dependencies]
@@ -39,6 +41,7 @@ num-derive = "*"
 num-traits = "*"
 maud = { version = "*", optional = true, features = ["rocket"] }
 ofdb-boundary = "*"
+ofdb-entities = "*"
 openssl = { version = "*", features = ["vendored"] }
 owning_ref = "*"
 passwords = "*"
@@ -51,7 +54,6 @@ rocket_contrib = "*"
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 strum = "*"
-strum_macros = "*"
 tantivy = "*"
 url = { version = "*", features = ["serde"] }
 uuid = { version = "*", features = ["v4"] }

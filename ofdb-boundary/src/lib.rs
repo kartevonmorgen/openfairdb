@@ -1,3 +1,4 @@
+use ofdb_entities as e;
 use serde::{Deserialize, Serialize};
 
 #[rustfmt::skip]
@@ -232,4 +233,38 @@ pub struct Rating {
     pub context: RatingContext,
     pub comments: Vec<Comment>,
     pub source: String,
+}
+
+impl From<e::category::Category> for Category {
+    fn from(from: e::category::Category) -> Self {
+        let name = from.name();
+        Self {
+            id: from.id.into(),
+            name,
+        }
+    }
+}
+
+impl From<e::review_status::ReviewStatus> for ReviewStatus {
+    fn from(from: e::review_status::ReviewStatus) -> Self {
+        use e::review_status::ReviewStatus::*;
+        match from {
+            Archived => ReviewStatus::Archived,
+            Confirmed => ReviewStatus::Confirmed,
+            Created => ReviewStatus::Created,
+            Rejected => ReviewStatus::Rejected,
+        }
+    }
+}
+
+impl From<ReviewStatus> for e::review_status::ReviewStatus {
+    fn from(from: ReviewStatus) -> Self {
+        use e::review_status::ReviewStatus::*;
+        match from {
+            ReviewStatus::Archived => Archived,
+            ReviewStatus::Confirmed => Confirmed,
+            ReviewStatus::Created => Created,
+            ReviewStatus::Rejected => Rejected,
+        }
+    }
 }
