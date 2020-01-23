@@ -424,13 +424,19 @@ mod tests {
                         api_token: "foo".into(),
                     })
                     .unwrap();
-                let res = client
+                let mut res = client
                     .post("/events")
                     .header(ContentType::JSON)
                     .header(Header::new("Authorization", "Bearer foo"))
                     .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com"}"#)
                     .dispatch();
-                assert_eq!(res.status(), HttpStatus::Forbidden);
+                assert_eq!(res.status(), HttpStatus::Ok);
+                test_json(&res);
+                let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+                let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
+                let eid = ev.id.clone();
+                assert_eq!(ev.created_by.unwrap(), "foo@bar.com");
+                assert_eq!(body_str, format!("\"{}\"", eid));
             }
 
             #[test]
@@ -1076,6 +1082,42 @@ mod tests {
             let e = usecases::NewEvent {
                 title: "x".into(),
                 tags: Some(vec!["bla".into(), "org-tag".into()]),
+                created_by: Some("foo@bar.com".into()),
+                start: Utc::now().naive_utc().timestamp(),
+                ..Default::default()
+            };
+            let id = flows::create_event(&db, &mut search_engine, Some("foo"), e)
+                .unwrap()
+                .id;
+            assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
+            let res = client
+                .put(format!("/events/{}", id))
+                .header(ContentType::JSON)
+                .header(Header::new("Authorization", "Bearer foo"))
+                .body(r#"{"title":"new","start":4132508400,"created_by":"changed@bar.com"}"#)
+                .dispatch();
+            assert_eq!(res.status(), HttpStatus::Ok);
+            let new = db.shared().unwrap().get_event(id.as_ref()).unwrap();
+            assert_eq!(new.title, "new");
+            assert_eq!(new.start.timestamp(), 4_132_508_400);
+            assert_eq!(new.created_by.unwrap(), "changed@bar.com");
+        }
+
+        #[test]
+        fn with_api_token_for_organization_without_any_owned_tags() {
+            let (client, db, mut search_engine) = setup2();
+            db.exclusive()
+                .unwrap()
+                .create_org(Organization {
+                    id: "foo".into(),
+                    name: "bar".into(),
+                    owned_tags: vec![],
+                    api_token: "foo".into(),
+                })
+                .unwrap();
+            let e = usecases::NewEvent {
+                title: "x".into(),
+                tags: Some(vec!["bla".into()]),
                 created_by: Some("foo@bar.com".into()),
                 start: Utc::now().naive_utc().timestamp(),
                 ..Default::default()

@@ -84,10 +84,10 @@ pub fn import_new_event<D: Db>(
     if super::check_and_count_owned_tags(db, &tags, org.as_ref())? == 0 {
         if let Some(mut org) = org {
             if org.owned_tags.is_empty() {
-                log::info!("Organization {} doesn't own any tags that are required for creating/updating events", org.name);
-                // All events are owned by an organization which must
-                // be assigned at least one dedicated tag!
-                return Err(Error::Parameter(ParameterError::OwnedTag));
+                log::info!(
+                    "Organization {} doesn't own any tags while creating/updating an event",
+                    org.name
+                );
             }
             // Implicitly add missing owned tags to prevent events with
             // undefined ownership!
@@ -98,31 +98,32 @@ pub fn import_new_event<D: Db>(
                         // but in the future we might allow anonymous creators
                         return Err(ParameterError::CreatorEmail.into());
                     }
-                    // Ensure that the newly created event is owned by the authorized org
-                    log::info!(
-                        "Implicitly adding all {} tag(s) owned by {} while creating event",
-                        org.owned_tags.len(),
-                        org.name
-                    );
-                    tags.reserve(org.owned_tags.len());
-                    tags.append(&mut org.owned_tags);
+                    if !org.owned_tags.is_empty() {
+                        // Ensure that the newly created event is owned by the authorized org
+                        log::info!(
+                            "Implicitly adding all {} tag(s) owned by {} while creating event",
+                            org.owned_tags.len(),
+                            org.name
+                        );
+                        tags.reserve(org.owned_tags.len());
+                        tags.append(&mut org.owned_tags);
+                    }
                 }
                 NewEventMode::Update(id) => {
                     // Keep all existing tags owned by the authorized org
                     let old_tags = db.get_event(id)?.tags;
                     // Verify that the org is entitled to update this event according to the owned tags
                     let owned_count = super::check_and_count_owned_tags(db, &old_tags, Some(&org))?;
-                    if owned_count < 1 {
-                        log::info!("Organization {} is not entitled to modify event {} according to the tags", org.name, id);
-                        return Err(Error::Parameter(ParameterError::OwnedTag));
-                    }
-                    tags.reserve(owned_count);
-                    // Collect all existing tags that are owned by this org
-                    for owned_tag in old_tags
-                        .into_iter()
-                        .filter(|t| org.owned_tags.iter().any(|x| x == t))
-                    {
-                        tags.push(owned_tag);
+                    if owned_count > 0 {
+                        debug_assert!(owned_count <= org.owned_tags.len());
+                        tags.reserve(owned_count);
+                        // Preserve all existing tags that are owned by this org
+                        for owned_tag in old_tags
+                            .into_iter()
+                            .filter(|t| org.owned_tags.iter().any(|x| x == t))
+                        {
+                            tags.push(owned_tag);
+                        }
                     }
                 }
             }

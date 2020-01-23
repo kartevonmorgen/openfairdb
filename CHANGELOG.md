@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.8.10 (2020-01-23)
+
+- fix(web): Allow creation/update of events without owned tags
+
 ## v0.8.9 (2020-01-20)
 
 - fix(web): Enable export of all event details for admins
