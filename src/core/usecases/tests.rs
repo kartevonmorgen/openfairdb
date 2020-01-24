@@ -344,9 +344,8 @@ impl UserGateway for MockDb {
             .users
             .borrow()
             .iter()
-            .filter(|u| u.email == email)
-            .cloned()
-            .next())
+            .find(|u| u.email == email)
+            .cloned())
     }
 
     fn get_user_by_email(&self, email: &str) -> RepoResult<User> {

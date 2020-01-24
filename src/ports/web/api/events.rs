@@ -117,8 +117,7 @@ impl<'q> FromQuery<'q> for usecases::EventQuery {
             .clone()
             .filter(|i| i.key == "created_by")
             .map(|i| i.value.url_decode_lossy())
-            .filter(|v| !v.is_empty())
-            .nth(0)
+            .find(|v| !v.is_empty())
             .map(|s| s.parse())
             .transpose()
             .map_err(|_| ParameterError::Email)?;
@@ -127,8 +126,7 @@ impl<'q> FromQuery<'q> for usecases::EventQuery {
             .clone()
             .filter(|i| i.key == "start_min")
             .map(|i| i.value.url_decode_lossy())
-            .filter(|v| !v.is_empty())
-            .nth(0);
+            .find(|v| !v.is_empty());
         if let Some(s) = start_min {
             let x: i64 = s.parse()?;
             q.start_min = Some(Timestamp::from_inner(x));
@@ -138,8 +136,7 @@ impl<'q> FromQuery<'q> for usecases::EventQuery {
             .clone()
             .filter(|i| i.key == "start_max")
             .map(|i| i.value.url_decode_lossy())
-            .filter(|v| !v.is_empty())
-            .nth(0);
+            .find(|v| !v.is_empty());
         if let Some(e) = start_max {
             let x: i64 = e.parse()?;
             q.start_max = Some(Timestamp::from_inner(x));
@@ -149,8 +146,7 @@ impl<'q> FromQuery<'q> for usecases::EventQuery {
             .clone()
             .filter(|i| i.key == "bbox")
             .map(|i| i.value.url_decode_lossy())
-            .filter(|v| !v.is_empty())
-            .nth(0);
+            .find(|v| !v.is_empty());
         if let Some(bbox) = bbox {
             let bbox = bbox
                 .parse::<MapBbox>()
@@ -162,8 +158,7 @@ impl<'q> FromQuery<'q> for usecases::EventQuery {
         q.text = query
             .filter(|i| i.key == "text")
             .map(|i| i.value.url_decode_lossy())
-            .filter(|v| !v.is_empty())
-            .nth(0);
+            .find(|v| !v.is_empty());
 
         Ok(q)
     }

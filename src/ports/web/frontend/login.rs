@@ -100,8 +100,7 @@ pub mod tests {
         let cookie = response
             .headers()
             .get("Set-Cookie")
-            .filter(|v| v.starts_with(COOKIE_EMAIL_KEY))
-            .nth(0)
+            .find(|v| v.starts_with(COOKIE_EMAIL_KEY))
             .and_then(|val| Cookie::parse_encoded(val).ok());
         cookie.map(|c| c.into_owned())
     }

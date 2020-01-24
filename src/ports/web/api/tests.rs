@@ -158,7 +158,7 @@ fn get_one_entry() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
+    assert_eq!(body_str.as_str().chars().next().unwrap(), '[');
     let entries: Vec<json::Entry> = serde_json::from_str(&body_str).unwrap();
     let rating = connections
         .shared()
@@ -199,7 +199,7 @@ fn get_multiple_places() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
+    assert_eq!(body_str.as_str().chars().next().unwrap(), '[');
     let entries: Vec<json::Entry> = serde_json::from_str(&body_str).unwrap();
     assert_eq!(entries.len(), 2);
     assert!(entries
@@ -1120,7 +1120,7 @@ fn get_one_rating() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
+    assert_eq!(body_str.as_str().chars().next().unwrap(), '[');
     let ratings: Vec<json::Rating> = serde_json::from_str(&body_str).unwrap();
     assert_eq!(ratings[0].comments.len(), 1);
     assert_eq!(ratings[0].id, rid.to_string());
@@ -1182,7 +1182,7 @@ fn ratings_with_and_without_source() {
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    assert_eq!(body_str.as_str().chars().nth(0).unwrap(), '[');
+    assert_eq!(body_str.as_str().chars().next().unwrap(), '[');
     let ratings: Vec<json::Rating> = serde_json::from_str(&body_str).unwrap();
     assert_eq!(ratings[0].id, rid.to_string());
     assert_eq!(ratings[0].comments.len(), 1);
@@ -1192,8 +1192,7 @@ fn user_id_cookie(response: &Response) -> Option<Cookie<'static>> {
     let cookie = response
         .headers()
         .get("Set-Cookie")
-        .filter(|v| v.starts_with("user_id"))
-        .nth(0)
+        .find(|v| v.starts_with("user_id"))
         .and_then(|val| Cookie::parse_encoded(val).ok());
 
     cookie.map(|c| c.into_owned())
@@ -1336,8 +1335,7 @@ fn confirm_email_address() {
         .headers()
         .iter()
         .filter(|h| h.name == "Set-Cookie")
-        .filter(|h| h.value.contains("user_id="))
-        .nth(0)
+        .find(|h| h.value.contains("user_id="))
         .unwrap()
         .value
         .parse()
