@@ -1533,6 +1533,40 @@ mod tests {
             assert_eq!(res.status(), HttpStatus::Forbidden);
             assert_eq!(db.shared().unwrap().count_events().unwrap(), 1);
         }
+
+        // FIXME: This test should fail, but it doesn't!!
+        #[test]
+        #[ignore]
+        fn with_api_token_by_organization_without_any_owned_tags() {
+            let (client, db, mut search_engine) = setup2();
+            db.exclusive()
+                .unwrap()
+                .create_org(Organization {
+                    id: "foo".into(),
+                    name: "bar".into(),
+                    owned_tags: vec![],
+                    api_token: "foo".into(),
+                })
+                .unwrap();
+            let e = usecases::NewEvent {
+                title: "x".into(),
+                start: Utc::now().naive_utc().timestamp(),
+                tags: Some(vec!["bla".into()]),
+                created_by: Some("foo@bar.com".into()),
+                ..Default::default()
+            };
+            let id = flows::create_event(&db, &mut search_engine, Some("foo"), e)
+                .unwrap()
+                .id;
+            assert_eq!(db.shared().unwrap().count_events().unwrap(), 1);
+            let res = client
+                .delete(format!("/events/{}", id))
+                .header(ContentType::JSON)
+                .header(Header::new("Authorization", "Bearer foo"))
+                .dispatch();
+            assert_eq!(db.shared().unwrap().count_events().unwrap(), 1);
+            assert_eq!(res.status(), HttpStatus::Unauthorized);
+        }
     }
 
     use chrono::prelude::*;
