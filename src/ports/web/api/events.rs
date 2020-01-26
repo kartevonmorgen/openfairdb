@@ -100,7 +100,62 @@ impl<'q> FromQuery<'q> for usecases::EventQuery {
     type Error = crate::core::prelude::Error;
 
     fn from_query(query: Query<'q>) -> std::result::Result<Self, Self::Error> {
-        let mut q = usecases::EventQuery::default();
+        let created_by = query
+            .clone()
+            .filter(|i| i.key == "created_by")
+            .map(|i| i.value.url_decode_lossy())
+            .find(|v| !v.is_empty())
+            .map(|s| s.parse::<Email>())
+            .transpose()
+            .map_err(|_| ParameterError::Email)?;
+
+        let bbox = if let Some(bbox) = query
+            .clone()
+            .filter(|i| i.key == "bbox")
+            .map(|i| i.value.url_decode_lossy())
+            .find(|v| !v.is_empty())
+        {
+            let bbox = bbox
+                .parse::<MapBbox>()
+                .map_err(|_err| ParameterError::Bbox)?;
+            validate::bbox(&bbox)?;
+            Some(bbox)
+        } else {
+            None
+        };
+
+        let limit = if let Some(limit) = query
+            .clone()
+            .filter(|i| i.key == "limit")
+            .map(|i| i.value.url_decode_lossy())
+            .find(|v| !v.is_empty())
+        {
+            Some(validate_and_adjust_query_limit(limit.parse()?)?)
+        } else {
+            None
+        };
+
+        let start_max = if let Some(start_max) = query
+            .clone()
+            .filter(|i| i.key == "start_max")
+            .map(|i| i.value.url_decode_lossy())
+            .find(|v| !v.is_empty())
+        {
+            Some(Timestamp::from_inner(start_max.parse()?))
+        } else {
+            None
+        };
+
+        let start_min = if let Some(start_min) = query
+            .clone()
+            .filter(|i| i.key == "start_min")
+            .map(|i| i.value.url_decode_lossy())
+            .find(|v| !v.is_empty())
+        {
+            Some(Timestamp::from_inner(start_min.parse()?))
+        } else {
+            None
+        };
 
         let tags: Vec<_> = query
             .clone()
@@ -108,83 +163,43 @@ impl<'q> FromQuery<'q> for usecases::EventQuery {
             .map(|i| i.value.to_string())
             .filter(|v| !v.is_empty())
             .collect();
+        let tags = if tags.is_empty() { None } else { Some(tags) };
 
-        if !tags.is_empty() {
-            q.tags = Some(tags);
-        }
-
-        q.created_by = query
+        let text = query
             .clone()
-            .filter(|i| i.key == "created_by")
-            .map(|i| i.value.url_decode_lossy())
-            .find(|v| !v.is_empty())
-            .map(|s| s.parse())
-            .transpose()
-            .map_err(|_| ParameterError::Email)?;
-
-        let start_min = query
-            .clone()
-            .filter(|i| i.key == "start_min")
-            .map(|i| i.value.url_decode_lossy())
-            .find(|v| !v.is_empty());
-        if let Some(s) = start_min {
-            let x: i64 = s.parse()?;
-            q.start_min = Some(Timestamp::from_inner(x));
-        }
-
-        let start_max = query
-            .clone()
-            .filter(|i| i.key == "start_max")
-            .map(|i| i.value.url_decode_lossy())
-            .find(|v| !v.is_empty());
-        if let Some(e) = start_max {
-            let x: i64 = e.parse()?;
-            q.start_max = Some(Timestamp::from_inner(x));
-        }
-
-        let bbox = query
-            .clone()
-            .filter(|i| i.key == "bbox")
-            .map(|i| i.value.url_decode_lossy())
-            .find(|v| !v.is_empty());
-        if let Some(bbox) = bbox {
-            let bbox = bbox
-                .parse::<MapBbox>()
-                .map_err(|_err| ParameterError::Bbox)?;
-            validate::bbox(&bbox)?;
-            q.bbox = Some(bbox);
-        }
-
-        q.text = query
             .filter(|i| i.key == "text")
             .map(|i| i.value.url_decode_lossy())
             .find(|v| !v.is_empty());
 
-        Ok(q)
+        drop(query); // silence clippy warning
+        Ok(usecases::EventQuery {
+            bbox,
+            created_by,
+            limit,
+            start_max,
+            start_min,
+            tags,
+            text,
+        })
     }
 }
 
 const MAX_RESULT_LIMIT: usize = 500;
 
 #[allow(clippy::absurd_extreme_comparisons)]
-fn validate_and_adjust_query_limit(limit: Option<usize>) -> CoreResult<Option<usize>> {
-    let limit = if let Some(limit) = limit {
-        if limit > MAX_RESULT_LIMIT {
-            info!(
-                "Requested limit {} exceeds maximum limit {} for event search results",
-                limit, MAX_RESULT_LIMIT
-            );
-            Some(MAX_RESULT_LIMIT)
-        } else if limit <= 0 {
-            warn!("Invalid search limit: {}", limit);
-            return Err(Error::Parameter(ParameterError::InvalidLimit));
-        } else {
-            Some(limit)
-        }
+fn validate_and_adjust_query_limit(limit: usize) -> CoreResult<usize> {
+    if limit > MAX_RESULT_LIMIT {
+        info!(
+            "Requested limit {} exceeds maximum limit {} for event search results",
+            limit, MAX_RESULT_LIMIT
+        );
+        Ok(MAX_RESULT_LIMIT)
+    } else if limit <= 0 {
+        warn!("Invalid search limit: {}", limit);
+        Err(Error::Parameter(ParameterError::InvalidLimit))
     } else {
-        None
-    };
-    Ok(limit)
+        Ok(limit)
+    }
 }
 
 #[get("/events?<query..>")]
@@ -192,10 +207,8 @@ pub fn get_events_with_token(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     token: Bearer,
-    mut query: usecases::EventQuery,
+    query: usecases::EventQuery,
 ) -> Result<Vec<json::Event>> {
-    query.limit = validate_and_adjust_query_limit(query.limit)?;
-
     let db = connections.shared()?;
     let org = usecases::authorize_organization_by_token(&*db, &token.0)?;
     let events = usecases::query_events(&*db, &search_engine, query)?;
@@ -214,12 +227,11 @@ pub fn get_events_with_token(
 pub fn get_events_chronologically(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
-    mut query: usecases::EventQuery,
+    query: usecases::EventQuery,
 ) -> Result<Vec<json::Event>> {
     if query.created_by.is_some() {
         return Err(Error::Parameter(ParameterError::Unauthorized).into());
     }
-    query.limit = validate_and_adjust_query_limit(query.limit)?;
 
     let db = connections.shared()?;
     let events = usecases::query_events(&*db, &search_engine, query)?;

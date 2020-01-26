@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.8.11 (2020-01-dd)
+
+- fix(web): Fix parsing of event search parameters (including limit)
+
 ## v0.8.10 (2020-01-23)
 
 - fix(web): Allow creation/update of events without owned tags
