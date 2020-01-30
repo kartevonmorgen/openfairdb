@@ -80,7 +80,8 @@ pub fn import_new_event<D: Db>(
             })
         })
         .transpose()?;
-    let mut tags = super::prepare_tag_list(tags.unwrap_or_else(|| vec![]));
+    let mut tags =
+        super::prepare_tag_list(tags.unwrap_or_else(|| vec![]).iter().map(String::as_str));
     if super::check_and_count_owned_tags(db, &tags, org.as_ref())? == 0 {
         if let Some(mut org) = org {
             if org.owned_tags.is_empty() {

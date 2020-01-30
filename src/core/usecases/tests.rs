@@ -772,7 +772,13 @@ fn receive_event_with_creators_email() {
 #[test]
 fn tag_lists() {
     assert_eq!(
-        vec!["a".to_string(), "b".to_string(), "c".to_string()],
-        prepare_tag_list(vec!["  a  c #b ".to_string()])
+        vec![
+            "a".to_string(),
+            "b".to_string(),
+            "c".to_string(),
+            "d".to_string(),
+            "e-f".to_string()
+        ],
+        prepare_tag_list(vec!["  A\n#d\tc #B ", "#", "#e-f"].into_iter())
     );
 }

@@ -56,7 +56,11 @@ pub fn prepare_new_place<D: Db>(
         Some(pos) => pos,
     };
     let categories: Vec<_> = categories.into_iter().map(Id::from).collect();
-    let tags = super::prepare_tag_list(Category::merge_ids_into_tags(&categories, tags));
+    let tags = super::prepare_tag_list(
+        Category::merge_ids_into_tags(&categories, tags)
+            .iter()
+            .map(String::as_str),
+    );
     super::check_and_count_owned_tags(db, &tags, None)?;
     let address = Address {
         street,

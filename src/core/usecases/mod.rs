@@ -149,23 +149,19 @@ pub fn email_addresses_by_coordinate(db: &dyn Db, pos: MapPoint) -> Result<Vec<S
         .collect())
 }
 
-pub fn prepare_tag_list(tags: Vec<String>) -> Vec<String> {
+pub fn prepare_tag_list<'a>(tags: impl IntoIterator<Item = &'a str>) -> Vec<String> {
     let mut tags: Vec<_> = tags
         .into_iter()
-        // Filter empty tags (1st pass)
-        .filter_map(|t| match t.trim() {
-            t if t.is_empty() => None,
-            t => Some(t.to_owned()),
-        })
-        // Split and recollect
-        .map(|t| t.split(' ').map(ToOwned::to_owned).collect::<Vec<_>>())
-        .flatten()
+        // Split by whitespace
+        .flat_map(|t| t.split_whitespace())
+        // Convert to lowercase
+        .map(|t| t.to_lowercase())
         // Remove reserved character
         .map(|t| t.replace("#", ""))
-        // Filter empty tags (2nd pass)
+        // Filter empty tags (2nd pass) and conversion to lowercase
         .filter_map(|t| match t.trim() {
             t if t.is_empty() => None,
-            t => Some(t.to_owned()),
+            t => Some(t.to_lowercase()),
         })
         .collect();
     tags.sort_unstable();
