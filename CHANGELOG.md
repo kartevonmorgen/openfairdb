@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.8.11 (2020-01-dd)
+## v0.8.11 (2020-01-30)
 
 - fix(web): Fix parsing of event search parameters (including limit)
 - fix(db): Implicitly convert all tags to lowercase
