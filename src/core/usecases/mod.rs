@@ -16,6 +16,7 @@ mod confirm_email_and_reset_password;
 mod create_new_place;
 mod create_new_user;
 mod delete_event;
+mod export_place;
 mod find_duplicates;
 mod indexing;
 mod login;
@@ -35,9 +36,9 @@ pub mod tests;
 pub use self::{
     archive_comments::*, archive_events::*, archive_ratings::*, authorize_organization::*,
     change_user_role::*, confirm_email::*, confirm_email_and_reset_password::*,
-    create_new_place::*, create_new_user::*, delete_event::*, find_duplicates::*, indexing::*,
-    login::*, query_events::*, rate_place::*, register::*, review_places::*, search::*,
-    store_event::*, strip_event_details::*, update_place::*, user_tokens::*,
+    create_new_place::*, create_new_user::*, delete_event::*, export_place::*, find_duplicates::*,
+    indexing::*, login::*, query_events::*, rate_place::*, register::*, review_places::*,
+    search::*, store_event::*, strip_event_details::*, update_place::*, user_tokens::*,
 };
 
 //TODO: move usecases into separate files

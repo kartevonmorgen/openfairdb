@@ -566,6 +566,7 @@ fn entries_csv_export(
                         .filter(|c1| categories.iter().any(|c2| c1.id == c2.id))
                         .cloned()
                         .collect::<Vec<Category>>();
+                    let place = usecases::export_place(place, user.role, &owned_tags);
                     Some((place, categories, ratings.total()))
                 } else {
                     None
