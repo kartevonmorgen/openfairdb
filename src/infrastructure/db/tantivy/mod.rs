@@ -26,15 +26,8 @@ use tantivy::{
     collector::TopDocs,
     query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
     schema::*,
-    tokenizer::{LowerCaser, RawTokenizer, TextAnalyzer},
-    DocAddress,
-    DocId,
-    Document,
-    Index,
-    IndexReader,
-    IndexWriter,
-    ReloadPolicy,
-    Score,
+    tokenizer::{LowerCaser, NgramTokenizer, RawTokenizer, RemoveLongFilter, TextAnalyzer},
+    DocAddress, DocId, Document, Index, IndexReader, IndexWriter, ReloadPolicy, Score,
     SegmentReader,
 };
 
@@ -249,8 +242,14 @@ fn register_tokenizers(index: &Index) {
     debug_assert!(index.tokenizers().get(TEXT_TOKENIZER).is_some());
     // Custom tokenizer(s)
     debug_assert!(index.tokenizers().get(TAG_TOKENIZER).is_none());
-    let tag_tokenizer = TextAnalyzer::from(RawTokenizer).filter(LowerCaser);
+    let tag_tokenizer = TextAnalyzer::from(RawTokenizer)
+        .filter(LowerCaser)
+        .filter(RemoveLongFilter::limit(40));
     index.tokenizers().register(TAG_TOKENIZER, tag_tokenizer);
+    let text_tokenizer = TextAnalyzer::from(NgramTokenizer::prefix_only(3, 3))
+        .filter(LowerCaser)
+        .filter(RemoveLongFilter::limit(40));
+    index.tokenizers().register(TEXT_TOKENIZER, text_tokenizer);
 }
 
 fn f64_to_u64(val: f64, min: f64, max: f64) -> u64 {
