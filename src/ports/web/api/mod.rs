@@ -85,7 +85,8 @@ pub fn routes() -> Vec<Route> {
         count::get_count_tags,
         get_version,
         get_api,
-        entries_csv_export,
+        entries_csv_export_with_token,
+        entries_csv_export_without_token,
     ]
 }
 
@@ -496,40 +497,58 @@ fn get_category(connections: sqlite::Connections, ids: String) -> Result<Vec<jso
     Ok(Json(categories))
 }
 
-#[derive(FromForm, Clone, Serialize)]
-struct CsvExport {
-    bbox: String,
+#[get("/export/entries.csv?<query..>")]
+fn entries_csv_export_with_token(
+    connections: sqlite::Connections,
+    search_engine: tantivy::SearchEngine,
+    token: Bearer,
+    login: Login,
+    query: Form<search::SearchQuery>,
+) -> result::Result<Content<String>, AppError> {
+    let organization =
+        usecases::authorize_organization_by_token(&*connections.shared()?, &token.0)?;
+    entries_csv_export(
+        connections,
+        search_engine,
+        Some(organization),
+        login,
+        query.into_inner(),
+    )
 }
 
-#[get("/export/entries.csv?<export..>")]
-fn entries_csv_export(
+#[get("/export/entries.csv?<query..>", rank = 2)]
+fn entries_csv_export_without_token(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     login: Login,
-    export: Form<CsvExport>,
+    query: Form<search::SearchQuery>,
 ) -> result::Result<Content<String>, AppError> {
-    let bbox = export
-        .bbox
-        .parse::<geo::MapBbox>()
-        .map_err(|_| ParameterError::Bbox)
-        .map_err(Error::Parameter)
-        .map_err(AppError::Business)?;
+    entries_csv_export(connections, search_engine, None, login, query.into_inner())
+}
 
-    let req = usecases::SearchRequest {
-        bbox,
-        ids: vec![],
-        categories: vec![],
-        hash_tags: vec![],
-        text: None,
-        status: vec![],
-    };
+fn entries_csv_export(
+    connections: sqlite::Connections,
+    search_engine: tantivy::SearchEngine,
+    org: Option<Organization>,
+    login: Login,
+    query: search::SearchQuery,
+) -> result::Result<Content<String>, AppError> {
+    let owned_tags = org.map(|org| org.owned_tags).unwrap_or_default();
 
     let db = connections.shared()?;
-    usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+    let user = usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+
+    let (req, limit) = search::parse_search_query(&query)?;
+    let limit = if let Some(limit) = limit {
+        // Limited
+        limit
+    } else {
+        // Unlimited
+        db.count_places()? + 100
+    };
 
     let entries_categories_and_ratings = {
         let all_categories: Vec<_> = db.all_categories()?;
-        let limit = db.count_places()? + 100;
         usecases::search(&search_engine, req, limit)?
             .0
             .into_iter()
@@ -554,6 +573,8 @@ fn entries_csv_export(
             })
             .collect::<Vec<_>>()
     };
+    // Release the database connection asap
+    drop(db);
 
     let records: Vec<_> = entries_categories_and_ratings
         .into_iter()

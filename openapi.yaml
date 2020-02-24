@@ -531,18 +531,33 @@ paths:
       description: |
         The CSV export is only available for logged in users with the role _Admin_ or _Scout_.
 
+        This request supports the same paramaters as the corresponding search request.
+
         **Example**:
 
         Export all entries in Germany:
         `/export/entries.csv?bbox=47.49,0.79,54.63,18.30`
-
-        If you want to find out the coordinates for other map areas,
-        open "network" in the "developer tools" in your browser
-        and look at the search request under at the value of `bbox`.
       tags:
         - Export
       parameters:
         - $ref: '#/components/parameters/BoundingBox'
+        - name: categories
+          in: query
+          schema:
+            type: string
+          description: |
+            Comma-separated list of category identifiers.
+            We currently use the following two:
+            - Initiative (non-commercial): `2cd00bebec0c48ba9db761da48678134`
+            - Company (commercial): `77b3c33a92554bcf8e8c2c86cedd6f6f`
+        - name: text
+          in: query
+          schema:
+            type: string
+        - $ref: '#/components/parameters/IdList'
+        - $ref: '#/components/parameters/TagList'
+        - $ref: '#/components/parameters/ReviewStatusList'
+        - $ref: '#/components/parameters/PaginationLimit'
       responses:
         '200':
           description: Successful response
