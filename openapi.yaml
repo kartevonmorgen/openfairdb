@@ -533,6 +533,11 @@ paths:
 
         This request supports the same paramaters as the corresponding search request.
 
+        Contact details (email/phone) are only visible for users with the role _Admin_ or _Scout_.
+
+        Information about who created the current version (created_by) is only visible for
+        users with the role _Admin_ or owners of this entry.
+
         **Example**:
 
         Export all entries in Germany:

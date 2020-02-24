@@ -5,7 +5,8 @@ use url::Url;
 #[derive(Debug, Serialize)]
 pub struct CsvRecord {
     pub id: String,
-    pub created: i64,
+    pub created_at: i64,
+    pub created_by: Option<String>,
     pub version: u64,
     pub title: String,
     pub description: String,
@@ -16,6 +17,8 @@ pub struct CsvRecord {
     pub city: Option<String>,
     pub country: Option<String>,
     pub homepage: Option<String>,
+    pub contact_email: Option<String>,
+    pub contact_phone: Option<String>,
     pub categories: String,
     pub tags: String,
     pub license: String,
@@ -32,12 +35,17 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
             id,
             license,
             revision,
-            created,
+            created:
+                Activity {
+                    at: created_at,
+                    by: created_by,
+                },
             title,
             description,
             location,
             links,
             tags,
+            contact,
             ..
         } = place;
 
@@ -64,9 +72,17 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
             .collect::<Vec<_>>()
             .join(",");
 
+        let (contact_phone, contact_email) = if let Some(contact) = contact {
+            let Contact { phone, email } = contact;
+            (phone, email)
+        } else {
+            (None, None)
+        };
+
         CsvRecord {
             id: id.into(),
-            created: created.at.into_seconds(),
+            created_at: created_at.into_seconds(),
+            created_by: created_by.map(Into::into),
             version: revision.into(),
             title,
             description,
@@ -77,6 +93,8 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
             city,
             country,
             homepage: homepage_url.map(Url::into_string),
+            contact_phone,
+            contact_email: contact_email.map(Into::into),
             license,
             image_url: image_url.map(Url::into_string),
             image_link_url: image_link_url.map(Url::into_string),

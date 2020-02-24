@@ -4,6 +4,7 @@
 
 - new(db): Use 3-gram prefix tokenizer for searching in text fields
 - new(web): Allow custom search queries for exporting entries/places
+- new(web): Export details of entries/places if authorized by user role (contact details) and/or token (created_by)
 
 ## v0.8.11 (2020-01-30)
 

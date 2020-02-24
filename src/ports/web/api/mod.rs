@@ -582,8 +582,8 @@ fn entries_csv_export(
         .map(adapters::csv::CsvRecord::from)
         .collect();
 
-    let buff: Vec<u8> = vec![];
-    let mut wtr = csv::Writer::from_writer(buff);
+    let buf: Vec<u8> = vec![];
+    let mut wtr = csv::Writer::from_writer(buf);
 
     for r in records {
         wtr.serialize(r)?;

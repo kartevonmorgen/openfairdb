@@ -1633,10 +1633,10 @@ fn entries_export_csv() {
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     //eprintln!("{}", body_str);
-    assert!(body_str.starts_with("id,created,version,title,description,lat,lng,street,zip,city,country,homepage,categories,tags,license,image_url,image_link_url,avg_rating\n"));
-    assert!(body_str.contains(&format!("entry1,1111,0,title1,desc1,{lat},{lng},street1,zip1,city1,country1,http://homepage1/,\"{cat1},{cat2}\",\"bla,bli\",license1,https://img/,\"https://img,link/\",0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg(), cat1 = Category::ID_NON_PROFIT, cat2 = Category::ID_COMMERCIAL)));
+    assert!(body_str.starts_with("id,created_at,created_by,version,title,description,lat,lng,street,zip,city,country,homepage,contact_email,contact_phone,categories,tags,license,image_url,image_link_url,avg_rating\n"));
+    assert!(body_str.contains(&format!("entry1,1111,,0,title1,desc1,{lat},{lng},street1,zip1,city1,country1,http://homepage1/,,,\"{cat1},{cat2}\",\"bla,bli\",license1,https://img/,\"https://img,link/\",0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg(), cat1 = Category::ID_NON_PROFIT, cat2 = Category::ID_COMMERCIAL)));
     assert!(body_str.contains(&format!(
-        "entry2,2222,0,,,0.0,0.0,,,,,,{cat},,,,,0.0\n",
+        "entry2,2222,,0,,,0.0,0.0,,,,,,,,{cat},,,,,0.0\n",
         cat = Category::ID_NON_PROFIT
     )));
     assert!(!body_str.contains("entry3"));
