@@ -34,7 +34,7 @@ pub fn strip_event_details_on_export(
     role: Role,
     owned_tags: Vec<String>,
 ) -> impl Iterator<Item = Event> {
-    if role == Role::Admin {
+    if role >= Role::Admin {
         // Admin sees everything even if no owned tags are provided
         Either::Left(event_iter)
     } else {
