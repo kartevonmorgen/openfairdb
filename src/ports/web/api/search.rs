@@ -23,33 +23,32 @@ pub struct SearchQuery {
     limit: Option<usize>,
 }
 
-type Result<T> = result::Result<Json<T>, AppError>;
+pub fn parse_search_query<'a>(
+    query: &'a SearchQuery,
+) -> result::Result<(usecases::SearchRequest<'a, 'a, 'a, 'a>, Option<usize>), AppError> {
+    let SearchQuery {
+        bbox,
+        ids,
+        categories,
+        tags,
+        text,
+        status,
+        limit,
+    } = query;
 
-const DEFAULT_RESULT_LIMIT: usize = 100;
-const MAX_RESULT_LIMIT: usize = 500;
-
-#[get("/search?<search..>")]
-#[allow(clippy::absurd_extreme_comparisons)]
-pub fn get_search(
-    search_engine: tantivy::SearchEngine,
-    search: Form<SearchQuery>,
-) -> Result<json::SearchResponse> {
-    let bbox = search
-        .bbox
+    let bbox = bbox
         .parse::<geo::MapBbox>()
         .map_err(|_| ParameterError::Bbox)
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
 
-    let ids = search
-        .ids
+    let ids = ids
         .as_ref()
         .map(String::as_str)
         .map(util::split_ids)
         .unwrap_or_default();
 
-    let categories = search
-        .categories
+    let categories = categories
         .as_ref()
         .map(String::as_str)
         .map(util::split_ids)
@@ -61,17 +60,15 @@ pub fn get_search(
         })
         .unwrap_or_default();
 
-    let hash_tags = search
-        .tags
+    let hash_tags = tags
         .as_ref()
         .map(String::as_str)
         .map(util::split_ids)
         .unwrap_or_default();
 
-    let text = search.text.as_ref().map(String::as_str);
+    let text = text.as_ref().map(String::as_str);
 
-    let status = search
-        .status
+    let status = status
         .as_ref()
         .map(String::as_str)
         .map(util::split_ids)
@@ -88,16 +85,34 @@ pub fn get_search(
         })
         .collect();
 
-    let req = usecases::SearchRequest {
-        bbox,
-        ids,
-        categories,
-        hash_tags,
-        text,
-        status,
-    };
+    Ok((
+        usecases::SearchRequest {
+            bbox,
+            ids,
+            categories,
+            hash_tags,
+            text,
+            status,
+        },
+        *limit,
+    ))
+}
 
-    let search_limit = if let Some(limit) = search.limit {
+type Result<T> = result::Result<Json<T>, AppError>;
+
+const DEFAULT_RESULT_LIMIT: usize = 100;
+const MAX_RESULT_LIMIT: usize = 500;
+
+#[get("/search?<query..>")]
+#[allow(clippy::absurd_extreme_comparisons)]
+pub fn get_search(
+    search_engine: tantivy::SearchEngine,
+    query: Form<SearchQuery>,
+) -> Result<json::SearchResponse> {
+    let query = query.into_inner();
+    let (req, limit) = parse_search_query(&query)?;
+
+    let limit = if let Some(limit) = limit {
         if limit > MAX_RESULT_LIMIT {
             info!(
                 "Requested limit {} exceeds maximum limit {} for search results",
@@ -120,7 +135,7 @@ pub fn get_search(
         DEFAULT_RESULT_LIMIT
     };
 
-    let (visible, invisible) = usecases::search(&search_engine, req, search_limit)?;
+    let (visible, invisible) = usecases::search(&search_engine, req, limit)?;
 
     let visible: Vec<json::PlaceSearchResult> = visible.into_iter().map(Into::into).collect();
 
