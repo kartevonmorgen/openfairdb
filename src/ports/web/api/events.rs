@@ -274,14 +274,23 @@ fn csv_export(
     search_engine: tantivy::SearchEngine,
     org: Option<Organization>,
     login: Login,
-    mut query: usecases::EventQuery,
+    query: usecases::EventQuery,
 ) -> result::Result<Content<String>, AppError> {
     let owned_tags = org.map(|org| org.owned_tags).unwrap_or_default();
 
     let db = connections.shared()?;
     let user = usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
-    let max_limit = db.count_events()? + 100;
-    query.limit = Some(query.limit.unwrap_or(max_limit).min(max_limit));
+    let limit = if let Some(limit) = query.limit {
+        // Limited
+        limit
+    } else {
+        // Unlimited
+        db.count_events()? + 100
+    };
+    let query = usecases::EventQuery {
+        limit: Some(limit),
+        ..query
+    };
     let events = usecases::query_events(&*db, &search_engine, query)?.into_iter();
     // Release the database connection asap
     drop(db);
