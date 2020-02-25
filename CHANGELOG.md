@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.8.12 (2020-02-xx)
+## v0.8.12 (2020-02-25)
 
 - new(db): Use 3-gram prefix tokenizer for searching in text fields
 - new(web): Allow custom search queries for exporting entries/places
