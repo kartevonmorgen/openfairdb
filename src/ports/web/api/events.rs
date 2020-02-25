@@ -216,7 +216,9 @@ pub fn get_events_with_token(
     drop(db);
 
     let owned_tags = org.owned_tags;
-    let events: Vec<_> = usecases::strip_event_details_on_search(events.into_iter(), owned_tags)
+    let events: Vec<_> = events
+        .into_iter()
+        .map(|e| usecases::filter_event(e, owned_tags.iter().map(String::as_str)))
         .map(json::Event::from)
         .collect();
 
@@ -239,7 +241,9 @@ pub fn get_events_chronologically(
     drop(db);
 
     let owned_tags = vec![];
-    let events: Vec<_> = usecases::strip_event_details_on_search(events.into_iter(), owned_tags)
+    let events: Vec<_> = events
+        .into_iter()
+        .map(|e| usecases::filter_event(e, owned_tags.iter().map(String::as_str)))
         .map(json::Event::from)
         .collect();
 
@@ -295,7 +299,9 @@ fn csv_export(
     // Release the database connection asap
     drop(db);
 
-    let events = usecases::strip_event_details_on_export(events, user.role, owned_tags);
+    let events = events
+        .into_iter()
+        .map(|e| usecases::export_event(e, user.role, owned_tags.iter().map(String::as_str)));
 
     let records: Vec<_> = events.map(adapters::csv::EventRecord::from).collect();
 

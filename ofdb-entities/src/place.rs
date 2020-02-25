@@ -36,6 +36,29 @@ pub struct Place {
     pub tags: Vec<String>,
 }
 
+impl Place {
+    pub fn strip_activity_details(self) -> Self {
+        Self {
+            created: self.created.anonymize(),
+            ..self
+        }
+    }
+
+    pub fn strip_contact_details(self) -> Self {
+        Self {
+            contact: None,
+            ..self
+        }
+    }
+
+    pub fn is_owned<'a>(&self, owned_tags: impl IntoIterator<Item = &'a str>) -> bool {
+        // Exclusive ownership of events is determined by the associated tags
+        owned_tags
+            .into_iter()
+            .any(|owned_tag| self.tags.iter().any(|tag| tag == owned_tag))
+    }
+}
+
 impl From<(PlaceRoot, PlaceRevision)> for Place {
     fn from(from: (PlaceRoot, PlaceRevision)) -> Self {
         let (

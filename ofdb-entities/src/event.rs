@@ -47,6 +47,29 @@ pub struct Event {
     pub image_link_url: Option<Url>,
 }
 
+impl Event {
+    pub fn strip_activity_details(self) -> Self {
+        Self {
+            created_by: None,
+            ..self
+        }
+    }
+
+    pub fn strip_contact_details(self) -> Self {
+        Self {
+            contact: None,
+            ..self
+        }
+    }
+
+    pub fn is_owned<'a>(&self, owned_tags: impl IntoIterator<Item = &'a str>) -> bool {
+        // Exclusive ownership of events is determined by the associated tags
+        owned_tags
+            .into_iter()
+            .any(|owned_tag| self.tags.iter().any(|tag| tag == owned_tag))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

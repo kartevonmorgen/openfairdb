@@ -13,6 +13,10 @@ impl Activity {
             by,
         }
     }
+
+    pub fn anonymize(self) -> Self {
+        Self { by: None, ..self }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

@@ -1,18 +1,18 @@
 use crate::core::prelude::*;
 
-pub fn export_place<'a>(
-    place: Place,
+pub fn export_event<'a>(
+    event: Event,
     role: Role,
     owned_tags: impl IntoIterator<Item = &'a str>,
-) -> Place {
+) -> Event {
     if role < Role::Admin {
-        let place = super::filter_place(place, owned_tags);
+        let event = super::filter_event(event, owned_tags);
         if role < Role::Scout {
-            place.strip_contact_details()
+            event.strip_contact_details()
         } else {
-            place
+            event
         }
     } else {
-        place
+        event
     }
 }
