@@ -4,6 +4,7 @@
 
 - new(web): Add CORS support
 - fix(doc): Fix API docs for PUT /entries
+- fix(doc): Add missing API docs for subscriptions
 
 ## v0.8.19 (2020-05-20)
 

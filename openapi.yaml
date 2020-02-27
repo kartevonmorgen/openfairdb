@@ -481,6 +481,49 @@ paths:
       responses:
         '200':
            description: Sucessful response
+  /'subscribe-to-bbox':
+    post:
+      summary: Subscribe to a bounding box
+      tags:
+        - Subscriptions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/LatLonDeg'
+            example:
+             - lat: 45.3
+               lng: 8.6
+             - lat: 48.7
+               lng: 9.2
+      responses:
+        '200':
+          description: Sucessful response
+  /'bbox-subscriptions':
+    get:
+      summary: Fetch subscriptions
+      tags:
+        - Subscriptions
+      responses:
+        '200':
+          description: Sucessful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BboxSubscription'
+  /'unsubscribe-all-bboxes':
+    delete:
+      summary: Delete all subscriptions
+      tags:
+        - Subscriptions
+      responses:
+        '200':
+          description: Sucessful response
   /tags:
     get:
       summary: Get tags
