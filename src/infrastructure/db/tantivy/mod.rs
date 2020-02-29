@@ -26,7 +26,7 @@ use tantivy::{
     collector::TopDocs,
     query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
     schema::*,
-    tokenizer::{LowerCaser, NgramTokenizer, RawTokenizer, RemoveLongFilter, TextAnalyzer},
+    tokenizer::{LowerCaser, RawTokenizer, RemoveLongFilter, SimpleTokenizer, TextAnalyzer},
     DocAddress, DocId, Document, Index, IndexReader, IndexWriter, ReloadPolicy, Score,
     SegmentReader,
 };
@@ -93,14 +93,17 @@ impl IndexedFields {
                     .set_tokenizer(TEXT_TOKENIZER)
                     .set_index_option(IndexRecordOption::WithFreqs),
             )
-            // Address fields currently don't need to be stored
+            // Address fields currently are currently not store stored
+            // until they also need to be provided as search results.
             //.set_stored()
             ;
         let text_options = TextOptions::default()
             .set_indexing_options(
                 TextFieldIndexing::default()
                     .set_tokenizer(TEXT_TOKENIZER)
-                    .set_index_option(IndexRecordOption::WithFreqsAndPositions),
+                    // IndexRecordOption::WithFreqsAndPositions: Positions are not
+                    // needed as long as no PhraseQuery is used.
+                    .set_index_option(IndexRecordOption::WithFreqs),
             )
             .set_stored();
         let mut schema_builder = SchemaBuilder::default();
@@ -236,6 +239,8 @@ const ID_TOKENIZER: &str = "raw";
 const TAG_TOKENIZER: &str = "tag";
 const TEXT_TOKENIZER: &str = "default";
 
+const MAX_TOKEN_LEN: usize = 40;
+
 fn register_tokenizers(index: &Index) {
     // Predefined tokenizers
     debug_assert!(index.tokenizers().get(ID_TOKENIZER).is_some());
@@ -244,11 +249,11 @@ fn register_tokenizers(index: &Index) {
     debug_assert!(index.tokenizers().get(TAG_TOKENIZER).is_none());
     let tag_tokenizer = TextAnalyzer::from(RawTokenizer)
         .filter(LowerCaser)
-        .filter(RemoveLongFilter::limit(40));
+        .filter(RemoveLongFilter::limit(MAX_TOKEN_LEN));
     index.tokenizers().register(TAG_TOKENIZER, tag_tokenizer);
-    let text_tokenizer = TextAnalyzer::from(NgramTokenizer::prefix_only(3, 3))
+    let text_tokenizer = TextAnalyzer::from(SimpleTokenizer)
         .filter(LowerCaser)
-        .filter(RemoveLongFilter::limit(40));
+        .filter(RemoveLongFilter::limit(MAX_TOKEN_LEN));
     index.tokenizers().register(TEXT_TOKENIZER, text_tokenizer);
 }
 

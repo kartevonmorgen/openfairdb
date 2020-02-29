@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.8.13 (2020-02-29)
+
+- fix(db): Switch back to simple tokenizer for indexing text fields
+
 ## v0.8.12 (2020-02-25)
 
 - new(db): Use 3-gram prefix tokenizer for searching in text fields
