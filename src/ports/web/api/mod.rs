@@ -15,8 +15,6 @@ use crate::{
     },
 };
 
-use csv;
-
 use rocket::{
     self,
     http::{ContentType, Cookie, Cookies, Status},

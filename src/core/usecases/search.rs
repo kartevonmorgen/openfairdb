@@ -41,8 +41,7 @@ pub fn search(
     });
 
     let text_tags = text
-        .as_ref()
-        .map(String::as_str)
+        .as_deref()
         .map(filter::split_text_to_words)
         .unwrap_or_default();
 

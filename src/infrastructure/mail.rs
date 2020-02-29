@@ -1,6 +1,5 @@
 use chrono::*;
 use fast_chemail::is_valid_email;
-use quoted_printable;
 use std::io::{Error, ErrorKind, Result};
 
 const FROM_ADDRESS: &str = "\"Karte von morgen\" <no-reply@kartevonmorgen.org>";

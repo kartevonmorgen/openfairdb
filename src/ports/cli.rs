@@ -84,6 +84,7 @@ pub fn run() {
     info!("Initializing Tantivy full-text search engine");
     let search_engine = tantivy::SearchEngine::init_with_path(idx_path).unwrap();
 
+    #[allow(clippy::match_single_binding)]
     match matches.subcommand() {
         _ => {
             if matches.is_present("fix-event-address-location") {

@@ -34,13 +34,13 @@ fn address_line(address: Option<&Address>) -> String {
             ref country,
         } = address;
         [
-            street.as_ref().map(String::as_str).unwrap_or(""),
+            street.as_deref().unwrap_or(""),
             &[
-                zip.as_ref().map(String::as_str).unwrap_or(""),
-                city.as_ref().map(String::as_str).unwrap_or(""),
+                zip.as_deref().unwrap_or(""),
+                city.as_deref().unwrap_or(""),
             ]
             .join(" "),
-            country.as_ref().map(String::as_str).unwrap_or(""),
+            country.as_deref().unwrap_or(""),
         ]
         .join(", ")
     } else {
@@ -188,8 +188,8 @@ das Karte von morgen-Team\n
             .end
             .map(|end| end.format(DATE_TIME_FORMAT).to_string())
             .unwrap_or_default(),
-        description = event.description.as_ref().map(String::as_str).unwrap_or(""),
-        organizer = event.organizer.as_ref().map(String::as_str).unwrap_or(""),
+        description = event.description.as_deref().unwrap_or(""),
+        organizer = event.organizer.as_deref().unwrap_or(""),
         address_line = address_line(event.location.as_ref().and_then(|l| l.address.as_ref())),
         email = email.map(|e| e.to_string()).unwrap_or_default(),
         phone = phone.unwrap_or_default(),

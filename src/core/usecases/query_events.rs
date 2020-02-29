@@ -23,8 +23,7 @@ pub fn query_events<D: Db>(db: &D, index: &dyn IdIndex, query: EventQuery) -> Re
     } = query;
 
     let mut hash_tags = text
-        .as_ref()
-        .map(String::as_str)
+        .as_deref()
         .map(extract_hash_tags)
         .unwrap_or_default();
     if let Some(tags) = tags {
@@ -35,8 +34,7 @@ pub fn query_events<D: Db>(db: &D, index: &dyn IdIndex, query: EventQuery) -> Re
     }
 
     let text = text
-        .as_ref()
-        .map(String::as_str)
+        .as_deref()
         .map(remove_hash_tags)
         .and_then(|text| {
             if text.trim().is_empty() {
@@ -47,8 +45,7 @@ pub fn query_events<D: Db>(db: &D, index: &dyn IdIndex, query: EventQuery) -> Re
         });
 
     let text_tags = text
-        .as_ref()
-        .map(String::as_str)
+        .as_deref()
         .map(filter::split_text_to_words)
         .unwrap_or_default();
 

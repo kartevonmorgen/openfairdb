@@ -1,4 +1,3 @@
-use pwhash;
 use std::io;
 
 quick_error! {

@@ -23,9 +23,9 @@ pub struct SearchQuery {
     limit: Option<usize>,
 }
 
-pub fn parse_search_query<'a>(
-    query: &'a SearchQuery,
-) -> result::Result<(usecases::SearchRequest<'a, 'a, 'a, 'a>, Option<usize>), AppError> {
+pub fn parse_search_query(
+    query: &'_ SearchQuery,
+) -> result::Result<(usecases::SearchRequest<'_, '_, '_, '_>, Option<usize>), AppError> {
     let SearchQuery {
         bbox,
         ids,
@@ -43,14 +43,12 @@ pub fn parse_search_query<'a>(
         .map_err(AppError::Business)?;
 
     let ids = ids
-        .as_ref()
-        .map(String::as_str)
+        .as_deref()
         .map(util::split_ids)
         .unwrap_or_default();
 
     let categories = categories
-        .as_ref()
-        .map(String::as_str)
+        .as_deref()
         .map(util::split_ids)
         .map(|ids| {
             ids.into_iter()
@@ -61,16 +59,14 @@ pub fn parse_search_query<'a>(
         .unwrap_or_default();
 
     let hash_tags = tags
-        .as_ref()
-        .map(String::as_str)
+        .as_deref()
         .map(util::split_ids)
         .unwrap_or_default();
 
-    let text = text.as_ref().map(String::as_str);
+    let text = text.as_deref();
 
     let status = status
-        .as_ref()
-        .map(String::as_str)
+        .as_deref()
         .map(util::split_ids)
         .unwrap_or_default()
         .into_iter()

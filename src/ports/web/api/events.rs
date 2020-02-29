@@ -295,7 +295,7 @@ fn csv_export(
         limit: Some(limit),
         ..query
     };
-    let events = usecases::query_events(&*db, &search_engine, query)?.into_iter();
+    let events = usecases::query_events(&*db, &search_engine, query)?;
     // Release the database connection asap
     drop(db);
 

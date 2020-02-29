@@ -446,8 +446,8 @@ impl PlaceRepo for SqliteConnection {
                     status,
                     created_at: changed_at,
                     created_by: changed_by,
-                    context: context.as_ref().map(String::as_str),
-                    comment: comment.as_ref().map(String::as_str),
+                    context: context.as_deref(),
+                    comment: comment.as_deref(),
                 };
                 diesel::insert_into(schema::place_revision_review::table)
                     .values(new_review)
