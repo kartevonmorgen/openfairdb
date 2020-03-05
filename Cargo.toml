@@ -64,3 +64,7 @@ ofdb-boundary = { version = "*", features = ["extra-derive"] }
 default = ["email","frontend"]
 email = ["quoted_printable"]
 frontend = ["maud"]
+
+[profile.release]
+lto = true
+codegen-units = 1
