@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.8.14 (2020-03-05)
+
+- fix(db): Fix pagination offset for GET entries/most-popular-tags
+
 ## v0.8.13 (2020-02-29)
 
 - fix(db): Switch back to simple tokenizer for indexing text fields

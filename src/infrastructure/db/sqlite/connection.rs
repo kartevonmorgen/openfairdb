@@ -618,12 +618,14 @@ impl PlaceRepo for SqliteConnection {
             }
         }
         sql.push_str(" ORDER BY count DESC, tag");
-        let offset = pagination.offset.unwrap_or(0);
-        if offset > 0 {
-            sql.push_str(&format!(" OFFSET {}", offset));
-        }
         if let Some(limit) = pagination.limit {
             sql.push_str(&format!(" LIMIT {}", limit));
+            // LIMIT must precede OFFSET, i.e. OFFSET without LIMIT
+            // is not supported!
+            let offset = pagination.offset.unwrap_or(0);
+            if offset > 0 {
+                sql.push_str(&format!(" OFFSET {}", offset));
+            }
         }
         let rows = diesel::dsl::sql_query(sql).load::<TagCountRow>(self)?;
         Ok(rows

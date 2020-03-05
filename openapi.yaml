@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: OpenFairDB API
-  version: 0.8.13
+  version: 0.8.14
   contact:
     name: slowtec GmbH
     url: 'https://slowtec.de'
@@ -1202,7 +1202,11 @@ components:
         example: 100
     PaginationOffset:
       name: offset
-      description: Number of items to skip in the result list or 0 if unspecified.
+      description: |
+        Number of items to skip in the result list or 0 if unspecified.
+
+        The pagination offset is only evaluated in conjunction with the
+        corresponding pagination limit parameter!
       in: query
       required: false
       schema:

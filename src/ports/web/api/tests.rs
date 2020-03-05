@@ -1474,12 +1474,37 @@ fn count_most_popular_tags_on_empty_db_to_verify_sql() {
     // to verify that the literal SQL query that is not verified
     // at compile-time still matches the current database schema!
     let (client, _) = setup();
+    // All parameters
     let mut response = client
-        .get("/entries/most-popular-tags?offset=0&limit=1000&min_count=10&max_count=100")
+        .get("/entries/most-popular-tags?offset=10&limit=1000&min_count=10&max_count=100")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     assert_eq!(body_str, "[]");
+
+    // Only offset parameter
+    let response = client
+        .get("/entries/most-popular-tags?offset=1")
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // Only limit parameter
+    let response = client
+    .get("/entries/most-popular-tags?limit=1")
+    .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // Only min_count parameter
+    let response = client
+    .get("/entries/most-popular-tags?min_count=1")
+    .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // Only max_count parameter
+    let response = client
+    .get("/entries/most-popular-tags?max_count=1")
+    .dispatch();
+    assert_eq!(response.status(), Status::Ok);
 }
 
 #[test]
