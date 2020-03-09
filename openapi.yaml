@@ -1,7 +1,7 @@
 openapi: 3.0.2
 info:
   title: OpenFairDB API
-  version: 0.8.14
+  version: 0.8.15
   contact:
     name: slowtec GmbH
     url: 'https://slowtec.de'
@@ -629,12 +629,16 @@ components:
           type: string
         country:
           type: string
+        state:
+          type: string
         email:
           $ref: '#/components/schemas/Email'
         telephone:
           $ref: '#/components/schemas/Phone'
         homepage:
           $ref: '#/components/schemas/Url'
+        opening_hours:
+          $ref: '#/components/schemas/OpeningHours'
         categories:
           type: array
           items:
@@ -809,6 +813,9 @@ components:
     Country:
       type: string
       example: Germany
+    State:
+      type: string
+      example: Baden-Württemberg
     Phone:
       type: string
       example: 001 123456789
@@ -878,6 +885,23 @@ components:
           $ref: '#/components/schemas/ZipCode'
         country:
           $ref: '#/components/schemas/Country'
+        state:
+          $ref: '#/components/schemas/State'
+    OpeningHours:
+      type: string
+      minLength: 4
+      description: |
+        The opening hours in OpenStreetMap format.
+
+        Specification: https://wiki.openstreetmap.org/wiki/Key:opening_hours
+
+        Reference implementations: https://github.com/opening-hours/
+
+        Generator tool: https://projets.pavie.info/yohours/
+
+        The service trims leading/trailing whitespaces and stores values as is.
+        Values are currently not validated against the OSM format syntax!
+      example: 24/7
     PlaceLinks:
       properties:
         www:
@@ -921,6 +945,8 @@ components:
           $ref: '#/components/schemas/Location'
         cnt:
           $ref: '#/components/schemas/Contact'
+        hrs:
+          $ref: '#/components/schemas/OpeningHours'
         lnk:
           $ref: '#/components/schemas/PlaceLinks'
         tag:
@@ -1040,6 +1066,8 @@ components:
         city:
           type: string
         country:
+          type: string
+        state:
           type: string
         email:
           $ref: '#/components/schemas/Email'

@@ -14,9 +14,11 @@ pub struct NewPlace {
     pub zip            : Option<String>,
     pub city           : Option<String>,
     pub country        : Option<String>,
+    pub state          : Option<String>,
     pub email          : Option<String>,
     pub telephone      : Option<String>,
     pub homepage       : Option<String>,
+    pub opening_hours  : Option<String>,
     pub categories     : Vec<String>,
     pub tags           : Vec<String>,
     pub license        : String,
@@ -44,9 +46,11 @@ pub fn prepare_new_place<D: Db>(
         zip,
         city,
         country,
+        state,
         tags,
         license,
         homepage,
+        opening_hours,
         image_url,
         image_link_url,
         ..
@@ -67,6 +71,7 @@ pub fn prepare_new_place<D: Db>(
         zip,
         city,
         country,
+        state,
     };
     let address = if address.is_empty() {
         None
@@ -112,6 +117,12 @@ pub fn prepare_new_place<D: Db>(
         description,
         location,
         contact,
+        opening_hours: opening_hours
+            .map(|s| {
+                s.parse()
+                    .map_err(|_| Error::Parameter(ParameterError::InvalidOpeningHours))
+            })
+            .transpose()?,
         links,
         tags,
     };
@@ -149,9 +160,11 @@ mod tests {
             zip         : None,
             city        : None,
             country     : None,
+            state       : None,
             email       : None,
             telephone   : None,
             homepage    : None,
+            opening_hours: None,
             categories  : vec![],
             tags        : vec![],
             license     : "CC0-1.0".into(),
@@ -184,9 +197,11 @@ mod tests {
             zip         : None,
             city        : None,
             country     : None,
+            state       : None,
             email       : Some("fooo-not-ok".into()),
             telephone   : None,
             homepage    : None,
+            opening_hours: None,
             categories  : vec![],
             tags        : vec![],
             license     : "CC0-1.0".into(),
@@ -209,9 +224,11 @@ mod tests {
             zip         : None,
             city        : None,
             country     : None,
+            state       : None,
             email       : None,
             telephone   : None,
             homepage    : None,
+            opening_hours: None,
             categories  : vec![],
             tags        : vec!["foo".into(),"bar".into()],
             license     : "CC0-1.0".into(),

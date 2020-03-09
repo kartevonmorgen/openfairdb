@@ -21,6 +21,7 @@ fn check_and_set_address_location(e: &mut usecases::NewEvent) {
         zip: e.zip.clone(),
         city: e.city.clone(),
         country: e.country.clone(),
+        state: e.state.clone(),
     };
     if let Some((lat, lng)) = resolve_address_lat_lng(&addr) {
         e.lat = Some(lat);
@@ -1694,13 +1695,13 @@ mod tests {
         let mut response = client.get("/export/events.csv").dispatch();
         assert_eq!(response.status(), Status::Ok);
         let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-        assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,email,phone,homepage,image_url,image_link_url,tags\n"));
+        assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,state,email,phone,homepage,image_url,image_link_url,tags\n"));
         assert!(body_str.contains(&format!(
-            "{},,,title1,,{},,,,,,,,email1@example.com,phone1,,,,\"bla,tag\"\n",
+            "{},,,title1,,{},,,,,,,,,email1@example.com,phone1,,,,\"bla,tag\"\n",
             id1, start1
         )));
         assert!(body_str.contains(&format!(
-            "{},,,title2,,{},,,,,,,,email2@example.com,phone2,,,,\"bli,tag2\"\n",
+            "{},,,title2,,{},,,,,,,,,email2@example.com,phone2,,,,\"bli,tag2\"\n",
             id2, start2
         )));
         assert!(!body_str.contains("createdby1@example.com"));
@@ -1719,10 +1720,10 @@ mod tests {
             .dispatch();
         assert_eq!(response.status(), Status::Ok);
         let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-        assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,email,phone,homepage,image_url,image_link_url,tags\n"));
-        assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1)));
+        assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,state,email,phone,homepage,image_url,image_link_url,tags\n"));
+        assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1)));
         assert!(body_str.contains(&format!(
-            "{},,,title2,,{},,,,,,,,email2@example.com,phone2,,,,\"bli,tag2\"\n",
+            "{},,,title2,,{},,,,,,,,,email2@example.com,phone2,,,,\"bli,tag2\"\n",
             id2, start2
         )));
         assert!(!body_str.contains("createdby2@example.com"));
@@ -1737,10 +1738,10 @@ mod tests {
         let mut response = client.get("/export/events.csv").dispatch();
         assert_eq!(response.status(), Status::Ok);
         let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-        assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,email,phone,homepage,image_url,image_link_url,tags\n"));
-        assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1)));
+        assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,state,email,phone,homepage,image_url,image_link_url,tags\n"));
+        assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1)));
         assert!(body_str.contains(&format!(
-            "{},createdby2@example.com,,title2,,{},,,,,,,,email2@example.com,phone2,,,,\"bli,tag2\"\n",
+            "{},createdby2@example.com,,title2,,{},,,,,,,,,email2@example.com,phone2,,,,\"bli,tag2\"\n",
             id2, start2
         )));
     }

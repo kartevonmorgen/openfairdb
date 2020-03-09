@@ -17,9 +17,11 @@ pub struct Entry {
     pub zip            : Option<String>,
     pub city           : Option<String>,
     pub country        : Option<String>,
+    pub state          : Option<String>,
     pub email          : Option<String>,
     pub telephone      : Option<String>,
     pub homepage       : Option<String>,
+    pub opening_hours  : Option<String>,
     pub categories     : Vec<String>,
     pub tags           : Vec<String>,
     pub ratings        : Vec<String>,
@@ -50,6 +52,8 @@ pub struct Event {
     pub city: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -408,6 +412,7 @@ impl From<e::event::Event> for Event {
             zip,
             city,
             country,
+            state,
         } = address.unwrap_or_default();
 
         let e::contact::Contact {
@@ -439,6 +444,7 @@ impl From<e::event::Event> for Event {
             zip,
             city,
             country,
+            state,
             email: email.map(Into::into),
             telephone,
             homepage: homepage.map(Url::into_string),

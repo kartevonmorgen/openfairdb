@@ -40,7 +40,6 @@ impl Validate for Place {
         license(&self.license)?;
 
         //TODO: check title
-
         self.contact.as_ref().map(|c| c.validate()).transpose()?;
 
         Ok(())
@@ -231,6 +230,7 @@ mod tests {
                 zip: None,
                 city: Some("".into()),
                 country: None,
+                state: None,
             }),
         });
         assert!(x.auto_correct().location.is_none());
@@ -243,6 +243,7 @@ mod tests {
             zip: None,
             city: None,
             country: None,
+            state: None,
         };
 
         let mut x = a.clone();
@@ -271,6 +272,7 @@ mod tests {
                 zip: Some("".into()),
                 city: None,
                 country: None,
+                state: None,
             }),
         };
         assert!(l.auto_correct().address.is_none());

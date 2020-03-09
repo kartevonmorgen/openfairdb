@@ -3,6 +3,7 @@
 class Address {
     city: String
     country: String
+    state: String
     street: String
     zip: String
 }

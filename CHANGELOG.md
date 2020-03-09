@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.8.15 (2020-03-09)
+
+- new(db): Add fields `state` and `opening_hours` to place entities
+- new(db): Add field `state` to event entities
+
 ## v0.8.14 (2020-03-05)
 
 - fix(db): Fix pagination offset for GET entries/most-popular-tags

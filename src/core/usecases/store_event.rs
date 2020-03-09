@@ -22,6 +22,7 @@ pub struct NewEvent {
     pub zip          : Option<String>,
     pub city         : Option<String>,
     pub country      : Option<String>,
+    pub state        : Option<String>,
     pub email        : Option<String>,
     pub telephone    : Option<String>,
     pub homepage     : Option<String>,
@@ -60,6 +61,7 @@ pub fn import_new_event<D: Db>(
         zip,
         city,
         country,
+        state,
         tags,
         created_by,
         registration,
@@ -131,12 +133,18 @@ pub fn import_new_event<D: Db>(
         }
     }
     //TODO: use address.is_empty()
-    let address = if street.is_some() || zip.is_some() || city.is_some() || country.is_some() {
+    let address = if street.is_some()
+        || zip.is_some()
+        || city.is_some()
+        || country.is_some()
+        || state.is_some()
+    {
         Some(Address {
             street,
             zip,
             city,
             country,
+            state,
         })
     } else {
         None
@@ -302,6 +310,7 @@ mod tests {
             zip          : None,
             city         : None,
             country      : None,
+            state        : None,
             email        : None,
             telephone    : None,
             homepage     : None,
@@ -348,6 +357,7 @@ mod tests {
             zip          : None,
             city         : None,
             country      : None,
+            state        : None,
             email        : Some("fooo-not-ok".into()),
             telephone    : None,
             homepage     : None,
@@ -376,6 +386,7 @@ mod tests {
             zip          : None,
             city         : None,
             country      : None,
+            state        : None,
             email        : None,
             telephone    : None,
             homepage     : None,
@@ -418,6 +429,7 @@ mod tests {
             zip          : None,
             city         : None,
             country      : None,
+            state        : None,
             email        : None,
             telephone    : None,
             homepage     : None,

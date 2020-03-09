@@ -5,10 +5,15 @@ pub struct Address {
     pub zip     : Option<String>,
     pub city    : Option<String>,
     pub country : Option<String>,
+    pub state   : Option<String>,
 }
 
 impl Address {
     pub fn is_empty(&self) -> bool {
-        self.street.is_none() && self.zip.is_none() && self.city.is_none() && self.country.is_none()
+        self.street.is_none()
+            && self.zip.is_none()
+            && self.city.is_none()
+            && self.country.is_none()
+            && self.state.is_none()
     }
 }

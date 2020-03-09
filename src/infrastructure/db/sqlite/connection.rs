@@ -37,9 +37,11 @@ fn load_place(
         zip,
         city,
         country,
+        state,
         email,
         phone,
         homepage,
+        opening_hours,
         image_url,
         image_link_url,
         ..
@@ -52,6 +54,7 @@ fn load_place(
             zip,
             city,
             country,
+            state,
         }),
     };
 
@@ -95,6 +98,7 @@ fn load_place(
             image: image_url.and_then(load_url),
             image_href: image_link_url.and_then(load_url),
         }),
+        opening_hours: opening_hours.map(Into::into),
         tags,
     };
 
@@ -118,9 +122,11 @@ fn load_place_with_status_review(
         zip,
         city,
         country,
+        state,
         email,
         phone,
         homepage,
+        opening_hours,
         image_url,
         image_link_url,
         place_id,
@@ -140,6 +146,7 @@ fn load_place_with_status_review(
             zip,
             city,
             country,
+            state,
         }),
     };
 
@@ -200,6 +207,7 @@ fn load_place_with_status_review(
         description,
         location,
         contact: Some(contact),
+        opening_hours: opening_hours.map(Into::into),
         links: Some(links),
         tags,
     };
@@ -263,6 +271,7 @@ fn into_new_place_revision(
         description,
         location: Location { pos, address },
         contact,
+        opening_hours,
         tags,
         links,
     } = place;
@@ -308,6 +317,7 @@ fn into_new_place_revision(
         zip,
         city,
         country,
+        state,
     } = address.unwrap_or_default();
     let Links {
         homepage,
@@ -328,9 +338,11 @@ fn into_new_place_revision(
         zip,
         city,
         country,
+        state,
         email: email.map(Into::into),
         phone,
         homepage: homepage.map(Url::into_string),
+        opening_hours: opening_hours.map(Into::into),
         image_url: image_url.map(Url::into_string),
         image_link_url: image_link_url.map(Url::into_string),
     };
@@ -482,9 +494,11 @@ impl PlaceRepo for SqliteConnection {
                 rev_dsl::zip,
                 rev_dsl::city,
                 rev_dsl::country,
+                rev_dsl::state,
                 rev_dsl::email,
                 rev_dsl::phone,
                 rev_dsl::homepage,
+                rev_dsl::opening_hours,
                 rev_dsl::image_url,
                 rev_dsl::image_link_url,
                 dsl::id,
@@ -549,9 +563,11 @@ impl PlaceRepo for SqliteConnection {
                 rev_dsl::zip,
                 rev_dsl::city,
                 rev_dsl::country,
+                rev_dsl::state,
                 rev_dsl::email,
                 rev_dsl::phone,
                 rev_dsl::homepage,
+                rev_dsl::opening_hours,
                 rev_dsl::image_url,
                 rev_dsl::image_link_url,
                 dsl::id,
@@ -668,9 +684,11 @@ impl PlaceRepo for SqliteConnection {
                 rev_dsl::zip,
                 rev_dsl::city,
                 rev_dsl::country,
+                rev_dsl::state,
                 rev_dsl::email,
                 rev_dsl::phone,
                 rev_dsl::homepage,
+                rev_dsl::opening_hours,
                 rev_dsl::image_url,
                 rev_dsl::image_link_url,
                 dsl::id,
@@ -915,6 +933,7 @@ impl EventGateway for SqliteConnection {
                 e_dsl::zip,
                 e_dsl::city,
                 e_dsl::country,
+                e_dsl::state,
                 e_dsl::email,
                 e_dsl::telephone,
                 e_dsl::homepage,
@@ -946,6 +965,7 @@ impl EventGateway for SqliteConnection {
                 zip,
                 city,
                 country,
+                state,
                 email,
                 telephone,
                 homepage,
@@ -968,6 +988,7 @@ impl EventGateway for SqliteConnection {
                 zip,
                 city,
                 country,
+                state,
             };
 
             let address = if address.is_empty() {
@@ -1046,6 +1067,7 @@ impl EventGateway for SqliteConnection {
                 e_dsl::zip,
                 e_dsl::city,
                 e_dsl::country,
+                e_dsl::state,
                 e_dsl::email,
                 e_dsl::telephone,
                 e_dsl::homepage,

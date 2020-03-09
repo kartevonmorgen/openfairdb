@@ -22,10 +22,7 @@ pub fn query_events<D: Db>(db: &D, index: &dyn IdIndex, query: EventQuery) -> Re
         limit,
     } = query;
 
-    let mut hash_tags = text
-        .as_deref()
-        .map(extract_hash_tags)
-        .unwrap_or_default();
+    let mut hash_tags = text.as_deref().map(extract_hash_tags).unwrap_or_default();
     if let Some(tags) = tags {
         hash_tags.reserve(hash_tags.len() + tags.len());
         for hashtag in tags {
@@ -33,16 +30,13 @@ pub fn query_events<D: Db>(db: &D, index: &dyn IdIndex, query: EventQuery) -> Re
         }
     }
 
-    let text = text
-        .as_deref()
-        .map(remove_hash_tags)
-        .and_then(|text| {
-            if text.trim().is_empty() {
-                None
-            } else {
-                Some(text)
-            }
-        });
+    let text = text.as_deref().map(remove_hash_tags).and_then(|text| {
+        if text.trim().is_empty() {
+            None
+        } else {
+            Some(text)
+        }
+    });
 
     let text_tags = text
         .as_deref()

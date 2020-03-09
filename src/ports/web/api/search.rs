@@ -42,10 +42,7 @@ pub fn parse_search_query(
         .map_err(Error::Parameter)
         .map_err(AppError::Business)?;
 
-    let ids = ids
-        .as_deref()
-        .map(util::split_ids)
-        .unwrap_or_default();
+    let ids = ids.as_deref().map(util::split_ids).unwrap_or_default();
 
     let categories = categories
         .as_deref()
@@ -58,10 +55,7 @@ pub fn parse_search_query(
         })
         .unwrap_or_default();
 
-    let hash_tags = tags
-        .as_deref()
-        .map(util::split_ids)
-        .unwrap_or_default();
+    let hash_tags = tags.as_deref().map(util::split_ids).unwrap_or_default();
 
     let text = text.as_deref();
 

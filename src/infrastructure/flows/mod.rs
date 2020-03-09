@@ -228,9 +228,11 @@ mod tests {
                     city: None,
                     zip: None,
                     country: None,
+                    state: None,
                     email: None,
                     telephone: None,
                     homepage: None,
+                    opening_hours: None,
                     image_url: None,
                     image_link_url: None,
                 }

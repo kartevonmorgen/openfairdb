@@ -88,6 +88,7 @@ pub(crate) fn event_from_event_entity_and_tags(e: EventEntity, tag_rels: &[Event
         zip,
         city,
         country,
+        state,
         email,
         telephone,
         homepage,
@@ -105,12 +106,18 @@ pub(crate) fn event_from_event_entity_and_tags(e: EventEntity, tag_rels: &[Event
         .map(|r| &r.tag)
         .cloned()
         .collect();
-    let address = if street.is_some() || zip.is_some() || city.is_some() || country.is_some() {
+    let address = if street.is_some()
+        || zip.is_some()
+        || city.is_some()
+        || country.is_some()
+        || state.is_some()
+    {
         Some(e::Address {
             street,
             zip,
             city,
             country,
+            state,
         })
     } else {
         None

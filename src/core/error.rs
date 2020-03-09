@@ -69,6 +69,9 @@ quick_error! {
         CreatorEmail{
             description("Missing the email of the creator")
         }
+        InvalidOpeningHours {
+            description("Invalid opening hours")
+        }
         InvalidPosition {
             description("Invalid position")
         }

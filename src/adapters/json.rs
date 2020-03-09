@@ -67,6 +67,7 @@ pub fn entry_from_place_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -
         description,
         location,
         contact,
+        opening_hours,
         links,
         tags,
     } = place;
@@ -79,6 +80,7 @@ pub fn entry_from_place_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -
         zip,
         city,
         country,
+        state,
     } = address.unwrap_or_default();
 
     let e::Contact {
@@ -106,9 +108,11 @@ pub fn entry_from_place_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -
         zip,
         city,
         country,
+        state,
         email: email.map(Into::into),
         telephone,
         homepage: homepage_url.map(Url::into_string),
+        opening_hours: opening_hours.map(Into::into),
         categories: categories.into_iter().map(|c| c.id.to_string()).collect(),
         tags,
         ratings: ratings.into_iter().map(|r| r.id.to_string()).collect(),
@@ -140,11 +144,18 @@ pub struct Address {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub country: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state: Option<String>,
 }
 
 impl Address {
     pub fn is_empty(&self) -> bool {
-        self.street.is_none() && self.zip.is_none() && self.city.is_none() && self.country.is_none()
+        self.street.is_none()
+            && self.zip.is_none()
+            && self.city.is_none()
+            && self.country.is_none()
+            && self.state.is_none()
     }
 }
 
@@ -155,12 +166,14 @@ impl From<e::Address> for Address {
             zip,
             city,
             country,
+            state,
         } = from;
         Self {
             street,
             zip,
             city,
             country,
+            state,
         }
     }
 }
@@ -335,6 +348,9 @@ pub struct PlaceRevision {
     )]
     pub contact: Contact,
 
+    #[serde(rename = "hrs", skip_serializing_if = "Option::is_none")]
+    pub opening_hours: Option<String>,
+
     #[serde(
         rename = "lnk",
         skip_serializing_if = "Links::is_empty",
@@ -359,6 +375,7 @@ impl From<e::PlaceRevision> for PlaceRevision {
             description,
             location,
             contact,
+            opening_hours,
             links,
             tags,
         } = from;
@@ -369,6 +386,7 @@ impl From<e::PlaceRevision> for PlaceRevision {
             description,
             location: location.into(),
             contact: contact.map(Into::into).unwrap_or_default(),
+            opening_hours: opening_hours.map(Into::into),
             links: links.map(Into::into).unwrap_or_default(),
             tags,
         }

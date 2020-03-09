@@ -16,9 +16,11 @@ pub struct CsvRecord {
     pub zip: Option<String>,
     pub city: Option<String>,
     pub country: Option<String>,
+    pub state: Option<String>,
     pub homepage: Option<String>,
     pub contact_email: Option<String>,
     pub contact_phone: Option<String>,
+    pub opening_hours: Option<String>,
     pub categories: String,
     pub tags: String,
     pub license: String,
@@ -46,6 +48,7 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
             links,
             tags,
             contact,
+            opening_hours,
             ..
         } = place;
 
@@ -58,6 +61,7 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
             zip,
             city,
             country,
+            state,
         } = address;
 
         let (homepage_url, image_url, image_link_url) = if let Some(links) = links {
@@ -92,9 +96,11 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
             zip,
             city,
             country,
+            state,
             homepage: homepage_url.map(Url::into_string),
             contact_phone,
             contact_email: contact_email.map(Into::into),
+            opening_hours: opening_hours.map(Into::into),
             license,
             image_url: image_url.map(Url::into_string),
             image_link_url: image_link_url.map(Url::into_string),
@@ -120,6 +126,7 @@ pub struct EventRecord {
     pub zip: Option<String>,
     pub city: Option<String>,
     pub country: Option<String>,
+    pub state: Option<String>,
     pub email: Option<String>,
     pub phone: Option<String>,
     pub homepage: Option<String>,
@@ -159,6 +166,7 @@ impl From<Event> for EventRecord {
             zip,
             city,
             country,
+            state,
         } = address;
 
         let Contact { email, phone } = contact.unwrap_or_default();
@@ -176,6 +184,7 @@ impl From<Event> for EventRecord {
             zip,
             city,
             country,
+            state,
             organizer,
             email: email.map(Into::into),
             phone,

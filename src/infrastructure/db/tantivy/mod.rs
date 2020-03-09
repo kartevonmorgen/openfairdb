@@ -4,8 +4,8 @@ use crate::core::{
         IndexedPlace, Indexer, PlaceIndex, PlaceIndexer,
     },
     entities::{
-        AvgRatingValue, AvgRatings, Category, Event, Id, Place, RatingContext, ReviewStatus,
-        ReviewStatusPrimitive,
+        Address, AvgRatingValue, AvgRatings, Category, Event, Id, Place, RatingContext,
+        ReviewStatus, ReviewStatusPrimitive,
     },
     util::{
         geo::{LatCoord, LngCoord, MapPoint},
@@ -60,6 +60,7 @@ struct IndexedFields {
     address_city: Field,
     address_zip: Field,
     address_country: Field,
+    address_state: Field,
     organizer: Field,
     tag: Field,
     ratings_diversity: Field,
@@ -121,7 +122,8 @@ impl IndexedFields {
             address_street: schema_builder.add_text_field("adr_street", address_options.clone()),
             address_city: schema_builder.add_text_field("adr_city", address_options.clone()),
             address_zip: schema_builder.add_text_field("adr_zip", address_options.clone()),
-            address_country: schema_builder.add_text_field("adr_country", address_options),
+            address_country: schema_builder.add_text_field("adr_country", address_options.clone()),
+            address_state: schema_builder.add_text_field("adr_state", address_options),
             tag: schema_builder.add_text_field("tag", tag_options),
             ratings_diversity: schema_builder.add_f64_field("rat_diversity", STORED),
             ratings_fairness: schema_builder.add_f64_field("rat_fairness", STORED),
@@ -214,6 +216,7 @@ impl IndexedFields {
                 //fv if fv.field() == self.address_city => (),
                 //fv if fv.field() == self.address_zip => (),
                 //fv if fv.field() == self.address_country => (),
+                //fv if fv.field() == self.address_state => (),
                 fv => {
                     error!("Unexpected field value: {:?}", fv);
                 }
@@ -351,6 +354,7 @@ impl TantivyIndex {
                 fields.address_city,
                 fields.address_zip,
                 fields.address_country,
+                fields.address_state,
                 fields.organizer,
             ],
         );
@@ -906,37 +910,29 @@ impl PlaceIndexer for TantivyIndex {
         doc.add_f64(self.fields.lng, place.location.pos.lng().to_deg());
         doc.add_text(self.fields.title, &place.title);
         doc.add_text(self.fields.description, &place.description);
-        if let Some(street) = place
-            .location
-            .address
-            .as_ref()
-            .and_then(|address| address.street.as_ref())
-        {
-            doc.add_text(self.fields.address_street, street);
-        }
-        if let Some(city) = place
-            .location
-            .address
-            .as_ref()
-            .and_then(|address| address.city.as_ref())
-        {
-            doc.add_text(self.fields.address_city, city);
-        }
-        if let Some(zip) = place
-            .location
-            .address
-            .as_ref()
-            .and_then(|address| address.zip.as_ref())
-        {
-            doc.add_text(self.fields.address_zip, zip);
-        }
-        if let Some(country) = place
-            .location
-            .address
-            .as_ref()
-            .and_then(|address| address.country.as_ref())
-        {
-            doc.add_text(self.fields.address_country, country);
+        if let Some(address) = &place.location.address {
+            let Address {
+                street,
+                city,
+                zip,
+                country,
+                state,
+            } = address;
+            if let Some(street) = street {
+                doc.add_text(self.fields.address_street, street);
+            }
+            if let Some(city) = city {
+                doc.add_text(self.fields.address_city, city);
+            }
+            if let Some(zip) = zip {
+                doc.add_text(self.fields.address_zip, zip);
+            }
+            if let Some(country) = country {
+                doc.add_text(self.fields.address_country, country);
+            }
+            if let Some(state) = state {
+                doc.add_text(self.fields.address_country, state);
+            }
         }
         for tag in &place.tags {
             doc.add_text(self.fields.tag, tag);
@@ -966,18 +962,28 @@ impl EventIndexer for TantivyIndex {
         if let Some(ref location) = event.location {
             doc.add_f64(self.fields.lat, location.pos.lat().to_deg());
             doc.add_f64(self.fields.lng, location.pos.lng().to_deg());
-            if let Some(ref address) = location.address {
-                if let Some(ref street) = address.street {
+            if let Some(address) = &location.address {
+                let Address {
+                    street,
+                    city,
+                    zip,
+                    country,
+                    state,
+                } = address;
+                if let Some(street) = street {
                     doc.add_text(self.fields.address_street, street);
                 }
-                if let Some(ref city) = address.city {
+                if let Some(city) = city {
                     doc.add_text(self.fields.address_city, city);
                 }
-                if let Some(ref zip) = address.zip {
+                if let Some(zip) = zip {
                     doc.add_text(self.fields.address_zip, zip);
                 }
-                if let Some(ref country) = address.country {
+                if let Some(country) = country {
                     doc.add_text(self.fields.address_country, country);
+                }
+                if let Some(state) = state {
+                    doc.add_text(self.fields.address_country, state);
                 }
             }
         }

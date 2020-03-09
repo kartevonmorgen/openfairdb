@@ -113,6 +113,7 @@ pub mod place_builder {
                         address: None,
                     },
                     contact: None,
+                    opening_hours: None,
                     links: None,
                     tags: vec![],
                 },
@@ -149,6 +150,10 @@ pub mod address_builder {
             self.addr.country = Some(x.into());
             self
         }
+        pub fn state(mut self, x: &str) -> Self {
+            self.addr.state = Some(x.into());
+            self
+        }
         pub fn finish(self) -> Address {
             self.addr
         }
@@ -170,5 +175,6 @@ pub mod address_builder {
         assert_eq!(Address::build().zip("x").finish().is_empty(), false);
         assert_eq!(Address::build().city("x").finish().is_empty(), false);
         assert_eq!(Address::build().country("x").finish().is_empty(), false);
+        assert_eq!(Address::build().state("x").finish().is_empty(), false);
     }
 }

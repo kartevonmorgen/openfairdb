@@ -32,15 +32,13 @@ fn address_line(address: Option<&Address>) -> String {
             ref zip,
             ref city,
             ref country,
+            ref state,
         } = address;
         [
             street.as_deref().unwrap_or(""),
-            &[
-                zip.as_deref().unwrap_or(""),
-                city.as_deref().unwrap_or(""),
-            ]
-            .join(" "),
+            &[zip.as_deref().unwrap_or(""), city.as_deref().unwrap_or("")].join(" "),
             country.as_deref().unwrap_or(""),
+            state.as_deref().unwrap_or(""),
         ]
         .join(", ")
     } else {
@@ -242,12 +240,14 @@ mod tests {
                     zip: Some("<zip>".into()),
                     city: Some("<city>".into()),
                     country: Some("<country>".into()),
+                    state: Some("<state>".into()),
                 }),
             },
             contact: Some(Contact {
                 email: Some("<email>".into()),
                 phone: Some("<phone>".into()),
             }),
+            opening_hours: Some("24/7".parse().unwrap()),
             links: Some(Links {
                 homepage: Some("https://kartevonmorgen.org".parse().unwrap()),
                 ..Default::default()
@@ -274,6 +274,7 @@ mod tests {
                     zip: Some("<zip>".into()),
                     city: Some("<city>".into()),
                     country: Some("<country>".into()),
+                    state: Some("<state>".into()),
                 }),
             }),
             contact: Some(Contact {

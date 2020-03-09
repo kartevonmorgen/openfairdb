@@ -1,10 +1,50 @@
 use crate::{activity::*, contact::*, id::*, links::*, location::*, review::*, revision::*};
 
+use std::str::FromStr;
+
 // Immutable part of a place.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlaceRoot {
     pub id: Id,
     pub license: String,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct OpeningHours(String);
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct OpeningHoursParseError;
+
+impl OpeningHours {
+    pub const fn min_len() -> usize {
+        4
+    }
+}
+
+impl FromStr for OpeningHours {
+    type Err = OpeningHoursParseError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let trimmed = s.trim();
+        if trimmed.len() < Self::min_len() {
+            return Err(OpeningHoursParseError);
+        }
+        Ok(Self(trimmed.to_string()))
+    }
+}
+
+impl From<String> for OpeningHours {
+    fn from(from: String) -> Self {
+        let res = Self(from);
+        debug_assert_eq!(Ok(&res), res.0.as_str().parse().as_ref());
+        res
+    }
+}
+
+impl From<OpeningHours> for String {
+    fn from(from: OpeningHours) -> Self {
+        from.0
+    }
 }
 
 // Mutable part of a place.
@@ -16,6 +56,7 @@ pub struct PlaceRevision {
     pub description: String,
     pub location: Location,
     pub contact: Option<Contact>,
+    pub opening_hours: Option<OpeningHours>,
     pub links: Option<Links>,
     pub tags: Vec<String>,
 }
@@ -32,6 +73,7 @@ pub struct Place {
     pub description: String,
     pub location: Location,
     pub contact: Option<Contact>,
+    pub opening_hours: Option<OpeningHours>,
     pub links: Option<Links>,
     pub tags: Vec<String>,
 }
@@ -70,6 +112,7 @@ impl From<(PlaceRoot, PlaceRevision)> for Place {
                 description,
                 location,
                 contact,
+                opening_hours,
                 links,
                 tags,
             },
@@ -83,6 +126,7 @@ impl From<(PlaceRoot, PlaceRevision)> for Place {
             description,
             location,
             contact,
+            opening_hours,
             links,
             tags,
         }
@@ -100,6 +144,7 @@ impl From<Place> for (PlaceRoot, PlaceRevision) {
             description,
             location,
             contact,
+            opening_hours,
             links,
             tags,
         } = from;
@@ -112,6 +157,7 @@ impl From<Place> for (PlaceRoot, PlaceRevision) {
                 description,
                 location,
                 contact,
+                opening_hours,
                 links,
                 tags,
             },
