@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.8.16 (2020-03-16)
+
+- fix(db): Field `state` was not stored for events
+
 ## v0.8.15 (2020-03-09)
 
 - new(db): Add fields `state` and `opening_hours` to place entities

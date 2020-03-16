@@ -1652,6 +1652,7 @@ mod tests {
             created_by: Some("createdby1@example.com".into()),
             email: Some("email1@example.com".into()),
             telephone: Some("phone1".into()),
+            state: Some("state".into()),
             ..Default::default()
         };
         let id1 = flows::create_event(&db, &mut search_engine, Some("foo"), e1)
@@ -1695,9 +1696,10 @@ mod tests {
         let mut response = client.get("/export/events.csv").dispatch();
         assert_eq!(response.status(), Status::Ok);
         let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+        eprintln!("{}", body_str);
         assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,state,email,phone,homepage,image_url,image_link_url,tags\n"));
         assert!(body_str.contains(&format!(
-            "{},,,title1,,{},,,,,,,,,email1@example.com,phone1,,,,\"bla,tag\"\n",
+            "{},,,title1,,{},,,,,,,,state,email1@example.com,phone1,,,,\"bla,tag\"\n",
             id1, start1
         )));
         assert!(body_str.contains(&format!(
@@ -1721,7 +1723,7 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
         let body_str = response.body().and_then(|b| b.into_string()).unwrap();
         assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,state,email,phone,homepage,image_url,image_link_url,tags\n"));
-        assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1)));
+        assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,state,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1)));
         assert!(body_str.contains(&format!(
             "{},,,title2,,{},,,,,,,,,email2@example.com,phone2,,,,\"bli,tag2\"\n",
             id2, start2
@@ -1739,7 +1741,7 @@ mod tests {
         assert_eq!(response.status(), Status::Ok);
         let body_str = response.body().and_then(|b| b.into_string()).unwrap();
         assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,state,email,phone,homepage,image_url,image_link_url,tags\n"));
-        assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1)));
+        assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,state,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1)));
         assert!(body_str.contains(&format!(
             "{},createdby2@example.com,,title2,,{},,,,,,,,,email2@example.com,phone2,,,,\"bli,tag2\"\n",
             id2, start2

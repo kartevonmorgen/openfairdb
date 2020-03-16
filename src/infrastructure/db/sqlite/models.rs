@@ -206,6 +206,7 @@ pub struct NewEvent {
     pub zip: Option<String>,
     pub city: Option<String>,
     pub country: Option<String>,
+    pub state: Option<String>,
     pub email: Option<String>,
     pub telephone: Option<String>,
     pub homepage: Option<String>,

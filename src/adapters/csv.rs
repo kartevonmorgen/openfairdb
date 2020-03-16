@@ -154,7 +154,17 @@ impl From<Event> for EventRecord {
             ..
         } = from;
 
-        let (pos, address) = location.map_or((None, None), |l| (Some(l.pos), l.address));
+        let (pos, address) = location.map_or((None, None), |l| {
+            let Location {
+                pos,
+                address,
+            } = l;
+            if pos.is_valid() {
+                (Some(pos), address)
+            } else {
+                (None, address)
+            }
+        });
 
         let (lat, lng) = pos.map_or((None, None), |p| {
             (Some(p.lat().to_deg()), Some(p.lng().to_deg()))

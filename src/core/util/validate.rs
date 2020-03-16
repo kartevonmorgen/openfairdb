@@ -142,6 +142,7 @@ impl AutoCorrect for Address {
         self.zip = self.zip.filter(|x| !x.is_empty());
         self.city = self.city.filter(|x| !x.is_empty());
         self.country = self.country.filter(|x| !x.is_empty());
+        self.state = self.state.filter(|x| !x.is_empty());
         self
     }
 }
@@ -258,9 +259,13 @@ mod tests {
         x.city = Some("".to_string());
         assert!(x.auto_correct().city.is_none());
 
-        let mut x = a;
+        let mut x = a.clone();
         x.country = Some("".to_string());
         assert!(x.auto_correct().country.is_none());
+
+        let mut x = a;
+        x.state = Some("".to_string());
+        assert!(x.auto_correct().state.is_none());
     }
 
     #[test]

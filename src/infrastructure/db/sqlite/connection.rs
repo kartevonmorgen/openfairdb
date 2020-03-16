@@ -312,6 +312,7 @@ fn into_new_place_revision(
         None
     };
     let Contact { email, phone } = contact.unwrap_or_default();
+    debug_assert!(pos.is_valid());
     let Address {
         street,
         zip,
@@ -776,22 +777,29 @@ fn into_new_event_with_tags(
         ..
     } = event;
 
-    let mut street = None;
-    let mut zip = None;
-    let mut city = None;
-    let mut country = None;
-
-    let (lat, lng) = if let Some(l) = location {
-        if let Some(a) = l.address {
-            street = a.street;
-            zip = a.zip;
-            city = a.city;
-            country = a.country;
+    let (lat, lng, address) = if let Some(l) = location {
+        let Location {
+            pos,
+            address,
+        } = l;
+        // The position might be invalid if no geo coords have
+        // been provided. Nevertheless some address fields might
+        // have been provided.
+        if pos.is_valid() {
+            (Some(pos.lat().to_deg()), Some(pos.lng().to_deg()), address.unwrap_or_default())
+        } else {
+            (None, None, address.unwrap_or_default())
         }
-        (Some(l.pos.lat().to_deg()), Some(l.pos.lng().to_deg()))
     } else {
-        (None, None)
+        (None, None, Default::default())
     };
+    let Address {
+        street,
+        zip,
+        city,
+        country,
+        state,
+    } = address;
 
     let (email, telephone) = if let Some(c) = contact {
         (c.email, c.phone)
@@ -820,6 +828,7 @@ fn into_new_event_with_tags(
             zip,
             city,
             country,
+            state,
             telephone,
             email: email.map(Into::into),
             homepage: homepage.map(Url::into_string),
