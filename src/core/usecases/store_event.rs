@@ -86,12 +86,6 @@ pub fn import_new_event<D: Db>(
         super::prepare_tag_list(tags.unwrap_or_else(|| vec![]).iter().map(String::as_str));
     if super::check_and_count_owned_tags(db, &tags, org.as_ref())? == 0 {
         if let Some(mut org) = org {
-            if org.owned_tags.is_empty() {
-                log::info!(
-                    "Organization {} doesn't own any tags while creating/updating an event",
-                    org.name
-                );
-            }
             // Implicitly add missing owned tags to prevent events with
             // undefined ownership!
             match mode {
