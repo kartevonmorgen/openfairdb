@@ -32,6 +32,8 @@ const PW_GEN: PasswordGenerator = PasswordGenerator {
     uppercase_letters: true,
     symbols: true,
     strict: false,
+    exclude_similar_characters: true,
+    spaces: false,
 };
 
 pub fn create_user_from_email<D: Db>(db: &D, email: &str) -> Result<User> {
