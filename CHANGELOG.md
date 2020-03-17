@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.8.18 (2020-03-17)
+
+- fix(web): Do not resolve event address if valid geo coords are provided
+
 ## v0.8.17 (2020-03-16)
 
 - fix(db): Allow to create/update events with a token but no associated tags

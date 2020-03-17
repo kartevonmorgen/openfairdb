@@ -15,6 +15,10 @@ use rocket::{
 };
 
 fn check_and_set_address_location(e: &mut usecases::NewEvent) {
+    if e.lat.is_some() && e.lng.is_some() {
+        // Preserve given locations
+        return;
+    }
     // TODO: Parse logical parts of NewEvent earlier
     let addr = Address {
         street: e.street.clone(),
