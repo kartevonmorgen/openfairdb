@@ -1335,6 +1335,55 @@ mod tests {
             // created_by has been updated
             assert_eq!(new.created_by, Some("changed@bar.com".into()));
         }
+
+        #[test]
+        fn update_geo_location() {
+            let (client, db, mut search_engine) = setup2();
+            db.exclusive()
+                .unwrap()
+                .create_org(Organization {
+                    id: "foo".into(),
+                    name: "bar".into(),
+                    owned_tags: vec!["org-tag".into()],
+                    api_token: "foo".into(),
+                })
+                .unwrap();
+            let e = usecases::NewEvent {
+                title: "x".into(),
+                tags: Some(vec!["bla".into(), "org-tag".into()]),
+                created_by: Some("foo@bar.com".into()),
+                start: Utc::now().naive_utc().timestamp(),
+                lat: Some(1.0),
+                lng: Some(2.0),
+                ..Default::default()
+            };
+            let id = flows::create_event(&db, &mut search_engine, Some("foo"), e)
+                .unwrap()
+                .id;
+            let created = db.shared().unwrap().get_event(id.as_ref()).unwrap();
+            assert_eq!(
+                Some((
+                    LatCoord::from_deg(1.0).to_deg(),
+                    LngCoord::from_deg(2.0).to_deg()
+                )),
+                created.location.map(|loc| loc.pos.to_lat_lng_deg())
+            );
+            let res = client
+                .put(format!("/events/{}", id))
+                .header(ContentType::JSON)
+                .header(Header::new("Authorization", "Bearer foo"))
+                .body(r#"{"title":"new title","start":4132508400,"created_by":"updated@example.com","lat":-1.0,"lng":-2.0}"#)
+                .dispatch();
+            assert_eq!(res.status(), HttpStatus::Ok);
+            let updated = db.shared().unwrap().get_event(id.as_ref()).unwrap();
+            assert_eq!(
+                Some((
+                    LatCoord::from_deg(-1.0).to_deg(),
+                    LngCoord::from_deg(-2.0).to_deg()
+                )),
+                updated.location.map(|loc| loc.pos.to_lat_lng_deg())
+            );
+        }
     }
 
     mod archive {
