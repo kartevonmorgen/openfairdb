@@ -32,10 +32,20 @@ fn check_and_set_address_location(e: &mut usecases::NewEvent) -> Option<MapPoint
         country: e.country.clone(),
         state: e.state.clone(),
     };
-    if let Some((lat, lng)) = resolve_address_lat_lng(&addr) {
-        e.lat = Some(lat);
-        e.lng = Some(lng);
-    }
+    resolve_address_lat_lng(&addr).and_then(|(lat, lng)| {
+        let pos = MapPoint::try_from_lat_lng_deg(lat, lng);
+        if pos.unwrap_or_default().is_valid() {
+            log::debug!(
+                "Updating event location: ({:?}, {:?}) -> {:?}",
+                e.lat,
+                e.lng,
+                pos
+            );
+            e.lat = Some(lat);
+            e.lng = Some(lng);
+        }
+        pos
+    })
 }
 
 #[post("/events", format = "application/json", data = "<e>")]
