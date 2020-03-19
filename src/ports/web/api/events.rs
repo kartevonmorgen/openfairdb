@@ -14,10 +14,15 @@ use rocket::{
     request::{FromQuery, Query},
 };
 
-fn check_and_set_address_location(e: &mut usecases::NewEvent) {
-    if e.lat.is_some() && e.lng.is_some() {
-        // Preserve given locations
-        return;
+fn check_and_set_address_location(e: &mut usecases::NewEvent) -> Option<MapPoint> {
+    let pos = if let (Some(lat), Some(lng)) = (e.lat, e.lng) {
+        MapPoint::try_from_lat_lng_deg(lat, lng)
+    } else {
+        None
+    };
+    if pos.unwrap_or_default().is_valid() {
+        // Preserve valid geo locations
+        return pos;
     }
     // TODO: Parse logical parts of NewEvent earlier
     let addr = Address {
