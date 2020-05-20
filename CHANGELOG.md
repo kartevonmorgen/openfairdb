@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.8.19 (2020-05-20)
+
+- chore: Update dependencies and Rust toolchain
+- chore(doc): Fix OpenAPI spec
+
 ## v0.8.18 (2020-03-17)
 
 - fix(web): Do not resolve event address if valid geo coords are provided
