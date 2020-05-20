@@ -64,7 +64,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Entry'
+              $ref: '#/components/schemas/NewEntry'
       responses:
         '200':
           description: Successful response
@@ -82,6 +82,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Entry'
+  '/entries/{id}':
+    put:
+      summary: Update an entry
+      description: |
+        The edited entry must include the current version of this entry.
+      tags:
+        - Entries
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntryWithVersion'
+      responses:
+        '200':
+          description: Successful response
 
   /entries/recently-changed:
     get:
@@ -605,14 +623,8 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
 components:
   schemas:
-    Entry:
+    NewEntry:
       properties:
-        id:
-          $ref: '#/components/schemas/Id'
-        version:
-          type: integer
-        created:
-          type: integer
         title:
           type: string
         description:
@@ -645,16 +657,32 @@ components:
             type: string
         tags:
           $ref: '#/components/schemas/TagArray'
-        ratings:
-          type: array
-          items:
-            type: string
         image_url:
           $ref: '#/components/schemas/Url'
         image_link_url:
           $ref: '#/components/schemas/Url'
         license:
           $ref: '#/components/schemas/License'
+    EntryWithVersion:
+      allOf:
+        - $ref: '#/components/schemas/NewEntry'
+        - type: object
+          properties:
+            version:
+              type: integer
+    Entry:
+      allOf:
+        - $ref: '#/components/schemas/EntryWithVersion'
+        - type: object
+          properties:
+            id:
+              $ref: '#/components/schemas/Id'
+            created:
+              type: integer
+            ratings:
+              type: array
+              items:
+                type: string
     Category:
       properties:
         id:
