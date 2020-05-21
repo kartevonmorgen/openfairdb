@@ -3,7 +3,7 @@ use crate::{
     adapters::{self, json},
     core::{
         prelude::*,
-        usecases::{self, DuplicateType},
+        usecases,
         util::{self, geo},
     },
     infrastructure::{
@@ -24,6 +24,7 @@ use rocket_contrib::json::Json;
 use std::result;
 
 mod count;
+mod duplicates;
 pub mod events;
 mod places;
 mod ratings;
@@ -33,7 +34,6 @@ pub mod tests;
 mod users;
 
 type Result<T> = result::Result<Json<T>, AppError>;
-
 type StatusResult = result::Result<Status, AppError>;
 
 pub fn routes() -> Vec<Route> {
@@ -76,7 +76,8 @@ pub fn routes() -> Vec<Route> {
         get_category,
         get_tags,
         search::get_search,
-        get_duplicates,
+        duplicates::get_duplicates,
+        duplicates::post_duplicates,
         count::get_count_entries,
         count::get_count_tags,
         get_version,
@@ -325,28 +326,6 @@ pub fn post_places_review(
         );
     }
     Ok(Json(()))
-}
-
-#[get("/duplicates/<ids>")]
-fn get_duplicates(
-    db: sqlite::Connections,
-    ids: String,
-) -> Result<Vec<(String, String, DuplicateType)>> {
-    let ids = util::split_ids(&ids);
-    if ids.is_empty() {
-        return Ok(Json(vec![]));
-    }
-    let (entries, all_entries) = {
-        let db = db.shared()?;
-        (db.get_places(&ids)?, db.all_places()?)
-    };
-    let results = usecases::find_duplicates(&entries, &all_entries);
-    Ok(Json(
-        results
-            .into_iter()
-            .map(|(id1, id2, dup)| (id1.to_string(), id2.to_string(), dup))
-            .collect(),
-    ))
 }
 
 #[get("/server/version")]
