@@ -777,6 +777,24 @@ paths:
                 type: string
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /duplicates/check-place:
+    post:
+      summary: Check if a place already exists
+      tags:
+        - Duplicates
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewEntry'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
 components:
   schemas:
     NewEntry:

@@ -5,6 +5,7 @@
 - new(web/db): Moderated tags: Fine-grained permissions for organizations
 - new(web/db): Clearance: Allow organizations to manually *clear* new place/entry revisions after editing
 - new (web/db): Clearance: Optionally replace or exclude revisions with *pending clearance* from search results, i.e. return an older, already cleared revision if available
+- new(api): check for duplicates (`/duplicates/check-place`)
 
 ## v0.8.21 (2020-08-04)
 
