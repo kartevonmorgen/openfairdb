@@ -1752,3 +1752,25 @@ fn entries_export_csv() {
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Unauthorized);
 }
+
+#[test]
+fn check_place_duplicate() {
+    let (client, db) = setup();
+    let res = client.post("/entries")
+                    .header(ContentType::JSON)
+                    .body(r#"{"title":"foo","description":"bla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#)
+                    .dispatch();
+    assert_eq!(res.status(), Status::Ok);
+    let mut res = client.post("/duplicates/check-place")
+                    .header(ContentType::JSON)
+                    .body(r#"{"title":"foO","description":"bla","lat":0.0005,"lng":0.0005,"categories":["y"],"license":"CC0-1.0","tags":[]}"#)
+                    .dispatch();
+    assert_eq!(res.status(), Status::Ok);
+    test_json(&res);
+    let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+    let eid = db.exclusive().unwrap().all_places().unwrap()[0]
+        .0
+        .id
+        .clone();
+    assert_eq!(body_str, format!("[[\"{}\",\"SimilarChars\"]]", eid));
+}

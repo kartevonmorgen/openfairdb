@@ -2,14 +2,15 @@
 
 ## unreleased (YYYY-mm-dd)
 
-- new(web/db): Moderated tags: Fine-grained permissions for organizations
-- new(web/db): Clearance: Allow organizations to manually *clear* new place/entry revisions after editing
-- new (web/db): Clearance: Optionally replace or exclude revisions with *pending clearance* from search results, i.e. return an older, already cleared revision if available
-- new(web): Allow organizations to read the history of places
+- new(api/db): Moderated tags: Fine-grained permissions for organizations
+- new(api/db): Clearance: Allow organizations to manually *clear* new place/entry revisions after editing
+- new(api/db): Clearance: Optionally replace or exclude revisions with *pending clearance* from search results, i.e. return an older, already cleared revision if available
+- new(api): Allow organizations to read the history of places
+- new(api): check for duplicates (`/duplicates/check-place`)
 
 ## v0.8.21 (2020-08-04)
 
-- fix(web): Authorize with bearer token when creating or updating places/entries
+- fix(api): Authorize with bearer token when creating or updating places/entries
 
 ## v0.8.20 (2020-06-10)
 
