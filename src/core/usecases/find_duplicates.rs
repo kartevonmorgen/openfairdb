@@ -1,4 +1,4 @@
-use crate::core::prelude::*;
+use crate::core::{prelude::*, usecases};
 use std::{cmp::min, collections::HashSet};
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -11,11 +11,11 @@ pub enum DuplicateType {
 // where entry1 and entry2 are similar places
 pub fn find_duplicates(
     places: &[(Place, ReviewStatus)],
-    all_places: &[(Place, ReviewStatus)],
+    possible_duplicate_places: &[(Place, ReviewStatus)],
 ) -> Vec<(Id, Id, DuplicateType)> {
     let mut duplicates = Vec::new();
     for (p1, _) in &places[..] {
-        for (p2, _) in &all_places[..] {
+        for (p2, _) in &possible_duplicate_places[..] {
             if p1.id >= p2.id {
                 continue;
             }
@@ -25,6 +25,13 @@ pub fn find_duplicates(
         }
     }
     duplicates
+}
+
+pub fn find_duplicate_place(
+    new_place: &usecases::NewPlace,
+    possible_duplicate_places: &[(Place, ReviewStatus)],
+) -> Vec<(Id, DuplicateType)> {
+    todo!()
 }
 
 const DUPLICATE_MAX_DISTANCE: Distance = Distance::from_meters(100.0);
