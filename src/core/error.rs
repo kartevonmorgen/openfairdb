@@ -1,161 +1,104 @@
 use std::io;
+use thiserror::Error;
 
-quick_error! {
-    #[derive(Debug)]
-    pub enum ParameterError {
-        Title{
-            description("The title is invalid")
-        }
-        Bbox{
-            description("Bounding box is invalid")
-        }
-        License{
-            description("Unsupported license")
-        }
-        Email{
-            description("Invalid email address")
-        }
-        Phone{
-            description("Invalid phone nr")
-        }
-        Url{
-            description("Invalid URL")
-        }
-        Contact{
-            description("Invalid contact")
-        }
-        RegistrationType{
-            description("Invalid registration type")
-        }
-        UserExists{
-            description("The user already exists")
-        }
-        UserDoesNotExist{
-            description("The user does not exist")
-        }
-        Password{
-            description("Invalid password")
-        }
-        EmptyComment{
-            description("Empty comment")
-        }
-        RatingValue{
-            description("Rating value out of range")
-        }
-        RatingContext(context: String){
-            description("Invalid rating context")
-        }
-        Credentials {
-            description("Invalid credentials")
-        }
-        EmailNotConfirmed {
-            description("Email not confirmed")
-        }
-        Forbidden{
-            description("This is not allowed")
-        }
-        Unauthorized{
-            description("This is not allowed without auth")
-        }
-        DateTimeOutOfRange{
-            description("The date/time is out of range")
-        }
-        EndDateBeforeStart{
-            description("The end date is before the start")
-        }
-        OwnedTag{
-            description("The tag is owned by an organization")
-        }
-        CreatorEmail{
-            description("Missing the email of the creator")
-        }
-        InvalidOpeningHours {
-            description("Invalid opening hours")
-        }
-        InvalidPosition {
-            description("Invalid position")
-        }
-        InvalidLimit{
-            description("Invalid limit")
-        }
-        Role{
-            description("Invalid role")
-        }
-        TokenInvalid{
-            description("Token invalid")
-        }
-        TokenExpired{
-            description("Token expired")
-        }
-        InvalidNonce{
-            description("Invalid nonce")
-        }
-        EmptyIdList{
-            description("Missing id list")
-        }
-    }
+#[derive(Debug, Error)]
+pub enum ParameterError {
+    #[error("The title is invalid")]
+    Title,
+    #[error("Bounding box is invalid")]
+    Bbox,
+    #[error("Unsupported license")]
+    License,
+    #[error("Invalid email address")]
+    Email,
+    #[error("Invalid phone nr")]
+    Phone,
+    #[error("Invalid URL")]
+    Url,
+    #[error("Invalid contact")]
+    Contact,
+    #[error("Invalid registration type")]
+    RegistrationType,
+    #[error("The user already exists")]
+    UserExists,
+    #[error("The user does not exist")]
+    UserDoesNotExist,
+    #[error("Invalid password")]
+    Password,
+    #[error("Empty comment")]
+    EmptyComment,
+    #[error("Rating value out of range")]
+    RatingValue,
+    #[error("Invalid rating context")]
+    RatingContext(String),
+    #[error("Invalid credentials")]
+    Credentials,
+    #[error("Email not confirmed")]
+    EmailNotConfirmed,
+    #[error("This is not allowed")]
+    Forbidden,
+    #[error("This is not allowed without auth")]
+    Unauthorized,
+    #[error("The date/time is out of range")]
+    DateTimeOutOfRange,
+    #[error("The end date is before the start")]
+    EndDateBeforeStart,
+    #[error("The tag is owned by an organization")]
+    OwnedTag,
+    #[error("Missing the email of the creator")]
+    CreatorEmail,
+    #[error("Invalid opening hours")]
+    InvalidOpeningHours,
+    #[error("Invalid position")]
+    InvalidPosition,
+    #[error("Invalid limit")]
+    InvalidLimit,
+    #[error("Invalid role")]
+    Role,
+    #[error("Token invalid")]
+    TokenInvalid,
+    #[error("Token expired")]
+    TokenExpired,
+    #[error("Invalid nonce")]
+    InvalidNonce,
+    #[error("Missing id list")]
+    EmptyIdList,
 }
 
-quick_error! {
-    #[derive(Debug)]
-    //TODO: rename to GatewayError
-    pub enum RepoError {
-        NotFound{
-            description("The requested object could not be found")
-        }
-        TooManyFound {
-            description("Too many instead of only one requested object has been found")
-        }
-        #[cfg(test)]
-        AlreadyExists {
-            description("The object already exists")
-        }
-        InvalidVersion {
-            description("The version of the object is invalid")
-        }
-        Io(err: io::Error) {
-            from()
-            cause(err)
-            description(err.to_string())
-        }
-        Other(err: anyhow::Error) {
-            description(err.to_string())
-        }
-    }
+#[derive(Debug, Error)]
+pub enum RepoError {
+    #[error("The requested object could not be found")]
+    NotFound,
+    #[error("Too many instead of only one requested object has been found")]
+    TooManyFound,
+    #[cfg(test)]
+    #[error("The object already exists")]
+    AlreadyExists,
+    #[error("The version of the object is invalid")]
+    InvalidVersion,
+    #[error(transparent)]
+    Io(#[from] io::Error),
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
 }
 
-quick_error! {
-    #[derive(Debug)]
-    pub enum Error {
-        Parameter(err: ParameterError) {
-            from()
-            cause(err)
-            description(err.description())
-        }
-        ParseInt(err: std::num::ParseIntError) {
-            from()
-            cause(err)
-            description(err.description())
-        }
-        Repo(err: RepoError) {
-            from()
-            cause(err)
-            description(err.description())
-        }
-        Pwhash(err: pwhash::error::Error) {
-            from()
-            cause(err)
-            description(err.description())
-        }
-        Internal(msg: String) {
-            from()
-        }
-    }
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error(transparent)]
+    Parameter(#[from] ParameterError),
+    #[error(transparent)]
+    ParseInt(#[from] std::num::ParseIntError),
+    #[error(transparent)]
+    Repo(#[from] RepoError),
+    #[error(transparent)]
+    Pwhash(#[from] pwhash::error::Error),
+    #[error("Internal error: {0}")]
+    Internal(String),
 }
 
-impl From<anyhow::Error> for RepoError {
-    fn from(from: anyhow::Error) -> Self {
-        RepoError::Other(from)
+impl From<String> for Error {
+    fn from(s: String) -> Self {
+        Error::Internal(s)
     }
 }
 

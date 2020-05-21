@@ -1,9 +1,9 @@
 use crate::core::error::{Error as BError, RepoError};
 use diesel::r2d2;
+use diesel::result::Error as DieselError;
 use diesel_migrations::RunMigrationsError;
 use std::io;
-
-use diesel::result::Error as DieselError;
+use thiserror::Error;
 
 impl From<RepoError> for AppError {
     fn from(err: RepoError) -> AppError {
@@ -26,40 +26,28 @@ impl From<RunMigrationsError> for AppError {
     }
 }
 
-quick_error! {
-    #[derive(Debug)]
-    pub enum AppError {
-        Business(err: BError){
-            from()
-            cause(err)
-            description(err.description())
-        }
-        Serialize(err: serde_json::Error){
-            from()
-            cause(err)
-            description(err.description())
-        }
-        Other(err: anyhow::Error){
-            from()
-            description(err.description())
-            from(err: io::Error) -> (err.into())
-        }
-        R2d2(err: r2d2::PoolError){
-            from()
-        }
-        CsvIntoInner(err: ::csv::IntoInnerError<::csv::Writer<::std::vec::Vec<u8>>>){
-            from()
-        }
-        String(err: ::std::string::FromUtf8Error){
-            from()
-        }
-        Str(err: ::std::str::Utf8Error){
-            from()
-        }
-        Csv(err: ::csv::Error){
-            from()
-        }
-    }
+#[derive(Debug, Error)]
+pub enum AppError {
+    #[error(transparent)]
+    Business(#[from] BError),
+    #[error(transparent)]
+    Serialize(#[from] serde_json::Error),
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
+    //    from(err: io::Error) -> (err.into())
+    //}
+    #[error(transparent)]
+    Io(#[from] io::Error),
+    #[error(transparent)]
+    R2d2(#[from] r2d2::PoolError),
+    #[error(transparent)]
+    CsvIntoInner(#[from] ::csv::IntoInnerError<::csv::Writer<::std::vec::Vec<u8>>>),
+    #[error(transparent)]
+    String(#[from] ::std::string::FromUtf8Error),
+    #[error(transparent)]
+    Str(#[from] ::std::str::Utf8Error),
+    #[error(transparent)]
+    Csv(#[from] ::csv::Error),
 }
 
 impl From<ofdb_entities::password::ParseError> for AppError {

@@ -13,8 +13,6 @@ extern crate lazy_static;
 #[macro_use]
 extern crate log;
 #[macro_use]
-extern crate quick_error;
-#[macro_use]
 extern crate rocket;
 #[macro_use]
 extern crate serde;
