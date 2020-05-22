@@ -45,7 +45,6 @@ openssl = { version = "*", features = ["vendored"] }
 owning_ref = "*"
 passwords = "*"
 pwhash = "*"
-quoted_printable = { version = "*", optional = true }
 regex = "*"
 rocket = "*"
 rocket_contrib = "*"
@@ -63,7 +62,7 @@ ofdb-boundary = { version = "*", features = ["extra-derive"] }
 
 [features]
 default = ["email","frontend"]
-email = ["quoted_printable"]
+email = []
 frontend = ["maud"]
 
 [profile.release]

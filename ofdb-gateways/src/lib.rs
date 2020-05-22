@@ -2,3 +2,4 @@
 extern crate log;
 
 pub mod opencage;
+pub mod sendmail;

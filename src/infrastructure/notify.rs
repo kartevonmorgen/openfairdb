@@ -1,12 +1,11 @@
-#[cfg(feature = "email")]
-use super::mail;
-
 use crate::{adapters::user_communication, core::prelude::*};
+#[cfg(feature = "email")]
+use ofdb_gateways::sendmail;
 
 #[cfg(all(not(test), feature = "email"))]
 fn send_email(mail: String) {
     std::thread::spawn(move || {
-        if let Err(err) = mail::sendmail::send(&mail) {
+        if let Err(err) = sendmail::send(&mail) {
             warn!("Could not send e-mail: {}", err);
         }
     });
@@ -21,7 +20,7 @@ fn send_email(email: String) {
 
 #[cfg(feature = "email")]
 pub fn compose_and_send_email(to: &str, subject: &str, body: &str) {
-    match mail::compose(&[to], subject, body) {
+    match sendmail::compose(&[to], subject, body) {
         Ok(email) => send_email(email),
         Err(err) => {
             warn!("Failed to compose e-mail: {}", err);

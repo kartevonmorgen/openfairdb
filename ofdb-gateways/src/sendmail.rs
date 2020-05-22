@@ -1,6 +1,9 @@
 use chrono::*;
 use fast_chemail::is_valid_email;
-use std::io::{Error, ErrorKind, Result};
+use std::{
+    io::{prelude::*, Error, ErrorKind, Result},
+    process::{Command, Stdio},
+};
 
 const FROM_ADDRESS: &str = "\"Karte von morgen\" <no-reply@kartevonmorgen.org>";
 
@@ -102,25 +105,18 @@ pub fn compose(to: &[&str], subject: &str, body: &str) -> Result<String> {
     Ok(email)
 }
 
-#[cfg(all(not(test), feature = "email"))]
-pub mod sendmail {
-    use super::*;
-    use std::io::prelude::*;
-    use std::process::{Command, Stdio};
-
-    pub fn send(mail: &str) -> Result<()> {
-        let mut child = Command::new("sendmail")
-            .arg("-t")
-            .stdin(Stdio::piped())
-            .spawn()?;
-        child
-            .stdin
-            .as_mut()
-            .ok_or_else(|| Error::new(ErrorKind::Other, "Could not get stdin"))?
-            .write_all(mail.as_bytes())?;
-        child.wait_with_output()?;
-        Ok(())
-    }
+pub fn send(mail: &str) -> Result<()> {
+    let mut child = Command::new("sendmail")
+        .arg("-t")
+        .stdin(Stdio::piped())
+        .spawn()?;
+    child
+        .stdin
+        .as_mut()
+        .ok_or_else(|| Error::new(ErrorKind::Other, "Could not get stdin"))?
+        .write_all(mail.as_bytes())?;
+    child.wait_with_output()?;
+    Ok(())
 }
 
 #[cfg(test)]
