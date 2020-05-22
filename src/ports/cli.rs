@@ -4,7 +4,7 @@ use crate::{
     ports::web,
 };
 
-use clap::{App, Arg};
+use clap::{App, Arg, crate_authors};
 use dotenv::dotenv;
 use ofdb_gateways::opencage;
 use std::{env, path::Path};
@@ -40,7 +40,7 @@ pub fn run() {
     dotenv().ok();
     let matches = App::new("openFairDB")
         .version(env!("CARGO_PKG_VERSION"))
-        .author("Markus Kohlhase <mail@markus-kohlhase.de>")
+        .author(crate_authors!("\n"))
         .arg(
             Arg::with_name("db-url")
                 .long("db-url")
