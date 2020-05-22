@@ -778,15 +778,16 @@ fn into_new_event_with_tags(
     } = event;
 
     let (lat, lng, address) = if let Some(l) = location {
-        let Location {
-            pos,
-            address,
-        } = l;
+        let Location { pos, address } = l;
         // The position might be invalid if no geo coords have
         // been provided. Nevertheless some address fields might
         // have been provided.
         if pos.is_valid() {
-            (Some(pos.lat().to_deg()), Some(pos.lng().to_deg()), address.unwrap_or_default())
+            (
+                Some(pos.lat().to_deg()),
+                Some(pos.lng().to_deg()),
+                address.unwrap_or_default(),
+            )
         } else {
             (None, None, address.unwrap_or_default())
         }

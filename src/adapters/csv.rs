@@ -155,10 +155,7 @@ impl From<Event> for EventRecord {
         } = from;
 
         let (pos, address) = location.map_or((None, None), |l| {
-            let Location {
-                pos,
-                address,
-            } = l;
+            let Location { pos, address } = l;
             if pos.is_valid() {
                 (Some(pos), address)
             } else {

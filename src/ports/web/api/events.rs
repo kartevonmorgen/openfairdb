@@ -1,5 +1,4 @@
-use super::{super::guards::Bearer, geocoding::*, *};
-
+use super::{super::guards::Bearer, *};
 use crate::{
     adapters,
     core::{
@@ -8,6 +7,7 @@ use crate::{
     },
     infrastructure::flows::prelude as flows,
 };
+use ofdb_gateways::opencage::*;
 
 use rocket::{
     http::{RawStr, Status as HttpStatus},

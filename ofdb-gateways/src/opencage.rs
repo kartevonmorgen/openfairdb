@@ -1,7 +1,7 @@
-use crate::core::entities::Address;
-
 use ::geocoding::{Forward, Opencage};
 use itertools::Itertools;
+use lazy_static::lazy_static;
+use ofdb_entities::address::Address;
 use std::env;
 
 lazy_static! {

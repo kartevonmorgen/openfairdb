@@ -1,10 +1,12 @@
-use super::web;
-
-use crate::core::prelude::*;
-use crate::infrastructure::db::{sqlite, tantivy};
+use crate::{
+    core::prelude::*,
+    infrastructure::db::{sqlite, tantivy},
+    ports::web,
+};
 
 use clap::{App, Arg};
 use dotenv::dotenv;
+use ofdb_gateways::opencage;
 use std::{env, path::Path};
 
 const DEFAULT_DB_URL: &str = "openfair.db";
@@ -17,7 +19,7 @@ fn update_event_locations<D: Db>(db: &mut D) -> Result<()> {
     for mut e in events {
         if let Some(ref mut loc) = e.location {
             if let Some(ref addr) = loc.address {
-                if let Some((lat, lng)) = web::api::geocoding::resolve_address_lat_lng(addr) {
+                if let Some((lat, lng)) = opencage::resolve_address_lat_lng(addr) {
                     if let Some(pos) = MapPoint::try_from_lat_lng_deg(lat, lng) {
                         if pos.is_valid() {
                             if let Err(err) = db.update_event(&e) {
