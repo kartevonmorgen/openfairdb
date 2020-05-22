@@ -86,7 +86,8 @@ paths:
     put:
       summary: Update an entry
       description: |
-        The edited entry must include the current version of this entry.
+        The edited entry must include the *next version* of this entry
+        in the `version` field, where *next version* = *current version* + 1.
       tags:
         - Entries
       parameters:
