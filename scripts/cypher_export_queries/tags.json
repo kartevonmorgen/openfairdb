@@ -1,3 +1,0 @@
-{
-  "statements":[ {"statement": "MATCH (n:Tag) RETURN n.id as id"} ]
-}
