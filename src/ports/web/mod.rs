@@ -106,12 +106,14 @@ pub fn run(
     enable_cors: bool,
 ) {
     if enable_cors {
-        panic!(
-            "enable-cors is currently not available until\
-             \nhttps://github.com/SergioBenitez/Rocket/pull/141\nis merged :("
-        );
+        let cors = rocket_cors::CorsOptions {
+            ..Default::default()
+        }.to_cors().unwrap();
+        rocket_instance(connections, search_engine, mounts(), None)
+            .attach(cors).launch();
+    } else {
+        rocket_instance(connections, search_engine, mounts(), None).launch();
     }
-    rocket_instance(connections, search_engine, mounts(), None).launch();
 }
 
 #[cfg(test)]
