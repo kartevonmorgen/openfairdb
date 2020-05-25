@@ -3,10 +3,10 @@ use crate::{
         db::{EventIndexer, PlaceIndexer},
         prelude::*,
         usecases,
-        util::sort::Rated,
     },
     infrastructure::error::AppError,
 };
+use ofdb_core::util::sort::Rated;
 use rocket::{config::Config, Rocket, Route};
 use rocket_contrib::json::Json;
 use std::result;

@@ -1,4 +1,4 @@
-use crate::core::prelude::*;
+use ofdb_entities::{place::*, rating::*};
 
 pub trait Rated {
     fn avg_ratings(&self, _: &[Rating]) -> AvgRatings;

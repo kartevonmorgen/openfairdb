@@ -1,4 +1,5 @@
-use crate::core::{prelude::*, util::sort::Rated};
+use crate::core::prelude::*;
+use ofdb_core::util::sort::Rated;
 
 use anyhow::Result as Fallible;
 

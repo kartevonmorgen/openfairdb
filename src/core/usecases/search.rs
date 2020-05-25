@@ -1,5 +1,6 @@
-use crate::core::prelude::*;
-use crate::core::util::{self, filter, geo::MapBbox};
+use crate::core::{prelude::*, util};
+use ofdb_core::util::filter;
+use ofdb_entities::geo::MapBbox;
 
 #[rustfmt::skip]
 #[derive(Debug, Clone)]

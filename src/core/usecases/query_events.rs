@@ -1,8 +1,9 @@
 use super::EventQuery;
 use crate::core::{
     prelude::*,
-    util::{extract_hash_tags, filter, remove_hash_tags},
+    util::{extract_hash_tags, remove_hash_tags},
 };
+use ofdb_core::util::filter;
 
 const DEFAULT_RESULT_LIMIT: usize = 100;
 

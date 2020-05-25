@@ -1,5 +1,7 @@
 use ofdb_entities::{address::*, category::*, email::*, event::*, nonce::*, place::*, user::*};
 
+pub mod util;
+
 pub trait EmailGateway {
     fn compose_and_send(&self, recipients: &[Email], subject: &str, body: &str);
 }

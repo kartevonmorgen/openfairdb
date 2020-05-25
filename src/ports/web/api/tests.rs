@@ -1,5 +1,6 @@
 use super::*;
-use crate::{adapters::json, core::usecases, core::util::sort::Rated, test::Bencher};
+use crate::{adapters::json, core::usecases};
+use ofdb_core::util::sort::Rated;
 
 pub mod prelude {
     pub use crate::{
@@ -542,21 +543,6 @@ fn search_with_city() {
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
-}
-
-#[ignore]
-#[bench]
-fn bench_search_in_10_000_rated_places(b: &mut Bencher) {
-    let (places, ratings) = crate::core::util::sort::tests::create_places_with_ratings(10_000);
-    let (client, db) = setup();
-    let conn = db.exclusive().unwrap();
-    for p in places {
-        conn.create_or_update_place(p).unwrap();
-    }
-    for r in ratings {
-        conn.create_rating(r).unwrap();
-    }
-    b.iter(|| client.get("/search?bbox=-10,-10,10,10").dispatch());
 }
 
 #[test]
