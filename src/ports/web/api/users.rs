@@ -1,16 +1,14 @@
 use super::*;
 
 #[post("/users", format = "application/json", data = "<u>")]
-pub fn post_user(db: sqlite::Connections, u: Json<usecases::NewUser>) -> Result<()> {
+pub fn post_user(db: sqlite::Connections, n: Notify, u: Json<usecases::NewUser>) -> Result<()> {
     let new_user = u.into_inner();
     let user = {
         let db = db.exclusive()?;
         usecases::create_new_user(&*db, new_user.clone())?;
         db.get_user_by_email(&new_user.email)?
     };
-
-    notify::user_registered_kvm(&user);
-
+    n.user_registered_kvm(&user);
     Ok(Json(()))
 }
 
@@ -21,11 +19,11 @@ pub fn post_user(db: sqlite::Connections, u: Json<usecases::NewUser>) -> Result<
 )]
 pub fn post_request_password_reset(
     connections: sqlite::Connections,
+    notify: Notify,
     data: Json<json::RequestPasswordReset>,
 ) -> Result<()> {
     let req = data.into_inner();
-
-    flows::reset_password_request(&connections, &req.email)?;
+    flows::reset_password_request(&connections, &*notify, &req.email)?;
 
     Ok(Json(()))
 }

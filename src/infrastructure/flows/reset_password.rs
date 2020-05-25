@@ -1,8 +1,7 @@
 use super::*;
-
 use crate::core::error::Error;
-
 use diesel::connection::Connection;
+use ofdb_core::NotificationGateway;
 
 fn refresh_user_token(connections: &sqlite::Connections, user: &User) -> Result<EmailNonce> {
     let mut rollback_err: Option<Error> = None;
@@ -19,6 +18,7 @@ fn refresh_user_token(connections: &sqlite::Connections, user: &User) -> Result<
 
 pub fn reset_password_request(
     connections: &sqlite::Connections,
+    notify: &dyn NotificationGateway,
     email: &str,
 ) -> Result<EmailNonce> {
     // The user is loaded before the following transaction that
@@ -26,7 +26,7 @@ pub fn reset_password_request(
     // writing.
     let user = connections.shared()?.get_user_by_email(email)?;
     let email_nonce = refresh_user_token(&connections, &user)?;
-    notify::user_reset_password_requested(&email_nonce);
+    notify.user_reset_password_requested(&email_nonce);
     Ok(email_nonce)
 }
 
@@ -83,7 +83,7 @@ mod tests {
     use super::super::tests::prelude::*;
 
     fn reset_password_request(fixture: &EnvFixture, email: &str) -> super::Result<EmailNonce> {
-        super::reset_password_request(&fixture.db_connections, email)
+        super::reset_password_request(&fixture.db_connections, &fixture.notify, email)
     }
 
     fn reset_password_with_email_nonce(

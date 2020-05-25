@@ -17,8 +17,11 @@ mod frontend;
 mod guards;
 #[cfg(test)]
 mod mockdb;
+pub mod notify;
 mod sqlite;
 mod tantivy;
+#[cfg(test)]
+pub mod tests;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
@@ -116,72 +119,5 @@ pub fn run(
             .launch();
     } else {
         rocket_instance(connections, search_engine, mounts(), None).launch();
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use crate::core::{prelude::*, usecases};
-    use crate::infrastructure::db::{sqlite, tantivy};
-    use rocket::{
-        config::{Config, Environment},
-        local::Client,
-        logger::LoggingLevel,
-        Route,
-    };
-
-    pub mod prelude {
-        pub use crate::core::db::*;
-        pub use rocket::{
-            http::{ContentType, Cookie, Status},
-            local::Client,
-            response::Response,
-        };
-    }
-
-    embed_migrations!();
-
-    pub fn setup(
-        mounts: Vec<(&'static str, Vec<Route>)>,
-    ) -> (
-        rocket::local::Client,
-        sqlite::Connections,
-        tantivy::SearchEngine,
-    ) {
-        let cfg = Config::build(Environment::Development)
-            .log_level(LoggingLevel::Debug)
-            .finalize()
-            .unwrap();
-        let connections = sqlite::Connections::init(":memory:", 1).unwrap();
-        embedded_migrations::run(&*connections.exclusive().unwrap()).unwrap();
-        let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
-        let rocket = super::rocket_instance(
-            connections.clone(),
-            search_engine.clone(),
-            mounts,
-            Some(cfg),
-        );
-        let client = Client::new(rocket).unwrap();
-        (client, connections, search_engine)
-    }
-
-    pub fn register_user(pool: &sqlite::Connections, email: &str, pw: &str, confirmed: bool) {
-        let db = pool.exclusive().unwrap();
-        usecases::create_new_user(
-            &*db,
-            usecases::NewUser {
-                email: email.to_string(),
-                password: pw.to_string(),
-            },
-        )
-        .unwrap();
-        let email_nonce = EmailNonce {
-            email: email.to_string(),
-            nonce: Nonce::new(),
-        };
-        let token = email_nonce.encode_to_string();
-        if confirmed {
-            usecases::confirm_email_address(&*db, &token).unwrap();
-        }
     }
 }

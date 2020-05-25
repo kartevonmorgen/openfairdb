@@ -20,7 +20,7 @@ pub mod prelude {
 
 pub type Result<T> = std::result::Result<T, error::AppError>;
 
-pub(crate) use super::{db::sqlite, error, notify};
+pub(crate) use super::{db::sqlite, error};
 pub(crate) use crate::core::{prelude::*, usecases};
 
 #[cfg(test)]
@@ -44,7 +44,7 @@ mod tests {
             response::Response,
         };
 
-        use crate::ports::web::rocket_instance;
+        use crate::ports::web::{rocket_instance, tests::DummyNotifyGW};
 
         use rocket::{
             config::{Config, Environment},
@@ -58,6 +58,7 @@ mod tests {
             pub client: Client,
             pub db_connections: sqlite::Connections,
             pub search_engine: RefCell<tantivy::SearchEngine>,
+            pub notify: DummyNotifyGW,
         }
 
         impl EnvFixture {
@@ -80,6 +81,7 @@ mod tests {
                     client,
                     db_connections,
                     search_engine: RefCell::new(search_engine),
+                    notify: DummyNotifyGW,
                 }
             }
 
@@ -91,6 +93,7 @@ mod tests {
                 flows::create_place(
                     &self.db_connections,
                     &mut *self.search_engine.borrow_mut(),
+                    &self.notify,
                     new_place.into(),
                     account_email,
                 )

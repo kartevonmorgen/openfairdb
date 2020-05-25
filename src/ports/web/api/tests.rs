@@ -1,23 +1,29 @@
 use super::*;
-
-use crate::{adapters::json, core::usecases, test::Bencher};
-
-use crate::core::util::sort::Rated;
+use crate::{adapters::json, core::usecases, core::util::sort::Rated, test::Bencher};
 
 pub mod prelude {
-    pub use crate::core::db::*;
-    use crate::infrastructure::db::{sqlite, tantivy};
-    pub use crate::infrastructure::flows::prelude as flows;
-    pub use crate::ports::web::tests::prelude::*;
-    use crate::ports::web::{self, api};
+    pub use crate::{
+        core::db::*, infrastructure::flows::prelude as flows, ports::web::tests::prelude::*,
+    };
+    use crate::{
+        infrastructure::db::{sqlite, tantivy},
+        ports::web::{self, api},
+    };
+    use ofdb_core::NotificationGateway;
 
     pub fn setup() -> (Client, sqlite::Connections) {
         let (client, conn, _) = web::tests::setup(vec![("/", api::routes())]);
         (client, conn)
     }
 
-    pub fn setup2() -> (Client, sqlite::Connections, tantivy::SearchEngine) {
-        web::tests::setup(vec![("/", api::routes())])
+    pub fn setup2() -> (
+        Client,
+        sqlite::Connections,
+        tantivy::SearchEngine,
+        impl NotificationGateway,
+    ) {
+        let (client, connections, search_engine) = web::tests::setup(vec![("/", api::routes())]);
+        (client, connections, search_engine, DummyNotifyGW {})
     }
 
     pub fn test_json(r: &Response) {
@@ -133,7 +139,7 @@ fn get_one_entry() {
         .description("desc")
         .finish();
 
-    let (client, connections, mut search_engine) = setup2();
+    let (client, connections, mut search_engine, _) = setup2();
     connections
         .exclusive()
         .unwrap()
@@ -249,11 +255,11 @@ fn search_with_categories_and_bbox() {
         new_entry_with_category(Category::ID_NON_PROFIT, 2.0, 2.0),
         new_entry_with_category(Category::ID_COMMERCIAL, 3.0, 3.0),
     ];
-    let (client, connections, mut search_engine) = setup2();
+    let (client, connections, mut search_engine, notify) = setup2();
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, &notify, e, None)
                 .unwrap()
                 .id
                 .to_string()
@@ -337,11 +343,11 @@ fn search_with_text() {
         new_entry_with_text("bar", "foo", 2.0, 2.0),
         new_entry_with_text("baZ", "blub", 3.0, 3.0),
     ];
-    let (client, connections, mut search_engine) = setup2();
+    let (client, connections, mut search_engine, notify) = setup2();
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, &notify, e, None)
                 .unwrap()
                 .id
                 .to_string()
@@ -413,11 +419,11 @@ fn search_with_text_terms_inclusive_exclusive() {
         new_entry_with_text("fOO", "baz", 2.0, 2.0),
         new_entry_with_text("baZ", "Bar", 3.0, 3.0),
     ];
-    let (client, connections, mut search_engine) = setup2();
+    let (client, connections, mut search_engine, notify) = setup2();
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, &notify, e, None)
                 .unwrap()
                 .id
                 .to_string()
@@ -513,11 +519,11 @@ fn search_with_city() {
         new_entry_with_city("Mannheim", 2.0),
         new_entry_with_city("Stuttgart-Möhringen", 3.0),
     ];
-    let (client, connections, mut search_engine) = setup2();
+    let (client, connections, mut search_engine, notify) = setup2();
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, &notify, e, None)
                 .unwrap()
                 .id
                 .to_string()
@@ -571,7 +577,7 @@ fn search_with_tags() {
             ..default_new_entry()
         },
     ];
-    let (client, connections, mut search_engine) = setup2();
+    let (client, connections, mut search_engine, notify) = setup2();
     connections
         .exclusive()
         .unwrap()
@@ -596,7 +602,7 @@ fn search_with_tags() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, &notify, e, None)
                 .unwrap()
                 .id
                 .to_string()
@@ -639,7 +645,7 @@ fn search_with_uppercase_tags() {
             ..default_new_entry()
         },
     ];
-    let (client, connections, mut search_engine) = setup2();
+    let (client, connections, mut search_engine, notify) = setup2();
     connections
         .exclusive()
         .unwrap()
@@ -658,7 +664,7 @@ fn search_with_uppercase_tags() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, &notify, e, None)
                 .unwrap()
                 .id
                 .to_string()
@@ -689,7 +695,7 @@ fn search_with_hashtag() {
             ..default_new_entry()
         },
     ];
-    let (client, connections, mut search_engine) = setup2();
+    let (client, connections, mut search_engine, notify) = setup2();
     connections
         .exclusive()
         .unwrap()
@@ -707,7 +713,7 @@ fn search_with_hashtag() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, &notify, e, None)
                 .unwrap()
                 .id
                 .to_string()
@@ -738,7 +744,7 @@ fn search_with_two_hashtags() {
             ..default_new_entry()
         },
     ];
-    let (client, connections, mut search_engine) = setup2();
+    let (client, connections, mut search_engine, notify) = setup2();
     connections
         .exclusive()
         .unwrap()
@@ -756,7 +762,7 @@ fn search_with_two_hashtags() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, &notify, e, None)
                 .unwrap()
                 .id
         })
@@ -796,7 +802,7 @@ fn search_with_commata() {
             ..default_new_entry()
         },
     ];
-    let (client, connections, mut search_engine) = setup2();
+    let (client, connections, mut search_engine, notify) = setup2();
     connections
         .exclusive()
         .unwrap()
@@ -810,7 +816,7 @@ fn search_with_commata() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, &notify, e, None)
                 .unwrap()
                 .id
                 .to_string()
@@ -872,7 +878,7 @@ fn search_without_specifying_hashtag_symbol() {
             ..default_new_entry()
         },
     ];
-    let (client, connections, mut search_engine) = setup2();
+    let (client, connections, mut search_engine, notify) = setup2();
     connections
         .exclusive()
         .unwrap()
@@ -890,7 +896,7 @@ fn search_without_specifying_hashtag_symbol() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, e, None)
+            flows::create_place(&connections, &mut search_engine, &notify, e, None)
                 .unwrap()
                 .id
                 .to_string()
@@ -971,13 +977,13 @@ fn search_with_status() {
             ..default_new_entry()
         },
     ];
-    let (client, connections, mut search_engine) = setup2();
+    let (client, connections, mut search_engine, notify) = setup2();
 
     let places: Vec<_> = places
         .into_iter()
         .map(|p| {
             let status = p.title.clone();
-            let id = flows::create_place(&connections, &mut search_engine, p, None)
+            let id = flows::create_place(&connections, &mut search_engine, &notify, p, None)
                 .unwrap()
                 .id
                 .to_string();
@@ -1061,7 +1067,7 @@ fn create_new_user() {
 
 #[test]
 fn create_rating() {
-    let (client, connections, _) = setup2();
+    let (client, connections, _, _) = setup2();
     let entries = vec![Place::build().id("foo").finish()];
     for e in entries {
         connections
@@ -1090,7 +1096,7 @@ fn create_rating() {
 #[test]
 fn get_one_rating() {
     let e = Place::build().id("foo").finish();
-    let (client, connections, mut search_engine) = setup2();
+    let (client, connections, mut search_engine, _) = setup2();
     connections
         .exclusive()
         .unwrap()
@@ -1132,7 +1138,7 @@ fn get_one_rating() {
 fn ratings_with_and_without_source() {
     let e1 = Place::build().id("foo").finish();
     let e2 = Place::build().id("bar").finish();
-    let (client, connections, mut search_engine) = setup2();
+    let (client, connections, mut search_engine, _) = setup2();
     connections
         .exclusive()
         .unwrap()
@@ -1521,7 +1527,7 @@ fn openapi() {
 
 #[test]
 fn entries_export_csv() {
-    let (client, db, mut search_engine) = setup2();
+    let (client, db, mut search_engine, _) = setup2();
 
     let users = vec![
         User {

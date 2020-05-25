@@ -1,12 +1,12 @@
 use super::*;
-
 use crate::core::error::RepoError;
-
 use diesel::Connection;
+use ofdb_core::NotificationGateway;
 
 pub fn update_event(
     connections: &sqlite::Connections,
     indexer: &mut dyn EventIndexer,
+    notify: &dyn NotificationGateway,
     token: Option<&str>,
     id: Id,
     new_event: usecases::NewEvent,
@@ -55,7 +55,7 @@ pub fn update_event(
 
     // Send subscription e-mails
     // TODO: Move to a separate task/thread that doesn't delay this request
-    if let Err(err) = notify_event_updated(connections, &event) {
+    if let Err(err) = notify_event_updated(connections, notify, &event) {
         error!(
             "Failed to send notifications for updated event {}: {}",
             event.id, err
@@ -65,13 +65,17 @@ pub fn update_event(
     Ok(event)
 }
 
-fn notify_event_updated(connections: &sqlite::Connections, event: &Event) -> Result<()> {
+fn notify_event_updated(
+    connections: &sqlite::Connections,
+    notify: &dyn NotificationGateway,
+    event: &Event,
+) -> Result<()> {
     if let Some(ref location) = event.location {
         let email_addresses = {
             let conn = connections.shared()?;
             usecases::email_addresses_by_coordinate(&*conn, location.pos)?
         };
-        notify::event_updated(&email_addresses, event);
+        notify.event_updated(&email_addresses, event);
     }
     Ok(())
 }

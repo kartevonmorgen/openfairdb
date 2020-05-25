@@ -1,10 +1,11 @@
 use super::*;
-
 use diesel::connection::Connection;
+use ofdb_core::NotificationGateway;
 
 pub fn update_place(
     connections: &sqlite::Connections,
     indexer: &mut dyn PlaceIndexer,
+    notify: &dyn NotificationGateway,
     id: Id,
     update_place: usecases::UpdatePlace,
     account_email: Option<&str>,
@@ -52,7 +53,7 @@ pub fn update_place(
 
     // Send subscription e-mails
     // TODO: Move to a separate task/thread that doesn't delay this request
-    if let Err(err) = notify_place_updated(connections, &place) {
+    if let Err(err) = notify_place_updated(connections, notify, &place) {
         error!(
             "Failed to send notifications for updated place {}: {}",
             place.id, err
@@ -62,7 +63,11 @@ pub fn update_place(
     Ok(place)
 }
 
-fn notify_place_updated(connections: &sqlite::Connections, place: &Place) -> Result<()> {
+fn notify_place_updated(
+    connections: &sqlite::Connections,
+    notify: &dyn NotificationGateway,
+    place: &Place,
+) -> Result<()> {
     let (email_addresses, all_categories) = {
         let connection = connections.shared()?;
         let email_addresses =
@@ -70,6 +75,6 @@ fn notify_place_updated(connections: &sqlite::Connections, place: &Place) -> Res
         let all_categories = connection.all_categories()?;
         (email_addresses, all_categories)
     };
-    notify::place_updated(&email_addresses, &place, all_categories);
+    notify.place_updated(&email_addresses, &place, all_categories);
     Ok(())
 }

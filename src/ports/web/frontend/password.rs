@@ -1,5 +1,9 @@
 use super::view;
-use crate::{core::prelude::*, infrastructure::flows::prelude::*, ports::web::sqlite::Connections};
+use crate::{
+    core::prelude::*,
+    infrastructure::flows::prelude::*,
+    ports::web::{notify::*, sqlite::Connections},
+};
 use maud::Markup;
 use rocket::{
     self,
@@ -39,10 +43,11 @@ pub struct ResetPasswordRequest {
 #[post("/users/actions/reset-password-request", data = "<data>")]
 pub fn post_reset_password_request(
     db: Connections,
+    notify: Notify,
     data: Form<ResetPasswordRequest>,
 ) -> std::result::Result<Redirect, Flash<Redirect>> {
     let ResetPasswordRequest { email } = data.into_inner();
-    match reset_password_request(&db, &email) {
+    match reset_password_request(&db, &*notify, &email) {
         Err(_) => Err(Flash::error(
             Redirect::to(uri!(get_reset_password:token = _, success = _)),
             "Failed to request a password reset.",

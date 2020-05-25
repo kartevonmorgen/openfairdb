@@ -1,5 +1,4 @@
 use super::guards::*;
-
 use crate::{
     adapters::{self, json},
     core::{
@@ -11,10 +10,9 @@ use crate::{
         db::{sqlite, tantivy},
         error::AppError,
         flows::prelude as flows,
-        notify,
     },
+    ports::web::notify::*,
 };
-
 use rocket::{
     self,
     http::{ContentType, Cookie, Cookies, Status},
@@ -423,6 +421,7 @@ fn get_bbox_subscriptions(
 fn post_entry(
     account: Option<Account>,
     connections: sqlite::Connections,
+    notify: Notify,
     mut search_engine: tantivy::SearchEngine,
     body: Json<usecases::NewPlace>,
 ) -> Result<String> {
@@ -430,6 +429,7 @@ fn post_entry(
         flows::create_place(
             &connections,
             &mut search_engine,
+            &*notify,
             body.into_inner(),
             account.as_ref().map(|a| a.email()),
         )?
@@ -443,6 +443,7 @@ fn put_entry(
     account: Option<Account>,
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
+    notify: Notify,
     id: String,
     data: Json<usecases::UpdatePlace>,
 ) -> Result<String> {
@@ -450,6 +451,7 @@ fn put_entry(
         flows::update_place(
             &connections,
             &mut search_engine,
+            &*notify,
             id.into(),
             data.into_inner(),
             account.as_ref().map(|a| a.email()),

@@ -1,12 +1,12 @@
 use super::*;
-
 use crate::core::error::RepoError;
-
 use diesel::Connection;
+use ofdb_core::NotificationGateway;
 
 pub fn create_place(
     connections: &sqlite::Connections,
     indexer: &mut dyn PlaceIndexer,
+    notify: &dyn NotificationGateway,
     new_place: usecases::NewPlace,
     account_email: Option<&str>,
 ) -> Result<Place> {
@@ -50,7 +50,7 @@ pub fn create_place(
 
     // Send subscription e-mails
     // TODO: Move to a separate task/thread that doesn't delay this request
-    if let Err(err) = notify_place_added(connections, &place) {
+    if let Err(err) = notify_place_added(connections, notify, &place) {
         error!(
             "Failed to send notifications for newly added place {}: {}",
             place.id, err
@@ -60,7 +60,11 @@ pub fn create_place(
     Ok(place)
 }
 
-fn notify_place_added(connections: &sqlite::Connections, place: &Place) -> Result<()> {
+fn notify_place_added(
+    connections: &sqlite::Connections,
+    notify: &dyn NotificationGateway,
+    place: &Place,
+) -> Result<()> {
     let (email_addresses, all_categories) = {
         let connection = connections.shared()?;
         let email_addresses =
@@ -68,6 +72,6 @@ fn notify_place_added(connections: &sqlite::Connections, place: &Place) -> Resul
         let all_categories = connection.all_categories()?;
         (email_addresses, all_categories)
     };
-    notify::place_added(&email_addresses, place, all_categories);
+    notify.place_added(&email_addresses, place, all_categories);
     Ok(())
 }

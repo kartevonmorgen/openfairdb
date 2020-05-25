@@ -2,8 +2,7 @@ use super::login::LoginCredentials;
 use super::view;
 use crate::{
     core::{prelude::*, usecases},
-    infrastructure::notify,
-    ports::web::sqlite::Connections,
+    ports::web::{notify::*, sqlite::Connections},
 };
 use maud::Markup;
 use rocket::{
@@ -21,6 +20,7 @@ pub fn get_register(flash: Option<FlashMessage>) -> Markup {
 #[post("/register", data = "<credentials>")]
 pub fn post_register(
     db: Connections,
+    notify: Notify,
     credentials: Form<LoginCredentials>,
 ) -> std::result::Result<Flash<Redirect>, Flash<Redirect>> {
     match db.exclusive() {
@@ -28,6 +28,7 @@ pub fn post_register(
             Redirect::to(uri!(get_register)),
             "We are so sorry! An internal server error has occurred. Please try again later.",
         )),
+        //TODO: move into flow layer
         Ok(mut db) => {
             let credentials = credentials.into_inner();
             match usecases::register_with_email(&mut *db, &credentials.as_login()) {
@@ -46,7 +47,7 @@ pub fn post_register(
                 Ok(()) => {
                     if let Ok(user) = db.get_user_by_email(&credentials.email) {
                         debug_assert_eq!(user.email, credentials.email);
-                        notify::user_registered_ofdb(&user);
+                        notify.user_registered_ofdb(&user);
 
                         let msg = "Registered sucessfully. Please confirm your email address.";
                         return Ok(Flash::success(

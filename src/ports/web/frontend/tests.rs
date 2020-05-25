@@ -41,9 +41,8 @@ fn login_user(client: &Client, name: &str) {
 
 mod events {
     use super::*;
-    use chrono::prelude::*;
-
     use crate::infrastructure::flows::prelude as flows;
+    use chrono::prelude::*;
 
     #[test]
     fn search_events() {
@@ -105,10 +104,11 @@ mod events {
                 ..Default::default()
             },
         ];
+        let gw = DummyNotifyGW;
         let event_ids = {
             let mut event_ids = Vec::with_capacity(new_events.len());
             for e in new_events {
-                let e = flows::create_event(&db, &mut search_engine, None, e).unwrap();
+                let e = flows::create_event(&db, &mut search_engine, &gw, None, e).unwrap();
                 event_ids.push(e.id);
             }
             event_ids
@@ -225,10 +225,11 @@ mod events {
                 ..Default::default()
             },
         ];
+        let gw = DummyNotifyGW;
         let event_ids = {
             let mut event_ids = Vec::with_capacity(new_events.len());
             for e in new_events {
-                let e = flows::create_event(&db, &mut search_engine, None, e).unwrap();
+                let e = flows::create_event(&db, &mut search_engine, &gw, None, e).unwrap();
                 event_ids.push(e.id);
             }
             event_ids
@@ -307,8 +308,7 @@ mod index {
 
 mod entry {
     use super::*;
-    use crate::core::usecases;
-    use crate::infrastructure::flows;
+    use crate::{core::usecases, infrastructure::flows};
 
     fn create_place_with_rating(
         db: &sqlite::Connections,
@@ -334,7 +334,8 @@ mod entry {
             image_url: None,
             image_link_url: None,
         };
-        let e_id = flows::prelude::create_place(db, search, e, None)
+        let gw = DummyNotifyGW;
+        let e_id = flows::prelude::create_place(db, search, &gw, e, None)
             .unwrap()
             .id;
         let r = usecases::NewPlaceRating {
