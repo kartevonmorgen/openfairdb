@@ -2,6 +2,7 @@
 
 ## unreleased (YYYY-mm-dd)
 
+- new(web): Add CORS support
 - fix(doc): Fix API docs for PUT /entries
 
 ## v0.8.19 (2020-05-20)
