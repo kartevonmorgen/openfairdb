@@ -1,11 +1,72 @@
 use chrono::*;
 use fast_chemail::is_valid_email;
+use ofdb_core::EmailGateway;
+use ofdb_entities::email::*;
+#[cfg(not(test))]
 use std::{
-    io::{prelude::*, Error, ErrorKind, Result},
+    io::prelude::*,
     process::{Command, Stdio},
 };
+use std::{
+    io::{Error, ErrorKind, Result},
+    thread,
+};
 
-const FROM_ADDRESS: &str = "\"Karte von morgen\" <no-reply@kartevonmorgen.org>";
+pub struct SendmailGateway {
+    from: Email,
+}
+
+impl SendmailGateway {
+    pub fn new(from: Email) -> Self {
+        Self { from }
+    }
+    fn send(&self, mail: String) {
+        thread::spawn(move || {
+            if let Err(err) = send_raw(&mail) {
+                warn!("Could not send e-mail: {}", err);
+            }
+        });
+    }
+}
+
+#[cfg(not(test))]
+fn send_raw(mail: &str) -> Result<()> {
+    let mut child = Command::new("sendmail")
+        .arg("-t")
+        .stdin(Stdio::piped())
+        .spawn()?;
+    child
+        .stdin
+        .as_mut()
+        .ok_or_else(|| Error::new(ErrorKind::Other, "Could not get stdin"))?
+        .write_all(mail.as_bytes())?;
+    child.wait_with_output()?;
+    Ok(())
+}
+
+/// Don't actually send emails while running the tests or
+/// if the `email` feature is disabled.
+#[cfg(test)]
+fn send_raw(email: &str) -> Result<()> {
+    debug!("Would send e-mail: {}", email);
+    Ok(())
+}
+
+impl EmailGateway for SendmailGateway {
+    fn compose_and_send(&self, recipients: &[Email], subject: &str, body: &str) {
+        debug!("Sending e-mails to: {:?}", recipients);
+        for to in recipients {
+            match compose(&self.from, &[to], subject, body) {
+                Ok(email) => {
+                    self.send(email);
+                }
+                Err(err) => {
+                    warn!("Failed to compose e-mail: {}", err);
+                }
+            }
+        }
+    }
+}
 
 // quoted_printable limits the length of lines to 76 chars
 // and otherwise inserts unintended line breaks! The max.
@@ -73,7 +134,7 @@ fn encode_header_field(name: &str, input: &str) -> String {
     encoded_output
 }
 
-pub fn compose(to: &[&str], subject: &str, body: &str) -> Result<String> {
+pub fn compose(from: &str, to: &[&str], subject: &str, body: &str) -> Result<String> {
     let to: Vec<_> = to.iter().filter(|m| is_valid_email(m)).cloned().collect();
 
     if to.is_empty() {
@@ -94,7 +155,7 @@ pub fn compose(to: &[&str], subject: &str, body: &str) -> Result<String> {
          Content-Type:text/plain;charset=utf-8\r\n\r\n\
          {body}",
         date = now.to_rfc2822(),
-        from = FROM_ADDRESS,
+        from = from,
         to = to.join(","),
         subject_header = encode_header_field("Subject", &subject),
         body = body
@@ -105,20 +166,6 @@ pub fn compose(to: &[&str], subject: &str, body: &str) -> Result<String> {
     Ok(email)
 }
 
-pub fn send(mail: &str) -> Result<()> {
-    let mut child = Command::new("sendmail")
-        .arg("-t")
-        .stdin(Stdio::piped())
-        .spawn()?;
-    child
-        .stdin
-        .as_mut()
-        .ok_or_else(|| Error::new(ErrorKind::Other, "Could not get stdin"))?
-        .write_all(mail.as_bytes())?;
-    child.wait_with_output()?;
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -126,11 +173,12 @@ mod tests {
     #[test]
     fn create_simple_mail() {
         let mail = compose(
+            "\"OFDB\" <from@ofdb.io>", 
             &["mail@test.org"],
             "My veeeeerrrrryyyyy looooonnnnnggggg Subject with äöüÄÖÜß Umlaute and even more characters that are distributed onto multiple lines",
             "Hello Mail",
         ).unwrap();
-        let expected = "From:\"Karte von morgen\" <no-reply@kartevonmorgen.org>\r\n\
+        let expected = "From:\"OFDB\" <from@ofdb.io>\r\n\
              To:mail@test.org\r\n\
              Subject:=?UTF-8?Q?My veeeeerrrrryyyyy looooonnnnnggggg Subject with =C3=A4?=\r\n \
              =?UTF-8?Q?=C3=B6=C3=BC=C3=84=C3=96=C3=9C=C3=9F Umlaute and even more char?=\r\n \
@@ -143,7 +191,7 @@ mod tests {
 
     #[test]
     fn check_addresses() {
-        assert!(compose(&[], "foo", "bar").is_err());
-        assert!(compose(&["not-valid"], "foo", "bar").is_err());
+        assert!(compose("from@mail.org", &[], "foo", "bar").is_err());
+        assert!(compose("from", &["not-valid"], "foo", "bar").is_err());
     }
 }

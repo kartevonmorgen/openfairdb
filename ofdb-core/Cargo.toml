@@ -1,18 +1,9 @@
 [package]
-name = "ofdb-gateways"
+name = "ofdb-core"
 version = "0.0.0" # will stay 0.0.0 until published
 authors = ["slowtec GmbH <post@slowtec.de>"]
 edition = "2018"
 publish = false
 
 [dependencies]
-chrono = "*"
-fast_chemail = "*"
-geocoding = "*"
-itertools = "*"
-lazy_static = "*"
-log = "*"
-ofdb-core = "*"
 ofdb-entities = "*"
-quoted_printable = "*"
-url = "2"

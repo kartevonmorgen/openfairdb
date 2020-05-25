@@ -10,6 +10,7 @@ edition = "2018"
 
 [patch.crates-io]
 ofdb-boundary = { path = "ofdb-boundary" }
+ofdb-core = { path = "ofdb-core" }
 ofdb-entities = { path = "ofdb-entities" }
 ofdb-gateways = { path = "ofdb-gateways" }
 
@@ -17,6 +18,7 @@ ofdb-gateways = { path = "ofdb-gateways" }
 members = [
   ".",
   "ofdb-boundary",
+  "ofdb-core",
   "ofdb-entities",
   "ofdb-gateways",
 ]
@@ -39,6 +41,7 @@ log = "*"
 num-traits = "*"
 maud = { version = "*", optional = true, features = ["rocket"] }
 ofdb-boundary = "*"
+ofdb-core = "*"
 ofdb-entities = "*"
 ofdb-gateways = "*"
 openssl = { version = "*", features = ["vendored"] }

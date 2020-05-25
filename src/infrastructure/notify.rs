@@ -1,39 +1,30 @@
 use crate::core::prelude::*;
+#[cfg(all(not(test), feature = "email"))]
+use ofdb_core::EmailGateway;
+#[cfg(all(not(test), feature = "email"))]
+use ofdb_gateways::sendmail;
 #[cfg(feature = "email")]
-use ofdb_gateways::{sendmail, user_communication};
+use ofdb_gateways::user_communication;
 
 #[cfg(all(not(test), feature = "email"))]
-fn send_email(mail: String) {
-    std::thread::spawn(move || {
-        if let Err(err) = sendmail::send(&mail) {
-            warn!("Could not send e-mail: {}", err);
-        }
-    });
-}
+const FROM_ADDRESS: &str = "\"Karte von morgen\" <no-reply@kartevonmorgen.org>";
 
 /// Don't actually send emails while running the tests or
 /// if the `email` feature is disabled.
 #[cfg(all(test, feature = "email"))]
-fn send_email(email: String) {
-    debug!("Would send e-mail: {}", email);
+fn compose_and_send_emails(recipients: &[String], subject: &str, body: &str) {
+    debug!(
+        "Would compose e-mails to {:?} with subject '{}' and body '{}'",
+        recipients, subject, body
+    );
 }
 
-#[cfg(feature = "email")]
-pub fn compose_and_send_email(to: &str, subject: &str, body: &str) {
-    match sendmail::compose(&[to], subject, body) {
-        Ok(email) => send_email(email),
-        Err(err) => {
-            warn!("Failed to compose e-mail: {}", err);
-        }
-    }
-}
-
-#[cfg(feature = "email")]
-pub fn compose_and_send_emails(recipients: &[String], subject: &str, body: &str) {
-    debug!("Sending e-mails to: {:?}", recipients);
-    for to in recipients {
-        compose_and_send_email(to, subject, body);
-    }
+#[cfg(all(not(test), feature = "email"))]
+fn compose_and_send_emails(recipients: &[String], subject: &str, body: &str) {
+    let gw = sendmail::SendmailGateway::new(Email::from(FROM_ADDRESS));
+    // TODO: take &[Email] as argument
+    let rec: Vec<_> = recipients.iter().cloned().map(Email::from).collect();
+    gw.compose_and_send(&rec, subject, body);
 }
 
 pub fn place_added(email_addresses: &[String], place: &Place, all_categories: Vec<Category>) {
@@ -134,7 +125,7 @@ pub fn user_registered(user: &User, url: &str) {
     #[cfg(feature = "email")]
     {
         info!("Sending confirmation e-mail to user {}", user.email);
-        compose_and_send_email(&user.email, &content.subject, &content.body);
+        compose_and_send_emails(&[user.email.clone()], &content.subject, &content.body);
     }
 }
 
