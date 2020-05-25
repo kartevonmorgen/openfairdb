@@ -4,7 +4,7 @@ use crate::{
     ports::web,
 };
 
-use clap::{App, Arg, crate_authors};
+use clap::{crate_authors, App, Arg};
 use dotenv::dotenv;
 use ofdb_gateways::opencage;
 use std::{env, path::Path};

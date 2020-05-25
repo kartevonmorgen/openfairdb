@@ -1,4 +1,5 @@
-use crate::core::{db::IndexedPlace, entities as e, util::geo::MapPoint};
+use crate::core::{db::IndexedPlace, entities as e};
+use ofdb_entities::geo::MapPoint;
 use url::Url;
 
 pub use ofdb_boundary::*;

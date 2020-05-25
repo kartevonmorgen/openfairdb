@@ -1,6 +1,6 @@
-use crate::{adapters::user_communication, core::prelude::*};
+use crate::core::prelude::*;
 #[cfg(feature = "email")]
-use ofdb_gateways::sendmail;
+use ofdb_gateways::{sendmail, user_communication};
 
 #[cfg(all(not(test), feature = "email"))]
 fn send_email(mail: String) {

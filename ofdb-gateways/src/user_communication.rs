@@ -1,5 +1,4 @@
-use crate::core::prelude::*;
-
+use ofdb_entities::{address::*, contact::*, event::*, place::*};
 use url::Url;
 
 pub struct EmailContent {
@@ -199,8 +198,8 @@ das Karte von morgen-Team\n
 #[cfg(test)]
 mod tests {
     use super::*;
-
     use chrono::Utc;
+    use ofdb_entities::{activity::*, geo::*, links::*, location::*};
 
     // To verify the formatting manually run these tests and examine
     // the output on stdout:
