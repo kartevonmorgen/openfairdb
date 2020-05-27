@@ -1,8 +1,10 @@
-use crate::{sendmail::SendmailGateway, user_communication};
+use crate::{mailgun::Mailgun, sendmail::SendmailGateway, user_communication};
 use ofdb_core::{EmailGateway, NotificationGateway};
 use ofdb_entities::{category::*, email::*, event::*, nonce::*, place::*, user::*};
+use std::env;
 
 const FROM_ADDRESS: &str = "\"Karte von morgen\" <no-reply@kartevonmorgen.org>";
+const DOMAIN: &str = "kartevonmorgen.org";
 
 pub struct NotificationGW {
     email_gw: Box<dyn EmailGateway + Send + Sync + 'static>,
@@ -10,8 +12,20 @@ pub struct NotificationGW {
 
 impl NotificationGW {
     pub fn new() -> Self {
-        Self {
-            email_gw: Box::new(SendmailGateway::new(Email::from(FROM_ADDRESS))),
+        match env::var("MAILGUN_API_KEY") {
+            Ok(api_key) => Self {
+                email_gw: Box::new(Mailgun {
+                    from_email: Email::from(FROM_ADDRESS),
+                    domain: DOMAIN.to_string(),
+                    api_key,
+                }),
+            },
+            Err(_) => {
+                warn!("No Mailgun API key found: Use sendmail as fallback");
+                Self {
+                    email_gw: Box::new(SendmailGateway::new(Email::from(FROM_ADDRESS))),
+                }
+            }
         }
     }
 }
