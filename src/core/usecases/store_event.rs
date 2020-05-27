@@ -1,6 +1,6 @@
-use super::create_user_from_email;
 use crate::core::{
     prelude::*,
+    usecases::create_user_from_email,
     util::{
         parse::parse_url_param,
         validate::{AutoCorrect, Validate},
@@ -83,7 +83,7 @@ pub fn import_new_event<D: Db>(
         })
         .transpose()?;
     let mut tags =
-        super::prepare_tag_list(tags.unwrap_or_else(|| vec![]).iter().map(String::as_str));
+        super::prepare_tag_list(tags.unwrap_or_else(Vec::new).iter().map(String::as_str));
     if super::check_and_count_owned_tags(db, &tags, org.as_ref())? == 0 {
         if let Some(mut org) = org {
             // Implicitly add missing owned tags to prevent events with

@@ -53,8 +53,6 @@ pub enum ParameterError {
     InvalidPosition,
     #[error("Invalid limit")]
     InvalidLimit,
-    #[error("Invalid role")]
-    Role,
     #[error("Token invalid")]
     TokenInvalid,
     #[error("Token expired")]
@@ -69,8 +67,6 @@ pub enum ParameterError {
 pub enum RepoError {
     #[error("The requested object could not be found")]
     NotFound,
-    #[error("Too many instead of only one requested object has been found")]
-    TooManyFound,
     #[cfg(test)]
     #[error("The object already exists")]
     AlreadyExists,

@@ -36,6 +36,7 @@ fn update_event_locations<D: Db>(db: &mut D) -> Result<()> {
     Ok(())
 }
 
+#[allow(deprecated)]
 pub fn run() {
     dotenv().ok();
     let matches = App::new("openFairDB")
