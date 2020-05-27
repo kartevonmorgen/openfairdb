@@ -1,17 +1,16 @@
 use ::geocoding::{Forward, Opencage};
 use itertools::Itertools;
-use lazy_static::lazy_static;
+use ofdb_core::GeoCodingGateway;
 use ofdb_entities::address::Address;
-use std::env;
 
-lazy_static! {
-    static ref OC_API_KEY: Option<String> = match env::var("OPENCAGE_API_KEY") {
-        Ok(key) => Some(key),
-        Err(_) => {
-            warn!("No OpenCage API key found");
-            None
-        }
-    };
+pub struct OpenCage {
+    api_key: Option<String>,
+}
+
+impl OpenCage {
+    pub fn new(api_key: Option<String>) -> Self {
+        Self { api_key }
+    }
 }
 
 fn address_to_forward_query_string(addr: &Address) -> String {
@@ -37,14 +36,15 @@ fn oc_resolve_address_lat_lng(oc_api_key: String, addr: &Address) -> Option<(f64
     None
 }
 
-//TODO: use a trait for the geocoding API and test it with a mock
-pub fn resolve_address_lat_lng(addr: &Address) -> Option<(f64, f64)> {
-    if addr.is_empty() {
-        None
-    } else {
-        OC_API_KEY
-            .as_ref()
-            .and_then(|key| oc_resolve_address_lat_lng(key.clone(), addr))
+impl GeoCodingGateway for OpenCage {
+    fn resolve_address_lat_lng(&self, addr: &Address) -> Option<(f64, f64)> {
+        if addr.is_empty() {
+            None
+        } else {
+            self.api_key
+                .as_ref()
+                .and_then(|key| oc_resolve_address_lat_lng(key.clone(), addr))
+        }
     }
 }
 

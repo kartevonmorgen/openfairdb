@@ -97,6 +97,17 @@ If you want to get stacktraces on panics use
 export RUST_BACKTRACE=1
 ```
 
+## Mailing
+
+To be able to send email notifications you need to define
+a sender email address. You can do this by setting the
+`MAIL_GATEWAY_SENDER_ADDRESS` environment variable.
+If you like to use the [mailgun](https://mailgun.com)
+service you also need to define the
+`MAILGUN_API_KEY` variable with your API key
+and the `MAILGUN_DOMAIN` variable with the domain
+you are setup for mailgun.
+
 ### Docker
 
 #### Build the image

@@ -12,11 +12,12 @@ use std::{
     thread,
 };
 
-pub struct SendmailGateway {
+#[derive(Debug, Clone)]
+pub struct Sendmail {
     from: Email,
 }
 
-impl SendmailGateway {
+impl Sendmail {
     pub fn new(from: Email) -> Self {
         Self { from }
     }
@@ -52,7 +53,7 @@ fn send_raw(email: &str) -> Result<()> {
     Ok(())
 }
 
-impl EmailGateway for SendmailGateway {
+impl EmailGateway for Sendmail {
     fn compose_and_send(&self, recipients: &[Email], subject: &str, body: &str) {
         debug!("Sending e-mails to: {:?}", recipients);
         for to in recipients {

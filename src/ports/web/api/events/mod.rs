@@ -5,9 +5,9 @@ use crate::{
         prelude::Result as CoreResult,
         util::{geo::MapBbox, validate},
     },
-    infrastructure::flows::prelude as flows,
+    infrastructure::{flows::prelude as flows, GEO_CODING_GW},
 };
-use ofdb_gateways::opencage::*;
+use ofdb_core::GeoCodingGateway;
 
 use rocket::{
     http::{RawStr, Status as HttpStatus},
@@ -35,20 +35,23 @@ fn check_and_set_address_location(e: &mut usecases::NewEvent) -> Option<MapPoint
         country: e.country.clone(),
         state: e.state.clone(),
     };
-    resolve_address_lat_lng(&addr).and_then(|(lat, lng)| {
-        let pos = MapPoint::try_from_lat_lng_deg(lat, lng);
-        if pos.unwrap_or_default().is_valid() {
-            log::debug!(
-                "Updating event location: ({:?}, {:?}) -> {:?}",
-                e.lat,
-                e.lng,
-                pos
-            );
-            e.lat = Some(lat);
-            e.lng = Some(lng);
-        }
-        pos
-    })
+
+    GEO_CODING_GW
+        .resolve_address_lat_lng(&addr)
+        .and_then(|(lat, lng)| {
+            let pos = MapPoint::try_from_lat_lng_deg(lat, lng);
+            if pos.unwrap_or_default().is_valid() {
+                log::debug!(
+                    "Updating event location: ({:?}, {:?}) -> {:?}",
+                    e.lat,
+                    e.lng,
+                    pos
+                );
+                e.lat = Some(lat);
+                e.lng = Some(lng);
+            }
+            pos
+        })
 }
 
 #[post("/events", format = "application/json", data = "<e>")]

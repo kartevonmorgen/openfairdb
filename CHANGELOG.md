@@ -2,6 +2,7 @@
 
 ## unreleased (YYYY-mm-dd)
 
+- new(web): Support sending emails via [mailgun](https://www.mailgun.com/)
 - new(web): Add CORS support
 - fix(doc): Fix API docs for PUT /entries
 - fix(doc): Add missing API docs for subscriptions

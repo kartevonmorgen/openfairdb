@@ -5,6 +5,7 @@ use std::io::{Error, ErrorKind};
 use std::{io::Result, thread};
 
 /// An email notification manager based on mailgun.net.
+#[derive(Debug, Clone)]
 pub struct Mailgun {
     pub api_key: String,
     pub domain: String,

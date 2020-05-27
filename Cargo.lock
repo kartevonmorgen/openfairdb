@@ -1484,7 +1484,6 @@ dependencies = [
  "fast_chemail 0.9.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "geocoding 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "itertools 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "lazy_static 1.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "log 0.4.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "ofdb-core 0.0.0",
  "ofdb-entities 0.0.0",

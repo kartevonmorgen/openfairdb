@@ -10,7 +10,6 @@ chrono = "*"
 fast_chemail = "*"
 geocoding = "*"
 itertools = "*"
-lazy_static = "*"
 log = "*"
 reqwest = "0.9" # TODO: update to v0.10.x
 ofdb-core = "*"
