@@ -6,6 +6,7 @@
 - new(web): Add CORS support
 - fix(doc): Fix API docs for PUT /entries
 - fix(doc): Add missing API docs for subscriptions
+- chore(web): update rocket: v0.4.4 -> v0.4.5
 
 ## v0.8.19 (2020-05-20)
 
