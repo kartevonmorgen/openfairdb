@@ -10,7 +10,7 @@ written in [Rust](http://rustlang.org/).
 
 ## Schnittstelle: REST API
 
-The API is available under `http://api.ofdb.io/v0/`.
+The Test-API is available under `http://dev.ofdb.io/v0/`.
 
 The current API is documented within the [openapi.yaml](https://github.com/kartevonmorgen/openfairdb/blob/master/openapi.yaml) file.
 You can render the API documentation e.g. with the swagger editor:
@@ -23,7 +23,8 @@ You can render the API documentation e.g. with the swagger editor:
 An other way to see how the API can be used, you can open the `network` tab in the developer
 tools of your browser and see the requests that are made to `https://kartevonmorgen.org`.
 
-If you want to use the API in your project, please contact us at helmut@bildungsagenten.com.
+If you want to use the API in your project, please contact us at helmut@kartevonmorgen.com.
+When your aplication is running stable you can switch from the dev.ofdb.io to the prductive api.ofdb.io.
 The API might still change sometimes. We will try to let you know in that case.
 
 ## Quick start
