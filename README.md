@@ -8,7 +8,7 @@ written in [Rust](http://rustlang.org/).
 [![dependency status](https://deps.rs/repo/github/kartevonmorgen/openfairdb/status.svg)](https://deps.rs/repo/github/kartevonmorgen/openfairdb)
 [![License](https://img.shields.io/badge/license-AGPLv3-blue.svg?style=flat)](https://github.com/kartevonmorgen/openfairdb/blob/master/LICENSE)
 
-## REST API
+##Schnittstelle: REST API
 
 The API is available under `http://api.ofdb.io/v0/`.
 
