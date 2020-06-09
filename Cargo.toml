@@ -63,6 +63,7 @@ uuid = { version = "*", features = ["v4"] }
 [dev-dependencies]
 rand = "*"
 ofdb-boundary = { version = "*", features = ["extra-derive"] }
+ofdb-entities = { version = "*", features = ["builders"] }
 
 [features]
 default = ["email","frontend"]

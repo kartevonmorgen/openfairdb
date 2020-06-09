@@ -24,6 +24,7 @@ impl Rated for Place {
 pub mod tests {
     use super::*;
     use crate::test::Bencher;
+    use ofdb_entities::{builders::*, id::*, time::*};
 
     fn new_place(id: &str) -> Place {
         Place::build().id(id).finish()

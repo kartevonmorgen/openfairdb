@@ -7,3 +7,6 @@ publish = false
 
 [dependencies]
 ofdb-entities = "*"
+
+[dev-dependencies]
+ofdb-entities = { version = "*", features = ["builders"] }

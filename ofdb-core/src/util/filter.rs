@@ -73,6 +73,7 @@ pub fn split_text_to_words(txt: &str) -> Vec<String> {
 mod tests {
 
     use super::*;
+    use ofdb_entities::builders::*;
 
     #[test]
     fn is_in_bounding_box() {
