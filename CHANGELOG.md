@@ -7,6 +7,7 @@
 - fix(doc): Fix API docs for PUT /entries
 - fix(doc): Add missing API docs for subscriptions
 - chore(web): update rocket: v0.4.4 -> v0.4.5
+- chore(*): use `rustls` instead of OpenSSL
 
 ## v0.8.19 (2020-05-20)
 
