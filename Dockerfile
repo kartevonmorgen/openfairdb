@@ -38,7 +38,9 @@ RUN USER=root cargo new --bin ${PROJECT_NAME}
 WORKDIR ${WORKDIR_ROOT}/${PROJECT_NAME}
 
 RUN USER=root cargo new --lib ofdb-boundary
+RUN USER=root cargo new --lib ofdb-core
 RUN USER=root cargo new --lib ofdb-entities
+RUN USER=root cargo new --lib ofdb-gateways
 
 COPY [ \
     "Cargo.toml", \
@@ -48,8 +50,14 @@ COPY [ \
     "ofdb-boundary/Cargo.toml", \
     "./ofdb-boundary/" ]
 COPY [ \
+    "ofdb-core/Cargo.toml", \
+    "./ofdb-core/" ]
+COPY [ \
     "ofdb-entities/Cargo.toml", \
     "./ofdb-entities/" ]
+COPY [ \
+    "ofdb-gateways/Cargo.toml", \
+    "./ofdb-gateways/" ]
 
 # Build the dummy project(s), then delete all build artefacts that must(!) not be cached
 RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
@@ -60,7 +68,11 @@ RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
     && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_boundary-* \
     && \
+    rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_core-* \
+    && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_entities-* \
+    && \
+    rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_gateways-* \
     && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/${PROJECT_NAME}-* \
     && \
@@ -79,8 +91,14 @@ COPY [ \
     "ofdb-boundary/src", \
     "./ofdb-boundary/src/" ]
 COPY [ \
+    "ofdb-core/src", \
+    "./ofdb-core/src/" ]
+COPY [ \
     "ofdb-entities/src", \
     "./ofdb-entities/src/" ]
+COPY [ \
+    "ofdb-gateways/src", \
+    "./ofdb-gateways/src/" ]
 COPY [ \
     "openapi.yaml", \
     "./" ]
