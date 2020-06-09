@@ -29,7 +29,7 @@ impl Mailgun {
 
 #[cfg(not(test))]
 fn send_raw(url: &str, api_key: &str, params: Vec<(&'static str, String)>) -> Result<()> {
-    let client = reqwest::Client::new();
+    let client = reqwest::blocking::Client::new();
     let res = client
         .post(url)
         .form(&params)
