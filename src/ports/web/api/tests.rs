@@ -414,6 +414,46 @@ fn search_with_text() {
 }
 
 #[test]
+fn search_partial_text() {
+    let entries = vec![
+        new_entry_with_text("Foo", "bla", 1.0, 1.0),
+        new_entry_with_text("bar", "foo", 2.0, 2.0),
+        new_entry_with_text("baZ", "blub", 3.0, 3.0),
+        new_entry_with_text("foo-bar-BaZ", "blub-blub", 1.0, 1.0),
+    ];
+    let (client, connections, mut search_engine, notify) = setup2();
+    let place_ids: Vec<_> = entries
+        .into_iter()
+        .map(|e| {
+            flows::create_place(&connections, &mut search_engine, &notify, e, None)
+                .unwrap()
+                .id
+                .to_string()
+        })
+        .collect();
+
+    let req = client.get("/search?bbox=-10,-10,10,10&text=bar-baz");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    test_json(&response);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
+    assert!(body_str.contains(&format!("\"{}\"", place_ids[3])));
+
+    let req = client.get("/search?bbox=-10,-10,10,10&text=blub-");
+    let mut response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    test_json(&response);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
+    assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
+    assert!(body_str.contains(&format!("\"{}\"", place_ids[2]))); // trailing '-' is ignored by Tantivy!
+    assert!(body_str.contains(&format!("\"{}\"", place_ids[3])));
+}
+
+#[test]
 fn search_with_text_terms_inclusive_exclusive() {
     let entries = vec![
         new_entry_with_text("foo", "bar", 1.0, 1.0),
