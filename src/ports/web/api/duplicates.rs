@@ -8,7 +8,6 @@ use crate::{
     infrastructure::db::sqlite,
 };
 use rocket_contrib::json::Json;
-use crate::core::usecases::create_place;
 
 #[post("/duplicates/check-place", data = "<body>")]
 pub fn post_duplicates(
@@ -23,13 +22,7 @@ pub fn post_duplicates(
         let db = db.shared()?;
         db.all_places()?
     };
-
-    let connection = db.exclusive()?;
-    let target_place = create_place(&*connection, new_place, None)?;
-    let results = usecases::find_duplicate_places(
-        &target_place,
-        &possible_duplicate_entries
-    );
+    let results = usecases::find_duplicate_place(&new_place, &possible_duplicate_entries);
     Ok(Json(
         results
             .into_iter()

@@ -29,11 +29,11 @@ pub struct NewPlace {
 #[derive(Debug, Clone)]
 pub struct Storable(Place);
 
-pub fn create_place<D: Db>(
+pub fn prepare_new_place<D: Db>(
     db: &D,
     e: NewPlace,
     created_by_email: Option<&str>,
-) -> Result<Place> {
+) -> Result<Storable> {
     let NewPlace {
         title,
         description,
@@ -127,15 +127,6 @@ pub fn create_place<D: Db>(
         tags,
     };
     place.validate()?;
-    Ok(place)
-}
-
-pub fn prepare_new_place<D: Db>(
-    db: &D,
-    e: NewPlace,
-    created_by_email: Option<&str>,
-) -> Result<Storable> {
-    let place = create_place(db, e, created_by_email)?;
     Ok(Storable(place))
 }
 

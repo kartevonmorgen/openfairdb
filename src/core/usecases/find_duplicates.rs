@@ -27,17 +27,11 @@ pub fn find_duplicates(
     duplicates
 }
 
-pub fn find_duplicate_places(
-    new_place: &Place,
+pub fn find_duplicate_place(
+    new_place: &usecases::NewPlace,
     possible_duplicate_places: &[(Place, ReviewStatus)],
 ) -> Vec<(Id, DuplicateType)> {
-    let mut duplicates = Vec::new();
-    for (p, _) in &possible_duplicate_places[..] {
-        if let Some(t) = is_duplicate(new_place, p) {
-            duplicates.push((p.id.clone(), t));
-        }
-    }
-    duplicates
+    todo!()
 }
 
 const DUPLICATE_MAX_DISTANCE: Distance = Distance::from_meters(100.0);
