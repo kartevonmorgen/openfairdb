@@ -2,6 +2,8 @@
 
 ## unreleased (YYYY-mm-dd)
 
+## v0.8.20 (2020-06-10)
+
 - new(web): Support sending emails via [mailgun](https://www.mailgun.com/)
 - new(web): Add CORS support
 - fix(doc): Fix API docs for PUT /entries
