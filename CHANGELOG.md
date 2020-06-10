@@ -6,6 +6,7 @@
 - new(web): Add CORS support
 - fix(doc): Fix API docs for PUT /entries
 - fix(doc): Add missing API docs for subscriptions
+- fix(db): Fix parsing of text queries to enable searching for sub-terms
 - chore(web): update rocket: v0.4.4 -> v0.4.5
 - chore(*): use `rustls` instead of OpenSSL
 
