@@ -88,25 +88,16 @@ impl IndexedFields {
                     .set_index_option(IndexRecordOption::WithFreqs),
             )
             .set_stored();
-        let address_options = TextOptions::default()
-            .set_indexing_options(
-                TextFieldIndexing::default()
-                    .set_tokenizer(TEXT_TOKENIZER)
-                    .set_index_option(IndexRecordOption::WithFreqs),
-            )
-            // Address fields currently are currently not store stored
-            // until they also need to be provided as search results.
-            //.set_stored()
-            ;
-        let text_options = TextOptions::default()
-            .set_indexing_options(
-                TextFieldIndexing::default()
-                    .set_tokenizer(TEXT_TOKENIZER)
-                    // IndexRecordOption::WithFreqsAndPositions: Positions are not
-                    // needed as long as no PhraseQuery is used.
-                    .set_index_option(IndexRecordOption::WithFreqs),
-            )
-            .set_stored();
+        let common_text_options = TextOptions::default().set_indexing_options(
+            TextFieldIndexing::default()
+                .set_tokenizer(TEXT_TOKENIZER)
+                .set_index_option(IndexRecordOption::WithFreqsAndPositions),
+        );
+        // Unlike the other text fields address fields currently are currently
+        // dot not need to be stored until they also need to be provided as
+        // search results.
+        let address_options = common_text_options.clone();
+        let text_options = common_text_options.set_stored();
         let mut schema_builder = SchemaBuilder::default();
         let fields = Self {
             kind: schema_builder.add_i64_field("kind", INDEXED),
