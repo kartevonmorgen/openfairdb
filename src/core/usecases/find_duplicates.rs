@@ -1,4 +1,4 @@
-use crate::core::{prelude::*};
+use crate::core::{prelude::*, usecases};
 use std::{cmp::min, collections::HashSet};
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -19,7 +19,9 @@ pub fn find_duplicates(
             if p1.id >= p2.id {
                 continue;
             }
-            if let Some(t) = is_duplicate(p1, p2) {
+            let p1_base = PlaceBase::from(p1);
+            let p2_base = PlaceBase::from(p2);
+            if let Some(t) = is_duplicate(&p1_base, &p2_base) {
                 duplicates.push((p1.id.clone(), p2.id.clone(), t));
             }
         }
@@ -31,13 +33,21 @@ pub fn find_duplicate_place(
     new_place: &usecases::NewPlace,
     possible_duplicate_places: &[(Place, ReviewStatus)],
 ) -> Vec<(Id, DuplicateType)> {
-    todo!()
+    let mut duplicates = Vec::new();
+    let source_place = PlaceBase::from(new_place);
+    for (p, _) in &possible_duplicate_places[..] {
+        let possible_duplicated = PlaceBase::from(p);
+        if let Some(t) = is_duplicate(&source_place, &possible_duplicated) {
+            duplicates.push((p.id.clone(), t));
+        }
+    }
+    duplicates
 }
 
 const DUPLICATE_MAX_DISTANCE: Distance = Distance::from_meters(100.0);
 
 // returns a DuplicateType if the two places have a similar title, returns None otherwise
-fn is_duplicate(e1: &Place, e2: &Place) -> Option<DuplicateType> {
+fn is_duplicate(e1: &PlaceBase, e2: &PlaceBase) -> Option<DuplicateType> {
     if similar_title(e1, e2, 0.3, 0) && in_close_proximity(e1, e2, DUPLICATE_MAX_DISTANCE) {
         Some(DuplicateType::SimilarChars)
     } else if similar_title(e1, e2, 0.0, 2) && in_close_proximity(e1, e2, DUPLICATE_MAX_DISTANCE) {
@@ -47,7 +57,7 @@ fn is_duplicate(e1: &Place, e2: &Place) -> Option<DuplicateType> {
     }
 }
 
-fn in_close_proximity(e1: &Place, e2: &Place, max_dist: Distance) -> bool {
+fn in_close_proximity(e1: &PlaceBase, e2: &PlaceBase, max_dist: Distance) -> bool {
     if let Some(dist) = MapPoint::distance(e1.location.pos, e2.location.pos) {
         return dist <= max_dist;
     }
@@ -55,8 +65,8 @@ fn in_close_proximity(e1: &Place, e2: &Place, max_dist: Distance) -> bool {
 }
 
 fn similar_title(
-    e1: &Place,
-    e2: &Place,
+    e1: &PlaceBase,
+    e2: &PlaceBase,
     max_percent_different: f32,
     max_words_different: u32,
 ) -> bool {
@@ -182,14 +192,17 @@ mod tests {
             "Punkt1".to_string(),
             MapPoint::from_lat_lng_deg(48.23153745093964, 8.003816366195679),
         );
+        let e1_base = PlaceBase::from(&e1);
+
         let e2 = new_place(
             "Entry 2".to_string(),
             "Punkt2".to_string(),
             MapPoint::from_lat_lng_deg(48.23167056421013, 8.003558874130248),
         );
+        let e2_base = PlaceBase::from(&e2);
 
-        assert!(in_close_proximity(&e1, &e2, Distance::from_meters(30.0)));
-        assert!(!in_close_proximity(&e1, &e2, Distance::from_meters(10.0)));
+        assert!(in_close_proximity(&e1_base, &e2_base, Distance::from_meters(30.0)));
+        assert!(!in_close_proximity(&e1_base, &e2_base, Distance::from_meters(10.0)));
     }
 
     #[test]
@@ -199,26 +212,33 @@ mod tests {
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(48.23153745093964, 6.003816366195679),
         );
+        let e1_base = PlaceBase::from(&e1);
+
         let e2 = new_place(
             "01234567".to_string(),
             "allo! Ein Eintra".to_string(),
             MapPoint::from_lat_lng_deg(48.23153745093964, 6.003816366195679),
         );
+        let e2_base = PlaceBase::from(&e2);
+
         let e3 = new_place(
             "eins zwei drei".to_string(),
             "allo! Ein Eintra".to_string(),
             MapPoint::from_lat_lng_deg(48.23153745093964, 6.003816366195679),
         );
+        let e3_base = PlaceBase::from(&e3);
+
         let e4 = new_place(
             "eins zwei fünf sechs".to_string(),
             "allo! Ein Eintra".to_string(),
             MapPoint::from_lat_lng_deg(48.23153745093964, 6.003816366195679),
         );
+        let e4_base = PlaceBase::from(&e4);
 
-        assert_eq!(true, similar_title(&e1, &e2, 0.2, 0)); // only 2 characters changed
-        assert_eq!(false, similar_title(&e1, &e2, 0.1, 0)); // more than one character changed
-        assert_eq!(true, similar_title(&e3, &e4, 0.0, 2)); // only 2 words changed
-        assert_eq!(false, similar_title(&e3, &e4, 0.0, 1)); // more than 1 word changed
+        assert_eq!(true, similar_title(&e1_base, &e2_base, 0.2, 0)); // only 2 characters changed
+        assert_eq!(false, similar_title(&e1_base, &e2_base, 0.1, 0)); // more than one character changed
+        assert_eq!(true, similar_title(&e3_base, &e4_base, 0.0, 2)); // only 2 words changed
+        assert_eq!(false, similar_title(&e3_base, &e4_base, 0.0, 1)); // more than 1 word changed
     }
 
     #[test]
@@ -228,37 +248,46 @@ mod tests {
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(47.23153745093964, 5.003816366195679),
         );
+        let e1_base = PlaceBase::from(&e1);
+
         let e2 = new_place(
             "Eintrag".to_string(),
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(47.23153745093970, 5.003816366195679),
         );
+        let e2_base = PlaceBase::from(&e2);
+
         let e3 = new_place(
             "Enn Eintrxg Blablalx".to_string(),
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(47.23153745093955, 5.003816366195679),
         );
+        let e3_base = PlaceBase::from(&e3);
+
         let e4 = new_place(
             "En Eintrg Blablala".to_string(),
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(47.23153745093955, 5.003816366195679),
         );
+        let e4_base = PlaceBase::from(&e4);
+
         let e5 = new_place(
             "Ein Eintrag Blabla".to_string(),
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(40.23153745093960, 5.003816366195670),
         );
+        let e5_base = PlaceBase::from(&e5);
 
         // titles have a word that is equal
-        assert_eq!(Some(DuplicateType::SimilarWords), is_duplicate(&e1, &e2));
+        assert_eq!(Some(DuplicateType::SimilarWords), is_duplicate(&e1_base, &e2_base));
         // titles similar: small levenshtein distance
-        assert_eq!(Some(DuplicateType::SimilarChars), is_duplicate(&e1, &e4));
+        assert_eq!(Some(DuplicateType::SimilarChars), is_duplicate(&e1_base, &e4_base));
         // titles similar: small hamming distance
-        assert_eq!(Some(DuplicateType::SimilarChars), is_duplicate(&e1, &e3));
+        assert_eq!(Some(DuplicateType::SimilarChars), is_duplicate(&e1_base, &e3_base));
         // titles not similar
-        assert_eq!(None, is_duplicate(&e2, &e4));
+        assert_eq!(None, is_duplicate(&e2_base, &e4_base));
         // places not located close together
-        assert_eq!(None, is_duplicate(&e4, &e5));
+        assert_eq!(None, is_duplicate(&e4_base, &e5_base));
     }
 
     #[test]

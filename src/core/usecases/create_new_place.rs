@@ -26,6 +26,36 @@ pub struct NewPlace {
     pub image_link_url : Option<String>,
 }
 
+impl From<&NewPlace> for PlaceBase {
+    fn from(from: &NewPlace) -> Self {
+        // duplicated code. defining a function would be a better idea
+        let pos =
+            match MapPoint::try_from_lat_lng_deg(from.lat.clone(), from.lng.clone()) {
+                Some(pos) => pos,
+                _ => MapPoint::default()
+        };
+        let address = Address {
+            street: from.street.clone(),
+            zip: from.zip.clone(),
+            city: from.city.clone(),
+            country: from.country.clone(),
+            state: from.state.clone(),
+        };
+        let address = if address.is_empty() {
+            None
+        } else {
+            Some(address)
+        };
+        let location = Location { pos, address };
+
+        PlaceBase {
+            id: Id::new(),
+            title: from.title.clone(),
+            location
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Storable(Place);
 
@@ -59,13 +89,6 @@ pub fn prepare_new_place<D: Db>(
         None => return Err(ParameterError::InvalidPosition.into()),
         Some(pos) => pos,
     };
-    let categories: Vec<_> = categories.into_iter().map(Id::from).collect();
-    let tags = super::prepare_tag_list(
-        Category::merge_ids_into_tags(&categories, tags)
-            .iter()
-            .map(String::as_str),
-    );
-    super::check_and_count_owned_tags(db, &tags, None)?;
     let address = Address {
         street,
         zip,
@@ -79,6 +102,13 @@ pub fn prepare_new_place<D: Db>(
         Some(address)
     };
     let location = Location { pos, address };
+    let categories: Vec<_> = categories.into_iter().map(Id::from).collect();
+    let tags = super::prepare_tag_list(
+        Category::merge_ids_into_tags(&categories, tags)
+            .iter()
+            .map(String::as_str),
+    );
+    super::check_and_count_owned_tags(db, &tags, None)?;
 
     let contact = if email.is_some() || telephone.is_some() {
         Some(Contact {

@@ -9,6 +9,14 @@ pub struct PlaceRoot {
     pub license: String,
 }
 
+// Essential attributes for comparision. mainly between NewPlace and Place
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct PlaceBase {
+    pub id: Id,
+    pub title: String,
+    pub location: Location,
+}
+
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct OpeningHours(String);
 
@@ -162,6 +170,16 @@ impl From<Place> for (PlaceRoot, PlaceRevision) {
                 tags,
             },
         )
+    }
+}
+
+impl From<&Place> for PlaceBase {
+    fn from(from: &Place) -> Self {
+        PlaceBase {
+            id: from.id.clone(),
+            title: from.title.clone(),
+            location: from.location.clone(),
+        }
     }
 }
 

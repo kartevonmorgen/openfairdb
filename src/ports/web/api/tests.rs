@@ -1723,14 +1723,15 @@ fn entries_export_csv() {
 #[test]
 fn check_place_duplicate() {
     let (client, db) = setup();
+    // similar data as test_is_duplicate in find_duplicates.rs
     let res = client.post("/entries")
                     .header(ContentType::JSON)
-                    .body(r#"{"title":"foo","description":"bla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#)
+                    .body(r#"{"title":"0123456789","description":"bla","lat":47.23153745093964,"lng":5.003816366195679,"categories":["x"],"license":"CC0-1.0","tags":[]}"#)
                     .dispatch();
     assert_eq!(res.status(), Status::Ok);
     let mut res = client.post("/duplicates/check-place")
                     .header(ContentType::JSON)
-                    .body(r#"{"title":"fooO","description":"bla","lat":0.001,"lng":0.0,"categories":["y"],"license":"CC0-1.0","tags":[]}"#)
+                    .body(r#"{"title":"01234567","description":"bla","lat":47.23153745093970,"lng":5.003816366195679,"categories":["y"],"license":"CC0-1.0","tags":[]}"#)
                     .dispatch();
     assert_eq!(res.status(), Status::Ok);
     test_json(&res);
@@ -1739,5 +1740,5 @@ fn check_place_duplicate() {
         .0
         .id
         .clone();
-    assert_eq!(body_str, format!("[[\"{}\", \"SimilarChars\"]]", eid));
+    assert_eq!(body_str, format!("[[\"{}\",\"SimilarChars\"]]", eid));
 }
