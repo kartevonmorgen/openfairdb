@@ -848,6 +848,13 @@ components:
           $ref: '#/components/schemas/Url'
         image_link_url:
           $ref: '#/components/schemas/Url'
+        links:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                $ref: '#/components/schemas/Url'
       required:
         - title
         - description
