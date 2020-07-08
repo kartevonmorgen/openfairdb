@@ -707,6 +707,14 @@ components:
           $ref: '#/components/schemas/Url'
         license:
           $ref: '#/components/schemas/License'
+        links:
+          type: array
+          items:
+            type: object
+            properties:
+              url:
+                $ref: '#/components/schemas/Url'
+
     EntryWithVersion:
       allOf:
         - $ref: '#/components/schemas/NewEntry'
