@@ -43,6 +43,24 @@ paths:
           in: query
           schema:
             type: string
+        - name: auth_tag
+          in: query
+          schema:
+            type: string
+          description: |
+            A single tag that is owned and managed by an organization.
+
+            The tag is included in the query as a mandatory serach criteria.
+
+            The results will be filtered according to the current authorization
+            status. Unauthorized, not yet reviewed revisions of entries will
+            either be removed or replaced by older, already authorized revisions.
+
+            Unauthorized revisions of entries are expected to only exist
+            temporarily for a short time frame. Omitting this parameter and
+            instead including the owned tag as a regular tag in the `tags`
+            parameter will return unfiltered search results, i.e. current
+            revisions of entries independent of the authorization status.
         - $ref: '#/components/parameters/IdList'
         - $ref: '#/components/parameters/TagList'
         - $ref: '#/components/parameters/ReviewStatusList'
