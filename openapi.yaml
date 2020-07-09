@@ -16,15 +16,17 @@ servers:
 paths:
   /search:
     get:
-      summary: Search for entries
+      summary: Search for entries *aka* places
       description: |
-        Search results are ordered by total rating.
+        Query the database for entries/places according to the search criteria
+        and order the top matching results by their total rating in descending
+        oder.
 
         The default result contains up to 100 entries. Use the `limit` parameter
         to customize the desired amount. The server may decide to deliver less
         results than requested up to some internal upper limit (currently 500).
 
-        If no particular review status are requested only visible places
+        If the review status list is empty or missing only visible places
         (created, confirmed) are returned.
       tags:
         - Search
@@ -48,19 +50,26 @@ paths:
           schema:
             type: string
           description: |
-            A single tag that is owned and managed by an organization.
+            A single hash tag that is moderated by an organization.
 
-            The tag is included in the query as a mandatory serach criteria.
+            The hash tag will be included in the query as a mandatory serach criteria.
 
-            The results will be filtered according to the current authorization
-            status. Unauthorized, not yet reviewed revisions of entries will
-            either be removed or replaced by older, already authorized revisions.
+            Results will be filtered according to the current authorization status.
+            Unauthorized, not yet reviewed revisions of entries will either be removed
+            or replaced by older, already authorized revisions. Unauthorized revisions
+            of entries are expected to only exist temporarily for a short time frame.
 
-            Unauthorized revisions of entries are expected to only exist
-            temporarily for a short time frame. Omitting this parameter and
-            instead including the owned tag as a regular tag in the `tags`
-            parameter will return unfiltered search results, i.e. current
-            revisions of entries independent of the authorization status.
+            If the provided hash tag is not moderated by any organization the results
+            will not be filtered.
+
+            Omitting this parameter and instead appending the moderated hash tag as
+            a regular tag to the `tags` parameter will also return unfiltered search
+            results, i.e. current revisions of entries independent of their
+            authorization status.
+
+            Only a single tag can be specified, because filtering according to
+            authorizations by multiple organizations could produce ambiguous
+            and conflicting results.
         - $ref: '#/components/parameters/IdList'
         - $ref: '#/components/parameters/TagList'
         - $ref: '#/components/parameters/ReviewStatusList'
@@ -191,6 +200,83 @@ paths:
               schema:
                 $ref: '#/components/schemas/TagCounts'
 
+  '/places/pending-authorizations':
+    get:
+      tags:
+        - Places
+      summary: List pending authorizations of places
+      description: |
+        Returns a list with pending authorizations of places in chronological order.
+
+        The organization responsible for authorization is identified indirectly by
+        providing one of the hash tags that is moderated by this organization.
+
+        Requests must include the API token of the corresponding organization.
+      parameters:
+        - name: auth_tag
+          in: query
+          required: true
+          schema:
+            type: string
+          description: |
+            The owned hash tag that identifies the organization responsible for authorization.
+        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: '#/components/parameters/PaginationOffset'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlacePendingAuthorization'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  '/places/pending-authorizations/acknowledge':
+    post:
+      tags:
+        - Places
+      summary: Acknowledge pending authorizations of places
+      description: |
+        Acknowledge pending authorizations by authorizing the specified
+        revision and review status of mutliple places.
+
+        All authorizations are handled one after another by this batch
+        operation.
+
+        If the review status is omitted then only the revision is considered,
+        i.e. the review status is considered as a wildcard match.
+
+        If the given revision and review status does not exist in the history
+        of the place then the authorization is silently ignored and skipped.
+
+        If the given revision and review status matches that of the most current
+        entity then the pending unauthorization is deleted.
+
+        Otherwise the pending authorization is replaced with the given revision
+        and review status. If no authorization for the place was pending then a
+        new pending authorization is created.
+      parameters:
+        - name: auth_tag
+          in: query
+          required: true
+          schema:
+            type: string
+          description: |
+            The owned hash tag that implicitly identifies the organization responsible
+            for authorization.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PlacePendingAuthorization'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   '/places/{id}/history':
     get:
       tags:
@@ -828,6 +914,32 @@ components:
           $ref: '#/components/schemas/TagArray'
         ratings:
           $ref: '#/components/schemas/AvgRatings'
+    PlaceId:
+      description: |
+        The id of a place
+      allOf:
+        - $ref: '#/components/schemas/Id'
+    PlaceRevisionAndReviewStatus:
+      description: |
+        Revision and review status of a place.
+      properties:
+        revision:
+          $ref: '#/components/schemas/PlaceRevision'
+        review_status:
+          $ref: '#/components/schemas/ReviewStatus'
+      required:
+        - revision
+        - review_status
+      additionalProperties: false
+    PlacePendingAuthorization:
+      description: The compact view of an entry as returned in search results.
+      properties:
+        id:
+          $ref: '#/components/schemas/PlaceId'
+        last_authorized:
+          $ref: '#/components/schemas/PlaceRevisionAndReviewStatus'
+      required:
+        - id
     AvgRatings:
       description: All average ratings of an entry.
       properties:
