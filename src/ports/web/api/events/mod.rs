@@ -250,10 +250,17 @@ pub fn get_events_with_token(
     // Release the database connection asap
     drop(db);
 
-    let owned_tags = org.owned_tags;
+    let moderated_tags = org.moderated_tags;
     let events: Vec<_> = events
         .into_iter()
-        .map(|e| usecases::filter_event(e, owned_tags.iter().map(String::as_str)))
+        .map(|e| {
+            usecases::filter_event(
+                e,
+                moderated_tags
+                    .iter()
+                    .map(|moderated_tag| moderated_tag.label.as_str()),
+            )
+        })
         .map(json::Event::from)
         .collect();
 
@@ -275,10 +282,10 @@ pub fn get_events_chronologically(
     // Release the database connection asap
     drop(db);
 
-    let owned_tags = vec![];
+    let moderated_tags = vec![];
     let events: Vec<_> = events
         .into_iter()
-        .map(|e| usecases::filter_event(e, owned_tags.iter().map(String::as_str)))
+        .map(|e| usecases::filter_event(e, moderated_tags.iter().map(String::as_str)))
         .map(json::Event::from)
         .collect();
 
@@ -315,7 +322,7 @@ fn csv_export(
     login: Login,
     query: usecases::EventQuery,
 ) -> result::Result<Content<String>, AppError> {
-    let owned_tags = org.map(|org| org.owned_tags).unwrap_or_default();
+    let moderated_tags = org.map(|org| org.moderated_tags).unwrap_or_default();
 
     let db = connections.shared()?;
     let user = usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
@@ -334,9 +341,15 @@ fn csv_export(
     // Release the database connection asap
     drop(db);
 
-    let events = events
-        .into_iter()
-        .map(|e| usecases::export_event(e, user.role, owned_tags.iter().map(String::as_str)));
+    let events = events.into_iter().map(|e| {
+        usecases::export_event(
+            e,
+            user.role,
+            moderated_tags
+                .iter()
+                .map(|moderated_tag| moderated_tag.label.as_str()),
+        )
+    });
 
     let records: Vec<_> = events.map(adapters::csv::EventRecord::from).collect();
 

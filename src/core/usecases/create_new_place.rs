@@ -59,13 +59,18 @@ pub fn prepare_new_place<D: Db>(
         None => return Err(ParameterError::InvalidPosition.into()),
         Some(pos) => pos,
     };
+
     let categories: Vec<_> = categories.into_iter().map(Id::from).collect();
-    let tags = super::prepare_tag_list(
+    let old_tags = vec![];
+    let new_tags = super::prepare_tag_list(
         Category::merge_ids_into_tags(&categories, tags)
             .iter()
             .map(String::as_str),
     );
-    super::check_and_count_owned_tags(db, &tags, None)?;
+    let _auth_org_ids =
+        super::authorize_moderated_tags_owned_by_orgs(db, &old_tags, &new_tags, None)?;
+    debug_assert_eq!(0, _auth_org_ids.len()); // FIXME
+
     let address = Address {
         street,
         zip,
@@ -124,7 +129,7 @@ pub fn prepare_new_place<D: Db>(
             })
             .transpose()?,
         links,
-        tags,
+        tags: new_tags,
     };
     place.validate()?;
     Ok(Storable(place))

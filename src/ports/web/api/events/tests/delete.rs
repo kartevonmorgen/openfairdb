@@ -18,7 +18,7 @@ fn with_invalid_api_token() {
         .create_org(Organization {
             id: "foo".into(),
             name: "bar".into(),
-            owned_tags: vec!["org-tag".into()],
+            moderated_tags: vec!["org-tag".into()],
             api_token: "foo".into(),
         })
         .unwrap();
@@ -38,7 +38,7 @@ fn with_api_token() {
         .create_org(Organization {
             id: "foo".into(),
             name: "bar".into(),
-            owned_tags: vec!["tag".into()],
+            moderated_tags: vec!["tag".into()],
             api_token: "foo".into(),
         })
         .unwrap();
@@ -87,14 +87,14 @@ fn with_api_token() {
 // FIXME: This test should fail, but it doesn't!!
 #[test]
 #[ignore]
-fn with_api_token_by_organization_without_any_owned_tags() {
+fn with_api_token_by_organization_without_any_moderated_tags() {
     let (client, db, mut search_engine, notify) = setup2();
     db.exclusive()
         .unwrap()
         .create_org(Organization {
             id: "foo".into(),
             name: "bar".into(),
-            owned_tags: vec![],
+            moderated_tags: vec![],
             api_token: "foo".into(),
         })
         .unwrap();

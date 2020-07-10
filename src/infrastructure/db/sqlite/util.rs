@@ -332,12 +332,39 @@ impl From<e::Organization> for NewOrganization {
             id,
             name,
             api_token,
-            owned_tags: _,
+            moderated_tags: _,
         } = o;
         NewOrganization {
             id: id.into(),
             name,
             api_token,
+        }
+    }
+}
+
+impl From<OrganizationTag> for e::ModeratedTag {
+    fn from(org_tag: OrganizationTag) -> Self {
+        let OrganizationTag {
+            org_rowid: _,
+            tag_label,
+            tag_moderation_flags,
+        } = org_tag;
+        let label = tag_label;
+        // TODO: Verify that value is valid
+        let flags = (tag_moderation_flags as e::TagModerationFlagsValue).into();
+        Self { label, flags }
+    }
+}
+
+impl From<(i64, e::ModeratedTag)> for OrganizationTag {
+    fn from((org_rowid, moderated_tag): (i64, e::ModeratedTag)) -> Self {
+        let e::ModeratedTag { label, flags } = moderated_tag;
+        let tag_label = label;
+        let tag_moderation_flags = e::TagModerationFlagsValue::from(flags).into();
+        Self {
+            org_rowid,
+            tag_label,
+            tag_moderation_flags,
         }
     }
 }

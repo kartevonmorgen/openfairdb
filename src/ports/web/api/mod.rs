@@ -532,7 +532,7 @@ fn entries_csv_export(
     login: Login,
     query: search::SearchQuery,
 ) -> result::Result<Content<String>, AppError> {
-    let owned_tags = org.map(|org| org.owned_tags).unwrap_or_default();
+    let moderated_tags = org.map(|org| org.moderated_tags).unwrap_or_default();
 
     let db = connections.shared()?;
     let user = usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
@@ -568,7 +568,9 @@ fn entries_csv_export(
                     let place = usecases::export_place(
                         place,
                         user.role,
-                        owned_tags.iter().map(String::as_str),
+                        moderated_tags
+                            .iter()
+                            .map(|moderated_tag| moderated_tag.label.as_str()),
                     );
                     Some((place, categories, ratings.total()))
                 } else {
@@ -610,7 +612,9 @@ impl<'r> Responder<'r> for AppError {
                         ParameterError::EmailNotConfirmed => {
                             <Status>::new(403, "EmailNotConfirmed")
                         }
-                        ParameterError::Forbidden | ParameterError::OwnedTag => Status::Forbidden,
+                        ParameterError::Forbidden | ParameterError::ModeratedTag => {
+                            Status::Forbidden
+                        }
                         _ => Status::BadRequest,
                     });
                 }

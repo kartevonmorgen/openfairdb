@@ -437,11 +437,11 @@ impl OrganizationGateway for MockDb {
             .ok_or(RepoError::NotFound)?;
         Ok(o.clone())
     }
-    fn get_all_tags_owned_by_orgs(&self) -> RepoResult<Vec<String>> {
+    fn get_all_tags_owned_by_orgs(&self) -> RepoResult<Vec<ModeratedTag>> {
         Ok(self
             .orgs
             .iter()
-            .flat_map(|o| o.owned_tags.clone())
+            .flat_map(|o| o.moderated_tags.clone())
             .collect())
     }
 }

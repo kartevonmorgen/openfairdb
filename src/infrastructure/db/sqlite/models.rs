@@ -278,14 +278,16 @@ pub struct NewEventTag<'a> {
 #[derive(Queryable)]
 pub struct OrganizationTag {
     pub org_rowid: i64,
-    pub owned_tag: String,
+    pub tag_label: String,
+    pub tag_moderation_flags: i16,
 }
 
 #[derive(Insertable)]
-#[table_name = "organization_tag_owned"]
+#[table_name = "organization_tag"]
 pub struct NewOrganizationTag<'a> {
     pub org_rowid: i64,
-    pub owned_tag: &'a str,
+    pub tag_label: &'a str,
+    pub tag_moderation_flags: i16,
 }
 
 #[derive(Queryable, Insertable)]

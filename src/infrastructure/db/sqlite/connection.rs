@@ -1656,7 +1656,7 @@ impl Db for SqliteConnection {
 impl OrganizationGateway for SqliteConnection {
     fn create_org(&mut self, mut o: Organization) -> Result<()> {
         let org_id = o.id.clone();
-        let owned_tags = std::mem::replace(&mut o.owned_tags, vec![]);
+        let moderated_tags = std::mem::replace(&mut o.moderated_tags, vec![]);
         let new_org = models::NewOrganization::from(o);
         self.transaction::<_, diesel::result::Error, _>(|| {
             diesel::insert_into(schema::organization::table)
@@ -1669,12 +1669,13 @@ impl OrganizationGateway for SqliteConnection {
                 );
                 diesel::result::Error::RollbackTransaction
             })?;
-            for owned_tag in &owned_tags {
+            for ModeratedTag { label, flags } in &moderated_tags {
                 let org_tag = models::NewOrganizationTag {
                     org_rowid,
-                    owned_tag,
+                    tag_label: label,
+                    tag_moderation_flags: TagModerationFlagsValue::from(*flags).into(),
                 };
-                diesel::insert_into(schema::organization_tag_owned::table)
+                diesel::insert_into(schema::organization_tag::table)
                     .values(&org_tag)
                     .execute(self)?;
             }
@@ -1684,7 +1685,7 @@ impl OrganizationGateway for SqliteConnection {
     }
 
     fn get_org_by_api_token(&self, token: &str) -> Result<Organization> {
-        use schema::{organization::dsl as org_dsl, organization_tag_owned::dsl as org_tag_dsl};
+        use schema::{organization::dsl as org_dsl, organization_tag::dsl as org_tag_dsl};
 
         let models::Organization {
             rowid,
@@ -1695,28 +1696,29 @@ impl OrganizationGateway for SqliteConnection {
             .filter(org_dsl::api_token.eq(token))
             .first(self)?;
 
-        let owned_tags = org_tag_dsl::organization_tag_owned
+        let moderated_tags = org_tag_dsl::organization_tag
             .filter(org_tag_dsl::org_rowid.eq(rowid))
             .load::<models::OrganizationTag>(self)?
             .into_iter()
-            .map(|r| r.owned_tag)
+            .map(Into::into)
             .collect();
 
         Ok(Organization {
             id: id.into(),
             name,
             api_token,
-            owned_tags,
+            moderated_tags,
         })
     }
 
-    fn get_all_tags_owned_by_orgs(&self) -> Result<Vec<String>> {
-        use schema::organization_tag_owned::dsl;
-        let owned_tags = dsl::organization_tag_owned
-            .select(dsl::owned_tag)
-            .distinct()
-            .load(self)?;
-        Ok(owned_tags)
+    fn get_all_tags_owned_by_orgs(&self) -> Result<Vec<ModeratedTag>> {
+        use schema::organization_tag::dsl;
+        let moderated_tags = dsl::organization_tag
+            .load::<models::OrganizationTag>(self)?
+            .into_iter()
+            .map(Into::into)
+            .collect();
+        Ok(moderated_tags)
     }
 }
 

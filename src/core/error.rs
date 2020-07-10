@@ -44,7 +44,7 @@ pub enum ParameterError {
     #[error("The end date is before the start")]
     EndDateBeforeStart,
     #[error("The tag is owned by an organization")]
-    OwnedTag,
+    ModeratedTag,
     #[error("Missing the email of the creator")]
     CreatorEmail,
     #[error("Invalid opening hours")]

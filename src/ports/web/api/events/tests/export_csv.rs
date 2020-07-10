@@ -34,7 +34,7 @@ fn export_csv() {
         .create_org(Organization {
             id: "foo".into(),
             name: "foo_name".into(),
-            owned_tags: vec!["tag".into()],
+            moderated_tags: vec!["tag".into()],
             api_token: "foo".into(),
         })
         .unwrap();
@@ -43,7 +43,7 @@ fn export_csv() {
         .create_org(Organization {
             id: "bar".into(),
             name: "bar_name".into(),
-            owned_tags: vec!["tag2".into()],
+            moderated_tags: vec!["tag2".into()],
             api_token: "bar".into(),
         })
         .unwrap();

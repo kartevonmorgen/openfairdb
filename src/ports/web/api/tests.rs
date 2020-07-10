@@ -62,7 +62,7 @@ fn create_place_with_reserved_tag() {
         .create_org(Organization {
             id: "a".into(),
             name: "a".into(),
-            owned_tags: vec!["a".into()],
+            moderated_tags: vec!["a".into()],
             api_token: "a".into(),
         })
         .unwrap();

@@ -93,11 +93,11 @@ impl Place {
         }
     }
 
-    pub fn is_owned<'a>(&self, owned_tags: impl IntoIterator<Item = &'a str>) -> bool {
+    pub fn is_owned<'a>(&self, moderated_tags: impl IntoIterator<Item = &'a str>) -> bool {
         // Exclusive ownership of events is determined by the associated tags
-        owned_tags
+        moderated_tags
             .into_iter()
-            .any(|owned_tag| self.tags.iter().any(|tag| tag == owned_tag))
+            .any(|moderated_tag| self.tags.iter().any(|tag| tag == moderated_tag))
     }
 }
 

@@ -173,32 +173,69 @@ pub fn prepare_tag_list<'a>(tags: impl IntoIterator<Item = &'a str>) -> Vec<Stri
     tags
 }
 
-// Counts and returns the number of tags owned by this org. If the
-// given list of tags contains tags that are owned by any other org
-// then fails with ParameterError::OwnedTag.
-pub fn check_and_count_owned_tags<D: Db>(
+// Counts and returns the number of tags owned by this org and a list
+// of other organizations that require authorization of pending changes.
+pub fn authorize_moderated_tags_owned_by_orgs<D: Db>(
     db: &D,
-    tags: &[String],
+    old_tags: &[String],
+    new_tags: &[String],
     org: Option<&Organization>,
-) -> Result<usize> {
-    let owned_tags = db.get_all_tags_owned_by_orgs()?;
+) -> Result<Vec<Id>> {
+    let mod_tags = db.get_all_tags_owned_by_orgs()?;
     let mut count = 0;
-    for t in tags {
-        if owned_tags.iter().any(|id| id == t) {
-            match org {
-                Some(ref o) => {
-                    if !o.owned_tags.iter().any(|x| x == t) {
-                        return Err(ParameterError::OwnedTag.into());
+    let mod_tags_of_other_orgs = if let Some(org) = org {
+        mod_tags
+            .into_iter()
+            .filter(|mod_tag| {
+                !org.moderated_tags.iter().any(|org_tag| {
+                    if org_tag == mod_tag {
+                        count += 1;
+                        true
+                    } else {
+                        false
                     }
-                    count += 1;
-                }
-                None => {
-                    return Err(ParameterError::OwnedTag.into());
-                }
+                })
+            })
+            .collect()
+    } else {
+        mod_tags
+    };
+    let mut auth_org_ids = Vec::new();
+    for added_tag in new_tags
+        .iter()
+        .filter(|new_tag| !old_tags.iter().any(|old_tag| old_tag == *new_tag))
+    {
+        for mod_tag in mod_tags_of_other_orgs
+            .iter()
+            .filter(|mod_tag| &mod_tag.label == added_tag)
+        {
+            if !mod_tag.flags.allows_add() {
+                return Err(ParameterError::ModeratedTag.into());
+            }
+            if mod_tag.flags.requires_authorization() {
+                //FIXME: auth_org_ids.push(org_id);
             }
         }
     }
-    Ok(count)
+    for removed_tag in old_tags
+        .iter()
+        .filter(|old_tag| !new_tags.iter().any(|new_tag| new_tag == *old_tag))
+    {
+        for mod_tag in mod_tags_of_other_orgs
+            .iter()
+            .filter(|mod_tag| &mod_tag.label == removed_tag)
+        {
+            if !mod_tag.flags.allows_remove() {
+                return Err(ParameterError::ModeratedTag.into());
+            }
+            if mod_tag.flags.requires_authorization() {
+                //FIXME: auth_org_ids.push(org_id);
+            }
+        }
+    }
+    auth_org_ids.sort_unstable();
+    auth_org_ids.dedup();
+    Ok(auth_org_ids)
 }
 
 pub fn authorize_user_by_email(

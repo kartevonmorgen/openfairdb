@@ -82,50 +82,82 @@ pub fn import_new_event<D: Db>(
             })
         })
         .transpose()?;
-    let mut tags =
+    let mut new_tags =
         super::prepare_tag_list(tags.unwrap_or_else(Vec::new).iter().map(String::as_str));
-    if super::check_and_count_owned_tags(db, &tags, org.as_ref())? == 0 {
-        if let Some(mut org) = org {
-            // Implicitly add missing owned tags to prevent events with
-            // undefined ownership!
-            match mode {
-                NewEventMode::Create => {
-                    if created_by.is_none() {
-                        // NOTE: At the moment we require an email address,
-                        // but in the future we might allow anonymous creators
-                        return Err(ParameterError::CreatorEmail.into());
-                    }
-                    if !org.owned_tags.is_empty() {
-                        // Ensure that the newly created event is owned by the authorized org
-                        log::info!(
-                            "Implicitly adding all {} tag(s) owned by {} while creating event",
-                            org.owned_tags.len(),
-                            org.name
-                        );
-                        tags.reserve(org.owned_tags.len());
-                        tags.append(&mut org.owned_tags);
+    let _auth_org_ids = if let Some(org) = org {
+        // Implicitly add missing owned tags to prevent events with
+        // undefined ownership!
+        let org_tag_count = new_tags
+            .iter()
+            .filter(|&new_tag| {
+                org.moderated_tags
+                    .iter()
+                    .any(|mod_tag| &mod_tag.label == new_tag)
+            })
+            .count();
+        match mode {
+            NewEventMode::Create => {
+                if created_by.is_none() {
+                    // NOTE: At the moment we require an email address,
+                    // but in the future we might allow anonymous creators
+                    return Err(ParameterError::CreatorEmail.into());
+                }
+                // Ensure that the newly created event is owned by the authorized org
+                if org_tag_count == 0 {
+                    new_tags.reserve(org.moderated_tags.len());
+                    for org_tag in &org.moderated_tags {
+                        new_tags.push(org_tag.label.clone());
                     }
                 }
-                NewEventMode::Update(id) => {
-                    // Keep all existing tags owned by the authorized org
-                    let old_tags = db.get_event(id)?.tags;
-                    // Verify that the org is entitled to update this event according to the owned tags
-                    let owned_count = super::check_and_count_owned_tags(db, &old_tags, Some(&org))?;
-                    if owned_count > 0 {
-                        debug_assert!(owned_count <= org.owned_tags.len());
-                        tags.reserve(owned_count);
-                        // Preserve all existing tags that are owned by this org
-                        for owned_tag in old_tags
-                            .into_iter()
-                            .filter(|t| org.owned_tags.iter().any(|x| x == t))
-                        {
-                            tags.push(owned_tag);
+                new_tags.sort_unstable();
+                new_tags.dedup();
+                let auth_org_ids = super::authorize_moderated_tags_owned_by_orgs(
+                    db,
+                    &vec![],
+                    &new_tags,
+                    Some(&org),
+                )?;
+                auth_org_ids
+            }
+            NewEventMode::Update(id) => {
+                let old_tags = db.get_event(id)?.tags;
+                if org_tag_count == 0 {
+                    // Preserve all existing tags that are owned by this org
+                    let mut added_count = 0;
+                    for old_tag in old_tags.iter().filter(|&old_tag| {
+                        org.moderated_tags
+                            .iter()
+                            .any(|mod_tag| &mod_tag.label == old_tag)
+                    }) {
+                        new_tags.push(old_tag.clone());
+                        added_count += 1;
+                    }
+                    if added_count == 0 {
+                        // Simply add all tags owned by the organization to preserve ownership
+                        new_tags.reserve(org.moderated_tags.len());
+                        for mod_tag in &org.moderated_tags {
+                            new_tags.push(mod_tag.label.clone());
                         }
                     }
+                    new_tags.sort_unstable();
+                    new_tags.dedup();
                 }
+                // Verify that the org is entitled to update this event according to the owned tags
+                let auth_org_ids = super::authorize_moderated_tags_owned_by_orgs(
+                    db,
+                    &old_tags,
+                    &new_tags,
+                    Some(&org),
+                )?;
+                auth_org_ids
             }
         }
-    }
+    } else {
+        super::authorize_moderated_tags_owned_by_orgs(db, &vec![], &new_tags, None)?
+    };
+    new_tags.sort_unstable();
+    new_tags.dedup();
+
     //TODO: use address.is_empty()
     let address = if street.is_some()
         || zip.is_some()
@@ -245,7 +277,7 @@ pub fn import_new_event<D: Db>(
         location,
         contact,
         homepage,
-        tags,
+        tags: new_tags,
         created_by,
         registration,
         organizer,

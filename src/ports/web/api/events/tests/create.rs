@@ -65,14 +65,14 @@ mod with_api_token {
     use super::*;
 
     #[test]
-    fn for_organization_without_any_owned_tags() {
+    fn for_organization_without_any_moderated_tags() {
         let (client, db) = setup();
         db.exclusive()
             .unwrap()
             .create_org(Organization {
                 id: "foo".into(),
                 name: "bar".into(),
-                owned_tags: vec![],
+                moderated_tags: vec![],
                 api_token: "foo".into(),
             })
             .unwrap();
@@ -99,7 +99,7 @@ mod with_api_token {
             .create_org(Organization {
                 id: "foo".into(),
                 name: "bar".into(),
-                owned_tags: vec!["org-tag".into()],
+                moderated_tags: vec!["org-tag".into()],
                 api_token: "foo".into(),
             })
             .unwrap();
@@ -126,7 +126,7 @@ mod with_api_token {
             .create_org(Organization {
                 id: "foo".into(),
                 name: "bar".into(),
-                owned_tags: vec!["org-tag".into()],
+                moderated_tags: vec!["org-tag".into()],
                 api_token: "foo".into(),
             })
             .unwrap();
@@ -152,7 +152,7 @@ mod with_api_token {
             .create_org(Organization {
                 id: "foo".into(),
                 name: "bar".into(),
-                owned_tags: vec!["org-tag".into()],
+                moderated_tags: vec!["org-tag".into()],
                 api_token: "foo".into(),
             })
             .unwrap();
@@ -178,7 +178,7 @@ mod with_api_token {
             .create_org(Organization {
                 id: "foo".into(),
                 name: "bar".into(),
-                owned_tags: vec!["org-tag".into()],
+                moderated_tags: vec!["org-tag".into()],
                 api_token: "foo".into(),
             })
             .unwrap();
@@ -202,7 +202,7 @@ mod with_api_token {
             .create_org(Organization {
                 id: "a".into(),
                 name: "a".into(),
-                owned_tags: vec!["a".into()],
+                moderated_tags: vec!["a".into()],
                 api_token: "a".into(),
             })
             .unwrap();
@@ -211,7 +211,7 @@ mod with_api_token {
             .create_org(Organization {
                 id: "b".into(),
                 name: "b".into(),
-                owned_tags: vec!["b".into()],
+                moderated_tags: vec!["b".into()],
                 api_token: "b".into(),
             })
             .unwrap();
@@ -246,7 +246,7 @@ mod with_api_token {
             .create_org(Organization {
                 id: "foo".into(),
                 name: "bar".into(),
-                owned_tags: vec!["org-tag".into()],
+                moderated_tags: vec!["org-tag".into()],
                 api_token: "foo".into(),
             })
             .unwrap();
@@ -259,16 +259,17 @@ mod with_api_token {
         assert_eq!(res.status(), HttpStatus::Ok);
         test_json(&res);
         let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
-        assert_eq!(
-            ev.tags,
+        let mut actual_tags = ev.tags;
+        actual_tags.sort_unstable();
+        let mut expected_tags = vec![
+            "tag".to_string(),
+            "tags".to_string(),
+            "two".to_string(),
             // Including the implicitly added org tag
-            vec![
-                "tag".to_string(),
-                "tags".to_string(),
-                "two".to_string(),
-                "org-tag".to_string()
-            ]
-        );
+            "org-tag".to_string(),
+        ];
+        expected_tags.sort_unstable();
+        assert_eq!(expected_tags, actual_tags);
     }
 
     #[test]
@@ -279,7 +280,7 @@ mod with_api_token {
             .create_org(Organization {
                 id: "foo".into(),
                 name: "bar".into(),
-                owned_tags: vec!["org-tag".into()],
+                moderated_tags: vec!["org-tag".into()],
                 api_token: "foo".into(),
             })
             .unwrap();
@@ -300,7 +301,7 @@ mod with_api_token {
             .create_org(Organization {
                 id: "foo".into(),
                 name: "bar".into(),
-                owned_tags: vec!["org-tag".into()],
+                moderated_tags: vec!["org-tag".into()],
                 api_token: "foo".into(),
             })
             .unwrap();
@@ -321,7 +322,7 @@ mod with_api_token {
             .create_org(Organization {
                 id: "foo".into(),
                 name: "bar".into(),
-                owned_tags: vec!["org-tag".into()],
+                moderated_tags: vec!["org-tag".into()],
                 api_token: "foo".into(),
             })
             .unwrap();
@@ -342,7 +343,7 @@ mod with_api_token {
             .create_org(Organization {
                 id: "foo".into(),
                 name: "bar".into(),
-                owned_tags: vec!["org-tag".into()],
+                moderated_tags: vec!["org-tag".into()],
                 api_token: "foo".into(),
             })
             .unwrap();

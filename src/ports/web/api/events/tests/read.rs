@@ -159,7 +159,7 @@ fn filtered_by_creator_with_valid_api_token() {
         .create_org(Organization {
             id: "foo".into(),
             name: "bar".into(),
-            owned_tags: vec!["org-tag".into()],
+            moderated_tags: vec!["org-tag".into()],
             api_token: "foo".into(),
         })
         .unwrap();
@@ -198,7 +198,7 @@ fn filtered_by_creator_with_invalid_api_token() {
         .create_org(Organization {
             id: "foo".into(),
             name: "bar".into(),
-            owned_tags: vec!["org-tag".into()],
+            moderated_tags: vec!["org-tag".into()],
             api_token: "foo".into(),
         })
         .unwrap();

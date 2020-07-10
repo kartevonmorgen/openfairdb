@@ -59,19 +59,6 @@ pub fn prepare_updated_place<D: Db>(
         None => return Err(ParameterError::InvalidPosition.into()),
         Some(pos) => pos,
     };
-    let categories: Vec<_> = categories.into_iter().map(Id::from).collect();
-    let tags = super::prepare_tag_list(
-        Category::merge_ids_into_tags(&categories, tags)
-            .iter()
-            .map(String::as_str),
-    );
-    super::check_and_count_owned_tags(db, &tags, None)?;
-    // TODO: Ensure that no reserved tags are removed without authorization.
-    // All existing reserved tags from other organizations must be preserved
-    // when editing places. Reserved tags that already exist should not be
-    // considers during the check, because they must be preserved independent
-    // of who is editing the place_rev.
-    // GitHub issue: https://github.com/slowtec/openfairdb/issues/203
     let address = Address {
         street,
         zip,
@@ -84,7 +71,8 @@ pub fn prepare_updated_place<D: Db>(
     } else {
         Some(address)
     };
-    let (revision, license) = {
+
+    let (revision, old_tags, license) = {
         let (old_place, _) = db.get_place(place_id.as_str())?;
         // Check for revision conflict (optimistic locking)
         let revision = Revision::from(version);
@@ -93,8 +81,27 @@ pub fn prepare_updated_place<D: Db>(
         }
         // The license is immutable
         let license = old_place.license;
-        (revision, license)
+        // The existing tags are needed for authorization
+        let old_tags = old_place.tags;
+        (revision, old_tags, license)
     };
+
+    let categories: Vec<_> = categories.into_iter().map(Id::from).collect();
+    let new_tags = super::prepare_tag_list(
+        Category::merge_ids_into_tags(&categories, tags)
+            .iter()
+            .map(String::as_str),
+    );
+    // TODO: Ensure that no reserved tags are removed without authorization.
+    // All existing reserved tags from other organizations must be preserved
+    // when editing places. Reserved tags that already exist should not be
+    // considers during the check, because they must be preserved independent
+    // of who is editing the place_rev.
+    // GitHub issue: https://github.com/slowtec/openfairdb/issues/203
+    // TODO: Check if the issue is solved now.
+    let _auth_org_ids =
+        super::authorize_moderated_tags_owned_by_orgs(db, &old_tags, &new_tags, None)?;
+    debug_assert_eq!(0, _auth_org_ids.len()); // FIXME
 
     let homepage = homepage
         .and_then(|ref url| parse_url_param(url).transpose())
@@ -134,7 +141,7 @@ pub fn prepare_updated_place<D: Db>(
             })
             .transpose()?,
         links,
-        tags,
+        tags: new_tags,
     };
     place.validate()?;
     Ok(Storable(place))

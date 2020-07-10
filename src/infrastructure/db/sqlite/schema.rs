@@ -22,28 +22,29 @@ table! {
 }
 
 table! {
-    organization_tag_owned (org_rowid, owned_tag) {
+    organization_tag (org_rowid, tag_label) {
         org_rowid -> BigInt,
-        owned_tag -> Text,
+        tag_label -> Text,
+        tag_moderation_flags -> SmallInt,
     }
 }
 
-joinable!(organization_tag_owned -> organization (org_rowid));
+joinable!(organization_tag -> organization (org_rowid));
 
 table! {
-    organization_place_unauthorized (org_rowid, place_rowid) {
+    organization_place_authorization_pending (org_rowid, place_rowid) {
         org_rowid -> BigInt,
         place_rowid -> BigInt,
         created_at -> BigInt,
         // last authorized revision number or NULL if the place has not been authorized yet
-        last_authorized_place_rev -> Nullable<BigInt>,
+        place_last_authorized_rev -> Nullable<BigInt>,
         // current review status upon authorization or NULL if the place has not been authorized yet
-        last_authorized_place_review_status -> Nullable<SmallInt>,
+        place_last_authorized_review_status -> Nullable<SmallInt>,
     }
 }
 
-joinable!(organization_place_unauthorized -> organization (org_rowid));
-joinable!(organization_place_unauthorized -> place (place_rowid));
+joinable!(organization_place_authorization_pending -> organization (org_rowid));
+joinable!(organization_place_authorization_pending -> place (place_rowid));
 
 ///////////////////////////////////////////////////////////////////////
 // Users
@@ -246,8 +247,8 @@ allow_tables_to_appear_in_same_query!(
     place_revision_review,
     place_revision_tag,
     organization,
-    organization_tag_owned,
-    organization_place_unauthorized,
+    organization_tag,
+    organization_place_authorization_pending,
     tags,
     users,
     user_tokens,

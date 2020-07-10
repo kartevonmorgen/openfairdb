@@ -77,7 +77,7 @@ fn archive_events() {
         .create_org(Organization {
             id: "foo".into(),
             name: "bar".into(),
-            owned_tags: vec!["tag".into()],
+            moderated_tags: vec!["tag".into()],
             api_token: "foo".into(),
         })
         .unwrap();
