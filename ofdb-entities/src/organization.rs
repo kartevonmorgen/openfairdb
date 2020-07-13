@@ -98,7 +98,7 @@ impl From<TagModerationFlagsValue> for TagModerationFlags {
 #[derive(Debug, Clone, PartialEq)]
 pub struct ModeratedTag {
     pub label: String,
-    pub flags: TagModerationFlags,
+    pub moderation_flags: TagModerationFlags,
 }
 
 // Workaround for backwards compatbility
@@ -107,7 +107,7 @@ impl From<&str> for ModeratedTag {
     fn from(from: &str) -> Self {
         Self {
             label: from.to_string(),
-            flags: Default::default(),
+            moderation_flags: Default::default(),
         }
     }
 }

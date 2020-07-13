@@ -1669,11 +1669,15 @@ impl OrganizationGateway for SqliteConnection {
                 );
                 diesel::result::Error::RollbackTransaction
             })?;
-            for ModeratedTag { label, flags } in &moderated_tags {
+            for ModeratedTag {
+                label,
+                moderation_flags,
+            } in &moderated_tags
+            {
                 let org_tag = models::NewOrganizationTag {
                     org_rowid,
                     tag_label: label,
-                    tag_moderation_flags: TagModerationFlagsValue::from(*flags).into(),
+                    tag_moderation_flags: TagModerationFlagsValue::from(*moderation_flags).into(),
                 };
                 diesel::insert_into(schema::organization_tag::table)
                     .values(&org_tag)
@@ -1711,10 +1715,17 @@ impl OrganizationGateway for SqliteConnection {
         })
     }
 
-    fn get_all_tags_owned_by_orgs(&self) -> Result<Vec<ModeratedTag>> {
-        use schema::organization_tag::dsl;
-        let moderated_tags = dsl::organization_tag
-            .load::<models::OrganizationTag>(self)?
+    fn get_all_tags_owned_by_orgs(&self) -> Result<Vec<(Id, ModeratedTag)>> {
+        use schema::organization::dsl as org_dsl;
+        use schema::organization_tag::dsl as org_tag_dsl;
+        let moderated_tags = org_tag_dsl::organization_tag
+            .inner_join(org_dsl::organization)
+            .select((
+                org_dsl::id,
+                org_tag_dsl::tag_label,
+                org_tag_dsl::tag_moderation_flags,
+            ))
+            .load::<models::OrganizationTagWithId>(self)?
             .into_iter()
             .map(Into::into)
             .collect();

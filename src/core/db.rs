@@ -88,7 +88,7 @@ pub trait UserGateway {
 pub trait OrganizationGateway {
     fn create_org(&mut self, _: Organization) -> Result<()>;
     fn get_org_by_api_token(&self, token: &str) -> Result<Organization>;
-    fn get_all_tags_owned_by_orgs(&self) -> Result<Vec<ModeratedTag>>;
+    fn get_all_tags_owned_by_orgs(&self) -> Result<Vec<(Id, ModeratedTag)>>;
 }
 
 //TODO:

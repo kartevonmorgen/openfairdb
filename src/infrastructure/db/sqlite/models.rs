@@ -282,6 +282,13 @@ pub struct OrganizationTag {
     pub tag_moderation_flags: i16,
 }
 
+#[derive(Queryable)]
+pub struct OrganizationTagWithId {
+    pub org_id: String,
+    pub tag_label: String,
+    pub tag_moderation_flags: i16,
+}
+
 #[derive(Insertable)]
 #[table_name = "organization_tag"]
 pub struct NewOrganizationTag<'a> {

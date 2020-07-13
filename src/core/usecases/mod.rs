@@ -173,47 +173,46 @@ pub fn prepare_tag_list<'a>(tags: impl IntoIterator<Item = &'a str>) -> Vec<Stri
     tags
 }
 
-// Counts and returns the number of tags owned by this org and a list
-// of other organizations that require authorization of pending changes.
+// Checks if the addition and removal of tags is permitted.
+//
+// Returns a list with the ids of other organizations that require
+// authorization of the pending changes.
+//
+// If an organization is provided than this organization is excluded
+// from both the checks and the pending authorization list.
 pub fn authorize_moderated_tags_owned_by_orgs<D: Db>(
     db: &D,
     old_tags: &[String],
     new_tags: &[String],
     org: Option<&Organization>,
 ) -> Result<Vec<Id>> {
-    let mod_tags = db.get_all_tags_owned_by_orgs()?;
-    let mut count = 0;
-    let mod_tags_of_other_orgs = if let Some(org) = org {
-        mod_tags
+    let moderated_tags_by_orgs = db.get_all_tags_owned_by_orgs()?;
+    let moderated_tags_by_other_orgs = if let Some(org) = org {
+        moderated_tags_by_orgs
             .into_iter()
-            .filter(|mod_tag| {
-                !org.moderated_tags.iter().any(|org_tag| {
-                    if org_tag == mod_tag {
-                        count += 1;
-                        true
-                    } else {
-                        false
-                    }
-                })
+            .filter(|(_, moderated_tag)| {
+                !org.moderated_tags
+                    .iter()
+                    .any(|moderated_org_tag| moderated_org_tag == moderated_tag)
             })
             .collect()
     } else {
-        mod_tags
+        moderated_tags_by_orgs
     };
     let mut auth_org_ids = Vec::new();
     for added_tag in new_tags
         .iter()
         .filter(|new_tag| !old_tags.iter().any(|old_tag| old_tag == *new_tag))
     {
-        for mod_tag in mod_tags_of_other_orgs
-            .iter()
-            .filter(|mod_tag| &mod_tag.label == added_tag)
-        {
-            if !mod_tag.flags.allows_add() {
+        for (org_id, moderated_tag) in &moderated_tags_by_other_orgs {
+            if &moderated_tag.label != added_tag {
+                continue;
+            }
+            if !moderated_tag.moderation_flags.allows_add() {
                 return Err(ParameterError::ModeratedTag.into());
             }
-            if mod_tag.flags.requires_authorization() {
-                //FIXME: auth_org_ids.push(org_id);
+            if moderated_tag.moderation_flags.requires_authorization() {
+                auth_org_ids.push(org_id.clone());
             }
         }
     }
@@ -221,15 +220,15 @@ pub fn authorize_moderated_tags_owned_by_orgs<D: Db>(
         .iter()
         .filter(|old_tag| !new_tags.iter().any(|new_tag| new_tag == *old_tag))
     {
-        for mod_tag in mod_tags_of_other_orgs
-            .iter()
-            .filter(|mod_tag| &mod_tag.label == removed_tag)
-        {
-            if !mod_tag.flags.allows_remove() {
+        for (org_id, moderated_tag) in &moderated_tags_by_other_orgs {
+            if &moderated_tag.label != removed_tag {
+                continue;
+            }
+            if !moderated_tag.moderation_flags.allows_remove() {
                 return Err(ParameterError::ModeratedTag.into());
             }
-            if mod_tag.flags.requires_authorization() {
-                //FIXME: auth_org_ids.push(org_id);
+            if moderated_tag.moderation_flags.requires_authorization() {
+                auth_org_ids.push(org_id.clone());
             }
         }
     }

@@ -155,6 +155,8 @@ pub fn import_new_event<D: Db>(
     } else {
         super::authorize_moderated_tags_owned_by_orgs(db, &vec![], &new_tags, None)?
     };
+    // TODO: Record pending authorizations for events
+    debug_assert!(_auth_org_ids.is_empty());
     new_tags.sort_unstable();
     new_tags.dedup();
 

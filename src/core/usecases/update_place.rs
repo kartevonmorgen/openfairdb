@@ -92,16 +92,10 @@ pub fn prepare_updated_place<D: Db>(
             .iter()
             .map(String::as_str),
     );
-    // TODO: Ensure that no reserved tags are removed without authorization.
-    // All existing reserved tags from other organizations must be preserved
-    // when editing places. Reserved tags that already exist should not be
-    // considers during the check, because they must be preserved independent
-    // of who is editing the place_rev.
-    // GitHub issue: https://github.com/slowtec/openfairdb/issues/203
-    // TODO: Check if the issue is solved now.
-    let _auth_org_ids =
+    let auth_org_ids =
         super::authorize_moderated_tags_owned_by_orgs(db, &old_tags, &new_tags, None)?;
-    debug_assert_eq!(0, _auth_org_ids.len()); // FIXME
+    // FIXME: Record pending authorizations
+    assert!(auth_org_ids.is_empty());
 
     let homepage = homepage
         .and_then(|ref url| parse_url_param(url).transpose())
