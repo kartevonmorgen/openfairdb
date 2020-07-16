@@ -1,7 +1,7 @@
 pub use ofdb_entities::{
-    activity::*, address::*, category::*, comment::*, contact::*, email::*, event::*, geo::*,
-    id::*, links::*, location::*, nonce::*, organization::*, password::*, place::*, rating::*,
-    review::*, revision::*, subscription::*, tag::*, time::*, user::*,
+    activity::*, address::*, authorization::*, category::*, comment::*, contact::*, email::*,
+    event::*, geo::*, id::*, links::*, location::*, nonce::*, organization::*, password::*,
+    place::*, rating::*, review::*, revision::*, subscription::*, tag::*, time::*, user::*,
 };
 
 #[cfg(test)]

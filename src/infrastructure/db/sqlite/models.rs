@@ -361,3 +361,21 @@ pub struct UserTokenEntity {
     // Joined columns
     pub user_email: String,
 }
+
+#[derive(Insertable)]
+#[table_name = "organization_place_authorization_pending"]
+pub struct NewPendingAuthorizationForPlace {
+    pub org_rowid: i64,
+    pub place_rowid: i64,
+    pub created_at: i64,
+    pub last_authorized_revision: Option<i64>,
+    pub last_authorized_review_status: Option<i16>,
+}
+
+#[derive(Queryable)]
+pub struct PendingAuthorizationForPlace {
+    pub place_id: String,
+    pub created_at: i64,
+    pub last_authorized_revision: Option<i64>,
+    pub last_authorized_review_status: Option<i16>,
+}

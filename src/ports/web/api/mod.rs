@@ -244,7 +244,7 @@ pub fn get_place_history(
 
         // The history contains e-mail addresses of registered users
         // and is only permitted for scouts and admins!
-        usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+        usecases::authorization::user::authorize_by_email(&*db, &login.0, Role::Scout)?;
 
         db.get_place_history(&id)?
     };
@@ -266,7 +266,7 @@ pub fn post_places_review(
     let reviewer_email = {
         let db = db.shared()?;
         // Only scouts and admins are entitled to review places
-        usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?.email
+        usecases::authorization::user::authorize_by_email(&*db, &login.0, Role::Scout)?.email
     };
     let json::Review { status, comment } = review.into_inner();
     // TODO: Record context information
@@ -504,8 +504,10 @@ fn entries_csv_export_with_token(
     login: Login,
     query: Form<search::SearchQuery>,
 ) -> result::Result<Content<String>, AppError> {
-    let organization =
-        usecases::authorize_organization_by_token(&*connections.shared()?, &token.0)?;
+    let organization = usecases::authorization::organization::authorize_by_token(
+        &*connections.shared()?,
+        &token.0,
+    )?;
     entries_csv_export(
         connections,
         search_engine,
@@ -535,7 +537,7 @@ fn entries_csv_export(
     let moderated_tags = org.map(|org| org.moderated_tags).unwrap_or_default();
 
     let db = connections.shared()?;
-    let user = usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+    let user = usecases::authorization::user::authorize_by_email(&*db, &login.0, Role::Scout)?;
 
     let (req, limit) = search::parse_search_query(&query)?;
     let limit = if let Some(limit) = limit {

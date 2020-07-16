@@ -219,7 +219,8 @@ paths:
           schema:
             type: string
           description: |
-            The owned hash tag that identifies the organization responsible for authorization.
+            The moderated hash tag that identifies the organization responsible for authorization.
+            It is not used for filtering the results if an organization moderates multiple tags.
         - $ref: '#/components/parameters/PaginationLimit'
         - $ref: '#/components/parameters/PaginationOffset'
       responses:
@@ -239,24 +240,18 @@ paths:
         - Places
       summary: Acknowledge pending authorizations of places
       description: |
-        Acknowledge pending authorizations by authorizing the specified
-        revision and review status of mutliple places.
+        Acknowledge pending authorizations for multiple places.
 
         All authorizations are handled one after another by this batch
         operation.
 
-        If the review status is omitted then only the revision is considered,
-        i.e. the review status is considered as a wildcard match.
+        A missing review status is replaced by the current review status
+        of the given revision, i.e. acts like a wildcard.
 
-        If the given revision and review status does not exist in the history
-        of the place then the authorization is silently ignored and skipped.
-
-        If the given revision and review status matches that of the most current
-        entity then the pending unauthorization is deleted.
-
-        Otherwise the pending authorization is replaced with the given revision
-        and review status. If no authorization for the place was pending then a
-        new pending authorization is created.
+        If the given revision and review status match the current revision
+        and review status then any pending authorization for the place is
+        deleted. Otherwise pending authorizations will be updated accordingly
+        and remain pending.
       parameters:
         - name: auth_tag
           in: query
@@ -264,8 +259,9 @@ paths:
           schema:
             type: string
           description: |
-            The owned hash tag that implicitly identifies the organization responsible
-            for authorization.
+            The moderated hash tag that implicitly identifies the organization responsible
+            for authorization. It is not used for filtering if an organization moderates
+            multiple tags.
       responses:
         '200':
           description: Successful response
@@ -274,7 +270,7 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/PlacePendingAuthorization'
+                  $ref: '#/components/schemas/PlaceAuthorization'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
   '/places/{id}/history':
@@ -940,6 +936,16 @@ components:
           $ref: '#/components/schemas/PlaceRevisionAndReviewStatus'
       required:
         - id
+    PlaceAuthorization:
+      description: The compact view of an entry as returned in search results.
+      properties:
+        id:
+          $ref: '#/components/schemas/PlaceId'
+        authorized:
+          $ref: '#/components/schemas/PlaceRevisionAndReviewStatus'
+      required:
+        - id
+        - authorized
     AvgRatings:
       description: All average ratings of an entry.
       properties:

@@ -111,13 +111,12 @@ pub fn import_new_event<D: Db>(
                 }
                 new_tags.sort_unstable();
                 new_tags.dedup();
-                let auth_org_ids = super::authorize_moderated_tags_owned_by_orgs(
+                super::authorization::moderated_tag::authorize_edits(
                     db,
-                    &vec![],
+                    &[],
                     &new_tags,
                     Some(&org),
-                )?;
-                auth_org_ids
+                )?
             }
             NewEventMode::Update(id) => {
                 let old_tags = db.get_event(id)?.tags;
@@ -143,17 +142,16 @@ pub fn import_new_event<D: Db>(
                     new_tags.dedup();
                 }
                 // Verify that the org is entitled to update this event according to the owned tags
-                let auth_org_ids = super::authorize_moderated_tags_owned_by_orgs(
+                super::authorization::moderated_tag::authorize_edits(
                     db,
                     &old_tags,
                     &new_tags,
                     Some(&org),
-                )?;
-                auth_org_ids
+                )?
             }
         }
     } else {
-        super::authorize_moderated_tags_owned_by_orgs(db, &vec![], &new_tags, None)?
+        super::authorization::moderated_tag::authorize_edits(db, &[], &new_tags, None)?
     };
     // TODO: Record pending authorizations for events
     debug_assert!(_auth_org_ids.is_empty());

@@ -9,7 +9,7 @@ use crate::core::{
 mod archive_comments;
 mod archive_events;
 mod archive_ratings;
-mod authorize_organization;
+pub mod authorization;
 mod change_user_role;
 mod confirm_email;
 mod confirm_email_and_reset_password;
@@ -36,12 +36,11 @@ mod user_tokens;
 pub mod tests;
 
 pub use self::{
-    archive_comments::*, archive_events::*, archive_ratings::*, authorize_organization::*,
-    change_user_role::*, confirm_email::*, confirm_email_and_reset_password::*,
-    create_new_place::*, create_new_user::*, delete_event::*, export_event::*, export_place::*,
-    filter_event::*, filter_place::*, find_duplicates::*, indexing::*, login::*, query_events::*,
-    rate_place::*, register::*, review_places::*, search::*, store_event::*, update_place::*,
-    user_tokens::*,
+    archive_comments::*, archive_events::*, archive_ratings::*, change_user_role::*,
+    confirm_email::*, confirm_email_and_reset_password::*, create_new_place::*, create_new_user::*,
+    delete_event::*, export_event::*, export_place::*, filter_event::*, filter_place::*,
+    find_duplicates::*, indexing::*, login::*, query_events::*, rate_place::*, register::*,
+    review_places::*, search::*, store_event::*, update_place::*, user_tokens::*,
 };
 
 //TODO: move usecases into separate files
@@ -171,81 +170,4 @@ pub fn prepare_tag_list<'a>(tags: impl IntoIterator<Item = &'a str>) -> Vec<Stri
     tags.sort_unstable();
     tags.dedup();
     tags
-}
-
-// Checks if the addition and removal of tags is permitted.
-//
-// Returns a list with the ids of other organizations that require
-// authorization of the pending changes.
-//
-// If an organization is provided than this organization is excluded
-// from both the checks and the pending authorization list.
-pub fn authorize_moderated_tags_owned_by_orgs<D: Db>(
-    db: &D,
-    old_tags: &[String],
-    new_tags: &[String],
-    org: Option<&Organization>,
-) -> Result<Vec<Id>> {
-    let moderated_tags_by_orgs = db.get_all_tags_owned_by_orgs()?;
-    let moderated_tags_by_other_orgs = if let Some(org) = org {
-        moderated_tags_by_orgs
-            .into_iter()
-            .filter(|(_, moderated_tag)| {
-                !org.moderated_tags
-                    .iter()
-                    .any(|moderated_org_tag| moderated_org_tag == moderated_tag)
-            })
-            .collect()
-    } else {
-        moderated_tags_by_orgs
-    };
-    let mut auth_org_ids = Vec::new();
-    for added_tag in new_tags
-        .iter()
-        .filter(|new_tag| !old_tags.iter().any(|old_tag| old_tag == *new_tag))
-    {
-        for (org_id, moderated_tag) in &moderated_tags_by_other_orgs {
-            if &moderated_tag.label != added_tag {
-                continue;
-            }
-            if !moderated_tag.moderation_flags.allows_add() {
-                return Err(ParameterError::ModeratedTag.into());
-            }
-            if moderated_tag.moderation_flags.requires_authorization() {
-                auth_org_ids.push(org_id.clone());
-            }
-        }
-    }
-    for removed_tag in old_tags
-        .iter()
-        .filter(|old_tag| !new_tags.iter().any(|new_tag| new_tag == *old_tag))
-    {
-        for (org_id, moderated_tag) in &moderated_tags_by_other_orgs {
-            if &moderated_tag.label != removed_tag {
-                continue;
-            }
-            if !moderated_tag.moderation_flags.allows_remove() {
-                return Err(ParameterError::ModeratedTag.into());
-            }
-            if moderated_tag.moderation_flags.requires_authorization() {
-                auth_org_ids.push(org_id.clone());
-            }
-        }
-    }
-    auth_org_ids.sort_unstable();
-    auth_org_ids.dedup();
-    Ok(auth_org_ids)
-}
-
-pub fn authorize_user_by_email(
-    db: &dyn Db,
-    user_email: &str,
-    min_required_role: Role,
-) -> Result<User> {
-    if let Some(user) = db.try_get_user_by_email(user_email)? {
-        if user.role >= min_required_role {
-            return Ok(user);
-        }
-    }
-    Err(Error::Parameter(ParameterError::Unauthorized))
 }

@@ -88,7 +88,28 @@ pub trait UserGateway {
 pub trait OrganizationGateway {
     fn create_org(&mut self, _: Organization) -> Result<()>;
     fn get_org_by_api_token(&self, token: &str) -> Result<Organization>;
-    fn get_all_tags_owned_by_orgs(&self) -> Result<Vec<(Id, ModeratedTag)>>;
+    fn get_moderated_tags_by_org(
+        &self,
+        excluded_org_id: Option<&Id>,
+    ) -> Result<Vec<(Id, ModeratedTag)>>;
+}
+
+pub trait AuthorizationGateway {
+    fn add_pending_authorizations_for_place(
+        &self,
+        org_ids: &[Id],
+        pending_authorization: &PendingAuthorizationForPlace,
+    ) -> Result<usize>;
+    fn get_pending_authorizations_for_places(
+        &self,
+        org_id: &Id,
+    ) -> Result<Vec<PendingAuthorizationForPlace>>;
+    fn replace_pending_authorization_for_place(
+        &self,
+        org_id: &Id,
+        authorization: &AuthorizationForPlace,
+    ) -> Result<()>;
+    fn cleanup_pending_authorizations_for_places(&self, org_id: &Id) -> Result<usize>;
 }
 
 //TODO:

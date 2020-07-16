@@ -33,13 +33,14 @@ joinable!(organization_tag -> organization (org_rowid));
 
 table! {
     organization_place_authorization_pending (org_rowid, place_rowid) {
+        rowid -> BigInt,
         org_rowid -> BigInt,
         place_rowid -> BigInt,
         created_at -> BigInt,
-        // last authorized revision number or NULL if the place has not been authorized yet
-        place_last_authorized_rev -> Nullable<BigInt>,
-        // current review status upon authorization or NULL if the place has not been authorized yet
-        place_last_authorized_review_status -> Nullable<SmallInt>,
+        // last authorized revision or NULL if the place has not been authorized yet
+        last_authorized_revision -> Nullable<BigInt>,
+        // last authorized review status or NULL if the place has not been authorized yet
+        last_authorized_review_status -> Nullable<SmallInt>,
     }
 }
 

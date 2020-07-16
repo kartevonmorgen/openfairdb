@@ -93,7 +93,7 @@ pub fn prepare_updated_place<D: Db>(
             .map(String::as_str),
     );
     let auth_org_ids =
-        super::authorize_moderated_tags_owned_by_orgs(db, &old_tags, &new_tags, None)?;
+        super::authorization::moderated_tag::authorize_edits(db, &old_tags, &new_tags, None)?;
     // FIXME: Record pending authorizations
     assert!(auth_org_ids.is_empty());
 

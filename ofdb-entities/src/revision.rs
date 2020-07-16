@@ -1,5 +1,7 @@
+pub type RevisionValue = u64;
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Revision(u64);
+pub struct Revision(RevisionValue);
 
 impl Revision {
     pub const fn initial() -> Self {
@@ -15,14 +17,14 @@ impl Revision {
     }
 }
 
-impl From<Revision> for u64 {
+impl From<Revision> for RevisionValue {
     fn from(from: Revision) -> Self {
         from.0
     }
 }
 
-impl From<u64> for Revision {
-    fn from(from: u64) -> Self {
+impl From<RevisionValue> for Revision {
+    fn from(from: RevisionValue) -> Self {
         Self(from)
     }
 }

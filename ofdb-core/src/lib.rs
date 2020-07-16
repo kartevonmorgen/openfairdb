@@ -4,6 +4,7 @@ extern crate test;
 
 use ofdb_entities::{address::*, category::*, email::*, event::*, nonce::*, place::*, user::*};
 
+pub mod authorization;
 pub mod util;
 
 pub trait EmailGateway {

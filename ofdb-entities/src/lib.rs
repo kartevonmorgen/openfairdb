@@ -1,5 +1,6 @@
 pub mod activity;
 pub mod address;
+pub mod authorization;
 pub mod category;
 pub mod comment;
 pub mod contact;
