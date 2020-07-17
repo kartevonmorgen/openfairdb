@@ -208,19 +208,8 @@ paths:
       description: |
         Returns a list with pending authorizations of places in chronological order.
 
-        The organization responsible for authorization is identified indirectly by
-        providing one of the hash tags that is moderated by this organization.
-
-        Requests must include the API token of the corresponding organization.
+        Requests must include the API token of the organization.
       parameters:
-        - name: auth_tag
-          in: query
-          required: true
-          schema:
-            type: string
-          description: |
-            The moderated hash tag that identifies the organization responsible for authorization.
-            It is not used for filtering the results if an organization moderates multiple tags.
         - $ref: '#/components/parameters/PaginationLimit'
         - $ref: '#/components/parameters/PaginationOffset'
       responses:
@@ -240,10 +229,7 @@ paths:
         - Places
       summary: Acknowledge pending authorizations of places
       description: |
-        Acknowledge pending authorizations for multiple places.
-
-        All authorizations are handled one after another by this batch
-        operation.
+        Acknowledges pending authorizations for multiple places.
 
         A missing review status is replaced by the current review status
         of the given revision, i.e. acts like a wildcard.
@@ -252,16 +238,8 @@ paths:
         and review status then any pending authorization for the place is
         deleted. Otherwise pending authorizations will be updated accordingly
         and remain pending.
-      parameters:
-        - name: auth_tag
-          in: query
-          required: true
-          schema:
-            type: string
-          description: |
-            The moderated hash tag that implicitly identifies the organization responsible
-            for authorization. It is not used for filtering if an organization moderates
-            multiple tags.
+
+        Requests must include the API token of the organization.
       responses:
         '200':
           description: Successful response

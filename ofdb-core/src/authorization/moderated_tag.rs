@@ -18,7 +18,7 @@ pub type Result<T> = StdResult<T, Error>;
 //
 // Returns a list with the ids of organizations that require
 // authorization of the pending changes.
-pub fn authorize_edits<T>(
+pub fn authorize_editing<T>(
     moderated_tags_by_org: T,
     old_tags: &[String],
     new_tags: &[String],

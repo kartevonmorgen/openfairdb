@@ -85,7 +85,7 @@ pub trait UserGateway {
     fn try_get_user_by_email(&self, email: &str) -> Result<Option<User>>;
 }
 
-pub trait OrganizationGateway {
+pub trait OrganizationRepo {
     fn create_org(&mut self, _: Organization) -> Result<()>;
     fn get_org_by_api_token(&self, token: &str) -> Result<Organization>;
     fn get_moderated_tags_by_org(
@@ -94,20 +94,22 @@ pub trait OrganizationGateway {
     ) -> Result<Vec<(Id, ModeratedTag)>>;
 }
 
-pub trait AuthorizationGateway {
-    fn add_pending_authorizations_for_place(
+pub trait PlaceAuthorizationRepo {
+    fn add_pending_authorization_for_place(
         &self,
         org_ids: &[Id],
         pending_authorization: &PendingAuthorizationForPlace,
     ) -> Result<usize>;
-    fn get_pending_authorizations_for_places(
+    fn count_pending_authorizations_for_places(&self, org_id: &Id) -> Result<u64>;
+    fn list_pending_authorizations_for_places(
         &self,
         org_id: &Id,
+        pagination: &Pagination,
     ) -> Result<Vec<PendingAuthorizationForPlace>>;
-    fn replace_pending_authorization_for_place(
+    fn replace_pending_authorizations_for_places(
         &self,
         org_id: &Id,
-        authorization: &AuthorizationForPlace,
+        authorizations: &[AuthorizationForPlace],
     ) -> Result<()>;
     fn cleanup_pending_authorizations_for_places(&self, org_id: &Id) -> Result<usize>;
 }
@@ -126,10 +128,11 @@ pub trait Db:
     PlaceRepo
     + UserGateway
     + EventGateway
-    + OrganizationGateway
+    + OrganizationRepo
     + CommentRepository
     + RatingRepository
     + UserTokenRepo
+    + PlaceAuthorizationRepo
 {
     fn create_tag_if_it_does_not_exist(&self, _: &Tag) -> Result<()>;
 

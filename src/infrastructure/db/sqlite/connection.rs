@@ -1683,7 +1683,7 @@ impl Db for SqliteConnection {
     }
 }
 
-impl OrganizationGateway for SqliteConnection {
+impl OrganizationRepo for SqliteConnection {
     fn create_org(&mut self, mut o: Organization) -> Result<()> {
         let org_id = o.id.clone();
         let moderated_tags = std::mem::replace(&mut o.moderated_tags, vec![]);
@@ -1770,8 +1770,8 @@ impl OrganizationGateway for SqliteConnection {
     }
 }
 
-impl AuthorizationGateway for SqliteConnection {
-    fn add_pending_authorizations_for_place(
+impl PlaceAuthorizationRepo for SqliteConnection {
+    fn add_pending_authorization_for_place(
         &self,
         org_ids: &[Id],
         pending_authorization: &PendingAuthorizationForPlace,
@@ -1821,15 +1821,31 @@ impl AuthorizationGateway for SqliteConnection {
         Ok(insert_count)
     }
 
-    fn get_pending_authorizations_for_places(
+    fn count_pending_authorizations_for_places(&self, org_id: &Id) -> Result<u64> {
+        use schema::organization::dsl as org_dsl;
+        use schema::organization_place_authorization_pending::dsl;
+        Ok(schema::organization_place_authorization_pending::table
+            .filter(
+                dsl::org_rowid.eq_any(
+                    schema::organization::table
+                        .select(org_dsl::rowid)
+                        .filter(org_dsl::id.eq(org_id.as_str())),
+                ),
+            )
+            .count()
+            .get_result::<i64>(self)? as u64)
+    }
+
+    fn list_pending_authorizations_for_places(
         &self,
         org_id: &Id,
+        pagination: &Pagination,
     ) -> Result<Vec<PendingAuthorizationForPlace>> {
         use schema::organization::dsl as org_dsl;
         use schema::organization_place_authorization_pending::dsl;
         use schema::place::dsl as place_dsl;
-        Ok(dsl::organization_place_authorization_pending
-            .inner_join(place_dsl::place)
+        let mut query = schema::organization_place_authorization_pending::table
+            .inner_join(schema::place::table)
             .select((
                 place_dsl::id,
                 dsl::created_at,
@@ -1838,63 +1854,76 @@ impl AuthorizationGateway for SqliteConnection {
             ))
             .filter(
                 dsl::org_rowid.eq_any(
-                    org_dsl::organization
+                    schema::organization::table
                         .select(org_dsl::rowid)
                         .filter(org_dsl::id.eq(org_id.as_str())),
                 ),
             )
             .order_by(dsl::created_at)
+            .into_boxed();
+
+        // Pagination
+        let offset = pagination.offset.unwrap_or(0);
+        if offset > 0 {
+            query = query.offset(offset as i64);
+        }
+        if let Some(limit) = pagination.limit {
+            query = query.limit(limit as i64);
+        }
+
+        Ok(query
             .load::<models::PendingAuthorizationForPlace>(self)?
             .into_iter()
             .map(Into::into)
             .collect())
     }
 
-    fn replace_pending_authorization_for_place(
+    fn replace_pending_authorizations_for_places(
         &self,
         org_id: &Id,
-        authorization: &AuthorizationForPlace,
+        authorizations: &[AuthorizationForPlace],
     ) -> Result<()> {
-        let AuthorizationForPlace {
-            place_id,
-            created_at,
-            authorized,
-        } = authorization;
-        let AuthorizedRevision {
-            revision: authorized_revision,
-            review_status: authorized_review_status,
-        } = authorized;
-        let (place_rowid, _authorized_revision_rowid, authorized_revision_current_status) =
-            resolve_place_revision_rowid(self, place_id, *authorized_revision)?;
         let org_rowid = resolve_organization_rowid(self, org_id)?;
+        for authorization in authorizations {
+            let AuthorizationForPlace {
+                place_id,
+                created_at,
+                authorized,
+            } = authorization;
+            let AuthorizedRevision {
+                revision: authorized_revision,
+                review_status: authorized_review_status,
+            } = authorized;
+            let (place_rowid, _authorized_revision_rowid, authorized_revision_current_status) =
+                resolve_place_revision_rowid(self, place_id, *authorized_revision)?;
 
-        use schema::organization_place_authorization_pending::dsl;
-        let _delete_count = diesel::delete(
-            schema::organization_place_authorization_pending::table
-                .filter(dsl::org_rowid.eq(org_rowid))
-                .filter(dsl::place_rowid.eq(place_rowid)),
-        )
-        .execute(self)?;
-        debug_assert!(_delete_count <= 1);
+            use schema::organization_place_authorization_pending::dsl;
+            let _delete_count = diesel::delete(
+                schema::organization_place_authorization_pending::table
+                    .filter(dsl::org_rowid.eq(org_rowid))
+                    .filter(dsl::place_rowid.eq(place_rowid)),
+            )
+            .execute(self)?;
+            debug_assert!(_delete_count <= 1);
 
-        let created_at = created_at.into_inner();
-        let last_authorized_revision = Some(RevisionValue::from(*authorized_revision) as i64);
-        let last_authorized_review_status = authorized_review_status
-            .or(authorized_revision_current_status)
-            .map(ReviewStatusPrimitive::from);
-        let insertable = models::NewPendingAuthorizationForPlace {
-            org_rowid,
-            place_rowid,
-            created_at,
-            last_authorized_revision,
-            last_authorized_review_status,
-        };
-        let _insert_count =
-            diesel::insert_into(schema::organization_place_authorization_pending::table)
-                .values(&insertable)
-                .execute(self)?;
-        debug_assert!(_insert_count <= 1);
-
+            let created_at = created_at.into_inner();
+            let last_authorized_revision = Some(RevisionValue::from(*authorized_revision) as i64);
+            let last_authorized_review_status = authorized_review_status
+                .or(authorized_revision_current_status)
+                .map(ReviewStatusPrimitive::from);
+            let insertable = models::NewPendingAuthorizationForPlace {
+                org_rowid,
+                place_rowid,
+                created_at,
+                last_authorized_revision,
+                last_authorized_review_status,
+            };
+            let _insert_count =
+                diesel::insert_into(schema::organization_place_authorization_pending::table)
+                    .values(&insertable)
+                    .execute(self)?;
+            debug_assert!(_insert_count <= 1);
+        }
         Ok(())
     }
 

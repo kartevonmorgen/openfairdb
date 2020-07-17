@@ -425,7 +425,7 @@ impl CommentRepository for MockDb {
     }
 }
 
-impl OrganizationGateway for MockDb {
+impl OrganizationRepo for MockDb {
     fn create_org(&mut self, o: Organization) -> RepoResult<()> {
         create(&mut self.orgs, o)
     }
@@ -502,6 +502,40 @@ impl RatingRepository for MockDb {
         _activity: &Activity,
     ) -> RepoResult<usize> {
         unimplemented!();
+    }
+}
+
+impl PlaceAuthorizationRepo for MockDb {
+    fn add_pending_authorization_for_place(
+        &self,
+        org_ids: &[Id],
+        _pending_authorization: &PendingAuthorizationForPlace,
+    ) -> RepoResult<usize> {
+        Ok(org_ids.len())
+    }
+
+    fn count_pending_authorizations_for_places(&self, _org_id: &Id) -> RepoResult<u64> {
+        Ok(0)
+    }
+
+    fn list_pending_authorizations_for_places(
+        &self,
+        _org_id: &Id,
+        _pagination: &Pagination,
+    ) -> RepoResult<Vec<PendingAuthorizationForPlace>> {
+        Ok(vec![])
+    }
+
+    fn replace_pending_authorizations_for_places(
+        &self,
+        _org_id: &Id,
+        _authorizations: &[AuthorizationForPlace],
+    ) -> RepoResult<()> {
+        Ok(())
+    }
+
+    fn cleanup_pending_authorizations_for_places(&self, _org_id: &Id) -> RepoResult<usize> {
+        Ok(0)
     }
 }
 

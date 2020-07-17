@@ -26,7 +26,11 @@ pub struct UpdatePlace {
     pub image_link_url : Option<String>,
 }
 
-pub struct Storable(Place);
+pub struct Storable {
+    place: Place,
+    auth_org_ids: Vec<Id>,
+    last_authorized: AuthorizedRevision,
+}
 
 pub fn prepare_updated_place<D: Db>(
     db: &D,
@@ -72,18 +76,22 @@ pub fn prepare_updated_place<D: Db>(
         Some(address)
     };
 
-    let (revision, old_tags, license) = {
-        let (old_place, _) = db.get_place(place_id.as_str())?;
+    let (revision, last_authorized, old_tags, license) = {
+        let (old_place, review_status) = db.get_place(place_id.as_str())?;
         // Check for revision conflict (optimistic locking)
         let revision = Revision::from(version);
         if old_place.revision.next() != revision {
             return Err(RepoError::InvalidVersion.into());
         }
+        let last_authorized = AuthorizedRevision {
+            revision: old_place.revision,
+            review_status: Some(review_status),
+        };
         // The license is immutable
         let license = old_place.license;
         // The existing tags are needed for authorization
         let old_tags = old_place.tags;
-        (revision, old_tags, license)
+        (revision, last_authorized, old_tags, license)
     };
 
     let categories: Vec<_> = categories.into_iter().map(Id::from).collect();
@@ -93,9 +101,7 @@ pub fn prepare_updated_place<D: Db>(
             .map(String::as_str),
     );
     let auth_org_ids =
-        super::authorization::moderated_tag::authorize_edits(db, &old_tags, &new_tags, None)?;
-    // FIXME: Record pending authorizations
-    assert!(auth_org_ids.is_empty());
+        super::authorization::moderated_tag::authorize_editing(db, &old_tags, &new_tags, None)?;
 
     let homepage = homepage
         .and_then(|ref url| parse_url_param(url).transpose())
@@ -138,16 +144,36 @@ pub fn prepare_updated_place<D: Db>(
         tags: new_tags,
     };
     place.validate()?;
-    Ok(Storable(place))
+    Ok(Storable {
+        place,
+        auth_org_ids,
+        last_authorized,
+    })
 }
 
 pub fn store_updated_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>)> {
-    let Storable(place) = s;
+    let Storable {
+        place,
+        auth_org_ids,
+        last_authorized,
+    } = s;
     debug!("Storing updated place revision: {:?}", place);
     for t in &place.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
     db.create_or_update_place(place.clone())?;
+    if !auth_org_ids.is_empty() {
+        let pending_authorization = PendingAuthorizationForPlace {
+            place_id: place.id.clone(),
+            created_at: place.created.at,
+            last_authorized: Some(last_authorized),
+        };
+        super::authorization::place::add_pending_authorization(
+            db,
+            &auth_org_ids,
+            &pending_authorization,
+        )?;
+    }
     let ratings = db.load_ratings_of_place(place.id.as_ref())?;
     Ok((place, ratings))
 }

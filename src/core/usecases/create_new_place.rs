@@ -27,7 +27,10 @@ pub struct NewPlace {
 }
 
 #[derive(Debug, Clone)]
-pub struct Storable(Place);
+pub struct Storable {
+    place: Place,
+    auth_org_ids: Vec<Id>,
+}
 
 pub fn prepare_new_place<D: Db>(
     db: &D,
@@ -68,9 +71,7 @@ pub fn prepare_new_place<D: Db>(
             .map(String::as_str),
     );
     let auth_org_ids =
-        super::authorization::moderated_tag::authorize_edits(db, &old_tags, &new_tags, None)?;
-    // FIXME: Record pending authorizations
-    assert!(auth_org_ids.is_empty());
+        super::authorization::moderated_tag::authorize_editing(db, &old_tags, &new_tags, None)?;
 
     let address = Address {
         street,
@@ -133,16 +134,34 @@ pub fn prepare_new_place<D: Db>(
         tags: new_tags,
     };
     place.validate()?;
-    Ok(Storable(place))
+    Ok(Storable {
+        place,
+        auth_org_ids,
+    })
 }
 
 pub fn store_new_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>)> {
-    let Storable(place) = s;
+    let Storable {
+        place,
+        auth_org_ids,
+    } = s;
     debug!("Storing new place revision: {:?}", place);
     for t in &place.tags {
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
     db.create_or_update_place(place.clone())?;
+    if !auth_org_ids.is_empty() {
+        let pending_authorization = PendingAuthorizationForPlace {
+            place_id: place.id.clone(),
+            created_at: place.created.at,
+            last_authorized: None,
+        };
+        super::authorization::place::add_pending_authorization(
+            db,
+            &auth_org_ids,
+            &pending_authorization,
+        )?;
+    }
     // No initial ratings so far
     let ratings = vec![];
     Ok((place, ratings))

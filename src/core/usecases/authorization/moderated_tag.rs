@@ -7,15 +7,16 @@ use crate::core::prelude::*;
 //
 // If an organization is provided than this organization is excluded
 // from both the checks and the pending authorization list.
-pub fn authorize_edits<D: Db>(
-    db: &D,
+pub fn authorize_editing<R: OrganizationRepo>(
+    repo: &R,
     old_tags: &[String],
     new_tags: &[String],
     org: Option<&Organization>,
 ) -> Result<Vec<Id>> {
     let org_id = org.map(|org| &org.id);
-    ofdb_core::authorization::moderated_tag::authorize_edits(
-        db.get_moderated_tags_by_org(org_id)?,
+    let moderated_tags_by_org = repo.get_moderated_tags_by_org(org_id)?;
+    ofdb_core::authorization::moderated_tag::authorize_editing(
+        moderated_tags_by_org,
         old_tags,
         new_tags,
     )
