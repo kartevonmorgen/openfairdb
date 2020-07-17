@@ -67,7 +67,7 @@ impl EmailGateway for Mailgun {
         }
         debug!("Sending e-mails to: {:?}", recipients);
         let recipients: String = recipients
-            .into_iter()
+            .iter()
             .map(std::ops::Deref::deref)
             .map(String::as_str)
             .collect::<Vec<_>>()
