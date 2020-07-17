@@ -27,6 +27,7 @@ impl From<RunMigrationsError> for AppError {
 }
 
 #[derive(Debug, Error)]
+#[allow(clippy::large_enum_variant)]
 pub enum AppError {
     #[error(transparent)]
     Business(#[from] BError),

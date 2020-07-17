@@ -302,6 +302,7 @@ enum TopDocsMode {
 }
 
 impl TantivyIndex {
+    #[allow(dead_code)]
     pub fn create_in_ram() -> Fallible<Self> {
         let no_path: Option<&Path> = None;
         Self::create(no_path)
@@ -1015,6 +1016,7 @@ impl EventAndPlaceIndexer for TantivyIndex {}
 pub struct SearchEngine(Arc<Mutex<Box<dyn EventAndPlaceIndexer + Send>>>);
 
 impl SearchEngine {
+    #[allow(dead_code)]
     pub fn init_in_ram() -> Fallible<SearchEngine> {
         let index = TantivyIndex::create_in_ram()?;
         Ok(SearchEngine(Arc::new(Mutex::new(Box::new(index)))))
