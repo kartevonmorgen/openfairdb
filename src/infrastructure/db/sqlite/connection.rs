@@ -233,14 +233,26 @@ struct TagCountRow {
     count: i64,
 }
 
-fn resolve_place_rowid(conn: &SqliteConnection, id: &Id) -> Result<(i64, Revision)> {
+fn resolve_organization_rowid(conn: &SqliteConnection, id: &Id) -> Result<i64> {
+    use schema::organization::dsl;
+    Ok(schema::organization::table
+        .select(dsl::rowid)
+        .filter(dsl::id.eq(id.as_str()))
+        .first::<i64>(conn)
+        .map_err(|e| {
+            log::warn!("Failed to resolve organization id '{}': {}", id, e);
+            e
+        })?)
+}
+
+fn resolve_place_rowid_rev(conn: &SqliteConnection, id: &Id) -> Result<(i64, Revision)> {
     use schema::place::dsl;
     Ok(schema::place::table
         .select((dsl::rowid, dsl::current_rev))
         .filter(dsl::id.eq(id.as_str()))
         .first::<(i64, i64)>(conn)
         .map_err(|e| {
-            log::warn!("Failed to resolve place pid '{}': {}", id, e);
+            log::warn!("Failed to resolve place id '{}': {}", id, e);
             e
         })
         .map(|(id, rev)| (id, Revision::from(rev as u64)))?)
@@ -253,7 +265,7 @@ fn resolve_rating_rowid(conn: &SqliteConnection, id: &str) -> Result<i64> {
         .filter(dsl::id.eq(id))
         .first::<i64>(conn)
         .map_err(|e| {
-            log::warn!("Failed to resolve place rating '{}': {}", id, e);
+            log::warn!("Failed to resolve place rating id '{}': {}", id, e);
             e
         })?)
 }
@@ -285,12 +297,12 @@ fn into_new_place_revision(
         diesel::insert_into(schema::place::table)
             .values(new_place)
             .execute(conn)?;
-        let (rowid, _revision) = resolve_place_rowid(conn, &place_id)?;
+        let (rowid, _revision) = resolve_place_rowid_rev(conn, &place_id)?;
         debug_assert_eq!(new_revision, _revision);
         rowid
     } else {
         // Update the existing place with a new revision
-        let (rowid, revision) = resolve_place_rowid(conn, &place_id)?;
+        let (rowid, revision) = resolve_place_rowid_rev(conn, &place_id)?;
         // Check for a contiguous revision history without conflicts (optimistic locking)
         if revision.next() != new_revision {
             return Err(RepoError::InvalidVersion);
@@ -1224,7 +1236,7 @@ impl RatingRepository for SqliteConnection {
             context,
             source,
         } = rating;
-        let (parent_rowid, _) = resolve_place_rowid(self, &place_id)?;
+        let (parent_rowid, _) = resolve_place_rowid_rev(self, &place_id)?;
         let new_place_rating = models::NewPlaceRating {
             id: id.into(),
             parent_rowid,
@@ -1645,46 +1657,53 @@ impl OrganizationGateway for SqliteConnection {
     fn create_org(&mut self, mut o: Organization) -> Result<()> {
         let org_id = o.id.clone();
         let owned_tags = std::mem::replace(&mut o.owned_tags, vec![]);
-        let tag_rels: Vec<_> = owned_tags
-            .iter()
-            .map(|tag_id| models::StoreableOrgTagRelation {
-                org_id: &org_id,
-                tag_id: &tag_id,
-            })
-            .collect();
-        let new_org = models::Organization::from(o);
+        let new_org = models::NewOrganization::from(o);
         self.transaction::<_, diesel::result::Error, _>(|| {
-            diesel::insert_into(schema::organizations::table)
+            diesel::insert_into(schema::organization::table)
                 .values(&new_org)
                 .execute(self)?;
-            diesel::insert_into(schema::org_tag_relations::table)
-                //WHERE NOT EXISTS
-                .values(&tag_rels)
-                .execute(self)?;
+            let org_rowid = resolve_organization_rowid(self, &org_id).map_err(|err| {
+                warn!(
+                    "Failed to resolve id of newly created organization '{}': {}",
+                    org_id, err
+                );
+                diesel::result::Error::RollbackTransaction
+            })?;
+            for owned_tag in &owned_tags {
+                let org_tag = models::NewOrganizationTag {
+                    org_rowid,
+                    owned_tag,
+                };
+                diesel::insert_into(schema::organization_tag_owned::table)
+                    .values(&org_tag)
+                    .execute(self)?;
+            }
             Ok(())
         })?;
         Ok(())
     }
+
     fn get_org_by_api_token(&self, token: &str) -> Result<Organization> {
-        use schema::{org_tag_relations::dsl as o_t_dsl, organizations::dsl as o_dsl};
+        use schema::{organization::dsl as org_dsl, organization_tag_owned::dsl as org_tag_dsl};
 
         let models::Organization {
+            rowid,
             id,
             name,
             api_token,
-        } = o_dsl::organizations
-            .filter(o_dsl::api_token.eq(token))
+        } = org_dsl::organization
+            .filter(org_dsl::api_token.eq(token))
             .first(self)?;
 
-        let owned_tags = o_t_dsl::org_tag_relations
-            .filter(o_t_dsl::org_id.eq(&id))
-            .load::<models::OrgTagRelation>(self)?
+        let owned_tags = org_tag_dsl::organization_tag_owned
+            .filter(org_tag_dsl::org_rowid.eq(rowid))
+            .load::<models::OrganizationTag>(self)?
             .into_iter()
-            .map(|r| r.tag_id)
+            .map(|r| r.owned_tag)
             .collect();
 
         Ok(Organization {
-            id,
+            id: id.into(),
             name,
             api_token,
             owned_tags,
@@ -1692,14 +1711,12 @@ impl OrganizationGateway for SqliteConnection {
     }
 
     fn get_all_tags_owned_by_orgs(&self) -> Result<Vec<String>> {
-        use schema::org_tag_relations::dsl;
-        let mut tags: Vec<_> = dsl::org_tag_relations
-            .load::<models::OrgTagRelation>(self)?
-            .into_iter()
-            .map(|r| r.tag_id)
-            .collect();
-        tags.dedup();
-        Ok(tags)
+        use schema::organization_tag_owned::dsl;
+        let owned_tags = dsl::organization_tag_owned
+            .select(dsl::owned_tag)
+            .distinct()
+            .load(self)?;
+        Ok(owned_tags)
     }
 }
 

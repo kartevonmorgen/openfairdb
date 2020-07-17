@@ -246,9 +246,17 @@ pub struct EventEntity {
     pub created_by_email: Option<String>,
 }
 
-#[derive(Queryable, Insertable)]
-#[table_name = "organizations"]
+#[derive(Insertable)]
+#[table_name = "organization"]
+pub struct NewOrganization {
+    pub id: String,
+    pub name: String,
+    pub api_token: String,
+}
+
+#[derive(Queryable)]
 pub struct Organization {
+    pub rowid: i64,
     pub id: String,
     pub name: String,
     pub api_token: String,
@@ -268,16 +276,16 @@ pub struct NewEventTag<'a> {
 }
 
 #[derive(Queryable)]
-pub struct OrgTagRelation {
-    pub org_id: String,
-    pub tag_id: String,
+pub struct OrganizationTag {
+    pub org_rowid: i64,
+    pub owned_tag: String,
 }
 
 #[derive(Insertable)]
-#[table_name = "org_tag_relations"]
-pub struct StoreableOrgTagRelation<'a, 'b> {
-    pub org_id: &'a str,
-    pub tag_id: &'b str,
+#[table_name = "organization_tag_owned"]
+pub struct NewOrganizationTag<'a> {
+    pub org_rowid: i64,
+    pub owned_tag: &'a str,
 }
 
 #[derive(Queryable, Insertable)]

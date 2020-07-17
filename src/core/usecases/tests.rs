@@ -64,7 +64,7 @@ impl Key for BboxSubscription {
 
 impl Key for Organization {
     fn key(&self) -> &str {
-        &self.id
+        self.id.as_ref()
     }
 }
 

@@ -13,7 +13,8 @@ table! {
 ///////////////////////////////////////////////////////////////////////
 
 table! {
-    organizations (id) {
+    organization (rowid) {
+        rowid -> BigInt,
         id -> Text,
         name -> Text,
         api_token -> Text,
@@ -21,14 +22,28 @@ table! {
 }
 
 table! {
-    org_tag_relations (org_id, tag_id) {
-        org_id -> Text,
-        tag_id -> Text,
+    organization_tag_owned (org_rowid, owned_tag) {
+        org_rowid -> BigInt,
+        owned_tag -> Text,
     }
 }
 
-joinable!(org_tag_relations -> organizations (org_id));
-joinable!(org_tag_relations -> tags (tag_id));
+joinable!(organization_tag_owned -> organization (org_rowid));
+
+table! {
+    organization_place_unauthorized (org_rowid, place_rowid) {
+        org_rowid -> BigInt,
+        place_rowid -> BigInt,
+        created_at -> BigInt,
+        // last authorized revision number or NULL if the place has not been authorized yet
+        last_authorized_place_rev -> Nullable<BigInt>,
+        // current review status upon authorization or NULL if the place has not been authorized yet
+        last_authorized_place_review_status -> Nullable<SmallInt>,
+    }
+}
+
+joinable!(organization_place_unauthorized -> organization (org_rowid));
+joinable!(organization_place_unauthorized -> place (place_rowid));
 
 ///////////////////////////////////////////////////////////////////////
 // Users
@@ -230,8 +245,9 @@ allow_tables_to_appear_in_same_query!(
     place_revision,
     place_revision_review,
     place_revision_tag,
-    org_tag_relations,
-    organizations,
+    organization,
+    organization_tag_owned,
+    organization_place_unauthorized,
     tags,
     users,
     user_tokens,

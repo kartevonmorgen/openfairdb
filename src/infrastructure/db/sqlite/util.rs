@@ -326,16 +326,16 @@ fn rating_context_from_str(context: &str) -> Result<e::RatingContext> {
     })
 }
 
-impl From<e::Organization> for Organization {
+impl From<e::Organization> for NewOrganization {
     fn from(o: e::Organization) -> Self {
         let e::Organization {
             id,
             name,
             api_token,
-            ..
+            owned_tags: _,
         } = o;
-        Organization {
-            id,
+        NewOrganization {
+            id: id.into(),
             name,
             api_token,
         }
