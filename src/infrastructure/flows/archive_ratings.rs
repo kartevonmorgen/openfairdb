@@ -88,7 +88,7 @@ pub fn archive_ratings(
 mod tests {
     use super::super::tests::prelude::*;
 
-    fn archive_ratings(fixture: &EnvFixture, ids: &[&str]) -> super::Result<usize> {
+    fn archive_ratings(fixture: &BackendFixture, ids: &[&str]) -> super::Result<usize> {
         super::archive_ratings(
             &fixture.db_connections,
             &mut *fixture.search_engine.borrow_mut(),
@@ -99,7 +99,7 @@ mod tests {
 
     #[test]
     fn should_archive_multiple_ratings_only_once() {
-        let fixture = EnvFixture::new();
+        let fixture = BackendFixture::new();
 
         fixture.create_user(
             usecases::NewUser {

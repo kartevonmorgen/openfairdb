@@ -82,12 +82,12 @@ pub fn reset_password_with_email_nonce(
 mod tests {
     use super::super::tests::prelude::*;
 
-    fn reset_password_request(fixture: &EnvFixture, email: &str) -> super::Result<EmailNonce> {
+    fn reset_password_request(fixture: &BackendFixture, email: &str) -> super::Result<EmailNonce> {
         super::reset_password_request(&fixture.db_connections, &fixture.notify, email)
     }
 
     fn reset_password_with_email_nonce(
-        fixture: &EnvFixture,
+        fixture: &BackendFixture,
         email_nonce: EmailNonce,
         new_password: Password,
     ) -> super::Result<()> {
@@ -96,7 +96,7 @@ mod tests {
 
     #[test]
     fn should_reset_password() {
-        let fixture = EnvFixture::new();
+        let fixture = BackendFixture::new();
 
         // User 1
         let email1 = "user1@some.org";

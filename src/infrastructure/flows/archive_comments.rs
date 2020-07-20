@@ -30,7 +30,7 @@ mod tests {
     use super::super::tests::prelude::*;
 
     fn archive_comments(
-        fixture: &EnvFixture,
+        fixture: &BackendFixture,
         account_email: &str,
         ids: &[&str],
     ) -> super::Result<usize> {
@@ -39,7 +39,7 @@ mod tests {
 
     #[test]
     fn should_archive_multiple_comments_only_once() {
-        let fixture = EnvFixture::new();
+        let fixture = BackendFixture::new();
 
         fixture.create_user(
             usecases::NewUser {

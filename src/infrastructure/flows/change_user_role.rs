@@ -33,7 +33,7 @@ mod tests {
     use super::super::tests::prelude::*;
 
     fn change_user_role(
-        fixture: &EnvFixture,
+        fixture: &BackendFixture,
         account_email: &str,
         user_email: &str,
         role: Role,
@@ -43,7 +43,7 @@ mod tests {
 
     #[test]
     fn should_change_the_role_to_scout_if_its_done_by_an_admin() {
-        let fixture = EnvFixture::new();
+        let fixture = BackendFixture::new();
         fixture.create_user(
             usecases::NewUser {
                 email: "user@bar.tld".into(),

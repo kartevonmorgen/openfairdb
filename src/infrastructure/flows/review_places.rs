@@ -78,7 +78,7 @@ mod tests {
     use super::super::tests::prelude::*;
 
     fn review_places(
-        fixture: &EnvFixture,
+        fixture: &BackendFixture,
         ids: &[&str],
         review: usecases::Review,
     ) -> super::Result<usize> {
@@ -101,7 +101,7 @@ mod tests {
 
     #[test]
     fn should_archive_multiple_places_only_once() {
-        let fixture = EnvFixture::new();
+        let fixture = BackendFixture::new();
 
         fixture.create_user(
             usecases::NewUser {
@@ -225,7 +225,7 @@ mod tests {
 
     #[test]
     fn should_archive_places_and_leaving_ratings_and_comments_unchanged() {
-        let fixture = EnvFixture::new();
+        let fixture = BackendFixture::new();
 
         fixture.create_user(
             usecases::NewUser {
