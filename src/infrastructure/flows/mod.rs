@@ -24,4 +24,4 @@ pub(crate) use super::{db::sqlite, error};
 pub(crate) use crate::core::{prelude::*, usecases};
 
 #[cfg(test)]
-mod tests;
+pub(crate) mod tests;

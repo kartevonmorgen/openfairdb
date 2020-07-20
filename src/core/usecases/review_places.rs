@@ -1,5 +1,6 @@
 use crate::core::prelude::*;
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Review {
     pub context: Option<String>,
     pub reviewer_email: Email,

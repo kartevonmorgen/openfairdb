@@ -49,3 +49,6 @@ lazy_static! {
         }
     };
 }
+
+#[cfg(test)]
+mod tests;

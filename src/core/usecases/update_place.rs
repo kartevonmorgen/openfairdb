@@ -26,6 +26,51 @@ pub struct UpdatePlace {
     pub image_link_url : Option<String>,
 }
 
+impl From<Place> for UpdatePlace {
+    fn from(from: Place) -> Self {
+        let Place {
+            contact,
+            created: _,
+            description,
+            id: _,
+            license: _,
+            links,
+            location: Location { address, pos },
+            opening_hours,
+            revision,
+            tags,
+            title,
+        } = from;
+        let (city, country, state, street, zip) = address
+            .map(|a| (a.city, a.country, a.state, a.street, a.zip))
+            .unwrap_or_default();
+        let (homepage_url, image_link_url, image_url) = links
+            .map(|l| (l.homepage, l.image_href, l.image))
+            .unwrap_or_default();
+        let (email, telephone) = contact.map(|c| (c.email, c.phone)).unwrap_or_default();
+        Self {
+            categories: vec![],
+            city,
+            country,
+            description,
+            email: email.map(Into::into),
+            homepage: homepage_url.map(|url| url.to_string()),
+            image_link_url: image_link_url.map(|url| url.to_string()),
+            image_url: image_url.map(|url| url.to_string()),
+            lat: pos.lat().to_deg(),
+            lng: pos.lng().to_deg(),
+            opening_hours: opening_hours.map(Into::into),
+            state,
+            street,
+            tags,
+            telephone,
+            title,
+            version: revision.into(),
+            zip,
+        }
+    }
+}
+
 pub struct Storable {
     place: Place,
     auth_org_ids: Vec<Id>,
