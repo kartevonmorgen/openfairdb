@@ -5,7 +5,10 @@ use crate::{
         usecases,
         util::{self, geo},
     },
-    infrastructure::{db::tantivy, error::AppError},
+    infrastructure::{
+        db::{sqlite, tantivy},
+        error::AppError,
+    },
 };
 
 use rocket::{self, request::Form};
@@ -17,6 +20,7 @@ pub struct SearchQuery {
     bbox: String,
     categories: Option<String>,
     ids: Option<String>,
+    auth_tag: Option<String>,
     tags: Option<String>,
     text: Option<String>,
     status: Option<String>,
@@ -25,11 +29,12 @@ pub struct SearchQuery {
 
 pub fn parse_search_query(
     query: &'_ SearchQuery,
-) -> result::Result<(usecases::SearchRequest<'_, '_, '_, '_>, Option<usize>), AppError> {
+) -> result::Result<(usecases::SearchRequest<'_>, Option<usize>), AppError> {
     let SearchQuery {
         bbox,
         ids,
         categories,
+        auth_tag,
         tags,
         text,
         status,
@@ -80,6 +85,7 @@ pub fn parse_search_query(
             bbox,
             ids,
             categories,
+            auth_tag: auth_tag.as_ref().map(String::as_str),
             hash_tags,
             text,
             status,
@@ -96,6 +102,7 @@ const MAX_RESULT_LIMIT: usize = 500;
 #[get("/search?<query..>")]
 #[allow(clippy::absurd_extreme_comparisons)]
 pub fn get_search(
+    connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     query: Form<SearchQuery>,
 ) -> Result<json::SearchResponse> {
@@ -125,7 +132,8 @@ pub fn get_search(
         DEFAULT_RESULT_LIMIT
     };
 
-    let (visible, invisible) = usecases::search(&search_engine, req, limit)?;
+    let (visible, invisible) =
+        usecases::search(&*connections.shared()?, &search_engine, req, limit)?;
 
     let visible: Vec<json::PlaceSearchResult> = visible.into_iter().map(Into::into).collect();
 

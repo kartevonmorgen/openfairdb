@@ -4,8 +4,6 @@ mod flows {
     pub use super::super::flows::{prelude::*, tests::prelude::BackendFixture, Result};
 }
 
-use std::ops::DerefMut;
-
 pub struct PlaceAuthorizationFixture {
     backend: flows::BackendFixture,
 
@@ -67,10 +65,14 @@ impl PlaceAuthorizationFixture {
         let backend = flows::BackendFixture::new();
 
         let user_email = Email::from("user@example.com".to_string());
-        usecases::register_with_email(backend.db_connections.exclusive().unwrap().deref_mut(), &usecases::Credentials {
-            email: &user_email,
-            password: "password",
-        }).unwrap();
+        usecases::register_with_email(
+            &mut *backend.db_connections.exclusive().unwrap(),
+            &usecases::Credentials {
+                email: &user_email,
+                password: "password",
+            },
+        )
+        .unwrap();
 
         // Create places
         let created_place = flows::create_place(
@@ -143,7 +145,11 @@ impl PlaceAuthorizationFixture {
             usecases::NewPlace {
                 title: "confirmed_place".into(),
                 description: "confirmed_place".into(),
-                tags: vec!["authadd".into(), "authremove".into(), "authaddremove".into()],
+                tags: vec![
+                    "authadd".into(),
+                    "authremove".into(),
+                    "authaddremove".into(),
+                ],
                 ..default_new_place()
             },
             None,
@@ -433,7 +439,12 @@ fn should_deny_removing_of_moderated_tag_from_place_if_not_allowed() -> flows::R
     let mut update_place = usecases::UpdatePlace::from(old_place.clone());
     let new_revision = old_place.revision.next();
     update_place.version = new_revision.into();
-    update_place.tags = old_place.tags.iter().filter(|place_tag| *place_tag != tag).cloned().collect();
+    update_place.tags = old_place
+        .tags
+        .iter()
+        .filter(|place_tag| *place_tag != tag)
+        .cloned()
+        .collect();
     assert!(flows::update_place(
         &fixture.backend.db_connections,
         fixture.backend.search_engine.get_mut(),

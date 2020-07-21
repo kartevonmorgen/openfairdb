@@ -58,6 +58,10 @@ paths:
             Unauthorized, not yet reviewed revisions of entries will either be removed
             or replaced by older, already authorized revisions. Unauthorized revisions
             of entries are expected to only exist temporarily for a short time frame.
+            Note: Currently ALL results with pending authorizations are removed from
+            the search results even if a previous, authorized revision is available!
+            This is necessary until a sound concept on how to deal with different
+            revisions in the front-end and in various API calls has been developed.
 
             If the provided hash tag is not moderated by any organization the results
             will not be filtered.

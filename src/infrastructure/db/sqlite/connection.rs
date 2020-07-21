@@ -794,6 +794,46 @@ impl PlaceRepo for SqliteConnection {
         }
         place_history.ok_or(RepoError::NotFound)
     }
+
+    fn load_place_revision(&self, id: &str, rev: Revision) -> Result<Place> {
+        use schema::place::dsl;
+        use schema::place_revision::dsl as rev_dsl;
+
+        let query = schema::place_revision::table
+            .inner_join(
+                schema::place::table.on(rev_dsl::parent_rowid
+                    .eq(dsl::rowid)
+                    .and(rev_dsl::rev.eq(RevisionValue::from(rev) as i64))),
+            )
+            .select((
+                rev_dsl::rowid,
+                rev_dsl::rev,
+                rev_dsl::created_at,
+                rev_dsl::created_by,
+                rev_dsl::current_status,
+                rev_dsl::title,
+                rev_dsl::description,
+                rev_dsl::lat,
+                rev_dsl::lon,
+                rev_dsl::street,
+                rev_dsl::zip,
+                rev_dsl::city,
+                rev_dsl::country,
+                rev_dsl::state,
+                rev_dsl::email,
+                rev_dsl::phone,
+                rev_dsl::homepage,
+                rev_dsl::opening_hours,
+                rev_dsl::image_url,
+                rev_dsl::image_link_url,
+                dsl::id,
+                dsl::license,
+            ))
+            .filter(dsl::id.eq(id));
+        let row = query.first::<models::JoinedPlaceRevision>(self)?;
+        let place = load_place(self, row)?.0;
+        Ok(place)
+    }
 }
 
 fn into_new_event_with_tags(
@@ -1745,6 +1785,25 @@ impl OrganizationRepo for SqliteConnection {
         })
     }
 
+    fn map_authorized_tag_to_org_id(&self, auth_tag: &str) -> Result<Option<Id>> {
+        use schema::{organization::dsl, organization_tag::dsl as tag_dsl};
+        Ok(schema::organization::table
+            .inner_join(schema::organization_tag::table)
+            .select((dsl::id, tag_dsl::tag_moderation_flags))
+            .filter(tag_dsl::tag_label.eq(auth_tag))
+            .first::<(String, i16)>(self)
+            .optional()?
+            .and_then(|(id, flags)| {
+                if TagModerationFlags::from(flags as TagModerationFlagsValue)
+                    .requires_authorization()
+                {
+                    Some(Id::from(id))
+                } else {
+                    None
+                }
+            }))
+    }
+
     fn get_moderated_tags_by_org(
         &self,
         excluded_org_id: Option<&Id>,
@@ -1872,6 +1931,36 @@ impl PlaceAuthorizationRepo for SqliteConnection {
         }
 
         Ok(query
+            .load::<models::PendingAuthorizationForPlace>(self)?
+            .into_iter()
+            .map(Into::into)
+            .collect())
+    }
+
+    fn load_pending_authorizations_for_places(
+        &self,
+        org_id: &Id,
+        place_ids: &[&str],
+    ) -> Result<Vec<PendingAuthorizationForPlace>> {
+        use schema::organization::dsl as org_dsl;
+        use schema::organization_place_authorization_pending::dsl;
+        use schema::place::dsl as place_dsl;
+        Ok(schema::organization_place_authorization_pending::table
+            .inner_join(schema::place::table)
+            .select((
+                place_dsl::id,
+                dsl::created_at,
+                dsl::last_authorized_revision,
+                dsl::last_authorized_review_status,
+            ))
+            .filter(
+                dsl::org_rowid.eq_any(
+                    schema::organization::table
+                        .select(org_dsl::rowid)
+                        .filter(org_dsl::id.eq(org_id.as_str())),
+                ),
+            )
+            .filter(place_dsl::id.eq_any(place_ids))
             .load::<models::PendingAuthorizationForPlace>(self)?
             .into_iter()
             .map(Into::into)

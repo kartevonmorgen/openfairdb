@@ -53,6 +53,8 @@ pub trait PlaceRepo {
     fn create_or_update_place(&self, place: Place) -> Result<()>;
 
     fn get_place_history(&self, id: &str) -> Result<PlaceHistory>;
+
+    fn load_place_revision(&self, id: &str, rev: Revision) -> Result<Place>;
 }
 
 pub trait EventGateway {
@@ -88,6 +90,7 @@ pub trait UserGateway {
 pub trait OrganizationRepo {
     fn create_org(&mut self, _: Organization) -> Result<()>;
     fn get_org_by_api_token(&self, token: &str) -> Result<Organization>;
+    fn map_authorized_tag_to_org_id(&self, auth_tag: &str) -> Result<Option<Id>>;
     fn get_moderated_tags_by_org(
         &self,
         excluded_org_id: Option<&Id>,
@@ -105,6 +108,11 @@ pub trait PlaceAuthorizationRepo {
         &self,
         org_id: &Id,
         pagination: &Pagination,
+    ) -> Result<Vec<PendingAuthorizationForPlace>>;
+    fn load_pending_authorizations_for_places(
+        &self,
+        org_id: &Id,
+        place_ids: &[&str],
     ) -> Result<Vec<PendingAuthorizationForPlace>>;
     fn replace_pending_authorizations_for_places(
         &self,

@@ -275,6 +275,10 @@ impl PlaceRepo for MockDb {
     fn get_place_history(&self, _id: &str) -> RepoResult<PlaceHistory> {
         unimplemented!();
     }
+
+    fn load_place_revision(&self, id: &str, rev: Revision) -> RepoResult<Place> {
+        unimplemented!();
+    }
 }
 
 impl EventGateway for MockDb {
@@ -437,6 +441,17 @@ impl OrganizationRepo for MockDb {
             .ok_or(RepoError::NotFound)?;
         Ok(o.clone())
     }
+    fn map_authorized_tag_to_org_id(&self, auth_tag: &str) -> RepoResult<Option<Id>> {
+        Ok(self
+            .orgs
+            .iter()
+            .find(|o| {
+                o.moderated_tags.iter().any(|mod_tag| {
+                    mod_tag.moderation_flags.requires_authorization() && mod_tag.label == auth_tag
+                })
+            })
+            .map(|o| o.id.clone()))
+    }
     fn get_moderated_tags_by_org(
         &self,
         excluded_org_id: Option<&Id>,
@@ -522,6 +537,14 @@ impl PlaceAuthorizationRepo for MockDb {
         &self,
         _org_id: &Id,
         _pagination: &Pagination,
+    ) -> RepoResult<Vec<PendingAuthorizationForPlace>> {
+        Ok(vec![])
+    }
+
+    fn load_pending_authorizations_for_places(
+        &self,
+        org_id: &Id,
+        place_ids: &[&str],
     ) -> RepoResult<Vec<PendingAuthorizationForPlace>> {
         Ok(vec![])
     }

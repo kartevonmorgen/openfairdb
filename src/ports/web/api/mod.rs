@@ -550,7 +550,7 @@ fn entries_csv_export(
 
     let entries_categories_and_ratings = {
         let all_categories: Vec<_> = db.all_categories()?;
-        usecases::search(&search_engine, req, limit)?
+        usecases::search(&*db, &search_engine, req, limit)?
             .0
             .into_iter()
             .filter_map(|indexed_entry| {
