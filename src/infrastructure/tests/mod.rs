@@ -15,14 +15,8 @@ pub struct PlaceAuthorizationFixture {
     // A place without any tags that has been archived
     archived_place: Place,
 
-    // A place without any tags that has been rejected
-    rejected_place: Place,
-
     // A place with ALL moderated tags that has been confirmed
     confirmed_place: Place,
-
-    // Organization without any moderated tags
-    organization_without_moderated_tags: Organization,
 
     // Organization with a moderated tags that allows only add
     // and requires authorization
@@ -57,6 +51,21 @@ fn default_new_place() -> usecases::NewPlace {
         license: "CC0-1.0".into(),
         image_url: None,
         image_link_url: None,
+    }
+}
+
+fn default_search_request<'a>() -> usecases::SearchRequest<'a> {
+    usecases::SearchRequest {
+        bbox: MapBbox::new(
+            MapPoint::from_lat_lng_deg(-90, -180),
+            MapPoint::from_lat_lng_deg(90, 180),
+        ),
+        auth_tag: None,
+        categories: vec![],
+        hash_tags: vec![],
+        ids: vec![],
+        status: vec![],
+        text: None,
     }
 }
 
@@ -234,9 +243,7 @@ impl PlaceAuthorizationFixture {
             user_email,
             created_place,
             archived_place,
-            rejected_place,
             confirmed_place,
-            organization_without_moderated_tags,
             organization_with_add_authorized_tag,
             organization_with_remove_authorized_tag,
             organization_with_addremove_authorized_tag,
@@ -276,7 +283,10 @@ fn should_create_pending_authorization_when_creating_place_with_moderated_tags()
     // Not yet authorized (and invisible)
     assert_eq!(
         None,
-        pending_authorizations.first().unwrap().last_authorized
+        pending_authorizations
+            .first()
+            .unwrap()
+            .last_authorized_revision
     );
 
     Ok(())
@@ -325,10 +335,7 @@ fn should_create_pending_authorization_once_when_updating_place_with_moderated_t
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.created_place;
     let place_id = &old_place.id;
-    let last_authorized = ReviewedRevision {
-        revision: old_place.revision,
-        review_status: Some(ReviewStatus::Created),
-    };
+    let last_authorized_revision = old_place.revision;
 
     let new_revision = old_place.revision.next();
     let mut update_place = usecases::UpdatePlace::from(old_place.clone());
@@ -352,8 +359,11 @@ fn should_create_pending_authorization_once_when_updating_place_with_moderated_t
     )?;
     assert_eq!(1, pending_authorizations.len());
     assert_eq!(
-        Some(last_authorized.clone()),
-        pending_authorizations.first().unwrap().last_authorized
+        Some(last_authorized_revision.clone()),
+        pending_authorizations
+            .first()
+            .unwrap()
+            .last_authorized_revision
     );
 
     let mut update_place = usecases::UpdatePlace::from(new_place.clone());
@@ -378,8 +388,11 @@ fn should_create_pending_authorization_once_when_updating_place_with_moderated_t
     // Pending authorization is unchanged
     assert_eq!(1, pending_authorizations.len());
     assert_eq!(
-        Some(last_authorized),
-        pending_authorizations.first().unwrap().last_authorized
+        Some(last_authorized_revision),
+        pending_authorizations
+            .first()
+            .unwrap()
+            .last_authorized_revision
     );
 
     Ok(())
@@ -471,10 +484,7 @@ fn should_create_pending_authorization_when_updating_an_archived_place_with_mode
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.archived_place;
     let place_id = &fixture.archived_place.id;
-    let last_authorized = ReviewedRevision {
-        revision: old_place.revision,
-        review_status: Some(ReviewStatus::Archived),
-    };
+    let last_authorized_revision = old_place.revision;
 
     let new_revision = old_place.revision.next();
     let mut update_place = usecases::UpdatePlace::from(old_place.clone());
@@ -498,8 +508,232 @@ fn should_create_pending_authorization_when_updating_an_archived_place_with_mode
     )?;
     assert_eq!(1, pending_authorizations.len());
     assert_eq!(
-        Some(last_authorized.clone()),
-        pending_authorizations.first().unwrap().last_authorized
+        Some(last_authorized_revision.clone()),
+        pending_authorizations
+            .first()
+            .unwrap()
+            .last_authorized_revision
+    );
+
+    Ok(())
+}
+
+#[test]
+fn should_return_the_last_authorized_revision_when_searching_for_authorized_places(
+) -> flows::Result<()> {
+    let mut fixture = PlaceAuthorizationFixture::new();
+    let org = &fixture.organization_with_addremove_authorized_tag;
+    let tag = &org.moderated_tags.first().unwrap().label;
+    let old_place = &fixture.created_place;
+    let place_id = &old_place.id;
+    let last_authorized_revision = old_place.revision;
+
+    let new_title = "new title".to_string();
+    assert_ne!(old_place.title, new_title);
+    let new_tags = vec![tag.clone()];
+    assert_ne!(old_place.tags, new_tags);
+    let new_revision = old_place.revision.next();
+
+    let mut update_place = usecases::UpdatePlace::from(old_place.clone());
+    update_place.title = new_title.clone();
+    update_place.tags = new_tags.clone();
+    update_place.version = new_revision.into();
+    let new_place = flows::update_place(
+        &fixture.backend.db_connections,
+        fixture.backend.search_engine.get_mut(),
+        &fixture.backend.notify,
+        place_id.clone(),
+        update_place,
+        None,
+    )?;
+
+    assert_eq!(new_revision, new_place.revision);
+    assert!(new_place.tags.contains(tag));
+    let pending_authorizations = usecases::authorization::place::list_pending_authorizations(
+        &*fixture.backend.db_connections.shared()?,
+        &org.api_token,
+        &Default::default(),
+    )?;
+    assert_eq!(1, pending_authorizations.len());
+    assert_eq!(
+        Some(last_authorized_revision.clone()),
+        pending_authorizations
+            .first()
+            .unwrap()
+            .last_authorized_revision
+    );
+
+    // Unauthorized (default)
+    let (unauthorized_search_result, _) = usecases::search(
+        &*fixture.backend.db_connections.shared()?,
+        &*fixture.backend.search_engine.borrow(),
+        usecases::SearchRequest {
+            hash_tags: vec![tag.as_str()],
+            ids: vec![place_id.as_ref()],
+            ..default_search_request()
+        },
+        100,
+    )?;
+    assert_eq!(1, unauthorized_search_result.len());
+    assert_eq!(new_title, unauthorized_search_result.first().unwrap().title);
+    assert_eq!(new_tags, unauthorized_search_result.first().unwrap().tags);
+    // Authorized
+    let (authorized_search_result, _) = usecases::search(
+        &*fixture.backend.db_connections.shared()?,
+        &*fixture.backend.search_engine.borrow(),
+        usecases::SearchRequest {
+            auth_tag: Some(tag.as_str()),
+            ids: vec![place_id.as_ref()],
+            ..default_search_request()
+        },
+        100,
+    )?;
+    assert_eq!(1, authorized_search_result.len());
+    assert_eq!(
+        old_place.title,
+        authorized_search_result.first().unwrap().title
+    );
+    assert_eq!(
+        old_place.tags,
+        authorized_search_result.first().unwrap().tags
+    );
+
+    // Archive, authorize, and then confirm this entry
+    flows::review_places(
+        &fixture.backend.db_connections,
+        &mut *fixture.backend.search_engine.get_mut(),
+        &[place_id.as_ref()],
+        usecases::Review {
+            status: ReviewStatus::Archived,
+            context: None,
+            comment: None,
+            reviewer_email: fixture.user_email.clone(),
+        },
+    )?;
+    assert_eq!(
+        1,
+        fixture
+            .backend
+            .db_connections
+            .shared()
+            .unwrap()
+            .count_pending_authorizations_for_places(&org.id)
+            .unwrap()
+    );
+    assert_eq!(
+        1,
+        usecases::authorization::place::acknowledge_pending_authorizations(
+            &*fixture.backend.db_connections.exclusive()?,
+            &org.api_token,
+            &[AuthorizationForPlace {
+                place_id: place_id.clone(),
+                authorized_revision: None,
+            }],
+        )?
+    );
+    assert_eq!(
+        0,
+        fixture
+            .backend
+            .db_connections
+            .shared()
+            .unwrap()
+            .count_pending_authorizations_for_places(&org.id)
+            .unwrap()
+    );
+    // Restore archived place by confirming it
+    flows::review_places(
+        &fixture.backend.db_connections,
+        &mut *fixture.backend.search_engine.get_mut(),
+        &[place_id.as_ref()],
+        usecases::Review {
+            status: ReviewStatus::Confirmed,
+            context: None,
+            comment: None,
+            reviewer_email: fixture.user_email.clone(),
+        },
+    )?;
+
+    // Unauthorized (default)
+    let (unauthorized_search_result, _) = usecases::search(
+        &*fixture.backend.db_connections.shared()?,
+        &*fixture.backend.search_engine.borrow(),
+        usecases::SearchRequest {
+            hash_tags: vec![tag.as_str()],
+            ids: vec![place_id.as_ref()],
+            ..default_search_request()
+        },
+        100,
+    )?;
+    assert_eq!(1, unauthorized_search_result.len());
+    assert_eq!(new_title, unauthorized_search_result.first().unwrap().title);
+    assert_eq!(
+        Some(ReviewStatus::Confirmed),
+        unauthorized_search_result.first().unwrap().status
+    );
+    // Authorized - Not filtered, because no more pending authorizations
+    let (authorized_search_result, _) = usecases::search(
+        &*fixture.backend.db_connections.shared()?,
+        &*fixture.backend.search_engine.borrow(),
+        usecases::SearchRequest {
+            auth_tag: Some(tag.as_str()),
+            ids: vec![place_id.as_ref()],
+            ..default_search_request()
+        },
+        100,
+    )?;
+    assert_eq!(1, authorized_search_result.len());
+    assert_eq!(new_title, authorized_search_result.first().unwrap().title);
+    assert_eq!(
+        Some(ReviewStatus::Confirmed),
+        authorized_search_result.first().unwrap().status
+    );
+
+    Ok(())
+}
+
+#[test]
+fn should_do_nothing_when_acknowledging_places_without_pending_authorizations() -> flows::Result<()>
+{
+    let fixture = PlaceAuthorizationFixture::new();
+    let org = &fixture.organization_with_addremove_authorized_tag;
+
+    assert_eq!(
+        0,
+        fixture
+            .backend
+            .db_connections
+            .shared()
+            .unwrap()
+            .count_pending_authorizations_for_places(&org.id)
+            .unwrap()
+    );
+    assert_eq!(
+        0,
+        usecases::authorization::place::acknowledge_pending_authorizations(
+            &*fixture.backend.db_connections.exclusive()?,
+            &org.api_token,
+            &[
+                AuthorizationForPlace {
+                    place_id: fixture.created_place.id.clone(),
+                    authorized_revision: None,
+                },
+                AuthorizationForPlace {
+                    place_id: fixture.confirmed_place.id.clone(),
+                    authorized_revision: None,
+                }
+            ],
+        )?
+    );
+    assert_eq!(
+        0,
+        fixture
+            .backend
+            .db_connections
+            .shared()
+            .unwrap()
+            .count_pending_authorizations_for_places(&org.id)
+            .unwrap()
     );
 
     Ok(())

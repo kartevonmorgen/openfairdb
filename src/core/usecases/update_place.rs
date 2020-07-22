@@ -74,7 +74,7 @@ impl From<Place> for UpdatePlace {
 pub struct Storable {
     place: Place,
     auth_org_ids: Vec<Id>,
-    last_authorized: ReviewedRevision,
+    last_authorized_revision: Revision,
 }
 
 pub fn prepare_updated_place<D: Db>(
@@ -121,22 +121,19 @@ pub fn prepare_updated_place<D: Db>(
         Some(address)
     };
 
-    let (revision, last_authorized, old_tags, license) = {
-        let (old_place, review_status) = db.get_place(place_id.as_str())?;
+    let (revision, last_authorized_revision, old_tags, license) = {
+        let (old_place, _review_status) = db.get_place(place_id.as_str())?;
         // Check for revision conflict (optimistic locking)
         let revision = Revision::from(version);
         if old_place.revision.next() != revision {
             return Err(RepoError::InvalidVersion.into());
         }
-        let last_authorized = ReviewedRevision {
-            revision: old_place.revision,
-            review_status: Some(review_status),
-        };
+        let last_authorized_revision = old_place.revision;
         // The license is immutable
         let license = old_place.license;
         // The existing tags are needed for authorization
         let old_tags = old_place.tags;
-        (revision, last_authorized, old_tags, license)
+        (revision, last_authorized_revision, old_tags, license)
     };
 
     let categories: Vec<_> = categories.into_iter().map(Id::from).collect();
@@ -192,7 +189,7 @@ pub fn prepare_updated_place<D: Db>(
     Ok(Storable {
         place,
         auth_org_ids,
-        last_authorized,
+        last_authorized_revision,
     })
 }
 
@@ -200,7 +197,7 @@ pub fn store_updated_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rat
     let Storable {
         place,
         auth_org_ids,
-        last_authorized,
+        last_authorized_revision,
     } = s;
     debug!("Storing updated place revision: {:?}", place);
     for t in &place.tags {
@@ -211,7 +208,7 @@ pub fn store_updated_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rat
         let pending_authorization = PendingAuthorizationForPlace {
             place_id: place.id.clone(),
             created_at: place.created.at,
-            last_authorized: Some(last_authorized),
+            last_authorized_revision: Some(last_authorized_revision),
         };
         super::authorization::place::add_pending_authorization(
             db,

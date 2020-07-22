@@ -54,7 +54,7 @@ pub trait PlaceRepo {
 
     fn get_place_history(&self, id: &str) -> Result<PlaceHistory>;
 
-    fn load_place_revision(&self, id: &str, rev: Revision) -> Result<Place>;
+    fn load_place_revision(&self, id: &str, rev: Revision) -> Result<(Place, ReviewStatus)>;
 }
 
 pub trait EventGateway {
@@ -118,7 +118,7 @@ pub trait PlaceAuthorizationRepo {
         &self,
         org_id: &Id,
         authorizations: &[AuthorizationForPlace],
-    ) -> Result<()>;
+    ) -> Result<usize>;
     fn cleanup_pending_authorizations_for_places(&self, org_id: &Id) -> Result<u64>;
 }
 

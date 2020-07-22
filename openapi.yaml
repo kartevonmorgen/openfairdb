@@ -250,12 +250,8 @@ paths:
       description: |
         Acknowledges pending authorizations for multiple places.
 
-        A missing review status is replaced by the current review status
-        of the given revision, i.e. acts like a wildcard.
-
-        If the given revision and review status match the current revision
-        and review status then any pending authorization for the place is
-        deleted. Otherwise pending authorizations will be updated accordingly
+        If the given revision matches the current revision of that place then any pending
+        authorization is deleted. Otherwise pending authorizations will be updated accordingly
         and remain pending.
 
         Requests must include the API token of the organization.
@@ -910,47 +906,33 @@ components:
         The id of a place
       allOf:
         - $ref: '#/components/schemas/Id'
-    ReviewedRevision:
-      description: |
-        Revision and review status of a place.
-      properties:
-        revision:
-          $ref: '#/components/schemas/PlaceRevision'
-        review_status:
-          $ref: '#/components/schemas/ReviewStatus'
-      required:
-        - revision
-      additionalProperties: false
     PendingAuthorizationForPlace:
       description: |
         The compact view of an entry as returned in search results.
 
-        The field `last_authorized` is missing if no authorized revivision
+        The field `last_authorized_revision` is missing if no authorized revivision
         is available, e.g. for newly created entries.
       properties:
         place_id:
           $ref: '#/components/schemas/PlaceId'
         created_at:
           $ref: '#/components/schemas/UnixTimeMillis'
-        last_authorized:
-          $ref: '#/components/schemas/ReviewedRevision'
+        last_authorized_revision:
+          $ref: '#/components/schemas/Revision'
       required:
         - place_id
         - created_at
     AuthorizationForPlace:
       description: |
-        Authorize a selected, reviewed revision of a place.
+        Authorize a selected revision of a place.
 
-        If the field `authorized` is missing then the current revision and
-        review status is authorized unconditionally.
-
-        If `authorized` specifies a revision but no `review_status` then the
-        most recent review status of this revision is authorized.
+        If the field `authorized_revision` is missing then the current revision
+        is authorized unconditionally.
       properties:
         place_id:
           $ref: '#/components/schemas/PlaceId'
-        authorized:
-          $ref: '#/components/schemas/ReviewedRevision'
+        authorized_revision:
+          $ref: '#/components/schemas/Revision'
       required:
         - place_id
     AvgRatings:

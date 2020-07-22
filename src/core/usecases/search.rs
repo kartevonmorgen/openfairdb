@@ -35,21 +35,11 @@ pub fn authorize_search_results<D: Db>(
     for mut place in results.into_iter() {
         let pending_authorization = pending_authorizations.get(&place.id);
         if let Some(pending_authorization) = pending_authorization {
-            if let Some(last_authorized) = &pending_authorization.last_authorized {
-                if let Some(authorized_review_status) = last_authorized.review_status {
-                    if !authorized_review_status.exists() {
-                        // Skip previously archived/rejected entry that might have been
-                        // restored later.
-                        continue;
-                    }
-                }
-                let last_authorized_place =
-                    db.load_place_revision(&place.id, last_authorized.revision)?;
-                log::warn!(
-                    "TODO: Replace unauthorized {:?} with {:?} in search results instead of excluding it entirely",
-                    place,
-                    last_authorized_place
-                );
+            if let Some(last_authorized_revision) = &pending_authorization.last_authorized_revision
+            {
+                let (last_authorized_place, current_status) =
+                    db.load_place_revision(&place.id, *last_authorized_revision)?;
+                debug_assert_eq!(*last_authorized_revision, last_authorized_place.revision);
                 let Place {
                     description,
                     id,
@@ -60,14 +50,13 @@ pub fn authorize_search_results<D: Db>(
                 } = last_authorized_place;
                 // Ratings are independent of the revision
                 let ratings = place.ratings;
-                // Replace the actual/current search result item with the last authorized
-                // revision and review status
+                // Replace the actual/current search result item with the last authorized revision
                 place = IndexedPlace {
                     id: id.into(),
                     description,
                     pos,
                     ratings,
-                    status: last_authorized.review_status,
+                    status: Some(current_status),
                     tags,
                     title,
                 };

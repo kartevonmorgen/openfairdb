@@ -39,8 +39,6 @@ table! {
         created_at -> BigInt,
         // last authorized revision or NULL if the place has not been authorized yet
         last_authorized_revision -> Nullable<BigInt>,
-        // last authorized review status or NULL if the place has not been authorized yet
-        last_authorized_review_status -> Nullable<SmallInt>,
     }
 }
 

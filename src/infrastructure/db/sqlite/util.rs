@@ -409,25 +409,13 @@ impl From<PendingAuthorizationForPlace> for e::PendingAuthorizationForPlace {
             place_id,
             created_at,
             last_authorized_revision,
-            last_authorized_review_status,
         } = from;
         let last_authorized_revision =
             last_authorized_revision.map(|rev| e::Revision::from(rev as u64));
-        let last_authorized = if let Some(last_authorized_revision) = last_authorized_revision {
-            let last_authorized_review_status =
-                last_authorized_review_status.and_then(e::ReviewStatus::try_from);
-            Some(e::ReviewedRevision {
-                revision: last_authorized_revision,
-                review_status: last_authorized_review_status,
-            })
-        } else {
-            debug_assert!(last_authorized_review_status.is_none());
-            None
-        };
         Self {
             place_id: place_id.into(),
             created_at: e::TimestampMs::from_inner(created_at),
-            last_authorized,
+            last_authorized_revision,
         }
     }
 }

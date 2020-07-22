@@ -276,7 +276,7 @@ impl PlaceRepo for MockDb {
         unimplemented!();
     }
 
-    fn load_place_revision(&self, _id: &str, _rev: Revision) -> RepoResult<Place> {
+    fn load_place_revision(&self, _id: &str, _rev: Revision) -> RepoResult<(Place, ReviewStatus)> {
         unimplemented!();
     }
 }
@@ -553,8 +553,8 @@ impl PlaceAuthorizationRepo for MockDb {
         &self,
         _org_id: &Id,
         _authorizations: &[AuthorizationForPlace],
-    ) -> RepoResult<()> {
-        Ok(())
+    ) -> RepoResult<usize> {
+        Ok(0)
     }
 
     fn cleanup_pending_authorizations_for_places(&self, _org_id: &Id) -> RepoResult<u64> {

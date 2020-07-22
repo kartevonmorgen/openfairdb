@@ -245,47 +245,36 @@ fn resolve_organization_rowid(conn: &SqliteConnection, id: &Id) -> Result<i64> {
         })?)
 }
 
-fn resolve_place_rowid(conn: &SqliteConnection, id: &Id) -> Result<(i64, Revision)> {
+fn resolve_place_rowid(conn: &SqliteConnection, id: &Id) -> Result<i64> {
+    use schema::place::dsl;
+    Ok(schema::place::table
+        .select(dsl::rowid)
+        .filter(dsl::id.eq(id.as_str()))
+        .first::<i64>(conn)
+        .map_err(|e| {
+            log::warn!("Failed to resolve place id '{}': {}", id, e);
+            e
+        })?)
+}
+
+fn resolve_place_rowid_with_current_revision(
+    conn: &SqliteConnection,
+    id: &Id,
+) -> Result<(i64, Revision)> {
     use schema::place::dsl;
     Ok(schema::place::table
         .select((dsl::rowid, dsl::current_rev))
         .filter(dsl::id.eq(id.as_str()))
         .first::<(i64, i64)>(conn)
         .map_err(|e| {
-            log::warn!("Failed to resolve place id '{}': {}", id, e);
-            e
-        })
-        .map(|(id, rev)| (id, Revision::from(rev as u64)))?)
-}
-
-fn resolve_place_revision_rowid(
-    conn: &SqliteConnection,
-    id: &Id,
-    revision: Revision,
-) -> Result<(i64, i64, Option<ReviewStatus>)> {
-    use schema::place::dsl as place_dsl;
-    use schema::place_revision::dsl;
-    Ok(dsl::place_revision
-        .inner_join(place_dsl::place)
-        .select((place_dsl::rowid, dsl::rowid, dsl::current_status))
-        .filter(place_dsl::id.eq(id.as_str()))
-        .first::<(i64, i64, i16)>(conn)
-        .map_err(|e| {
             log::warn!(
-                "Failed to resolve place id '{}' rev. {}: {}",
+                "Failed to resolve place id '{}' with current revision: {}",
                 id,
-                RevisionValue::from(revision),
                 e
             );
             e
         })
-        .map(|(place_rowid, place_rev_rowid, review_status)| {
-            (
-                place_rowid,
-                place_rev_rowid,
-                ReviewStatus::try_from(review_status),
-            )
-        })?)
+        .map(|(id, rev)| (id, Revision::from(rev as u64)))?)
 }
 
 fn resolve_rating_rowid(conn: &SqliteConnection, id: &str) -> Result<i64> {
@@ -327,12 +316,12 @@ fn into_new_place_revision(
         diesel::insert_into(schema::place::table)
             .values(new_place)
             .execute(conn)?;
-        let (rowid, _revision) = resolve_place_rowid(conn, &place_id)?;
+        let (rowid, _revision) = resolve_place_rowid_with_current_revision(conn, &place_id)?;
         debug_assert_eq!(new_revision, _revision);
         rowid
     } else {
         // Update the existing place with a new revision
-        let (rowid, revision) = resolve_place_rowid(conn, &place_id)?;
+        let (rowid, revision) = resolve_place_rowid_with_current_revision(conn, &place_id)?;
         // Check for a contiguous revision history without conflicts (optimistic locking)
         if revision.next() != new_revision {
             return Err(RepoError::InvalidVersion);
@@ -795,7 +784,7 @@ impl PlaceRepo for SqliteConnection {
         place_history.ok_or(RepoError::NotFound)
     }
 
-    fn load_place_revision(&self, id: &str, rev: Revision) -> Result<Place> {
+    fn load_place_revision(&self, id: &str, rev: Revision) -> Result<(Place, ReviewStatus)> {
         use schema::place::dsl;
         use schema::place_revision::dsl as rev_dsl;
 
@@ -831,8 +820,7 @@ impl PlaceRepo for SqliteConnection {
             ))
             .filter(dsl::id.eq(id));
         let row = query.first::<models::JoinedPlaceRevision>(self)?;
-        let place = load_place(self, row)?.0;
-        Ok(place)
+        Ok(load_place(self, row)?)
     }
 }
 
@@ -1306,7 +1294,7 @@ impl RatingRepository for SqliteConnection {
             context,
             source,
         } = rating;
-        let (parent_rowid, _) = resolve_place_rowid(self, &place_id)?;
+        let parent_rowid = resolve_place_rowid(self, &place_id)?;
         let new_place_rating = models::NewPlaceRating {
             id: id.into(),
             parent_rowid,
@@ -1838,29 +1826,12 @@ impl PlaceAuthorizationRepo for SqliteConnection {
         let PendingAuthorizationForPlace {
             place_id,
             created_at,
-            last_authorized,
+            last_authorized_revision,
         } = pending_authorization;
-        let (place_rowid, last_authorized_revision, last_authorized_review_status) =
-            if let Some(last_authorized) = last_authorized {
-                let ReviewedRevision {
-                    revision,
-                    review_status,
-                } = last_authorized;
-                // The current status has already changed after updating a place and we
-                // always need to use the provided review status!
-                let (place_rowid, _place_revision_rowid, _current_status) =
-                    resolve_place_revision_rowid(self, place_id, *revision)?;
-                (place_rowid, Some(*revision), *review_status)
-            } else {
-                // Pending authorization for a newly created place that has not been authorized yet
-                let (place_rowid, _revision) = resolve_place_rowid(self, place_id)?;
-                (place_rowid, None, None)
-            };
+        let place_rowid = resolve_place_rowid(self, place_id)?;
         let created_at = created_at.into_inner();
         let last_authorized_revision =
             last_authorized_revision.map(|rev| RevisionValue::from(rev) as i64);
-        let last_authorized_review_status =
-            last_authorized_review_status.map(ReviewStatusPrimitive::from);
         let mut insert_count = 0;
         for org_id in org_ids {
             let org_rowid = resolve_organization_rowid(self, org_id)?;
@@ -1869,7 +1840,6 @@ impl PlaceAuthorizationRepo for SqliteConnection {
                 place_rowid,
                 created_at,
                 last_authorized_revision,
-                last_authorized_review_status,
             };
             insert_count += diesel::insert_or_ignore_into(
                 schema::organization_place_authorization_pending::table,
@@ -1909,7 +1879,6 @@ impl PlaceAuthorizationRepo for SqliteConnection {
                 place_dsl::id,
                 dsl::created_at,
                 dsl::last_authorized_revision,
-                dsl::last_authorized_review_status,
             ))
             .filter(
                 dsl::org_rowid.eq_any(
@@ -1951,7 +1920,6 @@ impl PlaceAuthorizationRepo for SqliteConnection {
                 place_dsl::id,
                 dsl::created_at,
                 dsl::last_authorized_revision,
-                dsl::last_authorized_review_status,
             ))
             .filter(
                 dsl::org_rowid.eq_any(
@@ -1971,60 +1939,49 @@ impl PlaceAuthorizationRepo for SqliteConnection {
         &self,
         org_id: &Id,
         authorizations: &[AuthorizationForPlace],
-    ) -> Result<()> {
+    ) -> Result<usize> {
         let org_rowid = resolve_organization_rowid(self, org_id)?;
         let created_at = TimestampMs::now().into_inner();
+        let mut total_rows_affected = 0;
         for authorization in authorizations {
             let AuthorizationForPlace {
                 place_id,
-                authorized,
+                authorized_revision,
             } = authorization;
-            let (place_rowid, authorized_revision, authorized_review_status) =
-                if let Some(authorized) = authorized {
-                    let ReviewedRevision {
-                        revision,
-                        review_status,
-                    } = authorized;
-                    let (
-                        place_rowid,
-                        _authorized_revision_rowid,
-                        authorized_revision_current_status,
-                    ) = resolve_place_revision_rowid(self, place_id, *revision)?;
-                    (
-                        place_rowid,
-                        *revision,
-                        review_status.or(authorized_revision_current_status),
-                    )
+            let (place_rowid, authorized_revision) =
+                if let Some(authorized_revision) = authorized_revision {
+                    let place_rowid = resolve_place_rowid(self, place_id)?;
+                    (place_rowid, *authorized_revision)
                 } else {
-                    let (place_rowid, authorized_revision) = resolve_place_rowid(self, place_id)?;
-                    (place_rowid, authorized_revision, None)
+                    let (place_rowid, current_revision) =
+                        resolve_place_rowid_with_current_revision(self, place_id)?;
+                    (place_rowid, current_revision)
                 };
+            use schema::organization::dsl as org_dsl;
             use schema::organization_place_authorization_pending::dsl;
-            let _delete_count = diesel::delete(
-                schema::organization_place_authorization_pending::table
-                    .filter(dsl::org_rowid.eq(org_rowid))
-                    .filter(dsl::place_rowid.eq(place_rowid)),
-            )
-            .execute(self)?;
-            debug_assert!(_delete_count <= 1);
-
             let last_authorized_revision = Some(RevisionValue::from(authorized_revision) as i64);
-            let last_authorized_review_status =
-                authorized_review_status.map(ReviewStatusPrimitive::from);
-            let insertable = models::NewPendingAuthorizationForPlace {
+            let updatable = models::NewPendingAuthorizationForPlace {
                 org_rowid,
                 place_rowid,
                 created_at,
                 last_authorized_revision,
-                last_authorized_review_status,
             };
-            let _insert_count =
-                diesel::insert_into(schema::organization_place_authorization_pending::table)
-                    .values(&insertable)
+            let rows_affected =
+                diesel::update(schema::organization_place_authorization_pending::table)
+                    .set(&updatable)
+                    .filter(
+                        dsl::org_rowid.eq_any(
+                            schema::organization::table
+                                .select(org_dsl::rowid)
+                                .filter(org_dsl::id.eq(org_id.as_str())),
+                        ),
+                    )
+                    .filter(dsl::place_rowid.eq(place_rowid))
                     .execute(self)?;
-            debug_assert!(_insert_count <= 1);
+            debug_assert!(rows_affected <= 1);
+            total_rows_affected += rows_affected;
         }
-        Ok(())
+        Ok(total_rows_affected)
     }
 
     fn cleanup_pending_authorizations_for_places(&self, org_id: &Id) -> Result<u64> {
@@ -2042,10 +1999,7 @@ impl PlaceAuthorizationRepo for SqliteConnection {
             )
             .select(dsl::rowid)
             .filter(dsl::org_rowid.eq(org_rowid))
-            .filter(dsl::last_authorized_revision.eq(place_dsl::current_rev.nullable()))
-            .filter(
-                dsl::last_authorized_review_status.eq(place_rev_dsl::current_status.nullable()),
-            );
+            .filter(dsl::last_authorized_revision.eq(place_dsl::current_rev.nullable()));
         // TODO: Diesel 1.4.5 does not allow to use a subselect in the
         // following delete statement and requires to temporarily load
         // the subselect results into memory

@@ -47,5 +47,7 @@ pub fn acknowledge_pending_authorizations(
         &org_token.0,
         &authorizations,
     )?;
-    Ok(Json(json::ResultCount { count }))
+    Ok(Json(json::ResultCount {
+        count: count as u64,
+    }))
 }

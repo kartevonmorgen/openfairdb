@@ -154,7 +154,7 @@ pub fn store_new_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>
         let pending_authorization = PendingAuthorizationForPlace {
             place_id: place.id.clone(),
             created_at: place.created.at,
-            last_authorized: None,
+            last_authorized_revision: None,
         };
         super::authorization::place::add_pending_authorization(
             db,

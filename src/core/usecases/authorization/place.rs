@@ -35,18 +35,19 @@ pub fn acknowledge_pending_authorizations<R: OrganizationRepo + PlaceAuthorizati
     repo: &R,
     org_token: &str,
     authorizations: &[AuthorizationForPlace],
-) -> Result<u64> {
+) -> Result<usize> {
     let org = repo.get_org_by_api_token(org_token).map_err(|e| match e {
         RepoError::NotFound => Error::Parameter(ParameterError::Unauthorized),
         _ => Error::Repo(e),
     })?;
-    repo.replace_pending_authorizations_for_places(&org.id, authorizations)?;
-    let count = repo.cleanup_pending_authorizations_for_places(&org.id)?;
+    let acknowledged_count =
+        repo.replace_pending_authorizations_for_places(&org.id, authorizations)?;
     log::info!(
         "Acknowledged {} of {} pending authorization(s) for places on behalf of organization '{}'",
-        count,
+        acknowledged_count,
         authorizations.len(),
         org.name
     );
-    Ok(count)
+    repo.cleanup_pending_authorizations_for_places(&org.id)?;
+    Ok(acknowledged_count)
 }

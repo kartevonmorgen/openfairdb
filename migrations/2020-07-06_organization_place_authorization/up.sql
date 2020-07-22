@@ -46,7 +46,6 @@ CREATE TABLE organization_place_authorization_pending (
     created_at   INTEGER NOT NULL,
     --
     last_authorized_revision INTEGER, -- last authorized revision number or NULL if the place has not been authorized yet
-    last_authorized_review_status INTEGER,  -- last authorized review status or NULL if the place has not been authorized yet
     --
     UNIQUE (org_rowid, place_rowid),
     FOREIGN KEY (org_rowid) REFERENCES organizations(rowid),
