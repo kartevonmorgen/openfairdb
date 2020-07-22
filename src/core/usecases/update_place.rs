@@ -74,7 +74,7 @@ impl From<Place> for UpdatePlace {
 pub struct Storable {
     place: Place,
     auth_org_ids: Vec<Id>,
-    last_authorized: AuthorizedRevision,
+    last_authorized: ReviewedRevision,
 }
 
 pub fn prepare_updated_place<D: Db>(
@@ -128,7 +128,7 @@ pub fn prepare_updated_place<D: Db>(
         if old_place.revision.next() != revision {
             return Err(RepoError::InvalidVersion.into());
         }
-        let last_authorized = AuthorizedRevision {
+        let last_authorized = ReviewedRevision {
             revision: old_place.revision,
             review_status: Some(review_status),
         };

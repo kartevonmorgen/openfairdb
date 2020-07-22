@@ -416,7 +416,7 @@ impl PlaceRepo for SqliteConnection {
             })?;
 
         // Insert into place_revision_review
-        let new_review = models::NewPlaceRevisionReview {
+        let new_review = models::NewPlaceReviewedRevision {
             parent_rowid,
             rev: u64::from(Revision::initial()) as i64,
             created_at: new_place.created_at,
@@ -495,7 +495,7 @@ impl PlaceRepo for SqliteConnection {
                         .ok_or(RepoError::NotFound)? as u64,
                 );
                 let next_rev = prev_rev.next();
-                let new_review = models::NewPlaceRevisionReview {
+                let new_review = models::NewPlaceReviewedRevision {
                     parent_rowid: rev_id,
                     rev: u64::from(next_rev) as i64,
                     status,
@@ -769,7 +769,7 @@ impl PlaceRepo for SqliteConnection {
                 ))
                 .filter(review_dsl::parent_rowid.eq(parent_rowid))
                 .order_by(review_dsl::rev.desc())
-                .load::<models::PlaceRevisionReview>(self)?;
+                .load::<models::PlaceReviewedRevision>(self)?;
             let mut review_logs = Vec::with_capacity(rows.len());
             for row in rows {
                 let review_log = ReviewStatusLog {
@@ -1842,7 +1842,7 @@ impl PlaceAuthorizationRepo for SqliteConnection {
         } = pending_authorization;
         let (place_rowid, last_authorized_revision, last_authorized_review_status) =
             if let Some(last_authorized) = last_authorized {
-                let AuthorizedRevision {
+                let ReviewedRevision {
                     revision,
                     review_status,
                 } = last_authorized;
@@ -1973,19 +1973,32 @@ impl PlaceAuthorizationRepo for SqliteConnection {
         authorizations: &[AuthorizationForPlace],
     ) -> Result<()> {
         let org_rowid = resolve_organization_rowid(self, org_id)?;
+        let created_at = TimestampMs::now().into_inner();
         for authorization in authorizations {
             let AuthorizationForPlace {
                 place_id,
-                created_at,
                 authorized,
             } = authorization;
-            let AuthorizedRevision {
-                revision: authorized_revision,
-                review_status: authorized_review_status,
-            } = authorized;
-            let (place_rowid, _authorized_revision_rowid, authorized_revision_current_status) =
-                resolve_place_revision_rowid(self, place_id, *authorized_revision)?;
-
+            let (place_rowid, authorized_revision, authorized_review_status) =
+                if let Some(authorized) = authorized {
+                    let ReviewedRevision {
+                        revision,
+                        review_status,
+                    } = authorized;
+                    let (
+                        place_rowid,
+                        _authorized_revision_rowid,
+                        authorized_revision_current_status,
+                    ) = resolve_place_revision_rowid(self, place_id, *revision)?;
+                    (
+                        place_rowid,
+                        *revision,
+                        review_status.or(authorized_revision_current_status),
+                    )
+                } else {
+                    let (place_rowid, authorized_revision) = resolve_place_rowid(self, place_id)?;
+                    (place_rowid, authorized_revision, None)
+                };
             use schema::organization_place_authorization_pending::dsl;
             let _delete_count = diesel::delete(
                 schema::organization_place_authorization_pending::table
@@ -1995,11 +2008,9 @@ impl PlaceAuthorizationRepo for SqliteConnection {
             .execute(self)?;
             debug_assert!(_delete_count <= 1);
 
-            let created_at = created_at.into_inner();
-            let last_authorized_revision = Some(RevisionValue::from(*authorized_revision) as i64);
-            let last_authorized_review_status = authorized_review_status
-                .or(authorized_revision_current_status)
-                .map(ReviewStatusPrimitive::from);
+            let last_authorized_revision = Some(RevisionValue::from(authorized_revision) as i64);
+            let last_authorized_review_status =
+                authorized_review_status.map(ReviewStatusPrimitive::from);
             let insertable = models::NewPendingAuthorizationForPlace {
                 org_rowid,
                 place_rowid,
@@ -2016,7 +2027,7 @@ impl PlaceAuthorizationRepo for SqliteConnection {
         Ok(())
     }
 
-    fn cleanup_pending_authorizations_for_places(&self, org_id: &Id) -> Result<usize> {
+    fn cleanup_pending_authorizations_for_places(&self, org_id: &Id) -> Result<u64> {
         let org_rowid = resolve_organization_rowid(self, org_id)?;
         use schema::organization_place_authorization_pending::dsl;
         use schema::place::dsl as place_dsl;
@@ -2044,7 +2055,7 @@ impl PlaceAuthorizationRepo for SqliteConnection {
                 .filter(dsl::rowid.eq_any(delete_rowids)),
         )
         .execute(self)?;
-        Ok(delete_count)
+        Ok(delete_count as u64)
     }
 }
 

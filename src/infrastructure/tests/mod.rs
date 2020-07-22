@@ -267,13 +267,11 @@ fn should_create_pending_authorization_when_creating_place_with_moderated_tags()
 
     assert!(created_place.revision.is_initial());
     assert!(created_place.tags.contains(tag));
-    let pending_authorizations = fixture
-        .backend
-        .db_connections
-        .shared()
-        .unwrap()
-        .list_pending_authorizations_for_places(&org.id, &Default::default())
-        .unwrap();
+    let pending_authorizations = usecases::authorization::place::list_pending_authorizations(
+        &*fixture.backend.db_connections.shared()?,
+        &org.api_token,
+        &Default::default(),
+    )?;
     assert_eq!(1, pending_authorizations.len());
     // Not yet authorized (and invisible)
     assert_eq!(
@@ -327,7 +325,7 @@ fn should_create_pending_authorization_once_when_updating_place_with_moderated_t
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.created_place;
     let place_id = &old_place.id;
-    let last_authorized = AuthorizedRevision {
+    let last_authorized = ReviewedRevision {
         revision: old_place.revision,
         review_status: Some(ReviewStatus::Created),
     };
@@ -347,13 +345,11 @@ fn should_create_pending_authorization_once_when_updating_place_with_moderated_t
 
     assert_eq!(new_revision, new_place.revision);
     assert!(new_place.tags.contains(tag));
-    let pending_authorizations = fixture
-        .backend
-        .db_connections
-        .shared()
-        .unwrap()
-        .list_pending_authorizations_for_places(&org.id, &Default::default())
-        .unwrap();
+    let pending_authorizations = usecases::authorization::place::list_pending_authorizations(
+        &*fixture.backend.db_connections.shared()?,
+        &org.api_token,
+        &Default::default(),
+    )?;
     assert_eq!(1, pending_authorizations.len());
     assert_eq!(
         Some(last_authorized.clone()),
@@ -374,13 +370,11 @@ fn should_create_pending_authorization_once_when_updating_place_with_moderated_t
     )?;
     assert_eq!(new_revision, new_place.revision);
     assert!(new_place.tags.is_empty());
-    let pending_authorizations = fixture
-        .backend
-        .db_connections
-        .shared()
-        .unwrap()
-        .list_pending_authorizations_for_places(&org.id, &Default::default())
-        .unwrap();
+    let pending_authorizations = usecases::authorization::place::list_pending_authorizations(
+        &*fixture.backend.db_connections.shared()?,
+        &org.api_token,
+        &Default::default(),
+    )?;
     // Pending authorization is unchanged
     assert_eq!(1, pending_authorizations.len());
     assert_eq!(
@@ -477,7 +471,7 @@ fn should_create_pending_authorization_when_updating_an_archived_place_with_mode
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.archived_place;
     let place_id = &fixture.archived_place.id;
-    let last_authorized = AuthorizedRevision {
+    let last_authorized = ReviewedRevision {
         revision: old_place.revision,
         review_status: Some(ReviewStatus::Archived),
     };
@@ -497,13 +491,11 @@ fn should_create_pending_authorization_when_updating_an_archived_place_with_mode
 
     assert_eq!(new_revision, new_place.revision);
     assert!(new_place.tags.contains(tag));
-    let pending_authorizations = fixture
-        .backend
-        .db_connections
-        .shared()
-        .unwrap()
-        .list_pending_authorizations_for_places(&org.id, &Default::default())
-        .unwrap();
+    let pending_authorizations = usecases::authorization::place::list_pending_authorizations(
+        &*fixture.backend.db_connections.shared()?,
+        &org.api_token,
+        &Default::default(),
+    )?;
     assert_eq!(1, pending_authorizations.len());
     assert_eq!(
         Some(last_authorized.clone()),

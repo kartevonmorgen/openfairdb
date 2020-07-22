@@ -224,7 +224,26 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/PlacePendingAuthorization'
+                  $ref: '#/components/schemas/PendingAuthorizationForPlace'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  '/places/pending-authorizations/count':
+    get:
+      tags:
+        - Places
+      summary: Count pending authorizations of places
+      description: |
+        Returns the total number of pending authorizations for
+        places on behalf of the requesting organization.
+
+        Requests must include the API token of the organization.
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultCount'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
   '/places/pending-authorizations/acknowledge':
@@ -250,9 +269,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PlaceAuthorization'
+                $ref: '#/components/schemas/ResultCount'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
   '/places/{id}/history':
@@ -897,7 +914,7 @@ components:
         The id of a place
       allOf:
         - $ref: '#/components/schemas/Id'
-    PlaceRevisionAndReviewStatus:
+    ReviewedRevision:
       description: |
         Revision and review status of a place.
       properties:
@@ -907,27 +924,39 @@ components:
           $ref: '#/components/schemas/ReviewStatus'
       required:
         - revision
-        - review_status
       additionalProperties: false
-    PlacePendingAuthorization:
-      description: The compact view of an entry as returned in search results.
+    PendingAuthorizationForPlace:
+      description: |
+        The compact view of an entry as returned in search results.
+
+        The field `last_authorized` is missing if no authorized revivision
+        is available, e.g. for newly created entries.
       properties:
-        id:
+        place_id:
           $ref: '#/components/schemas/PlaceId'
+        created_at:
+          $ref: '#/components/schemas/UnixTimeMillis'
         last_authorized:
-          $ref: '#/components/schemas/PlaceRevisionAndReviewStatus'
+          $ref: '#/components/schemas/ReviewedRevision'
       required:
-        - id
-    PlaceAuthorization:
-      description: The compact view of an entry as returned in search results.
+        - place_id
+        - created_at
+    AuthorizationForPlace:
+      description: |
+        Authorize a selected, reviewed revision of a place.
+
+        If the field `authorized` is missing then the current revision and
+        review status is authorized unconditionally.
+
+        If `authorized` specifies a revision but no `review_status` then the
+        most recent review status of this revision is authorized.
       properties:
-        id:
+        place_id:
           $ref: '#/components/schemas/PlaceId'
         authorized:
-          $ref: '#/components/schemas/PlaceRevisionAndReviewStatus'
+          $ref: '#/components/schemas/ReviewedRevision'
       required:
-        - id
-        - authorized
+        - place_id
     AvgRatings:
       description: All average ratings of an entry.
       properties:
@@ -1178,6 +1207,14 @@ components:
           $ref: '#/components/schemas/PlaceRevisionLogArray'
       required:
         - place
+    ResultCount:
+      properties:
+        count:
+          type: number
+          format: i64
+      required:
+        - count
+      additionalProperties: false
     Review:
       properties:
         status:

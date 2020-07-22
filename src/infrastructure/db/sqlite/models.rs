@@ -102,7 +102,7 @@ pub struct JoinedPlaceRevisionWithStatusReview {
 
 #[derive(Insertable)]
 #[table_name = "place_revision_review"]
-pub struct NewPlaceRevisionReview<'a, 'b> {
+pub struct NewPlaceReviewedRevision<'a, 'b> {
     pub parent_rowid: i64,
     pub rev: i64,
     pub created_at: i64,
@@ -113,7 +113,7 @@ pub struct NewPlaceRevisionReview<'a, 'b> {
 }
 
 #[derive(Queryable)]
-pub struct PlaceRevisionReview {
+pub struct PlaceReviewedRevision {
     pub rev: i64,
     pub created_at: i64,
     pub created_by: Option<i64>,

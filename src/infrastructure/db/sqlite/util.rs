@@ -416,7 +416,7 @@ impl From<PendingAuthorizationForPlace> for e::PendingAuthorizationForPlace {
         let last_authorized = if let Some(last_authorized_revision) = last_authorized_revision {
             let last_authorized_review_status =
                 last_authorized_review_status.and_then(e::ReviewStatus::try_from);
-            Some(e::AuthorizedRevision {
+            Some(e::ReviewedRevision {
                 revision: last_authorized_revision,
                 review_status: last_authorized_review_status,
             })

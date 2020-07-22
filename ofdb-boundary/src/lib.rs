@@ -456,3 +456,85 @@ impl From<e::event::Event> for Event {
         }
     }
 }
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
+pub struct ReviewedRevision {
+    pub revision: u64,
+    pub review_status: Option<ReviewStatus>,
+}
+
+impl From<e::authorization::ReviewedRevision> for ReviewedRevision {
+    fn from(from: e::authorization::ReviewedRevision) -> Self {
+        let e::authorization::ReviewedRevision {
+            revision,
+            review_status,
+        } = from;
+        Self {
+            revision: revision.into(),
+            review_status: review_status.map(Into::into),
+        }
+    }
+}
+
+impl From<ReviewedRevision> for e::authorization::ReviewedRevision {
+    fn from(from: ReviewedRevision) -> Self {
+        let ReviewedRevision {
+            revision,
+            review_status,
+        } = from;
+        Self {
+            revision: revision.into(),
+            review_status: review_status.map(Into::into),
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
+pub struct PendingAuthorizationForPlace {
+    pub place_id: String,
+    pub created_at: i64,
+    pub last_authorized: Option<ReviewedRevision>,
+}
+
+impl From<e::authorization::PendingAuthorizationForPlace> for PendingAuthorizationForPlace {
+    fn from(from: e::authorization::PendingAuthorizationForPlace) -> Self {
+        let e::authorization::PendingAuthorizationForPlace {
+            place_id,
+            created_at,
+            last_authorized,
+        } = from;
+        Self {
+            place_id: place_id.into(),
+            created_at: created_at.into_inner(),
+            last_authorized: last_authorized.map(Into::into),
+        }
+    }
+}
+
+#[derive(Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
+pub struct AuthorizationForPlace {
+    pub place_id: String,
+    pub authorized: Option<ReviewedRevision>,
+}
+
+impl From<AuthorizationForPlace> for e::authorization::AuthorizationForPlace {
+    fn from(from: AuthorizationForPlace) -> Self {
+        let AuthorizationForPlace {
+            place_id,
+            authorized,
+        } = from;
+        Self {
+            place_id: place_id.into(),
+            authorized: authorized.map(Into::into),
+        }
+    }
+}
+
+#[derive(Serialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
+pub struct ResultCount {
+    pub count: u64,
+}

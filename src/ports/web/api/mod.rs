@@ -25,6 +25,7 @@ use std::result;
 
 mod count;
 pub mod events;
+mod places;
 mod ratings;
 mod search;
 #[cfg(test)]
@@ -82,6 +83,9 @@ pub fn routes() -> Vec<Route> {
         get_api,
         entries_csv_export_with_token,
         entries_csv_export_without_token,
+        places::count_pending_authorizations,
+        places::list_pending_authorizations,
+        places::acknowledge_pending_authorizations,
     ]
 }
 

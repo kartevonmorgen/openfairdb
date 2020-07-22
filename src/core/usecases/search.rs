@@ -22,8 +22,7 @@ pub fn authorize_search_results<D: Db>(
     results: Vec<IndexedPlace>,
 ) -> Result<Vec<IndexedPlace>> {
     let place_ids: Vec<_> = results.iter().map(|p| p.id.as_str()).collect();
-    let pending_authorizations =
-        db.load_pending_authorizations_for_places(org_id, &place_ids)?;
+    let pending_authorizations = db.load_pending_authorizations_for_places(org_id, &place_ids)?;
     if pending_authorizations.is_empty() {
         // No filtering required
         return Ok(results);

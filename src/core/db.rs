@@ -119,7 +119,7 @@ pub trait PlaceAuthorizationRepo {
         org_id: &Id,
         authorizations: &[AuthorizationForPlace],
     ) -> Result<()>;
-    fn cleanup_pending_authorizations_for_places(&self, org_id: &Id) -> Result<usize>;
+    fn cleanup_pending_authorizations_for_places(&self, org_id: &Id) -> Result<u64>;
 }
 
 //TODO:
