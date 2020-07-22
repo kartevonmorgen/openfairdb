@@ -32,13 +32,14 @@ pub fn authorize_search_results<D: Db>(
         .map(|p| (p.place_id.to_string(), p))
         .collect();
     let mut authorized_results = Vec::with_capacity(results.len());
-    for place in results.into_iter() {
+    for mut place in results.into_iter() {
         let pending_authorization = pending_authorizations.get(&place.id);
         if let Some(pending_authorization) = pending_authorization {
             if let Some(last_authorized) = &pending_authorization.last_authorized {
                 if let Some(authorized_review_status) = last_authorized.review_status {
                     if !authorized_review_status.exists() {
-                        // Skip previously archived/rejected entry that has later been restored
+                        // Skip previously archived/rejected entry that might have been
+                        // restored later.
                         continue;
                     }
                 }
@@ -49,9 +50,27 @@ pub fn authorize_search_results<D: Db>(
                     place,
                     last_authorized_place
                 );
-                // Skip unauthorized entry until conversion from last_authorized_place into place is available
-                // TODO: Update the OpenAPI docs that also mention this temporary workaround!
-                continue; // TODO: Remove this line to include the entry in the authorized results
+                let Place {
+                    description,
+                    id,
+                    location: Location { pos, .. },
+                    tags,
+                    title,
+                    ..
+                } = last_authorized_place;
+                // Ratings are independent of the revision
+                let ratings = place.ratings;
+                // Replace the actual/current search result item with the last authorized
+                // revision and review status
+                place = IndexedPlace {
+                    id: id.into(),
+                    description,
+                    pos,
+                    ratings,
+                    status: last_authorized.review_status,
+                    tags,
+                    title,
+                };
             } else {
                 // Skip newly created but not yet authorized entry
                 continue;
