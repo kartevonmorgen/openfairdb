@@ -272,7 +272,11 @@ impl PlaceRepo for MockDb {
         unimplemented!();
     }
 
-    fn get_place_history(&self, _id: &str) -> RepoResult<PlaceHistory> {
+    fn get_place_history(
+        &self,
+        _id: &str,
+        _revision: Option<Revision>,
+    ) -> RepoResult<PlaceHistory> {
         unimplemented!();
     }
 

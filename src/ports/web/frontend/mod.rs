@@ -119,7 +119,7 @@ pub fn get_place_history(db: sqlite::Connections, id: &RawStr, account: Account)
         // and is only permitted for scouts and admins!
         usecases::authorization::user::authorize_by_email(&*db, &account.email(), Role::Scout)?;
 
-        db.get_place_history(&id)?
+        db.get_place_history(&id, None)?
     };
     Ok(view::place_history(&user, &place_history))
 }

@@ -266,18 +266,23 @@ paths:
                 $ref: '#/components/schemas/ResultCount'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-  '/places/{id}/history':
+  '/places/{id}/history/{revision}':
     get:
       tags:
         - Places
       summary: History of place revisions
       description: |
-        Loads the history of all history of place revisions including all reviews.
-        Sorted in descending order of activity time stamps, i.e. the most recent
-        changes appear first.
+        Loads the history of all place revisions including status reviews.
+
+        Optionally the result can be restricted to a single revision.
+
+        Results are sorted in descending chronological order of activity time stamps,
+        i.e. the most recent changes appear first.
+
         Only scouts and admins are entitled to invoke this function.
       parameters:
         - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/OptionalRevisionPath'
       responses:
         '200':
           description: Successful response
@@ -1367,6 +1372,12 @@ components:
       required: true
       schema:
         $ref: '#/components/schemas/Id'
+    OptionalRevisionPath:
+      name: id
+      in: path
+      required: false
+      schema:
+        $ref: '#/components/schemas/Revision'
     IdListPath:
       name: ids
       in: path

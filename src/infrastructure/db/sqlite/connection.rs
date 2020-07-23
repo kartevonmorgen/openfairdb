@@ -696,11 +696,11 @@ impl PlaceRepo for SqliteConnection {
             .first::<i64>(self)? as usize)
     }
 
-    fn get_place_history(&self, id: &str) -> Result<PlaceHistory> {
+    fn get_place_history(&self, id: &str, revision: Option<Revision>) -> Result<PlaceHistory> {
         use schema::place::dsl;
         use schema::place_revision::dsl as rev_dsl;
 
-        let rows = schema::place_revision::table
+        let mut query = schema::place_revision::table
             .inner_join(schema::place::table.on(rev_dsl::parent_rowid.eq(dsl::rowid)))
             .select((
                 rev_dsl::rowid,
@@ -728,7 +728,11 @@ impl PlaceRepo for SqliteConnection {
             ))
             .filter(dsl::id.eq(id))
             .order_by(rev_dsl::rev.desc())
-            .load::<models::JoinedPlaceRevision>(self)?;
+            .into_boxed();
+        if let Some(revision) = revision {
+            query = query.filter(rev_dsl::rev.eq(RevisionValue::from(revision) as i64));
+        }
+        let rows = query.load::<models::JoinedPlaceRevision>(self)?;
         let mut place_history = None;
         let num_revisions = rows.len();
         for row in rows {

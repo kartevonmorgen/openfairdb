@@ -52,7 +52,7 @@ pub trait PlaceRepo {
 
     fn create_or_update_place(&self, place: Place) -> Result<()>;
 
-    fn get_place_history(&self, id: &str) -> Result<PlaceHistory>;
+    fn get_place_history(&self, id: &str, revision: Option<Revision>) -> Result<PlaceHistory>;
 
     fn load_place_revision(&self, id: &str, rev: Revision) -> Result<(Place, ReviewStatus)>;
 }

@@ -49,6 +49,7 @@ pub fn routes() -> Vec<Route> {
         get_entries_most_popular_tags,
         get_place,
         get_place_history,
+        get_place_history_revision,
         post_places_review,
         post_entry,
         put_entry,
@@ -237,7 +238,26 @@ pub fn get_place(
     )))
 }
 
-#[get("/places/<id>/history")]
+#[get("/places/<id>/history/<revision>")]
+pub fn get_place_history_revision(
+    db: sqlite::Connections,
+    login: Login,
+    id: String,
+    revision: RevisionValue,
+) -> Result<json::PlaceHistory> {
+    let place_history = {
+        let db = db.shared()?;
+
+        // The history contains e-mail addresses of registered users
+        // and is only permitted for scouts and admins!
+        usecases::authorization::user::authorize_by_email(&*db, &login.0, Role::Scout)?;
+
+        db.get_place_history(&id, Some(revision.into()))?
+    };
+    Ok(Json(place_history.into()))
+}
+
+#[get("/places/<id>/history", rank = 2)]
 pub fn get_place_history(
     db: sqlite::Connections,
     login: Login,
@@ -250,7 +270,7 @@ pub fn get_place_history(
         // and is only permitted for scouts and admins!
         usecases::authorization::user::authorize_by_email(&*db, &login.0, Role::Scout)?;
 
-        db.get_place_history(&id)?
+        db.get_place_history(&id, None)?
     };
     Ok(Json(place_history.into()))
 }
