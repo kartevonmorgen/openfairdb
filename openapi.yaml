@@ -108,7 +108,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Entry'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Entry'
   '/entries/{id}':
     put:
       summary: Update an entry
