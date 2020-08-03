@@ -9,8 +9,8 @@ use crate::core::{
 mod archive_comments;
 mod archive_events;
 mod archive_ratings;
-pub mod authorization;
 mod change_user_role;
+pub mod clearance;
 mod confirm_email;
 mod confirm_email_and_reset_password;
 mod create_new_place;

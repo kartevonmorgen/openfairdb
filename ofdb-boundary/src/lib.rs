@@ -459,43 +459,43 @@ impl From<e::event::Event> for Event {
 
 #[derive(Serialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
-pub struct PendingAuthorizationForPlace {
+pub struct PendingClearanceForPlace {
     pub place_id: String,
     pub created_at: i64,
-    pub last_authorized_revision: Option<e::revision::RevisionValue>,
+    pub last_cleared_revision: Option<e::revision::RevisionValue>,
 }
 
-impl From<e::authorization::PendingAuthorizationForPlace> for PendingAuthorizationForPlace {
-    fn from(from: e::authorization::PendingAuthorizationForPlace) -> Self {
-        let e::authorization::PendingAuthorizationForPlace {
+impl From<e::clearance::PendingClearanceForPlace> for PendingClearanceForPlace {
+    fn from(from: e::clearance::PendingClearanceForPlace) -> Self {
+        let e::clearance::PendingClearanceForPlace {
             place_id,
             created_at,
-            last_authorized_revision,
+            last_cleared_revision,
         } = from;
         Self {
             place_id: place_id.into(),
             created_at: created_at.into_inner(),
-            last_authorized_revision: last_authorized_revision.map(Into::into),
+            last_cleared_revision: last_cleared_revision.map(Into::into),
         }
     }
 }
 
 #[derive(Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
-pub struct AuthorizationForPlace {
+pub struct ClearanceForPlace {
     pub place_id: String,
-    pub authorized_revision: Option<e::revision::RevisionValue>,
+    pub cleared_revision: Option<e::revision::RevisionValue>,
 }
 
-impl From<AuthorizationForPlace> for e::authorization::AuthorizationForPlace {
-    fn from(from: AuthorizationForPlace) -> Self {
-        let AuthorizationForPlace {
+impl From<ClearanceForPlace> for e::clearance::ClearanceForPlace {
+    fn from(from: ClearanceForPlace) -> Self {
+        let ClearanceForPlace {
             place_id,
-            authorized_revision,
+            cleared_revision,
         } = from;
         Self {
             place_id: place_id.into(),
-            authorized_revision: authorized_revision.map(Into::into),
+            cleared_revision: cleared_revision.map(Into::into),
         }
     }
 }

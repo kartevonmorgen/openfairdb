@@ -1,0 +1,46 @@
+{
+    "visible": [
+        {
+            "id": "4c20979fe0754e74875afa4308d73ce7",
+            "lat": 48.720333561636664,
+            "lng": 9.152239220753424,
+            "title": "slowtec GmbH",
+            "description": "Entwicklungsdienstleistungen für konsequent nachhaltige technische Open Source Lösungen sowie  Softwareentwicklung & Automatisierung von energie- und wasserautarken Systemen.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "assoziativ",
+                "ie-stationsidee",
+                "ingenieurbüro",
+                "initiativ-kolloquium2",
+                "kartevonmorgen",
+                "linux",
+                "new-work",
+                "open-source",
+                "potentialentfaltung",
+                "regelungstechnik",
+                "regpis",
+                "selbstgeführt",
+                "smart-lowtec",
+                "socent",
+                "software",
+                "sozialezukunft",
+                "soziokratie",
+                "teal-organization",
+                "transforming-capitalism-lab",
+                "urbane-landwirtschaft"
+            ],
+            "ratings": {
+                "total": 1.25,
+                "diversity": 2.0,
+                "fairness": 0.0,
+                "humanity": 2.0,
+                "renewable": 1.5,
+                "solidarity": 0.0,
+                "transparency": 2.0
+            }
+        }
+    ],
+    "invisible": []
+}

@@ -16,8 +16,8 @@ pub type Result<T> = StdResult<T, Error>;
 
 // Checks if the addition and removal of tags is permitted by organizations.
 //
-// Returns a list with the ids of organizations that require
-// authorization of the pending changes.
+// Returns a list with the ids of organizations that require clearance of
+// pending changes.
 pub fn authorize_editing<T>(
     moderated_tags_by_org: T,
     old_tags: &[String],
@@ -37,7 +37,7 @@ where
                     tag: added_tag.clone(),
                 });
             }
-            if moderated_tag.moderation_flags.requires_authorization() {
+            if moderated_tag.moderation_flags.requires_clearance() {
                 auth_org_ids.push(org_id.clone());
             }
         }
@@ -50,7 +50,7 @@ where
                     tag: removed_tag.clone(),
                 });
             }
-            if moderated_tag.moderation_flags.requires_authorization() {
+            if moderated_tag.moderation_flags.requires_clearance() {
                 auth_org_ids.push(org_id.clone());
             }
         }

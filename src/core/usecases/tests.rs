@@ -445,13 +445,13 @@ impl OrganizationRepo for MockDb {
             .ok_or(RepoError::NotFound)?;
         Ok(o.clone())
     }
-    fn map_authorized_tag_to_org_id(&self, auth_tag: &str) -> RepoResult<Option<Id>> {
+    fn map_moderated_tag_to_org_id(&self, moderated_tag: &str) -> RepoResult<Option<Id>> {
         Ok(self
             .orgs
             .iter()
             .find(|o| {
                 o.moderated_tags.iter().any(|mod_tag| {
-                    mod_tag.moderation_flags.requires_authorization() && mod_tag.label == auth_tag
+                    mod_tag.moderation_flags.requires_clearance() && mod_tag.label == moderated_tag
                 })
             })
             .map(|o| o.id.clone()))
@@ -524,44 +524,44 @@ impl RatingRepository for MockDb {
     }
 }
 
-impl PlaceAuthorizationRepo for MockDb {
-    fn add_pending_authorization_for_place(
+impl PlaceClearanceRepo for MockDb {
+    fn add_pending_clearances_for_place(
         &self,
         org_ids: &[Id],
-        _pending_authorization: &PendingAuthorizationForPlace,
+        _pending_clearance: &PendingClearanceForPlace,
     ) -> RepoResult<usize> {
         Ok(org_ids.len())
     }
 
-    fn count_pending_authorizations_for_places(&self, _org_id: &Id) -> RepoResult<u64> {
+    fn count_pending_clearances_for_places(&self, _org_id: &Id) -> RepoResult<u64> {
         Ok(0)
     }
 
-    fn list_pending_authorizations_for_places(
+    fn list_pending_clearances_for_places(
         &self,
         _org_id: &Id,
         _pagination: &Pagination,
-    ) -> RepoResult<Vec<PendingAuthorizationForPlace>> {
+    ) -> RepoResult<Vec<PendingClearanceForPlace>> {
         Ok(vec![])
     }
 
-    fn load_pending_authorizations_for_places(
+    fn load_pending_clearances_for_places(
         &self,
         _org_id: &Id,
         _place_ids: &[&str],
-    ) -> RepoResult<Vec<PendingAuthorizationForPlace>> {
+    ) -> RepoResult<Vec<PendingClearanceForPlace>> {
         Ok(vec![])
     }
 
-    fn replace_pending_authorizations_for_places(
+    fn update_pending_clearances_for_places(
         &self,
         _org_id: &Id,
-        _authorizations: &[AuthorizationForPlace],
+        _clearances: &[ClearanceForPlace],
     ) -> RepoResult<usize> {
         Ok(0)
     }
 
-    fn cleanup_pending_authorizations_for_places(&self, _org_id: &Id) -> RepoResult<u64> {
+    fn cleanup_pending_clearances_for_places(&self, _org_id: &Id) -> RepoResult<u64> {
         Ok(0)
     }
 }

@@ -1,0 +1,2157 @@
+{
+    "visible": [
+        {
+            "id": "fe2e835bb28e4082b0dbd8f2a7158d4f",
+            "lat": 51.95532468103803,
+            "lng": 7.637477517127992,
+            "title": "Teikei Gemeinschaft Münster",
+            "description": "Verbrauchergemeinschaft (im Aufbau) für solidarischen Kaffee aus Mexiko\nhttp://teikeicoffee.org/",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "coffee",
+                "solawi",
+                "teikei",
+                "teikei-gemeinschaft"
+            ],
+            "avg_rating": 2.0
+        },
+        {
+            "id": "87d33ddbbcc94d7ab960a9d8dd7c6ea2",
+            "lat": 52.0231333,
+            "lng": 4.6203595,
+            "title": "Nature & More (eosta)",
+            "description": "Nature & More is the \"trace & tell\" consumer trademark and online transparency system of Eosta - where ecology meets economy. We bring you fresh organic fruits & vegetables from all over the world",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bio",
+                "dreigliederung",
+                "organic",
+                "sustainability-ranking",
+                "threefoldsocialorganism"
+            ],
+            "avg_rating": 2.0
+        },
+        {
+            "id": "f0fa6cde0131411fa6ac3e129e9167e9",
+            "lat": 51.50347688569963,
+            "lng": 7.544555068016053,
+            "title": "Schule am Marsbruch",
+            "description": "LWL-Förderschule mit dem Förderschwerpunkt körperliche und motorische Entwicklung, Bestrebungen zur papierlosen Schule, ausgezeichnet mit dem Agenda-Siegel 2018 der Stadt Dortmund für Nachhaltigkeit und Umweltschutz durch erfolgreiche Digitalisierung",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "digitalisierung",
+                "dortmund",
+                "förderschule",
+                "marsbruch",
+                "marsbruchnet",
+                "nachhaltigkeit",
+                "papierlos",
+                "schule",
+                "umweltschutz"
+            ],
+            "avg_rating": 2.0
+        },
+        {
+            "id": "7cee99c287094a94acbdcf29ffff2e85",
+            "lat": 50.91339038897711,
+            "lng": 6.9664156436920175,
+            "title": "NeuLand Köln",
+            "description": "Der mobile Gemeinschaftsgarten\n\n[Zusätzlich: Fairteiler von foodsharing]",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "gemeinschaftsgarten",
+                "markt"
+            ],
+            "avg_rating": 1.833333333333333
+        },
+        {
+            "id": "27bccef5a7ef49dab2414f6eb6cd8ef4",
+            "lat": 49.42022496672443,
+            "lng": 8.65102529525757,
+            "title": "Heidelberger Solidarstrom",
+            "description": "Heidelberger Ökostrom der nicht nur den Wechsel zu erneuerbaren Energien fördert sondern zugleich den Wechsel der Energiewirtschaft. Hin zu einer Wirtschaft deren Gewinne dem Gemeinwohl dienen statt der Geldbörse der Investoren.\n",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "energiewende",
+                "gemeinwohl",
+                "mitbestimmung",
+                "nachhaltigkeit",
+                "transformation",
+                "wirtschaftswende",
+                "ökostrom"
+            ],
+            "avg_rating": 1.666666666666667
+        },
+        {
+            "id": "de6ac9a92bde46d0b34bd5961196ec12",
+            "lat": 47.4913731,
+            "lng": 7.6175922,
+            "title": "Bio-Stiftung Schweiz",
+            "description": "Die Bio-Stiftung fördert eine nachhaltige Agrikultur und ökologi\nsches Bewusstsein. Zudem sind wir der Überzeugung, dass eigenverantwortliches Handeln sowie Kooperation und Innovation die wesentlichen Voraussetzungen für nachhaltige Entwicklung sind",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "agrikultur",
+                "bio",
+                "gemeinwohl",
+                "innovation",
+                "kooperation",
+                "nachhaltigkeit",
+                "socent",
+                "teikei",
+                "zukunftsfähigkeit",
+                "öko"
+            ],
+            "avg_rating": 1.666666666666667
+        },
+        {
+            "id": "dbd5fb1a476e43aeba491cd227d93681",
+            "lat": 47.4913731,
+            "lng": 7.6175922,
+            "title": "Bodenfruchtbarkeitsfonds",
+            "description": "Der Bodenfruchtbarkeitsfonds schafft Freiräume für Ökolandwirte, damit diese die gemeinnützigen Aspekte ihrer Tätigkeit würdevoller durchführen können. Jede Unterstützung ist herzlich willkommen!",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "agrarwende",
+                "agrikultur",
+                "bio",
+                "bodenfruchtbarkeit",
+                "kooperation",
+                "öko"
+            ],
+            "avg_rating": 1.666666666666667
+        },
+        {
+            "id": "c7ba67d95b804a9a84e9d989bf8552db",
+            "lat": 52.4813412,
+            "lng": 13.4351032,
+            "title": "Touristinformation Neukölln",
+            "description": "Die Touristinformation Neukölln engagiert sich für Tourismus, der dem Bezirk Neukölln gut tut. Das Motto: Neukölln macht glücklich!",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "information",
+                "reisen",
+                "tourismus",
+                "touristinformation"
+            ],
+            "avg_rating": 1.666666666666667
+        },
+        {
+            "id": "b1ed8720cbb743f78ece989c32b5ff07",
+            "lat": 49.403770873546115,
+            "lng": 8.676453975728414,
+            "title": " Netzwerk Geld-Kompass Heidelberg",
+            "description": "Zusammenschluss von Bürger­initia­tiven in der Region für ein nach­haltiges Geld- und Finanz­system. Informationsaus­tausch, Abstimmung der Aktivi­täten der Akteure und gemein­same Pro­jekte. Treffen alle ein bis zwei Monate im Welthaus Heidelberg.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "bildung",
+                "geld",
+                "grünes-geld",
+                "nachhaltige-geldanlage",
+                "nachhaltige-wirtschaft",
+                "sustainable-finance",
+                "öffentlichkeitsarbeit"
+            ],
+            "avg_rating": 1.5
+        },
+        {
+            "id": "2c9382201b1f430a8034ccffe9a879e4",
+            "lat": 52.585320475465245,
+            "lng": 9.023380279541016,
+            "title": "Peacelab",
+            "description": "8 Monate, 6 Teilnehmer*innen, ein Haus im Lebensgarten und qualifizierte Gruppenprozessbegleitung (mehrmals wöchentlich), sowie Seminare zur persönlichen Weiterentwicklung. Monate des Ausprobierens, Entfaltens, Lernens, Beitragens und Seins.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "achtsamkeit",
+                "aufstellungsarbeit",
+                "bewegung",
+                "bildungsjahr",
+                "byron",
+                "dragon",
+                "dreaming",
+                "forum",
+                "gemeinschaft",
+                "gewaltfreie",
+                "katie",
+                "kommunikation",
+                "kunstprojekte",
+                "meditation",
+                "orgodynamik",
+                "persönlichkeitsarbeit",
+                "pferdearbeit",
+                "pilgerreise",
+                "schwitzhütte",
+                "spiritualität",
+                "tanz",
+                "theater"
+            ],
+            "avg_rating": 1.5
+        },
+        {
+            "id": "e3909087cbc04853b5e32067f9a1a3d0",
+            "lat": 52.59733916116392,
+            "lng": 9.189548492431642,
+            "title": "Lilienhof Sirisampanno e.V. Meditationskloster",
+            "description": "Ein Rückzugs- und Praxisort in der Natur für Menschen jeglicher Ausrichtung. Hier wird frei von Riten und Dogmen oder einer ausschließlichen Tradition praktiziert. Es werden Schweigeretreats für Gäste angeboten.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "achtsamkeit",
+                "bewusstsein",
+                "dhamma",
+                "entfaltung",
+                "entspannung",
+                "garten",
+                "geldfrei",
+                "gemeinschaft",
+                "gärtnern",
+                "kloster",
+                "lehrer",
+                "liebevoll",
+                "meditation",
+                "meditieren",
+                "natur",
+                "psychologie",
+                "ruhe",
+                "spenden",
+                "spiritualität",
+                "spirituell",
+                "stille",
+                "unreligiös",
+                "vision",
+                "weiterentwicklung",
+                "zurückziehen",
+                "ökologisch"
+            ],
+            "avg_rating": 1.5
+        },
+        {
+            "id": "fbf7f7c6f41a4d3ab534de9983e089df",
+            "lat": 49.4524985,
+            "lng": 8.5162415,
+            "title": "TeamWeitblick GmbH",
+            "description": "Ehemalige Unternehmensberatung und Coach für Gemeinwohlökonomie",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "geschlossen"
+            ],
+            "avg_rating": 1.5
+        },
+        {
+            "id": "cd1ac0d81679479fb85acdf59ce69a01",
+            "lat": 48.1789742,
+            "lng": 11.4842233,
+            "title": "Kartoffelkombinat eG",
+            "description": "Erntegemeinschaft im Sinne einer Solidarische Landwirtschaft durch Bio-Gemüsegärtnerei, die eigene, regionale Lebensmitteln produziert. Daneben eine Bio-Bäckerei und Akademie.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "genossenschaft",
+                "gwö",
+                "gwö-bayern",
+                "solawi"
+            ],
+            "avg_rating": 1.333333333333333
+        },
+        {
+            "id": "ae0e013a175f4e7fb1723432fd0f7ff1",
+            "lat": 51.099920559046545,
+            "lng": 11.582015910148735,
+            "title": "Auerworld Festival",
+            "description": "Im kleinen thüringischen Dorf Auerstädt veranstalten wir in einem Weidenpalast Ende Juli das kleine, gemütliche,\nfamiliäre Festival.\nGemeinnütziger Verein | ca. 1200 Gäste  | Nachhaltigkeit GROSS geschrieben | viel live-Musik | Workshops | Kino, etc.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "festival",
+                "firespace",
+                "hörspiel",
+                "kino",
+                "musik",
+                "nachhaltigkeit",
+                "natur",
+                "trampen",
+                "weidenpalast",
+                "workshops"
+            ],
+            "avg_rating": 1.333333333333333
+        },
+        {
+            "id": "abad0eb57fce49159eedf5120cb11418",
+            "lat": 50.73837501417338,
+            "lng": 7.0940592885017395,
+            "title": "Weltladen Bonn",
+            "description": "Geschäft für Fair gehandelte Produkte. Außerdem organisiert der Weltladen Bonn e.V. Vorträge, Filmvorführungen, Produktvorstellungen u.ä. rund um den Fairen Handel.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "fair",
+                "fairer-handel",
+                "fairtrade",
+                "konsum",
+                "kunsthandwerk",
+                "lebensmittel",
+                "veranstaltungen",
+                "weltladen"
+            ],
+            "avg_rating": 1.333333333333333
+        },
+        {
+            "id": "32e9acf23ba94559a7ef60515e669d00",
+            "lat": 47.720617,
+            "lng": 11.4071827,
+            "title": "Nager IT - Faire Computermäuse",
+            "description": "Die Faire\nComputermaus\n\nFür menschenwürdige Arbeitsbedingungen\nin den Fabriken der Computerindustrie",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "computer",
+                "fair-it",
+                "maus"
+            ],
+            "avg_rating": 1.333333333333333
+        },
+        {
+            "id": "4c20979fe0754e74875afa4308d73ce7",
+            "lat": 48.72033355,
+            "lng": 9.15223921812849,
+            "title": "slowtec GmbH",
+            "description": "Entwicklungsdienstleistungen für konsequent nachhaltige technische Open Source Lösungen sowie  Softwareentwicklung & Automatisierung von energie- und wasserautarken Systemen.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "assoziativ",
+                "ie-stationsidee",
+                "ingenieurbüro",
+                "initiativ-kolloquium2",
+                "kartevonmorgen",
+                "linux",
+                "new-work",
+                "open-source",
+                "potentialentfaltung",
+                "regelungstechnik",
+                "regpis",
+                "selbstgeführt",
+                "smart-lowtec",
+                "socent",
+                "software",
+                "sozialezukunft",
+                "soziokratie",
+                "teal-organization",
+                "transforming-capitalism-lab",
+                "urbane-landwirtschaft"
+            ],
+            "avg_rating": 1.25
+        },
+        {
+            "id": "96809b0390c746aa95348a1a7190b90e",
+            "lat": 49.7999706,
+            "lng": 9.9241559,
+            "title": "Bergwaldprojekt e.V.",
+            "description": "Das Bergwaldprojekt arbeitet dtl.weit mit Freiwilligen, um die Ökosysteme zu erhalten, den TeilnehmerInnen die Bedeutung & Gefährdung der natürlichen Lebensgrundlagen bewusst zu machen und mehr Menschen zu einem nachhaltigen Lebenswandel zu bewegen.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "bergwälder",
+                "bildung",
+                "biodiversität",
+                "biotoppflege",
+                "ehrenamt",
+                "einfach.jetzt.machen",
+                "freiwilligenarbeit",
+                "kulturlandschaften",
+                "moorwiedervernässung",
+                "naturnah",
+                "naturschutz",
+                "transition",
+                "waldumbau",
+                "ökosysteme"
+            ],
+            "avg_rating": 1.25
+        },
+        {
+            "id": "16e7a8f88c2040588c3061a0a6c15194",
+            "lat": 49.9361649,
+            "lng": 11.5735906,
+            "title": "TransitionHaus Bayreuth",
+            "description": "Das TransitionHaus bietet  Platz für verschiedenste Initiativen und Veranstaltungen. Hier findet ihr das TransitionCafé, Reparaturcafé, eine VolXküche - Küche für Alle! und vieles mehr...",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "buntstattbraun",
+                "essbare-stadt",
+                "fahrrad",
+                "flickwerk",
+                "foodsharing",
+                "geldzwangfrei",
+                "nicht-kommerziell",
+                "nähcaf",
+                "papierpilz",
+                "repaircafe",
+                "reparatur",
+                "reparaturcaf",
+                "solawi",
+                "transition",
+                "transition-bayreuth",
+                "transitioncaf",
+                "transitionhaus",
+                "transitiontown",
+                "umsonstflohmarkt",
+                "umsonstladen",
+                "upcycling",
+                "vokü",
+                "volxküche",
+                "wandel-bayreuth",
+                "weltbewusst",
+                "werkstadt",
+                "werkstatt"
+            ],
+            "avg_rating": 1.166666666666667
+        },
+        {
+            "id": "3a39215365d34944a94a09e127fea46f",
+            "lat": 48.4906836,
+            "lng": 10.8494501,
+            "title": "buch7.de GmbH",
+            "description": "Der Buchhandel mit der sozialen Seite. 75% des Gewinns gehen an wertvolle soziale, kulturelle und ökologische Projekte. buch7 bietet einen Auswahl von 9 Millionen Artikeln, kostenlosen Bücherversand und persönlichen Kundenservice.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "buch7",
+                "gemeinwohlökonomie",
+                "kultur",
+                "nachhaltig",
+                "onlinebuchhandel",
+                "sozial",
+                "spenden",
+                "sponsoring",
+                "ökologisch"
+            ],
+            "avg_rating": 1.166666666666667
+        },
+        {
+            "id": "f818057d152741a8a1c95362c24ec2fb",
+            "lat": 49.1222885,
+            "lng": 11.2709681,
+            "title": "Solidarische Landwirtschaft am Bio-Hof Dollinger",
+            "description": "Die Solidarische Landwirtschaft am Biolandhof Dollinger ist ein Zusammenschluss aus VerbraucherInnen und dem Biolandhof Dollinger. Als Mitglied wirst du quasi SelbstversorgerIn, nur dass du nicht selber anbaust, sondern den Hof damit beauftragst.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bioland",
+                "biologisch",
+                "depot",
+                "gemüse",
+                "landwirtschaft",
+                "nürnberg",
+                "roth",
+                "solawi",
+                "solidarisch",
+                "thalmässing",
+                "tierhaltung",
+                "öko-landbau",
+                "ömr",
+                "ömr_n_nl_rh"
+            ],
+            "avg_rating": 1.166666666666667
+        },
+        {
+            "id": "c13479218e654bc184b98361dfc98982",
+            "lat": 49.4799267,
+            "lng": 8.44329413113261,
+            "title": "Hack-Museumsgarten",
+            "description": "Seit März 2012 ist das Wilhelm-Hack-Museum mit diesem Gartenprojekt aktiv. Kindergärten, Schulen, Vereine, Familien und Einzelpersonen nutzen den Garten. Rund 200 Personen bauen in Kisten und auf Paletten Blumen, Gemüse und Kräuter an.\n\n",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "",
+                "grünindiestadt",
+                "hack-museumsgarten",
+                "integrativ",
+                "natur",
+                "sozio-kulturell",
+                "urban-gardening"
+            ],
+            "avg_rating": 1.1388888888888888
+        },
+        {
+            "id": "9757bd0358f84883b9a7280114ddc204",
+            "lat": 49.40756834780427,
+            "lng": 8.647042214870455,
+            "title": "HEG Heidelberger Energiegenossenschaft",
+            "description": "Wir sind die Energiewende in Heidelberg! Das Ziel all unserer Mitglieder: Wir nehmen die Energiewende vor Ort selbst in die Hand und stärken die regionale Wirtschaft. Dabei bleiben wir politisch unabhängig und tragen aktiv zum Klimaschutz bei.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "balkonmodule",
+                "bundhshd",
+                "contracting",
+                "energie",
+                "energiewende",
+                "erneuerbare",
+                "photovoltaik",
+                "solarenergie",
+                "windenergie"
+            ],
+            "avg_rating": 1.1111111111111112
+        },
+        {
+            "id": "e8dbf6d028954d6eaa76ad394377c196",
+            "lat": 52.470307,
+            "lng": 13.4412441,
+            "title": "Ideen³ e.V. // Räume für Entwicklung",
+            "description": "Ideen hoch drei e.V. Gestalten Räume für Entwicklung, in denen Menschen einander begegnen, Ideen erleben und Zukunft gestalten können. Vielfältige Initiativen auf Basis sozialer, ökologischer und ökonomischer Ideen. (Postanschrift)",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "assoziativ",
+                "berufungscoaching",
+                "bge",
+                "bildungsagenten",
+                "economy",
+                "fwd-rückkehrende",
+                "grundeinkommen",
+                "heilstätteharzgerode",
+                "ideenhochdrei",
+                "ideenwerkstatt",
+                "initiativ-kolloquium2",
+                "m4h",
+                "pocsummit",
+                "radtour",
+                "rethink",
+                "socent",
+                "socentedu",
+                "social-entrepreneurship",
+                "sozialezukunft",
+                "tagderideen",
+                "transforming-capitalism-lab",
+                "transition",
+                "upcycling",
+                "wandel",
+                "wandel-campus-netz",
+                "wandelbündnis",
+                "wc18",
+                "ökoligenta-netz"
+            ],
+            "avg_rating": 1.083333333333333
+        },
+        {
+            "id": "ff20f44776c0486682bc2e926d6d2bb3",
+            "lat": 48.7244278,
+            "lng": 9.14492801713147,
+            "title": "SoLaWiS - Solidarische Landwirtschaft Stuttgart",
+            "description": "Gemeinsam mit dem Reyerhof hat die Initiative \"SoLaWiS\" die Idee des Solidarischen Landwirtschaftens umgesetzt und trägt zu nachhaltiger, ökologischer, regionaler und saisonaler Lebensmittelversorgung bei. Mach mit! :)",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "csa",
+                "demeter",
+                "honig",
+                "socent",
+                "solawi",
+                "teikei"
+            ],
+            "avg_rating": 1.083333333333333
+        },
+        {
+            "id": "b454482070674ff7af1124dd679aa689",
+            "lat": 52.4921537,
+            "lng": 13.4369794,
+            "title": "Fairmondo eG",
+            "description": "Genossenschaftlicher Online-Marktplatz.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bio",
+                "fair",
+                "flohmarkt",
+                "genossenschaft",
+                "marktplatz",
+                "onlineangebot",
+                "onlineshop"
+            ],
+            "avg_rating": 1.0
+        },
+        {
+            "id": "d52750c7fe204ec18d303b4120b04cf3",
+            "lat": 49.495005592329704,
+            "lng": 8.45500409603119,
+            "title": "RobinKruso Handwerkergenossenschaft eG",
+            "description": "RobinKruso ist seit über 30 Jahren die Adresse für ökologisches Ausbauen und Einrichten: Massivholz- und Polstermöbel, Naturmatratzen, Bettwaren, Accessoires, Naturfarben/-putze, Holzfenster/-türen sowie Bodenbeläge aus Holz, Linoleum, Kork und Wolle",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bettdecke",
+                "fenster",
+                "holz",
+                "kalk",
+                "kissen",
+                "kork",
+                "lehm",
+                "linoleum",
+                "matratze",
+                "möbel",
+                "schreinerei",
+                "sofa",
+                "tür",
+                "wandfarbe",
+                "wandheizung",
+                "ökologisch",
+                "öl"
+            ],
+            "avg_rating": 1.0
+        },
+        {
+            "id": "b3d8d66da836470cb5c90ff321dfa3d2",
+            "lat": 48.2134217,
+            "lng": 16.3361903275309,
+            "title": "BrotpilotInnen",
+            "description": "Geben Brot eine zweite Chance - an drei Märkten in Wien vertreten (Yppenmarkt, Vorgartenmarkt, Karmelitermarkt)",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "konsum",
+                "lebensmittel",
+                "markt"
+            ],
+            "avg_rating": 1.0
+        },
+        {
+            "id": "0ca51e4ac36f4374955b35777bc21944",
+            "lat": 52.5008108,
+            "lng": 13.4206261,
+            "title": "Quartiermeister – Bier für den Kiez",
+            "description": "Quartiermeister – ein Social Business, bestehend aus einem Unternehmen und einem Verein. Aus Bierverkäufen werden Nachbarschaftsprojekte gefördert. Wir freuen uns über jeden, der Mitmacht und unsere Initiative (ehrenamtlich) unterstützt.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                " austausch",
+                " bier",
+                " food",
+                " nachbarschaft",
+                " netzwerk",
+                " politisch",
+                " projektförderung",
+                " regional",
+                " sozial",
+                " transparent",
+                " unabhängig",
+                " vernetzt",
+                "ehrenamt",
+                "social business",
+                "verein"
+            ],
+            "avg_rating": 1.0
+        },
+        {
+            "id": "6337618e7d2c4bbb811017a9d672cfc8",
+            "lat": 52.284831090249256,
+            "lng": 8.023034334182741,
+            "title": "NEO - Nachhaltiges Engagement Osnabrück",
+            "description": "studentische Hochschulinititative: \nNEO möchte Verantwortung übernehmen und als Vorbild fungieren. Die Mitglieder arbeiten aktiv an der Planung und Umsetzung von Projekten unterschiedlicher Dimensionen. ",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "bildung",
+                "diy",
+                "first-hand",
+                "international",
+                "kleidertausch",
+                "nachhaltigkeit",
+                "projekt",
+                "regpis",
+                "secondhand",
+                "stadtrundgang",
+                "transition",
+                "vernetzen",
+                "wandel",
+                "workshop"
+            ],
+            "avg_rating": 1.0
+        },
+        {
+            "id": "c5c844f92a4d4e459392197bc6805ee7",
+            "lat": 47.9941572,
+            "lng": 7.84340860047771,
+            "title": "Teikei Kaffee Freiburg",
+            "description": "Erste globale CSA Initiative (Solidarisch Landwirtschaft) die mit Kaffee eine achtsame Wirtschafsbeziehung mit Mexico beginnt und Kaffe per Segelschiff importiert",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "assoziativ",
+                "csa",
+                "dreigliederung",
+                "kaffee",
+                "pocsummit",
+                "sailed",
+                "solawi",
+                "teikei",
+                "thempis",
+                "wandel-campus-netz",
+                "wc18"
+            ],
+            "avg_rating": 1.0
+        },
+        {
+            "id": "1fea21e5cc0549838976b4b3220ccf36",
+            "lat": 48.6678439,
+            "lng": 9.21184533130148,
+            "title": "Eduard-Spranger-Gymnasium",
+            "description": "Gymnasium mit \"Eine-Welt-Tag\"",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "abitur",
+                "ein-welt-tag",
+                "gymnasium"
+            ],
+            "avg_rating": 1.0
+        },
+        {
+            "id": "2a44d660133048df9ee14124f89ff266",
+            "lat": 49.96123745,
+            "lng": 8.26575735210183,
+            "title": "Malteser Integrationslotsen - Patenprojekt",
+            "description": "Die ehrenamtlichen Integrationslotsen der Malteser unterstützen geflüchtete Menschen darin ein selbstbestimmtes Leben zu führen, Potentiale zu erkennen und am gesellschaftlichen Leben vor Ort teilzunehmen.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "flucht",
+                "fwd-rückkehrende",
+                "geflüchtete",
+                "integration",
+                "mainz",
+                "patenprojekt",
+                "rückkehrer_innen"
+            ],
+            "avg_rating": 1.0
+        },
+        {
+            "id": "168ed64b29924970a8a6d0ebf49e3179",
+            "lat": 51.3671048,
+            "lng": 12.7407526252206,
+            "title": "Kanthaus",
+            "description": "A house for sharing.\nFür Teilen und gegen Wegwerfen.\nYou are very welcome to visit the house, just ask by mail when it is suitable for. ",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "foodsharing",
+                "kifa",
+                "programming",
+                "repaircafe",
+                "sharing",
+                "umsonstladen"
+            ],
+            "avg_rating": 1.0
+        },
+        {
+            "id": "82f64e5b32c846e49966185b9c7127f6",
+            "lat": 50.121686,
+            "lng": 8.70769139585224,
+            "title": "['kvirder]® - fahrradfreude pur",
+            "description": "Dein Bikeshop in Frankfurt am Main. Fahrradwerkstatt für alle Marken || Verkauf von cargobikes und Falträder. Probefahrt aller Modelle mit und ohne Motor möglich.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "cargobike",
+                "fahrradwerkstatt",
+                "faltrad",
+                "kvirder",
+                "lastenrad",
+                "mobilität",
+                "mobilitätwerkstätten",
+                "transportrad",
+                "werkstatt",
+                "zweiradmechanikermeisterin"
+            ],
+            "avg_rating": 0.9444444444444446
+        },
+        {
+            "id": "e95e5f113bc248c0b2ecd92fb03ff6d1",
+            "lat": 50.8046826,
+            "lng": 8.7675177,
+            "title": "Bioladen Kollektiv onkel emma",
+            "description": "onkel emma ist ein Bioladen, der seit Oktober 2001 als Kollektiv betrieben und von allen KundInnen gemeinsam finanziert wird.\n\nDas Betriebsmodell Mitgliederladen ermöglicht es, Ökowaren vergleichsweise günstig anzubieten.\n",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bio",
+                "bioladen",
+                "ideenerfahren17",
+                "mitgliederladen"
+            ],
+            "avg_rating": 0.9166666666666665
+        },
+        {
+            "id": "5754ee19cee1409591380635bf8b680f",
+            "lat": 48.59809194880833,
+            "lng": 13.449317808699377,
+            "title": "Vereinte Wurzelwerke",
+            "description": "Auf Freilandäckern und in Folientunneln bauen wir ca 60 Kulturen Gemüse an. Die Ernte teilen wir unter uns auf, Kosten und Arbeit tragen wir gemeinsam. Teil des Konzeptes sind regelmäßige Mitarbeitertreffen, Feste und Lehrveranstaltungen.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                " demeter",
+                " gemüse",
+                " regional",
+                " saisonal",
+                " transition",
+                " wandel",
+                " wurzelwerke",
+                "bio",
+                "gemüseanbau",
+                "solawi",
+                "solidarischelandwirtschaft"
+            ],
+            "avg_rating": 0.8333333333333335
+        },
+        {
+            "id": "1b523b587bd9472da9ffc459b058ab27",
+            "lat": 51.2856906,
+            "lng": 9.6022455,
+            "title": "Kommune Niederkaufungen",
+            "description": "Eine intentionale Gemeinschaft seit 1986. Zusammen leben und arbeiten hier 57 Erwachsene und 20 Kinder/Jugendliche. (Stand: Aug. 2017)",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "ideenerfahren17",
+                "kommune"
+            ],
+            "avg_rating": 0.8333333333333335
+        },
+        {
+            "id": "5b3b4c7dfdfe43e5b6d752c829dfcee0",
+            "lat": 50.7596618,
+            "lng": 8.9551713,
+            "title": "Ohäuser Mühle",
+            "description": "Kinderbauernhof, biohof, menschliche Nutztierhaltung, wunderbarer Honig",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bio",
+                "bioland",
+                "eier",
+                "hof",
+                "honig",
+                "ideenerfahren17"
+            ],
+            "avg_rating": 0.8333333333333335
+        },
+        {
+            "id": "ef7ac95e561840cebb039bade59d6071",
+            "lat": 50.1107542,
+            "lng": 8.6643487,
+            "title": "GLS Bank Filiale Frankfurt",
+            "description": "Bei der GLS Bank ist Geld für die Menschen da. Wir finanzieren nur nachhaltige Unternehmerinnen und Unternehmer – damit diese sozial, ökologisch und ökonomisch sinnvolle Dinge schaffen können. Alle Kredite machen wir transparent.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bank",
+                "bildung",
+                "erneuerbare-energien",
+                "ernährung",
+                "ethical-banking",
+                "finanzethik",
+                "fonds",
+                "geld",
+                "gesundheit",
+                "gls",
+                "grünes-geld",
+                "investment",
+                "konto",
+                "kredit",
+                "kultur",
+                "leihen-und-schenken",
+                "nachhaltig",
+                "nachhaltige-geldanlage",
+                "nachhaltige-wirtschaft",
+                "sinn",
+                "sozial",
+                "soziales",
+                "sustainable-finance",
+                "wohnen",
+                "ökologisch"
+            ],
+            "avg_rating": 0.8333333333333335
+        },
+        {
+            "id": "689713e22ea440c8af2e415de4acefad",
+            "lat": 47.6135062,
+            "lng": 9.7134647,
+            "title": "FIU-Verlag und Buch-Versand",
+            "description": "\"Alles ist Skulptur\"\nDieser Gestaltungsbegriff von Joseph Beuys steht im Zentrum der verlegerischen Tätigkeit des FIU-Verlags. Alles will gestaltet sein. Und hierzu liefert der Verlag wichtiges und spannendes Material. ",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bildung",
+                "buchverlag",
+                "bücher",
+                "versandbuchhandel",
+                "wissen"
+            ],
+            "avg_rating": 0.8333333333333335
+        },
+        {
+            "id": "74d1af6d329342f0b94a9f0463034939",
+            "lat": 48.12062563806472,
+            "lng": 11.544388532638552,
+            "title": "Serlo Education",
+            "description": "Serlo macht hochwertige Bildung frei verfügbar mit der Wiki-basierten Lernplattform www.serlo.org",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "ashoka",
+                "bildung",
+                "bildungsgerechtigkeit",
+                "digitalisierung",
+                "lernen",
+                "partizipation",
+                "socent"
+            ],
+            "avg_rating": 0.8333333333333335
+        },
+        {
+            "id": "1d3f2a9e94064a7794a1b508a0b8c49c",
+            "lat": 52.371289219729746,
+            "lng": 8.005127906799318,
+            "title": "CSA Hof Pente - Solid. Landwirtschaft",
+            "description": "Vorzeige-CSA-Hofgemeinschaft mit Handlungspädagogik, Waldkindergarten und großer Landwirtschaft.\n",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bildungsvielfalt",
+                "csa",
+                "handlungspädagogik",
+                "kinderbauernhof",
+                "solawi",
+                "teikei",
+                "wowsommercamp"
+            ],
+            "avg_rating": 0.8333333333333335
+        },
+        {
+            "id": "78392de59f6d49e18087234187815d7b",
+            "lat": 48.22878477764061,
+            "lng": 16.50184139913967,
+            "title": "vienna.transitionBASE",
+            "description": "Die vienna.transitionBASE ist ein Ort an dem Prototypen für eine nachhaltige, partizipative und kreative Zukunft entwickelt und getestet werden.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "campus",
+                "expo",
+                "gartengruppe",
+                "greenskills",
+                "living-lab",
+                "nachhaltigbauen",
+                "transition",
+                "transitiontown",
+                "wandelort",
+                "ökoligenta-netz"
+            ],
+            "avg_rating": 0.8333333333333335
+        },
+        {
+            "id": "a6ecc183b3864315a77f015e2ed0afc1",
+            "lat": 47.72241541952971,
+            "lng": 8.756119608879091,
+            "title": "Hofladen Gmues Zahn",
+            "description": "Hofladen mit regionalem Biogemüse aus eigenem Anbau und Bioobst. Öffnungszeiten Freitag 16-18 Uhr.\n",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "biogemüse",
+                "biolandbetrieb",
+                "bioobst",
+                "hofladen"
+            ],
+            "avg_rating": 0.8333333333333335
+        },
+        {
+            "id": "f6b479c4210c45c1b0282138ebde8f2f",
+            "lat": 49.4850651,
+            "lng": 8.4658722,
+            "title": "Umgekrempelt",
+            "description": "Faire Kleidung, die nicht nur auf Labels sondern auch auf Transparenz setzt. Wer hier einkauft unterstützt nachhaltige und soziale Projekte in Deutschland. Zusätzlich werden hier auch Upcycling-Workshops angeboten.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "fair",
+                "fairfashion",
+                "fairtrade",
+                "handmade",
+                "jeans",
+                "klamotten",
+                "kleidung",
+                "manomama",
+                "mode",
+                "regional",
+                "upcycling"
+            ],
+            "avg_rating": 0.75
+        },
+        {
+            "id": "f5430cd752b1433280d5874545dd7ec8",
+            "lat": 51.0710873,
+            "lng": 9.39590386954423,
+            "title": "Shiftphone",
+            "description": "Firma produziert schöne Smartphones und Laptops und versucht dabei auf Menschenrechte und faire Bezahlung zu setzen",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "fair-it",
+                "phone"
+            ],
+            "avg_rating": 0.75
+        },
+        {
+            "id": "e240b1f69a1b4900a83112646700af21",
+            "lat": 49.496907281340754,
+            "lng": 8.484634024969312,
+            "title": "radhof Gebrauchträder",
+            "description": "Verkauf von aufgewerteten Gebrauchträdern, Reparatur zu fairen Preisen. Man kann auch selbst reparieren, wird beraten und zahlt nur die Ersatzteile.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "fahrad",
+                "ie-stationsidee",
+                "mobilität",
+                "radladen",
+                "reparatur"
+            ],
+            "avg_rating": 0.75
+        },
+        {
+            "id": "3fc25c3b10444c669f985e4637ad2439",
+            "lat": 49.494532,
+            "lng": 8.4787963,
+            "title": "Solidarische Landwirtschaft Ma-Lu e.V.",
+            "description": "SoLaWi = Sich die Ernte teilen. In Mannheim seit 2015. KonsumentInnen tragen zwei regionalen Bio-Landwirte, die das ganze Jahr die Gruppe mit Lebensmitteln versorgen.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "bio",
+                "csa",
+                "gemüse",
+                "landwirtschaft",
+                "mvm",
+                "obst",
+                "solawi",
+                "solawi-malu",
+                "solawidepot",
+                "teikei",
+                "teikei_gemeinschaft"
+            ],
+            "avg_rating": 0.75
+        },
+        {
+            "id": "13eb2b40d1434e4796581cdb9a15ca20",
+            "lat": 48.7780912,
+            "lng": 9.18886557331713,
+            "title": "Die AnStifter – Interculturelle Initiativen e.V. ",
+            "description": "Das Bürgerprojekt Die AnStifter setzt sich seit über 20 Jahren für Demokratie, Frieden und Toleranz und gegen Antisemitismus, Rassismus und Fremdenfeindlichkeit ein. Seit 2003 verleihen sie den mit 5.000 Euro dotierten Stuttgarter Friedenspreis.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "bildung",
+                "demokratie",
+                "demokratiekongress",
+                "ehrenamt",
+                "fluchthilfen",
+                "frieden",
+                "geflüchtete",
+                "interkulturalität",
+                "kultur",
+                "lesezeichen",
+                "netzwerk",
+                "plakatwettbewerbe",
+                "reisen",
+                "solidarität",
+                "stuttgarterfriedenspreis",
+                "toleranz",
+                "umwelt",
+                "vernetzung",
+                "zivilgesellschaft"
+            ],
+            "avg_rating": 0.7222222222222223
+        },
+        {
+            "id": "110a03bfa65d4adc9bd4c359168ad84c",
+            "lat": 47.6183704,
+            "lng": 7.66049355,
+            "title": "fairNETZt Lörrach",
+            "description": "Plattform und fairSTÄRKer für Initiativen, die den Wandel aktiv gestalten und sich für eine nachhaltig lebenswerte Zukunft einsetzen",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "demokratie",
+                "gemeinwohl",
+                "integration",
+                "pioneersofchange",
+                "transitiontown",
+                "wandel",
+                "weltbewusst",
+                "ökologie"
+            ],
+            "avg_rating": 0.7222222222222223
+        },
+        {
+            "id": "70ac91a480364cd78b601afbab283fc5",
+            "lat": 51.65800651081451,
+            "lng": 11.14631921052933,
+            "title": "Freie Feldlage Harzgerode",
+            "description": "Sozial-ökologische Lebensgemeinschaft in der Heilstätte Harzgerode",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "freiefeldlage",
+                "gemeinschaftingründung",
+                "heilstätteharzgerode",
+                "lebensgemeinschaft",
+                "seinkönnen",
+                "undjetzt-orte",
+                "veranstaltungsort",
+                "wohnprojekt",
+                "ökodorf"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "ba8e21532d654b0ab30df06f53aae94a",
+            "lat": 47.6827801,
+            "lng": 7.85995520439666,
+            "title": "tanzRaum & Naturheilpraxis",
+            "description": "Raum für Kunst & Wandel // \nLeben ist Bewegung  - die Welle\nWahrnehmen der inneren Gesundheit",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "gesundheit",
+                "heilung",
+                "naturheilpraxis",
+                "tanzen",
+                "tanzsstudio"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "15d495164bcd474e8f7d2b193465ab20",
+            "lat": 47.6486272,
+            "lng": 7.8236037,
+            "title": "Café Irrlicht",
+            "description": "linksorientiertes, autonomes Zentrum. Konzerte, Kneipe, Kultur, Austausch, Aktionismus, Umsonstladen. Selbstverwaltend und antikommerziell.  ",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "",
+                " austausch",
+                "aktionismus",
+                "kneipe",
+                "konzerte",
+                "kultur",
+                "umsonstladen"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "7ddcbbf3ef5d43398295f2694f353b53",
+            "lat": 48.21755824859634,
+            "lng": 16.362265027577205,
+            "title": "Der Wiener Deewan",
+            "description": "Der Wiener Deewan soll ein möglichst andockbar Ort für ein breites Spektrum an Personen sein.\nPakistanische Küche.\n\nAll you can eat, pay what you wish",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "food",
+                "pakistani",
+                "restaurant",
+                "social-gathering"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "1f3651b5c81e42a3b623a1db35f851b9",
+            "lat": 51.8532546,
+            "lng": 9.9482221,
+            "title": "living utopia - Kollektivhaus",
+            "description": "Wir schaffen Mitmachräume, in denen Austausch, Empowerment, Vernetzung und das Leben einer solidarischen gesellschaftlichen Wirklichkeit möglich werden soll.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "austausch",
+                "diskurs",
+                "empowerment",
+                "geld",
+                "geldfrei",
+                "schenkökonomie",
+                "seinkönnen",
+                "utopie",
+                "vernetzung",
+                "wandel-campus-netz",
+                "ökoligenta"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "a23008728f6d4442b98e1f2c30bf0f82",
+            "lat": 49.50079958433558,
+            "lng": 8.491187095642092,
+            "title": "Transition Town Mannheim von morgen",
+            "description": "Mannheim ist Entwicklungsland hin zu einer Postfossilen Stadt. Dafür setzen wir uns ein. Wandel für ein Mannheim von morgen.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "engagement",
+                "entwicklungspolitik",
+                "freunderegiogruppe",
+                "fwd",
+                "fwd-regionalgruppe",
+                "kartevonmorgen",
+                "m4h",
+                "neujahrsempfang",
+                "regionalgruppe",
+                "regpis",
+                "transitiontown",
+                "vonmorgen",
+                "wandel-campus-netz",
+                "wc18",
+                "wind"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "842f8c99a65344ab8ca3e9e2c5960ed4",
+            "lat": 49.4075827,
+            "lng": 8.6470966,
+            "title": "Bürgerwerke-Gemeinschaft",
+            "description": "Eine erneuerbare, regionale und unabhängige Energieversorgung in Bürgerhand – das ist unsere Vision. Dazu haben sich 80 Energiegenossenschaften mit mehr als 12.000 Mitgliedern aus ganz Deutschland zu den Bürgerwerken zusammengeschlossen.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bürgerenergie",
+                "energie",
+                "energiegenossenschaft",
+                "erneuerbare-energie",
+                "ökoligenta-netz"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "7906e3466321431dbc0ffff20b57f121",
+            "lat": 47.6120896,
+            "lng": 7.6607218,
+            "title": "Zukunftsforum Lörrach+",
+            "description": "bringt Menschen aus Zivilgesellschaft, Bildung, Kultur, Sozialem, Politik, Verwaltungen und Wirtschaft zusammen, um unsere Region zu stärken und eine regionale Vernetzung zu fördern. ",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "bildung",
+                "gemeinwohl",
+                "soziales",
+                "wandel",
+                "ökologie"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "5d36ea021a0648edbebcd518c49a831b",
+            "lat": 53.5698904,
+            "lng": 10.0666160461884,
+            "title": "Premium Cola / Premium Kollektiv",
+            "description": "Ein Getränkehersteller der besonderen Art. Ohne Chef und zentrale Steuerung ist es ein Neztwerk freier Menschen",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "augenhoehe",
+                "augenhoehe-film",
+                "cola",
+                "getränke",
+                "premium-cola",
+                "selbstorganisation",
+                "tagderideen",
+                "teal-organization"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "78c3bb7ac21b4c8c94e14ca675e00872",
+            "lat": 51.30869887086814,
+            "lng": 9.46919560432434,
+            "title": "Bürgerblüte Lokalwährung Kassel",
+            "description": "Die Währung für die Region Kassel.\nAuffindbar im Transition Haus",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "bank",
+                "geld",
+                "regionalgeld",
+                "regionalwährung"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "4a8da262013641258e22a0bfc9a52509",
+            "lat": 49.8672861,
+            "lng": 10.3177993,
+            "title": "Go&Change",
+            "description": "Go & Change – Entwicklungsgemeinschaft für Lebensqualität\nWir bei Go & Change wagen das Experiment einer integralen intentionalen Lebens-, Arbeits- und Entwicklungsgemeinschaft.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bewusstsein",
+                "gemeinschaft",
+                "integral"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "418da3086e1149229b23f661cd6d77fc",
+            "lat": 47.7302645,
+            "lng": 9.349771,
+            "title": "wirundjetzt e.V.",
+            "description": "Wir vernetzen Nachhaltigkeit in der Region Allgäu –Bodensee-Oberschwaben und möchten Menschen begeistern, selbst Initiative zu ergreifen und die Zukunft zu gestalten. ",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "nachaltigkeit",
+                "netzwerk",
+                "regpis",
+                "transition",
+                "transitiontown",
+                "wandel",
+                "ökoligenta-netz"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "21712c29be4a41629b54cf2eafc3170a",
+            "lat": 47.567285,
+            "lng": 7.5923369,
+            "title": "BaselWandel",
+            "description": "Die Vernetzungsplattform BaselWandel versucht all diese Bewegungen stärker untereinander zu vernetzen, so dass Synergien möglich werden und aus vielen kleinen Projekten eine starke und vielfältige Gemeinschaft wachsen kann. ",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "transition",
+                "transitiontown",
+                "wandel"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "f07138ad5d674bdc9d969503b8dedeea",
+            "lat": 48.5212033,
+            "lng": 9.0570983,
+            "title": "Style afFAIRe",
+            "description": "gute Kleidung, fair produziert",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "",
+                "bekleidung",
+                "fair",
+                "klamotten",
+                "schuhe",
+                "unterwäsche"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "c6463b48e5914b8dbc115dd94d2ec390",
+            "lat": 49.5160984,
+            "lng": 11.5216331,
+            "title": "Streuobstinitiative Hersbrucker Alb e.V.",
+            "description": "Erhalt der Obstvielfalt, Pflege von Obstwiesen, Obstbauseminare und Veredelungskurse, Sensenkurse, Baumpflanzungen, Umweltpädagogik, Wertschöpfung für Obst, reg. Verarbeitung und Vermarktung, Erhalt der Lebensgrundlagen für Pflanze, Tier und Mensch",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "bioland",
+                "kurse",
+                "neuanlage",
+                "streuobst",
+                "streuobstpflege",
+                "umweltpädagogik",
+                "verarbeitung",
+                "vermarktung",
+                "wertschöpfungskette",
+                "ömr",
+                "ömr_n_nl_rh"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "1428436040734b6dae8c8b37334268f3",
+            "lat": 50.72638934731746,
+            "lng": 7.091221511363984,
+            "title": "Cafete",
+            "description": "studentisch geführtes Café. Tassen anstatt TO Go Becher, Bio-Gemüse, Bio-Riegel, (...) ",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "cafete"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "abd9382d10084cb48dfb1649e71e6443",
+            "lat": 49.93084956866857,
+            "lng": 11.58768582486543,
+            "title": "Green Campus",
+            "description": "Green Campus ist eine Plattform, die 2016 ins Leben gerufen wurde, um alle Aktivitäten zum Thema Nachhaltigkeit an der Universität Bayreuth zu bündeln und potentielle neue Akteure bei der Umsetzung ihrer Pläne zu unterstützen.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "green-campus",
+                "uni-bayreuth",
+                "universität",
+                "wandel-bayreuth"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "2b080d014f4a42e0a451e4148d314ee0",
+            "lat": 49.95500905,
+            "lng": 11.5937271693768,
+            "title": "Spielmobil & Wundersam anders",
+            "description": "Wundersam anders e.V. ging aus der Initiative des Spielmobil Bayreuths hervor, welches seit 2013 im Stadt- und Landkreis sein Unwesen treibt.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "spielmobil",
+                "wandel-bayreuth",
+                "wundersam-anders"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "9c792f9911ef4639937c50233aaa6c70",
+            "lat": 47.89518289230452,
+            "lng": 8.17938566207886,
+            "title": "Ecosaeder.de",
+            "description": "Modulares, nicht-rechteckiges, winterfestes, preisgünstiges Tiny-House System auf der Basis der Ikosaeder- bzw Dome-Form",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "do-it-yourself",
+                "dome",
+                "günstiges-wohnen",
+                "modular",
+                "naturmaterialien",
+                "prototyping",
+                "runde-räume",
+                "tinyhouse"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "b4fd7143aa834387bc9a4af13bda57fe",
+            "lat": 50.9202142,
+            "lng": 7.19231546973158,
+            "title": "Thalgold, Agentur für Begegnungen",
+            "description": "Thalgold setzt sich ein für mehr Achtsamkeit und Bewusstsein im Leben. Meditationsworkshops und Achtsamkeitskurse für Kinder und Erwachsene, an Schulen und im Ganztag. Theater, Kunst, Lesungen und Filmprojekte zum Thema. Begegnung mit der neuen Zeit.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "achtsamkeit",
+                "erwachsene",
+                "film",
+                "kinder",
+                "kultur",
+                "kunst",
+                "meditation",
+                "schule"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "a884e54948dd452fb91eeb0458b46394",
+            "lat": 50.776351,
+            "lng": 6.083862,
+            "title": "Aachen Unverpackt",
+            "description": "Wir sind eine Gruppe engagierter Student*innen, die rund um das Thema Müllvermeidung und Nachhaltigkeit informieren, sensibilisieren und motivieren wollen. Monatlich treffen wir uns zur Planung der kommenden Aktionen.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "müllvermeidung",
+                "nachhaltigkeit",
+                "zerowaste"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "0dac9296b82d454ab770032727612907",
+            "lat": 52.37370952847533,
+            "lng": 9.706104397773744,
+            "title": "artlab4",
+            "description": "Hier hat Künstler Joy Lohmann sein Atelier. Artlab4 bietet aber auch:\n> Graphic Recording + Erklärfilme\n> Graffiti + Wandgestaltungen\n> Konzept + Kulturmanagement\n> Coop-Plattformen (DCrow.de)",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "events",
+                "graffiti",
+                "graphic-recording",
+                "illustration",
+                "klimakultur",
+                "kultur",
+                "kunst",
+                "projekte"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "02d360a15e6147ef889a6012abb07b7d",
+            "lat": 49.4504948,
+            "lng": 11.0619664,
+            "title": "Bio und Nah e.G.",
+            "description": "Kleiner Bioladen in Nürnberg, mit der Möglichkeit trockene Lebensmittel unverpackt einzukaufen, z.B. Nudeln, Reis etc. ",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bioladen",
+                "regional",
+                "unverpackt",
+                "verpackungsfrei",
+                "zerowaste"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "0b89e6d0945740b3a77f240d9cdab0e9",
+            "lat": 48.72033355,
+            "lng": 9.15223921812849,
+            "title": "Karte von morgen",
+            "description": "Das assoziative Netzwerk für Initiativen des Wandels und nachhaltige Unternehmen zur Unterstützung der sozial-ökologischen Transformation.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "degrowth",
+                "fairmove-it",
+                "fwd-rückkehrende",
+                "ideenhochdrei",
+                "initiativ-kolloquium2",
+                "kartevonmorgen",
+                "regpis",
+                "rückkehrer-innen",
+                "sdg-fibel-hessen",
+                "sozialezukunft",
+                "transition",
+                "wandel",
+                "wandel-campus-netz",
+                "wandelbündnis",
+                "wc18",
+                "ökoligenta-netz"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "9359d93cbc514308a4a194df0904056a",
+            "lat": 52.3735109,
+            "lng": 9.7351457,
+            "title": "fairKauf e.G.",
+            "description": "Secondhandwaren für fast alle. Die gemeinnützige Genossenschaft qualifiziert Langzeitarbeitslose Menschen für eine Tätigkeit im Einzelhandel. Jeder Einkauf u.jede Warenspende hilft ihnen, ihre Chancen auf dem Arbeitsmarkt zu erhöhen. ",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "ausbildung",
+                "bildung",
+                "fair",
+                "gesellschaft",
+                "konsumwandel",
+                "secondhand"
+            ],
+            "avg_rating": 0.6666666666666665
+        },
+        {
+            "id": "bfc0dac17c7a43cc8e9b756d5cc3b889",
+            "lat": 49.488074895851895,
+            "lng": 8.464826345443727,
+            "title": "Klimaschutzagentur Mannheim",
+            "description": "Jeder kann aktiv zum Klimaschutz beitragen. Und die Klimaschutzagentur hilft Ihnen mit wertvollen Informationen und Tipps zu allen relevanten Themen.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "energieagentur",
+                "energieberatung",
+                "förderung",
+                "gebäudesanierung",
+                "klimaagentur",
+                "klimaschutz",
+                "nachhaltigleben",
+                "umweltbildung"
+            ],
+            "avg_rating": 0.6111111111111112
+        },
+        {
+            "id": "ddee967ea1ef48c9bea5261d7f0aedf2",
+            "lat": 48.28242255,
+            "lng": 8.746163749999997,
+            "title": "ownworld",
+            "description": "Energie- und Wasserautarke Holzhäuser sowie Produkte und Dienstleistungen für einen weltgerechten Lebensstil.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "socent",
+                "tiny",
+                "tinyhouse",
+                "wohnen"
+            ],
+            "avg_rating": 0.5833333333333335
+        },
+        {
+            "id": "f7c97e606ac74c1c8e3e6ae93f7c6a75",
+            "lat": 49.44841970485072,
+            "lng": 11.05856001377106,
+            "title": "ZeroHero – Unverpackt Nürnberg",
+            "description": "der erste Unverpackt-Laden in Franken\n",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bio",
+                "lebensmittel",
+                "regional",
+                "unverpackt",
+                "zerowaste"
+            ],
+            "avg_rating": 0.5833333333333335
+        },
+        {
+            "id": "3704517fe6d34497bbc48e69e1acbe23",
+            "lat": 49.43388925,
+            "lng": 8.52338416955265,
+            "title": "sofalich.de",
+            "description": "sofalich ein Online-Shop, der nicht nur auf coolen Style sondern besonders Fairtrade und Ökologisch Nachhaltige Produkte wert legt. Und wir setzen noch eins drauf: man kann sogar mit dem Einkauf soziale Projekte unterstützen! ",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "cool",
+                "fair",
+                "guteaussehen",
+                "hoodie",
+                "hose",
+                "klamotten",
+                "kleidung",
+                "mannheim",
+                "nachhaltig",
+                "sofalich",
+                "style",
+                "t-shirt"
+            ],
+            "avg_rating": 0.5833333333333335
+        },
+        {
+            "id": "5fbd36d349ba4aa4a4e0da6a583b1081",
+            "lat": 51.3108136,
+            "lng": 12.3761886,
+            "title": "Initiative Grundeinkommen Leipzig",
+            "description": "Regionalinitiative des Netzwerk Grundeinkommen. Die Initiative Grundeinkommen Leipzig trifft sich regelmäßig jeden letzten Donnerstag im Monat 19:30 Uhr im Café im Haus der Demokratie Leipzig . Interessierte sind herzlich willkommen!",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "",
+                "bge",
+                "grundeinkommen"
+            ],
+            "avg_rating": 0.5833333333333335
+        },
+        {
+            "id": "c8ac675557d74f66819d0d8bd7971aca",
+            "lat": 49.4485631,
+            "lng": 11.0790454,
+            "title": "BLUEPINGU e.V.",
+            "description": "Eine der ersten und erfolgreichsten Regionallotsen der Transition-Initiative Nürnberg für ökologischen Konsum und Wandel.\nFrank ist hier Regionalpilot der Karte von morgen, die hier über den Regionallotsen läuft.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "agenda2030",
+                "agenda21",
+                "bio",
+                "buch7",
+                "ernährungsrat",
+                "fairteiler",
+                "gemeinschaftsgarten",
+                "kartevonmorgen",
+                "kino",
+                "leibu",
+                "m4h",
+                "regionallotse",
+                "regpis",
+                "sdgs",
+                "sharing",
+                "stadtentwicklung",
+                "teilen",
+                "transitiontown",
+                "wandel-campus-netz",
+                "wc18",
+                "zerowaste",
+                "ökoligenta-netz"
+            ],
+            "avg_rating": 0.5833333333333335
+        },
+        {
+            "id": "c6ed00c48fbf4e5ea804cf3f7939fde2",
+            "lat": 53.57489729348123,
+            "lng": 10.044883489608766,
+            "title": "Hydrophil",
+            "description": "Wasserneutrale, vegane und faire Hygieneprodukte, wie z.B. nachhaltige Zahnbürsten aus Bambus, Seifen, Bambus-Wattestäbchen und Mundwasser.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bambus",
+                "crueltyfree",
+                "fair",
+                "hygiene",
+                "hygieneprodukte",
+                "kosmetik",
+                "nachhaltig",
+                "seife",
+                "vegan",
+                "vivaconagua",
+                "wasser",
+                "wasserneutral",
+                "zahnbürste"
+            ],
+            "avg_rating": 0.5833333333333335
+        },
+        {
+            "id": "4985653ea3ff4267849fb05cf53bf0b5",
+            "lat": 48.7180392,
+            "lng": 9.21075592216894,
+            "title": "Geco-Gardens",
+            "description": "Ökologische, vertikale Kleingärten für Balkon und Terrasse",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "",
+                "automatisiert",
+                "terrabioponisch",
+                "urban-gardening"
+            ],
+            "avg_rating": 0.5833333333333335
+        },
+        {
+            "id": "33c593c8efdc42f7904a22d4e011a59c",
+            "lat": 47.688041397565264,
+            "lng": 8.900433182716371,
+            "title": "Lädele Schienen",
+            "description": "Ein Dorfladen der einen großen Teil seiner Lebensmittel aus der Region bekommt und von einer Bürgerinitiative getragen wird",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "bio",
+                "bürgerinitiative",
+                "dorfladen",
+                "regionalentwicklung",
+                "regionalversorgung"
+            ],
+            "avg_rating": 0.5833333333333335
+        },
+        {
+            "id": "68e92c53e2894c2eb35f0e0bd48bfb34",
+            "lat": 49.4802592,
+            "lng": 8.4799778,
+            "title": "Eddie´s – Verpackungsfrei Einkaufen",
+            "description": "Unverpackt einkaufen ohne Plastikmüll. Man füllt alles in eigene Behälter. Es gibt Öle, Pasta, Kaffee, Schockolade, Kosmetik uvm.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bio",
+                "einkaufen",
+                "keinmüll",
+                "kvmfilm",
+                "lebensmittel",
+                "unverpackt",
+                "verpackungsfrei",
+                "zerowaste"
+            ],
+            "avg_rating": 0.5
+        },
+        {
+            "id": "280f51d2c6eb4e5cb4299ee3a44b70ff",
+            "lat": 48.818478626478445,
+            "lng": 9.16962504386902,
+            "title": "HOBBYHIMMEL - Die Offene Werkstatt",
+            "description": "Stuttgarts erste Offene Werkstatt. Als gemeinnütziges Projekt haben wir uns das Ziel gesetzt, die handwerklichen Möglichkeiten möglichst vieler Menschen drastisch zu erweitern. Wir bieten eine große Werkstattfläche mit diversen Werkbereichen!",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "fablab",
+                "gwö",
+                "holz",
+                "makerspace",
+                "mietwerkstatt",
+                "offenewerkstatt",
+                "openecolab",
+                "repaircafe",
+                "sharing",
+                "teilen",
+                "thempis",
+                "upcycling",
+                "werkstatt"
+            ],
+            "avg_rating": 0.5
+        },
+        {
+            "id": "58abd12c43b14b29b5b5f4ee6bfd605d",
+            "lat": 48.78252655,
+            "lng": 9.20655660057964,
+            "title": "Intern. Begegnung in Gemeinschaftsdiensten e.V.",
+            "description": "IBG e.V. organisiert seit 1965 Freiwilligendienste in Deutschland und vermittelt junge Menschen in gemeinnützige Projekte weltweit. Durch Freiwilligenarbeit will der Verein internationale Solidarität, Völkerverständigung und Frieden fördern. ",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "bildung",
+                "freiwilligenarbeit",
+                "freiwilligendienste",
+                "frieden",
+                "inklusion",
+                "international",
+                "nachhaltigkeit",
+                "solidarität",
+                "volunteering",
+                "völkerverständigung",
+                "workcamps"
+            ],
+            "avg_rating": 0.5
+        },
+        {
+            "id": "43c22e4875b54444bf6eb1b0a85105fc",
+            "lat": 47.5565748,
+            "lng": 7.588360700000001,
+            "title": "Café Mitte - unternehmen Mitte",
+            "description": "Kaffeehaus, Plattform, Arbeitsplatz und öffentliches Wohnzimmmer. Hier werden Ideen geboren, Schicksale geknüpft und Freundschaften gelebt. Von hier aus geht es immer weiter ...\n",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bge",
+                "cafe",
+                "grundeinkommen",
+                "ideenerfahren12",
+                "kaffe",
+                "purpose-economy",
+                "socent"
+            ],
+            "avg_rating": 0.5
+        },
+        {
+            "id": "bcfd2ac6d91243e2b36bf15abd0b1dc0",
+            "lat": 48.14060372402012,
+            "lng": 11.530717805787368,
+            "title": "Weisser Rabe Gebrauchtwarenhaus",
+            "description": "Annahme und Verkauf von gebrauchten Möbeln, Gebrauchsgegenständen für Haushalt und Freizeit sowie Kleidung in gutem Zustand. Menschen in schwierigen Situationen finden hier eine Einstiegsbeschäftigung.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "einrichtung",
+                "freizeit",
+                "haushalt",
+                "kleidung",
+                "möbel",
+                "secondhandladen",
+                "sozial"
+            ],
+            "avg_rating": 0.5
+        },
+        {
+            "id": "2d9c714bf6ef45218fdc154838a08fdb",
+            "lat": 48.1666891,
+            "lng": 11.5273552,
+            "title": "Lastenrad Ralph Fischer",
+            "description": "Die beiden Münchner Raphael Draeger und Thomas Schmidt vom Projekt \"Freie Lastenradler\"\nhaben das erste Lastenrad nach München gebracht.\nDie beiden wollen etwas bewegen, denn Alternativen zum Fahrrad in der Stadt gibt es Ihrer Aussage nach \nnicht. \n",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "kinder",
+                "lastenradverleih",
+                "nachbarschaft",
+                "nachhaltig",
+                "nachhaltigkeit",
+                "selbsthilfe"
+            ],
+            "avg_rating": 0.5
+        },
+        {
+            "id": "c641154a10034861b43e66f2b5b40a64",
+            "lat": 51.3435361,
+            "lng": 9.8574897,
+            "title": "Transition Haus und Transition Town Witzenhausen",
+            "description": " Eine Haus für alle Initiativen, die Raum geben für den Wandel in Stadt und Menschen.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "ideenerfahren17",
+                "klimaschutz",
+                "nachhaltigkeit",
+                "statdimwandel",
+                "thempis",
+                "transitiontown",
+                "umwelt"
+            ],
+            "avg_rating": 0.5
+        },
+        {
+            "id": "cc6535c8b8474574bd03dab1e12cf84d",
+            "lat": 49.4524985,
+            "lng": 8.5162415,
+            "title": "Kanzlei Heinrich",
+            "description": "Steuerberatung & Wirtschaftsprüfung\nBerät Selbstständige, Privatpersonen, Unternehmen und gemeinnützige Organisationen.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "gwö",
+                "steuerberater",
+                "wirtschaftsprüfer"
+            ],
+            "avg_rating": 0.5
+        },
+        {
+            "id": "2d975bb0c7a84cca9ca4cc1990375224",
+            "lat": 48.1249953,
+            "lng": 11.5493321,
+            "title": "Lastenrad Sigi (E-Lastenrad)",
+            "description": "Die beiden Münchner Raphael Draeger und Thomas Schmidt vom Projekt \"Freie Lastenradler\"\nhaben das erste Lastenrad nach München gebracht.\nDie beiden wollen etwas bewegen, denn Alternativen zum Fahrrad in der Stadt gibt es Ihrer Aussage nach \nnicht. \n",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "-nachhaltig",
+                "kinder",
+                "lastenradverleih",
+                "nachbarschaft",
+                "nachhhaltigkeit",
+                "selbsthilfe"
+            ],
+            "avg_rating": 0.5
+        },
+        {
+            "id": "b76e3d64f499478e960ad5180085f1cf",
+            "lat": 49.49401015,
+            "lng": 8.4921864604503,
+            "title": "Rantipole - Online-Shop für nachhaltige Kleidung",
+            "description": "Punkige Subkultur-Mode und Accessoires, hergestellt in Handarbeit. Nachhaltige, vegane Bio-Produkte. ",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "bio",
+                "diy",
+                "handarbeit",
+                "kleidung",
+                "mode",
+                "vegan"
+            ],
+            "avg_rating": 0.5
+        },
+        {
+            "id": "18625c5c121b4f4cb0bc037d7c093871",
+            "lat": 51.2667081779183,
+            "lng": 7.144777178764344,
+            "title": "Utopiastadt",
+            "description": "Utopiastadt ist ein kreativer Kluster. Es ist die Initialzündung eines andauernden Kultur- und Gesellschaftskongresses mit Ambitionen und Wirkung",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "bahnhof",
+                "coworking",
+                "fahrrad",
+                "gastronomie",
+                "gemeinschaftsgarten",
+                "stadtgarten",
+                "werkstatt"
+            ],
+            "avg_rating": 0.5
+        },
+        {
+            "id": "5391846ede4a4f409102d2d54be7eeb8",
+            "lat": 47.9338477,
+            "lng": 7.80744506615667,
+            "title": "Süße Hoffnung UG",
+            "description": "faire Pralinen",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "fair",
+                "fairer-handel",
+                "fairwandlerpreis18",
+                "pralienen",
+                "schokolade"
+            ],
+            "avg_rating": 0.5
+        },
+        {
+            "id": "93d44625627441a7b2710aaa0514634f",
+            "lat": 48.1253082,
+            "lng": 11.5799128,
+            "title": "Lastenrad Antje",
+            "description": "Die beiden Münchner Raphael Draeger und Thomas Schmidt vom Projekt \"Freie Lastenradler\"\nhaben das erste Lastenrad nach München gebracht.\nDie beiden wollen etwas bewegen, denn Alternativen zum Fahrrad in der Stadt gibt es Ihrer Aussage nach \nnicht. \n",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "kinder",
+                "lastenradverleih",
+                "nachbarschaft",
+                "nachhaltig",
+                "nachhhaltigkeit",
+                "selbsthilfe"
+            ],
+            "avg_rating": 0.5
+        },
+        {
+            "id": "f3625be4e4954ecf849c4ab5f2351f94",
+            "lat": 48.1523189,
+            "lng": 11.5771339,
+            "title": "Oxfam Shop Maxvorstadt",
+            "description": "Gebrauchtwarenladen für gespendete Kleidung, Haushaltswaren, Bücher, Spiele etc. Die Erlöse des ehrenamtlich geführten Ladens fließen in die Arbeit von Oxfam Deutschland.",
+            "categories": [
+                "77b3c33a92554bcf8e8c2c86cedd6f6f"
+            ],
+            "tags": [
+                "accessoires",
+                "annahmestelle",
+                "bekleidung",
+                "bücher",
+                "damenkleidung",
+                "ehrenamtlich",
+                "haushalt",
+                "herrenmode",
+                "klamotten",
+                "klamottenladen",
+                "kleidung",
+                "kleidungsladen",
+                "mode",
+                "secondhand",
+                "secondhandladen",
+                "spiele",
+                "spielzeug"
+            ],
+            "avg_rating": 0.5
+        }
+    ],
+    "invisible": [
+        {
+            "id": "1bcb092c44574d738b8f2534eb33393a",
+            "lat": 47.4723658,
+            "lng": 7.6912049,
+            "title": "Nuglar Gärten",
+            "description": "Die solidarische Landwirtschaft fördert  auf ihren 26 Parzellen (7H) die Bodenfruchtbarkeit und baut Demeter zertifiziertes Gemüse an, das im Ernte-Abo an die Mitglieder verteilt wird. Alle sind eingeladen, sich nach ihren Möglichkeiten einzubringen.",
+            "categories": [
+                "2cd00bebec0c48ba9db761da48678134"
+            ],
+            "tags": [
+                "",
+                "bio-dynamisch",
+                "bodenaufbau",
+                "csa",
+                "gemeinschaftlich",
+                "gemüseao",
+                "mitmachen",
+                "solila",
+                "weltacker"
+            ],
+            "avg_rating": 1.666666666666667
+        }
+    ]
+}

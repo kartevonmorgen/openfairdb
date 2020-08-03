@@ -32,18 +32,18 @@ table! {
 joinable!(organization_tag -> organization (org_rowid));
 
 table! {
-    organization_place_authorization_pending (org_rowid, place_rowid) {
+    organization_place_clearance (org_rowid, place_rowid) {
         rowid -> BigInt,
         org_rowid -> BigInt,
         place_rowid -> BigInt,
         created_at -> BigInt,
-        // last authorized revision or NULL if the place has not been authorized yet
-        last_authorized_revision -> Nullable<BigInt>,
+        // last cleared revision or NULL if the place is new and has not been cleared yet
+        last_cleared_revision -> Nullable<BigInt>,
     }
 }
 
-joinable!(organization_place_authorization_pending -> organization (org_rowid));
-joinable!(organization_place_authorization_pending -> place (place_rowid));
+joinable!(organization_place_clearance -> organization (org_rowid));
+joinable!(organization_place_clearance -> place (place_rowid));
 
 ///////////////////////////////////////////////////////////////////////
 // Users
@@ -247,7 +247,7 @@ allow_tables_to_appear_in_same_query!(
     place_revision_tag,
     organization,
     organization_tag,
-    organization_place_authorization_pending,
+    organization_place_clearance,
     tags,
     users,
     user_tokens,

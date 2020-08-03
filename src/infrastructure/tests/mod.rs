@@ -4,7 +4,7 @@ mod flows {
     pub use super::super::flows::{prelude::*, tests::prelude::BackendFixture, Result};
 }
 
-pub struct PlaceAuthorizationFixture {
+pub struct PlaceClearanceFixture {
     backend: flows::BackendFixture,
 
     user_email: Email,
@@ -18,17 +18,17 @@ pub struct PlaceAuthorizationFixture {
     // A place with ALL moderated tags that has been confirmed
     confirmed_place: Place,
 
-    // Organization with a moderated tags that allows only add
-    // and requires authorization
-    organization_with_add_authorized_tag: Organization,
+    // Organization with a moderated tag that allows only add
+    // and requires clearance
+    organization_with_add_clearance_tag: Organization,
 
-    // Organization with a moderated tags that allows only add
-    // and requires authorization
-    organization_with_remove_authorized_tag: Organization,
+    // Organization with a moderated tag that allows only add
+    // and requires clearance
+    organization_with_remove_clearance_tag: Organization,
 
-    // Organization with a moderated tags that allows both add
-    // and remove and requires authorization
-    organization_with_addremove_authorized_tag: Organization,
+    // Organization with a moderated tag that allows both add
+    // and remove and requires clearance
+    organization_with_addremove_clearance_tag: Organization,
 }
 
 fn default_new_place() -> usecases::NewPlace {
@@ -60,7 +60,7 @@ fn default_search_request<'a>() -> usecases::SearchRequest<'a> {
             MapPoint::from_lat_lng_deg(-90, -180),
             MapPoint::from_lat_lng_deg(90, 180),
         ),
-        auth_tag: None,
+        moderated_tag: None,
         categories: vec![],
         hash_tags: vec![],
         ids: vec![],
@@ -69,7 +69,7 @@ fn default_search_request<'a>() -> usecases::SearchRequest<'a> {
     }
 }
 
-impl PlaceAuthorizationFixture {
+impl PlaceClearanceFixture {
     pub fn new() -> Self {
         let backend = flows::BackendFixture::new();
 
@@ -190,44 +190,43 @@ impl PlaceAuthorizationFixture {
             .unwrap()
             .create_org(organization_without_moderated_tags.clone())
             .unwrap();
-        let organization_with_add_authorized_tag = Organization {
+        let organization_with_add_clearance_tag = Organization {
             id: Id::new(),
-            name: "organization_with_add_authorized_tag".into(),
-            api_token: "organization_with_add_authorized_tag".into(),
+            name: "organization_with_add_clearance_tag".into(),
+            api_token: "organization_with_add_clearance_tag".into(),
             moderated_tags: vec![ModeratedTag {
                 label: "authadd".into(),
-                moderation_flags: TagModerationFlags::authorize().join(TagModerationFlags::add()),
+                moderation_flags: TagModerationFlags::clear().join(TagModerationFlags::add()),
             }],
         };
         backend
             .db_connections
             .exclusive()
             .unwrap()
-            .create_org(organization_with_add_authorized_tag.clone())
+            .create_org(organization_with_add_clearance_tag.clone())
             .unwrap();
-        let organization_with_remove_authorized_tag = Organization {
+        let organization_with_remove_clearance_tag = Organization {
             id: Id::new(),
-            name: "organization_with_remove_authorized_tag".into(),
-            api_token: "organization_with_remove_authorized_tag".into(),
+            name: "organization_with_remove_clearance_tag".into(),
+            api_token: "organization_with_remove_clearance_tag".into(),
             moderated_tags: vec![ModeratedTag {
                 label: "authremove".into(),
-                moderation_flags: TagModerationFlags::authorize()
-                    .join(TagModerationFlags::remove()),
+                moderation_flags: TagModerationFlags::clear().join(TagModerationFlags::remove()),
             }],
         };
         backend
             .db_connections
             .exclusive()
             .unwrap()
-            .create_org(organization_with_remove_authorized_tag.clone())
+            .create_org(organization_with_remove_clearance_tag.clone())
             .unwrap();
-        let organization_with_addremove_authorized_tag = Organization {
+        let organization_with_addremove_clearance_tag = Organization {
             id: Id::new(),
             name: "organization_with_authaddremove_tag".into(),
             api_token: "organization_with_authaddremove_tag".into(),
             moderated_tags: vec![ModeratedTag {
                 label: "authaddremove".into(),
-                moderation_flags: TagModerationFlags::authorize()
+                moderation_flags: TagModerationFlags::clear()
                     .join(TagModerationFlags::add())
                     .join(TagModerationFlags::remove()),
             }],
@@ -236,7 +235,7 @@ impl PlaceAuthorizationFixture {
             .db_connections
             .exclusive()
             .unwrap()
-            .create_org(organization_with_addremove_authorized_tag.clone())
+            .create_org(organization_with_addremove_clearance_tag.clone())
             .unwrap();
         Self {
             backend,
@@ -244,18 +243,17 @@ impl PlaceAuthorizationFixture {
             created_place,
             archived_place,
             confirmed_place,
-            organization_with_add_authorized_tag,
-            organization_with_remove_authorized_tag,
-            organization_with_addremove_authorized_tag,
+            organization_with_add_clearance_tag,
+            organization_with_remove_clearance_tag,
+            organization_with_addremove_clearance_tag,
         }
     }
 }
 
 #[test]
-fn should_create_pending_authorization_when_creating_place_with_moderated_tags() -> flows::Result<()>
-{
-    let mut fixture = PlaceAuthorizationFixture::new();
-    let org = &fixture.organization_with_add_authorized_tag;
+fn should_create_pending_clearance_when_creating_place_with_moderated_tags() -> flows::Result<()> {
+    let mut fixture = PlaceClearanceFixture::new();
+    let org = &fixture.organization_with_add_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
 
     let new_place = usecases::NewPlace {
@@ -274,19 +272,16 @@ fn should_create_pending_authorization_when_creating_place_with_moderated_tags()
 
     assert!(created_place.revision.is_initial());
     assert!(created_place.tags.contains(tag));
-    let pending_authorizations = usecases::authorization::place::list_pending_authorizations(
+    let pending_clearances = usecases::clearance::place::list_pending_clearances(
         &*fixture.backend.db_connections.shared()?,
         &org.api_token,
         &Default::default(),
     )?;
-    assert_eq!(1, pending_authorizations.len());
-    // Not yet authorized (and invisible)
+    assert_eq!(1, pending_clearances.len());
+    // Not yet cleared (and invisible)
     assert_eq!(
         None,
-        pending_authorizations
-            .first()
-            .unwrap()
-            .last_authorized_revision
+        pending_clearances.first().unwrap().last_cleared_revision
     );
 
     Ok(())
@@ -294,8 +289,8 @@ fn should_create_pending_authorization_when_creating_place_with_moderated_tags()
 
 #[test]
 fn should_deny_creation_of_place_with_moderated_tags_if_not_allowed() -> flows::Result<()> {
-    let mut fixture = PlaceAuthorizationFixture::new();
-    let org = &fixture.organization_with_remove_authorized_tag;
+    let mut fixture = PlaceClearanceFixture::new();
+    let org = &fixture.organization_with_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
 
     let new_place = usecases::NewPlace {
@@ -312,7 +307,7 @@ fn should_deny_creation_of_place_with_moderated_tags_if_not_allowed() -> flows::
         None,
     )
     .is_err());
-    // No pending authorizations created
+    // No pending clearances created
     assert_eq!(
         0,
         fixture
@@ -320,7 +315,7 @@ fn should_deny_creation_of_place_with_moderated_tags_if_not_allowed() -> flows::
             .db_connections
             .shared()
             .unwrap()
-            .count_pending_authorizations_for_places(&org.id)
+            .count_pending_clearances_for_places(&org.id)
             .unwrap()
     );
 
@@ -328,14 +323,14 @@ fn should_deny_creation_of_place_with_moderated_tags_if_not_allowed() -> flows::
 }
 
 #[test]
-fn should_create_pending_authorization_once_when_updating_place_with_moderated_tags(
+fn should_create_pending_clearance_once_when_updating_place_with_moderated_tags(
 ) -> flows::Result<()> {
-    let mut fixture = PlaceAuthorizationFixture::new();
-    let org = &fixture.organization_with_addremove_authorized_tag;
+    let mut fixture = PlaceClearanceFixture::new();
+    let org = &fixture.organization_with_addremove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.created_place;
     let place_id = &old_place.id;
-    let last_authorized_revision = old_place.revision;
+    let last_cleared_revision = old_place.revision;
 
     let new_revision = old_place.revision.next();
     let mut update_place = usecases::UpdatePlace::from(old_place.clone());
@@ -352,18 +347,15 @@ fn should_create_pending_authorization_once_when_updating_place_with_moderated_t
 
     assert_eq!(new_revision, new_place.revision);
     assert!(new_place.tags.contains(tag));
-    let pending_authorizations = usecases::authorization::place::list_pending_authorizations(
+    let pending_clearances = usecases::clearance::place::list_pending_clearances(
         &*fixture.backend.db_connections.shared()?,
         &org.api_token,
         &Default::default(),
     )?;
-    assert_eq!(1, pending_authorizations.len());
+    assert_eq!(1, pending_clearances.len());
     assert_eq!(
-        Some(last_authorized_revision.clone()),
-        pending_authorizations
-            .first()
-            .unwrap()
-            .last_authorized_revision
+        Some(last_cleared_revision.clone()),
+        pending_clearances.first().unwrap().last_cleared_revision
     );
 
     let mut update_place = usecases::UpdatePlace::from(new_place.clone());
@@ -380,19 +372,16 @@ fn should_create_pending_authorization_once_when_updating_place_with_moderated_t
     )?;
     assert_eq!(new_revision, new_place.revision);
     assert!(new_place.tags.is_empty());
-    let pending_authorizations = usecases::authorization::place::list_pending_authorizations(
+    let pending_clearances = usecases::clearance::place::list_pending_clearances(
         &*fixture.backend.db_connections.shared()?,
         &org.api_token,
         &Default::default(),
     )?;
-    // Pending authorization is unchanged
-    assert_eq!(1, pending_authorizations.len());
+    // Pending clearance is unchanged
+    assert_eq!(1, pending_clearances.len());
     assert_eq!(
-        Some(last_authorized_revision),
-        pending_authorizations
-            .first()
-            .unwrap()
-            .last_authorized_revision
+        Some(last_cleared_revision),
+        pending_clearances.first().unwrap().last_cleared_revision
     );
 
     Ok(())
@@ -400,8 +389,8 @@ fn should_create_pending_authorization_once_when_updating_place_with_moderated_t
 
 #[test]
 fn should_deny_adding_of_moderated_tag_to_place_if_not_allowed() -> flows::Result<()> {
-    let mut fixture = PlaceAuthorizationFixture::new();
-    let org = &fixture.organization_with_remove_authorized_tag;
+    let mut fixture = PlaceClearanceFixture::new();
+    let org = &fixture.organization_with_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.created_place;
     let place_id = &old_place.id;
@@ -419,7 +408,7 @@ fn should_deny_adding_of_moderated_tag_to_place_if_not_allowed() -> flows::Resul
         None,
     )
     .is_err());
-    // No pending authorizations created
+    // No pending clearances created
     assert_eq!(
         0,
         fixture
@@ -427,7 +416,7 @@ fn should_deny_adding_of_moderated_tag_to_place_if_not_allowed() -> flows::Resul
             .db_connections
             .shared()
             .unwrap()
-            .count_pending_authorizations_for_places(&org.id)
+            .count_pending_clearances_for_places(&org.id)
             .unwrap()
     );
 
@@ -436,8 +425,8 @@ fn should_deny_adding_of_moderated_tag_to_place_if_not_allowed() -> flows::Resul
 
 #[test]
 fn should_deny_removing_of_moderated_tag_from_place_if_not_allowed() -> flows::Result<()> {
-    let mut fixture = PlaceAuthorizationFixture::new();
-    let org = &fixture.organization_with_add_authorized_tag;
+    let mut fixture = PlaceClearanceFixture::new();
+    let org = &fixture.organization_with_add_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.confirmed_place;
     assert!(old_place.tags.contains(tag));
@@ -461,7 +450,7 @@ fn should_deny_removing_of_moderated_tag_from_place_if_not_allowed() -> flows::R
         None,
     )
     .is_err());
-    // No pending authorizations created
+    // No pending clearances created
     assert_eq!(
         0,
         fixture
@@ -469,7 +458,7 @@ fn should_deny_removing_of_moderated_tag_from_place_if_not_allowed() -> flows::R
             .db_connections
             .shared()
             .unwrap()
-            .count_pending_authorizations_for_places(&org.id)
+            .count_pending_clearances_for_places(&org.id)
             .unwrap()
     );
 
@@ -477,14 +466,14 @@ fn should_deny_removing_of_moderated_tag_from_place_if_not_allowed() -> flows::R
 }
 
 #[test]
-fn should_create_pending_authorization_when_updating_an_archived_place_with_moderated_tags(
+fn should_create_pending_clearance_when_updating_an_archived_place_with_moderated_tags(
 ) -> flows::Result<()> {
-    let mut fixture = PlaceAuthorizationFixture::new();
-    let org = &fixture.organization_with_addremove_authorized_tag;
+    let mut fixture = PlaceClearanceFixture::new();
+    let org = &fixture.organization_with_addremove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.archived_place;
     let place_id = &fixture.archived_place.id;
-    let last_authorized_revision = old_place.revision;
+    let last_cleared_revision = old_place.revision;
 
     let new_revision = old_place.revision.next();
     let mut update_place = usecases::UpdatePlace::from(old_place.clone());
@@ -501,32 +490,29 @@ fn should_create_pending_authorization_when_updating_an_archived_place_with_mode
 
     assert_eq!(new_revision, new_place.revision);
     assert!(new_place.tags.contains(tag));
-    let pending_authorizations = usecases::authorization::place::list_pending_authorizations(
+    let pending_clearances = usecases::clearance::place::list_pending_clearances(
         &*fixture.backend.db_connections.shared()?,
         &org.api_token,
         &Default::default(),
     )?;
-    assert_eq!(1, pending_authorizations.len());
+    assert_eq!(1, pending_clearances.len());
     assert_eq!(
-        Some(last_authorized_revision.clone()),
-        pending_authorizations
-            .first()
-            .unwrap()
-            .last_authorized_revision
+        Some(last_cleared_revision.clone()),
+        pending_clearances.first().unwrap().last_cleared_revision
     );
 
     Ok(())
 }
 
 #[test]
-fn should_return_the_last_authorized_revision_when_searching_for_authorized_places(
-) -> flows::Result<()> {
-    let mut fixture = PlaceAuthorizationFixture::new();
-    let org = &fixture.organization_with_addremove_authorized_tag;
+fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -> flows::Result<()>
+{
+    let mut fixture = PlaceClearanceFixture::new();
+    let org = &fixture.organization_with_addremove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.created_place;
     let place_id = &old_place.id;
-    let last_authorized_revision = old_place.revision;
+    let last_cleared_revision = old_place.revision;
 
     let new_title = "new title".to_string();
     assert_ne!(old_place.title, new_title);
@@ -549,22 +535,19 @@ fn should_return_the_last_authorized_revision_when_searching_for_authorized_plac
 
     assert_eq!(new_revision, new_place.revision);
     assert!(new_place.tags.contains(tag));
-    let pending_authorizations = usecases::authorization::place::list_pending_authorizations(
+    let pending_clearances = usecases::clearance::place::list_pending_clearances(
         &*fixture.backend.db_connections.shared()?,
         &org.api_token,
         &Default::default(),
     )?;
-    assert_eq!(1, pending_authorizations.len());
+    assert_eq!(1, pending_clearances.len());
     assert_eq!(
-        Some(last_authorized_revision.clone()),
-        pending_authorizations
-            .first()
-            .unwrap()
-            .last_authorized_revision
+        Some(last_cleared_revision.clone()),
+        pending_clearances.first().unwrap().last_cleared_revision
     );
 
-    // Unauthorized (default)
-    let (unauthorized_search_result, _) = usecases::search(
+    // Uncleared (default)
+    let (uncleared_search_result, _) = usecases::search(
         &*fixture.backend.db_connections.shared()?,
         &*fixture.backend.search_engine.borrow(),
         usecases::SearchRequest {
@@ -574,31 +557,28 @@ fn should_return_the_last_authorized_revision_when_searching_for_authorized_plac
         },
         100,
     )?;
-    assert_eq!(1, unauthorized_search_result.len());
-    assert_eq!(new_title, unauthorized_search_result.first().unwrap().title);
-    assert_eq!(new_tags, unauthorized_search_result.first().unwrap().tags);
-    // Authorized
-    let (authorized_search_result, _) = usecases::search(
+    assert_eq!(1, uncleared_search_result.len());
+    assert_eq!(new_title, uncleared_search_result.first().unwrap().title);
+    assert_eq!(new_tags, uncleared_search_result.first().unwrap().tags);
+    // Cleared
+    let (cleared_search_result, _) = usecases::search(
         &*fixture.backend.db_connections.shared()?,
         &*fixture.backend.search_engine.borrow(),
         usecases::SearchRequest {
-            auth_tag: Some(tag.as_str()),
+            moderated_tag: Some(tag.as_str()),
             ids: vec![place_id.as_ref()],
             ..default_search_request()
         },
         100,
     )?;
-    assert_eq!(1, authorized_search_result.len());
+    assert_eq!(1, cleared_search_result.len());
     assert_eq!(
         old_place.title,
-        authorized_search_result.first().unwrap().title
+        cleared_search_result.first().unwrap().title
     );
-    assert_eq!(
-        old_place.tags,
-        authorized_search_result.first().unwrap().tags
-    );
+    assert_eq!(old_place.tags, cleared_search_result.first().unwrap().tags);
 
-    // Archive, authorize, and then confirm this entry
+    // Archive, clear, and then confirm this entry
     flows::review_places(
         &fixture.backend.db_connections,
         &mut *fixture.backend.search_engine.get_mut(),
@@ -617,17 +597,17 @@ fn should_return_the_last_authorized_revision_when_searching_for_authorized_plac
             .db_connections
             .shared()
             .unwrap()
-            .count_pending_authorizations_for_places(&org.id)
+            .count_pending_clearances_for_places(&org.id)
             .unwrap()
     );
     assert_eq!(
         1,
-        usecases::authorization::place::acknowledge_pending_authorizations(
+        usecases::clearance::place::update_pending_clearances(
             &*fixture.backend.db_connections.exclusive()?,
             &org.api_token,
-            &[AuthorizationForPlace {
+            &[ClearanceForPlace {
                 place_id: place_id.clone(),
-                authorized_revision: None,
+                cleared_revision: None,
             }],
         )?
     );
@@ -638,7 +618,7 @@ fn should_return_the_last_authorized_revision_when_searching_for_authorized_plac
             .db_connections
             .shared()
             .unwrap()
-            .count_pending_authorizations_for_places(&org.id)
+            .count_pending_clearances_for_places(&org.id)
             .unwrap()
     );
     // Restore archived place by confirming it
@@ -654,8 +634,8 @@ fn should_return_the_last_authorized_revision_when_searching_for_authorized_plac
         },
     )?;
 
-    // Unauthorized (default)
-    let (unauthorized_search_result, _) = usecases::search(
+    // Uncleared (default)
+    let (uncleared_search_result, _) = usecases::search(
         &*fixture.backend.db_connections.shared()?,
         &*fixture.backend.search_engine.borrow(),
         usecases::SearchRequest {
@@ -665,38 +645,113 @@ fn should_return_the_last_authorized_revision_when_searching_for_authorized_plac
         },
         100,
     )?;
-    assert_eq!(1, unauthorized_search_result.len());
-    assert_eq!(new_title, unauthorized_search_result.first().unwrap().title);
+    assert_eq!(1, uncleared_search_result.len());
+    assert_eq!(new_title, uncleared_search_result.first().unwrap().title);
     assert_eq!(
         Some(ReviewStatus::Confirmed),
-        unauthorized_search_result.first().unwrap().status
+        uncleared_search_result.first().unwrap().status
     );
-    // Authorized - Not filtered, because no more pending authorizations
-    let (authorized_search_result, _) = usecases::search(
+    // Cleared - Not filtered, because no more pending clearances
+    let (cleared_search_result, _) = usecases::search(
         &*fixture.backend.db_connections.shared()?,
         &*fixture.backend.search_engine.borrow(),
         usecases::SearchRequest {
-            auth_tag: Some(tag.as_str()),
+            moderated_tag: Some(tag.as_str()),
             ids: vec![place_id.as_ref()],
             ..default_search_request()
         },
         100,
     )?;
-    assert_eq!(1, authorized_search_result.len());
-    assert_eq!(new_title, authorized_search_result.first().unwrap().title);
+    assert_eq!(1, cleared_search_result.len());
+    assert_eq!(new_title, cleared_search_result.first().unwrap().title);
     assert_eq!(
         Some(ReviewStatus::Confirmed),
-        authorized_search_result.first().unwrap().status
+        cleared_search_result.first().unwrap().status
     );
 
     Ok(())
 }
 
 #[test]
-fn should_do_nothing_when_acknowledging_places_without_pending_authorizations() -> flows::Result<()>
-{
-    let fixture = PlaceAuthorizationFixture::new();
-    let org = &fixture.organization_with_addremove_authorized_tag;
+fn should_fail_when_trying_to_clear_future_revisions_of_places() -> flows::Result<()> {
+    let mut fixture = PlaceClearanceFixture::new();
+    let org = &fixture.organization_with_addremove_clearance_tag;
+    let tag = &org.moderated_tags.first().unwrap().label;
+    let old_place = &fixture.created_place;
+    let place_id = &old_place.id;
+    let last_cleared_revision = old_place.revision;
+
+    let new_title = "new title".to_string();
+    assert_ne!(old_place.title, new_title);
+    let new_tags = vec![tag.clone()];
+    assert_ne!(old_place.tags, new_tags);
+    let new_revision = old_place.revision.next();
+
+    let mut update_place = usecases::UpdatePlace::from(old_place.clone());
+    update_place.title = new_title.clone();
+    update_place.tags = new_tags.clone();
+    update_place.version = new_revision.into();
+    let new_place = flows::update_place(
+        &fixture.backend.db_connections,
+        fixture.backend.search_engine.get_mut(),
+        &fixture.backend.notify,
+        place_id.clone(),
+        update_place,
+        None,
+    )?;
+
+    assert_eq!(new_revision, new_place.revision);
+    assert!(new_place.tags.contains(tag));
+    let pending_clearances = usecases::clearance::place::list_pending_clearances(
+        &*fixture.backend.db_connections.shared()?,
+        &org.api_token,
+        &Default::default(),
+    )?;
+    assert_eq!(1, pending_clearances.len());
+    assert_eq!(
+        Some(last_cleared_revision.clone()),
+        pending_clearances.first().unwrap().last_cleared_revision
+    );
+
+    assert_eq!(
+        1,
+        fixture
+            .backend
+            .db_connections
+            .shared()
+            .unwrap()
+            .count_pending_clearances_for_places(&org.id)
+            .unwrap()
+    );
+    // Try to clear the next, non-existent revision of the place
+    assert!(usecases::clearance::place::update_pending_clearances(
+        &*fixture.backend.db_connections.exclusive()?,
+        &org.api_token,
+        &[ClearanceForPlace {
+            place_id: place_id.clone(),
+            cleared_revision: Some(new_revision.next()),
+        }],
+    )
+    .is_err());
+    // Still pending
+    assert_eq!(
+        1,
+        fixture
+            .backend
+            .db_connections
+            .shared()
+            .unwrap()
+            .count_pending_clearances_for_places(&org.id)
+            .unwrap()
+    );
+
+    Ok(())
+}
+
+#[test]
+fn should_do_nothing_when_clearing_places_without_pending_clearances() -> flows::Result<()> {
+    let fixture = PlaceClearanceFixture::new();
+    let org = &fixture.organization_with_addremove_clearance_tag;
 
     assert_eq!(
         0,
@@ -705,22 +760,22 @@ fn should_do_nothing_when_acknowledging_places_without_pending_authorizations() 
             .db_connections
             .shared()
             .unwrap()
-            .count_pending_authorizations_for_places(&org.id)
+            .count_pending_clearances_for_places(&org.id)
             .unwrap()
     );
     assert_eq!(
         0,
-        usecases::authorization::place::acknowledge_pending_authorizations(
+        usecases::clearance::place::update_pending_clearances(
             &*fixture.backend.db_connections.exclusive()?,
             &org.api_token,
             &[
-                AuthorizationForPlace {
+                ClearanceForPlace {
                     place_id: fixture.created_place.id.clone(),
-                    authorized_revision: None,
+                    cleared_revision: None,
                 },
-                AuthorizationForPlace {
+                ClearanceForPlace {
                     place_id: fixture.confirmed_place.id.clone(),
-                    authorized_revision: None,
+                    cleared_revision: Some(fixture.confirmed_place.revision),
                 }
             ],
         )?
@@ -732,7 +787,7 @@ fn should_do_nothing_when_acknowledging_places_without_pending_authorizations() 
             .db_connections
             .shared()
             .unwrap()
-            .count_pending_authorizations_for_places(&org.id)
+            .count_pending_clearances_for_places(&org.id)
             .unwrap()
     );
 

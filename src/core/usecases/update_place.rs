@@ -74,7 +74,7 @@ impl From<Place> for UpdatePlace {
 pub struct Storable {
     place: Place,
     auth_org_ids: Vec<Id>,
-    last_authorized_revision: Revision,
+    last_cleared_revision: Revision,
 }
 
 pub fn prepare_updated_place<D: Db>(
@@ -121,19 +121,19 @@ pub fn prepare_updated_place<D: Db>(
         Some(address)
     };
 
-    let (revision, last_authorized_revision, old_tags, license) = {
+    let (revision, last_cleared_revision, old_tags, license) = {
         let (old_place, _review_status) = db.get_place(place_id.as_str())?;
         // Check for revision conflict (optimistic locking)
         let revision = Revision::from(version);
         if old_place.revision.next() != revision {
             return Err(RepoError::InvalidVersion.into());
         }
-        let last_authorized_revision = old_place.revision;
+        let last_cleared_revision = old_place.revision;
         // The license is immutable
         let license = old_place.license;
         // The existing tags are needed for authorization
         let old_tags = old_place.tags;
-        (revision, last_authorized_revision, old_tags, license)
+        (revision, last_cleared_revision, old_tags, license)
     };
 
     let categories: Vec<_> = categories.into_iter().map(Id::from).collect();
@@ -143,7 +143,7 @@ pub fn prepare_updated_place<D: Db>(
             .map(String::as_str),
     );
     let auth_org_ids =
-        super::authorization::moderated_tag::authorize_editing(db, &old_tags, &new_tags, None)?;
+        super::clearance::moderated_tag::authorize_editing(db, &old_tags, &new_tags, None)?;
 
     let homepage = homepage
         .and_then(|ref url| parse_url_param(url).transpose())
@@ -189,7 +189,7 @@ pub fn prepare_updated_place<D: Db>(
     Ok(Storable {
         place,
         auth_org_ids,
-        last_authorized_revision,
+        last_cleared_revision,
     })
 }
 
@@ -197,7 +197,7 @@ pub fn store_updated_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rat
     let Storable {
         place,
         auth_org_ids,
-        last_authorized_revision,
+        last_cleared_revision,
     } = s;
     debug!("Storing updated place revision: {:?}", place);
     for t in &place.tags {
@@ -205,16 +205,12 @@ pub fn store_updated_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rat
     }
     db.create_or_update_place(place.clone())?;
     if !auth_org_ids.is_empty() {
-        let pending_authorization = PendingAuthorizationForPlace {
+        let pending_clearance = PendingClearanceForPlace {
             place_id: place.id.clone(),
             created_at: place.created.at,
-            last_authorized_revision: Some(last_authorized_revision),
+            last_cleared_revision: Some(last_cleared_revision),
         };
-        super::authorization::place::add_pending_authorization(
-            db,
-            &auth_org_ids,
-            &pending_authorization,
-        )?;
+        super::clearance::place::add_pending_clearance(db, &auth_org_ids, &pending_clearance)?;
     }
     let ratings = db.load_ratings_of_place(place.id.as_ref())?;
     Ok((place, ratings))

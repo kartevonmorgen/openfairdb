@@ -36,8 +36,8 @@ ON org.id=old.org_id;
 DROP TABLE org_tag_relations;
 DROP TABLE organizations;
 
--- Pending authorizations by organizations for selected/observed places
-CREATE TABLE organization_place_authorization_pending (
+-- Pending authorization/approval of places by organizations
+CREATE TABLE organization_place_clearance (
     rowid        INTEGER PRIMARY KEY,
     --
     org_rowid    INTEGER NOT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE organization_place_authorization_pending (
     --
     created_at   INTEGER NOT NULL,
     --
-    last_authorized_revision INTEGER, -- last authorized revision number or NULL if the place has not been authorized yet
+    last_cleared_revision INTEGER, -- last cleared revision number or NULL if the place is new and has not been cleared yet
     --
     UNIQUE (org_rowid, place_rowid),
     FOREIGN KEY (org_rowid) REFERENCES organizations(rowid),

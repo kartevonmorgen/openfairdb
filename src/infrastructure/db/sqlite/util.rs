@@ -403,19 +403,18 @@ pub fn tags_diff(old: &[String], new: &[String]) -> ChangeSet<String> {
     ChangeSet { added, deleted }
 }
 
-impl From<PendingAuthorizationForPlace> for e::PendingAuthorizationForPlace {
-    fn from(from: PendingAuthorizationForPlace) -> Self {
-        let PendingAuthorizationForPlace {
+impl From<PendingClearanceForPlace> for e::PendingClearanceForPlace {
+    fn from(from: PendingClearanceForPlace) -> Self {
+        let PendingClearanceForPlace {
             place_id,
             created_at,
-            last_authorized_revision,
+            last_cleared_revision,
         } = from;
-        let last_authorized_revision =
-            last_authorized_revision.map(|rev| e::Revision::from(rev as u64));
+        let last_cleared_revision = last_cleared_revision.map(|rev| e::Revision::from(rev as u64));
         Self {
             place_id: place_id.into(),
             created_at: e::TimestampMs::from_inner(created_at),
-            last_authorized_revision,
+            last_cleared_revision,
         }
     }
 }

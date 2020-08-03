@@ -1,0 +1,33 @@
+{
+    "documentation": "https://opencagedata.com/api",
+    "licenses": [
+        {
+            "name": "CC-BY-SA",
+            "url": "https://creativecommons.org/licenses/by-sa/3.0/"
+        },
+        {
+            "name": "ODbL",
+            "url": "https://opendatacommons.org/licenses/odbl/summary/"
+        }
+    ],
+    "rate": {
+        "limit": 2500,
+        "remaining": 2496,
+        "reset": 1550275200
+    },
+    "results": [],
+    "status": {
+        "code": 200,
+        "message": "OK"
+    },
+    "stay_informed": {
+        "blog": "https://blog.opencagedata.com",
+        "twitter": "https://twitter.com/opencagedata"
+    },
+    "thanks": "For using an OpenCage Data API",
+    "timestamp": {
+        "created_http": "Fri, 15 Feb 2019 10:08:57 GMT",
+        "created_unix": 1550225337
+    },
+    "total_results": 0
+}

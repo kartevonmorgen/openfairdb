@@ -90,36 +90,36 @@ pub trait UserGateway {
 pub trait OrganizationRepo {
     fn create_org(&mut self, _: Organization) -> Result<()>;
     fn get_org_by_api_token(&self, token: &str) -> Result<Organization>;
-    fn map_authorized_tag_to_org_id(&self, auth_tag: &str) -> Result<Option<Id>>;
+    fn map_moderated_tag_to_org_id(&self, moderated_tag: &str) -> Result<Option<Id>>;
     fn get_moderated_tags_by_org(
         &self,
         excluded_org_id: Option<&Id>,
     ) -> Result<Vec<(Id, ModeratedTag)>>;
 }
 
-pub trait PlaceAuthorizationRepo {
-    fn add_pending_authorization_for_place(
+pub trait PlaceClearanceRepo {
+    fn add_pending_clearances_for_place(
         &self,
         org_ids: &[Id],
-        pending_authorization: &PendingAuthorizationForPlace,
+        pending_clearance: &PendingClearanceForPlace,
     ) -> Result<usize>;
-    fn count_pending_authorizations_for_places(&self, org_id: &Id) -> Result<u64>;
-    fn list_pending_authorizations_for_places(
+    fn count_pending_clearances_for_places(&self, org_id: &Id) -> Result<u64>;
+    fn list_pending_clearances_for_places(
         &self,
         org_id: &Id,
         pagination: &Pagination,
-    ) -> Result<Vec<PendingAuthorizationForPlace>>;
-    fn load_pending_authorizations_for_places(
+    ) -> Result<Vec<PendingClearanceForPlace>>;
+    fn load_pending_clearances_for_places(
         &self,
         org_id: &Id,
         place_ids: &[&str],
-    ) -> Result<Vec<PendingAuthorizationForPlace>>;
-    fn replace_pending_authorizations_for_places(
+    ) -> Result<Vec<PendingClearanceForPlace>>;
+    fn update_pending_clearances_for_places(
         &self,
         org_id: &Id,
-        authorizations: &[AuthorizationForPlace],
+        clearances: &[ClearanceForPlace],
     ) -> Result<usize>;
-    fn cleanup_pending_authorizations_for_places(&self, org_id: &Id) -> Result<u64>;
+    fn cleanup_pending_clearances_for_places(&self, org_id: &Id) -> Result<u64>;
 }
 
 //TODO:
@@ -140,7 +140,7 @@ pub trait Db:
     + CommentRepository
     + RatingRepository
     + UserTokenRepo
-    + PlaceAuthorizationRepo
+    + PlaceClearanceRepo
 {
     fn create_tag_if_it_does_not_exist(&self, _: &Tag) -> Result<()>;
 

@@ -111,12 +111,7 @@ pub fn import_new_event<D: Db>(
                 }
                 new_tags.sort_unstable();
                 new_tags.dedup();
-                super::authorization::moderated_tag::authorize_editing(
-                    db,
-                    &[],
-                    &new_tags,
-                    Some(&org),
-                )?
+                super::clearance::moderated_tag::authorize_editing(db, &[], &new_tags, Some(&org))?
             }
             NewEventMode::Update(id) => {
                 let old_tags = db.get_event(id)?.tags;
@@ -142,7 +137,7 @@ pub fn import_new_event<D: Db>(
                     new_tags.dedup();
                 }
                 // Verify that the org is entitled to update this event according to the owned tags
-                super::authorization::moderated_tag::authorize_editing(
+                super::clearance::moderated_tag::authorize_editing(
                     db,
                     &old_tags,
                     &new_tags,
@@ -151,9 +146,9 @@ pub fn import_new_event<D: Db>(
             }
         }
     } else {
-        super::authorization::moderated_tag::authorize_editing(db, &[], &new_tags, None)?
+        super::clearance::moderated_tag::authorize_editing(db, &[], &new_tags, None)?
     };
-    // TODO: Record pending authorizations for events
+    // TODO: Record pending clearance for events
     debug_assert!(_auth_org_ids.is_empty());
     new_tags.sort_unstable();
     new_tags.dedup();

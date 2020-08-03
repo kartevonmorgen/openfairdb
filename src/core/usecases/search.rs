@@ -10,36 +10,35 @@ pub struct SearchRequest<'a> {
     pub bbox       : MapBbox,
     pub ids        : Vec<&'a str>,
     pub categories : Vec<&'a str>,
-    pub auth_tag   : Option<&'a str>,
+    pub moderated_tag   : Option<&'a str>,
     pub hash_tags  : Vec<&'a str>,
     pub text       : Option<&'a str>,
     pub status     : Vec<ReviewStatus>,
 }
 
-pub fn authorize_search_results<D: Db>(
+pub fn clear_search_results<D: Db>(
     db: &D,
     org_id: &Id,
     results: Vec<IndexedPlace>,
 ) -> Result<Vec<IndexedPlace>> {
     let place_ids: Vec<_> = results.iter().map(|p| p.id.as_str()).collect();
-    let pending_authorizations = db.load_pending_authorizations_for_places(org_id, &place_ids)?;
-    if pending_authorizations.is_empty() {
+    let pending_clearances = db.load_pending_clearances_for_places(org_id, &place_ids)?;
+    if pending_clearances.is_empty() {
         // No filtering required
         return Ok(results);
     }
-    let pending_authorizations: HashMap<_, _> = pending_authorizations
+    let pending_clearances: HashMap<_, _> = pending_clearances
         .into_iter()
         .map(|p| (p.place_id.to_string(), p))
         .collect();
-    let mut authorized_results = Vec::with_capacity(results.len());
+    let mut cleared_results = Vec::with_capacity(results.len());
     for mut place in results.into_iter() {
-        let pending_authorization = pending_authorizations.get(&place.id);
-        if let Some(pending_authorization) = pending_authorization {
-            if let Some(last_authorized_revision) = &pending_authorization.last_authorized_revision
-            {
-                let (last_authorized_place, current_status) =
-                    db.load_place_revision(&place.id, *last_authorized_revision)?;
-                debug_assert_eq!(*last_authorized_revision, last_authorized_place.revision);
+        let pending_clearance = pending_clearances.get(&place.id);
+        if let Some(pending_clearance) = pending_clearance {
+            if let Some(last_cleared_revision) = &pending_clearance.last_cleared_revision {
+                let (last_cleared_place, current_status) =
+                    db.load_place_revision(&place.id, *last_cleared_revision)?;
+                debug_assert_eq!(*last_cleared_revision, last_cleared_place.revision);
                 let Place {
                     description,
                     id,
@@ -47,10 +46,10 @@ pub fn authorize_search_results<D: Db>(
                     tags,
                     title,
                     ..
-                } = last_authorized_place;
+                } = last_cleared_place;
                 // Ratings are independent of the revision
                 let ratings = place.ratings;
-                // Replace the actual/current search result item with the last authorized revision
+                // Replace the actual/current search result item with the last cleared revision
                 place = IndexedPlace {
                     id: id.into(),
                     description,
@@ -61,13 +60,13 @@ pub fn authorize_search_results<D: Db>(
                     title,
                 };
             } else {
-                // Skip newly created but not yet authorized entry
+                // Skip newly created but not yet cleared entry
                 continue;
             }
         }
-        authorized_results.push(place);
+        cleared_results.push(place);
     }
-    Ok(authorized_results)
+    Ok(cleared_results)
 }
 
 pub fn search<D: Db>(
@@ -80,7 +79,7 @@ pub fn search<D: Db>(
         bbox: visible_bbox,
         ids,
         categories,
-        auth_tag,
+        moderated_tag,
         hash_tags: req_hash_tags,
         text,
         status,
@@ -91,8 +90,8 @@ pub fn search<D: Db>(
     for hash_tag in req_hash_tags {
         hash_tags.push(hash_tag.to_owned());
     }
-    if let Some(auth_tag) = auth_tag {
-        hash_tags.push(auth_tag.to_owned());
+    if let Some(moderated_tag) = moderated_tag {
+        hash_tags.push(moderated_tag.to_owned());
     }
 
     let text = text.map(util::remove_hash_tags).and_then(|text| {
@@ -129,9 +128,9 @@ pub fn search<D: Db>(
     debug_assert!(visible_places
         .iter()
         .all(|e| visible_bbox.contains_point(e.pos)));
-    if let Some(auth_tag) = auth_tag {
-        if let Some(org_id) = db.map_authorized_tag_to_org_id(auth_tag)? {
-            visible_places = authorize_search_results(db, &org_id, visible_places)?;
+    if let Some(moderated_tag) = moderated_tag {
+        if let Some(org_id) = db.map_moderated_tag_to_org_id(moderated_tag)? {
+            visible_places = clear_search_results(db, &org_id, visible_places)?;
         }
     }
 
@@ -151,9 +150,9 @@ pub fn search<D: Db>(
     debug_assert!(!invisible_places
         .iter()
         .any(|e| visible_bbox.contains_point(e.pos)));
-    if let Some(auth_tag) = auth_tag {
-        if let Some(org_id) = db.map_authorized_tag_to_org_id(auth_tag)? {
-            invisible_places = authorize_search_results(db, &org_id, invisible_places)?;
+    if let Some(moderated_tag) = moderated_tag {
+        if let Some(org_id) = db.map_moderated_tag_to_org_id(moderated_tag)? {
+            invisible_places = clear_search_results(db, &org_id, invisible_places)?;
         }
     }
 

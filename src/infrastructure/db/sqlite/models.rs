@@ -363,18 +363,18 @@ pub struct UserTokenEntity {
 }
 
 #[derive(Insertable, AsChangeset)]
-#[table_name = "organization_place_authorization_pending"]
+#[table_name = "organization_place_clearance"]
 #[changeset_options(treat_none_as_null = "true")]
-pub struct NewPendingAuthorizationForPlace {
+pub struct NewPendingClearanceForPlace {
     pub org_rowid: i64,
     pub place_rowid: i64,
     pub created_at: i64,
-    pub last_authorized_revision: Option<i64>,
+    pub last_cleared_revision: Option<i64>,
 }
 
 #[derive(Queryable)]
-pub struct PendingAuthorizationForPlace {
+pub struct PendingClearanceForPlace {
     pub place_id: String,
     pub created_at: i64,
-    pub last_authorized_revision: Option<i64>,
+    pub last_cleared_revision: Option<i64>,
 }

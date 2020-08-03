@@ -45,31 +45,33 @@ paths:
           in: query
           schema:
             type: string
-        - name: auth_tag
+        - name: org_tag
           in: query
           schema:
             type: string
           description: |
             A single hash tag that is moderated by an organization.
 
-            The hash tag will be included in the query as a mandatory serach criteria.
+            The hash tag will be included in the query as a mandatory search criteria
+            like any other tag.
 
-            Results will be filtered according to the current authorization status.
-            Unauthorized, not yet reviewed revisions of entries will either be removed
-            or replaced by older, already authorized revisions. Unauthorized revisions
-            of entries are expected to only exist temporarily for a short time frame.
+            Results will be filtered according to the current clearance status.
+            Unclear revisions of entries will either be removed or replaced by older,
+            already cleared revisions. Unclear revisions of entries are expected to
+            only exist temporarily for a short time frame until a newer version has been
+            cleared.
 
             If the provided hash tag is not moderated by any organization the results
-            will not be filtered.
+            will not be filtered by clearance status.
 
             Omitting this parameter and instead appending the moderated hash tag as
             a regular tag to the `tags` parameter will also return unfiltered search
             results, i.e. current revisions of entries independent of their
-            authorization status.
+            clearance status.
 
             Only a single tag can be specified, because filtering according to
-            authorizations by multiple organizations could produce ambiguous
-            and conflicting results.
+            clearance by multiple organizations could produce ambiguous and
+            conflicting results.
         - $ref: '#/components/parameters/IdList'
         - $ref: '#/components/parameters/TagList'
         - $ref: '#/components/parameters/ReviewStatusList'
@@ -202,13 +204,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/TagCounts'
 
-  '/places/pending-authorizations':
+  '/places/pending-clearances':
     get:
       tags:
         - Places
-      summary: List pending authorizations of places
+      summary: List of places where clearance is pending.
       description: |
-        Returns a list with pending authorizations of places in chronological order.
+        Returns a list of places with pending clearance in chronological order.
 
         Requests must include the API token of the organization.
       parameters:
@@ -222,17 +224,17 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/PendingAuthorizationForPlace'
+                  $ref: '#/components/schemas/PendingClearanceForPlace'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-  '/places/pending-authorizations/count':
+  '/places/pending-clearances/count':
     get:
       tags:
         - Places
-      summary: Count pending authorizations of places
+      summary: Count pending clearance of places
       description: |
-        Returns the total number of pending authorizations for
-        places on behalf of the requesting organization.
+        Returns the total number places with pending clearance on behalf
+        of the requesting organization.
 
         Requests must include the API token of the organization.
       responses:
@@ -244,19 +246,27 @@ paths:
                 $ref: '#/components/schemas/ResultCount'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-  '/places/pending-authorizations/acknowledge':
+  '/places/pending-clearances/clear':
     post:
       tags:
         - Places
-      summary: Acknowledge pending authorizations of places
+      summary: Update the clearance status of places
       description: |
-        Acknowledges pending authorizations for multiple places.
+        Update the clearance status of multiple places.
 
         If the given revision matches the current revision of that place then any pending
-        authorization is deleted. Otherwise pending authorizations will be updated accordingly
-        and remain pending.
+        clearance is deleted. Otherwise the clearance status is updated accordingly and
+        clearance will remain pending.
 
         Requests must include the API token of the organization.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/ClearanceForPlace'
       responses:
         '200':
           description: Successful response
@@ -913,32 +923,32 @@ components:
         The id of a place
       allOf:
         - $ref: '#/components/schemas/Id'
-    PendingAuthorizationForPlace:
+    PendingClearanceForPlace:
       description: |
         The compact view of an entry as returned in search results.
 
-        The field `last_authorized_revision` is missing if no authorized revivision
+        The field `last_cleared_revision` is missing if no cleared revivision
         is available, e.g. for newly created entries.
       properties:
         place_id:
           $ref: '#/components/schemas/PlaceId'
         created_at:
           $ref: '#/components/schemas/UnixTimeMillis'
-        last_authorized_revision:
+        last_cleared_revision:
           $ref: '#/components/schemas/Revision'
       required:
         - place_id
         - created_at
-    AuthorizationForPlace:
+    ClearanceForPlace:
       description: |
-        Authorize a selected revision of a place.
+        Clearance for a selected revision of a place.
 
-        If the field `authorized_revision` is missing then the current revision
-        is authorized unconditionally.
+        If the field `cleared_revision` is missing then the current revision
+        is cleared unconditionally.
       properties:
         place_id:
           $ref: '#/components/schemas/PlaceId'
-        authorized_revision:
+        cleared_revision:
           $ref: '#/components/schemas/Revision'
       required:
         - place_id

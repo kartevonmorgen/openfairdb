@@ -3,10 +3,10 @@ use crate::core::prelude::*;
 // Checks if the addition and removal of tags is permitted.
 //
 // Returns a list with the ids of other organizations that require
-// authorization of the pending changes.
+// clearance of the pending changes.
 //
 // If an organization is provided than this organization is excluded
-// from both the checks and the pending authorization list.
+// from both the checks and the pending clearance list.
 pub fn authorize_editing<R: OrganizationRepo>(
     repo: &R,
     old_tags: &[String],
@@ -15,7 +15,7 @@ pub fn authorize_editing<R: OrganizationRepo>(
 ) -> Result<Vec<Id>> {
     let org_id = org.map(|org| &org.id);
     let moderated_tags_by_org = repo.get_moderated_tags_by_org(org_id)?;
-    ofdb_core::authorization::moderated_tag::authorize_editing(
+    ofdb_core::clearance::moderated_tag::authorize_editing(
         moderated_tags_by_org,
         old_tags,
         new_tags,

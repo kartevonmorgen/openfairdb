@@ -27,8 +27,8 @@ impl TagModerationFlags {
         Self(2)
     }
 
-    /// Hide edits on entries until authorized
-    pub const fn authorize() -> Self {
+    /// Hide edits on entries until cleared
+    pub const fn clear() -> Self {
         Self(4)
     }
 
@@ -46,8 +46,8 @@ impl TagModerationFlags {
         }
     }
 
-    pub fn requires_authorization(self) -> bool {
-        match Self::authorize().partial_cmp(&self) {
+    pub fn requires_clearance(self) -> bool {
+        match Self::clear().partial_cmp(&self) {
             Some(Ordering::Less) | Some(Ordering::Equal) => true,
             _ => false,
         }
@@ -129,7 +129,7 @@ mod tests {
         assert!(!TagModerationFlags::none().allows_add());
         assert!(TagModerationFlags::add().allows_add());
         assert!(!TagModerationFlags::remove().allows_add());
-        assert!(!TagModerationFlags::authorize().allows_add());
+        assert!(!TagModerationFlags::clear().allows_add());
         assert!(TagModerationFlags::all().allows_add());
     }
 }

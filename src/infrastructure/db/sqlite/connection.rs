@@ -257,6 +257,31 @@ fn resolve_place_rowid(conn: &SqliteConnection, id: &Id) -> Result<i64> {
         })?)
 }
 
+fn resolve_place_rowid_verify_revision(
+    conn: &SqliteConnection,
+    id: &Id,
+    revision: Revision,
+) -> Result<i64> {
+    use schema::place::dsl;
+    use schema::place_revision::dsl as rev_dsl;
+    let revision = RevisionValue::from(revision);
+    Ok(schema::place::table
+        .inner_join(schema::place_revision::table)
+        .select(dsl::rowid)
+        .filter(dsl::id.eq(id.as_str()))
+        .filter(rev_dsl::rev.eq(revision as i64))
+        .first::<i64>(conn)
+        .map_err(|e| {
+            log::warn!(
+                "Failed to resolve place id '{}' with revision {}: {}",
+                id,
+                revision,
+                e
+            );
+            e
+        })?)
+}
+
 fn resolve_place_rowid_with_current_revision(
     conn: &SqliteConnection,
     id: &Id,
@@ -267,11 +292,7 @@ fn resolve_place_rowid_with_current_revision(
         .filter(dsl::id.eq(id.as_str()))
         .first::<(i64, i64)>(conn)
         .map_err(|e| {
-            log::warn!(
-                "Failed to resolve place id '{}' with current revision: {}",
-                id,
-                e
-            );
+            log::warn!("Failed to resolve place id '{}': {}", id, e);
             e
         })
         .map(|(id, rev)| (id, Revision::from(rev as u64)))?)
@@ -1777,18 +1798,16 @@ impl OrganizationRepo for SqliteConnection {
         })
     }
 
-    fn map_authorized_tag_to_org_id(&self, auth_tag: &str) -> Result<Option<Id>> {
+    fn map_moderated_tag_to_org_id(&self, moderated_tag: &str) -> Result<Option<Id>> {
         use schema::{organization::dsl, organization_tag::dsl as tag_dsl};
         Ok(schema::organization::table
             .inner_join(schema::organization_tag::table)
             .select((dsl::id, tag_dsl::tag_moderation_flags))
-            .filter(tag_dsl::tag_label.eq(auth_tag))
+            .filter(tag_dsl::tag_label.eq(moderated_tag))
             .first::<(String, i16)>(self)
             .optional()?
             .and_then(|(id, flags)| {
-                if TagModerationFlags::from(flags as TagModerationFlagsValue)
-                    .requires_authorization()
-                {
+                if TagModerationFlags::from(flags as TagModerationFlagsValue).requires_clearance() {
                     Some(Id::from(id))
                 } else {
                     None
@@ -1821,43 +1840,42 @@ impl OrganizationRepo for SqliteConnection {
     }
 }
 
-impl PlaceAuthorizationRepo for SqliteConnection {
-    fn add_pending_authorization_for_place(
+impl PlaceClearanceRepo for SqliteConnection {
+    fn add_pending_clearances_for_place(
         &self,
         org_ids: &[Id],
-        pending_authorization: &PendingAuthorizationForPlace,
+        pending_clearance: &PendingClearanceForPlace,
     ) -> Result<usize> {
-        let PendingAuthorizationForPlace {
+        let PendingClearanceForPlace {
             place_id,
             created_at,
-            last_authorized_revision,
-        } = pending_authorization;
+            last_cleared_revision,
+        } = pending_clearance;
         let place_rowid = resolve_place_rowid(self, place_id)?;
         let created_at = created_at.into_inner();
-        let last_authorized_revision =
-            last_authorized_revision.map(|rev| RevisionValue::from(rev) as i64);
+        let last_cleared_revision =
+            last_cleared_revision.map(|rev| RevisionValue::from(rev) as i64);
         let mut insert_count = 0;
         for org_id in org_ids {
             let org_rowid = resolve_organization_rowid(self, org_id)?;
-            let insertable = models::NewPendingAuthorizationForPlace {
+            let insertable = models::NewPendingClearanceForPlace {
                 org_rowid,
                 place_rowid,
                 created_at,
-                last_authorized_revision,
+                last_cleared_revision,
             };
-            insert_count += diesel::insert_or_ignore_into(
-                schema::organization_place_authorization_pending::table,
-            )
-            .values(&insertable)
-            .execute(self)?;
+            insert_count +=
+                diesel::insert_or_ignore_into(schema::organization_place_clearance::table)
+                    .values(&insertable)
+                    .execute(self)?;
         }
         Ok(insert_count)
     }
 
-    fn count_pending_authorizations_for_places(&self, org_id: &Id) -> Result<u64> {
+    fn count_pending_clearances_for_places(&self, org_id: &Id) -> Result<u64> {
         use schema::organization::dsl as org_dsl;
-        use schema::organization_place_authorization_pending::dsl;
-        Ok(schema::organization_place_authorization_pending::table
+        use schema::organization_place_clearance::dsl;
+        Ok(schema::organization_place_clearance::table
             .filter(
                 dsl::org_rowid.eq_any(
                     schema::organization::table
@@ -1869,21 +1887,17 @@ impl PlaceAuthorizationRepo for SqliteConnection {
             .get_result::<i64>(self)? as u64)
     }
 
-    fn list_pending_authorizations_for_places(
+    fn list_pending_clearances_for_places(
         &self,
         org_id: &Id,
         pagination: &Pagination,
-    ) -> Result<Vec<PendingAuthorizationForPlace>> {
+    ) -> Result<Vec<PendingClearanceForPlace>> {
         use schema::organization::dsl as org_dsl;
-        use schema::organization_place_authorization_pending::dsl;
+        use schema::organization_place_clearance::dsl;
         use schema::place::dsl as place_dsl;
-        let mut query = schema::organization_place_authorization_pending::table
+        let mut query = schema::organization_place_clearance::table
             .inner_join(schema::place::table)
-            .select((
-                place_dsl::id,
-                dsl::created_at,
-                dsl::last_authorized_revision,
-            ))
+            .select((place_dsl::id, dsl::created_at, dsl::last_cleared_revision))
             .filter(
                 dsl::org_rowid.eq_any(
                     schema::organization::table
@@ -1904,27 +1918,23 @@ impl PlaceAuthorizationRepo for SqliteConnection {
         }
 
         Ok(query
-            .load::<models::PendingAuthorizationForPlace>(self)?
+            .load::<models::PendingClearanceForPlace>(self)?
             .into_iter()
             .map(Into::into)
             .collect())
     }
 
-    fn load_pending_authorizations_for_places(
+    fn load_pending_clearances_for_places(
         &self,
         org_id: &Id,
         place_ids: &[&str],
-    ) -> Result<Vec<PendingAuthorizationForPlace>> {
+    ) -> Result<Vec<PendingClearanceForPlace>> {
         use schema::organization::dsl as org_dsl;
-        use schema::organization_place_authorization_pending::dsl;
+        use schema::organization_place_clearance::dsl;
         use schema::place::dsl as place_dsl;
-        Ok(schema::organization_place_authorization_pending::table
+        Ok(schema::organization_place_clearance::table
             .inner_join(schema::place::table)
-            .select((
-                place_dsl::id,
-                dsl::created_at,
-                dsl::last_authorized_revision,
-            ))
+            .select((place_dsl::id, dsl::created_at, dsl::last_cleared_revision))
             .filter(
                 dsl::org_rowid.eq_any(
                     schema::organization::table
@@ -1933,64 +1943,63 @@ impl PlaceAuthorizationRepo for SqliteConnection {
                 ),
             )
             .filter(place_dsl::id.eq_any(place_ids))
-            .load::<models::PendingAuthorizationForPlace>(self)?
+            .load::<models::PendingClearanceForPlace>(self)?
             .into_iter()
             .map(Into::into)
             .collect())
     }
 
-    fn replace_pending_authorizations_for_places(
+    fn update_pending_clearances_for_places(
         &self,
         org_id: &Id,
-        authorizations: &[AuthorizationForPlace],
+        clearances: &[ClearanceForPlace],
     ) -> Result<usize> {
         let org_rowid = resolve_organization_rowid(self, org_id)?;
         let created_at = TimestampMs::now().into_inner();
         let mut total_rows_affected = 0;
-        for authorization in authorizations {
-            let AuthorizationForPlace {
+        for clearance in clearances {
+            let ClearanceForPlace {
                 place_id,
-                authorized_revision,
-            } = authorization;
-            let (place_rowid, authorized_revision) =
-                if let Some(authorized_revision) = authorized_revision {
-                    let place_rowid = resolve_place_rowid(self, place_id)?;
-                    (place_rowid, *authorized_revision)
-                } else {
-                    let (place_rowid, current_revision) =
-                        resolve_place_rowid_with_current_revision(self, place_id)?;
-                    (place_rowid, current_revision)
-                };
+                cleared_revision,
+            } = clearance;
+            let (place_rowid, cleared_revision) = if let Some(cleared_revision) = cleared_revision {
+                let place_rowid =
+                    resolve_place_rowid_verify_revision(self, place_id, *cleared_revision)?;
+                (place_rowid, *cleared_revision)
+            } else {
+                let (place_rowid, current_revision) =
+                    resolve_place_rowid_with_current_revision(self, place_id)?;
+                (place_rowid, current_revision)
+            };
             use schema::organization::dsl as org_dsl;
-            use schema::organization_place_authorization_pending::dsl;
-            let last_authorized_revision = Some(RevisionValue::from(authorized_revision) as i64);
-            let updatable = models::NewPendingAuthorizationForPlace {
+            use schema::organization_place_clearance::dsl;
+            let last_cleared_revision = Some(RevisionValue::from(cleared_revision) as i64);
+            let updatable = models::NewPendingClearanceForPlace {
                 org_rowid,
                 place_rowid,
                 created_at,
-                last_authorized_revision,
+                last_cleared_revision,
             };
-            let rows_affected =
-                diesel::update(schema::organization_place_authorization_pending::table)
-                    .set(&updatable)
-                    .filter(
-                        dsl::org_rowid.eq_any(
-                            schema::organization::table
-                                .select(org_dsl::rowid)
-                                .filter(org_dsl::id.eq(org_id.as_str())),
-                        ),
-                    )
-                    .filter(dsl::place_rowid.eq(place_rowid))
-                    .execute(self)?;
+            let rows_affected = diesel::update(schema::organization_place_clearance::table)
+                .set(&updatable)
+                .filter(
+                    dsl::org_rowid.eq_any(
+                        schema::organization::table
+                            .select(org_dsl::rowid)
+                            .filter(org_dsl::id.eq(org_id.as_str())),
+                    ),
+                )
+                .filter(dsl::place_rowid.eq(place_rowid))
+                .execute(self)?;
             debug_assert!(rows_affected <= 1);
             total_rows_affected += rows_affected;
         }
         Ok(total_rows_affected)
     }
 
-    fn cleanup_pending_authorizations_for_places(&self, org_id: &Id) -> Result<u64> {
+    fn cleanup_pending_clearances_for_places(&self, org_id: &Id) -> Result<u64> {
         let org_rowid = resolve_organization_rowid(self, org_id)?;
-        use schema::organization_place_authorization_pending::dsl;
+        use schema::organization_place_clearance::dsl;
         use schema::place::dsl as place_dsl;
         use schema::place_revision::dsl as place_rev_dsl;
         let current_place_revisions = schema::place::table
@@ -1998,19 +2007,18 @@ impl PlaceAuthorizationRepo for SqliteConnection {
             .filter(place_dsl::current_rev.eq(place_rev_dsl::rev));
         let subselect = current_place_revisions
             .inner_join(
-                schema::organization_place_authorization_pending::table
+                schema::organization_place_clearance::table
                     .on(dsl::place_rowid.eq(place_dsl::rowid)),
             )
             .select(dsl::rowid)
             .filter(dsl::org_rowid.eq(org_rowid))
-            .filter(dsl::last_authorized_revision.eq(place_dsl::current_rev.nullable()));
+            .filter(dsl::last_cleared_revision.eq(place_dsl::current_rev.nullable()));
         // TODO: Diesel 1.4.5 does not allow to use a subselect in the
         // following delete statement and requires to temporarily load
         // the subselect results into memory
         let delete_rowids = subselect.load::<i64>(self)?;
         let delete_count = diesel::delete(
-            schema::organization_place_authorization_pending::table
-                .filter(dsl::rowid.eq_any(delete_rowids)),
+            schema::organization_place_clearance::table.filter(dsl::rowid.eq_any(delete_rowids)),
         )
         .execute(self)?;
         Ok(delete_count as u64)

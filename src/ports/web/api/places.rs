@@ -1,51 +1,47 @@
 use super::*;
 
-#[get("/places/pending-authorizations/count")]
-pub fn count_pending_authorizations(
+#[get("/places/pending-clearances/count")]
+pub fn count_pending_clearances(
     db: sqlite::Connections,
     org_token: Bearer,
 ) -> Result<json::ResultCount> {
-    let count =
-        usecases::authorization::place::count_pending_authorizations(&*db.shared()?, &org_token.0)?;
+    let count = usecases::clearance::place::count_pending_clearances(&*db.shared()?, &org_token.0)?;
     Ok(Json(json::ResultCount { count }))
 }
 
-#[get("/places/pending-authorizations?<offset>&<limit>")]
-pub fn list_pending_authorizations(
+#[get("/places/pending-clearances?<offset>&<limit>")]
+pub fn list_pending_clearances(
     db: sqlite::Connections,
     org_token: Bearer,
     offset: Option<u64>,
     limit: Option<u64>,
-) -> Result<Vec<json::PendingAuthorizationForPlace>> {
+) -> Result<Vec<json::PendingClearanceForPlace>> {
     let pagination = Pagination { offset, limit };
-    let pending_authorizations = usecases::authorization::place::list_pending_authorizations(
+    let pending_clearances = usecases::clearance::place::list_pending_clearances(
         &*db.shared()?,
         &org_token.0,
         &pagination,
     )?;
     Ok(Json(
-        pending_authorizations.into_iter().map(Into::into).collect(),
+        pending_clearances.into_iter().map(Into::into).collect(),
     ))
 }
 
-#[post(
-    "/places/pending-authorizations/acknowledge",
-    data = "<authorizations>"
-)]
-pub fn acknowledge_pending_authorizations(
+#[post("/places/pending-clearances/clear", data = "<clearances>")]
+pub fn update_pending_clearances(
     db: sqlite::Connections,
     org_token: Bearer,
-    authorizations: Json<Vec<json::AuthorizationForPlace>>,
+    clearances: Json<Vec<json::ClearanceForPlace>>,
 ) -> Result<json::ResultCount> {
-    let authorizations: Vec<_> = authorizations
+    let clearances: Vec<_> = clearances
         .into_inner()
         .into_iter()
         .map(Into::into)
         .collect();
-    let count = usecases::authorization::place::acknowledge_pending_authorizations(
+    let count = usecases::clearance::place::update_pending_clearances(
         &*db.exclusive()?,
         &org_token.0,
-        &authorizations,
+        &clearances,
     )?;
     Ok(Json(json::ResultCount {
         count: count as u64,
