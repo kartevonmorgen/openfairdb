@@ -26,6 +26,7 @@ pub fn create_place(
                         Ok((place, ratings))
                     }
                     Err(err) => {
+                        log::info!("Failed to prepare new place revision: {}", err);
                         prepare_err = Some(err);
                         Err(diesel::result::Error::RollbackTransaction)
                     }
