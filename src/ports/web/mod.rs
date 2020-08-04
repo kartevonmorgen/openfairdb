@@ -6,7 +6,7 @@ use crate::{
     },
     infrastructure::error::AppError,
 };
-use ofdb_core::util::sort::Rated;
+use ofdb_core::rating::Rated;
 use rocket::{config::Config, Rocket, Route};
 use rocket_contrib::json::Json;
 use std::result;

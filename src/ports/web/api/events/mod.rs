@@ -7,7 +7,7 @@ use crate::{
     },
     infrastructure::{flows::prelude as flows, GEO_CODING_GW},
 };
-use ofdb_core::GeoCodingGateway;
+use ofdb_core::gateways::geocode::GeoCodingGateway;
 
 use rocket::{
     http::{RawStr, Status as HttpStatus},
@@ -245,7 +245,7 @@ pub fn get_events_with_token(
     query: usecases::EventQuery,
 ) -> Result<Vec<json::Event>> {
     let db = connections.shared()?;
-    let org = usecases::clearance::organization::authorize_by_token(&*db, &token.0)?;
+    let org = usecases::authorize_organization_by_api_token(&*db, &token.0)?;
     let events = usecases::query_events(&*db, &search_engine, query)?;
     // Release the database connection asap
     drop(db);
@@ -301,7 +301,7 @@ pub fn csv_export_with_token(
     query: usecases::EventQuery,
 ) -> result::Result<Content<String>, AppError> {
     let organization =
-        usecases::clearance::organization::authorize_by_token(&*connections.shared()?, &token.0)?;
+        usecases::authorize_organization_by_api_token(&*connections.shared()?, &token.0)?;
     csv_export(connections, search_engine, Some(organization), login, query)
 }
 
@@ -325,7 +325,7 @@ fn csv_export(
     let moderated_tags = org.map(|org| org.moderated_tags).unwrap_or_default();
 
     let db = connections.shared()?;
-    let user = usecases::clearance::user::authorize_by_email(&*db, &login.0, Role::Scout)?;
+    let user = usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
     let limit = if let Some(limit) = query.limit {
         // Limited
         limit
@@ -379,7 +379,7 @@ pub fn post_events_archive(
     let archived_by_email = {
         let db = db.shared()?;
         // Only scouts and admins are entitled to review events
-        usecases::clearance::user::authorize_by_email(&*db, &login.0, Role::Scout)?.email
+        usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?.email
     };
     let update_count = flows::archive_events(&db, &mut search_engine, &ids, &archived_by_email)?;
     if update_count < ids.len() {

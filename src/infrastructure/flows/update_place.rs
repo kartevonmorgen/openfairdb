@@ -1,6 +1,6 @@
 use super::*;
 use diesel::connection::Connection;
-use ofdb_core::NotificationGateway;
+use ofdb_core::gateways::notify::NotificationGateway;
 
 pub fn update_place(
     connections: &sqlite::Connections,

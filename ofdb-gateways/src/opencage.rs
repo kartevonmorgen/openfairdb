@@ -1,6 +1,6 @@
 use ::geocoding::{Forward, Opencage};
 use itertools::Itertools;
-use ofdb_core::GeoCodingGateway;
+use ofdb_core::gateways::geocode::GeoCodingGateway;
 use ofdb_entities::address::Address;
 
 pub struct OpenCage {

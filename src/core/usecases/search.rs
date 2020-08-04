@@ -1,5 +1,5 @@
 use crate::core::{prelude::*, util};
-use ofdb_core::util::filter;
+use ofdb_core::{bbox, tag};
 use ofdb_entities::geo::MapBbox;
 
 use std::collections::HashMap;
@@ -104,7 +104,7 @@ pub fn search<D: Db>(
 
     let text_tags = text
         .as_deref()
-        .map(filter::split_text_to_words)
+        .map(tag::split_text_into_tags)
         .unwrap_or_default();
 
     let visible_places_query = IndexQuery {
@@ -137,7 +137,7 @@ pub fn search<D: Db>(
     // 2nd query: Search for remaining invisible results
     let mut invisible_places = if visible_places.len() < limit {
         let invisible_places_query = IndexQuery {
-            include_bbox: Some(filter::extend_bbox(&visible_bbox)),
+            include_bbox: Some(bbox::extend_bbox(&visible_bbox)),
             exclude_bbox: visible_places_query.include_bbox,
             ..visible_places_query
         };

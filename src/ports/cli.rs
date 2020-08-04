@@ -9,7 +9,7 @@ use crate::{
 
 use clap::{crate_authors, App, Arg};
 use dotenv::dotenv;
-use ofdb_core::GeoCodingGateway;
+use ofdb_core::gateways::geocode::GeoCodingGateway;
 use std::{env, path::Path};
 
 const DEFAULT_DB_URL: &str = "openfair.db";

@@ -9,6 +9,7 @@ use crate::core::{
 mod archive_comments;
 mod archive_events;
 mod archive_ratings;
+mod authorize;
 mod change_user_role;
 pub mod clearance;
 mod confirm_email;
@@ -36,7 +37,7 @@ mod user_tokens;
 pub mod tests;
 
 pub use self::{
-    archive_comments::*, archive_events::*, archive_ratings::*, change_user_role::*,
+    archive_comments::*, archive_events::*, archive_ratings::*, authorize::*, change_user_role::*,
     confirm_email::*, confirm_email_and_reset_password::*, create_new_place::*, create_new_user::*,
     delete_event::*, export_event::*, export_place::*, filter_event::*, filter_place::*,
     find_duplicates::*, indexing::*, login::*, query_events::*, rate_place::*, register::*,

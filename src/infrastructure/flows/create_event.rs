@@ -1,7 +1,7 @@
 use super::*;
 use crate::core::error::RepoError;
 use diesel::Connection;
-use ofdb_core::NotificationGateway;
+use ofdb_core::gateways::notify::NotificationGateway;
 
 pub fn create_event(
     connections: &sqlite::Connections,

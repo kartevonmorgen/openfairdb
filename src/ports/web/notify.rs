@@ -3,7 +3,7 @@ use crate::infrastructure::{MAILGUN_GW, SENDMAIL_GW};
 #[cfg(test)]
 use crate::ports::web::tests::DummyNotifyGW;
 use core::ops::Deref;
-use ofdb_core::EmailGateway;
+use ofdb_core::gateways::email::EmailGateway;
 use ofdb_entities::email::*;
 #[cfg(not(test))]
 use ofdb_gateways::notify;
@@ -27,7 +27,7 @@ impl EmailGateway for DummyMailGw {
 }
 
 impl Deref for Notify {
-    type Target = dyn ofdb_core::NotificationGateway;
+    type Target = dyn ofdb_core::gateways::notify::NotificationGateway;
     fn deref(&self) -> &Self::Target {
         &self.0
     }

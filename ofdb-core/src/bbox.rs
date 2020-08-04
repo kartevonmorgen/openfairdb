@@ -59,16 +59,6 @@ impl InBBox for Event {
     }
 }
 
-pub fn split_text_to_words(txt: &str) -> Vec<String> {
-    txt.to_lowercase()
-        .split(|c| match c {
-            ' ' | ',' | '.' | ';' => true,
-            _ => false,
-        })
-        .map(|x| x.trim().to_string())
-        .collect()
-}
-
 #[cfg(test)]
 mod tests {
 

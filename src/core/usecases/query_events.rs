@@ -3,7 +3,7 @@ use crate::core::{
     prelude::*,
     util::{extract_hash_tags, remove_hash_tags},
 };
-use ofdb_core::util::filter;
+use ofdb_core::{bbox, tag};
 
 const DEFAULT_RESULT_LIMIT: usize = 100;
 
@@ -41,7 +41,7 @@ pub fn query_events<D: Db>(db: &D, index: &dyn IdIndex, query: EventQuery) -> Re
 
     let text_tags = text
         .as_deref()
-        .map(filter::split_text_to_words)
+        .map(tag::split_text_into_tags)
         .unwrap_or_default();
 
     let visible_events_query = IndexQuery {
@@ -75,7 +75,7 @@ pub fn query_events<D: Db>(db: &D, index: &dyn IdIndex, query: EventQuery) -> Re
     let invisible_event_ids = if let Some(visible_bbox) = visible_bbox {
         if visible_event_ids.len() < limit {
             let invisible_events_query = IndexQuery {
-                include_bbox: Some(filter::extend_bbox(&visible_bbox)),
+                include_bbox: Some(bbox::extend_bbox(&visible_bbox)),
                 exclude_bbox: visible_events_query.include_bbox,
                 ..visible_events_query
             };

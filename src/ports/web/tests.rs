@@ -67,7 +67,7 @@ pub fn register_user(pool: &sqlite::Connections, email: &str, pw: &str, confirme
 
 pub struct DummyNotifyGW;
 
-impl ofdb_core::NotificationGateway for DummyNotifyGW {
+impl ofdb_core::gateways::notify::NotificationGateway for DummyNotifyGW {
     fn place_added(&self, _: &[String], _: &Place, _: Vec<Category>) {}
     fn place_updated(&self, _: &[String], _: &Place, _: Vec<Category>) {}
     fn event_created(&self, _: &[String], _: &Event) {}

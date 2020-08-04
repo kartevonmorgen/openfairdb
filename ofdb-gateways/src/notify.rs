@@ -1,5 +1,5 @@
 use crate::user_communication;
-use ofdb_core::{EmailGateway, NotificationGateway};
+use ofdb_core::gateways::{email::EmailGateway, notify::NotificationGateway};
 use ofdb_entities::{category::*, email::*, event::*, nonce::*, place::*, user::*};
 
 pub struct Notify {

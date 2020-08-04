@@ -1,7 +1,7 @@
 use super::*;
 use crate::core::error::Error;
 use diesel::connection::Connection;
-use ofdb_core::NotificationGateway;
+use ofdb_core::gateways::notify::NotificationGateway;
 
 fn refresh_user_token(connections: &sqlite::Connections, user: &User) -> Result<EmailNonce> {
     let mut rollback_err: Option<Error> = None;

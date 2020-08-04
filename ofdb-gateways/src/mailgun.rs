@@ -1,4 +1,4 @@
-use ofdb_core::EmailGateway;
+use ofdb_core::gateways::email::EmailGateway;
 use ofdb_entities::email::*;
 #[cfg(not(test))]
 use std::io::{Error, ErrorKind};

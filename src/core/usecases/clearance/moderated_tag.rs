@@ -15,10 +15,6 @@ pub fn authorize_editing<R: OrganizationRepo>(
 ) -> Result<Vec<Id>> {
     let org_id = org.map(|org| &org.id);
     let moderated_tags_by_org = repo.get_moderated_tags_by_org(org_id)?;
-    ofdb_core::clearance::moderated_tag::authorize_editing(
-        moderated_tags_by_org,
-        old_tags,
-        new_tags,
-    )
-    .map_err(|_| ParameterError::ModeratedTag.into())
+    ofdb_core::tag::moderated::authorize_editing(moderated_tags_by_org, old_tags, new_tags)
+        .map_err(|_| ParameterError::ModeratedTag.into())
 }

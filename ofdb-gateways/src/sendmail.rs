@@ -1,6 +1,6 @@
 use chrono::*;
 use fast_chemail::is_valid_email;
-use ofdb_core::EmailGateway;
+use ofdb_core::gateways::email::EmailGateway;
 use ofdb_entities::email::*;
 #[cfg(not(test))]
 use std::{
@@ -174,7 +174,7 @@ mod tests {
     #[test]
     fn create_simple_mail() {
         let mail = compose(
-            "\"OFDB\" <from@ofdb.io>", 
+            "\"OFDB\" <from@ofdb.io>",
             &["mail@test.org"],
             "My veeeeerrrrryyyyy looooonnnnnggggg Subject with äöüÄÖÜß Umlaute and even more characters that are distributed onto multiple lines",
             "Hello Mail",

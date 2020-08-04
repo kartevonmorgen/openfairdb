@@ -1,6 +1,6 @@
 use super::*;
 use crate::{adapters::json, core::usecases};
-use ofdb_core::util::sort::Rated;
+use ofdb_core::rating::Rated;
 
 pub mod prelude {
     pub use crate::{
@@ -10,7 +10,7 @@ pub mod prelude {
         infrastructure::db::{sqlite, tantivy},
         ports::web::{self, api},
     };
-    use ofdb_core::NotificationGateway;
+    use ofdb_core::gateways::notify::NotificationGateway;
 
     pub fn setup() -> (Client, sqlite::Connections) {
         let (client, conn, _) = web::tests::setup(vec![("/", api::routes())]);
