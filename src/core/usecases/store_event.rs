@@ -84,7 +84,7 @@ pub fn import_new_event<D: Db>(
         .transpose()?;
     let mut new_tags =
         super::prepare_tag_list(tags.unwrap_or_else(Vec::new).iter().map(String::as_str));
-    let _auth_org_ids = if let Some(org) = org {
+    let _clearance_org_ids = if let Some(org) = org {
         // Implicitly add missing owned tags to prevent events with
         // undefined ownership!
         let org_tag_count = new_tags
@@ -111,7 +111,7 @@ pub fn import_new_event<D: Db>(
                 }
                 new_tags.sort_unstable();
                 new_tags.dedup();
-                super::clearance::moderated_tag::authorize_editing(db, &[], &new_tags, Some(&org))?
+                super::authorize_editing_of_tagged_entry(db, &[], &new_tags, Some(&org))?
             }
             NewEventMode::Update(id) => {
                 let old_tags = db.get_event(id)?.tags;
@@ -137,19 +137,14 @@ pub fn import_new_event<D: Db>(
                     new_tags.dedup();
                 }
                 // Verify that the org is entitled to update this event according to the owned tags
-                super::clearance::moderated_tag::authorize_editing(
-                    db,
-                    &old_tags,
-                    &new_tags,
-                    Some(&org),
-                )?
+                super::authorize_editing_of_tagged_entry(db, &old_tags, &new_tags, Some(&org))?
             }
         }
     } else {
-        super::clearance::moderated_tag::authorize_editing(db, &[], &new_tags, None)?
+        super::authorize_editing_of_tagged_entry(db, &[], &new_tags, None)?
     };
     // TODO: Record pending clearance for events
-    debug_assert!(_auth_org_ids.is_empty());
+    debug_assert!(_clearance_org_ids.is_empty());
     new_tags.sort_unstable();
     new_tags.dedup();
 

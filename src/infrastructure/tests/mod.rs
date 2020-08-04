@@ -28,7 +28,7 @@ pub struct PlaceClearanceFixture {
 
     // Organization with a moderated tag that allows both add
     // and remove and requires clearance
-    organization_with_addremove_clearance_tag: Organization,
+    organization_with_add_remove_clearance_tag: Organization,
 }
 
 fn default_new_place() -> usecases::NewPlace {
@@ -155,9 +155,9 @@ impl PlaceClearanceFixture {
                 title: "confirmed_place".into(),
                 description: "confirmed_place".into(),
                 tags: vec![
-                    "authadd".into(),
-                    "authremove".into(),
-                    "authaddremove".into(),
+                    "add_clearance".into(),
+                    "remove_clearance".into(),
+                    "add_remove_clearance".into(),
                 ],
                 ..default_new_place()
             },
@@ -195,8 +195,9 @@ impl PlaceClearanceFixture {
             name: "organization_with_add_clearance_tag".into(),
             api_token: "organization_with_add_clearance_tag".into(),
             moderated_tags: vec![ModeratedTag {
-                label: "authadd".into(),
-                moderation_flags: TagModerationFlags::clear().join(TagModerationFlags::add()),
+                label: "add_clearance".into(),
+                moderation_flags: TagModerationFlags::require_clearance_by_organization()
+                    .join(TagModerationFlags::allow_adding_of_tag()),
             }],
         };
         backend
@@ -210,8 +211,9 @@ impl PlaceClearanceFixture {
             name: "organization_with_remove_clearance_tag".into(),
             api_token: "organization_with_remove_clearance_tag".into(),
             moderated_tags: vec![ModeratedTag {
-                label: "authremove".into(),
-                moderation_flags: TagModerationFlags::clear().join(TagModerationFlags::remove()),
+                label: "remove_clearance".into(),
+                moderation_flags: TagModerationFlags::require_clearance_by_organization()
+                    .join(TagModerationFlags::allow_removal_of_tag()),
             }],
         };
         backend
@@ -220,22 +222,22 @@ impl PlaceClearanceFixture {
             .unwrap()
             .create_org(organization_with_remove_clearance_tag.clone())
             .unwrap();
-        let organization_with_addremove_clearance_tag = Organization {
+        let organization_with_add_remove_clearance_tag = Organization {
             id: Id::new(),
-            name: "organization_with_authaddremove_tag".into(),
-            api_token: "organization_with_authaddremove_tag".into(),
+            name: "organization_with_add_remove_clearance_tag".into(),
+            api_token: "organization_with_add_remove_clearance_tag".into(),
             moderated_tags: vec![ModeratedTag {
-                label: "authaddremove".into(),
-                moderation_flags: TagModerationFlags::clear()
-                    .join(TagModerationFlags::add())
-                    .join(TagModerationFlags::remove()),
+                label: "add_remove_clearance".into(),
+                moderation_flags: TagModerationFlags::require_clearance_by_organization()
+                    .join(TagModerationFlags::allow_adding_of_tag())
+                    .join(TagModerationFlags::allow_removal_of_tag()),
             }],
         };
         backend
             .db_connections
             .exclusive()
             .unwrap()
-            .create_org(organization_with_addremove_clearance_tag.clone())
+            .create_org(organization_with_add_remove_clearance_tag.clone())
             .unwrap();
         Self {
             backend,
@@ -245,7 +247,7 @@ impl PlaceClearanceFixture {
             confirmed_place,
             organization_with_add_clearance_tag,
             organization_with_remove_clearance_tag,
-            organization_with_addremove_clearance_tag,
+            organization_with_add_remove_clearance_tag,
         }
     }
 }
@@ -326,7 +328,7 @@ fn should_deny_creation_of_place_with_moderated_tags_if_not_allowed() -> flows::
 fn should_create_pending_clearance_once_when_updating_place_with_moderated_tags(
 ) -> flows::Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
-    let org = &fixture.organization_with_addremove_clearance_tag;
+    let org = &fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.created_place;
     let place_id = &old_place.id;
@@ -469,7 +471,7 @@ fn should_deny_removing_of_moderated_tag_from_place_if_not_allowed() -> flows::R
 fn should_create_pending_clearance_when_updating_an_archived_place_with_moderated_tags(
 ) -> flows::Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
-    let org = &fixture.organization_with_addremove_clearance_tag;
+    let org = &fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.archived_place;
     let place_id = &fixture.archived_place.id;
@@ -508,7 +510,7 @@ fn should_create_pending_clearance_when_updating_an_archived_place_with_moderate
 fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -> flows::Result<()>
 {
     let mut fixture = PlaceClearanceFixture::new();
-    let org = &fixture.organization_with_addremove_clearance_tag;
+    let org = &fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.created_place;
     let place_id = &old_place.id;
@@ -675,7 +677,7 @@ fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -
 #[test]
 fn should_fail_when_trying_to_clear_future_revisions_of_places() -> flows::Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
-    let org = &fixture.organization_with_addremove_clearance_tag;
+    let org = &fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.created_place;
     let place_id = &old_place.id;
@@ -751,7 +753,7 @@ fn should_fail_when_trying_to_clear_future_revisions_of_places() -> flows::Resul
 #[test]
 fn should_do_nothing_when_clearing_places_without_pending_clearances() -> flows::Result<()> {
     let fixture = PlaceClearanceFixture::new();
-    let org = &fixture.organization_with_addremove_clearance_tag;
+    let org = &fixture.organization_with_add_remove_clearance_tag;
 
     assert_eq!(
         0,

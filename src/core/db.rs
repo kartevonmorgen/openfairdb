@@ -98,7 +98,7 @@ pub trait OrganizationRepo {
 }
 
 pub trait PlaceClearanceRepo {
-    fn add_pending_clearances_for_place(
+    fn add_pending_clearance_for_places(
         &self,
         org_ids: &[Id],
         pending_clearance: &PendingClearanceForPlace,

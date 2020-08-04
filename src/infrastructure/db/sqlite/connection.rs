@@ -1807,7 +1807,9 @@ impl OrganizationRepo for SqliteConnection {
             .first::<(String, i16)>(self)
             .optional()?
             .and_then(|(id, flags)| {
-                if TagModerationFlags::from(flags as TagModerationFlagsValue).requires_clearance() {
+                if TagModerationFlags::from(flags as TagModerationFlagsValue)
+                    .requires_clearance_by_organization()
+                {
                     Some(Id::from(id))
                 } else {
                     None
@@ -1841,7 +1843,7 @@ impl OrganizationRepo for SqliteConnection {
 }
 
 impl PlaceClearanceRepo for SqliteConnection {
-    fn add_pending_clearances_for_place(
+    fn add_pending_clearance_for_places(
         &self,
         org_ids: &[Id],
         pending_clearance: &PendingClearanceForPlace,

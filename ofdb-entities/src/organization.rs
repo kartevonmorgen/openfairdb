@@ -17,37 +17,37 @@ impl TagModerationFlags {
         Self(7)
     }
 
-    /// Allow users to add this tag
-    pub const fn add() -> Self {
+    /// Allow users to add this tag to entries
+    pub const fn allow_adding_of_tag() -> Self {
         Self(1)
     }
 
-    /// Allow users to remove this tag
-    pub const fn remove() -> Self {
+    /// Allow users to remove this tag from entries
+    pub const fn allow_removal_of_tag() -> Self {
         Self(2)
     }
 
-    /// Hide edits on entries until cleared
-    pub const fn clear() -> Self {
+    /// Hide edits of entries until cleared by the moderating organization
+    pub const fn require_clearance_by_organization() -> Self {
         Self(4)
     }
 
-    pub fn allows_add(self) -> bool {
-        match Self::add().partial_cmp(&self) {
+    pub fn allows_adding_of_tag(self) -> bool {
+        match Self::allow_adding_of_tag().partial_cmp(&self) {
             Some(Ordering::Less) | Some(Ordering::Equal) => true,
             _ => false,
         }
     }
 
-    pub fn allows_remove(self) -> bool {
-        match Self::remove().partial_cmp(&self) {
+    pub fn allows_removal_of_tag(self) -> bool {
+        match Self::allow_removal_of_tag().partial_cmp(&self) {
             Some(Ordering::Less) | Some(Ordering::Equal) => true,
             _ => false,
         }
     }
 
-    pub fn requires_clearance(self) -> bool {
-        match Self::clear().partial_cmp(&self) {
+    pub fn requires_clearance_by_organization(self) -> bool {
+        match Self::require_clearance_by_organization().partial_cmp(&self) {
             Some(Ordering::Less) | Some(Ordering::Equal) => true,
             _ => false,
         }
@@ -125,11 +125,30 @@ mod tests {
     use super::*;
 
     #[test]
-    fn allows_add() {
-        assert!(!TagModerationFlags::none().allows_add());
-        assert!(TagModerationFlags::add().allows_add());
-        assert!(!TagModerationFlags::remove().allows_add());
-        assert!(!TagModerationFlags::clear().allows_add());
-        assert!(TagModerationFlags::all().allows_add());
+    fn allows_adding_of_tag() {
+        assert!(!TagModerationFlags::none().allows_adding_of_tag());
+        assert!(TagModerationFlags::allow_adding_of_tag().allows_adding_of_tag());
+        assert!(!TagModerationFlags::allow_removal_of_tag().allows_adding_of_tag());
+        assert!(!TagModerationFlags::require_clearance_by_organization().allows_adding_of_tag());
+        assert!(TagModerationFlags::all().allows_adding_of_tag());
+    }
+
+    #[test]
+    fn allows_removal_of_tag() {
+        assert!(!TagModerationFlags::none().allows_removal_of_tag());
+        assert!(!TagModerationFlags::allow_adding_of_tag().allows_removal_of_tag());
+        assert!(TagModerationFlags::allow_removal_of_tag().allows_removal_of_tag());
+        assert!(!TagModerationFlags::require_clearance_by_organization().allows_removal_of_tag());
+        assert!(TagModerationFlags::all().allows_removal_of_tag());
+    }
+
+    #[test]
+    fn requires_clearance_by_organization() {
+        assert!(!TagModerationFlags::none().requires_clearance_by_organization());
+        assert!(!TagModerationFlags::allow_adding_of_tag().requires_clearance_by_organization());
+        assert!(!TagModerationFlags::allow_removal_of_tag().requires_clearance_by_organization());
+        assert!(TagModerationFlags::require_clearance_by_organization()
+            .requires_clearance_by_organization());
+        assert!(TagModerationFlags::all().requires_clearance_by_organization());
     }
 }

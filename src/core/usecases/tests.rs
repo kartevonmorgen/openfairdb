@@ -451,7 +451,10 @@ impl OrganizationRepo for MockDb {
             .iter()
             .find(|o| {
                 o.moderated_tags.iter().any(|mod_tag| {
-                    mod_tag.moderation_flags.requires_clearance() && mod_tag.label == moderated_tag
+                    mod_tag
+                        .moderation_flags
+                        .requires_clearance_by_organization()
+                        && mod_tag.label == moderated_tag
                 })
             })
             .map(|o| o.id.clone()))
@@ -525,7 +528,7 @@ impl RatingRepository for MockDb {
 }
 
 impl PlaceClearanceRepo for MockDb {
-    fn add_pending_clearances_for_place(
+    fn add_pending_clearance_for_places(
         &self,
         org_ids: &[Id],
         _pending_clearance: &PendingClearanceForPlace,

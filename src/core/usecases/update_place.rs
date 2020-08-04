@@ -73,7 +73,7 @@ impl From<Place> for UpdatePlace {
 
 pub struct Storable {
     place: Place,
-    auth_org_ids: Vec<Id>,
+    clearance_org_ids: Vec<Id>,
     last_cleared_revision: Revision,
 }
 
@@ -142,8 +142,8 @@ pub fn prepare_updated_place<D: Db>(
             .iter()
             .map(String::as_str),
     );
-    let auth_org_ids =
-        super::clearance::moderated_tag::authorize_editing(db, &old_tags, &new_tags, None)?;
+    let clearance_org_ids =
+        super::authorize_editing_of_tagged_entry(db, &old_tags, &new_tags, None)?;
 
     let homepage = homepage
         .and_then(|ref url| parse_url_param(url).transpose())
@@ -188,7 +188,7 @@ pub fn prepare_updated_place<D: Db>(
     place.validate()?;
     Ok(Storable {
         place,
-        auth_org_ids,
+        clearance_org_ids,
         last_cleared_revision,
     })
 }
@@ -196,7 +196,7 @@ pub fn prepare_updated_place<D: Db>(
 pub fn store_updated_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>)> {
     let Storable {
         place,
-        auth_org_ids,
+        clearance_org_ids,
         last_cleared_revision,
     } = s;
     debug!("Storing updated place revision: {:?}", place);
@@ -204,13 +204,13 @@ pub fn store_updated_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rat
         db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
     db.create_or_update_place(place.clone())?;
-    if !auth_org_ids.is_empty() {
+    if !clearance_org_ids.is_empty() {
         let pending_clearance = PendingClearanceForPlace {
             place_id: place.id.clone(),
             created_at: place.created.at,
             last_cleared_revision: Some(last_cleared_revision),
         };
-        super::clearance::place::add_pending_clearance(db, &auth_org_ids, &pending_clearance)?;
+        super::clearance::place::add_pending_clearance(db, &clearance_org_ids, &pending_clearance)?;
     }
     let ratings = db.load_ratings_of_place(place.id.as_ref())?;
     Ok((place, ratings))

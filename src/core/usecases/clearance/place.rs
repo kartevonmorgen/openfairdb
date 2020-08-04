@@ -5,7 +5,7 @@ pub(crate) fn add_pending_clearance<R: PlaceClearanceRepo>(
     org_ids: &[Id],
     pending_clearance: &PendingClearanceForPlace,
 ) -> Result<usize> {
-    Ok(repo.add_pending_clearances_for_place(org_ids, pending_clearance)?)
+    Ok(repo.add_pending_clearance_for_places(org_ids, pending_clearance)?)
 }
 
 pub fn count_pending_clearances<R: OrganizationRepo + PlaceClearanceRepo>(

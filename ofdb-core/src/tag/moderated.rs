@@ -18,7 +18,7 @@ pub type Result<T> = StdResult<T, Error>;
 //
 // Returns a list with the ids of organizations that require clearance of
 // pending changes.
-pub fn authorize_editing<T>(
+pub fn authorize_editing_of_tagged_entry<T>(
     moderated_tags_by_org: T,
     old_tags: &[String],
     new_tags: &[String],
@@ -26,38 +26,44 @@ pub fn authorize_editing<T>(
 where
     T: IntoIterator<Item = (Id, ModeratedTag)>,
 {
-    let mut auth_org_ids = Vec::new();
+    let mut clearance_org_ids = Vec::new();
     for (org_id, moderated_tag) in moderated_tags_by_org.into_iter() {
         for added_tag in added_tags(old_tags, new_tags) {
             if &moderated_tag.label != added_tag {
                 continue;
             }
-            if !moderated_tag.moderation_flags.allows_add() {
+            if !moderated_tag.moderation_flags.allows_adding_of_tag() {
                 return Err(Error::AddNotAllowed {
                     tag: added_tag.clone(),
                 });
             }
-            if moderated_tag.moderation_flags.requires_clearance() {
-                auth_org_ids.push(org_id.clone());
+            if moderated_tag
+                .moderation_flags
+                .requires_clearance_by_organization()
+            {
+                clearance_org_ids.push(org_id.clone());
             }
         }
         for removed_tag in removed_tags(old_tags, new_tags) {
             if &moderated_tag.label != removed_tag {
                 continue;
             }
-            if !moderated_tag.moderation_flags.allows_remove() {
+            if !moderated_tag.moderation_flags.allows_removal_of_tag() {
                 return Err(Error::RemoveNotAllowed {
                     tag: removed_tag.clone(),
                 });
             }
-            if moderated_tag.moderation_flags.requires_clearance() {
-                auth_org_ids.push(org_id.clone());
+            if moderated_tag
+                .moderation_flags
+                .requires_clearance_by_organization()
+            {
+                clearance_org_ids.push(org_id.clone());
             }
         }
     }
-    auth_org_ids.sort_unstable();
-    auth_org_ids.dedup();
-    Ok(auth_org_ids)
+    clearance_org_ids.sort_unstable();
+    clearance_org_ids.dedup();
+    Ok(clearance_org_ids)
 }
 
 fn added_tags<'a>(
