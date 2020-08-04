@@ -33,6 +33,7 @@ pub fn prepare_new_place<D: Db>(
     db: &D,
     e: NewPlace,
     created_by_email: Option<&str>,
+    created_by_org: Option<&Organization>,
 ) -> Result<Storable> {
     let NewPlace {
         title,
@@ -65,7 +66,7 @@ pub fn prepare_new_place<D: Db>(
             .iter()
             .map(String::as_str),
     );
-    super::check_and_count_owned_tags(db, &tags, None)?;
+    super::check_and_count_owned_tags(db, &tags, created_by_org)?;
     let address = Address {
         street,
         zip,
@@ -173,7 +174,7 @@ mod tests {
         };
         let mock_db = MockDb::default();
         let now = TimestampMs::now();
-        let storable = prepare_new_place(&mock_db, x, Some("test@example.com")).unwrap();
+        let storable = prepare_new_place(&mock_db, x, Some("test@example.com"), None).unwrap();
         let (_, initial_ratings) = store_new_place(&mock_db, storable).unwrap();
         assert!(initial_ratings.is_empty());
         assert_eq!(mock_db.entries.borrow().len(), 1);
@@ -209,7 +210,7 @@ mod tests {
             image_link_url: None,
         };
         let mock_db: MockDb = MockDb::default();
-        assert!(prepare_new_place(&mock_db, x, None).is_err());
+        assert!(prepare_new_place(&mock_db, x, None, None).is_err());
     }
 
     #[test]
@@ -236,7 +237,7 @@ mod tests {
             image_link_url: None,
         };
         let mock_db = MockDb::default();
-        let e = prepare_new_place(&mock_db, x, None).unwrap();
+        let e = prepare_new_place(&mock_db, x, None, None).unwrap();
         assert!(store_new_place(&mock_db, e).is_ok());
         assert_eq!(mock_db.tags.borrow().len(), 2);
         assert_eq!(mock_db.entries.borrow().len(), 1);

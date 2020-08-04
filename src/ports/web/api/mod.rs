@@ -419,19 +419,27 @@ fn get_bbox_subscriptions(
 
 #[post("/entries", format = "application/json", data = "<body>")]
 fn post_entry(
-    account: Option<Account>,
+    bearer: Option<Bearer>,
+    created_by_account: Option<Account>,
     connections: sqlite::Connections,
     notify: Notify,
     mut search_engine: tantivy::SearchEngine,
     body: Json<usecases::NewPlace>,
 ) -> Result<String> {
+    let created_by_org = if let Some(bearer) = bearer {
+        let api_token = bearer.0;
+        Some(usecases::authorize_organization_by_token(&*connections.shared()?, &api_token)?)
+    } else {
+        None
+    };
     Ok(Json(
         flows::create_place(
             &connections,
             &mut search_engine,
             &*notify,
             body.into_inner(),
-            account.as_ref().map(|a| a.email()),
+            created_by_account.as_ref().map(|a| a.email()),
+            created_by_org.as_ref(),
         )?
         .id
         .to_string(),
@@ -440,13 +448,20 @@ fn post_entry(
 
 #[put("/entries/<id>", format = "application/json", data = "<data>")]
 fn put_entry(
-    account: Option<Account>,
+    bearer: Option<Bearer>,
+    created_by_account: Option<Account>,
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
     notify: Notify,
     id: String,
     data: Json<usecases::UpdatePlace>,
 ) -> Result<String> {
+    let created_by_org = if let Some(bearer) = bearer {
+        let api_token = bearer.0;
+        Some(usecases::authorize_organization_by_token(&*connections.shared()?, &api_token)?)
+    } else {
+        None
+    };
     Ok(Json(
         flows::update_place(
             &connections,
@@ -454,7 +469,8 @@ fn put_entry(
             &*notify,
             id.into(),
             data.into_inner(),
-            account.as_ref().map(|a| a.email()),
+            created_by_account.as_ref().map(|a| a.email()),
+            created_by_org.as_ref(),
         )?
         .id
         .into(),
