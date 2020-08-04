@@ -158,8 +158,6 @@ pub fn prepare_tag_list<'a>(tags: impl IntoIterator<Item = &'a str>) -> Vec<Stri
         .into_iter()
         // Split by whitespace
         .flat_map(|t| t.split_whitespace())
-        // Convert to lowercase
-        .map(|t| t.to_lowercase())
         // Remove reserved character
         .map(|t| t.replace("#", ""))
         // Filter empty tags (2nd pass) and conversion to lowercase

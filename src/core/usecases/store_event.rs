@@ -83,7 +83,7 @@ pub fn import_new_event<D: Db>(
         })
         .transpose()?;
     let mut new_tags =
-        super::prepare_tag_list(tags.unwrap_or_else(Vec::new).iter().map(String::as_str));
+        super::prepare_tag_list(tags.unwrap_or_default().iter().map(String::as_str));
     let _clearance_org_ids = if let Some(org) = org {
         // Implicitly add missing owned tags to prevent events with
         // undefined ownership!
