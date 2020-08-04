@@ -286,39 +286,25 @@ pub fn get_events_chronologically(
 }
 
 #[get("/export/events.csv?<query..>")]
-pub fn csv_export_with_token(
+pub fn csv_export(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
-    token: Bearer,
+    bearer: Option<Bearer>,
     login: Login,
     query: usecases::EventQuery,
 ) -> result::Result<Content<String>, AppError> {
-    let organization =
-        usecases::authorize_organization_by_token(&*connections.shared()?, &token.0)?;
-    csv_export(connections, search_engine, Some(organization), login, query)
-}
-
-#[get("/export/events.csv?<query..>", rank = 2)]
-pub fn csv_export_without_token(
-    connections: sqlite::Connections,
-    search_engine: tantivy::SearchEngine,
-    login: Login,
-    query: usecases::EventQuery,
-) -> result::Result<Content<String>, AppError> {
-    csv_export(connections, search_engine, None, login, query)
-}
-
-fn csv_export(
-    connections: sqlite::Connections,
-    search_engine: tantivy::SearchEngine,
-    org: Option<Organization>,
-    login: Login,
-    query: usecases::EventQuery,
-) -> result::Result<Content<String>, AppError> {
-    let owned_tags = org.map(|org| org.owned_tags).unwrap_or_default();
-
     let db = connections.shared()?;
+
+    let owned_tags = if let Some(bearer) = bearer {
+        let api_token = bearer.0;
+        let org = usecases::authorize_organization_by_token(&*db, &api_token)?;
+        org.owned_tags
+    } else {
+        vec![]
+    };
+
     let user = usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+
     let limit = if let Some(limit) = query.limit {
         // Limited
         limit
