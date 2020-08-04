@@ -204,13 +204,14 @@ paths:
               schema:
                 $ref: '#/components/schemas/TagCounts'
 
-  '/places/pending-clearances':
+  '/places/clearance':
     get:
       tags:
         - Places
-      summary: List of places where clearance is pending.
+      summary: List clearance of places
       description: |
-        Returns a list of places with pending clearance in chronological order.
+        Returns a list of places with pending clearance on behalf
+        of the requesting organization in chronological order.
 
         Requests must include the API token of the organization.
       parameters:
@@ -227,36 +228,20 @@ paths:
                   $ref: '#/components/schemas/PendingClearanceForPlace'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-  '/places/pending-clearances/count':
-    get:
-      tags:
-        - Places
-      summary: Count pending clearance of places
-      description: |
-        Returns the total number places with pending clearance on behalf
-        of the requesting organization.
-
-        Requests must include the API token of the organization.
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ResultCount'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-  '/places/pending-clearances/clear':
     post:
       tags:
         - Places
-      summary: Update the clearance status of places
+      summary: Update clearance of places
       description: |
-        Update the clearance status of multiple places.
+        Update the clearance of multiple places on behalf of the
+        requesting organization.
 
-        If the given revision matches the current revision of that place then any pending
-        clearance is deleted. Otherwise the clearance status is updated accordingly and
-        clearance will remain pending.
+        Returns the number of created/updated clearance records.
+
+        If the given revision matches the current revision of that place
+        then any pending clearance is deleted. Otherwise clearance will
+        remain pending with the given revision stored as the new last
+        cleared revision, i.e. any pending clearance is replaced.
 
         Requests must include the API token of the organization.
       requestBody:
@@ -267,6 +252,25 @@ paths:
               type: array
               items:
                 $ref: '#/components/schemas/ClearanceForPlace'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResultCount'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+  '/places/clearance/count':
+    get:
+      tags:
+        - Places
+      summary: Count clearance of places
+      description: |
+        Returns the total number places with pending clearance on behalf
+        of the requesting organization.
+
+        Requests must include the API token of the organization.
       responses:
         '200':
           description: Successful response

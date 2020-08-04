@@ -1,6 +1,6 @@
 use super::*;
 
-#[get("/places/pending-clearances/count")]
+#[get("/places/clearance/count")]
 pub fn count_pending_clearances(
     db: sqlite::Connections,
     org_token: Bearer,
@@ -9,7 +9,7 @@ pub fn count_pending_clearances(
     Ok(Json(json::ResultCount { count }))
 }
 
-#[get("/places/pending-clearances?<offset>&<limit>")]
+#[get("/places/clearance?<offset>&<limit>")]
 pub fn list_pending_clearances(
     db: sqlite::Connections,
     org_token: Bearer,
@@ -27,7 +27,7 @@ pub fn list_pending_clearances(
     ))
 }
 
-#[post("/places/pending-clearances/clear", data = "<clearances>")]
+#[post("/places/clearance", data = "<clearances>")]
 pub fn update_pending_clearances(
     db: sqlite::Connections,
     org_token: Bearer,
