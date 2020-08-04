@@ -2,6 +2,10 @@
 
 ## unreleased (YYYY-mm-dd)
 
+## v0.8.21 (2020-08-04)
+
+- fix(web): Authorize with bearer token when creating or updating places/entries
+
 ## v0.8.20 (2020-06-10)
 
 - new(web): Support sending emails via [mailgun](https://www.mailgun.com/)
