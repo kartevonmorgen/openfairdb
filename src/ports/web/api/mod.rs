@@ -63,8 +63,7 @@ pub fn routes() -> Vec<Route> {
         events::post_events_archive,
         events::delete_event,
         events::delete_event_with_token,
-        events::csv_export_with_token,
-        events::csv_export_without_token,
+        events::csv_export,
         users::post_request_password_reset,
         users::post_reset_password,
         users::post_user,
@@ -82,8 +81,7 @@ pub fn routes() -> Vec<Route> {
         count::get_count_tags,
         get_version,
         get_api,
-        entries_csv_export_with_token,
-        entries_csv_export_without_token,
+        entries_csv_export,
         places::count_pending_clearances,
         places::list_pending_clearances,
         places::update_pending_clearances,
@@ -443,19 +441,30 @@ fn get_bbox_subscriptions(
 
 #[post("/entries", format = "application/json", data = "<body>")]
 fn post_entry(
-    account: Option<Account>,
+    bearer: Option<Bearer>,
+    created_by_account: Option<Account>,
     connections: sqlite::Connections,
     notify: Notify,
     mut search_engine: tantivy::SearchEngine,
     body: Json<usecases::NewPlace>,
 ) -> Result<String> {
+    let created_by_org = if let Some(bearer) = bearer {
+        let api_token = bearer.0;
+        Some(usecases::authorize_organization_by_api_token(
+            &*connections.shared()?,
+            &api_token,
+        )?)
+    } else {
+        None
+    };
     Ok(Json(
         flows::create_place(
             &connections,
             &mut search_engine,
             &*notify,
             body.into_inner(),
-            account.as_ref().map(|a| a.email()),
+            created_by_account.as_ref().map(|a| a.email()),
+            created_by_org.as_ref(),
         )?
         .id
         .to_string(),
@@ -464,13 +473,23 @@ fn post_entry(
 
 #[put("/entries/<id>", format = "application/json", data = "<data>")]
 fn put_entry(
-    account: Option<Account>,
+    bearer: Option<Bearer>,
+    created_by_account: Option<Account>,
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
     notify: Notify,
     id: String,
     data: Json<usecases::UpdatePlace>,
 ) -> Result<String> {
+    let created_by_org = if let Some(bearer) = bearer {
+        let api_token = bearer.0;
+        Some(usecases::authorize_organization_by_api_token(
+            &*connections.shared()?,
+            &api_token,
+        )?)
+    } else {
+        None
+    };
     Ok(Json(
         flows::update_place(
             &connections,
@@ -478,7 +497,8 @@ fn put_entry(
             &*notify,
             id.into(),
             data.into_inner(),
-            account.as_ref().map(|a| a.email()),
+            created_by_account.as_ref().map(|a| a.email()),
+            created_by_org.as_ref(),
         )?
         .id
         .into(),
@@ -521,44 +541,23 @@ fn get_category(connections: sqlite::Connections, ids: String) -> Result<Vec<jso
 }
 
 #[get("/export/entries.csv?<query..>")]
-fn entries_csv_export_with_token(
-    connections: sqlite::Connections,
-    search_engine: tantivy::SearchEngine,
-    token: Bearer,
-    login: Login,
-    query: Form<search::SearchQuery>,
-) -> result::Result<Content<String>, AppError> {
-    let organization =
-        usecases::authorize_organization_by_api_token(&*connections.shared()?, &token.0)?;
-    entries_csv_export(
-        connections,
-        search_engine,
-        Some(organization),
-        login,
-        query.into_inner(),
-    )
-}
-
-#[get("/export/entries.csv?<query..>", rank = 2)]
-fn entries_csv_export_without_token(
-    connections: sqlite::Connections,
-    search_engine: tantivy::SearchEngine,
-    login: Login,
-    query: Form<search::SearchQuery>,
-) -> result::Result<Content<String>, AppError> {
-    entries_csv_export(connections, search_engine, None, login, query.into_inner())
-}
-
 fn entries_csv_export(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
-    org: Option<Organization>,
+    bearer: Option<Bearer>,
     login: Login,
-    query: search::SearchQuery,
+    query: Form<search::SearchQuery>,
 ) -> result::Result<Content<String>, AppError> {
-    let moderated_tags = org.map(|org| org.moderated_tags).unwrap_or_default();
-
     let db = connections.shared()?;
+
+    let moderated_tags = if let Some(bearer) = bearer {
+        let api_token = bearer.0;
+        let org = usecases::authorize_organization_by_api_token(&*db, &api_token)?;
+        org.moderated_tags
+    } else {
+        vec![]
+    };
+
     let user = usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
 
     let (req, limit) = search::parse_search_query(&query)?;

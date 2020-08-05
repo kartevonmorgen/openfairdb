@@ -81,7 +81,8 @@ pub fn prepare_updated_place<D: Db>(
     db: &D,
     place_id: Id,
     e: UpdatePlace,
-    updated_by: Option<&str>,
+    created_by_email: Option<&str>,
+    created_by_org: Option<&Organization>,
 ) -> Result<Storable> {
     let UpdatePlace {
         version,
@@ -143,7 +144,7 @@ pub fn prepare_updated_place<D: Db>(
             .map(String::as_str),
     );
     let clearance_org_ids =
-        super::authorize_editing_of_tagged_entry(db, &old_tags, &new_tags, None)?;
+        super::authorize_editing_of_tagged_entry(db, &old_tags, &new_tags, created_by_org)?;
 
     let homepage = homepage
         .and_then(|ref url| parse_url_param(url).transpose())
@@ -168,7 +169,7 @@ pub fn prepare_updated_place<D: Db>(
         id: place_id,
         license,
         revision,
-        created: Activity::now(updated_by.map(Into::into)),
+        created: Activity::now(created_by_email.map(Into::into)),
         title,
         description,
         location: Location { pos, address },
@@ -261,7 +262,8 @@ mod tests {
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![(old, ReviewStatus::Created)].into();
         let now = TimestampMs::now();
-        let storable = prepare_updated_place(&mock_db, id, new, Some("test@example.com")).unwrap();
+        let storable =
+            prepare_updated_place(&mock_db, id, new, Some("test@example.com"), None).unwrap();
         assert!(store_updated_place(&mock_db, storable).is_ok());
         assert_eq!(mock_db.entries.borrow().len(), 1);
         let (x, _) = &mock_db.entries.borrow()[0];
@@ -332,7 +334,7 @@ mod tests {
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![(old, ReviewStatus::Created)].into();
-        let err = match prepare_updated_place(&mock_db, id, new, None) {
+        let err = match prepare_updated_place(&mock_db, id, new, None, None) {
             Ok(storable) => store_updated_place(&mock_db, storable).err(),
             Err(err) => Some(err),
         };
@@ -377,7 +379,7 @@ mod tests {
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![].into();
-        let result = prepare_updated_place(&mock_db, id, new, None);
+        let result = prepare_updated_place(&mock_db, id, new, None, None);
         assert!(result.is_err());
         match result.err().unwrap() {
             Error::Repo(err) => match err {
@@ -426,7 +428,7 @@ mod tests {
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![(old, ReviewStatus::Created)].into();
         mock_db.tags = vec![Tag { id: "bio".into() }, Tag { id: "fair".into() }].into();
-        let storable = prepare_updated_place(&mock_db, id.clone(), new, None).unwrap();
+        let storable = prepare_updated_place(&mock_db, id.clone(), new, None, None).unwrap();
         assert!(store_updated_place(&mock_db, storable).is_ok());
         let (e, _) = mock_db.get_place(id.as_ref()).unwrap();
         assert_eq!(e.tags, vec!["vegan"]);

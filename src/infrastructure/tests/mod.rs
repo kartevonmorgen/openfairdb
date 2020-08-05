@@ -94,6 +94,7 @@ impl PlaceClearanceFixture {
                 ..default_new_place()
             },
             None,
+            None,
         )
         .unwrap();
 
@@ -106,6 +107,7 @@ impl PlaceClearanceFixture {
                 description: "archived_place".into(),
                 ..default_new_place()
             },
+            None,
             None,
         )
         .unwrap();
@@ -131,6 +133,7 @@ impl PlaceClearanceFixture {
                 description: "rejected_place".into(),
                 ..default_new_place()
             },
+            None,
             None,
         )
         .unwrap();
@@ -161,6 +164,7 @@ impl PlaceClearanceFixture {
                 ],
                 ..default_new_place()
             },
+            None,
             None,
         )
         .unwrap();
@@ -270,6 +274,7 @@ fn should_create_pending_clearance_when_creating_place_with_moderated_tags() -> 
         &fixture.backend.notify,
         new_place,
         None,
+        None,
     )?;
 
     assert!(created_place.revision.is_initial());
@@ -306,6 +311,7 @@ fn should_deny_creation_of_place_with_moderated_tags_if_not_allowed() -> flows::
         fixture.backend.search_engine.get_mut(),
         &fixture.backend.notify,
         new_place,
+        None,
         None,
     )
     .is_err());
@@ -345,6 +351,7 @@ fn should_create_pending_clearance_once_when_updating_place_with_moderated_tags(
         place_id.clone(),
         update_place,
         None,
+        None,
     )?;
 
     assert_eq!(new_revision, new_place.revision);
@@ -370,6 +377,7 @@ fn should_create_pending_clearance_once_when_updating_place_with_moderated_tags(
         &fixture.backend.notify,
         place_id.clone(),
         update_place,
+        None,
         None,
     )?;
     assert_eq!(new_revision, new_place.revision);
@@ -407,6 +415,7 @@ fn should_deny_adding_of_moderated_tag_to_place_if_not_allowed() -> flows::Resul
         &fixture.backend.notify,
         place_id.clone(),
         update_place,
+        None,
         None,
     )
     .is_err());
@@ -450,6 +459,7 @@ fn should_deny_removing_of_moderated_tag_from_place_if_not_allowed() -> flows::R
         place_id.clone(),
         update_place,
         None,
+        None,
     )
     .is_err());
     // No pending clearances created
@@ -487,6 +497,7 @@ fn should_create_pending_clearance_when_updating_an_archived_place_with_moderate
         &fixture.backend.notify,
         place_id.clone(),
         update_place,
+        None,
         None,
     )?;
 
@@ -532,6 +543,7 @@ fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -
         &fixture.backend.notify,
         place_id.clone(),
         update_place,
+        None,
         None,
     )?;
 
@@ -699,6 +711,7 @@ fn should_fail_when_trying_to_clear_future_revisions_of_places() -> flows::Resul
         &fixture.backend.notify,
         place_id.clone(),
         update_place,
+        None,
         None,
     )?;
 

@@ -8,7 +8,8 @@ pub fn update_place(
     notify: &dyn NotificationGateway,
     id: Id,
     update_place: usecases::UpdatePlace,
-    account_email: Option<&str>,
+    created_by_email: Option<&str>,
+    created_by_org: Option<&Organization>,
 ) -> Result<Place> {
     // Update existing entry
     let (place, ratings) = {
@@ -16,8 +17,13 @@ pub fn update_place(
         let mut prepare_err = None;
         connection
             .transaction::<_, diesel::result::Error, _>(|| {
-                match usecases::prepare_updated_place(&*connection, id, update_place, account_email)
-                {
+                match usecases::prepare_updated_place(
+                    &*connection,
+                    id,
+                    update_place,
+                    created_by_email,
+                    created_by_org,
+                ) {
                     Ok(storable) => {
                         let (place, ratings) =
                             usecases::store_updated_place(&*connection, storable).map_err(

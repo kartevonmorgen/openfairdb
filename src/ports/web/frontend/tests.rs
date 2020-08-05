@@ -335,7 +335,7 @@ mod entry {
             image_link_url: None,
         };
         let gw = DummyNotifyGW;
-        let e_id = flows::prelude::create_place(db, search, &gw, e, None)
+        let e_id = flows::prelude::create_place(db, search, &gw, e, None, None)
             .unwrap()
             .id;
         let r = usecases::NewPlaceRating {

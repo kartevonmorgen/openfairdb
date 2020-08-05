@@ -8,7 +8,8 @@ pub fn create_place(
     indexer: &mut dyn PlaceIndexer,
     notify: &dyn NotificationGateway,
     new_place: usecases::NewPlace,
-    account_email: Option<&str>,
+    created_by_email: Option<&str>,
+    created_by_org: Option<&Organization>,
 ) -> Result<Place> {
     // Create and add new entry
     let (place, ratings) = {
@@ -16,7 +17,12 @@ pub fn create_place(
         let mut prepare_err = None;
         connection
             .transaction::<_, diesel::result::Error, _>(|| {
-                match usecases::prepare_new_place(&*connection, new_place, account_email) {
+                match usecases::prepare_new_place(
+                    &*connection,
+                    new_place,
+                    created_by_email,
+                    created_by_org,
+                ) {
                     Ok(storable) => {
                         let (place, ratings) = usecases::store_new_place(&*connection, storable)
                             .map_err(|err| {
@@ -26,6 +32,7 @@ pub fn create_place(
                         Ok((place, ratings))
                     }
                     Err(err) => {
+                        log::info!("Failed to prepare new place revision: {}", err);
                         prepare_err = Some(err);
                         Err(diesel::result::Error::RollbackTransaction)
                     }
