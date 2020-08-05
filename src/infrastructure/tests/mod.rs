@@ -200,8 +200,9 @@ impl PlaceClearanceFixture {
             api_token: "organization_with_add_clearance_tag".into(),
             moderated_tags: vec![ModeratedTag {
                 label: "add_clearance".into(),
-                moderation_flags: TagModerationFlags::require_clearance_by_organization()
-                    .join(TagModerationFlags::allow_adding_of_tag()),
+                allow_add: true,
+                allow_remove: false,
+                require_clearance: true,
             }],
         };
         backend
@@ -216,8 +217,9 @@ impl PlaceClearanceFixture {
             api_token: "organization_with_remove_clearance_tag".into(),
             moderated_tags: vec![ModeratedTag {
                 label: "remove_clearance".into(),
-                moderation_flags: TagModerationFlags::require_clearance_by_organization()
-                    .join(TagModerationFlags::allow_removal_of_tag()),
+                allow_add: false,
+                allow_remove: true,
+                require_clearance: true,
             }],
         };
         backend
@@ -232,9 +234,9 @@ impl PlaceClearanceFixture {
             api_token: "organization_with_add_remove_clearance_tag".into(),
             moderated_tags: vec![ModeratedTag {
                 label: "add_remove_clearance".into(),
-                moderation_flags: TagModerationFlags::require_clearance_by_organization()
-                    .join(TagModerationFlags::allow_adding_of_tag())
-                    .join(TagModerationFlags::allow_removal_of_tag()),
+                allow_add: true,
+                allow_remove: true,
+                require_clearance: true,
             }],
         };
         backend

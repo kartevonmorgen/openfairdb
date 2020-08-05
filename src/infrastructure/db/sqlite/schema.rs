@@ -25,7 +25,9 @@ table! {
     organization_tag (org_rowid, tag_label) {
         org_rowid -> BigInt,
         tag_label -> Text,
-        tag_moderation_flags -> SmallInt,
+        tag_allow_add -> SmallInt,
+        tag_allow_remove -> SmallInt,
+        require_clearance -> SmallInt,
     }
 }
 

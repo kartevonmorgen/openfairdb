@@ -129,7 +129,7 @@ pub fn search<D: Db>(
         .iter()
         .all(|e| visible_bbox.contains_point(e.pos)));
     if let Some(moderated_tag) = moderated_tag {
-        if let Some(org_id) = db.map_moderated_tag_to_org_id(moderated_tag)? {
+        if let Some(org_id) = db.map_moderated_tag_to_clearance_org_id(moderated_tag)? {
             visible_places = clear_search_results(db, &org_id, visible_places)?;
         }
     }
@@ -151,7 +151,7 @@ pub fn search<D: Db>(
         .iter()
         .any(|e| visible_bbox.contains_point(e.pos)));
     if let Some(moderated_tag) = moderated_tag {
-        if let Some(org_id) = db.map_moderated_tag_to_org_id(moderated_tag)? {
+        if let Some(org_id) = db.map_moderated_tag_to_clearance_org_id(moderated_tag)? {
             invisible_places = clear_search_results(db, &org_id, invisible_places)?;
         }
     }

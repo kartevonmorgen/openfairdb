@@ -347,14 +347,19 @@ impl From<OrganizationTag> for e::ModeratedTag {
         let OrganizationTag {
             org_rowid: _,
             tag_label,
-            tag_moderation_flags,
+            tag_allow_add,
+            tag_allow_remove,
+            require_clearance,
         } = from;
         let label = tag_label;
-        // TODO: Verify that value is valid
-        let moderation_flags = (tag_moderation_flags as e::TagModerationFlagsValue).into();
+        let allow_add = tag_allow_add != 0;
+        let allow_remove = tag_allow_remove != 0;
+        let require_clearance = require_clearance != 0;
         Self {
             label,
-            moderation_flags,
+            allow_add,
+            allow_remove,
+            require_clearance,
         }
     }
 }
@@ -364,16 +369,21 @@ impl From<OrganizationTagWithId> for (e::Id, e::ModeratedTag) {
         let OrganizationTagWithId {
             org_id,
             tag_label,
-            tag_moderation_flags,
+            tag_allow_add,
+            tag_allow_remove,
+            require_clearance,
         } = from;
         let label = tag_label;
-        // TODO: Verify that value is valid
-        let moderation_flags = (tag_moderation_flags as e::TagModerationFlagsValue).into();
+        let allow_add = tag_allow_add != 0;
+        let allow_remove = tag_allow_remove != 0;
+        let require_clearance = require_clearance != 0;
         (
             org_id.into(),
             e::ModeratedTag {
                 label,
-                moderation_flags,
+                allow_add,
+                allow_remove,
+                require_clearance,
             },
         )
     }

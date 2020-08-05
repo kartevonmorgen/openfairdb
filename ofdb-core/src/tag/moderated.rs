@@ -32,15 +32,12 @@ where
             if &moderated_tag.label != added_tag {
                 continue;
             }
-            if !moderated_tag.moderation_flags.allows_adding_of_tag() {
+            if !moderated_tag.allow_add {
                 return Err(Error::AddNotAllowed {
                     tag: added_tag.clone(),
                 });
             }
-            if moderated_tag
-                .moderation_flags
-                .requires_clearance_by_organization()
-            {
+            if moderated_tag.require_clearance {
                 clearance_org_ids.push(org_id.clone());
             }
         }
@@ -48,15 +45,12 @@ where
             if &moderated_tag.label != removed_tag {
                 continue;
             }
-            if !moderated_tag.moderation_flags.allows_removal_of_tag() {
+            if !moderated_tag.allow_remove {
                 return Err(Error::RemoveNotAllowed {
                     tag: removed_tag.clone(),
                 });
             }
-            if moderated_tag
-                .moderation_flags
-                .requires_clearance_by_organization()
-            {
+            if moderated_tag.require_clearance {
                 clearance_org_ids.push(org_id.clone());
             }
         }

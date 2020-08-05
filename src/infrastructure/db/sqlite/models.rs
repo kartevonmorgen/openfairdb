@@ -279,14 +279,18 @@ pub struct NewEventTag<'a> {
 pub struct OrganizationTag {
     pub org_rowid: i64,
     pub tag_label: String,
-    pub tag_moderation_flags: i16,
+    pub tag_allow_add: i16,
+    pub tag_allow_remove: i16,
+    pub require_clearance: i16,
 }
 
 #[derive(Queryable)]
 pub struct OrganizationTagWithId {
     pub org_id: String,
     pub tag_label: String,
-    pub tag_moderation_flags: i16,
+    pub tag_allow_add: i16,
+    pub tag_allow_remove: i16,
+    pub require_clearance: i16,
 }
 
 #[derive(Insertable)]
@@ -294,7 +298,9 @@ pub struct OrganizationTagWithId {
 pub struct NewOrganizationTag<'a> {
     pub org_rowid: i64,
     pub tag_label: &'a str,
-    pub tag_moderation_flags: i16,
+    pub tag_allow_add: i16,
+    pub tag_allow_remove: i16,
+    pub require_clearance: i16,
 }
 
 #[derive(Queryable, Insertable)]

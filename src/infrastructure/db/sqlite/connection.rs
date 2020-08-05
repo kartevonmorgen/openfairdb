@@ -1754,13 +1754,17 @@ impl OrganizationRepo for SqliteConnection {
             })?;
             for ModeratedTag {
                 label,
-                moderation_flags,
+                allow_add,
+                allow_remove,
+                require_clearance,
             } in &moderated_tags
             {
                 let org_tag = models::NewOrganizationTag {
                     org_rowid,
                     tag_label: label,
-                    tag_moderation_flags: TagModerationFlagsValue::from(*moderation_flags).into(),
+                    tag_allow_add: if *allow_add { 1 } else { 0 },
+                    tag_allow_remove: if *allow_remove { 1 } else { 0 },
+                    require_clearance: if *require_clearance { 1 } else { 0 },
                 };
                 diesel::insert_into(schema::organization_tag::table)
                     .values(&org_tag)
@@ -1798,23 +1802,16 @@ impl OrganizationRepo for SqliteConnection {
         })
     }
 
-    fn map_moderated_tag_to_org_id(&self, moderated_tag: &str) -> Result<Option<Id>> {
+    fn map_moderated_tag_to_clearance_org_id(&self, moderated_tag: &str) -> Result<Option<Id>> {
         use schema::{organization::dsl, organization_tag::dsl as tag_dsl};
         Ok(schema::organization::table
             .inner_join(schema::organization_tag::table)
-            .select((dsl::id, tag_dsl::tag_moderation_flags))
+            .select(dsl::id)
             .filter(tag_dsl::tag_label.eq(moderated_tag))
-            .first::<(String, i16)>(self)
+            .filter(tag_dsl::require_clearance.ne(0))
+            .first::<String>(self)
             .optional()?
-            .and_then(|(id, flags)| {
-                if TagModerationFlags::from(flags as TagModerationFlagsValue)
-                    .requires_clearance_by_organization()
-                {
-                    Some(Id::from(id))
-                } else {
-                    None
-                }
-            }))
+            .map(Into::into))
     }
 
     fn get_moderated_tags_by_org(
@@ -1828,7 +1825,9 @@ impl OrganizationRepo for SqliteConnection {
             .select((
                 org_dsl::id,
                 org_tag_dsl::tag_label,
-                org_tag_dsl::tag_moderation_flags,
+                org_tag_dsl::tag_allow_add,
+                org_tag_dsl::tag_allow_remove,
+                org_tag_dsl::require_clearance,
             ))
             .order_by(org_dsl::id);
         let moderated_tags = if let Some(excluded_org_id) = excluded_org_id {

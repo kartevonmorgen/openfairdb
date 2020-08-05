@@ -18,7 +18,9 @@ CREATE TABLE organization_tag (
     org_rowid INTEGER NOT NULL,
     tag_label TEXT NOT NULL,
     --
-    tag_moderation_flags SMALLINT NOT NULL,
+    tag_allow_add     TINYINT NOT NULL,
+    tag_allow_remove  TINYINT NOT NULL,
+    require_clearance TINYINT NOT NULL,
     --
     UNIQUE (org_rowid, tag_label),
     FOREIGN KEY (org_rowid) REFERENCES organization(rowid)
@@ -28,7 +30,7 @@ CREATE TABLE organization_tag (
 CREATE INDEX organization_tag_idx_tag_label ON organization_tag(tag_label);
 
 INSERT INTO organization_tag
-SELECT old.rowid as rowid, org.rowid as org_rowid, old.tag_id as tag_label, 0 as tag_moderation_flags
+SELECT old.rowid as rowid, org.rowid as org_rowid, old.tag_id as tag_label, 0 as tag_allow_add, 0 as tag_allow_remove, 0 as require_clearance
 FROM org_tag_relations old
 JOIN organization org
 ON org.id=old.org_id;
@@ -43,8 +45,7 @@ CREATE TABLE organization_place_clearance (
     org_rowid    INTEGER NOT NULL,
     place_rowid  INTEGER NOT NULL,
     --
-    created_at   INTEGER NOT NULL,
-    --
+    created_at            INTEGER NOT NULL,
     last_cleared_revision INTEGER, -- last cleared revision number or NULL if the place is new and has not been cleared yet
     --
     UNIQUE (org_rowid, place_rowid),
