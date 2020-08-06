@@ -90,7 +90,7 @@ pub trait UserGateway {
 pub trait OrganizationRepo {
     fn create_org(&mut self, _: Organization) -> Result<()>;
     fn get_org_by_api_token(&self, token: &str) -> Result<Organization>;
-    fn map_moderated_tag_to_clearance_org_id(&self, moderated_tag: &str) -> Result<Option<Id>>;
+    fn map_tag_to_clearance_org_id(&self, tag: &str) -> Result<Option<Id>>;
     fn get_moderated_tags_by_org(
         &self,
         excluded_org_id: Option<&Id>,

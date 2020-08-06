@@ -60,7 +60,7 @@ fn default_search_request<'a>() -> usecases::SearchRequest<'a> {
             MapPoint::from_lat_lng_deg(-90, -180),
             MapPoint::from_lat_lng_deg(90, 180),
         ),
-        moderated_tag: None,
+        org_tag: None,
         categories: vec![],
         hash_tags: vec![],
         ids: vec![],
@@ -150,6 +150,64 @@ impl PlaceClearanceFixture {
         )
         .unwrap();
 
+        // Prepate organizations
+        let organization_without_moderated_tags = Organization {
+            id: Id::new(),
+            name: "organization_without_moderated_tags".into(),
+            api_token: "organization_without_moderated_tags".into(),
+            moderated_tags: vec![],
+        };
+        let organization_with_add_clearance_tag = Organization {
+            id: Id::new(),
+            name: "organization_with_add_clearance_tag".into(),
+            api_token: "organization_with_add_clearance_tag".into(),
+            moderated_tags: vec![ModeratedTag {
+                label: "add_clearance".into(),
+                allow_add: true,
+                allow_remove: false,
+                require_clearance: true,
+            }],
+        };
+        let organization_with_remove_clearance_tag = Organization {
+            id: Id::new(),
+            name: "organization_with_remove_clearance_tag".into(),
+            api_token: "organization_with_remove_clearance_tag".into(),
+            moderated_tags: vec![ModeratedTag {
+                label: "remove_clearance".into(),
+                allow_add: false,
+                allow_remove: true,
+                require_clearance: true,
+            }],
+        };
+        let organization_with_add_remove_clearance_tag = Organization {
+            id: Id::new(),
+            name: "organization_with_add_remove_clearance_tag".into(),
+            api_token: "organization_with_add_remove_clearance_tag".into(),
+            moderated_tags: vec![ModeratedTag {
+                label: "add_remove_clearance".into(),
+                allow_add: true,
+                allow_remove: true,
+                require_clearance: true,
+            }],
+        };
+
+        let confirmed_tags = organization_with_add_clearance_tag
+            .moderated_tags
+            .iter()
+            .map(|mod_tag| mod_tag.label.clone())
+            .chain(
+                organization_with_remove_clearance_tag
+                    .moderated_tags
+                    .iter()
+                    .map(|mod_tag| mod_tag.label.clone()),
+            )
+            .chain(
+                organization_with_add_remove_clearance_tag
+                    .moderated_tags
+                    .iter()
+                    .map(|mod_tag| mod_tag.label.clone()),
+            )
+            .collect();
         let confirmed_place = flows::create_place(
             &backend.db_connections,
             &mut *backend.search_engine.borrow_mut(),
@@ -157,11 +215,7 @@ impl PlaceClearanceFixture {
             usecases::NewPlace {
                 title: "confirmed_place".into(),
                 description: "confirmed_place".into(),
-                tags: vec![
-                    "add_clearance".into(),
-                    "remove_clearance".into(),
-                    "add_remove_clearance".into(),
-                ],
+                tags: confirmed_tags,
                 ..default_new_place()
             },
             None,
@@ -181,64 +235,25 @@ impl PlaceClearanceFixture {
         )
         .unwrap();
 
-        // Create organizations with moderated tags
-        let organization_without_moderated_tags = Organization {
-            id: Id::new(),
-            name: "organization_without_moderated_tags".into(),
-            api_token: "organization_without_moderated_tags".into(),
-            moderated_tags: vec![],
-        };
+        // Insert organizations into database
         backend
             .db_connections
             .exclusive()
             .unwrap()
             .create_org(organization_without_moderated_tags.clone())
             .unwrap();
-        let organization_with_add_clearance_tag = Organization {
-            id: Id::new(),
-            name: "organization_with_add_clearance_tag".into(),
-            api_token: "organization_with_add_clearance_tag".into(),
-            moderated_tags: vec![ModeratedTag {
-                label: "add_clearance".into(),
-                allow_add: true,
-                allow_remove: false,
-                require_clearance: true,
-            }],
-        };
         backend
             .db_connections
             .exclusive()
             .unwrap()
             .create_org(organization_with_add_clearance_tag.clone())
             .unwrap();
-        let organization_with_remove_clearance_tag = Organization {
-            id: Id::new(),
-            name: "organization_with_remove_clearance_tag".into(),
-            api_token: "organization_with_remove_clearance_tag".into(),
-            moderated_tags: vec![ModeratedTag {
-                label: "remove_clearance".into(),
-                allow_add: false,
-                allow_remove: true,
-                require_clearance: true,
-            }],
-        };
         backend
             .db_connections
             .exclusive()
             .unwrap()
             .create_org(organization_with_remove_clearance_tag.clone())
             .unwrap();
-        let organization_with_add_remove_clearance_tag = Organization {
-            id: Id::new(),
-            name: "organization_with_add_remove_clearance_tag".into(),
-            api_token: "organization_with_add_remove_clearance_tag".into(),
-            moderated_tags: vec![ModeratedTag {
-                label: "add_remove_clearance".into(),
-                allow_add: true,
-                allow_remove: true,
-                require_clearance: true,
-            }],
-        };
         backend
             .db_connections
             .exclusive()
@@ -525,19 +540,24 @@ fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -
     let mut fixture = PlaceClearanceFixture::new();
     let org = &fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
-    let old_place = &fixture.created_place;
+    let old_place = &fixture.confirmed_place;
+    assert!(old_place.tags.contains(tag));
     let place_id = &old_place.id;
     let last_cleared_revision = old_place.revision;
 
+    assert_eq!(
+        0,
+        usecases::clearance::place::count_pending_clearances(
+            &*fixture.backend.db_connections.shared()?,
+            &org.api_token,
+        )?
+    );
+
     let new_title = "new title".to_string();
     assert_ne!(old_place.title, new_title);
-    let new_tags = vec![tag.clone()];
-    assert_ne!(old_place.tags, new_tags);
     let new_revision = old_place.revision.next();
-
     let mut update_place = usecases::UpdatePlace::from(old_place.clone());
     update_place.title = new_title.clone();
-    update_place.tags = new_tags.clone();
     update_place.version = new_revision.into();
     let new_place = flows::update_place(
         &fixture.backend.db_connections,
@@ -550,7 +570,6 @@ fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -
     )?;
 
     assert_eq!(new_revision, new_place.revision);
-    assert!(new_place.tags.contains(tag));
     let pending_clearances = usecases::clearance::place::list_pending_clearances(
         &*fixture.backend.db_connections.shared()?,
         &org.api_token,
@@ -562,7 +581,7 @@ fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -
         pending_clearances.first().unwrap().last_cleared_revision
     );
 
-    // Uncleared (default)
+    // Search uncleared (default)
     let (uncleared_search_result, _) = usecases::search(
         &*fixture.backend.db_connections.shared()?,
         &*fixture.backend.search_engine.borrow(),
@@ -575,13 +594,12 @@ fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -
     )?;
     assert_eq!(1, uncleared_search_result.len());
     assert_eq!(new_title, uncleared_search_result.first().unwrap().title);
-    assert_eq!(new_tags, uncleared_search_result.first().unwrap().tags);
-    // Cleared
+    // Search cleared
     let (cleared_search_result, _) = usecases::search(
         &*fixture.backend.db_connections.shared()?,
         &*fixture.backend.search_engine.borrow(),
         usecases::SearchRequest {
-            moderated_tag: Some(tag.as_str()),
+            org_tag: Some(tag.as_str()),
             ids: vec![place_id.as_ref()],
             ..default_search_request()
         },
@@ -592,9 +610,8 @@ fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -
         old_place.title,
         cleared_search_result.first().unwrap().title
     );
-    assert_eq!(old_place.tags, cleared_search_result.first().unwrap().tags);
 
-    // Archive, clear, and then confirm this entry
+    // Archive, clear, and then confirm (= unarchive) this entry
     flows::review_places(
         &fixture.backend.db_connections,
         &mut *fixture.backend.search_engine.get_mut(),
@@ -650,7 +667,7 @@ fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -
         },
     )?;
 
-    // Uncleared (default)
+    // Search uncleared (default)
     let (uncleared_search_result, _) = usecases::search(
         &*fixture.backend.db_connections.shared()?,
         &*fixture.backend.search_engine.borrow(),
@@ -667,12 +684,12 @@ fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -
         Some(ReviewStatus::Confirmed),
         uncleared_search_result.first().unwrap().status
     );
-    // Cleared - Not filtered, because no more pending clearances
+    // Search cleared - Not filtered, because no more pending clearances
     let (cleared_search_result, _) = usecases::search(
         &*fixture.backend.db_connections.shared()?,
         &*fixture.backend.search_engine.borrow(),
         usecases::SearchRequest {
-            moderated_tag: Some(tag.as_str()),
+            org_tag: Some(tag.as_str()),
             ids: vec![place_id.as_ref()],
             ..default_search_request()
         },
@@ -684,6 +701,81 @@ fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -
         Some(ReviewStatus::Confirmed),
         cleared_search_result.first().unwrap().status
     );
+
+    Ok(())
+}
+
+#[test]
+fn should_hide_untagged_cleared_revision_when_searching_for_cleared_places() -> flows::Result<()> {
+    let mut fixture = PlaceClearanceFixture::new();
+    let org = &fixture.organization_with_add_remove_clearance_tag;
+    let tag = &org.moderated_tags.first().unwrap().label;
+    let old_place = &fixture.created_place;
+    let place_id = &old_place.id;
+    let last_cleared_revision = old_place.revision;
+
+    let new_title = "new title".to_string();
+    assert_ne!(old_place.title, new_title);
+    let new_tags = vec![tag.clone()];
+    assert_ne!(old_place.tags, new_tags);
+    let new_revision = old_place.revision.next();
+
+    let mut update_place = usecases::UpdatePlace::from(old_place.clone());
+    update_place.title = new_title.clone();
+    update_place.tags = new_tags.clone();
+    update_place.version = new_revision.into();
+    let new_place = flows::update_place(
+        &fixture.backend.db_connections,
+        fixture.backend.search_engine.get_mut(),
+        &fixture.backend.notify,
+        place_id.clone(),
+        update_place,
+        None,
+        None,
+    )?;
+
+    assert_eq!(new_revision, new_place.revision);
+    assert!(new_place.tags.contains(tag));
+    let pending_clearances = usecases::clearance::place::list_pending_clearances(
+        &*fixture.backend.db_connections.shared()?,
+        &org.api_token,
+        &Default::default(),
+    )?;
+    assert_eq!(1, pending_clearances.len());
+    assert_eq!(
+        Some(last_cleared_revision.clone()),
+        pending_clearances.first().unwrap().last_cleared_revision
+    );
+
+    // Search uncleared (default)
+    let (uncleared_search_result, _) = usecases::search(
+        &*fixture.backend.db_connections.shared()?,
+        &*fixture.backend.search_engine.borrow(),
+        usecases::SearchRequest {
+            hash_tags: vec![tag.as_str()],
+            ids: vec![place_id.as_ref()],
+            ..default_search_request()
+        },
+        100,
+    )?;
+    assert_eq!(1, uncleared_search_result.len());
+    assert_eq!(new_title, uncleared_search_result.first().unwrap().title);
+    assert_eq!(new_tags, uncleared_search_result.first().unwrap().tags);
+
+    // Search cleared
+    let (cleared_search_result, _) = usecases::search(
+        &*fixture.backend.db_connections.shared()?,
+        &*fixture.backend.search_engine.borrow(),
+        usecases::SearchRequest {
+            org_tag: Some(tag.as_str()),
+            ids: vec![place_id.as_ref()],
+            ..default_search_request()
+        },
+        100,
+    )?;
+    // The cleared initial revision is not tagged and should
+    // be removed from the results
+    assert!(cleared_search_result.is_empty());
 
     Ok(())
 }

@@ -445,14 +445,14 @@ impl OrganizationRepo for MockDb {
             .ok_or(RepoError::NotFound)?;
         Ok(o.clone())
     }
-    fn map_moderated_tag_to_clearance_org_id(&self, moderated_tag: &str) -> RepoResult<Option<Id>> {
+    fn map_tag_to_clearance_org_id(&self, tag: &str) -> RepoResult<Option<Id>> {
         Ok(self
             .orgs
             .iter()
             .find(|o| {
                 o.moderated_tags
                     .iter()
-                    .any(|mod_tag| mod_tag.require_clearance && mod_tag.label == moderated_tag)
+                    .any(|mod_tag| mod_tag.require_clearance && mod_tag.label == tag)
             })
             .map(|o| o.id.clone()))
     }

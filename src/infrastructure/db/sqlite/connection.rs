@@ -1802,12 +1802,12 @@ impl OrganizationRepo for SqliteConnection {
         })
     }
 
-    fn map_moderated_tag_to_clearance_org_id(&self, moderated_tag: &str) -> Result<Option<Id>> {
+    fn map_tag_to_clearance_org_id(&self, tag: &str) -> Result<Option<Id>> {
         use schema::{organization::dsl, organization_tag::dsl as tag_dsl};
         Ok(schema::organization::table
             .inner_join(schema::organization_tag::table)
             .select(dsl::id)
-            .filter(tag_dsl::tag_label.eq(moderated_tag))
+            .filter(tag_dsl::tag_label.eq(tag))
             .filter(tag_dsl::require_clearance.ne(0))
             .first::<String>(self)
             .optional()?
