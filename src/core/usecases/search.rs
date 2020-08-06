@@ -38,8 +38,7 @@ pub fn clear_search_results<D: Db>(
             .tags
             .iter()
             .map(String::as_str)
-            .find(|tag| *tag == org_tag)
-            .is_some());
+            .any(|tag| tag == org_tag));
         let pending_clearance = pending_clearances.get(&place.id);
         if let Some(pending_clearance) = pending_clearance {
             if let Some(last_cleared_revision) = &pending_clearance.last_cleared_revision {
@@ -54,12 +53,7 @@ pub fn clear_search_results<D: Db>(
                     title,
                     ..
                 } = last_cleared_place;
-                if tags
-                    .iter()
-                    .map(String::as_str)
-                    .find(|tag| *tag == org_tag)
-                    .is_none()
-                {
+                if !tags.iter().map(String::as_str).any(|tag| tag == org_tag) {
                     // Remove previously untagged places from the result
                     continue;
                 }
