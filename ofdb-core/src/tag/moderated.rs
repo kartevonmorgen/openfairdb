@@ -37,9 +37,6 @@ where
                     tag: added_tag.clone(),
                 });
             }
-            if moderated_tag.require_clearance {
-                clearance_org_ids.push(org_id.clone());
-            }
         }
         for removed_tag in removed_tags(old_tags, new_tags) {
             if &moderated_tag.label != removed_tag {
@@ -50,9 +47,11 @@ where
                     tag: removed_tag.clone(),
                 });
             }
-            if moderated_tag.require_clearance {
-                clearance_org_ids.push(org_id.clone());
-            }
+        }
+        if moderated_tag.require_clearance
+            && (old_tags.contains(&moderated_tag.label) || new_tags.contains(&moderated_tag.label))
+        {
+            clearance_org_ids.push(org_id.clone());
         }
     }
     clearance_org_ids.sort_unstable();
