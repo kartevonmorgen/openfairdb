@@ -1,4 +1,4 @@
-use crate::core::{db::IndexedPlace, entities as e};
+use crate::core::{db::IndexedPlace, entities as e, usecases};
 use ofdb_entities::geo::MapPoint;
 use url::Url;
 
@@ -52,6 +52,96 @@ impl From<IndexedPlace> for PlaceSearchResult {
             categories,
             tags,
             ratings,
+        }
+    }
+}
+
+impl From<NewPlace> for usecases::NewPlace {
+    fn from(p: NewPlace) -> Self {
+        let NewPlace {
+            title,
+            description,
+            lat,
+            lng,
+            street,
+            zip,
+            city,
+            country,
+            state,
+            email,
+            telephone,
+            homepage,
+            opening_hours,
+            categories,
+            tags,
+            license,
+            image_url,
+            image_link_url,
+        } = p;
+        usecases::NewPlace {
+            title,
+            description,
+            lat,
+            lng,
+            street,
+            zip,
+            city,
+            country,
+            state,
+            email,
+            telephone,
+            homepage,
+            opening_hours,
+            categories,
+            tags,
+            license,
+            image_url,
+            image_link_url,
+        }
+    }
+}
+
+impl From<UpdatePlace> for usecases::UpdatePlace {
+    fn from(p: UpdatePlace) -> Self {
+        let UpdatePlace {
+            version,
+            title,
+            description,
+            lat,
+            lng,
+            street,
+            zip,
+            city,
+            country,
+            state,
+            email,
+            telephone,
+            homepage,
+            opening_hours,
+            categories,
+            tags,
+            image_url,
+            image_link_url,
+        } = p;
+        usecases::UpdatePlace {
+            version,
+            title,
+            description,
+            lat,
+            lng,
+            street,
+            zip,
+            city,
+            country,
+            state,
+            email,
+            telephone,
+            homepage,
+            opening_hours,
+            categories,
+            tags,
+            image_url,
+            image_link_url,
         }
     }
 }

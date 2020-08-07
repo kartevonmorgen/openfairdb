@@ -446,7 +446,7 @@ fn post_entry(
     connections: sqlite::Connections,
     notify: Notify,
     mut search_engine: tantivy::SearchEngine,
-    body: Json<usecases::NewPlace>,
+    body: Json<json::NewPlace>,
 ) -> Result<String> {
     let created_by_org = if let Some(bearer) = bearer {
         let api_token = bearer.0;
@@ -457,12 +457,13 @@ fn post_entry(
     } else {
         None
     };
+    let new_place = body.into_inner().into();
     Ok(Json(
         flows::create_place(
             &connections,
             &mut search_engine,
             &*notify,
-            body.into_inner(),
+            new_place,
             created_by_account.as_ref().map(|a| a.email()),
             created_by_org.as_ref(),
         )?
@@ -479,7 +480,7 @@ fn put_entry(
     mut search_engine: tantivy::SearchEngine,
     notify: Notify,
     id: String,
-    data: Json<usecases::UpdatePlace>,
+    data: Json<json::UpdatePlace>,
 ) -> Result<String> {
     let created_by_org = if let Some(bearer) = bearer {
         let api_token = bearer.0;
@@ -496,7 +497,7 @@ fn put_entry(
             &mut search_engine,
             &*notify,
             id.into(),
-            data.into_inner(),
+            data.into_inner().into(),
             created_by_account.as_ref().map(|a| a.email()),
             created_by_org.as_ref(),
         )?

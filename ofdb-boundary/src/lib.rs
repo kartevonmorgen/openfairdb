@@ -30,6 +30,54 @@ pub struct Entry {
     pub image_link_url : Option<String>,
 }
 
+#[rustfmt::skip]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq))]
+pub struct NewPlace {
+    pub title          : String,
+    pub description    : String,
+    pub lat            : f64,
+    pub lng            : f64,
+    pub street         : Option<String>,
+    pub zip            : Option<String>,
+    pub city           : Option<String>,
+    pub country        : Option<String>,
+    pub state          : Option<String>,
+    pub email          : Option<String>,
+    pub telephone      : Option<String>,
+    pub homepage       : Option<String>,
+    pub opening_hours  : Option<String>,
+    pub categories     : Vec<String>,
+    pub tags           : Vec<String>,
+    pub license        : String,
+    pub image_url      : Option<String>,
+    pub image_link_url : Option<String>,
+}
+
+#[rustfmt::skip]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq))]
+pub struct UpdatePlace {
+    pub version        : u64,
+    pub title          : String,
+    pub description    : String,
+    pub lat            : f64,
+    pub lng            : f64,
+    pub street         : Option<String>,
+    pub zip            : Option<String>,
+    pub city           : Option<String>,
+    pub country        : Option<String>,
+    pub state          : Option<String>,
+    pub email          : Option<String>,
+    pub telephone      : Option<String>,
+    pub homepage       : Option<String>,
+    pub opening_hours  : Option<String>,
+    pub categories     : Vec<String>,
+    pub tags           : Vec<String>,
+    pub image_url      : Option<String>,
+    pub image_link_url : Option<String>,
+}
+
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
 pub struct Event {

@@ -4,7 +4,7 @@ use crate::core::{
 };
 
 #[rustfmt::skip]
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct NewPlace {
     pub title          : String,
     pub description    : String,
