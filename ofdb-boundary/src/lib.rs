@@ -553,7 +553,7 @@ impl From<e::event::Event> for Event {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
 pub struct PendingClearanceForPlace {
     pub place_id: String,
@@ -576,7 +576,7 @@ impl From<e::clearance::PendingClearanceForPlace> for PendingClearanceForPlace {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
 pub struct ClearanceForPlace {
     pub place_id: String,
@@ -596,15 +596,15 @@ impl From<ClearanceForPlace> for e::clearance::ClearanceForPlace {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
 pub struct ResultCount {
     pub count: u64,
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq))]
-pub struct LatLonDegrees(f64, f64);
+#[cfg_attr(feature = "extra-derive", derive(Clone, Debug, PartialEq))]
+pub struct LatLonDegrees(pub f64, pub f64);
 
 impl From<e::geo::MapPoint> for LatLonDegrees {
     fn from(from: e::geo::MapPoint) -> Self {
@@ -612,8 +612,8 @@ impl From<e::geo::MapPoint> for LatLonDegrees {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq))]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Clone, Debug, Default, PartialEq, Eq))]
 pub struct Address {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub street: Option<String>,
@@ -661,7 +661,7 @@ impl From<e::address::Address> for Address {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq))]
+#[cfg_attr(feature = "extra-derive", derive(Clone, Debug, PartialEq))]
 pub struct Location {
     #[serde(rename = "deg")]
     pub latlon: LatLonDegrees,
@@ -684,8 +684,8 @@ impl From<e::location::Location> for Location {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq))]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Clone, Debug, Default, PartialEq, Eq))]
 pub struct Contact {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -714,8 +714,8 @@ impl From<e::contact::Contact> for Contact {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq))]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Clone, Debug, Default, PartialEq, Eq))]
 pub struct Links {
     #[serde(rename = "www", skip_serializing_if = "Option::is_none")]
     pub homepage: Option<Url>,
@@ -764,7 +764,7 @@ impl From<e::links::Links> for Links {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq))]
+#[cfg_attr(feature = "extra-derive", derive(Clone, Debug, PartialEq, Eq))]
 pub struct Activity {
     pub at: i64,
 
@@ -783,7 +783,7 @@ impl From<e::activity::Activity> for Activity {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug))]
+#[cfg_attr(feature = "extra-derive", derive(Clone, Debug))]
 pub struct PlaceRoot {
     pub id: String,
 
@@ -802,7 +802,7 @@ impl From<e::place::PlaceRoot> for PlaceRoot {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug))]
+#[cfg_attr(feature = "extra-derive", derive(Clone, Debug))]
 pub struct PlaceRevision {
     #[serde(rename = "rev")]
     pub revision: u64,
@@ -876,7 +876,7 @@ impl From<e::place::PlaceRevision> for PlaceRevision {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug))]
+#[cfg_attr(feature = "extra-derive", derive(Clone, Debug))]
 pub struct PlaceHistory {
     pub place: PlaceRoot,
     pub revisions: Vec<(PlaceRevision, Vec<ReviewStatusLog>)>,
@@ -901,7 +901,7 @@ impl From<e::place::PlaceHistory> for PlaceHistory {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug))]
+#[cfg_attr(feature = "extra-derive", derive(Clone, Debug))]
 pub struct ActivityLog {
     pub at: i64,
 
@@ -932,7 +932,7 @@ impl From<e::activity::ActivityLog> for ActivityLog {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug))]
+#[cfg_attr(feature = "extra-derive", derive(Clone, Debug))]
 pub struct ReviewStatusLog {
     pub rev: u64,
     pub act: ActivityLog,
