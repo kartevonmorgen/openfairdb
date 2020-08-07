@@ -293,7 +293,8 @@ paths:
         Results are sorted in descending chronological order of activity time stamps,
         i.e. the most recent changes appear first.
 
-        Only scouts and admins are entitled to invoke this function.
+        Only users with the role scout or admin are entitled to invoke this function.
+        Organizations must provide their API token for authorization.
       parameters:
         - $ref: '#/components/parameters/IdPath'
         - $ref: '#/components/parameters/OptionalRevisionPath'

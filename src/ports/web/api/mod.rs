@@ -239,7 +239,8 @@ pub fn get_place(
 #[get("/places/<id>/history/<revision>")]
 pub fn get_place_history_revision(
     db: sqlite::Connections,
-    login: Login,
+    login: Option<Login>,
+    bearer: Option<Bearer>,
     id: String,
     revision: RevisionValue,
 ) -> Result<json::PlaceHistory> {
@@ -247,8 +248,17 @@ pub fn get_place_history_revision(
         let db = db.shared()?;
 
         // The history contains e-mail addresses of registered users
-        // and is only permitted for scouts and admins!
-        usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+        // is only permitted for scouts and admins or organizations!
+        if let Some(login) = login {
+            usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+        } else {
+            if let Some(bearer) = bearer {
+                let api_token = bearer.0;
+                usecases::authorize_organization_by_api_token(&*db, &api_token)?;
+            } else {
+                return Err(Error::Parameter(ParameterError::Unauthorized).into());
+            }
+        }
 
         db.get_place_history(&id, Some(revision.into()))?
     };
@@ -258,15 +268,25 @@ pub fn get_place_history_revision(
 #[get("/places/<id>/history", rank = 2)]
 pub fn get_place_history(
     db: sqlite::Connections,
-    login: Login,
+    login: Option<Login>,
+    bearer: Option<Bearer>,
     id: String,
 ) -> Result<json::PlaceHistory> {
     let place_history = {
         let db = db.shared()?;
 
         // The history contains e-mail addresses of registered users
-        // and is only permitted for scouts and admins!
-        usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+        // is only permitted for scouts and admins or for organizations!
+        if let Some(login) = login {
+            usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+        } else {
+            if let Some(bearer) = bearer {
+                let api_token = bearer.0;
+                usecases::authorize_organization_by_api_token(&*db, &api_token)?;
+            } else {
+                return Err(Error::Parameter(ParameterError::Unauthorized).into());
+            }
+        }
 
         db.get_place_history(&id, None)?
     };
