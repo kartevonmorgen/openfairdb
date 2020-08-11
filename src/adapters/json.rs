@@ -217,4 +217,3 @@ pub struct Review {
     pub status: ReviewStatus,
     pub comment: Option<String>,
 }
-

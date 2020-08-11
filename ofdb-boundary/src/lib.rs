@@ -880,4 +880,3 @@ impl From<e::review::ReviewStatusLog> for ReviewStatusLog {
         }
     }
 }
-
