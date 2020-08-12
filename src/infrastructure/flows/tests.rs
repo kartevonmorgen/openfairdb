@@ -185,6 +185,7 @@ pub mod prelude {
                 opening_hours: None,
                 image_url: None,
                 image_link_url: None,
+                custom_links: vec![],
             }
         }
     }

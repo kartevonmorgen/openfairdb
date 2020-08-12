@@ -333,6 +333,7 @@ mod entry {
             license: "CC0-1.0".into(),
             image_url: None,
             image_link_url: None,
+            custom_links: vec![],
         };
         let gw = DummyNotifyGW;
         let e_id = flows::prelude::create_place(db, search, &gw, e, None, None)

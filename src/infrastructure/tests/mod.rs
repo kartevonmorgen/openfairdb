@@ -51,6 +51,7 @@ fn default_new_place() -> usecases::NewPlace {
         license: "CC0-1.0".into(),
         image_url: None,
         image_link_url: None,
+        custom_links: vec![],
     }
 }
 

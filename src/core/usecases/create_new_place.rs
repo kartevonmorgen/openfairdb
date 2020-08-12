@@ -24,6 +24,7 @@ pub struct NewPlace {
     pub license        : String,
     pub image_url      : Option<String>,
     pub image_link_url : Option<String>,
+    pub custom_links   : Vec<CustomLink>,
 }
 
 #[derive(Debug, Clone)]
@@ -57,6 +58,7 @@ pub fn prepare_new_place<D: Db>(
         opening_hours,
         image_url,
         image_link_url,
+        custom_links,
         ..
     } = e;
     let pos = match MapPoint::try_from_lat_lng_deg(lat, lng) {
@@ -106,15 +108,18 @@ pub fn prepare_new_place<D: Db>(
     let image_href = image_link_url
         .and_then(|ref url| parse_url_param(url).transpose())
         .transpose()?;
-    let links = if homepage.is_some() || image.is_some() || image_href.is_some() {
-        Some(Links {
-            homepage,
-            image,
-            image_href,
-        })
-    } else {
-        None
-    };
+    let links =
+        if homepage.is_none() && image.is_none() && image_href.is_none() && custom_links.is_empty()
+        {
+            None
+        } else {
+            Some(Links {
+                homepage,
+                image,
+                image_href,
+                custom: custom_links,
+            })
+        };
 
     let place = Place {
         id: Id::new(),
@@ -192,6 +197,7 @@ mod tests {
             license     : "CC0-1.0".into(),
             image_url     : None,
             image_link_url: None,
+            custom_links: vec![],
         };
         let mock_db = MockDb::default();
         let now = TimestampMs::now();
@@ -229,6 +235,7 @@ mod tests {
             license     : "CC0-1.0".into(),
             image_url     : None,
             image_link_url: None,
+            custom_links: vec![],
         };
         let mock_db: MockDb = MockDb::default();
         assert!(prepare_new_place(&mock_db, x, None, None).is_err());
@@ -256,6 +263,7 @@ mod tests {
             license     : "CC0-1.0".into(),
             image_url     : None,
             image_link_url: None,
+            custom_links: vec![],
         };
         let mock_db = MockDb::default();
         let e = prepare_new_place(&mock_db, x, None, None).unwrap();

@@ -24,6 +24,7 @@ pub struct UpdatePlace {
     pub tags           : Vec<String>,
     pub image_url      : Option<String>,
     pub image_link_url : Option<String>,
+    pub custom_links   : Vec<CustomLink>,
 }
 
 impl From<Place> for UpdatePlace {
@@ -44,14 +45,22 @@ impl From<Place> for UpdatePlace {
         let (city, country, state, street, zip) = address
             .map(|a| (a.city, a.country, a.state, a.street, a.zip))
             .unwrap_or_default();
-        let (homepage_url, image_link_url, image_url) = links
-            .map(|l| (l.homepage, l.image_href, l.image))
+        let (homepage_url, image_link_url, image_url, custom_links) = links
+            .map(
+                |Links {
+                     homepage,
+                     image,
+                     image_href,
+                     custom,
+                 }| (homepage, image, image_href, custom),
+            )
             .unwrap_or_default();
         let (email, telephone) = contact.map(|c| (c.email, c.phone)).unwrap_or_default();
         Self {
             categories: vec![],
             city,
             country,
+            custom_links,
             description,
             email: email.map(Into::into),
             homepage: homepage_url.map(|url| url.to_string()),
@@ -103,6 +112,7 @@ pub fn prepare_updated_place<D: Db>(
         homepage,
         image_url,
         image_link_url,
+        custom_links,
         ..
     } = e;
     let pos = match MapPoint::try_from_lat_lng_deg(lat, lng) {
@@ -155,15 +165,18 @@ pub fn prepare_updated_place<D: Db>(
     let image_href = image_link_url
         .and_then(|ref url| parse_url_param(url).transpose())
         .transpose()?;
-    let links = if homepage.is_some() || image.is_some() || image_href.is_some() {
-        Some(Links {
-            homepage,
-            image,
-            image_href,
-        })
-    } else {
-        None
-    };
+    let links =
+        if homepage.is_none() && image.is_none() && image_href.is_none() && custom_links.is_empty()
+        {
+            None
+        } else {
+            Some(Links {
+                homepage,
+                image,
+                image_href,
+                custom: custom_links,
+            })
+        };
 
     let place = Place {
         id: place_id,
@@ -258,6 +271,7 @@ mod tests {
             tags        : vec![],
             image_url     : Some("img2".into()),
             image_link_url: old.links.as_ref().and_then(|l| l.image_href.as_ref()).map(|url| url.as_str().to_string()),
+            custom_links: vec![],
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![(old, ReviewStatus::Created)].into();
@@ -331,6 +345,7 @@ mod tests {
             tags        : vec![],
             image_url     : None,
             image_link_url: None,
+            custom_links: vec![],
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![(old, ReviewStatus::Created)].into();
@@ -376,6 +391,7 @@ mod tests {
             tags        : vec![],
             image_url     : None,
             image_link_url: None,
+            custom_links: vec![],
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![].into();
@@ -424,6 +440,7 @@ mod tests {
             tags        : vec!["vegan".into()],
             image_url     : None,
             image_link_url: None,
+            custom_links: vec![],
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![(old, ReviewStatus::Created)].into();

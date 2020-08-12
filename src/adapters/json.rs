@@ -1,4 +1,6 @@
 use crate::core::{db::IndexedPlace, entities as e, usecases};
+
+use std::convert::TryInto;
 use url::Url;
 
 pub use ofdb_boundary::*;
@@ -76,6 +78,7 @@ impl From<NewPlace> for usecases::NewPlace {
             license,
             image_url,
             image_link_url,
+            custom_links,
         } = p;
         usecases::NewPlace {
             title,
@@ -96,6 +99,18 @@ impl From<NewPlace> for usecases::NewPlace {
             license,
             image_url,
             image_link_url,
+            custom_links: custom_links
+                .into_iter()
+                .filter_map(|custom_link| {
+                    custom_link
+                        .try_into()
+                        .or_else(|err| {
+                            log::info!("Ignoring custom link with invalid URL: {}", err);
+                            Err(err)
+                        })
+                        .ok()
+                })
+                .collect(),
         }
     }
 }
@@ -121,6 +136,7 @@ impl From<UpdatePlace> for usecases::UpdatePlace {
             tags,
             image_url,
             image_link_url,
+            custom_links,
         } = p;
         usecases::UpdatePlace {
             version,
@@ -141,6 +157,18 @@ impl From<UpdatePlace> for usecases::UpdatePlace {
             tags,
             image_url,
             image_link_url,
+            custom_links: custom_links
+                .into_iter()
+                .filter_map(|custom_link| {
+                    custom_link
+                        .try_into()
+                        .or_else(|err| {
+                            log::info!("Ignoring custom link with invalid URL: {}", err);
+                            Err(err)
+                        })
+                        .ok()
+                })
+                .collect(),
         }
     }
 }
@@ -178,11 +206,16 @@ pub fn entry_from_place_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -
         phone: telephone,
     } = contact.unwrap_or_default();
 
-    let (homepage_url, image_url, image_link_url) = if let Some(links) = links {
-        (links.homepage, links.image, links.image_href)
-    } else {
-        (None, None, None)
-    };
+    let (homepage_url, image_url, image_link_url, custom_links) = links
+        .map(
+            |e::Links {
+                 homepage,
+                 image,
+                 image_href,
+                 custom,
+             }| (homepage, image, image_href, custom),
+        )
+        .unwrap_or_default();
 
     let (tags, categories) = e::Category::split_from_tags(tags);
 
@@ -209,6 +242,7 @@ pub fn entry_from_place_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -
         license: Some(license),
         image_url: image_url.map(Url::into_string),
         image_link_url: image_link_url.map(Url::into_string),
+        custom_links: custom_links.into_iter().map(Into::into).collect(),
     }
 }
 
