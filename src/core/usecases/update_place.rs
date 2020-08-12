@@ -45,7 +45,7 @@ impl From<Place> for UpdatePlace {
         let (city, country, state, street, zip) = address
             .map(|a| (a.city, a.country, a.state, a.street, a.zip))
             .unwrap_or_default();
-        let (homepage_url, image_link_url, image_url, custom_links) = links
+        let (homepage_url, image_url, image_link_url, custom_links) = links
             .map(
                 |Links {
                      homepage,

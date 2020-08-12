@@ -136,6 +136,23 @@ pub struct NewPlaceRevisionTag<'a> {
     pub tag: &'a str,
 }
 
+#[derive(Queryable)]
+pub struct PlaceRevisionCustomLink {
+    pub parent_rowid: i64,
+    pub url: String,
+    pub title: Option<String>,
+    pub description: Option<String>,
+}
+
+#[derive(Insertable)]
+#[table_name = "place_revision_custom_link"]
+pub struct NewPlaceRevisionCustomLink<'a> {
+    pub parent_rowid: i64,
+    pub url: &'a str,
+    pub title: Option<&'a str>,
+    pub description: Option<&'a str>,
+}
+
 #[derive(Insertable)]
 #[table_name = "place_rating"]
 pub struct NewPlaceRating {
