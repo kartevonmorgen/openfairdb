@@ -143,6 +143,7 @@ pub mod prelude {
         pub description: String,
         pub categories: Vec<String>,
         pub tags: Vec<String>,
+        pub custom_links: Vec<CustomLink>,
     }
 
     impl From<i32> for NewPlace {
@@ -150,29 +151,43 @@ pub mod prelude {
             let lat_deg = i % 91;
             let lng_deg = -i % 181;
             let pos = MapPoint::from_lat_lng_deg(f64::from(lat_deg), f64::from(lng_deg));
-            let title = format!("title_{}", i);
-            let description = format!("description_{}", i);
+            let title = format!("Title {}", i);
+            let description = format!("Description {}", i);
             let categories = vec![format!("category_{}", i)];
-            let tags = vec![format!("tag_{}", i)];
+            let tags = vec![format!("tag-{}", i)];
+            let custom_links = vec![CustomLink {
+                url: format!("https://www.example{}.com", i).parse().unwrap(),
+                title: Some(format!("Custom link {}", i)),
+                description: None,
+            }];
             NewPlace {
                 pos,
                 title,
                 description,
                 categories,
                 tags,
+                custom_links,
             }
         }
     }
 
     impl From<NewPlace> for usecases::NewPlace {
         fn from(e: NewPlace) -> Self {
+            let NewPlace {
+                categories,
+                custom_links,
+                description,
+                pos,
+                tags,
+                title,
+            } = e;
             usecases::NewPlace {
-                lat: e.pos.lat().to_deg(),
-                lng: e.pos.lng().to_deg(),
-                title: e.title,
-                description: e.description,
-                categories: e.categories,
-                tags: e.tags,
+                lat: pos.lat().to_deg(),
+                lng: pos.lng().to_deg(),
+                title: title,
+                description,
+                categories,
+                tags,
                 license: "CC0-1.0".into(),
                 street: None,
                 city: None,
@@ -185,7 +200,7 @@ pub mod prelude {
                 opening_hours: None,
                 image_url: None,
                 image_link_url: None,
-                custom_links: vec![],
+                custom_links,
             }
         }
     }
@@ -202,8 +217,8 @@ pub mod prelude {
             entry: place_id.to_owned(),
             context,
             value,
-            title: format!("title_{}", i),
-            comment: format!("comment_{}", i),
+            title: format!("Rating title {}", i),
+            comment: format!("Rating comment {}", i),
             source: None,
             user: None,
         }

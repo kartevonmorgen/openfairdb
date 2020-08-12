@@ -17,6 +17,57 @@ fn load_review_status(status: ReviewStatusPrimitive) -> Result<ReviewStatus> {
         .ok_or_else(|| RepoError::Other(anyhow!("Invalid review status: {}", status)))
 }
 
+fn load_place_revision_tags(
+    conn: &SqliteConnection,
+    place_revision_rowid: i64,
+) -> Result<Vec<String>> {
+    use schema::place_revision_tag::dsl;
+    Ok(schema::place_revision_tag::table
+        .filter(dsl::parent_rowid.eq(&place_revision_rowid))
+        .load::<models::PlaceRevisionTag>(conn)?
+        .into_iter()
+        .map(
+            |models::PlaceRevisionTag {
+                 parent_rowid: _,
+                 tag,
+             }| tag,
+        )
+        .collect())
+}
+
+fn load_place_revision_custom_links(
+    conn: &SqliteConnection,
+    place_revision_rowid: i64,
+) -> Result<Vec<CustomLink>> {
+    use schema::place_revision_custom_link::dsl;
+    Ok(schema::place_revision_custom_link::table
+        .filter(dsl::parent_rowid.eq(&place_revision_rowid))
+        .load::<models::PlaceRevisionCustomLink>(conn)?
+        .into_iter()
+        .filter_map(
+            |models::PlaceRevisionCustomLink {
+                 parent_rowid: _,
+                 url,
+                 title,
+                 description,
+             }| {
+                url.parse()
+                    .or_else(|err| {
+                        // This should never happen if URLs have been validated properly on insert
+                        log::error!("Failed to load custom link with invalid URL: {}", err);
+                        Err(err)
+                    })
+                    .ok()
+                    .map(|url| CustomLink {
+                        url,
+                        title,
+                        description,
+                    })
+            },
+        )
+        .collect())
+}
+
 fn load_place(
     conn: &SqliteConnection,
     place: models::JoinedPlaceRevision,
@@ -58,13 +109,9 @@ fn load_place(
         }),
     };
 
-    use schema::place_revision_tag::dsl as tag_dsl;
-    let tags: Vec<_> = tag_dsl::place_revision_tag
-        .filter(tag_dsl::parent_rowid.eq(&id))
-        .load::<models::PlaceRevisionTag>(conn)?
-        .into_iter()
-        .map(|r| r.tag)
-        .collect();
+    let tags = load_place_revision_tags(conn, id)?;
+
+    let custom_links = load_place_revision_custom_links(conn, id)?;
 
     let created_by = if let Some(user_id) = created_by_id {
         use schema::users::dsl;
@@ -97,7 +144,7 @@ fn load_place(
             homepage: homepage.and_then(load_url),
             image: image_url.and_then(load_url),
             image_href: image_link_url.and_then(load_url),
-            custom: vec![], // FIXME
+            custom: custom_links,
         }),
         opening_hours: opening_hours.map(Into::into),
         tags,
@@ -151,13 +198,9 @@ fn load_place_with_status_review(
         }),
     };
 
-    use schema::place_revision_tag::dsl as tag_dsl;
-    let tags: Vec<_> = tag_dsl::place_revision_tag
-        .filter(tag_dsl::parent_rowid.eq(&id))
-        .load::<models::PlaceRevisionTag>(conn)?
-        .into_iter()
-        .map(|r| r.tag)
-        .collect();
+    let tags = load_place_revision_tags(conn, id)?;
+
+    let custom_links = load_place_revision_custom_links(conn, id)?;
 
     let created_by = if let Some(user_id) = created_by_id {
         use schema::users::dsl;
@@ -175,7 +218,7 @@ fn load_place_with_status_review(
         homepage: homepage.and_then(load_url),
         image: image_url.and_then(load_url),
         image_href: image_link_url.and_then(load_url),
-        custom: vec![], // FIXME
+        custom: custom_links,
     };
 
     let contact = Contact {
@@ -443,7 +486,7 @@ impl PlaceRepo for SqliteConnection {
             .execute(self)?;
 
         // Insert into place_revision_tag
-        let tags: Vec<_> = tags
+        let insertable_tags: Vec<_> = tags
             .iter()
             .map(|tag| models::NewPlaceRevisionTag {
                 parent_rowid,
@@ -451,10 +494,28 @@ impl PlaceRepo for SqliteConnection {
             })
             .collect();
         diesel::insert_into(schema::place_revision_tag::table)
-            .values(&tags)
+            .values(&insertable_tags)
             .execute(self)?;
 
-        log::error!("FIXME: Insert custom links: {:?}", custom_links);
+        // Insert into place_revision_custom_link
+        let insertable_custom_links: Vec<_> = custom_links
+            .iter()
+            .map(
+                |CustomLink {
+                     url,
+                     title,
+                     description,
+                 }| models::NewPlaceRevisionCustomLink {
+                    parent_rowid,
+                    url: url.as_str(),
+                    title: title.as_ref().map(String::as_str),
+                    description: description.as_ref().map(String::as_str),
+                },
+            )
+            .collect();
+        diesel::insert_into(schema::place_revision_custom_link::table)
+            .values(&insertable_custom_links)
+            .execute(self)?;
 
         Ok(())
     }

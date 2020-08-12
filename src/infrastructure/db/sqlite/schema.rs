@@ -123,6 +123,17 @@ table! {
 joinable!(place_revision_tag -> place_revision (parent_rowid));
 
 table! {
+    place_revision_custom_link (parent_rowid, url) {
+        parent_rowid -> BigInt,
+        url -> Text,
+        title -> Nullable<Text>,
+        description -> Nullable<Text>,
+    }
+}
+
+joinable!(place_revision_custom_link -> place_revision (parent_rowid));
+
+table! {
     place_revision_review (rowid) {
         rowid -> BigInt,
         parent_rowid -> BigInt,
@@ -247,6 +258,7 @@ allow_tables_to_appear_in_same_query!(
     place_revision,
     place_revision_review,
     place_revision_tag,
+    place_revision_custom_link,
     organization,
     organization_tag,
     organization_place_clearance,

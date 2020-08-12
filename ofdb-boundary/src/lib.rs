@@ -99,7 +99,7 @@ pub struct NewPlace {
     pub image_url      : Option<String>,
     pub image_link_url : Option<String>,
 
-    #[serde(rename = "custom", skip_serializing_if = "Vec::is_empty", default = "Default::default")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default = "Default::default")]
     pub custom_links   : Vec<CustomLink>,
 }
 
@@ -126,7 +126,7 @@ pub struct UpdatePlace {
     pub image_url      : Option<String>,
     pub image_link_url : Option<String>,
 
-    #[serde(rename = "custom", skip_serializing_if = "Vec::is_empty", default = "Default::default")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default = "Default::default")]
     pub custom_links   : Vec<CustomLink>,
 }
 
@@ -736,7 +736,13 @@ pub struct Links {
 
 impl Links {
     pub fn is_empty(&self) -> bool {
-        self.homepage.is_none() && self.image.is_none() && self.image_href.is_none()
+        let Self {
+            homepage,
+            image,
+            image_href,
+            custom,
+        } = self;
+        homepage.is_none() && image.is_none() && image_href.is_none() && custom.is_empty()
     }
 }
 
