@@ -16,7 +16,7 @@ servers:
 paths:
   /search:
     get:
-      summary: Search for entries *aka* places
+      summary: Search for places
       description: |
         Query the database for entries/places according to the search criteria
         and order the top matching results by their total rating in descending
@@ -87,13 +87,13 @@ paths:
     post:
       summary: Create an entry
       tags:
-        - Entries
+        - Entries/Places
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewEntry'
+              $ref: '#/components/schemas/NewEntryWithLicense'
       responses:
         '200':
           description: Successful response
@@ -101,7 +101,7 @@ paths:
     get:
       summary: Get multiple entries
       tags:
-        - Entries
+        - Entries/Places
       parameters:
         - $ref: '#/components/parameters/IdListPath'
       responses:
@@ -120,7 +120,7 @@ paths:
         The edited entry must include the *next version* of this entry
         in the `version` field, where *next version* = *current version* + 1.
       tags:
-        - Entries
+        - Entries/Places
       parameters:
         - $ref: '#/components/parameters/IdPath'
       requestBody:
@@ -128,7 +128,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/EntryWithVersion'
+              $ref: '#/components/schemas/NewEntryWithVersion'
       responses:
         '200':
           description: Successful response
@@ -141,7 +141,7 @@ paths:
         Limitation: Only the most recent 1000 entries are returned and the change history is
         restricted to the last 100 days.
       tags:
-        - Entries
+        - Entries/Places
       parameters:
         - name: since
           in: query
@@ -178,7 +178,7 @@ paths:
         tags appear first. A maximum of 1000 tag with their count is returned
         if no limit is specifid.
       tags:
-        - Entries
+        - Entries/Places
       parameters:
         - name: min_count
           in: query
@@ -207,7 +207,7 @@ paths:
   '/places/clearance':
     get:
       tags:
-        - Places
+        - Entries/Places
       summary: List clearance of places
       description: |
         Returns a list of places with pending clearance on behalf
@@ -230,7 +230,7 @@ paths:
           $ref: '#/components/responses/UnauthorizedError'
     post:
       tags:
-        - Places
+        - Entries/Places
       summary: Update clearance of places
       description: |
         Update the clearance of multiple places on behalf of the
@@ -264,7 +264,7 @@ paths:
   '/places/clearance/count':
     get:
       tags:
-        - Places
+        - Entries/Places
       summary: Count clearance of places
       description: |
         Returns the total number places with pending clearance on behalf
@@ -283,12 +283,13 @@ paths:
   '/places/{id}/history/{revision}':
     get:
       tags:
-        - Places
+        - Entries/Places
       summary: History of place revisions
       description: |
         Loads the history of all place revisions including status reviews.
 
-        Optionally the result can be restricted to a single revision.
+        Optionally the result can be restricted to a single revision. If no
+        particular revision is requested then all revisions are returned.
 
         Results are sorted in descending chronological order of activity time stamps,
         i.e. the most recent changes appear first.
@@ -310,7 +311,7 @@ paths:
   '/places/{ids}/review':
     post:
       tags:
-        - Places
+        - Entries/Places
       summary: Review multiple places
       description: |
         Reviews the latest revision of multiple places at once. An audit log
@@ -818,9 +819,21 @@ components:
           $ref: '#/components/schemas/Url'
         image_link_url:
           $ref: '#/components/schemas/Url'
-        license:
-          $ref: '#/components/schemas/License'
-    EntryWithVersion:
+      required:
+        - title
+        - description
+        - lat
+        - lng
+    NewEntryWithLicense:
+      allOf:
+        - $ref: '#/components/schemas/NewEntry'
+        - type: object
+          properties:
+            license:
+              $ref: '#/components/schemas/License'
+          required:
+            - license
+    NewEntryWithVersion:
       allOf:
         - $ref: '#/components/schemas/NewEntry'
         - type: object
@@ -829,11 +842,13 @@ components:
               type: integer
     Entry:
       allOf:
-        - $ref: '#/components/schemas/EntryWithVersion'
+        - $ref: '#/components/schemas/NewEntryWithLicense'
         - type: object
           properties:
             id:
               $ref: '#/components/schemas/Id'
+            version:
+              type: integer
             created:
               type: integer
             ratings:
@@ -1388,9 +1403,11 @@ components:
       schema:
         $ref: '#/components/schemas/Id'
     OptionalRevisionPath:
-      name: id
+      name: revision
       in: path
-      required: false
+      # TODO: Set required to false when supported by OpenAPI
+      # https://github.com/OAI/OpenAPI-Specification/issues/93
+      required: true
       schema:
         $ref: '#/components/schemas/Revision'
     IdListPath:
