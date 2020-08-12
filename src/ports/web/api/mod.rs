@@ -251,13 +251,11 @@ pub fn get_place_history_revision(
         // is only permitted for scouts and admins or organizations!
         if let Some(login) = login {
             usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+        } else if let Some(bearer) = bearer {
+            let api_token = bearer.0;
+            usecases::authorize_organization_by_api_token(&*db, &api_token)?;
         } else {
-            if let Some(bearer) = bearer {
-                let api_token = bearer.0;
-                usecases::authorize_organization_by_api_token(&*db, &api_token)?;
-            } else {
-                return Err(Error::Parameter(ParameterError::Unauthorized).into());
-            }
+            return Err(Error::Parameter(ParameterError::Unauthorized).into());
         }
 
         db.get_place_history(&id, Some(revision.into()))?
@@ -279,13 +277,11 @@ pub fn get_place_history(
         // is only permitted for scouts and admins or for organizations!
         if let Some(login) = login {
             usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+        } else if let Some(bearer) = bearer {
+            let api_token = bearer.0;
+            usecases::authorize_organization_by_api_token(&*db, &api_token)?;
         } else {
-            if let Some(bearer) = bearer {
-                let api_token = bearer.0;
-                usecases::authorize_organization_by_api_token(&*db, &api_token)?;
-            } else {
-                return Err(Error::Parameter(ParameterError::Unauthorized).into());
-            }
+            return Err(Error::Parameter(ParameterError::Unauthorized).into());
         }
 
         db.get_place_history(&id, None)?
