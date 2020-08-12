@@ -3,7 +3,7 @@ use crate::{
     adapters::{self, json},
     core::{
         prelude::*,
-        usecases,
+        usecases::{self, DuplicateType},
         util::{self, geo},
     },
     infrastructure::{
@@ -24,7 +24,6 @@ use rocket_contrib::json::Json;
 use std::result;
 
 mod count;
-mod duplicates;
 pub mod events;
 mod places;
 mod ratings;
@@ -76,8 +75,8 @@ pub fn routes() -> Vec<Route> {
         get_category,
         get_tags,
         search::get_search,
-        duplicates::get_duplicates,
-        duplicates::post_duplicates,
+        get_duplicates,
+        search::post_search_duplicates,
         count::get_count_entries,
         count::get_count_tags,
         get_version,
@@ -326,6 +325,26 @@ pub fn post_places_review(
         );
     }
     Ok(Json(()))
+}
+
+#[get("/duplicates/<ids>")]
+pub fn get_duplicates(
+    connections: sqlite::Connections,
+    search_engine: tantivy::SearchEngine,
+    ids: String,
+) -> Result<Vec<(String, String, DuplicateType)>> {
+    let ids = util::split_ids(&ids);
+    if ids.is_empty() {
+        return Ok(Json(vec![]));
+    }
+    let places = connections.shared()?.get_places(&ids)?;
+    let results = usecases::find_duplicates(&search_engine, &places)?;
+    Ok(Json(
+        results
+            .into_iter()
+            .map(|(id1, id2, dup)| (id1.to_string(), id2.to_string(), dup))
+            .collect(),
+    ))
 }
 
 #[get("/server/version")]
