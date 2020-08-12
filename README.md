@@ -4,7 +4,6 @@ The backend for [Karte von morgen](https://github.com/kartevonmorgen/kartevonmor
 written in [Rust](http://rustlang.org/).
 
 [![GitHub CI](https://github.com/kartevonmorgen/openfairdb/workflows/Continuous%20integration/badge.svg?branch=master)](https://github.com/kartevonmorgen/openfairdb/actions?query=workflow%3A%22Continuous+integration%22)
-[![Build Status](https://travis-ci.org/kartevonmorgen/openfairdb.svg?branch=master)](https://travis-ci.org/kartevonmorgen/openfairdb)
 [![Coverage Status](https://coveralls.io/repos/github/kartevonmorgen/openfairdb/badge.svg?branch=master)](https://coveralls.io/github/kartevonmorgen/openfairdb?branch=master)
 [![dependency status](https://deps.rs/repo/github/kartevonmorgen/openfairdb/status.svg)](https://deps.rs/repo/github/kartevonmorgen/openfairdb)
 [![License](https://img.shields.io/badge/license-AGPLv3-blue.svg?style=flat)](https://github.com/kartevonmorgen/openfairdb/blob/master/LICENSE)
