@@ -1,4 +1,5 @@
 use itertools::*;
+use std::ops::{Add, Sub};
 
 pub type RawCoord = i32;
 
@@ -63,6 +64,8 @@ impl LatCoord {
     const RAD_MIN: f64 = -std::f64::consts::FRAC_PI_2;
     const TO_RAD: f64 =
         (Self::RAD_MAX - Self::RAD_MIN) / (RAW_COORD_MAX as f64 - RAW_COORD_MIN as f64);
+    const FROM_RAD: f64 =
+        (RAW_COORD_MAX as f64 - RAW_COORD_MIN as f64) / (Self::RAD_MAX - Self::RAD_MIN);
 
     const DEG_MAX: f64 = 90.0;
     const DEG_MIN: f64 = -90.0;
@@ -119,6 +122,16 @@ impl LatCoord {
         }
     }
 
+    pub fn from_rad<T: Into<f64>>(rad: T) -> Self {
+        let rad = rad.into();
+        debug_assert!(rad >= Self::RAD_MIN);
+        debug_assert!(rad <= Self::RAD_MAX);
+        let raw = f64::round(rad * Self::FROM_RAD) as RawCoord;
+        let res = Self::from_raw(raw);
+        debug_assert!(res.is_valid());
+        res
+    }
+
     pub fn from_deg<T: Into<f64>>(deg: T) -> Self {
         let deg = deg.into();
         debug_assert!(deg >= Self::DEG_MIN);
@@ -139,6 +152,30 @@ impl LatCoord {
     }
 }
 
+impl Add for LatCoord {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self {
+        let mut deg = self.to_deg() + rhs.to_deg();
+        if deg > Self::DEG_MAX {
+            deg -= Self::DEG_MAX - Self::DEG_MIN;
+        }
+        Self::from_deg(deg)
+    }
+}
+
+impl Sub for LatCoord {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self {
+        let mut deg = self.to_deg() - rhs.to_deg();
+        if deg < Self::DEG_MIN {
+            deg += Self::DEG_MAX - Self::DEG_MIN;
+        }
+        Self::from_deg(deg)
+    }
+}
+
 impl std::fmt::Display for LatCoord {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         write!(f, "{}", self.to_deg())
@@ -153,6 +190,8 @@ impl LngCoord {
     const RAD_MIN: f64 = -std::f64::consts::PI;
     const TO_RAD: f64 =
         (Self::RAD_MAX - Self::RAD_MIN) / (RAW_COORD_MAX as f64 - RAW_COORD_MIN as f64);
+    const FROM_RAD: f64 =
+        (RAW_COORD_MAX as f64 - RAW_COORD_MIN as f64) / (Self::RAD_MAX - Self::RAD_MIN);
 
     const DEG_MAX: f64 = 180.0;
     const DEG_MIN: f64 = -180.0;
@@ -209,6 +248,16 @@ impl LngCoord {
         }
     }
 
+    pub fn from_rad<T: Into<f64>>(rad: T) -> Self {
+        let rad = rad.into();
+        debug_assert!(rad >= Self::RAD_MIN);
+        debug_assert!(rad <= Self::RAD_MAX);
+        let raw = f64::round(rad * Self::FROM_RAD) as RawCoord;
+        let res = Self::from_raw(raw);
+        debug_assert!(res.is_valid());
+        res
+    }
+
     pub fn from_deg<T: Into<f64>>(deg: T) -> Self {
         let deg = deg.into();
         debug_assert!(deg >= Self::DEG_MIN);
@@ -226,6 +275,30 @@ impl LngCoord {
         } else {
             None
         }
+    }
+}
+
+impl Add for LngCoord {
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self {
+        let mut deg = self.to_deg() + rhs.to_deg();
+        if deg > Self::DEG_MAX {
+            deg -= Self::DEG_MAX - Self::DEG_MIN;
+        }
+        Self::from_deg(deg)
+    }
+}
+
+impl Sub for LngCoord {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self {
+        let mut deg = self.to_deg() - rhs.to_deg();
+        if deg < Self::DEG_MIN {
+            deg += Self::DEG_MAX - Self::DEG_MIN;
+        }
+        Self::from_deg(deg)
     }
 }
 
@@ -352,7 +425,22 @@ impl Distance {
     }
 }
 
-const MEAN_EARTH_RADIUS: Distance = Distance::from_meters(6_371_200.0);
+// Semi-axes of WGS-84 ellipsoid
+const WGS84_MAJOR_SEMIAXIS: Distance = Distance::from_meters(6_378_137.0);
+const WGS84_MINOR_SEMIAXIS: Distance = Distance::from_meters(6_356_752.3);
+
+// Earth radius at a given latitude, according to the WGS-84 ellipsoid
+fn wgs84_earth_radius(lat: LatCoord) -> Distance {
+    let major_n =
+        WGS84_MAJOR_SEMIAXIS.to_meters() * WGS84_MAJOR_SEMIAXIS.to_meters() * lat.to_rad().cos();
+    let minor_n =
+        WGS84_MINOR_SEMIAXIS.to_meters() * WGS84_MINOR_SEMIAXIS.to_meters() * lat.to_rad().sin();
+    let major_d = WGS84_MAJOR_SEMIAXIS.to_meters() * lat.to_rad().cos();
+    let minor_d = WGS84_MINOR_SEMIAXIS.to_meters() * lat.to_rad().sin();
+    Distance::from_meters(
+        ((major_n * major_n + minor_n * minor_n) / (major_d * major_d + minor_d * minor_d)).sqrt(),
+    )
+}
 
 impl MapPoint {
     /// Calculate the great-circle distance on the surface
@@ -379,8 +467,11 @@ impl MapPoint {
         let nom = (nom1 * nom1 + nom2 * nom2).sqrt();
         let denom = lat1_sin * lat2_sin + lat1_cos * lat2_cos * dlng_cos;
 
+        let mean_earth_radius_meters = (wgs84_earth_radius(p1.lat()).to_meters()
+            + wgs84_earth_radius(p2.lat()).to_meters())
+            / 2.0;
         Some(Distance::from_meters(
-            MEAN_EARTH_RADIUS.to_meters() * nom.atan2(denom),
+            mean_earth_radius_meters * nom.atan2(denom),
         ))
     }
 }
@@ -394,6 +485,24 @@ pub struct MapBbox {
 impl MapBbox {
     pub const fn new(sw: MapPoint, ne: MapPoint) -> Self {
         Self { sw, ne }
+    }
+
+    /// Create a bounding box with a center point and given width/height
+    pub fn centered_around(center: MapPoint, lat_width: Distance, lng_height: Distance) -> Self {
+        let lat = center.lat();
+        let lng = center.lng();
+
+        // Radius of the parallel at given latitude
+        let earth_radius = wgs84_earth_radius(lat).to_meters();
+        let parallel_radius = earth_radius * lat.to_rad().cos();
+
+        let lat_delta = LatCoord::from_rad(lat_width.to_meters() / (2.0 * parallel_radius));
+        let lng_delta = LngCoord::from_rad(lng_height.to_meters() / (2.0 * parallel_radius));
+
+        let sw = MapPoint::new(lat - lat_delta, lng - lng_delta);
+        let ne = MapPoint::new(lat + lat_delta, lng + lng_delta);
+
+        Self::new(sw, ne)
     }
 
     pub const fn south_west(&self) -> MapPoint {

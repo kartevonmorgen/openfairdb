@@ -4,9 +4,9 @@
 
 - new(api/db): Moderated tags: Fine-grained permissions for organizations
 - new(api/db): Clearance: Allow organizations to manually *clear* new place/entry revisions after editing
-- new(api/db): Clearance: Optionally replace or exclude revisions with *pending clearance* from search results, i.e. return an older, already cleared revision if available
-- new(api): Allow organizations to read the history of places
-- new(api): check for duplicates (`/duplicates/check-place`)
+- new(api/db): Clearance: Optionally replace or exclude revisions with *pending clearance* from search results, i.e. return an older, already cleared revision if - - - new(api): Allow organizations to read the history of places
+- new(api): Add route to search for duplicate entries/places by example (`/search/duplicates`)
+- new(db): Optimize performance to identify duplicates of existing entries/places (`duplicates/<ids>`)
 
 ## v0.8.21 (2020-08-04)
 

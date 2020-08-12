@@ -83,6 +83,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SearchResponse'
+  /search/duplicates:
+    post:
+      summary: Search for duplicate places
+      description: |
+        Search for similiar places that might be duplicates of a
+        given place.
+
+        Currently only the geographical location and title and are
+        considered to find similar, already existing entries in
+        the database.
+
+        Returns a list of possible duplicates for the given place.
+      tags:
+        - Search
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewEntry'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SearchEntry'
   '/entries':
     post:
       summary: Create an entry
@@ -779,24 +808,6 @@ paths:
                 type: string
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-  /duplicates/check-place:
-    post:
-      summary: Check if a place already exists
-      tags:
-        - Duplicates
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/NewEntry'
-      responses:
-        '200':
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: array
 components:
   schemas:
     NewEntry:

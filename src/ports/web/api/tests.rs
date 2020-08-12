@@ -1754,23 +1754,30 @@ fn entries_export_csv() {
 }
 
 #[test]
-fn check_place_duplicate() {
+fn search_duplicates() {
     let (client, db) = setup();
     let res = client.post("/entries")
                     .header(ContentType::JSON)
                     .body(r#"{"title":"foo","description":"bla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#)
                     .dispatch();
     assert_eq!(res.status(), Status::Ok);
-    let mut res = client.post("/duplicates/check-place")
+    let (place, _) = db
+        .shared()
+        .unwrap()
+        .all_places()
+        .unwrap()
+        .into_iter()
+        .next()
+        .unwrap();
+    let mut res = client.post("/search/duplicates")
                     .header(ContentType::JSON)
                     .body(r#"{"title":"foO","description":"bla","lat":0.0005,"lng":0.0005,"categories":["y"],"license":"CC0-1.0","tags":[]}"#)
                     .dispatch();
     assert_eq!(res.status(), Status::Ok);
     test_json(&res);
     let body_str = res.body().and_then(|b| b.into_string()).unwrap();
-    let eid = db.exclusive().unwrap().all_places().unwrap()[0]
-        .0
-        .id
-        .clone();
-    assert_eq!(body_str, format!("[[\"{}\",\"SimilarChars\"]]", eid));
+    let duplicate_places: Vec<ofdb_boundary::PlaceSearchResult> =
+        serde_json::from_str(&body_str).unwrap();
+    assert_eq!(1, duplicate_places.len());
+    assert_eq!(place.id.to_string(), duplicate_places.first().unwrap().id);
 }

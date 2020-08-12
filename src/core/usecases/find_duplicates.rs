@@ -1,4 +1,4 @@
-use crate::core::{prelude::*, usecases};
+use crate::core::{prelude::*, usecases::NewPlace};
 use std::{cmp::min, collections::HashSet};
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -10,76 +10,116 @@ pub enum DuplicateType {
 // Return vector of places like: (entry1ID, entry2ID, reason)
 // where entry1 and entry2 are similar places.
 pub fn find_duplicates(
+    place_index: &dyn PlaceIndex,
     places: &[(Place, ReviewStatus)],
-    possible_duplicate_places: &[(Place, ReviewStatus)],
-) -> Vec<(Id, Id, DuplicateType)> {
+) -> Result<Vec<(Id, Id, DuplicateType)>> {
     let mut duplicates = Vec::new();
     for (p1, _) in &places[..] {
-        for (p2, _) in &possible_duplicate_places[..] {
-            if p1.id >= p2.id {
-                continue;
-            }
-            if let Some(t) = is_duplicate(p1, p2) {
-                duplicates.push((p1.id.clone(), p2.id.clone(), t));
+        let nearby_places = search_nearby_places(place_index, p1.location.pos)?;
+        for p2 in nearby_places {
+            if let Some(t) = is_duplicate(p1, &p2) {
+                duplicates.push((p1.id.clone(), Id::from(p2.id), t));
             }
         }
     }
-    duplicates
+    Ok(duplicates)
 }
 
-// Return vector of places like (entryID, reason)
-// where the new and yet unregistered place are similar places.
-pub fn find_duplicate_of_unregistered_place(
-    unregistered_place: &usecases::NewPlace,
-    possible_duplicate_places: &[(Place, ReviewStatus)],
-) -> Vec<(Id, DuplicateType)> {
-    possible_duplicate_places
-        .iter()
-        .filter_map(|(p, _)| {
-            is_duplicate_unregistered_place(&unregistered_place, &p).map(|t| (p.id.clone(), t))
-        })
+pub fn retain_duplicates_of(
+    nearby_places: Vec<IndexedPlace>,
+    new_place: &NewPlace,
+) -> Vec<IndexedPlace> {
+    nearby_places
+        .into_iter()
+        .filter(|p| is_duplicate_of(new_place, p))
         .collect()
 }
 
-const DUPLICATES_MAX_DISTANCE: Distance = Distance::from_meters(100.0);
+const MAX_NEARBY_RESULTS: usize = 1000;
 
-// returns a DuplicateType if the two places have a similar title and location, otherweise returns None.
-fn is_duplicate(e1: &Place, e2: &Place) -> Option<DuplicateType> {
-    if is_similar_title(&e1.title, &e2.title, 0.3, 0)
-        && is_in_close_proximity_pos(&e1.location.pos, &e2.location.pos, DUPLICATES_MAX_DISTANCE)
-    {
-        Some(DuplicateType::SimilarChars)
-    } else if is_similar_title(&e1.title, &e2.title, 0.0, 2)
-        && is_in_close_proximity_pos(&e1.location.pos, &e2.location.pos, DUPLICATES_MAX_DISTANCE)
-    {
-        Some(DuplicateType::SimilarWords)
-    } else {
-        None
-    }
+const MAX_NEARBY_RADIUS: Distance = Distance::from_meters(100.0);
+
+const MAX_NEARBY_DIAMETER: Distance = Distance::from_meters(MAX_NEARBY_RADIUS.to_meters() * 2.0);
+
+const MAX_TEXT_RELATIVE_EDIT_DISTANCE: f64 = 0.3; // max. 30% text difference
+
+const MAX_WORDS_HAMMING_DISTANCE: u32 = 2; // up to 2 words may differ
+
+fn search_nearby_places(
+    place_index: &dyn crate::core::db::PlaceIndex,
+    center: MapPoint,
+) -> Result<Vec<IndexedPlace>> {
+    let nearby_bbox = nearby_bbox(center);
+    let nearby_query = crate::core::db::IndexQuery {
+        include_bbox: Some(nearby_bbox),
+        ..Default::default()
+    };
+    Ok(place_index
+        .query_places(&nearby_query, MAX_NEARBY_RESULTS)
+        .map_err(RepoError::Other)?)
 }
 
-//returns a DuplicateType if the two places have a similar title and location, otherwise returns None.
-fn is_duplicate_unregistered_place(
-    unregistered_place: &usecases::NewPlace,
-    p: &Place,
-) -> Option<DuplicateType> {
-    if let Some(new_pos) =
-        MapPoint::try_from_lat_lng_deg(unregistered_place.lat, unregistered_place.lng)
-    {
-        if is_similar_title(&unregistered_place.title, &p.title, 0.3, 0)
-            && is_in_close_proximity_pos(&new_pos, &p.location.pos, DUPLICATES_MAX_DISTANCE)
-        {
-            Some(DuplicateType::SimilarChars)
-        } else if is_similar_title(&unregistered_place.title, &p.title, 0.0, 2)
-            && is_in_close_proximity_pos(&new_pos, &p.location.pos, DUPLICATES_MAX_DISTANCE)
-        {
-            Some(DuplicateType::SimilarWords)
-        } else {
-            None
-        }
-    } else {
-        None
+pub fn search_duplicates(
+    place_index: &dyn crate::core::db::PlaceIndex,
+    new_place: &NewPlace,
+) -> Result<Vec<IndexedPlace>> {
+    let center = MapPoint::new(
+        LatCoord::from_deg(new_place.lat),
+        LngCoord::from_deg(new_place.lng),
+    );
+    let nearby_places = search_nearby_places(place_index, center)?;
+    Ok(retain_duplicates_of(nearby_places, &new_place))
+}
+
+pub fn nearby_bbox(center: MapPoint) -> MapBbox {
+    MapBbox::centered_around(center, MAX_NEARBY_DIAMETER, MAX_NEARBY_DIAMETER)
+}
+
+// returns a DuplicateType if the two places have a similar title and location, otherweise returns None.
+fn is_duplicate(e1: &Place, e2: &IndexedPlace) -> Option<DuplicateType> {
+    if e1.id.as_str() == e2.id.as_str() {
+        // Skip identical places
+        return None;
     }
+    if !is_in_close_proximity_pos(&e1.location.pos, &e2.pos, MAX_NEARBY_RADIUS) {
+        return None;
+    }
+    if is_similar_text(&e1.title, &e2.title, MAX_TEXT_RELATIVE_EDIT_DISTANCE, 0) {
+        return Some(DuplicateType::SimilarChars);
+    }
+    if is_similar_text(&e1.title, &e2.title, 0.0, MAX_WORDS_HAMMING_DISTANCE) {
+        return Some(DuplicateType::SimilarWords);
+    }
+    None
+}
+
+fn is_similar_text(
+    text1: &str,
+    text2: &str,
+    max_text_relative_edit_distance: f64,
+    max_words_hamming_distance: u32,
+) -> bool {
+    let max_levenshtein_dist =
+        (min(text1.len(), text2.len()) as f64 * max_text_relative_edit_distance).ceil() as usize;
+    levenshtein_distance_small(&text1, &text2, max_levenshtein_dist)
+        || words_equal_except_k_words(&text1, &text2, max_words_hamming_distance)
+}
+
+fn is_duplicate_of(new_place: &NewPlace, indexed_place: &IndexedPlace) -> bool {
+    let pos = MapPoint::from_lat_lng_deg(new_place.lat, new_place.lng);
+    if !is_in_close_proximity_pos(&pos, &indexed_place.pos, MAX_NEARBY_RADIUS) {
+        return false;
+    }
+    // TODO: Compare more (text) fields than just the title?
+    if !is_similar_text(
+        &new_place.title,
+        &indexed_place.title,
+        MAX_TEXT_RELATIVE_EDIT_DISTANCE,
+        MAX_WORDS_HAMMING_DISTANCE,
+    ) {
+        return false;
+    }
+    true
 }
 
 fn is_in_close_proximity_pos(p1: &MapPoint, p2: &MapPoint, max_dist: Distance) -> bool {
@@ -87,18 +127,6 @@ fn is_in_close_proximity_pos(p1: &MapPoint, p2: &MapPoint, max_dist: Distance) -
         return dist <= max_dist;
     }
     false
-}
-
-fn is_similar_title(
-    t1: &str,
-    t2: &str,
-    max_percent_different: f32,
-    max_words_different: u32,
-) -> bool {
-    let max_dist = ((min(t1.len(), t2.len()) as f32 * max_percent_different) + 1.0) as usize; // +1 is to get the ceil
-
-    levenshtein_distance_small(&t1, &t2, max_dist)
-        || words_equal_except_k_words(&t1, &t2, max_words_different)
 }
 
 // returns true if all but k words are equal in str1 and str2
@@ -209,6 +237,17 @@ mod tests {
             .finish()
     }
 
+    fn new_indexed_place(title: String, description: String, pos: MapPoint) -> IndexedPlace {
+        let id = title.clone();
+        IndexedPlace {
+            id,
+            title,
+            description,
+            pos,
+            ..Default::default()
+        }
+    }
+
     #[test]
     fn test_in_close_proximity_pos() {
         let pos1 = MapPoint::from_lat_lng_deg(48.23153745093964, 8.003816366195679);
@@ -249,14 +288,14 @@ mod tests {
             MapPoint::from_lat_lng_deg(48.23153745093964, 6.003816366195679),
         );
 
-        assert_eq!(true, is_similar_title(&e1.title, &e2.title, 0.2, 0)); // only 2 characters changed
-        assert_eq!(false, is_similar_title(&e1.title, &e2.title, 0.1, 0)); // more than one character changed
-        assert_eq!(true, is_similar_title(&e3.title, &e4.title, 0.0, 2)); // only 2 words changed
-        assert_eq!(false, is_similar_title(&e3.title, &e4.title, 0.0, 1)); // more than 1 word changed
+        assert!(is_similar_text(&e1.title, &e2.title, 0.2, 0)); // only 2 characters changed
+        assert!(!is_similar_text(&e1.title, &e2.title, 0.1, 0)); // more than one character changed
+        assert!(is_similar_text(&e3.title, &e4.title, 0.0, 2)); // only 2 words changed
+        assert!(!is_similar_text(&e3.title, &e4.title, 0.0, 1)); // more than 1 word changed
     }
     #[test]
-    fn test_is_duplicate_unregistered_place() {
-        let x = &usecases::NewPlace {
+    fn test_is_duplicate_of() {
+        let new_x = NewPlace {
             title: "Ein Eintrag Blablabla".into(),
             description: "Hallo! Ein Eintrag".into(),
             lat: 47.23153745093964,
@@ -276,95 +315,92 @@ mod tests {
             image_url: None,
             image_link_url: None,
         };
+        let new_y = NewPlace {
+            lat: 47.13153745093964,
+            ..new_x.clone()
+        };
 
-        let e2 = new_place(
+        let x = new_indexed_place(
+            new_x.title.clone(),
+            new_x.description.clone(),
+            MapPoint::from_lat_lng_deg(new_x.lat, new_x.lng),
+        );
+        // small hamming distance: 2 words in title missing
+        let similar_title_words1 = new_indexed_place(
             "Eintrag".to_string(),
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(47.23153745093970, 5.003816366195679),
         );
-        let e3 = new_place(
-            "Enn Eintrxg Blablalx".to_string(),
-            "Hallo! Ein Eintrag".to_string(),
-            MapPoint::from_lat_lng_deg(47.23153745093955, 5.003816366195679),
-        );
-        let e4 = new_place(
+        // small hamming distance: 2 words in title differ
+        let similar_title_words2 = new_indexed_place(
             "En Eintrg Blablala".to_string(),
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(47.23153745093955, 5.003816366195679),
         );
-        let e5 = new_place(
-            "Ein Eintrag Blabla".to_string(),
+        // small levenshtein distance: some typos in title
+        let similar_title_characters = new_indexed_place(
+            "Enn Eintrxg Blablalx".to_string(),
             "Hallo! Ein Eintrag".to_string(),
-            MapPoint::from_lat_lng_deg(40.23153745093960, 5.003816366195670),
-        );
-        let e6 = new_place(
-            "Ein Eintrag Blablabla".to_string(),
-            "Hallo! Ein Eintrag".to_string(),
-            MapPoint::from_lat_lng_deg(47.23153745093964, 5.003816366195679),
+            MapPoint::from_lat_lng_deg(47.23153745093955, 5.003816366195679),
         );
 
-        // titles have a word that is equal
-        assert_eq!(
-            Some(DuplicateType::SimilarWords),
-            is_duplicate_unregistered_place(&x, &e2)
-        );
-        // titles similar: small hamming distance
-        assert_eq!(
-            Some(DuplicateType::SimilarChars),
-            is_duplicate_unregistered_place(&x, &e3)
-        );
-        // titles similar: small levenshtein distance
-        assert_eq!(
-            Some(DuplicateType::SimilarChars),
-            is_duplicate_unregistered_place(&x, &e4)
-        );
-        // exact_same
-        assert_eq!(
-            Some(DuplicateType::SimilarChars),
-            is_duplicate_unregistered_place(&x, &e6)
-        );
-        // too far away
-        assert_eq!(None, is_duplicate_unregistered_place(&x, &e5));
+        assert!(is_duplicate_of(&new_x, &x));
+        assert!(is_duplicate_of(&new_x, &similar_title_words1));
+        assert!(is_duplicate_of(&new_x, &similar_title_words2));
+        assert!(is_duplicate_of(&new_x, &similar_title_characters));
+
+        assert!(!is_duplicate_of(&new_y, &x));
     }
 
     #[test]
     fn test_is_duplicate() {
-        let e1 = new_place(
+        let p1 = new_place(
             "Ein Eintrag Blablabla".to_string(),
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(47.23153745093964, 5.003816366195679),
         );
-        let e2 = new_place(
+        let p2 = new_place(
             "Eintrag".to_string(),
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(47.23153745093970, 5.003816366195679),
         );
-        let e3 = new_place(
-            "Enn Eintrxg Blablalx".to_string(),
-            "Hallo! Ein Eintrag".to_string(),
-            MapPoint::from_lat_lng_deg(47.23153745093955, 5.003816366195679),
-        );
-        let e4 = new_place(
+        let p4 = new_place(
             "En Eintrg Blablala".to_string(),
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(47.23153745093955, 5.003816366195679),
         );
-        let e5 = new_place(
+
+        let ip2 = new_indexed_place(
+            "Eintrag".to_string(),
+            "Hallo! Ein Eintrag".to_string(),
+            MapPoint::from_lat_lng_deg(47.23153745093970, 5.003816366195679),
+        );
+        let ip3 = new_indexed_place(
+            "Enn Eintrxg Blablalx".to_string(),
+            "Hallo! Ein Eintrag".to_string(),
+            MapPoint::from_lat_lng_deg(47.23153745093955, 5.003816366195679),
+        );
+        let ip4 = new_indexed_place(
+            "En Eintrg Blablala".to_string(),
+            "Hallo! Ein Eintrag".to_string(),
+            MapPoint::from_lat_lng_deg(47.23153745093955, 5.003816366195679),
+        );
+        let ip5 = new_indexed_place(
             "Ein Eintrag Blabla".to_string(),
             "Hallo! Ein Eintrag".to_string(),
             MapPoint::from_lat_lng_deg(40.23153745093960, 5.003816366195670),
         );
 
         // titles have a word that is equal
-        assert_eq!(Some(DuplicateType::SimilarWords), is_duplicate(&e1, &e2));
+        assert_eq!(Some(DuplicateType::SimilarWords), is_duplicate(&p1, &ip2));
         // titles similar: small levenshtein distance
-        assert_eq!(Some(DuplicateType::SimilarChars), is_duplicate(&e1, &e4));
+        assert_eq!(Some(DuplicateType::SimilarChars), is_duplicate(&p1, &ip4));
         // titles similar: small hamming distance
-        assert_eq!(Some(DuplicateType::SimilarChars), is_duplicate(&e1, &e3));
+        assert_eq!(Some(DuplicateType::SimilarChars), is_duplicate(&p1, &ip3));
         // titles not similar
-        assert_eq!(None, is_duplicate(&e2, &e4));
+        assert_eq!(None, is_duplicate(&p2, &ip4));
         // places not located close together
-        assert_eq!(None, is_duplicate(&e4, &e5));
+        assert_eq!(None, is_duplicate(&p4, &ip5));
     }
 
     #[test]
