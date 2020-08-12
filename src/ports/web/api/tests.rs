@@ -237,6 +237,7 @@ fn default_new_entry() -> usecases::NewPlace {
         license: "CC0-1.0".into(),
         image_url: None,
         image_link_url: None,
+        custom_links: vec![],
     }
 }
 
@@ -1619,6 +1620,9 @@ fn entries_export_csv() {
         homepage: Some("http://homepage1".parse().unwrap()),
         image: Some("https://img".parse().unwrap()),
         image_href: Some("https://img,link".parse().unwrap()),
+        custom: vec![CustomLink::from_url(
+            "http://custom-link.org".parse().unwrap(),
+        )],
     });
     entries[0].opening_hours = Some("24/7".parse().unwrap());
     entries[1].created.at = TimestampMs::from_seconds(2222);

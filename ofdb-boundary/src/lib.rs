@@ -1,5 +1,6 @@
 use ofdb_entities as e;
 use serde::{Deserialize, Serialize};
+use std::convert::TryFrom;
 use url::Url;
 
 #[rustfmt::skip]
@@ -28,6 +29,51 @@ pub struct Entry {
     pub license        : Option<String>,
     pub image_url      : Option<String>,
     pub image_link_url : Option<String>,
+
+    #[serde(rename = "custom", skip_serializing_if = "Vec::is_empty", default = "Default::default")]
+    pub custom_links   : Vec<CustomLink>,
+}
+
+#[rustfmt::skip]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
+pub struct CustomLink {
+    pub url            : String,
+    pub title          : Option<String>,
+    pub description    : Option<String>,
+}
+
+impl From<e::links::CustomLink> for CustomLink {
+    fn from(from: e::links::CustomLink) -> Self {
+        let e::links::CustomLink {
+            url,
+            title,
+            description,
+        } = from;
+        Self {
+            url: url.to_string(),
+            title,
+            description,
+        }
+    }
+}
+
+impl TryFrom<CustomLink> for e::links::CustomLink {
+    type Error = url::ParseError;
+
+    fn try_from(from: CustomLink) -> Result<Self, Self::Error> {
+        let CustomLink {
+            url,
+            title,
+            description,
+        } = from;
+        let url = url.parse()?;
+        Ok(Self {
+            url,
+            title,
+            description,
+        })
+    }
 }
 
 #[rustfmt::skip]
@@ -52,6 +98,9 @@ pub struct NewPlace {
     pub license        : String,
     pub image_url      : Option<String>,
     pub image_link_url : Option<String>,
+
+    #[serde(rename = "custom", skip_serializing_if = "Vec::is_empty", default = "Default::default")]
+    pub custom_links   : Vec<CustomLink>,
 }
 
 #[rustfmt::skip]
@@ -76,6 +125,9 @@ pub struct UpdatePlace {
     pub tags           : Vec<String>,
     pub image_url      : Option<String>,
     pub image_link_url : Option<String>,
+
+    #[serde(rename = "custom", skip_serializing_if = "Vec::is_empty", default = "Default::default")]
+    pub custom_links   : Vec<CustomLink>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -662,7 +714,8 @@ impl From<e::contact::Contact> for Contact {
     }
 }
 
-#[derive(Debug, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Default, PartialEq, Eq))]
 pub struct Links {
     #[serde(rename = "www", skip_serializing_if = "Option::is_none")]
     pub homepage: Option<Url>,
@@ -672,6 +725,13 @@ pub struct Links {
 
     #[serde(rename = "img_href", skip_serializing_if = "Option::is_none")]
     pub image_href: Option<Url>,
+
+    #[serde(
+        rename = "custom",
+        skip_serializing_if = "Vec::is_empty",
+        default = "Default::default"
+    )]
+    pub custom: Vec<CustomLink>,
 }
 
 impl Links {
@@ -686,11 +746,13 @@ impl From<e::links::Links> for Links {
             homepage,
             image,
             image_href,
+            custom,
         } = from;
         Self {
             homepage,
             image,
             image_href,
+            custom: custom.into_iter().map(Into::into).collect(),
         }
     }
 }

@@ -97,6 +97,7 @@ fn load_place(
             homepage: homepage.and_then(load_url),
             image: image_url.and_then(load_url),
             image_href: image_link_url.and_then(load_url),
+            custom: vec![], // FIXME
         }),
         opening_hours: opening_hours.map(Into::into),
         tags,
@@ -174,6 +175,7 @@ fn load_place_with_status_review(
         homepage: homepage.and_then(load_url),
         image: image_url.and_then(load_url),
         image_href: image_link_url.and_then(load_url),
+        custom: vec![], // FIXME
     };
 
     let contact = Contact {
@@ -313,7 +315,7 @@ fn resolve_rating_rowid(conn: &SqliteConnection, id: &str) -> Result<i64> {
 fn into_new_place_revision(
     conn: &SqliteConnection,
     place: Place,
-) -> Result<(Id, models::NewPlaceRevision, Vec<String>)> {
+) -> Result<(Id, models::NewPlaceRevision, Vec<String>, Vec<CustomLink>)> {
     let Place {
         id: place_id,
         license,
@@ -376,6 +378,7 @@ fn into_new_place_revision(
         homepage,
         image: image_url,
         image_href: image_link_url,
+        custom: custom_links,
     } = links.unwrap_or_default();
     let new_place = models::NewPlaceRevision {
         parent_rowid,
@@ -399,12 +402,12 @@ fn into_new_place_revision(
         image_url: image_url.map(Url::into_string),
         image_link_url: image_link_url.map(Url::into_string),
     };
-    Ok((place_id, new_place, tags))
+    Ok((place_id, new_place, tags, custom_links))
 }
 
 impl PlaceRepo for SqliteConnection {
     fn create_or_update_place(&self, place: Place) -> Result<()> {
-        let (_place_id, new_place, tags) = into_new_place_revision(self, place)?;
+        let (_place_id, new_place, tags, custom_links) = into_new_place_revision(self, place)?;
         diesel::insert_into(schema::place_revision::table)
             .values(&new_place)
             .execute(self)?;
@@ -450,6 +453,8 @@ impl PlaceRepo for SqliteConnection {
         diesel::insert_into(schema::place_revision_tag::table)
             .values(&tags)
             .execute(self)?;
+
+        log::error!("FIXME: Insert custom links: {:?}", custom_links);
 
         Ok(())
     }
