@@ -307,6 +307,13 @@ pub struct ResetPassword {
 
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+pub struct Credentials {
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
 pub struct TagFrequency(pub String, pub u64);
 
 #[derive(Serialize, Deserialize)]
