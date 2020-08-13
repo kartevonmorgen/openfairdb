@@ -8,7 +8,7 @@ publish = false
 [dependencies]
 ofdb-entities = "*"
 serde = { version = "1", features = ["derive"] }
-url = "2"
+url = { version = "2", features = ["serde"] }
 
 [features]
 default = []
