@@ -2,7 +2,13 @@ use crate::email::Email;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Contact {
+    /// The display name of a person
+    pub name: Option<String>,
+
+    /// An e-mail address to get in contact
     pub email: Option<Email>,
+
+    /// A phone number to get in contact
     pub phone: Option<String>,
 }
 

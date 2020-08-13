@@ -5,6 +5,8 @@ use crate::core::{
     util::{parse::parse_url_param, validate::Validate},
 };
 
+use chrono::NaiveDate;
+
 #[rustfmt::skip]
 #[derive(Debug, Clone)]
 pub struct UpdatePlace {
@@ -18,10 +20,12 @@ pub struct UpdatePlace {
     pub city           : Option<String>,
     pub country        : Option<String>,
     pub state          : Option<String>,
+    pub contact_name   : Option<String>,
     pub email          : Option<String>,
     pub telephone      : Option<String>,
     pub homepage       : Option<String>,
     pub opening_hours  : Option<String>,
+    pub founded_on     : Option<NaiveDate>,
     pub categories     : Vec<String>,
     pub tags           : Vec<String>,
     pub image_url      : Option<String>,
@@ -40,6 +44,7 @@ impl From<Place> for UpdatePlace {
             links,
             location: Location { address, pos },
             opening_hours,
+            founded_on,
             revision,
             tags,
             title,
@@ -57,13 +62,16 @@ impl From<Place> for UpdatePlace {
                  }| (homepage, image, image_href, custom),
             )
             .unwrap_or_default();
-        let (email, telephone) = contact.map(|c| (c.email, c.phone)).unwrap_or_default();
+        let (contact_name, email, telephone) = contact
+            .map(|c| (c.name, c.email, c.phone))
+            .unwrap_or_default();
         Self {
             categories: vec![],
             city,
             country,
             custom_links: custom_links.into_iter().map(Into::into).collect(),
             description,
+            contact_name,
             email: email.map(Into::into),
             homepage: homepage_url.map(|url| url.to_string()),
             image_link_url: image_link_url.map(|url| url.to_string()),
@@ -71,6 +79,7 @@ impl From<Place> for UpdatePlace {
             lat: pos.lat().to_deg(),
             lng: pos.lng().to_deg(),
             opening_hours: opening_hours.map(Into::into),
+            founded_on,
             state,
             street,
             tags,
@@ -106,9 +115,11 @@ pub fn prepare_updated_place<D: Db>(
         city,
         country,
         state,
+        contact_name,
         email,
         telephone: phone,
         opening_hours,
+        founded_on,
         categories,
         tags,
         homepage,
@@ -193,6 +204,7 @@ pub fn prepare_updated_place<D: Db>(
         description,
         location: Location { pos, address },
         contact: Some(Contact {
+            name: contact_name,
             email: email.map(Into::into),
             phone,
         }),
@@ -202,6 +214,7 @@ pub fn prepare_updated_place<D: Db>(
                     .map_err(|_| Error::Parameter(ParameterError::InvalidOpeningHours))
             })
             .transpose()?,
+        founded_on,
         links,
         tags: new_tags,
     };
@@ -269,10 +282,12 @@ mod tests {
             city        : None,
             country     : None,
             state       : None,
+            contact_name: None,
             email       : None,
             telephone   : None,
             homepage    : None,
             opening_hours: None,
+            founded_on  : None,
             categories  : vec![],
             tags        : vec![],
             image_url     : Some("img2".into()),
@@ -343,10 +358,12 @@ mod tests {
             city        : None,
             country     : None,
             state       : None,
+            contact_name: None,
             email       : None,
             telephone   : None,
             homepage    : None,
             opening_hours: None,
+            founded_on  : None,
             categories  : vec![],
             tags        : vec![],
             image_url     : None,
@@ -389,10 +406,12 @@ mod tests {
             city        : None,
             country     : None,
             state       : None,
+            contact_name: None,
             email       : None,
             telephone   : None,
             homepage    : None,
             opening_hours: None,
+            founded_on  : None,
             categories  : vec![],
             tags        : vec![],
             image_url     : None,
@@ -438,10 +457,12 @@ mod tests {
             city        : None,
             country     : None,
             state       : None,
+            contact_name: None,
             email       : None,
             telephone   : None,
             homepage    : None,
             opening_hours: None,
+            founded_on  : None,
             categories  : vec![],
             tags        : vec!["vegan".into()],
             image_url     : None,

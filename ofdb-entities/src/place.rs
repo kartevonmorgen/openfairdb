@@ -1,5 +1,6 @@
 use crate::{activity::*, contact::*, id::*, links::*, location::*, review::*, revision::*};
 
+use chrono::NaiveDate;
 use std::str::FromStr;
 
 // Immutable part of a place.
@@ -57,6 +58,7 @@ pub struct PlaceRevision {
     pub location: Location,
     pub contact: Option<Contact>,
     pub opening_hours: Option<OpeningHours>,
+    pub founded_on: Option<NaiveDate>,
     pub links: Option<Links>,
     pub tags: Vec<String>,
 }
@@ -74,6 +76,7 @@ pub struct Place {
     pub location: Location,
     pub contact: Option<Contact>,
     pub opening_hours: Option<OpeningHours>,
+    pub founded_on: Option<NaiveDate>,
     pub links: Option<Links>,
     pub tags: Vec<String>,
 }
@@ -113,6 +116,7 @@ impl From<(PlaceRoot, PlaceRevision)> for Place {
                 location,
                 contact,
                 opening_hours,
+                founded_on,
                 links,
                 tags,
             },
@@ -127,6 +131,7 @@ impl From<(PlaceRoot, PlaceRevision)> for Place {
             location,
             contact,
             opening_hours,
+            founded_on,
             links,
             tags,
         }
@@ -145,6 +150,7 @@ impl From<Place> for (PlaceRoot, PlaceRevision) {
             location,
             contact,
             opening_hours,
+            founded_on,
             links,
             tags,
         } = from;
@@ -158,6 +164,7 @@ impl From<Place> for (PlaceRoot, PlaceRevision) {
                 location,
                 contact,
                 opening_hours,
+                founded_on,
                 links,
                 tags,
             },

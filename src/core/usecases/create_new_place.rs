@@ -5,6 +5,8 @@ use crate::core::{
     util::{parse::parse_url_param, validate::Validate},
 };
 
+use chrono::NaiveDate;
+
 #[rustfmt::skip]
 #[derive(Debug, Clone)]
 pub struct NewPlace {
@@ -17,10 +19,12 @@ pub struct NewPlace {
     pub city           : Option<String>,
     pub country        : Option<String>,
     pub state          : Option<String>,
+    pub contact_name   : Option<String>,
     pub email          : Option<String>,
     pub telephone      : Option<String>,
     pub homepage       : Option<String>,
     pub opening_hours  : Option<String>,
+    pub founded_on     : Option<NaiveDate>,
     pub categories     : Vec<String>,
     pub tags           : Vec<String>,
     pub license        : String,
@@ -45,6 +49,7 @@ pub fn prepare_new_place<D: Db>(
         title,
         description,
         categories,
+        contact_name,
         email,
         telephone,
         lat,
@@ -58,10 +63,10 @@ pub fn prepare_new_place<D: Db>(
         license,
         homepage,
         opening_hours,
+        founded_on,
         image_url,
         image_link_url,
         custom_links: custom_links_param,
-        ..
     } = e;
     let pos = match MapPoint::try_from_lat_lng_deg(lat, lng) {
         None => return Err(ParameterError::InvalidPosition.into()),
@@ -94,6 +99,7 @@ pub fn prepare_new_place<D: Db>(
 
     let contact = if email.is_some() || telephone.is_some() {
         Some(Contact {
+            name: contact_name,
             email: email.map(Into::into),
             phone: telephone,
         })
@@ -143,6 +149,7 @@ pub fn prepare_new_place<D: Db>(
                     .map_err(|_| Error::Parameter(ParameterError::InvalidOpeningHours))
             })
             .transpose()?,
+        founded_on,
         links,
         tags: new_tags,
     };
@@ -195,10 +202,12 @@ mod tests {
             city        : None,
             country     : None,
             state       : None,
+            contact_name: None,
             email       : None,
             telephone   : None,
             homepage    : None,
             opening_hours: None,
+            founded_on  : None,
             categories  : vec![],
             tags        : vec![],
             license     : "CC0-1.0".into(),
@@ -233,10 +242,12 @@ mod tests {
             city        : None,
             country     : None,
             state       : None,
+            contact_name: None,
             email       : Some("fooo-not-ok".into()),
             telephone   : None,
             homepage    : None,
             opening_hours: None,
+            founded_on  : None,
             categories  : vec![],
             tags        : vec![],
             license     : "CC0-1.0".into(),
@@ -261,10 +272,12 @@ mod tests {
             city        : None,
             country     : None,
             state       : None,
+            contact_name: None,
             email       : None,
             telephone   : None,
             homepage    : None,
             opening_hours: None,
+            founded_on  : None,
             categories  : vec![],
             tags        : vec!["foo".into(),"bar".into()],
             license     : "CC0-1.0".into(),

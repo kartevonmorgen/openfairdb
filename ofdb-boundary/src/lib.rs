@@ -1,4 +1,6 @@
 use ofdb_entities as e;
+
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -18,10 +20,12 @@ pub struct Entry {
     pub city           : Option<String>,
     pub country        : Option<String>,
     pub state          : Option<String>,
+    pub contact_name   : Option<String>,
     pub email          : Option<String>,
     pub telephone      : Option<String>,
     pub homepage       : Option<String>,
     pub opening_hours  : Option<String>,
+    pub founded_on     : Option<NaiveDate>,
     pub categories     : Vec<String>,
     pub tags           : Vec<String>,
     pub ratings        : Vec<String>,
@@ -70,10 +74,12 @@ pub struct NewPlace {
     pub city           : Option<String>,
     pub country        : Option<String>,
     pub state          : Option<String>,
+    pub contact_name   : Option<String>,
     pub email          : Option<String>,
     pub telephone      : Option<String>,
     pub homepage       : Option<String>,
     pub opening_hours  : Option<String>,
+    pub founded_on     : Option<NaiveDate>,
     pub categories     : Vec<String>,
     pub tags           : Vec<String>,
     pub license        : String,
@@ -98,10 +104,12 @@ pub struct UpdatePlace {
     pub city           : Option<String>,
     pub country        : Option<String>,
     pub state          : Option<String>,
+    pub contact_name   : Option<String>,
     pub email          : Option<String>,
     pub telephone      : Option<String>,
     pub homepage       : Option<String>,
     pub opening_hours  : Option<String>,
+    pub founded_on     : Option<NaiveDate>,
     pub categories     : Vec<String>,
     pub tags           : Vec<String>,
     pub image_url      : Option<String>,
@@ -477,7 +485,6 @@ impl From<e::event::Event> for Event {
             tags,
             homepage,
             registration,
-            organizer,
             image_url,
             image_link_url,
             ..
@@ -504,6 +511,7 @@ impl From<e::event::Event> for Event {
         } = address.unwrap_or_default();
 
         let e::contact::Contact {
+            name: organizer,
             email,
             phone: telephone,
         } = contact.unwrap_or_default();
@@ -680,6 +688,9 @@ impl From<e::location::Location> for Location {
 #[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq))]
 pub struct Contact {
     #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
+
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub email: Option<String>,
 
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -694,8 +705,9 @@ impl Contact {
 
 impl From<e::contact::Contact> for Contact {
     fn from(from: e::contact::Contact) -> Self {
-        let e::contact::Contact { email, phone } = from;
+        let e::contact::Contact { name, email, phone } = from;
         Self {
+            name,
             email: email.map(Into::into),
             phone,
         }
@@ -816,6 +828,9 @@ pub struct PlaceRevision {
     #[serde(rename = "hrs", skip_serializing_if = "Option::is_none")]
     pub opening_hours: Option<String>,
 
+    #[serde(rename = "fnd", skip_serializing_if = "Option::is_none")]
+    pub founded_on: Option<NaiveDate>,
+
     #[serde(
         rename = "lnk",
         skip_serializing_if = "Links::is_empty",
@@ -841,6 +856,7 @@ impl From<e::place::PlaceRevision> for PlaceRevision {
             location,
             contact,
             opening_hours,
+            founded_on,
             links,
             tags,
         } = from;
@@ -852,6 +868,7 @@ impl From<e::place::PlaceRevision> for PlaceRevision {
             location: location.into(),
             contact: contact.map(Into::into).unwrap_or_default(),
             opening_hours: opening_hours.map(Into::into),
+            founded_on: founded_on.map(Into::into),
             links: links.map(Into::into).unwrap_or_default(),
             tags,
         }

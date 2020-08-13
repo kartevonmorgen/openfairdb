@@ -179,9 +179,14 @@ pub fn import_new_event<D: Db>(
     } else {
         None
     };
+
+    let organizer = organizer
+        .map(|x| x.trim().to_owned())
+        .filter(|x| !x.is_empty());
     //TODO: use contact.is_empty()
-    let contact = if email.is_some() || telephone.is_some() {
+    let contact = if organizer.is_some() || email.is_some() || telephone.is_some() {
         Some(Contact {
+            name: organizer,
             email: email.map(Into::into),
             phone: telephone,
         })
@@ -240,10 +245,6 @@ pub fn import_new_event<D: Db>(
         None => None,
     };
 
-    let organizer = organizer
-        .map(|x| x.trim().to_owned())
-        .filter(|x| !x.is_empty());
-
     let start = NaiveDateTime::from_timestamp(start, 0);
     let end = end.map(|e| NaiveDateTime::from_timestamp(e, 0));
 
@@ -269,7 +270,6 @@ pub fn import_new_event<D: Db>(
         tags: new_tags,
         created_by,
         registration,
-        organizer,
         archived: None,
         image_url,
         image_link_url,

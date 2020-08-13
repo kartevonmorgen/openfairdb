@@ -40,11 +40,17 @@ pub struct Event {
     pub homepage     : Option<Url>,
     pub created_by   : Option<String>,
     pub registration : Option<RegistrationType>,
-    pub organizer    : Option<String>,
     // TODO: Switch archived time stamp to millisecond precision?
     pub archived     : Option<Timestamp>,
     pub image_url     : Option<Url>,
     pub image_link_url: Option<Url>,
+}
+
+impl Event {
+    /// Deprecated: Only for backward compatibility!
+    pub fn organizer(&self) -> Option<&String> {
+        self.contact.as_ref().and_then(|c| c.name.as_ref())
+    }
 }
 
 impl Event {

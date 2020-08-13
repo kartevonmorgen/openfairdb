@@ -89,10 +89,12 @@ fn load_place(
         city,
         country,
         state,
+        contact_name,
         email,
         phone,
         homepage,
         opening_hours,
+        founded_on,
         image_url,
         image_link_url,
         ..
@@ -137,6 +139,7 @@ fn load_place(
         description,
         location,
         contact: Some(Contact {
+            name: contact_name,
             email: email.map(Into::into),
             phone,
         }),
@@ -147,6 +150,7 @@ fn load_place(
             custom: custom_links,
         }),
         opening_hours: opening_hours.map(Into::into),
+        founded_on,
         tags,
     };
 
@@ -171,10 +175,12 @@ fn load_place_with_status_review(
         city,
         country,
         state,
+        contact_name,
         email,
         phone,
         homepage,
         opening_hours,
+        founded_on,
         image_url,
         image_link_url,
         place_id,
@@ -184,7 +190,7 @@ fn load_place_with_status_review(
         review_status,
         review_context,
         review_comment,
-        ..
+        review_rev: _,
     } = place_with_status_review;
 
     let location = Location {
@@ -222,6 +228,7 @@ fn load_place_with_status_review(
     };
 
     let contact = Contact {
+        name: contact_name,
         email: email.map(Into::into),
         phone,
     };
@@ -253,6 +260,7 @@ fn load_place_with_status_review(
         location,
         contact: Some(contact),
         opening_hours: opening_hours.map(Into::into),
+        founded_on,
         links: Some(links),
         tags,
     };
@@ -369,6 +377,7 @@ fn into_new_place_revision(
         location: Location { pos, address },
         contact,
         opening_hours,
+        founded_on,
         tags,
         links,
     } = place;
@@ -408,7 +417,11 @@ fn into_new_place_revision(
     } else {
         None
     };
-    let Contact { email, phone } = contact.unwrap_or_default();
+    let Contact {
+        name: contact_name,
+        email,
+        phone,
+    } = contact.unwrap_or_default();
     debug_assert!(pos.is_valid());
     let Address {
         street,
@@ -438,10 +451,12 @@ fn into_new_place_revision(
         city,
         country,
         state,
+        contact_name,
         email: email.map(Into::into),
         phone,
         homepage: homepage.map(Url::into_string),
         opening_hours: opening_hours.map(Into::into),
+        founded_on,
         image_url: image_url.map(Url::into_string),
         image_link_url: image_link_url.map(Url::into_string),
     };
@@ -614,10 +629,12 @@ impl PlaceRepo for SqliteConnection {
                 rev_dsl::city,
                 rev_dsl::country,
                 rev_dsl::state,
+                rev_dsl::contact_name,
                 rev_dsl::email,
                 rev_dsl::phone,
                 rev_dsl::homepage,
                 rev_dsl::opening_hours,
+                rev_dsl::founded_on,
                 rev_dsl::image_url,
                 rev_dsl::image_link_url,
                 dsl::id,
@@ -683,10 +700,12 @@ impl PlaceRepo for SqliteConnection {
                 rev_dsl::city,
                 rev_dsl::country,
                 rev_dsl::state,
+                rev_dsl::contact_name,
                 rev_dsl::email,
                 rev_dsl::phone,
                 rev_dsl::homepage,
                 rev_dsl::opening_hours,
+                rev_dsl::founded_on,
                 rev_dsl::image_url,
                 rev_dsl::image_link_url,
                 dsl::id,
@@ -804,10 +823,12 @@ impl PlaceRepo for SqliteConnection {
                 rev_dsl::city,
                 rev_dsl::country,
                 rev_dsl::state,
+                rev_dsl::contact_name,
                 rev_dsl::email,
                 rev_dsl::phone,
                 rev_dsl::homepage,
                 rev_dsl::opening_hours,
+                rev_dsl::founded_on,
                 rev_dsl::image_url,
                 rev_dsl::image_link_url,
                 dsl::id,
@@ -900,10 +921,12 @@ impl PlaceRepo for SqliteConnection {
                 rev_dsl::city,
                 rev_dsl::country,
                 rev_dsl::state,
+                rev_dsl::contact_name,
                 rev_dsl::email,
                 rev_dsl::phone,
                 rev_dsl::homepage,
                 rev_dsl::opening_hours,
+                rev_dsl::founded_on,
                 rev_dsl::image_url,
                 rev_dsl::image_link_url,
                 dsl::id,
@@ -930,7 +953,6 @@ fn into_new_event_with_tags(
         homepage,
         created_by,
         registration,
-        organizer,
         archived,
         image_url,
         image_link_url,
@@ -963,10 +985,10 @@ fn into_new_event_with_tags(
         state,
     } = address;
 
-    let (email, telephone) = if let Some(c) = contact {
-        (c.email, c.phone)
+    let (organizer, email, telephone) = if let Some(c) = contact {
+        (c.name, c.email, c.phone)
     } else {
-        (None, None)
+        (None, None, None)
     };
 
     let registration = registration.map(util::registration_type_into_i16);
@@ -1181,8 +1203,9 @@ impl EventGateway for SqliteConnection {
             } else {
                 None
             };
-            let contact = if email.is_some() || telephone.is_some() {
+            let contact = if organizer.is_some() || email.is_some() || telephone.is_some() {
                 Some(Contact {
+                    name: organizer,
                     email: email.map(Into::into),
                     phone: telephone,
                 })
@@ -1204,7 +1227,6 @@ impl EventGateway for SqliteConnection {
                 tags,
                 created_by: created_by_email,
                 registration,
-                organizer,
                 archived: archived.map(Timestamp::from_inner),
                 image_url: image_url.and_then(load_url),
                 image_link_url: image_link_url.and_then(load_url),

@@ -46,7 +46,6 @@ fn all() {
                 homepage: None,
                 created_by: None,
                 registration: None,
-                organizer: None,
                 archived: None,
                 image_url: None,
                 image_link_url: None,

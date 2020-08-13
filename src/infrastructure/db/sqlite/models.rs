@@ -1,5 +1,7 @@
 use super::schema::*;
 
+use chrono::NaiveDate;
+
 #[derive(Insertable)]
 #[table_name = "place"]
 pub struct NewPlace<'a, 'b> {
@@ -33,10 +35,12 @@ pub struct NewPlaceRevision {
     pub city: Option<String>,
     pub country: Option<String>,
     pub state: Option<String>,
+    pub contact_name: Option<String>,
     pub email: Option<String>,
     pub phone: Option<String>,
     pub homepage: Option<String>,
     pub opening_hours: Option<String>,
+    pub founded_on: Option<NaiveDate>,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
 }
@@ -57,10 +61,12 @@ pub struct JoinedPlaceRevision {
     pub city: Option<String>,
     pub country: Option<String>,
     pub state: Option<String>,
+    pub contact_name: Option<String>,
     pub email: Option<String>,
     pub phone: Option<String>,
     pub homepage: Option<String>,
     pub opening_hours: Option<String>,
+    pub founded_on: Option<NaiveDate>,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
     // Joined columns
@@ -83,10 +89,12 @@ pub struct JoinedPlaceRevisionWithStatusReview {
     pub city: Option<String>,
     pub country: Option<String>,
     pub state: Option<String>,
+    pub contact_name: Option<String>,
     pub email: Option<String>,
     pub phone: Option<String>,
     pub homepage: Option<String>,
     pub opening_hours: Option<String>,
+    pub founded_on: Option<NaiveDate>,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
     // Joined columns

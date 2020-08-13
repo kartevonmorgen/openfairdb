@@ -95,7 +95,12 @@ fn place_email(place: &Place, category_names: &[String], intro_sentence: &str) -
         "".to_string()
     };
 
-    let Contact { email, phone } = place.contact.clone().unwrap_or_else(|| Contact {
+    let Contact {
+        name: _,
+        email,
+        phone,
+    } = place.contact.clone().unwrap_or_else(|| Contact {
+        name: None,
         email: None,
         phone: None,
     });
@@ -150,7 +155,12 @@ pub fn event_updated_email(event: &Event) -> EmailContent {
 }
 
 fn event_email(event: &Event, intro_sentence: &str) -> String {
-    let Contact { email, phone } = event.contact.clone().unwrap_or_else(|| Contact {
+    let Contact {
+        name: _,
+        email,
+        phone,
+    } = event.contact.clone().unwrap_or_else(|| Contact {
+        name: None,
         email: None,
         phone: None,
     });
@@ -186,7 +196,7 @@ das Karte von morgen-Team\n
             .map(|end| end.format(DATE_TIME_FORMAT).to_string())
             .unwrap_or_default(),
         description = event.description.as_deref().unwrap_or(""),
-        organizer = event.organizer.as_deref().unwrap_or(""),
+        organizer = event.organizer().map(String::as_str).unwrap_or(""),
         address_line = address_line(event.location.as_ref().and_then(|l| l.address.as_ref())),
         email = email.map(|e| e.to_string()).unwrap_or_default(),
         phone = phone.unwrap_or_default(),
@@ -243,10 +253,12 @@ mod tests {
                 }),
             },
             contact: Some(Contact {
+                name: Some("<name>".into()),
                 email: Some("<email>".into()),
                 phone: Some("<phone>".into()),
             }),
             opening_hours: Some("24/7".parse().unwrap()),
+            founded_on: Some("1945-10-24".parse().unwrap()),
             links: Some(Links {
                 homepage: Some("https://kartevonmorgen.org".parse().unwrap()),
                 ..Default::default()
@@ -263,7 +275,6 @@ mod tests {
             start: Utc::now().naive_utc(),
             end: None,
             registration: None,
-            organizer: Some("<organizer>".into()),
             title: "<title>".into(),
             description: Some("<description>".into()),
             location: Some(Location {
@@ -277,6 +288,7 @@ mod tests {
                 }),
             }),
             contact: Some(Contact {
+                name: Some("<organizer>".into()),
                 email: Some("<email>".into()),
                 phone: Some("<phone>".into()),
             }),
