@@ -845,13 +845,11 @@ components:
         tags:
           $ref: '#/components/schemas/TagArray'
         image_url:
-          $ref: '#/components/schemas/Url'
+          $ref: '#/components/schemas/ImageUrl'
         image_link_url:
-          $ref: '#/components/schemas/Url'
+          $ref: '#/components/schemas/ImageLink'
         links:
-          type: array
-          items:
-            $ref: '#/components/schemas/CustomLink'
+          $ref: '#/components/schemas/CustomLinkList'
       required:
         - title
         - description
@@ -888,7 +886,20 @@ components:
               type: array
               items:
                 type: string
+    ImageUrl:
+      description: |
+        The external URL for an image.
+      allOf:
+        - $ref: '#/components/schemas/Url'
+    ImageLink:
+      description: |
+        A hyperlink behind an image that is supposed to be opened when
+        clicking on the image.
+      allOf:
+        - $ref: '#/components/schemas/Url'
     CustomLink:
+      description: |
+        A custom hyperlink with an optional title and description.
       properties:
         url:
           $ref: '#/components/schemas/Url'
@@ -898,6 +909,16 @@ components:
           type: string
       required:
         - url
+    CustomLinkList:
+      description: |
+        An unordered list of custom links.
+
+        The ordering of list items may change between different
+        revisions even if this list has not been modified. Don't
+        make any assumptions about a particular ordering!
+      type: array
+      items:
+        $ref: '#/components/schemas/CustomLink'
     Category:
       properties:
         id:
@@ -1184,9 +1205,9 @@ components:
         www:
           $ref: '#/components/schemas/Url'
         img:
-          $ref: '#/components/schemas/Url'
+          $ref: '#/components/schemas/ImageUrl'
         img_href:
-          $ref: '#/components/schemas/Url'
+          $ref: '#/components/schemas/ImageLink'
     LatLonDeg:
       type: array
       minLength: 2
@@ -1373,9 +1394,9 @@ components:
         organizer:
           type: string
         image_url:
-          $ref: '#/components/schemas/Url'
+          $ref: '#/components/schemas/ImageUrl'
         image_link_url:
-          $ref: '#/components/schemas/Url'
+          $ref: '#/components/schemas/ImageLink'
     UnixTime:
       type: integer
       format: int64
