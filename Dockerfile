@@ -6,6 +6,8 @@
 ###############################################################################
 # Define global ARGs for all stages
 
+# clux/muslrust: /usr/src
+# ekidd/rust-musl-builder: /home/rust/src
 ARG WORKDIR_ROOT=/usr/src
 
 ARG PROJECT_NAME=openfairdb

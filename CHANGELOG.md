@@ -1,6 +1,6 @@
 # Changelog
 
-## unreleased (YYYY-mm-dd)
+## v0.9.0 (2020-08-13)
 
 - new(api/db): Moderated tags: Fine-grained permissions for organizations
 - new(api/db): Clearance: Allow organizations to manually *clear* new place/entry revisions after editing
