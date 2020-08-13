@@ -4,6 +4,13 @@ use url::Url;
 
 pub use ofdb_boundary::*;
 
+impl From<Credentials> for usecases::Login {
+    fn from(from: Credentials) -> Self {
+        let Credentials { email, password } = from;
+        Self { email, password }
+    }
+}
+
 impl From<IndexedPlace> for PlaceSearchResult {
     fn from(from: IndexedPlace) -> Self {
         let IndexedPlace {

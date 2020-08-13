@@ -363,9 +363,9 @@ fn get_api() -> Content<&'static str> {
 fn post_login(
     db: sqlite::Connections,
     mut cookies: Cookies,
-    login: Json<usecases::Login>,
+    login: Json<json::Credentials>,
 ) -> Result<()> {
-    let login = login.into_inner();
+    let login = usecases::Login::from(login.into_inner());
     {
         let credentials = usecases::Credentials {
             email: &login.email,
