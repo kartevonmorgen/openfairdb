@@ -1,7 +1,9 @@
 use crate::core::{
+    error::ParameterError,
     prelude::*,
     util::{
         geo::{MapBbox, MapPoint},
+        parse::parse_url_param,
         validate,
     },
 };
@@ -169,4 +171,40 @@ pub fn prepare_tag_list<'a>(tags: impl IntoIterator<Item = &'a str>) -> Vec<Stri
     tags.sort_unstable();
     tags.dedup();
     tags
+}
+
+#[derive(Debug, Clone)]
+pub struct CustomLinkParam {
+    pub url: String,
+    pub title: Option<String>,
+    pub description: Option<String>,
+}
+
+impl From<CustomLink> for CustomLinkParam {
+    fn from(from: CustomLink) -> Self {
+        let CustomLink {
+            url,
+            title,
+            description,
+        } = from;
+        Self {
+            url: url.to_string(),
+            title,
+            description,
+        }
+    }
+}
+
+fn parse_custom_link_param(from: CustomLinkParam) -> Result<CustomLink> {
+    let CustomLinkParam {
+        url,
+        title,
+        description,
+    } = from;
+    let url = parse_url_param(&url)?.ok_or(ParameterError::Url)?;
+    Ok(CustomLink {
+        url,
+        title,
+        description,
+    })
 }

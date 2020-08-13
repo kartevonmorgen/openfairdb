@@ -57,6 +57,21 @@ impl From<IndexedPlace> for PlaceSearchResult {
     }
 }
 
+impl From<CustomLink> for usecases::CustomLinkParam {
+    fn from(from: CustomLink) -> Self {
+        let CustomLink {
+            url,
+            title,
+            description,
+        } = from;
+        Self {
+            url,
+            title,
+            description,
+        }
+    }
+}
+
 impl From<NewPlace> for usecases::NewPlace {
     fn from(p: NewPlace) -> Self {
         let NewPlace {
@@ -99,18 +114,7 @@ impl From<NewPlace> for usecases::NewPlace {
             license,
             image_url,
             image_link_url,
-            custom_links: custom_links
-                .into_iter()
-                .filter_map(|custom_link| {
-                    custom_link
-                        .try_into()
-                        .or_else(|err| {
-                            log::info!("Ignoring custom link with invalid URL: {}", err);
-                            Err(err)
-                        })
-                        .ok()
-                })
-                .collect(),
+            custom_links: custom_links.into_iter().map(Into::into).collect(),
         }
     }
 }
