@@ -91,9 +91,9 @@ fn create_place_with_tag_duplicates() {
 }
 
 #[test]
-fn create_place_with_sharp_tag() {
+fn create_place_with_sharp_tag_and_custom_link() {
     let (client, db) = setup();
-    let json = r##"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","#bar"]}"##;
+    let json = r##"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","#bar"],"custom_links":[{"url":"example.com","title":"Auto-completed URL"}]}"##;
     let response = client
         .post("/entries")
         .header(ContentType::JSON)
@@ -101,11 +101,24 @@ fn create_place_with_sharp_tag() {
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let tags = db.exclusive().unwrap().all_places().unwrap()[0]
-        .0
-        .tags
-        .clone();
-    assert_eq!(tags, vec!["bar", "foo"]);
+    let (place, _) = db
+        .shared()
+        .unwrap()
+        .all_places()
+        .unwrap()
+        .into_iter()
+        .next()
+        .unwrap();
+    assert_eq!(&place.tags[..], &["bar", "foo"]);
+    // The "https://www." prefix should be added implicitly by auto-completion!
+    assert_eq!(
+        &place.links.unwrap().custom[..],
+        &[CustomLink {
+            url: "https://www.example.com".parse().unwrap(),
+            title: Some("Auto-completed URL".to_string()),
+            description: None
+        }]
+    );
 }
 
 #[test]

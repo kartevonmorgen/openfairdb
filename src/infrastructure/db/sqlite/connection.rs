@@ -52,10 +52,10 @@ fn load_place_revision_custom_links(
                  description,
              }| {
                 url.parse()
-                    .or_else(|err| {
+                    .map_err(|err| {
                         // This should never happen if URLs have been validated properly on insert
                         log::error!("Failed to load custom link with invalid URL: {}", err);
-                        Err(err)
+                        err
                     })
                     .ok()
                     .map(|url| CustomLink {

@@ -1,6 +1,5 @@
 use ofdb_entities as e;
 use serde::{Deserialize, Serialize};
-use std::convert::TryFrom;
 use url::Url;
 
 #[rustfmt::skip]
@@ -55,24 +54,6 @@ impl From<e::links::CustomLink> for CustomLink {
             title,
             description,
         }
-    }
-}
-
-impl TryFrom<CustomLink> for e::links::CustomLink {
-    type Error = url::ParseError;
-
-    fn try_from(from: CustomLink) -> Result<Self, Self::Error> {
-        let CustomLink {
-            url,
-            title,
-            description,
-        } = from;
-        let url = url.parse()?;
-        Ok(Self {
-            url,
-            title,
-            description,
-        })
     }
 }
 

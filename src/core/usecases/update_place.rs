@@ -1,3 +1,5 @@
+use super::{parse_custom_link_param, CustomLinkParam};
+
 use crate::core::{
     prelude::*,
     util::{parse::parse_url_param, validate::Validate},
@@ -24,7 +26,7 @@ pub struct UpdatePlace {
     pub tags           : Vec<String>,
     pub image_url      : Option<String>,
     pub image_link_url : Option<String>,
-    pub custom_links   : Vec<CustomLink>,
+    pub custom_links   : Vec<CustomLinkParam>,
 }
 
 impl From<Place> for UpdatePlace {
@@ -60,7 +62,7 @@ impl From<Place> for UpdatePlace {
             categories: vec![],
             city,
             country,
-            custom_links,
+            custom_links: custom_links.into_iter().map(Into::into).collect(),
             description,
             email: email.map(Into::into),
             homepage: homepage_url.map(|url| url.to_string()),
@@ -112,7 +114,7 @@ pub fn prepare_updated_place<D: Db>(
         homepage,
         image_url,
         image_link_url,
-        custom_links,
+        custom_links: custom_links_param,
         ..
     } = e;
     let pos = match MapPoint::try_from_lat_lng_deg(lat, lng) {
@@ -165,6 +167,10 @@ pub fn prepare_updated_place<D: Db>(
     let image_href = image_link_url
         .and_then(|ref url| parse_url_param(url).transpose())
         .transpose()?;
+    let mut custom_links = Vec::with_capacity(custom_links_param.len());
+    for custom_link_param in custom_links_param {
+        custom_links.push(parse_custom_link_param(custom_link_param)?);
+    }
     let links =
         if homepage.is_none() && image.is_none() && image_href.is_none() && custom_links.is_empty()
         {
