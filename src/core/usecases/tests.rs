@@ -829,7 +829,6 @@ fn receive_event_with_creators_email() {
         tags: vec![],
         created_by: Some("abc@abc.de".into()),
         registration: None,
-        organizer: None,
         archived: None,
         image_url: None,
         image_link_url: None,

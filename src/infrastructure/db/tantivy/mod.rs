@@ -991,7 +991,7 @@ impl EventIndexer for TantivyIndex {
         if let Some(ref description) = event.description {
             doc.add_text(self.fields.description, description);
         }
-        if let Some(ref organizer) = event.organizer {
+        if let Some(organizer) = event.organizer() {
             doc.add_text(self.fields.organizer, organizer);
         }
         for tag in &event.tags {

@@ -168,12 +168,14 @@ mod tests {
     #[test]
     fn contact_email_test() {
         assert!(Contact {
+            name: None,
             email: Some("foo".into()),
             phone: None
         }
         .validate()
         .is_err());
         assert!(Contact {
+            name: None,
             email: Some("foo@bar.tld".into()),
             phone: None
         }
@@ -195,7 +197,6 @@ mod tests {
             homepage: None,
             created_by: None,
             registration: None,
-            organizer: None,
             archived: None,
             image_url: None,
             image_link_url: None,
@@ -207,6 +208,7 @@ mod tests {
 
         let mut x = e.clone();
         x.contact = Some(Contact {
+            name: None,
             email: Some("".into()),
             phone: None,
         });
@@ -214,6 +216,7 @@ mod tests {
 
         let mut x = e.clone();
         x.contact = Some(Contact {
+            name: None,
             email: None,
             phone: Some("".into()),
         });
@@ -298,7 +301,6 @@ mod tests {
             homepage: None,
             created_by: None,
             registration: None,
-            organizer: None,
             archived: None,
             image_url: None,
             image_link_url: None,
@@ -344,7 +346,6 @@ mod tests {
             homepage: None,
             created_by: None,
             registration: None,
-            organizer: None,
             archived: None,
             image_url: None,
             image_link_url: None,

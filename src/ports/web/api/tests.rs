@@ -235,6 +235,7 @@ fn default_new_entry() -> usecases::NewPlace {
         title: Default::default(),
         description: Default::default(),
         categories: Default::default(),
+        contact_name: None,
         email: None,
         telephone: None,
         lat: Default::default(),
@@ -247,6 +248,7 @@ fn default_new_entry() -> usecases::NewPlace {
         tags: Default::default(),
         homepage: None,
         opening_hours: None,
+        founded_on: None,
         license: "CC0-1.0".into(),
         image_url: None,
         image_link_url: None,
@@ -1620,6 +1622,11 @@ fn entries_export_csv() {
     entries[0].location.address = Some(Address::build().street("street1").finish());
     entries[0].created.at = TimestampMs::from_seconds(1111);
     entries[0].created.by = Some("user@example.com".into());
+    entries[0].contact = Some(Contact {
+        name: Some("John Smith".to_string()),
+        email: Some("john.smith@example.com".parse().unwrap()),
+        phone: Some("0123456789".to_string()),
+    });
     entries[0].location.address = Some(
         Address::build()
             .street("street1")
@@ -1638,6 +1645,7 @@ fn entries_export_csv() {
         )],
     });
     entries[0].opening_hours = Some("24/7".parse().unwrap());
+    entries[0].founded_on = Some("1945-10-24".parse().unwrap());
     entries[1].created.at = TimestampMs::from_seconds(2222);
 
     db.exclusive()
@@ -1723,10 +1731,10 @@ fn entries_export_csv() {
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     //eprintln!("{}", body_str);
-    assert!(body_str.starts_with("id,created_at,created_by,version,title,description,lat,lng,street,zip,city,country,state,homepage,contact_email,contact_phone,opening_hours,categories,tags,license,image_url,image_link_url,avg_rating\n"));
-    assert!(body_str.contains(&format!("entry1,1111,user@example.com,0,title1,desc1,{lat},{lng},street1,zip1,city1,country1,state1,http://homepage1/,,,24/7,\"{cat1},{cat2}\",\"bla,bli\",license1,https://img/,\"https://img,link/\",0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg(), cat1 = Category::ID_NON_PROFIT, cat2 = Category::ID_COMMERCIAL)));
+    assert!(body_str.starts_with("id,created_at,created_by,version,title,description,lat,lng,street,zip,city,country,state,homepage,contact_name,contact_email,contact_phone,opening_hours,founded_on,categories,tags,license,image_url,image_link_url,avg_rating\n"));
+    assert!(body_str.contains(&format!("entry1,1111,user@example.com,0,title1,desc1,{lat},{lng},street1,zip1,city1,country1,state1,http://homepage1/,John Smith,john.smith@example.com,0123456789,24/7,1945-10-24,\"{cat1},{cat2}\",\"bla,bli\",license1,https://img/,\"https://img,link/\",0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg(), cat1 = Category::ID_NON_PROFIT, cat2 = Category::ID_COMMERCIAL)));
     assert!(body_str.contains(&format!(
-        "entry2,2222,,0,,,0.0,0.0,,,,,,,,,,{cat},,,,,0.0\n",
+        "entry2,2222,,0,,,0.0,0.0,,,,,,,,,,,,{cat},,,,,0.0\n",
         cat = Category::ID_NON_PROFIT
     )));
     assert!(!body_str.contains("entry3"));
@@ -1749,10 +1757,10 @@ fn entries_export_csv() {
     }
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
     //eprintln!("{}", body_str);
-    assert!(body_str.starts_with("id,created_at,created_by,version,title,description,lat,lng,street,zip,city,country,state,homepage,contact_email,contact_phone,opening_hours,categories,tags,license,image_url,image_link_url,avg_rating\n"));
-    assert!(body_str.contains(&format!("entry1,1111,,0,title1,desc1,{lat},{lng},street1,zip1,city1,country1,state1,http://homepage1/,,,24/7,\"{cat1},{cat2}\",\"bla,bli\",license1,https://img/,\"https://img,link/\",0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg(), cat1 = Category::ID_NON_PROFIT, cat2 = Category::ID_COMMERCIAL)));
+    assert!(body_str.starts_with("id,created_at,created_by,version,title,description,lat,lng,street,zip,city,country,state,homepage,contact_name,contact_email,contact_phone,opening_hours,founded_on,categories,tags,license,image_url,image_link_url,avg_rating\n"));
+    assert!(body_str.contains(&format!("entry1,1111,,0,title1,desc1,{lat},{lng},street1,zip1,city1,country1,state1,http://homepage1/,John Smith,john.smith@example.com,0123456789,24/7,1945-10-24,\"{cat1},{cat2}\",\"bla,bli\",license1,https://img/,\"https://img,link/\",0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg(), cat1 = Category::ID_NON_PROFIT, cat2 = Category::ID_COMMERCIAL)));
     assert!(body_str.contains(&format!(
-        "entry2,2222,,0,,,0.0,0.0,,,,,,,,,,{cat},,,,,0.0\n",
+        "entry2,2222,,0,,,0.0,0.0,,,,,,,,,,,,{cat},,,,,0.0\n",
         cat = Category::ID_NON_PROFIT
     )));
     assert!(!body_str.contains("entry3"));

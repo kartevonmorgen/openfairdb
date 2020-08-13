@@ -18,9 +18,11 @@ pub struct CsvRecord {
     pub country: Option<String>,
     pub state: Option<String>,
     pub homepage: Option<String>,
+    pub contact_name: Option<String>,
     pub contact_email: Option<String>,
     pub contact_phone: Option<String>,
     pub opening_hours: Option<String>,
+    pub founded_on: Option<String>,
     pub categories: String,
     pub tags: String,
     pub license: String,
@@ -49,6 +51,7 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
             tags,
             contact,
             opening_hours,
+            founded_on,
             ..
         } = place;
 
@@ -76,11 +79,11 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
             .collect::<Vec<_>>()
             .join(",");
 
-        let (contact_phone, contact_email) = if let Some(contact) = contact {
-            let Contact { phone, email } = contact;
-            (phone, email)
+        let (contact_name, contact_email, contact_phone) = if let Some(contact) = contact {
+            let Contact { name, phone, email } = contact;
+            (name, email, phone)
         } else {
-            (None, None)
+            (None, None, None)
         };
 
         CsvRecord {
@@ -98,9 +101,11 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
             country,
             state,
             homepage: homepage_url.map(Url::into_string),
+            contact_name,
             contact_phone,
             contact_email: contact_email.map(Into::into),
             opening_hours: opening_hours.map(Into::into),
+            founded_on: founded_on.as_ref().map(ToString::to_string),
             license,
             image_url: image_url.map(Url::into_string),
             image_link_url: image_link_url.map(Url::into_string),
@@ -140,7 +145,6 @@ impl From<Event> for EventRecord {
         let Event {
             id,
             created_by,
-            organizer,
             title,
             description,
             start,
@@ -176,7 +180,11 @@ impl From<Event> for EventRecord {
             state,
         } = address;
 
-        let Contact { email, phone } = contact.unwrap_or_default();
+        let Contact {
+            name: organizer,
+            email,
+            phone,
+        } = contact.unwrap_or_default();
 
         Self {
             id: id.into(),

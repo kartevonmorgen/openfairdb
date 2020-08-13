@@ -137,6 +137,7 @@ pub(crate) fn event_from_event_entity_and_tags(e: EventEntity, tag_rels: &[Event
     };
     let contact = if email.is_some() || telephone.is_some() {
         Some(e::Contact {
+            name: organizer,
             email: email.map(Into::into),
             phone: telephone,
         })
@@ -158,7 +159,6 @@ pub(crate) fn event_from_event_entity_and_tags(e: EventEntity, tag_rels: &[Event
         tags,
         created_by: created_by_email,
         registration,
-        organizer,
         archived: archived.map(Timestamp::from_inner),
         image_url: image_url.and_then(load_url),
         image_link_url: image_link_url.and_then(load_url),

@@ -49,12 +49,12 @@ pub fn event(user: Option<User>, ev: Event) -> Markup {
                             (format!("{:.2} / {:.2}",location.pos.lat().to_deg(), location.pos.lng().to_deg()))
                         }
                 }
-                @if let Some(org) = ev.organizer {
-                    h4{"Veranstalter"}
-                    p{(org)}
-                }
                 @if let Some(contact) = ev.contact{
                     @if !contact.is_empty(){
+                        @if let Some(ref org) = &contact.name {
+                            h4{"Veranstalter"}
+                            p{(org)}
+                        }
                         h4{ "Kontakt" }
                         @if let Some(email) = contact.email{
                             (email)
@@ -155,7 +155,7 @@ pub fn events(email: Option<&str>, events: &[Event]) -> Markup {
                                                     }
                                                 }
                                             }
-                                            @if let Some(ref o) = e.organizer {
+                                            @if let Some(o) = e.organizer() {
                                                 span class="organizer" { (o) }
                                             }
                                         }

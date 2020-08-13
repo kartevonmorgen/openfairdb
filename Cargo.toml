@@ -30,7 +30,7 @@ chrono = "*"
 # clap 3 is supposed to introduce breaking changes
 clap = "2"
 csv = "*"
-diesel = { version = "*", features = ["sqlite", "r2d2"] }
+diesel = { version = "*", features = ["sqlite", "r2d2", "chrono"] }
 diesel_migrations = { version = "*", features = ["sqlite"] }
 dotenv = "*"
 env_logger = "*"

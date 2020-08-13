@@ -102,10 +102,12 @@ table! {
         city -> Nullable<Text>,
         country -> Nullable<Text>,
         state -> Nullable<Text>,
+        contact_name -> Nullable<Text>,
         email -> Nullable<Text>,
         phone -> Nullable<Text>,
         homepage -> Nullable<Text>,
         opening_hours -> Nullable<Text>,
+        founded_on -> Nullable<Date>,
         image_url -> Nullable<Text>,
         image_link_url -> Nullable<Text>,
     }

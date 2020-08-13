@@ -106,6 +106,7 @@ pub mod place_builder {
                     },
                     contact: None,
                     opening_hours: None,
+                    founded_on: None,
                     links: None,
                     tags: vec![],
                 },
