@@ -37,8 +37,8 @@ type StatusResult = result::Result<Status, AppError>;
 
 pub fn routes() -> Vec<Route> {
     routes![
-        login,
-        logout,
+        post_login,
+        post_logout,
         confirm_email_address,
         subscribe_to_bbox,
         get_bbox_subscriptions,
@@ -360,7 +360,7 @@ fn get_api() -> Content<&'static str> {
 }
 
 #[post("/login", format = "application/json", data = "<login>")]
-fn login(
+fn post_login(
     db: sqlite::Connections,
     mut cookies: Cookies,
     login: Json<usecases::Login>,
@@ -382,7 +382,7 @@ fn login(
 }
 
 #[post("/logout", format = "application/json")]
-fn logout(mut cookies: Cookies) -> Result<()> {
+fn post_logout(mut cookies: Cookies) -> Result<()> {
     cookies.remove_private(Cookie::named(COOKIE_USER_KEY));
     Ok(Json(()))
 }
