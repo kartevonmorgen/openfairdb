@@ -81,7 +81,7 @@ pub struct NewPlace {
     pub image_link_url : Option<String>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default = "Default::default")]
-    pub custom_links   : Vec<CustomLink>,
+    pub links          : Vec<CustomLink>,
 }
 
 #[rustfmt::skip]
@@ -108,7 +108,7 @@ pub struct UpdatePlace {
     pub image_link_url : Option<String>,
 
     #[serde(skip_serializing_if = "Vec::is_empty", default = "Default::default")]
-    pub custom_links   : Vec<CustomLink>,
+    pub links          : Vec<CustomLink>,
 }
 
 #[derive(Serialize, Deserialize)]
