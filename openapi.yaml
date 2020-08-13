@@ -560,7 +560,7 @@ paths:
               type: object
               properties:
                 email:
-                  $ref: '#/components/schemas/Email'
+                  $ref: '#/components/schemas/UserEmail'
                 password:
                   type: string
       responses:
@@ -599,7 +599,7 @@ paths:
               type: object
               properties:
                 email:
-                  $ref: '#/components/schemas/Email'
+                  $ref: '#/components/schemas/UserEmail'
       responses:
         '200':
            description: Sucessful response
@@ -616,7 +616,7 @@ paths:
               type: object
               properties:
                 email:
-                  $ref: '#/components/schemas/Email'
+                  $ref: '#/components/schemas/UserEmail'
                 token:
                   type: string
                 new_password:
@@ -830,14 +830,18 @@ components:
           type: string
         state:
           type: string
+        contact_name:
+          $ref: '#/components/schemas/PersonDisplayName'
         email:
-          $ref: '#/components/schemas/Email'
+          $ref: '#/components/schemas/ContactEmail'
         telephone:
-          $ref: '#/components/schemas/Phone'
+          $ref: '#/components/schemas/ContactPhone'
         homepage:
           $ref: '#/components/schemas/Url'
         opening_hours:
           $ref: '#/components/schemas/OpeningHours'
+        founded_on:
+          $ref: '#/components/schemas/FoundingDate'
         categories:
           type: array
           items:
@@ -1089,8 +1093,23 @@ components:
       type: string
       minLength: 3
       description: |
-        An e-mail address of a user
-      example: user@example.com
+        An e-mail address.
+      example: john.smith@example.com
+    UserEmail:
+      description: |
+        The e-mail address of a user account.
+      allOf:
+        - $ref: '#/components/schemas/Email'
+    ContactEmail:
+      description: |
+        An e-mail address to get in contact.
+      allOf:
+        - $ref: '#/components/schemas/Email'
+    PersonDisplayName:
+      type: string
+      description: |
+        The display name of a person.
+      example: John Smith
     Title:
       type: string
       minLength: 1
@@ -1117,6 +1136,11 @@ components:
     Phone:
       type: string
       example: 001 123456789
+    ContactPhone:
+      description: |
+        An phone number to get in contact.
+      allOf:
+        - $ref: '#/components/schemas/Phone'
     Tag:
       type: string
       minLength: 1
@@ -1135,7 +1159,7 @@ components:
         at:
           $ref: '#/components/schemas/CreatedAt'
         by:
-          $ref: '#/components/schemas/Email'
+          $ref: '#/components/schemas/UserEmail'
       required:
         - at
     ActivityContext:
@@ -1152,7 +1176,7 @@ components:
         at:
           $ref: '#/components/schemas/CreatedAt'
         by:
-          $ref: '#/components/schemas/Email'
+          $ref: '#/components/schemas/UserEmail'
         ctx:
           $ref: '#/components/schemas/ActivityContext'
         comment:
@@ -1169,10 +1193,12 @@ components:
         - deg
     Contact:
       properties:
+        name:
+          $ref: '#/components/schemas/PersonDisplayName'
         phone:
-          $ref: '#/components/schemas/Phone'
+          $ref: '#/components/schemas/ContactPhone'
         email:
-          $ref: '#/components/schemas/Email'
+          $ref: '#/components/schemas/ContactEmail'
     Address:
       properties:
         street:
@@ -1208,6 +1234,12 @@ components:
           $ref: '#/components/schemas/ImageUrl'
         img_href:
           $ref: '#/components/schemas/ImageLink'
+    FoundingDate:
+        description: |
+          The date on which an organization, initiative, or company has been founded or established.
+        type: string
+        format: date
+        example: 1945-10-24
     LatLonDeg:
       type: array
       minLength: 2
@@ -1245,6 +1277,8 @@ components:
           $ref: '#/components/schemas/Contact'
         hrs:
           $ref: '#/components/schemas/OpeningHours'
+        fnd:
+          $ref: '#/components/schemas/FoundingDate'
         lnk:
           $ref: '#/components/schemas/PlaceLinks'
         tag:
@@ -1331,7 +1365,7 @@ components:
     User:
       properties:
         email:
-          $ref: '#/components/schemas/Email'
+          $ref: '#/components/schemas/UserEmail'
         email_confirmed:
           type: boolean
         role:
@@ -1376,9 +1410,9 @@ components:
         state:
           type: string
         email:
-          $ref: '#/components/schemas/Email'
+          $ref: '#/components/schemas/ContactEmail'
         telephone:
-          $ref: '#/components/schemas/Phone'
+          $ref: '#/components/schemas/ContactPhone'
         tags:
           $ref: '#/components/schemas/TagArray'
         homepage:
