@@ -952,7 +952,7 @@ components:
         id:
           $ref: '#/components/schemas/Id'
         created:
-          $ref: '#/components/schemas/UnixTimeMillis'
+          $ref: '#/components/schemas/CreatedAt'
         text:
           type: string
     BboxSubscription:
@@ -1017,7 +1017,7 @@ components:
         place_id:
           $ref: '#/components/schemas/PlaceId'
         created_at:
-          $ref: '#/components/schemas/UnixTimeMillis'
+          $ref: '#/components/schemas/CreatedAt'
         last_cleared_revision:
           $ref: '#/components/schemas/Revision'
       required:
@@ -1133,7 +1133,7 @@ components:
     Activity:
       properties:
         at:
-          $ref: '#/components/schemas/UnixTimeMillis'
+          $ref: '#/components/schemas/CreatedAt'
         by:
           $ref: '#/components/schemas/Email'
       required:
@@ -1150,7 +1150,7 @@ components:
     ActivityLog:
       properties:
         at:
-          $ref: '#/components/schemas/UnixTimeMillis'
+          $ref: '#/components/schemas/CreatedAt'
         by:
           $ref: '#/components/schemas/Email'
         ctx:
@@ -1355,7 +1355,7 @@ components:
         end:
           $ref: '#/components/schemas/EventTime'
         created_at:
-          $ref: '#/components/schemas/UnixTimeMillis'
+          $ref: '#/components/schemas/CreatedAt'
         created_by:
           type: string
           description: |
@@ -1418,7 +1418,7 @@ components:
         in the UTC time zone, neither taking into account the actual time at the
         geographical location of the event nor the current local time zone of the
         client itself!
-      oneOf:
+      allOf:
         - $ref: '#/components/schemas/UnixTime'
     UnixTimeMillis:
       type: integer
@@ -1428,6 +1428,14 @@ components:
         Precise Unix time (number of milliseconds since 00:00::00.000 1. January, 1970, UTC)
         for system-generated time stamps
       example: 1547403509000
+    CreatedAt:
+      description: |
+        The time at which the corresponding entity or database record has been created,
+        i.e. the first time it has been written.
+
+        Most entities/records are immutable and never updated.
+      allOf:
+        - $ref: '#/components/schemas/UnixTimeMillis'
     TagCounts:
       type: array
       items:
