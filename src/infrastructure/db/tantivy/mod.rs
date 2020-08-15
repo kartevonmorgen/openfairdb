@@ -4,7 +4,7 @@ use crate::core::{
         IndexedPlace, Indexer, PlaceIndex, PlaceIndexer,
     },
     entities::{
-        Address, AvgRatingValue, AvgRatings, Category, Event, Id, Place, RatingContext,
+        Address, AvgRatingValue, AvgRatings, Category, Contact, Event, Id, Place, RatingContext,
         ReviewStatus, ReviewStatusPrimitive,
     },
     util::{
@@ -61,7 +61,7 @@ struct IndexedFields {
     address_zip: Field,
     address_country: Field,
     address_state: Field,
-    organizer: Field,
+    contact_name: Field,
     tag: Field,
     ratings_diversity: Field,
     ratings_fairness: Field,
@@ -109,7 +109,7 @@ impl IndexedFields {
             ts_max: schema_builder.add_i64_field("ts_max", INDEXED | STORED),
             title: schema_builder.add_text_field("tit", text_options.clone()),
             description: schema_builder.add_text_field("dsc", text_options.clone()),
-            organizer: schema_builder.add_text_field("org", text_options),
+            contact_name: schema_builder.add_text_field("cnt_name", text_options),
             address_street: schema_builder.add_text_field("adr_street", address_options.clone()),
             address_city: schema_builder.add_text_field("adr_city", address_options.clone()),
             address_zip: schema_builder.add_text_field("adr_zip", address_options.clone()),
@@ -347,7 +347,7 @@ impl TantivyIndex {
                 fields.address_zip,
                 fields.address_country,
                 fields.address_state,
-                fields.organizer,
+                fields.contact_name,
             ],
         );
         Ok(Self {
@@ -902,7 +902,7 @@ impl PlaceIndexer for TantivyIndex {
         doc.add_f64(self.fields.lng, place.location.pos.lng().to_deg());
         doc.add_text(self.fields.title, &place.title);
         doc.add_text(self.fields.description, &place.description);
-        if let Some(address) = &place.location.address {
+        if let Some(ref address) = place.location.address {
             let Address {
                 street,
                 city,
@@ -924,6 +924,12 @@ impl PlaceIndexer for TantivyIndex {
             }
             if let Some(state) = state {
                 doc.add_text(self.fields.address_country, state);
+            }
+        }
+        if let Some(ref contact) = place.contact {
+            let Contact { name, .. } = contact;
+            if let Some(contact_name) = name {
+                doc.add_text(self.fields.contact_name, contact_name);
             }
         }
         for tag in &place.tags {
@@ -991,8 +997,11 @@ impl EventIndexer for TantivyIndex {
         if let Some(ref description) = event.description {
             doc.add_text(self.fields.description, description);
         }
-        if let Some(organizer) = event.organizer() {
-            doc.add_text(self.fields.organizer, organizer);
+        if let Some(ref contact) = event.contact {
+            let Contact { name, .. } = contact;
+            if let Some(contact_name) = name {
+                doc.add_text(self.fields.contact_name, contact_name);
+            }
         }
         for tag in &event.tags {
             doc.add_text(self.fields.tag, tag);
