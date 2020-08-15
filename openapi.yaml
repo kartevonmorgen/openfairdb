@@ -831,7 +831,7 @@ components:
         state:
           type: string
         contact_name:
-          $ref: '#/components/schemas/PersonDisplayName'
+          $ref: '#/components/schemas/ContactName'
         email:
           $ref: '#/components/schemas/ContactEmail'
         telephone:
@@ -1100,15 +1100,20 @@ components:
         The e-mail address of a user account.
       allOf:
         - $ref: '#/components/schemas/Email'
+    ContactName:
+      description: |
+        The name of the contact person.
+      allOf:
+        - $ref: '#/components/schemas/PersonFullName'
     ContactEmail:
       description: |
         An e-mail address to get in contact.
       allOf:
         - $ref: '#/components/schemas/Email'
-    PersonDisplayName:
+    PersonFullName:
       type: string
       description: |
-        The display name of a person.
+        The full name of a person.
       example: John Smith
     Title:
       type: string
@@ -1194,7 +1199,7 @@ components:
     Contact:
       properties:
         name:
-          $ref: '#/components/schemas/PersonDisplayName'
+          $ref: '#/components/schemas/ContactName'
         phone:
           $ref: '#/components/schemas/ContactPhone'
         email:
