@@ -88,18 +88,35 @@ pub fn routes() -> Vec<Route> {
     ]
 }
 
-#[get("/entries/<ids>")]
-fn get_entry(db: sqlite::Connections, ids: String) -> Result<Vec<json::Entry>> {
+#[derive(FromForm, Clone)]
+pub struct GetEntryQuery {
+    org_tag: Option<String>,
+}
+
+#[get("/entries/<ids>?<query..>")]
+fn get_entry(
+    db: sqlite::Connections,
+    ids: String,
+    query: Form<GetEntryQuery>,
+) -> Result<Vec<json::Entry>> {
     // TODO: Only lookup and return a single entity
     // TODO: Add a new method for searching multiple ids
     let ids = util::split_ids(&ids);
     if ids.is_empty() {
         return Ok(Json(vec![]));
     }
+    let GetEntryQuery { ref org_tag } = query.into_inner();
     let results = {
-        let mut results = Vec::with_capacity(ids.len());
         let db = db.shared()?;
-        for (place, _) in db.get_places(&ids)?.into_iter() {
+        let mut places = db.get_places(&ids)?;
+        if let Some(org_tag) = org_tag {
+            if let Some(org_id) = db.map_tag_to_clearance_org_id(&org_tag)? {
+                places =
+                    usecases::clearance::place::clear_repo_results(&*db, &org_id, org_tag, places)?;
+            }
+        }
+        let mut results = Vec::with_capacity(places.len());
+        for (place, _) in places.into_iter() {
             let r = db.load_ratings_of_place(place.id.as_ref())?;
             results.push(json::entry_from_place_with_ratings(place, r));
         }

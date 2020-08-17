@@ -32,6 +32,7 @@ paths:
         - Search
       parameters:
         - $ref: '#/components/parameters/BoundingBox'
+        - $ref: '#/components/parameters/OrgTagFilter'
         - name: categories
           in: query
           schema:
@@ -45,33 +46,6 @@ paths:
           in: query
           schema:
             type: string
-        - name: org_tag
-          in: query
-          schema:
-            type: string
-          description: |
-            A single hash tag that is moderated by an organization.
-
-            The hash tag will be included in the query as a mandatory search criteria
-            like any other tag.
-
-            Results will be filtered according to the current clearance status.
-            Unclear revisions of entries will either be removed or replaced by older,
-            already cleared revisions. Unclear revisions of entries are expected to
-            only exist temporarily for a short time frame until a newer version has been
-            cleared.
-
-            If the provided hash tag is not moderated by any organization the results
-            will not be filtered by clearance status.
-
-            Omitting this parameter and instead appending the moderated hash tag as
-            a regular tag to the `tags` parameter will also return unfiltered search
-            results, i.e. current revisions of entries independent of their
-            clearance status.
-
-            Only a single tag can be specified, because filtering according to
-            clearance by multiple organizations could produce ambiguous and
-            conflicting results.
         - $ref: '#/components/parameters/IdList'
         - $ref: '#/components/parameters/TagList'
         - $ref: '#/components/parameters/ReviewStatusList'
@@ -133,6 +107,7 @@ paths:
         - Entries/Places
       parameters:
         - $ref: '#/components/parameters/IdListPath'
+        - $ref: '#/components/parameters/OrgTagFilter'
       responses:
         '200':
           description: Successful response
@@ -1500,19 +1475,18 @@ components:
       example: 120.7
       description: Geographic longitude (in degrees)
   parameters:
-    BoundingBox:
-      name: bbox
-      in: query
-      description: Bounding Box
-      schema:
-        type: string
-        example: '42.27,-7.97,52.58,38.25'
     IdPath:
       name: id
       in: path
       required: true
       schema:
         $ref: '#/components/schemas/Id'
+    IdListPath:
+      name: ids
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/IdList'
     OptionalRevisionPath:
       name: revision
       in: path
@@ -1521,12 +1495,40 @@ components:
       required: true
       schema:
         $ref: '#/components/schemas/Revision'
-    IdListPath:
-      name: ids
-      in: path
-      required: true
+    BoundingBox:
+      name: bbox
+      in: query
+      description: Bounding Box
       schema:
-        $ref: '#/components/schemas/IdList'
+        type: string
+        example: '42.27,-7.97,52.58,38.25'
+    OrgTagFilter:
+      name: org_tag
+      in: query
+      required: false
+      schema:
+        type: string
+      description: |
+        A single hash tag that is moderated by an organization.
+
+        Results will be filtered according to the current clearance status.
+        Unclear revisions of entries will either be removed or replaced by older,
+        already cleared revisions. Unclear revisions of entries are expected to
+        only exist temporarily for a short time frame until a newer version has
+        been cleared.
+
+        If the provided hash tag is not moderated by any organization the results
+        will not be filtered by clearance status.
+
+        Only a single tag can be specified, because filtering according to
+        clearance by multiple organizations could produce ambiguous and
+        conflicting results.
+
+        Only when used in search requests: The hash tag will be included in the
+        query as a mandatory search criteria like any other tag. Omitting this
+        parameter and instead appending the moderated hash tag as a regular tag
+        to the `tags` parameter will also return unfiltered search results, i.e.
+        current revisions of entries independent of their clearance status.
     IdList:
       name: ids
       in: query
