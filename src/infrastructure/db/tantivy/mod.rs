@@ -88,16 +88,15 @@ impl IndexedFields {
                     .set_index_option(IndexRecordOption::WithFreqs),
             )
             .set_stored();
-        let common_text_options = TextOptions::default().set_indexing_options(
+        // Common options for indexing text fields
+        let indexed_text_options = TextOptions::default().set_indexing_options(
             TextFieldIndexing::default()
                 .set_tokenizer(TEXT_TOKENIZER)
                 .set_index_option(IndexRecordOption::WithFreqsAndPositions),
         );
-        // Unlike the other text fields address fields currently are currently
-        // dot not need to be stored until they also need to be provided as
-        // search results.
-        let address_options = common_text_options.clone();
-        let text_options = common_text_options.set_stored();
+        // Text fields that are returned as part of the search result
+        // additionally need to be stored explicitly
+        let stored_text_options = indexed_text_options.clone().set_stored();
         let mut schema_builder = SchemaBuilder::default();
         let fields = Self {
             kind: schema_builder.add_i64_field("kind", INDEXED),
@@ -107,14 +106,16 @@ impl IndexedFields {
             lng: schema_builder.add_f64_field("lon", INDEXED | STORED),
             ts_min: schema_builder.add_i64_field("ts_min", INDEXED | STORED),
             ts_max: schema_builder.add_i64_field("ts_max", INDEXED | STORED),
-            title: schema_builder.add_text_field("tit", text_options.clone()),
-            description: schema_builder.add_text_field("dsc", text_options.clone()),
-            contact_name: schema_builder.add_text_field("cnt_name", text_options),
-            address_street: schema_builder.add_text_field("adr_street", address_options.clone()),
-            address_city: schema_builder.add_text_field("adr_city", address_options.clone()),
-            address_zip: schema_builder.add_text_field("adr_zip", address_options.clone()),
-            address_country: schema_builder.add_text_field("adr_country", address_options.clone()),
-            address_state: schema_builder.add_text_field("adr_state", address_options),
+            title: schema_builder.add_text_field("tit", stored_text_options.clone()),
+            description: schema_builder.add_text_field("dsc", stored_text_options),
+            contact_name: schema_builder.add_text_field("cnt_name", indexed_text_options.clone()),
+            address_street: schema_builder
+                .add_text_field("adr_street", indexed_text_options.clone()),
+            address_city: schema_builder.add_text_field("adr_city", indexed_text_options.clone()),
+            address_zip: schema_builder.add_text_field("adr_zip", indexed_text_options.clone()),
+            address_country: schema_builder
+                .add_text_field("adr_country", indexed_text_options.clone()),
+            address_state: schema_builder.add_text_field("adr_state", indexed_text_options),
             tag: schema_builder.add_text_field("tag", tag_options),
             ratings_diversity: schema_builder.add_f64_field("rat_diversity", STORED),
             ratings_fairness: schema_builder.add_f64_field("rat_fairness", STORED),
