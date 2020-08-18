@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.6.0/dist/leaflet.css"
+      integrity="sha512-xwE/Az9zrjBIphAcBb3F6JVqxf46+CDLwfLMHloNu6KEQCAWi6HcDUbeOfBIptF7tcCzusKFjFw2yuvEpDL9wQ=="
+      crossorigin="" />
+    <link rel="stylesheet" href="main.css" />
+    <script src="https://unpkg.com/leaflet@1.6.0/dist/leaflet.js"
+      integrity="sha512-gZwIG9x3wUXg2hdXF6+rVkLF/0Vi9U8D2Ntg4Ga5I5BZpVkVxlJWbSQtXPSiUTtC0TjtGOmxa1AJPuV0CPthew=="
+      crossorigin=""></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <title>OpenFairDB</title>
+    <style>
+      #app {
+        padding-left: 20px;
+        padding-right: 20px;
+        max-width: 100vw;
+      }
+      ul li {
+        width: 100%;
+        padding-top: 10px;
+      }
+      .details-table {
+        border-collapse: collapse;
+      }
+      .details-table thead {
+        background: lavender;
+      }
+      .details-table td {
+        padding: 2px;
+      }
+      .details-table tr:nth-child(odd) {
+        background: #eee;
+      }
+      .diffrem {
+        background: #faa;
+      }
+      .diffadd {
+        background: #afa;
+      }
+      .col-head {
+        width: 10%;
+        max-width: 10%;
+      }
+      .col-last {
+        width: 45%;
+        max-width: 45%;
+        border-left: 1px solid #333;
+        /* background: #ddd; */
+      }
+      .col-curr {
+        width: 45%;
+        max-width: 45%;
+        border-left: 1px solid #333;
+      }
+    </style>
+  </head>
+  <body>
+    <section id="app"></section>
+    <script type="module">
+      import init from '/pkg/clearance.js';
+      init();
+    </script>
+  </body>
+</html>

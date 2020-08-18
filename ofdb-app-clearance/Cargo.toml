@@ -1,0 +1,18 @@
+[package]
+name = "ofdb-app-clearance"
+version = "0.0.0" # will stay 0.0.0 until published
+authors = ["slowtec GmbH <post@slowtec.de>"]
+edition = "2018"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+ofdb-boundary = { version = "*", features = ["extra-derive"] }
+ofdb-entities = "*"
+ofdb-seed = "*"
+seed = "*"
+difference = "*"
+web-sys = { version = "*", features = ["HtmlFormElement"] }
+url = { version = "*", features = ["serde"] }

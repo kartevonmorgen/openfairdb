@@ -5,11 +5,17 @@ let
      date = "2020-06-08";
      channel = "nightly";
   };
+  rust = (rustChannel.rust.override {
+    targets = [
+      "x86_64-unknown-linux-musl"
+      "wasm32-unknown-unknown"
+    ];
+  });
 in
   with pkgs;
   mkShell {
     buildInputs = [
-      rustChannel.rust
+      rust
       cmake
       pkgconfig
       openssl

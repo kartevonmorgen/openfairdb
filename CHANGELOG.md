@@ -1,5 +1,9 @@
 # Changelog
 
+## unreleased (YYYY-mm-dd)
+
+- new(web): Add clearance center
+
 ## v0.9.1 (2020-08-18)
 
 - new(api/db): Add new fields `contact_name` and `founded_on` to entries/places

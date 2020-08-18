@@ -11,10 +11,10 @@ use maud::Markup;
 use num_traits::FromPrimitive;
 use rocket::{
     self,
-    http::RawStr,
+    http::{ContentType, RawStr},
     request::Form,
     response::{
-        content::{Css, JavaScript},
+        content::{Content, Css, Html, JavaScript},
         Flash, Redirect,
     },
     Route,
@@ -29,6 +29,10 @@ mod view;
 
 const MAP_JS: &str = include_str!("map.js");
 const MAIN_CSS: &str = include_str!("main.css");
+const CLEARANCE_HTML: &str = include_str!("../../../../ofdb-app-clearance/index.html");
+const CLEARANCE_JS: &str = include_str!("../../../../ofdb-app-clearance/pkg/clearance.js");
+const CLEARANCE_WASM: &[u8] =
+    include_bytes!("../../../../ofdb-app-clearance/pkg/clearance_bg.wasm");
 
 type Result<T> = std::result::Result<T, AppError>;
 
@@ -45,6 +49,21 @@ pub fn get_index() -> Markup {
 #[get("/index.html")]
 pub fn get_index_html() -> Markup {
     view::index(None)
+}
+
+#[get("/clearance")]
+pub fn get_clearance_html() -> Html<&'static str> {
+    Html(CLEARANCE_HTML)
+}
+
+#[get("/pkg/clearance.js")]
+pub fn get_clearance_js() -> JavaScript<&'static str> {
+    JavaScript(CLEARANCE_JS)
+}
+
+#[get("/pkg/clearance_bg.wasm")]
+pub fn get_clearance_wasm() -> Content<&'static [u8]> {
+    Content(ContentType::WASM, CLEARANCE_WASM)
 }
 
 #[get("/search?<q>&<limit>")]
@@ -362,6 +381,9 @@ pub fn post_ratings_archive(
 
 pub fn routes() -> Vec<Route> {
     routes![
+        get_clearance_html,
+        get_clearance_js,
+        get_clearance_wasm,
         get_index_user,
         get_index,
         get_index_html,
