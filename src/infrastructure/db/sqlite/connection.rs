@@ -1192,6 +1192,8 @@ impl EventGateway for SqliteConnection {
 
             let pos = if let (Some(lat), Some(lng)) = (lat, lng) {
                 MapPoint::try_from_lat_lng_deg(lat, lng)
+                    .map(Some)
+                    .unwrap_or_default()
             } else {
                 None
             };

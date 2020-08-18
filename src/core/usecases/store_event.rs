@@ -165,12 +165,15 @@ pub fn import_new_event<D: Db>(
         None
     };
 
-    //TODO: use location.is_empty()
     let pos = if let (Some(lat), Some(lng)) = (lat, lng) {
-        MapPoint::try_from_lat_lng_deg(lat, lng)
+        Some(
+            MapPoint::try_from_lat_lng_deg(lat, lng)
+                .map_err(|_| ParameterError::InvalidPosition)?,
+        )
     } else {
         None
     };
+    //TODO: use location.is_empty()
     let location = if pos.is_some() || address.is_some() {
         Some(Location {
             pos: pos.unwrap_or_default(),

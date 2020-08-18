@@ -128,10 +128,8 @@ pub fn prepare_updated_place<D: Db>(
         custom_links: custom_links_param,
         ..
     } = e;
-    let pos = match MapPoint::try_from_lat_lng_deg(lat, lng) {
-        None => return Err(ParameterError::InvalidPosition.into()),
-        Some(pos) => pos,
-    };
+    let pos =
+        MapPoint::try_from_lat_lng_deg(lat, lng).map_err(|_| ParameterError::InvalidPosition)?;
     let address = Address {
         street,
         zip,

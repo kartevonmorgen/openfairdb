@@ -1,5 +1,12 @@
 use itertools::*;
 use std::ops::{Add, Sub};
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum CoordError {
+    #[error("out of range")]
+    OutOfRange,
+}
 
 pub type RawCoord = i32;
 
@@ -142,12 +149,12 @@ impl LatCoord {
         res
     }
 
-    pub fn try_from_deg<T: Into<f64>>(deg: T) -> Option<Self> {
+    pub fn try_from_deg<T: Into<f64>>(deg: T) -> Result<Self, CoordError> {
         let deg = deg.into();
         if deg >= Self::DEG_MIN && deg <= Self::DEG_MAX {
-            Some(Self::from_deg(deg))
+            Ok(Self::from_deg(deg))
         } else {
-            None
+            Err(CoordError::OutOfRange)
         }
     }
 }
@@ -268,12 +275,12 @@ impl LngCoord {
         res
     }
 
-    pub fn try_from_deg<T: Into<f64>>(deg: T) -> Option<Self> {
+    pub fn try_from_deg<T: Into<f64>>(deg: T) -> Result<Self, CoordError> {
         let deg = deg.into();
         if deg >= Self::DEG_MIN && deg <= Self::DEG_MAX {
-            Some(Self::from_deg(deg))
+            Ok(Self::from_deg(deg))
         } else {
-            None
+            Err(CoordError::OutOfRange)
         }
     }
 }
@@ -347,40 +354,33 @@ impl MapPoint {
     pub fn try_from_lat_lng_deg<LAT: Into<f64>, LNG: Into<f64>>(
         lat: LAT,
         lng: LNG,
-    ) -> Option<Self> {
-        match (LatCoord::try_from_deg(lat), LngCoord::try_from_deg(lng)) {
-            (Some(lat), Some(lng)) => Some(Self::new(lat, lng)),
-            _ => None,
-        }
+    ) -> Result<Self, CoordError> {
+        let lat = LatCoord::try_from_deg(lat)?;
+        let lng = LngCoord::try_from_deg(lng)?;
+        Ok(Self::new(lat, lng))
     }
 
     fn parse_lat_lng_deg(lat_deg_str: &str, lng_deg_str: &str) -> Result<Self, MapPointParseError> {
-        match (lat_deg_str.parse::<f64>(), lng_deg_str.parse::<f64>()) {
-            (Ok(lat_deg), Ok(lng_deg)) => {
-                let lat = LatCoord::try_from_deg(lat_deg);
-                if let Some(lat) = lat {
-                    debug_assert!(lat.is_valid());
-                    let lng = LngCoord::try_from_deg(lng_deg);
-                    if let Some(lng) = lng {
-                        debug_assert!(lng.is_valid());
-                        Ok(MapPoint::new(lat, lng))
-                    } else {
-                        Err(MapPointParseError::LongitudeDegree(lng_deg))
-                    }
-                } else {
-                    Err(MapPointParseError::LatitudeDegree(lat_deg))
-                }
-            }
-            (Err(err), _) => Err(MapPointParseError::LatitudeString(lat_deg_str.into(), err)),
-            (_, Err(err)) => Err(MapPointParseError::LongitudeString(lng_deg_str.into(), err)),
-        }
+        let lat_deg = lat_deg_str
+            .parse::<f64>()
+            .map_err(|err| MapPointParseError::LatitudeString(lat_deg_str.into(), err))?;
+        let lng_deg = lng_deg_str
+            .parse::<f64>()
+            .map_err(|err| MapPointParseError::LongitudeString(lng_deg_str.into(), err))?;
+        let lat = LatCoord::try_from_deg(lat_deg)
+            .map_err(|err| MapPointParseError::LatitudeDegree(lat_deg, err))?;
+        debug_assert!(lat.is_valid());
+        let lng = LngCoord::try_from_deg(lng_deg)
+            .map_err(|err| MapPointParseError::LongitudeDegree(lng_deg, err))?;
+        debug_assert!(lng.is_valid());
+        Ok(MapPoint::new(lat, lng))
     }
 }
 
 #[derive(Debug)]
 pub enum MapPointParseError {
-    LatitudeDegree(f64),
-    LongitudeDegree(f64),
+    LatitudeDegree(f64, CoordError),
+    LongitudeDegree(f64, CoordError),
     LatitudeString(String, std::num::ParseFloatError),
     LongitudeString(String, std::num::ParseFloatError),
     Other,
@@ -602,8 +602,8 @@ mod tests {
         );
         assert_eq!(LatCoord::min(), LatCoord::from_deg(-90));
         assert_eq!(LatCoord::max(), LatCoord::from_deg(90));
-        assert_eq!(None, LatCoord::try_from_deg(-90.000001));
-        assert_eq!(None, LatCoord::try_from_deg(90.000001));
+        assert!(LatCoord::try_from_deg(-90.000001).is_err());
+        assert!(LatCoord::try_from_deg(90.000001).is_err());
     }
 
     #[test]
@@ -633,8 +633,8 @@ mod tests {
         );
         assert_eq!(LngCoord::min(), LngCoord::from_deg(-180));
         assert_eq!(LngCoord::max(), LngCoord::from_deg(180));
-        assert_eq!(None, LngCoord::try_from_deg(-180.000001));
-        assert_eq!(None, LngCoord::try_from_deg(180.000001));
+        assert!(LngCoord::try_from_deg(-180.000001).is_err());
+        assert!(LngCoord::try_from_deg(180.000001).is_err());
     }
 
     #[test]
