@@ -124,6 +124,8 @@ pub(crate) fn event_from_event_entity_and_tags(e: EventEntity, tag_rels: &[Event
     };
     let pos = if let (Some(lat), Some(lng)) = (lat, lng) {
         MapPoint::try_from_lat_lng_deg(lat, lng)
+            .map(Some)
+            .unwrap_or_default()
     } else {
         None
     };

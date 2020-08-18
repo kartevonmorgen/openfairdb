@@ -20,6 +20,8 @@ mod tests;
 fn check_and_set_address_location(e: &mut usecases::NewEvent) -> Option<MapPoint> {
     let pos = if let (Some(lat), Some(lng)) = (e.lat, e.lng) {
         MapPoint::try_from_lat_lng_deg(lat, lng)
+            .map(Some)
+            .unwrap_or_default()
     } else {
         None
     };
@@ -39,8 +41,7 @@ fn check_and_set_address_location(e: &mut usecases::NewEvent) -> Option<MapPoint
     GEO_CODING_GW
         .resolve_address_lat_lng(&addr)
         .and_then(|(lat, lng)| {
-            let pos = MapPoint::try_from_lat_lng_deg(lat, lng);
-            if pos.unwrap_or_default().is_valid() {
+            if let Ok(pos) = MapPoint::try_from_lat_lng_deg(lat, lng) {
                 log::debug!(
                     "Updating event location: ({:?}, {:?}) -> {:?}",
                     e.lat,

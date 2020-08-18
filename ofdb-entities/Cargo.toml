@@ -16,6 +16,7 @@ uuid = { version = "*", features = ["v4"] }
 url = "2"
 strum = "*"
 strum_macros = "*"
+thiserror = "*"
 
 [features]
 default = []

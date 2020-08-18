@@ -68,10 +68,8 @@ pub fn prepare_new_place<D: Db>(
         image_link_url,
         custom_links: custom_links_param,
     } = e;
-    let pos = match MapPoint::try_from_lat_lng_deg(lat, lng) {
-        None => return Err(ParameterError::InvalidPosition.into()),
-        Some(pos) => pos,
-    };
+    let pos =
+        MapPoint::try_from_lat_lng_deg(lat, lng).map_err(|_| ParameterError::InvalidPosition)?;
 
     let categories: Vec<_> = categories.into_iter().map(Id::from).collect();
     let old_tags = vec![];
