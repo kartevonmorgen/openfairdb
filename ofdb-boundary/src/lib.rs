@@ -623,8 +623,8 @@ impl From<e::geo::MapPoint> for LatLonDegrees {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq))]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Default, PartialEq, Eq))]
 pub struct Address {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub street: Option<String>,
@@ -695,8 +695,8 @@ impl From<e::location::Location> for Location {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq))]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Default, PartialEq, Eq))]
 pub struct Contact {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -725,8 +725,8 @@ impl From<e::contact::Contact> for Contact {
     }
 }
 
-#[derive(Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq))]
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Default, PartialEq, Eq))]
 pub struct Links {
     #[serde(rename = "www", skip_serializing_if = "Option::is_none")]
     pub homepage: Option<Url>,
