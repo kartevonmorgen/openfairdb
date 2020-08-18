@@ -564,30 +564,33 @@ impl std::fmt::Display for MapBbox {
 }
 
 impl std::str::FromStr for MapBbox {
-    type Err = MapBboxParseErr;
+    type Err = MapBboxInputError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some((sw_lat_deg_str, sw_lng_deg_str, ne_lat_deg_str, ne_lng_deg_str)) =
             s.split(',').collect_tuple()
         {
-            let sw = MapPoint::parse_lat_lng_deg(sw_lat_deg_str, sw_lng_deg_str);
-            let ne = MapPoint::parse_lat_lng_deg(ne_lat_deg_str, ne_lng_deg_str);
-            match (sw, ne) {
-                (Ok(sw), Ok(ne)) => Ok(MapBbox::new(sw, ne)),
-                (Err(err), _) => Err(MapBboxParseErr::SouthWest(err)),
-                (_, Err(err)) => Err(MapBboxParseErr::NorthEast(err)),
-            }
+            let sw = MapPoint::parse_lat_lng_deg(sw_lat_deg_str, sw_lng_deg_str)
+                .map_err(MapBboxInputError::Southwest)?;
+            let ne = MapPoint::parse_lat_lng_deg(ne_lat_deg_str, ne_lng_deg_str)
+                .map_err(MapBboxInputError::Northeast)?;
+            Ok(MapBbox::new(sw, ne))
         } else {
-            Err(MapBboxParseErr::Other(s.into()))
+            Err(MapBboxInputError::Format(s.to_string()))
         }
     }
 }
 
-#[derive(Debug)]
-pub enum MapBboxParseErr {
-    SouthWest(MapPointInputError),
-    NorthEast(MapPointInputError),
-    Other(String),
+#[derive(Debug, Error)]
+pub enum MapBboxInputError {
+    #[error("southwest point: {0}")]
+    Southwest(MapPointInputError),
+
+    #[error("northeast point: {0}")]
+    Northeast(MapPointInputError),
+
+    #[error("invalid format: '{0}'")]
+    Format(String),
 }
 
 #[cfg(test)]
