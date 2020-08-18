@@ -108,13 +108,7 @@ fn get_entry(
     let GetEntryQuery { ref org_tag } = query.into_inner();
     let results = {
         let db = db.shared()?;
-        let mut places = db.get_places(&ids)?;
-        if let Some(org_tag) = org_tag {
-            if let Some(org_id) = db.map_tag_to_clearance_org_id(&org_tag)? {
-                places =
-                    usecases::clearance::place::clear_repo_results(&*db, &org_id, org_tag, places)?;
-            }
-        }
+        let places = usecases::load_places(&*db, &ids, org_tag.as_ref().map(String::as_str))?;
         let mut results = Vec::with_capacity(places.len());
         for (place, _) in places.into_iter() {
             let r = db.load_ratings_of_place(place.id.as_ref())?;

@@ -538,8 +538,8 @@ fn should_create_pending_clearance_when_updating_an_archived_place_with_moderate
 }
 
 #[test]
-fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -> flows::Result<()>
-{
+fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_places(
+) -> flows::Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
     let org = &fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
@@ -597,6 +597,15 @@ fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -
     )?;
     assert_eq!(1, uncleared_search_result.len());
     assert_eq!(new_title, uncleared_search_result.first().unwrap().title);
+    // Load uncleared (default)
+    let uncleared_load_result = usecases::load_places(
+        &*fixture.backend.db_connections.shared()?,
+        &vec![place_id.as_ref()],
+        None,
+    )?;
+    assert_eq!(1, uncleared_load_result.len());
+    assert_eq!(new_title, uncleared_load_result.first().unwrap().0.title);
+
     // Search cleared
     let (cleared_search_result, _) = usecases::search(
         &*fixture.backend.db_connections.shared()?,
@@ -612,6 +621,17 @@ fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -
     assert_eq!(
         old_place.title,
         cleared_search_result.first().unwrap().title
+    );
+    // Load cleared
+    let cleared_load_result = usecases::load_places(
+        &*fixture.backend.db_connections.shared()?,
+        &vec![place_id.as_ref()],
+        Some(tag.as_str()),
+    )?;
+    assert_eq!(1, cleared_load_result.len());
+    assert_eq!(
+        old_place.title,
+        cleared_load_result.first().unwrap().0.title
     );
 
     // Archive, clear, and then confirm (= unarchive) this entry
@@ -670,7 +690,12 @@ fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -
         },
     )?;
 
-    // Search uncleared (default)
+    // Load & search uncleared (default)
+    let uncleared_load_result = usecases::load_places(
+        &*fixture.backend.db_connections.shared()?,
+        &vec![place_id.as_ref()],
+        None,
+    )?;
     let (uncleared_search_result, _) = usecases::search(
         &*fixture.backend.db_connections.shared()?,
         &*fixture.backend.search_engine.borrow(),
@@ -681,13 +706,25 @@ fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -
         },
         100,
     )?;
+    assert_eq!(1, uncleared_load_result.len());
     assert_eq!(1, uncleared_search_result.len());
+    assert_eq!(new_title, uncleared_load_result.first().unwrap().0.title);
     assert_eq!(new_title, uncleared_search_result.first().unwrap().title);
+    assert_eq!(
+        ReviewStatus::Confirmed,
+        uncleared_load_result.first().unwrap().1
+    );
     assert_eq!(
         Some(ReviewStatus::Confirmed),
         uncleared_search_result.first().unwrap().status
     );
-    // Search cleared - Not filtered, because no more pending clearances
+
+    // Load & search cleared - Not filtered, because no more pending clearances
+    let cleared_load_result = usecases::load_places(
+        &*fixture.backend.db_connections.shared()?,
+        &vec![place_id.as_ref()],
+        Some(tag.as_str()),
+    )?;
     let (cleared_search_result, _) = usecases::search(
         &*fixture.backend.db_connections.shared()?,
         &*fixture.backend.search_engine.borrow(),
@@ -698,8 +735,14 @@ fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -
         },
         100,
     )?;
+    assert_eq!(1, cleared_load_result.len());
     assert_eq!(1, cleared_search_result.len());
+    assert_eq!(new_title, cleared_load_result.first().unwrap().0.title);
     assert_eq!(new_title, cleared_search_result.first().unwrap().title);
+    assert_eq!(
+        ReviewStatus::Confirmed,
+        cleared_load_result.first().unwrap().1
+    );
     assert_eq!(
         Some(ReviewStatus::Confirmed),
         cleared_search_result.first().unwrap().status
@@ -709,7 +752,8 @@ fn should_return_the_last_cleared_revision_when_searching_for_cleared_places() -
 }
 
 #[test]
-fn should_hide_untagged_cleared_revision_when_searching_for_cleared_places() -> flows::Result<()> {
+fn should_hide_untagged_cleared_revision_when_loading_or_searching_for_cleared_places(
+) -> flows::Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
     let org = &fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
@@ -750,7 +794,12 @@ fn should_hide_untagged_cleared_revision_when_searching_for_cleared_places() -> 
         pending_clearances.first().unwrap().last_cleared_revision
     );
 
-    // Search uncleared (default)
+    // Load & search uncleared (default)
+    let uncleared_load_result = usecases::load_places(
+        &*fixture.backend.db_connections.shared()?,
+        &vec![place_id.as_ref()],
+        None,
+    )?;
     let (uncleared_search_result, _) = usecases::search(
         &*fixture.backend.db_connections.shared()?,
         &*fixture.backend.search_engine.borrow(),
@@ -761,11 +810,19 @@ fn should_hide_untagged_cleared_revision_when_searching_for_cleared_places() -> 
         },
         100,
     )?;
+    assert_eq!(1, uncleared_load_result.len());
     assert_eq!(1, uncleared_search_result.len());
+    assert_eq!(new_title, uncleared_load_result.first().unwrap().0.title);
     assert_eq!(new_title, uncleared_search_result.first().unwrap().title);
+    assert_eq!(new_tags, uncleared_load_result.first().unwrap().0.tags);
     assert_eq!(new_tags, uncleared_search_result.first().unwrap().tags);
 
-    // Search cleared
+    // Load & search cleared
+    let cleared_load_result = usecases::load_places(
+        &*fixture.backend.db_connections.shared()?,
+        &vec![place_id.as_ref()],
+        Some(tag.as_str()),
+    )?;
     let (cleared_search_result, _) = usecases::search(
         &*fixture.backend.db_connections.shared()?,
         &*fixture.backend.search_engine.borrow(),
@@ -778,6 +835,7 @@ fn should_hide_untagged_cleared_revision_when_searching_for_cleared_places() -> 
     )?;
     // The cleared initial revision is not tagged and should
     // be removed from the results
+    assert!(cleared_load_result.is_empty());
     assert!(cleared_search_result.is_empty());
 
     Ok(())

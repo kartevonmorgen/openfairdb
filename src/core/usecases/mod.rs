@@ -25,6 +25,7 @@ mod filter_event;
 mod filter_place;
 mod find_duplicates;
 mod indexing;
+mod load_places;
 mod login;
 mod query_events;
 mod rate_place;
@@ -42,8 +43,8 @@ pub use self::{
     archive_comments::*, archive_events::*, archive_ratings::*, authorize::*, change_user_role::*,
     confirm_email::*, confirm_email_and_reset_password::*, create_new_place::*, create_new_user::*,
     delete_event::*, export_event::*, export_place::*, filter_event::*, filter_place::*,
-    find_duplicates::*, indexing::*, login::*, query_events::*, rate_place::*, register::*,
-    review_places::*, search::*, store_event::*, update_place::*, user_tokens::*,
+    find_duplicates::*, indexing::*, load_places::*, login::*, query_events::*, rate_place::*,
+    register::*, review_places::*, search::*, store_event::*, update_place::*, user_tokens::*,
 };
 
 //TODO: move usecases into separate files
