@@ -455,10 +455,10 @@ fn get_bbox_subscriptions(
         .into_iter()
         .map(|s| json::BboxSubscription {
             id: s.id.into(),
-            south_west_lat: s.bbox.south_west().lat().to_deg(),
-            south_west_lng: s.bbox.south_west().lng().to_deg(),
-            north_east_lat: s.bbox.north_east().lat().to_deg(),
-            north_east_lng: s.bbox.north_east().lng().to_deg(),
+            south_west_lat: s.bbox.southwest().lat().to_deg(),
+            south_west_lng: s.bbox.southwest().lng().to_deg(),
+            north_east_lat: s.bbox.northeast().lat().to_deg(),
+            north_east_lng: s.bbox.northeast().lng().to_deg(),
         })
         .collect();
     Ok(Json(user_subscriptions))

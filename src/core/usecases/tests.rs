@@ -654,7 +654,7 @@ fn create_bbox_subscription() {
 
     let bbox_subscription = db.all_bbox_subscriptions().unwrap()[0].clone();
     assert_eq!(
-        bbox_subscription.bbox.north_east().lat(),
+        bbox_subscription.bbox.northeast().lat(),
         LatCoord::from_deg(88.2)
     );
 }
@@ -700,7 +700,7 @@ fn modify_bbox_subscription() {
 
     assert_eq!(bbox_subscriptions.len(), 1);
     assert_eq!(
-        bbox_subscriptions[0].clone().bbox.north_east().lat(),
+        bbox_subscriptions[0].clone().bbox.northeast().lat(),
         LatCoord::from_deg(10.0)
     );
 }

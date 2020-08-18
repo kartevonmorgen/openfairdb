@@ -523,11 +523,11 @@ impl MapBbox {
         Self::new(sw, ne)
     }
 
-    pub const fn south_west(&self) -> MapPoint {
+    pub const fn southwest(&self) -> MapPoint {
         self.sw
     }
 
-    pub const fn north_east(&self) -> MapPoint {
+    pub const fn northeast(&self) -> MapPoint {
         self.ne
     }
 
