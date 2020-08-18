@@ -21,6 +21,7 @@ thiserror = "*"
 [features]
 default = []
 builders = []
+wasm-bindgen = ["uuid/wasm-bindgen"]
 
 [dev-dependencies]
 rand = "*"
