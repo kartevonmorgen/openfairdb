@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.9.1 (2020-08-18)
+
+- new(api/db): Add new fields `contact_name` and `founded_on` to entries/places
+- new(api): Filter entries by `org_tag` and return only revisions that have been *cleared* by the responsible organization (`/entries`)
+
 ## v0.9.0 (2020-08-13)
 
 - new(api/db): Moderated tags: Fine-grained permissions for organizations
@@ -8,7 +13,7 @@
 - new(api/db): Add support for custom links in place entries
 - new(api): Allow organizations to read the history of places
 - new(api): Add route to search for duplicate entries/places by example (`/search/duplicates`)
-- new(db): Optimize performance to identify duplicates of existing entries/places (`duplicates/<ids>`)
+- new(db): Optimize performance to identify duplicates of existing entries/places (`/duplicates/<ids>`)
 
 ## v0.8.21 (2020-08-04)
 
