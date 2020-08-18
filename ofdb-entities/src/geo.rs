@@ -1,12 +1,9 @@
 use itertools::*;
-use std::ops::{Add, Sub};
+use std::{
+    num::ParseFloatError,
+    ops::{Add, Sub},
+};
 use thiserror::Error;
-
-#[derive(Debug, Error)]
-pub enum CoordError {
-    #[error("out of range")]
-    OutOfRange,
-}
 
 pub type RawCoord = i32;
 
@@ -14,6 +11,24 @@ pub type RawCoord = i32;
 const RAW_COORD_INVALID: RawCoord = std::i32::MIN;
 const RAW_COORD_MAX: RawCoord = std::i32::MAX;
 const RAW_COORD_MIN: RawCoord = -RAW_COORD_MAX;
+
+#[derive(Debug, Error)]
+pub enum CoordRangeError {
+    #[error("degrees out of range")]
+    Degrees(f64),
+
+    #[error("radians out of range")]
+    Radians(f64),
+}
+
+#[derive(Debug, Error)]
+pub enum CoordInputError {
+    #[error(transparent)]
+    Range(#[from] CoordRangeError),
+
+    #[error(transparent)]
+    Parse(#[from] ParseFloatError),
+}
 
 /// Compact fixed-point integer representation of a geographical coordinate.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -149,12 +164,12 @@ impl LatCoord {
         res
     }
 
-    pub fn try_from_deg<T: Into<f64>>(deg: T) -> Result<Self, CoordError> {
+    pub fn try_from_deg<T: Into<f64>>(deg: T) -> Result<Self, CoordRangeError> {
         let deg = deg.into();
         if deg >= Self::DEG_MIN && deg <= Self::DEG_MAX {
             Ok(Self::from_deg(deg))
         } else {
-            Err(CoordError::OutOfRange)
+            Err(CoordRangeError::Degrees(deg))
         }
     }
 }
@@ -275,12 +290,12 @@ impl LngCoord {
         res
     }
 
-    pub fn try_from_deg<T: Into<f64>>(deg: T) -> Result<Self, CoordError> {
+    pub fn try_from_deg<T: Into<f64>>(deg: T) -> Result<Self, CoordRangeError> {
         let deg = deg.into();
         if deg >= Self::DEG_MIN && deg <= Self::DEG_MAX {
             Ok(Self::from_deg(deg))
         } else {
-            Err(CoordError::OutOfRange)
+            Err(CoordRangeError::Degrees(deg))
         }
     }
 }
@@ -354,36 +369,39 @@ impl MapPoint {
     pub fn try_from_lat_lng_deg<LAT: Into<f64>, LNG: Into<f64>>(
         lat: LAT,
         lng: LNG,
-    ) -> Result<Self, CoordError> {
+    ) -> Result<Self, CoordRangeError> {
         let lat = LatCoord::try_from_deg(lat)?;
         let lng = LngCoord::try_from_deg(lng)?;
         Ok(Self::new(lat, lng))
     }
 
-    fn parse_lat_lng_deg(lat_deg_str: &str, lng_deg_str: &str) -> Result<Self, MapPointParseError> {
+    fn parse_lat_lng_deg(lat_deg_str: &str, lng_deg_str: &str) -> Result<Self, MapPointInputError> {
         let lat_deg = lat_deg_str
             .parse::<f64>()
-            .map_err(|err| MapPointParseError::LatitudeString(lat_deg_str.into(), err))?;
+            .map_err(|err| MapPointInputError::Latitude(err.into()))?;
+        let lat = LatCoord::try_from_deg(lat_deg)
+            .map_err(|err| MapPointInputError::Latitude(err.into()))?;
+        debug_assert!(lat.is_valid());
         let lng_deg = lng_deg_str
             .parse::<f64>()
-            .map_err(|err| MapPointParseError::LongitudeString(lng_deg_str.into(), err))?;
-        let lat = LatCoord::try_from_deg(lat_deg)
-            .map_err(|err| MapPointParseError::LatitudeDegree(lat_deg, err))?;
-        debug_assert!(lat.is_valid());
+            .map_err(|err| MapPointInputError::Longitude(err.into()))?;
         let lng = LngCoord::try_from_deg(lng_deg)
-            .map_err(|err| MapPointParseError::LongitudeDegree(lng_deg, err))?;
+            .map_err(|err| MapPointInputError::Longitude(err.into()))?;
         debug_assert!(lng.is_valid());
         Ok(MapPoint::new(lat, lng))
     }
 }
 
-#[derive(Debug)]
-pub enum MapPointParseError {
-    LatitudeDegree(f64, CoordError),
-    LongitudeDegree(f64, CoordError),
-    LatitudeString(String, std::num::ParseFloatError),
-    LongitudeString(String, std::num::ParseFloatError),
-    Other,
+#[derive(Debug, Error)]
+pub enum MapPointInputError {
+    #[error("latitude: {0}")]
+    Latitude(CoordInputError),
+
+    #[error("longitude: {0}")]
+    Longitude(CoordInputError),
+
+    #[error("invalid format: '{0}'")]
+    Format(String),
 }
 
 impl std::fmt::Display for MapPoint {
@@ -393,13 +411,13 @@ impl std::fmt::Display for MapPoint {
 }
 
 impl std::str::FromStr for MapPoint {
-    type Err = MapPointParseError;
+    type Err = MapPointInputError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         if let Some((lat_deg_str, lng_deg_str)) = s.split(',').collect_tuple() {
             MapPoint::parse_lat_lng_deg(lat_deg_str, lng_deg_str)
         } else {
-            Err(MapPointParseError::Other)
+            Err(MapPointInputError::Format(s.to_string()))
         }
     }
 }
@@ -567,8 +585,8 @@ impl std::str::FromStr for MapBbox {
 
 #[derive(Debug)]
 pub enum MapBboxParseErr {
-    SouthWest(MapPointParseError),
-    NorthEast(MapPointParseError),
+    SouthWest(MapPointInputError),
+    NorthEast(MapPointInputError),
     Other(String),
 }
 
