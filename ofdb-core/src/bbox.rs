@@ -6,21 +6,21 @@ const BBOX_LNG_DEG_EXT: f64 = 0.04;
 pub fn extend_bbox(bbox: &MapBbox) -> MapBbox {
     let south_west_lat_deg = LatCoord::min()
         .to_deg()
-        .max(bbox.south_west().lat().to_deg() - BBOX_LAT_DEG_EXT);
+        .max(bbox.southwest().lat().to_deg() - BBOX_LAT_DEG_EXT);
     let north_east_lat_deg = LatCoord::max()
         .to_deg()
-        .min(bbox.north_east().lat().to_deg() + BBOX_LAT_DEG_EXT);
-    let mut south_west_lng_deg = bbox.south_west().lng().to_deg() - BBOX_LNG_DEG_EXT;
+        .min(bbox.northeast().lat().to_deg() + BBOX_LAT_DEG_EXT);
+    let mut south_west_lng_deg = bbox.southwest().lng().to_deg() - BBOX_LNG_DEG_EXT;
     if south_west_lng_deg < LngCoord::min().to_deg() {
         // wrap around
         south_west_lng_deg += LngCoord::max().to_deg() - LngCoord::min().to_deg();
     }
-    let mut north_east_lng_deg = bbox.north_east().lng().to_deg() + BBOX_LNG_DEG_EXT;
+    let mut north_east_lng_deg = bbox.northeast().lng().to_deg() + BBOX_LNG_DEG_EXT;
     if north_east_lng_deg > LngCoord::max().to_deg() {
         // wrap around
         north_east_lng_deg -= LngCoord::max().to_deg() - LngCoord::min().to_deg();
     }
-    if bbox.south_west().lng() <= bbox.north_east().lng() {
+    if bbox.southwest().lng() <= bbox.northeast().lng() {
         if south_west_lng_deg > north_east_lng_deg {
             // overflow after wrap around (boundaries switched) -> maximize
             south_west_lng_deg = LngCoord::min().to_deg();
@@ -113,9 +113,9 @@ mod tests {
         );
         let ext_bbox = extend_bbox(&bbox);
         assert!(ext_bbox.is_valid());
-        assert_eq!(ext_bbox.south_west().lat(), LatCoord::min());
-        assert_eq!(ext_bbox.north_east().lat(), LatCoord::max());
-        assert_eq!(ext_bbox.south_west().lng(), LngCoord::min());
-        assert_eq!(ext_bbox.north_east().lng(), LngCoord::max());
+        assert_eq!(ext_bbox.southwest().lat(), LatCoord::min());
+        assert_eq!(ext_bbox.northeast().lat(), LatCoord::max());
+        assert_eq!(ext_bbox.southwest().lng(), LngCoord::min());
+        assert_eq!(ext_bbox.northeast().lng(), LngCoord::max());
     }
 }
