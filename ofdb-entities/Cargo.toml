@@ -1,5 +1,6 @@
 [package]
 name = "ofdb-entities"
+description = "Reusable, agnostic domain entities for OpenFairDB."
 version = "0.0.0" # will stay 0.0.0 until published
 authors = ["slowtec GmbH <post@slowtec.de>"]
 edition = "2018"

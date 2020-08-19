@@ -11,6 +11,7 @@ pub mod place_builder {
     use crate::{activity::*, geo::*, id::*, links::*, location::*, place::*, revision::*};
     use std::str::FromStr;
 
+    #[derive(Debug)]
     pub struct PlaceBuild {
         place: Place,
     }
@@ -120,6 +121,7 @@ pub mod address_builder {
     use super::*;
     use crate::address::*;
 
+    #[derive(Debug)]
     pub struct AddressBuild {
         addr: Address,
     }

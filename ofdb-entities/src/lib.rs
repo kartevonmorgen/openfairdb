@@ -1,3 +1,14 @@
+//#![deny(missing_docs)] // TODO: Complete missing documentation and enable this option
+#![deny(missing_debug_implementations)]
+#![deny(intra_doc_link_resolution_failure)]
+#![cfg_attr(test, deny(warnings))]
+
+//! # ofdb-entities
+//!
+//! Reusable, agnostic domain entities for OpenFairDB.
+//!
+//! The entities only contain generic functionality that does not reveal any application-specific business logic.
+
 pub mod activity;
 pub mod address;
 pub mod category;

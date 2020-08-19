@@ -1,3 +1,14 @@
+//#![deny(missing_docs)] // TODO: Complete missing documentation and enable this option
+#![deny(missing_debug_implementations)]
+#![deny(intra_doc_link_resolution_failure)]
+#![cfg_attr(test, deny(warnings))]
+
+//! # ofdb-boundary
+//!
+//! Serializable, anemic data structures for accessing the OpenFairDB API in a type-safe manner.
+//!
+//! Only supposed to be used as short-lived, transitional instances for (de-)serializing entities!
+
 use ofdb_entities as e;
 
 use chrono::NaiveDate;
