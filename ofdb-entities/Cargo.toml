@@ -1,23 +1,25 @@
 [package]
 name = "ofdb-entities"
 description = "Reusable, agnostic domain entities for OpenFairDB."
-version = "0.0.0" # will stay 0.0.0 until published
+version = "0.9.0"
 authors = ["slowtec GmbH <post@slowtec.de>"]
+license = "MIT/Apache-2.0"
+homepage = "https://github.com/kartevonmorgen/openfairdb"
+repository = "https://github.com/kartevonmorgen/openfairdb"
 edition = "2018"
-publish = false
 
 [dependencies]
-bs58 = "*"
-chrono = "*"
-itertools = "*"
-num-derive = "*"
-num-traits = "*"
-pwhash = "*"
-uuid = { version = "*", features = ["v4"] }
+bs58 = "0.3"
+chrono = "0.4"
+itertools = "0.9"
+num-derive = "0.3"
+num-traits = "0.2"
+pwhash = "0.3"
+uuid = { version = "0.8", features = ["v4"] }
 url = "2"
-strum = "*"
-strum_macros = "*"
-thiserror = "*"
+strum = "0.19"
+strum_macros = "0.19"
+thiserror = "1"
 
 [features]
 default = []
@@ -25,4 +27,7 @@ builders = []
 wasm-bindgen = ["uuid/wasm-bindgen"]
 
 [dev-dependencies]
-rand = "*"
+rand = "0.7"
+
+[badges]
+maintenance = { status = "actively-developed" }
