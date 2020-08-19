@@ -1,13 +1,15 @@
 [package]
 name = "ofdb-boundary"
 description = "Serializable, anemic data structures for accessing the OpenFairDB API in a type-safe manner."
-version = "0.0.0" # will stay 0.0.0 until published
+version = "0.9.0"
 authors = ["slowtec GmbH <post@slowtec.de>"]
+license = "MIT/Apache-2.0"
+homepage = "https://github.com/kartevonmorgen/openfairdb"
+repository = "https://github.com/kartevonmorgen/openfairdb"
 edition = "2018"
-publish = false
 
 [dependencies]
-ofdb-entities = "*"
+ofdb-entities = { version = "0.9", path = "../ofdb-entities" }
 chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
 url = { version = "2", features = ["serde"] }
@@ -15,3 +17,7 @@ url = { version = "2", features = ["serde"] }
 [features]
 default = []
 extra-derive = []
+wasm-bindgen = ["ofdb-entities/wasm-bindgen"]
+
+[badges]
+maintenance = { status = "actively-developed" }

@@ -1,5 +1,5 @@
 //#![deny(missing_docs)] // TODO: Complete missing documentation and enable this option
-#![deny(missing_debug_implementations)]
+#![cfg_attr(features = "extra-derive", deny(missing_debug_implementations))]
 #![deny(intra_doc_link_resolution_failure)]
 #![cfg_attr(test, deny(warnings))]
 
