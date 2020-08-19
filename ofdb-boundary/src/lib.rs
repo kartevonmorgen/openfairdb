@@ -564,7 +564,7 @@ impl From<e::event::Event> for Event {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
 pub struct PendingClearanceForPlace {
     pub place_id: String,
@@ -587,7 +587,7 @@ impl From<e::clearance::PendingClearanceForPlace> for PendingClearanceForPlace {
     }
 }
 
-#[derive(Deserialize)]
+#[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
 pub struct ClearanceForPlace {
     pub place_id: String,
@@ -607,7 +607,7 @@ impl From<ClearanceForPlace> for e::clearance::ClearanceForPlace {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
 pub struct ResultCount {
     pub count: u64,
