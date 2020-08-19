@@ -13,6 +13,7 @@ use ofdb_entities as e;
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+use std::convert::{TryFrom, TryInto};
 use url::Url;
 
 #[rustfmt::skip]
@@ -66,6 +67,22 @@ impl From<e::links::CustomLink> for CustomLink {
         } = from;
         Self {
             url: url.to_string(),
+            title,
+            description,
+        }
+    }
+}
+
+// TODO: use TryFrom
+impl From<CustomLink> for e::links::CustomLink {
+    fn from(from: CustomLink) -> Self {
+        let CustomLink {
+            url,
+            title,
+            description,
+        } = from;
+        Self {
+            url: url.parse().unwrap(),
             title,
             description,
         }
@@ -623,6 +640,14 @@ impl From<e::geo::MapPoint> for LatLonDegrees {
     }
 }
 
+impl TryFrom<LatLonDegrees> for e::geo::MapPoint {
+    type Error = e::geo::CoordRangeError;
+
+    fn try_from(from: LatLonDegrees) -> Result<Self, Self::Error> {
+        e::geo::MapPoint::try_from_lat_lng_deg(from.0, from.1)
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Default, PartialEq, Eq))]
 pub struct Address {
@@ -671,6 +696,25 @@ impl From<e::address::Address> for Address {
     }
 }
 
+impl From<Address> for e::address::Address {
+    fn from(from: Address) -> Self {
+        let Address {
+            street,
+            zip,
+            city,
+            country,
+            state,
+        } = from;
+        Self {
+            street,
+            zip,
+            city,
+            country,
+            state,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq))]
 pub struct Location {
@@ -691,6 +735,17 @@ impl From<e::location::Location> for Location {
         Self {
             latlon: pos.into(),
             address: address.map(Into::into).unwrap_or_default(),
+        }
+    }
+}
+
+// TODO: use TryFrom here
+impl From<Location> for e::location::Location {
+    fn from(from: Location) -> Self {
+        let Location { latlon, address } = from;
+        Self {
+            pos: latlon.try_into().unwrap(),
+            address: Some(address.into()),
         }
     }
 }
@@ -717,6 +772,17 @@ impl Contact {
 impl From<e::contact::Contact> for Contact {
     fn from(from: e::contact::Contact) -> Self {
         let e::contact::Contact { name, email, phone } = from;
+        Self {
+            name,
+            email: email.map(Into::into),
+            phone,
+        }
+    }
+}
+
+impl From<Contact> for e::contact::Contact {
+    fn from(from: Contact) -> Self {
+        let Contact { name, email, phone } = from;
         Self {
             name,
             email: email.map(Into::into),
@@ -774,6 +840,23 @@ impl From<e::links::Links> for Links {
     }
 }
 
+impl From<Links> for e::links::Links {
+    fn from(from: Links) -> Self {
+        let Links {
+            homepage,
+            image,
+            image_href,
+            custom,
+        } = from;
+        Self {
+            homepage,
+            image,
+            image_href,
+            custom: custom.into_iter().map(Into::into).collect(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq))]
 pub struct Activity {
@@ -793,6 +876,16 @@ impl From<e::activity::Activity> for Activity {
     }
 }
 
+impl From<Activity> for e::activity::Activity {
+    fn from(from: Activity) -> Self {
+        let Activity { at, by } = from;
+        Self {
+            at: e::time::TimestampMs::from_inner(at),
+            by: by.map(Into::into),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug))]
 pub struct PlaceRoot {
@@ -805,6 +898,16 @@ pub struct PlaceRoot {
 impl From<e::place::PlaceRoot> for PlaceRoot {
     fn from(from: e::place::PlaceRoot) -> Self {
         let e::place::PlaceRoot { id, license } = from;
+        Self {
+            id: id.into(),
+            license,
+        }
+    }
+}
+
+impl From<PlaceRoot> for e::place::PlaceRoot {
+    fn from(from: PlaceRoot) -> Self {
+        let PlaceRoot { id, license } = from;
         Self {
             id: id.into(),
             license,
@@ -886,6 +989,35 @@ impl From<e::place::PlaceRevision> for PlaceRevision {
     }
 }
 
+impl From<PlaceRevision> for e::place::PlaceRevision {
+    fn from(from: PlaceRevision) -> Self {
+        let PlaceRevision {
+            revision,
+            created,
+            title,
+            description,
+            location,
+            contact,
+            opening_hours,
+            founded_on,
+            links,
+            tags,
+        } = from;
+        Self {
+            revision: revision.into(),
+            created: created.into(),
+            title,
+            description,
+            location: location.into(),
+            contact: Some(contact.into()),
+            opening_hours: opening_hours.map(Into::into),
+            founded_on: founded_on.map(Into::into),
+            links: Some(links.into()),
+            tags,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug))]
 pub struct PlaceHistory {
@@ -896,6 +1028,24 @@ pub struct PlaceHistory {
 impl From<e::place::PlaceHistory> for PlaceHistory {
     fn from(from: e::place::PlaceHistory) -> Self {
         let e::place::PlaceHistory { place, revisions } = from;
+        Self {
+            place: place.into(),
+            revisions: revisions
+                .into_iter()
+                .map(|(place_revision, reviews)| {
+                    (
+                        place_revision.into(),
+                        reviews.into_iter().map(Into::into).collect(),
+                    )
+                })
+                .collect(),
+        }
+    }
+}
+
+impl From<PlaceHistory> for e::place::PlaceHistory {
+    fn from(from: PlaceHistory) -> Self {
+        let PlaceHistory { place, revisions } = from;
         Self {
             place: place.into(),
             revisions: revisions
@@ -942,6 +1092,27 @@ impl From<e::activity::ActivityLog> for ActivityLog {
     }
 }
 
+impl From<ActivityLog> for e::activity::ActivityLog {
+    fn from(from: ActivityLog) -> Self {
+        let ActivityLog {
+            at,
+            by,
+            ctx: context,
+            comment,
+        } = from;
+        let at = e::time::TimestampMs::from_inner(at);
+        let activity = e::activity::Activity {
+            at,
+            by: by.map(Into::into),
+        };
+        Self {
+            activity,
+            context,
+            comment,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug))]
 pub struct ReviewStatusLog {
@@ -960,6 +1131,17 @@ impl From<e::review::ReviewStatusLog> for ReviewStatusLog {
         Self {
             rev: revision.into(),
             act: activity.into(),
+            status: status.into(),
+        }
+    }
+}
+
+impl From<ReviewStatusLog> for e::review::ReviewStatusLog {
+    fn from(from: ReviewStatusLog) -> Self {
+        let ReviewStatusLog { rev, act, status } = from;
+        Self {
+            revision: rev.into(),
+            activity: act.into(),
             status: status.into(),
         }
     }
