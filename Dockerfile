@@ -104,6 +104,12 @@ COPY [ \
 COPY [ \
     "openapi.yaml", \
     "./" ]
+COPY [ \
+    "build.rs", \
+    "./" ]
+COPY [ \
+    "ofdb-app-clearance", \
+    "./ofdb-app-clearance/" ]
 
 # Test and build the actual project
 RUN cargo test --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
