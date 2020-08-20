@@ -9,7 +9,6 @@ license = "AGPL-3.0-or-later"
 edition = "2018"
 
 [patch.crates-io]
-ofdb-app-clearance = { path = "ofdb-app-clearance" }
 ofdb-boundary = { path = "ofdb-boundary" }
 ofdb-core = { path = "ofdb-core" }
 ofdb-entities = { path = "ofdb-entities" }
@@ -18,13 +17,12 @@ geocoding = { git = "https://github.com/slowtec/geocoding", branch = "rustls" }
 
 [workspace]
 members = [
-  ".",
-  "ofdb-app-clearance",
   "ofdb-boundary",
   "ofdb-core",
   "ofdb-entities",
   "ofdb-gateways",
 ]
+exclude = [ "ofdb-app-clearance" ]
 
 [dependencies]
 anyhow = "*"
@@ -43,7 +41,6 @@ lazy_static = "*"
 log = "*"
 num-traits = "*"
 maud = { version = "*", optional = true, features = ["rocket"] }
-ofdb-app-clearance = { version = "*", optional = true }
 ofdb-boundary = "*"
 ofdb-core = "*"
 ofdb-entities = "*"
@@ -75,11 +72,8 @@ walkdir = "2"
 default = ["frontend", "email", "clearance"]
 email = []
 frontend = ["maud"]
-clearance = ["ofdb-app-clearance"]
+clearance = []
 
 [profile.release]
 lto = true
 codegen-units = 1
-
-[profile.release.package.ofdb-app-clearance]
-opt-level = 'z'
