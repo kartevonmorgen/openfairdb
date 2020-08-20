@@ -43,6 +43,7 @@ RUN USER=root cargo new --lib ofdb-boundary
 RUN USER=root cargo new --lib ofdb-core
 RUN USER=root cargo new --lib ofdb-entities
 RUN USER=root cargo new --lib ofdb-gateways
+RUN USER=root cargo new --lib ofdb-app-clearance
 
 COPY [ \
     "Cargo.toml", \
@@ -60,6 +61,9 @@ COPY [ \
 COPY [ \
     "ofdb-gateways/Cargo.toml", \
     "./ofdb-gateways/" ]
+COPY [ \
+    "ofdb-app-clearance/Cargo.toml", \
+    "./ofdb-app-clearance/" ]
 
 # Build the dummy project(s), then delete all build artefacts that must(!) not be cached
 RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
@@ -75,6 +79,8 @@ RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_entities-* \
     && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_gateways-* \
+    && \
+    rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_app_clearance-* \
     && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/${PROJECT_NAME}-* \
     && \
