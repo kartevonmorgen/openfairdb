@@ -147,10 +147,11 @@ docker run --rm \
 
 #### Extract the static executable
 
-The resulting Docker image contains a static executable that can be extracted from any container instance:
+The resulting Docker image contains a static executable named `entrypoint` that can be extracted
+from any container instance (but not directly from the image itself):
 
 ```sh
-docker cp <container id>:openfairdb .
+docker cp <container id>:entrypoint openfairdb
 ```
 
 ## DB Backups
