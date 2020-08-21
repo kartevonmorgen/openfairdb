@@ -35,6 +35,12 @@ jobs:
           command: build
           args: --release
 
+      - name: Check ofdb-entities crate
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --manifest-path ofdb-entities/Cargo.toml
+
       - name: Check ofdb-boundary crate
         uses: actions-rs/cargo@v1
         with:
