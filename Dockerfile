@@ -36,14 +36,17 @@ WORKDIR ${WORKDIR_ROOT}
 # Docker build cache: Create and build an empty dummy project with all
 # external dependencies to avoid redownloading them on subsequent builds
 # if unchanged.
-RUN USER=root cargo new --bin ${PROJECT_NAME}
+RUN USER=root \
+    cargo new --bin ${PROJECT_NAME}
 WORKDIR ${WORKDIR_ROOT}/${PROJECT_NAME}
 
-RUN USER=root cargo new --lib ofdb-boundary
-RUN USER=root cargo new --lib ofdb-core
-RUN USER=root cargo new --lib ofdb-entities
-RUN USER=root cargo new --lib ofdb-gateways
-RUN USER=root cargo new --lib ofdb-app-clearance
+RUN USER=root cargo new --lib ofdb-boundary \
+    && \
+    USER=root cargo new --lib ofdb-core \
+    && \
+    USER=root cargo new --lib ofdb-entities \
+    && \
+    USER=root cargo new --lib ofdb-gateways
 
 COPY [ \
     "Cargo.toml", \
@@ -61,9 +64,6 @@ COPY [ \
 COPY [ \
     "ofdb-gateways/Cargo.toml", \
     "./ofdb-gateways/" ]
-COPY [ \
-    "ofdb-app-clearance/Cargo.toml", \
-    "./ofdb-app-clearance/" ]
 
 # Build the dummy project(s), then delete all build artefacts that must(!) not be cached
 RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
@@ -80,21 +80,29 @@ RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
     && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_gateways-* \
     && \
-    rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_app_clearance-* \
-    && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/${PROJECT_NAME}-* \
     && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-boundary-* \
     && \
-    rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-entities-*
+    rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-core-* \
+    && \
+    rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-entities-* \
+    && \
+    rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-gateways-*
 
-# Copy all project (re-)sources that are required for building
+# Copy all project (re-)sources that are required for building (ordered alphabetically)
+COPY [ \
+    "build.rs", \
+    "./" ]
+COPY [ \
+    "openapi.yaml", \
+    "./" ]
 COPY [ \
     "migrations", \
     "./migrations/" ]
 COPY [ \
-    "src", \
-    "./src/" ]
+    "ofdb-app-clearance", \
+    "./ofdb-app-clearance/" ]
 COPY [ \
     "ofdb-boundary/src", \
     "./ofdb-boundary/src/" ]
@@ -108,17 +116,19 @@ COPY [ \
     "ofdb-gateways/src", \
     "./ofdb-gateways/src/" ]
 COPY [ \
-    "openapi.yaml", \
-    "./" ]
-COPY [ \
-    "build.rs", \
-    "./" ]
-COPY [ \
-    "ofdb-app-clearance", \
-    "./ofdb-app-clearance/" ]
+    "src", \
+    "./src/" ]
 
 # Test and build the actual project
-RUN cargo test --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
+RUN cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-boundary \
+    && \
+    cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-core \
+    && \
+    cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-entities \
+    && \
+    cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-gateways \
+    && \
+    cargo test --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
     && \
     cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --bin ${BUILD_BIN} \
     && \
