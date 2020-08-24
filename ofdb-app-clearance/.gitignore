@@ -1,0 +1,5 @@
+# TODO: This file becomes obsolete after fixing the build by (re-)using
+# the target directory of the workspace!
+
+# Build directories (or a symbolic link, i.e. without a trailing slash)
+/target
