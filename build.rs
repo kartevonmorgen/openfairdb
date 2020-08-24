@@ -1,4 +1,4 @@
-use std::{env, path::Path, process::Command};
+use std::{env, process::Command};
 
 const CLEARANCE_NAME: &str = "clearance";
 const CLEARANCE_PKG_DIR: &str = "ofdb-app-clearance";
@@ -21,8 +21,8 @@ fn main() {
                 "--release",
                 "--out-name",
                 CLEARANCE_NAME,
+                CLEARANCE_PKG_DIR,
             ])
-            .current_dir(&Path::new(&CLEARANCE_PKG_DIR))
             .status()
             .expect("Unable to successfully execute wasm-pack");
         println!("cargo:rerun-if-changed=\"{}\"", CLEARANCE_PKG_SRC);
