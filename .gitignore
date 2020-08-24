@@ -4,6 +4,5 @@
 # .gitignore file that can be configured by setting core.excludesFile.
 # See also: https://git-scm.com/docs/gitignore
 
-# Build directories (or a symbolic link, i.e. without a trailing slash) in
-# root and sub-folders
-*/target
+# Build directories (or a symbolic link, i.e. without a trailing slash)
+/target
