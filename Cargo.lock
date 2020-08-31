@@ -872,7 +872,7 @@ dependencies = [
 [[package]]
 name = "geocoding"
 version = "0.3.0"
-source = "git+https://github.com/slowtec/geocoding?branch=rustls#ce27312319976de55b72b62b1d9bea8d60d61721"
+source = "git+https://github.com/georust/geocoding#5f109081caaa5c197aee03367da1294213e20bbb"
 dependencies = [
  "chrono",
  "geo-types",
