@@ -14,10 +14,7 @@ pub struct EntryPresenter {
 impl From<(Place, Vec<(Rating, Vec<Comment>)>, Role)> for EntryPresenter {
     fn from((place, rtngs, role): (Place, Vec<(Rating, Vec<Comment>)>, Role)) -> EntryPresenter {
         let mut p: EntryPresenter = (place, rtngs).into();
-        p.allow_archiving = match role {
-            Role::Admin | Role::Scout => true,
-            _ => false,
-        };
+        p.allow_archiving = matches!(role, Role::Admin | Role::Scout);
         p
     }
 }

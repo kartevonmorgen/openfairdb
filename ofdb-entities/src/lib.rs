@@ -1,6 +1,6 @@
 //#![deny(missing_docs)] // TODO: Complete missing documentation and enable this option
 #![deny(missing_debug_implementations)]
-#![deny(intra_doc_link_resolution_failure)]
+#![deny(broken_intra_doc_links)]
 #![cfg_attr(test, deny(warnings))]
 
 //! # ofdb-entities

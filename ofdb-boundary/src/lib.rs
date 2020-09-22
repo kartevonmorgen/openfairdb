@@ -1,6 +1,6 @@
 //#![deny(missing_docs)] // TODO: Complete missing documentation and enable this option
 #![cfg_attr(features = "extra-derive", deny(missing_debug_implementations))]
-#![deny(intra_doc_link_resolution_failure)]
+#![deny(broken_intra_doc_links)]
 #![cfg_attr(test, deny(warnings))]
 
 //! # ofdb-boundary
