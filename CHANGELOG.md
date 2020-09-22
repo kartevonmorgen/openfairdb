@@ -1,6 +1,6 @@
 # Changelog
 
-## unreleased (YYYY-mm-dd)
+## v0.9.2 (2020-09-22)
 
 - new(web): Add clearance center
 

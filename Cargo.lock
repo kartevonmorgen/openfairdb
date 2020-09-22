@@ -1548,7 +1548,7 @@ checksum = "1ab52be62400ca80aa00285d25253d7f7c437b7375c4de678f5405d3afe82ca5"
 
 [[package]]
 name = "ofdb-boundary"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "chrono",
  "ofdb-entities",
@@ -1619,7 +1619,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "openfairdb"
-version = "0.9.1"
+version = "0.9.2"
 dependencies = [
  "anyhow",
  "chrono",
