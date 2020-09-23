@@ -330,6 +330,20 @@ pub struct BboxSubscription {
 
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+pub struct MapBbox {
+    pub sw: MapPoint,
+    pub ne: MapPoint,
+}
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+pub struct MapPoint {
+    pub lat: f64,
+    pub lng: f64,
+}
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
 pub struct RequestPasswordReset {
     pub email: String,
 }
