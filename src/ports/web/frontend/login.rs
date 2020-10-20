@@ -7,7 +7,7 @@ use crate::{
 use maud::Markup;
 use rocket::{
     self,
-    http::{Cookie, Cookies},
+    http::{Cookie, Cookies, SameSite},
     request::{FlashMessage, Form},
     response::{Flash, Redirect},
 };
@@ -65,7 +65,12 @@ pub fn post_login(
                     Err(Flash::error(Redirect::to(uri!(get_login)), msg))
                 }
                 Ok(_) => {
-                    cookies.add_private(Cookie::new(COOKIE_EMAIL_KEY, credentials.email));
+                    cookies.add_private(
+                        Cookie::build(COOKIE_EMAIL_KEY, credentials.email)
+                            .http_only(true)
+                            .same_site(SameSite::Lax)
+                            .finish(),
+                    );
                     Ok(Redirect::to(uri!(super::get_index)))
                 }
             }

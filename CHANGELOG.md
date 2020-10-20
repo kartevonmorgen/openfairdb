@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.9.3 (unreleased)
+
+- new(web): Set property `SameSite` to `Lax` in frontend login cookie
+
 ## v0.9.2 (2020-09-22)
 
 - new(web): Add clearance center

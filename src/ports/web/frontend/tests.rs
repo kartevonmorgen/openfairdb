@@ -494,6 +494,31 @@ mod admin {
     }
 }
 
+mod login {
+    use super::*;
+
+    #[test]
+    fn login_with_valid_credentials() {
+        let (client, db, _) = setup();
+        create_user(&db, "user", Role::User);
+        let login_res = client
+            .post("/login")
+            .header(ContentType::Form)
+            .body("email=user%40example.com&password=secret")
+            .dispatch();
+        assert_eq!(login_res.status(), Status::SeeOther);
+        let cookie = login_res
+            .headers()
+            .get("Set-Cookie")
+            .find(|v| v.starts_with("ofdb-user-email"))
+            .and_then(|val| Cookie::parse_encoded(val).ok())
+            .unwrap()
+            .into_owned();
+        assert_eq!(cookie.http_only(), Some(true));
+        assert_eq!(cookie.same_site(), Some(rocket::http::SameSite::Lax));
+    }
+}
+
 mod pw_reset {
     use super::*;
 
