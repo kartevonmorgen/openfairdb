@@ -13,7 +13,6 @@ ofdb-boundary = { path = "ofdb-boundary" }
 ofdb-core = { path = "ofdb-core" }
 ofdb-entities = { path = "ofdb-entities" }
 ofdb-gateways = { path = "ofdb-gateways" }
-geocoding = { git = "https://github.com/georust/geocoding" }
 
 [workspace]
 members = [
