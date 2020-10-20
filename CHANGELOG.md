@@ -3,6 +3,7 @@
 ## v0.9.3 (unreleased)
 
 - new(web): Set property `SameSite` to `Lax` in frontend login cookie
+- fix(api): Prevent unauthorized editing of events
 
 ## v0.9.2 (2020-09-22)
 
