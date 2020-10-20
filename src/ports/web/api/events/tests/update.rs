@@ -284,6 +284,51 @@ fn with_api_token_created_by() {
 }
 
 #[test]
+fn with_api_token_from_different_org_unauthorized() {
+    let (client, db, mut search_engine, notify) = setup2();
+    let _creator_org = db.exclusive()
+        .unwrap()
+        .create_org(Organization {
+            id: "creator".into(),
+            name: "creator".into(),
+            moderated_tags: vec!["creator".into()],
+            api_token: "creator".into(),
+        })
+        .unwrap();
+    let _updater_org = db.exclusive()
+        .unwrap()
+        .create_org(Organization {
+            id: "updater".into(),
+            name: "updater".into(),
+            moderated_tags: vec!["updater".into()],
+            api_token: "updater".into(),
+        })
+        .unwrap();
+    let e = usecases::NewEvent {
+        title: "x".into(),
+        tags: Some(vec!["bla".into(), "creator".into()]),
+        created_by: Some("creator@example.com".into()),
+        start: Utc::now().naive_utc().timestamp(),
+        ..Default::default()
+    };
+    let id = flows::create_event(&db, &mut search_engine, &notify, Some("creator"), e)
+        .unwrap()
+        .id;
+    assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
+    // Try to update the event using the token of another organization while
+    // preserving the original creator as owner by keeping the owned tag.
+    let res = client
+        .put(format!("/events/{}", id))
+        .header(ContentType::JSON)
+        .header(Header::new("Authorization", "Bearer updater"))
+        .body(
+            r#"{"title":"new","start":4132508400,"created_by":"updater@example.com","tags":["bla2", "creator"]}"#,
+        )
+        .dispatch();
+    assert_eq!(res.status(), HttpStatus::Forbidden);
+}
+
+#[test]
 fn update_geo_location() {
     let (client, db, mut search_engine, notify) = setup2();
     db.exclusive()

@@ -117,3 +117,44 @@ fn with_api_token_by_organization_without_any_moderated_tags() {
     assert_eq!(db.shared().unwrap().count_events().unwrap(), 1);
     assert_eq!(res.status(), HttpStatus::Unauthorized);
 }
+
+#[test]
+fn with_api_token_from_different_org_unauthorized() {
+    let (client, db, mut search_engine, notify) = setup2();
+    let _creator_org = db.exclusive()
+        .unwrap()
+        .create_org(Organization {
+            id: "creator".into(),
+            name: "creator".into(),
+            moderated_tags: vec!["creator".into()],
+            api_token: "creator".into(),
+        })
+        .unwrap();
+    let _deleter_org = db.exclusive()
+        .unwrap()
+        .create_org(Organization {
+            id: "deleter".into(),
+            name: "deleter".into(),
+            moderated_tags: vec!["deleter".into()],
+            api_token: "deleter".into(),
+        })
+        .unwrap();
+    let e = usecases::NewEvent {
+        title: "x".into(),
+        tags: Some(vec!["bla".into(), "creator".into()]),
+        created_by: Some("creator@example.com".into()),
+        start: Utc::now().naive_utc().timestamp(),
+        ..Default::default()
+    };
+    let id = flows::create_event(&db, &mut search_engine, &notify, Some("creator"), e)
+        .unwrap()
+        .id;
+    assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
+    // Try to delete the event using the token of another organization.
+    let res = client
+        .delete(format!("/events/{}", id))
+        .header(ContentType::JSON)
+        .header(Header::new("Authorization", "Bearer deleter"))
+        .dispatch();
+    assert_eq!(res.status(), HttpStatus::Forbidden);
+}

@@ -113,7 +113,18 @@ pub fn import_new_event<D: Db>(
                 super::authorize_editing_of_tagged_entry(db, &[], &new_tags, Some(&org))?
             }
             NewEventMode::Update(id) => {
-                let old_tags = db.get_event(id)?.tags;
+                let old_event = db.get_event(id)?;
+                // Reject update if the organization does not own the event
+                let mut owned_tag_count = 0;
+                for org_tag in &org.moderated_tags {
+                    if old_event.is_owned(std::iter::once(org_tag.label.as_str())) {
+                        owned_tag_count += 1;
+                    }
+                }
+                if owned_tag_count == 0 {
+                    return Err(ParameterError::ModeratedTag.into());
+                }
+                let old_tags = old_event.tags;
                 if org_tag_count == 0 {
                     // Preserve all existing tags that are owned by this org
                     let mut added_count = 0;
