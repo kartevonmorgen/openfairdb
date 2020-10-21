@@ -1305,7 +1305,7 @@ impl EventGateway for SqliteConnection {
         Ok(count)
     }
 
-    fn delete_event_with_matching_tags(&self, id: &str, tags: &[&str]) -> Result<Option<()>> {
+    fn delete_event_with_matching_tags(&self, id: &str, tags: &[&str]) -> Result<bool> {
         use schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl};
         let id = resolve_event_id(self, id)?;
         if !tags.is_empty() {
@@ -1317,13 +1317,31 @@ impl EventGateway for SqliteConnection {
                 .load::<i64>(self)?;
             debug_assert!(ids.len() <= 1);
             if ids.is_empty() {
-                return Ok(None);
+                return Ok(false);
             }
             debug_assert_eq!(id, *ids.first().unwrap());
         }
         diesel::delete(et_dsl::event_tags.filter(et_dsl::event_id.eq(id))).execute(self)?;
         diesel::delete(e_dsl::events.filter(e_dsl::id.eq(id))).execute(self)?;
-        Ok(Some(()))
+        Ok(true)
+    }
+
+    fn is_event_owned_by_any_organization(&self, id: &str) -> Result<bool> {
+        use schema::{event_tags, events, organization_tag};
+        Ok(events::table
+            .select(events::id)
+            .filter(events::uid.eq(id))
+            .filter(
+                events::id.eq_any(
+                    event_tags::table.select(event_tags::event_id).filter(
+                        event_tags::tag
+                            .eq_any(organization_tag::table.select(organization_tag::tag_label)),
+                    ),
+                ),
+            )
+            .first::<i64>(self)
+            .optional()?
+            .is_some())
     }
 }
 

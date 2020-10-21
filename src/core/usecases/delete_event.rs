@@ -10,15 +10,15 @@ pub fn delete_event<D: Db>(db: &mut D, token: &str, id: &str) -> Result<()> {
         .iter()
         .map(|moderated_tag| moderated_tag.label.as_str())
         .collect();
-    // FIXME: Only events with at least one tag that is owned by
-    // the organization can be deleted. If the organization
-    // doesn't own any tags deletion of events must not be
-    // permitted!
-    /*
-    if moderated_tags.is_empty() {
+    if moderated_tags.is_empty() && db.is_event_owned_by_any_organization(id)? {
+        // Prevent deletion of events owned by another organization
+        // if the given organization does not own any tags.
         return Err(Error::Parameter(ParameterError::ModeratedTag));
     }
-    */
-    db.delete_event_with_matching_tags(id, &moderated_tags)?
-        .ok_or(Error::Parameter(ParameterError::ModeratedTag))
+    let deleted = db.delete_event_with_matching_tags(id, &moderated_tags)?;
+    if !deleted {
+        // No matching tags, i.e. event is not owned by the given organization
+        return Err(Error::Parameter(ParameterError::ModeratedTag));
+    }
+    Ok(())
 }

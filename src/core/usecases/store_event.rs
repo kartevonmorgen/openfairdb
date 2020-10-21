@@ -121,7 +121,8 @@ pub fn import_new_event<D: Db>(
                         owned_tag_count += 1;
                     }
                 }
-                if owned_tag_count == 0 {
+                if owned_tag_count == 0 && db.is_event_owned_by_any_organization(id)? {
+                    // Prevent editing of events that are owned by another organization
                     return Err(ParameterError::ModeratedTag.into());
                 }
                 let old_tags = old_event.tags;

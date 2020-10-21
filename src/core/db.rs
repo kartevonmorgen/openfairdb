@@ -68,11 +68,15 @@ pub trait EventGateway {
     fn all_events_chronologically(&self) -> Result<Vec<Event>>;
 
     fn count_events(&self) -> Result<usize>;
-    // Delete an event, but only if tagged with at least one of the given tags
-    // Ok(Some(())) => Found and deleted
-    // Ok(None)     => No matching tags
+
+    // Delete an event, but only if tagged with at least one of the given tags.
+    // If no tags are provided the event is deleted unconditionally.
+    // Ok(true)  => Found and deleted
+    // Ok(false) => Found but no matching tags
     // TODO: Use explicit result semantics
-    fn delete_event_with_matching_tags(&self, id: &str, tags: &[&str]) -> Result<Option<()>>;
+    fn delete_event_with_matching_tags(&self, id: &str, tags: &[&str]) -> Result<bool>;
+
+    fn is_event_owned_by_any_organization(&self, id: &str) -> Result<bool>;
 }
 
 pub trait UserGateway {

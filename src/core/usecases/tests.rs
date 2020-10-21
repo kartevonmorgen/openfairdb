@@ -337,7 +337,11 @@ impl EventGateway for MockDb {
         unimplemented!();
     }
 
-    fn delete_event_with_matching_tags(&self, _id: &str, _tags: &[&str]) -> RepoResult<Option<()>> {
+    fn delete_event_with_matching_tags(&self, _id: &str, _tags: &[&str]) -> RepoResult<bool> {
+        unimplemented!();
+    }
+
+    fn is_event_owned_by_any_organization(&self, _id: &str) -> RepoResult<bool> {
         unimplemented!();
     }
 }
