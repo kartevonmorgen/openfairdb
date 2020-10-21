@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.9.3 (unreleased)
+## v0.9.3 (2020-10-21)
 
 - new(web): Set property `SameSite` to `Lax` in frontend login cookie
 - fix(api): Prevent unauthorized editing of events
