@@ -1,0 +1,219 @@
+use super::{super::guards::*, Result};
+use crate::{
+    adapters::json,
+    core::{prelude::*, usecases, util},
+    infrastructure::{
+        db::{sqlite, tantivy},
+        flows::prelude as flows,
+    },
+    ports::web::{notify::*, AppError},
+};
+use ofdb_entities::organization::Organization as Org;
+use rocket::{self, request::Form};
+use rocket_contrib::json::Json;
+use std::result::Result as StdResult;
+
+#[derive(FromForm, Clone)]
+pub struct GetEntryQuery {
+    org_tag: Option<String>,
+}
+
+#[get("/entries/<ids>?<query..>")]
+pub fn get_entry(
+    db: sqlite::Connections,
+    ids: String,
+    query: Form<GetEntryQuery>,
+) -> Result<Vec<json::Entry>> {
+    // TODO: Only lookup and return a single entity
+    // TODO: Add a new method for searching multiple ids
+    let ids = util::split_ids(&ids);
+    if ids.is_empty() {
+        return Ok(Json(vec![]));
+    }
+    let GetEntryQuery { ref org_tag } = query.into_inner();
+    let results = {
+        let db = db.shared()?;
+        let places = usecases::load_places(&*db, &ids, org_tag.as_ref().map(String::as_str))?;
+        let mut results = Vec::with_capacity(places.len());
+        for (place, _) in places.into_iter() {
+            let r = db.load_ratings_of_place(place.id.as_ref())?;
+            results.push(json::entry_from_place_with_ratings(place, r));
+        }
+        results
+    };
+    Ok(Json(results))
+}
+
+// Limit the total number of recently changed entries to avoid cloning
+// the whole database!!
+
+const ENTRIES_RECECENTLY_CHANGED_MAX_COUNT: u64 = 1000;
+
+const ENTRIES_RECECENTLY_CHANGED_MAX_AGE_IN_DAYS: i64 = 100;
+
+const SECONDS_PER_DAY: i64 = 24 * 60 * 60;
+
+#[get("/entries/recently-changed?<since>&<until>&<with_ratings>&<offset>&<limit>")]
+pub fn get_entries_recently_changed(
+    db: sqlite::Connections,
+    since: Option<i64>, // in seconds
+    until: Option<i64>, // in seconds
+    with_ratings: Option<bool>,
+    offset: Option<u64>,
+    mut limit: Option<u64>,
+) -> Result<Vec<json::Entry>> {
+    let since_min = Timestamp::now().into_seconds()
+        - ENTRIES_RECECENTLY_CHANGED_MAX_AGE_IN_DAYS * SECONDS_PER_DAY;
+    let since = if let Some(since) = since {
+        if since < since_min {
+            log::warn!(
+                "Maximum available age of recently changed entries exceeded: {} < {}",
+                since,
+                since_min
+            );
+            Some(since_min)
+        } else {
+            Some(since)
+        }
+    } else {
+        Some(since_min)
+    };
+    debug_assert!(since.is_some());
+    let mut total_count = 0;
+    if let Some(offset) = offset {
+        total_count += offset;
+    }
+    total_count += limit.unwrap_or(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT);
+    if total_count > ENTRIES_RECECENTLY_CHANGED_MAX_COUNT {
+        log::warn!(
+            "Maximum available number of recently changed entries exceeded: {} > {}",
+            total_count,
+            ENTRIES_RECECENTLY_CHANGED_MAX_COUNT
+        );
+        if let Some(offset) = offset {
+            limit = Some(
+                ENTRIES_RECECENTLY_CHANGED_MAX_COUNT
+                    - offset.min(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT),
+            );
+        } else {
+            limit = Some(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT);
+        }
+    } else {
+        limit = Some(limit.unwrap_or(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT - offset.unwrap_or(0)));
+    }
+    debug_assert!(limit.is_some());
+    // Conversion from seconds (external) to milliseconds (internal)
+    let params = RecentlyChangedEntriesParams {
+        since: since.map(TimestampMs::from_seconds),
+        until: until.map(TimestampMs::from_seconds),
+    };
+    let pagination = Pagination { offset, limit };
+    let results = {
+        let db = db.shared()?;
+        let entries = db.recently_changed_places(&params, &pagination)?;
+        if with_ratings.unwrap_or(false) {
+            let mut results = Vec::with_capacity(entries.len());
+            for (place, _, _) in entries.into_iter() {
+                let r = db.load_ratings_of_place(place.id.as_ref())?;
+                results.push(json::entry_from_place_with_ratings(place, r));
+            }
+            results
+        } else {
+            entries
+                .into_iter()
+                .map(|(place, _, _)| json::entry_from_place_with_ratings(place, vec![]))
+                .collect()
+        }
+    };
+    Ok(Json(results))
+}
+
+const ENTRIES_MOST_POPULAR_TAGS_PAGINATION_LIMIT_MAX: u64 = 1000;
+
+#[get("/entries/most-popular-tags?<min_count>&<max_count>&<offset>&<limit>")]
+pub fn get_entries_most_popular_tags(
+    db: sqlite::Connections,
+    min_count: Option<u64>,
+    max_count: Option<u64>,
+    offset: Option<u64>,
+    limit: Option<u64>,
+) -> Result<Vec<json::TagFrequency>> {
+    let params = MostPopularTagsParams {
+        min_count,
+        max_count,
+    };
+    let limit = Some(
+        limit
+            .unwrap_or(ENTRIES_MOST_POPULAR_TAGS_PAGINATION_LIMIT_MAX)
+            .min(ENTRIES_MOST_POPULAR_TAGS_PAGINATION_LIMIT_MAX),
+    );
+    let pagination = Pagination { offset, limit };
+    let results = {
+        let db = db.shared()?;
+        db.most_popular_place_revision_tags(&params, &pagination)?
+    };
+    Ok(Json(results.into_iter().map(Into::into).collect()))
+}
+
+#[post("/entries", format = "application/json", data = "<body>")]
+pub fn post_entry(
+    auth: Auth,
+    connections: sqlite::Connections,
+    notify: Notify,
+    mut search_engine: tantivy::SearchEngine,
+    body: Json<json::NewPlace>,
+) -> Result<String> {
+    let created_by_org = created_by_org(&connections, &auth)?;
+    let new_place = body.into_inner().into();
+    Ok(Json(
+        flows::create_place(
+            &connections,
+            &mut search_engine,
+            &*notify,
+            new_place,
+            auth.email(),
+            created_by_org.as_ref(),
+        )?
+        .id
+        .to_string(),
+    ))
+}
+
+#[put("/entries/<id>", format = "application/json", data = "<data>")]
+pub fn put_entry(
+    auth: Auth,
+    connections: sqlite::Connections,
+    mut search_engine: tantivy::SearchEngine,
+    notify: Notify,
+    id: String,
+    data: Json<json::UpdatePlace>,
+) -> Result<String> {
+    let created_by_org = created_by_org(&connections, &auth)?;
+    Ok(Json(
+        flows::update_place(
+            &connections,
+            &mut search_engine,
+            &*notify,
+            id.into(),
+            data.into_inner().into(),
+            auth.email(),
+            created_by_org.as_ref(),
+        )?
+        .id
+        .into(),
+    ))
+}
+
+fn created_by_org(
+    connections: &sqlite::Connections,
+    auth: &Auth,
+) -> StdResult<Option<Org>, AppError> {
+    Ok(if let Some(api_token) = auth.bearer() {
+        Some(usecases::authorize_organization_by_api_token(
+            &*connections.shared()?,
+            api_token,
+        )?)
+    } else {
+        None
+    })
+}

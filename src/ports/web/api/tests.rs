@@ -4,7 +4,11 @@ use ofdb_core::rating::Rated;
 
 pub mod prelude {
     pub use crate::{
-        core::db::*, infrastructure::flows::prelude as flows, ports::web::tests::prelude::*,
+        core::db::*,
+        infrastructure::flows::prelude as flows,
+        ports::web::{
+            api::captcha::tests::get_valid_captcha_cookie as get_captcha_cookie, tests::prelude::*,
+        },
     };
     use crate::{
         infrastructure::db::{sqlite, tantivy},
@@ -33,6 +37,7 @@ pub mod prelude {
             "application/json"
         );
     }
+    pub use super::cookie_from_response;
 }
 
 use self::prelude::*;
@@ -40,8 +45,10 @@ use self::prelude::*;
 #[test]
 fn create_place() {
     let (client, db) = setup();
+    let cookie = get_captcha_cookie(&client).unwrap();
     let req = client.post("/entries")
                     .header(ContentType::JSON)
+                    .cookie(cookie)
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#);
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -66,8 +73,10 @@ fn create_place_with_reserved_tag() {
             api_token: "a".into(),
         })
         .unwrap();
+    let cookie = get_captcha_cookie(&client).unwrap();
     let res = client.post("/entries")
                     .header(ContentType::JSON)
+                    .cookie(cookie)
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["a"]}"#)
                     .dispatch();
     assert_eq!(res.status(), Status::Forbidden);
@@ -76,8 +85,10 @@ fn create_place_with_reserved_tag() {
 #[test]
 fn create_place_with_tag_duplicates() {
     let (client, db) = setup();
+    let cookie = get_captcha_cookie(&client).unwrap();
     let req = client.post("/entries")
                     .header(ContentType::JSON)
+                    .cookie(cookie)
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","foo"]}"#);
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -94,9 +105,11 @@ fn create_place_with_tag_duplicates() {
 fn create_place_with_sharp_tag_and_custom_link() {
     let (client, db) = setup();
     let json = r##"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","#bar"],"links":[{"url":"example.com","title":"Auto-completed URL"}]}"##;
+    let cookie = get_captcha_cookie(&client).unwrap();
     let response = client
         .post("/entries")
         .header(ContentType::JSON)
+        .cookie(cookie)
         .body(json)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -124,8 +137,10 @@ fn create_place_with_sharp_tag_and_custom_link() {
 #[test]
 fn update_place_with_tag_duplicates() {
     let (client, db) = setup();
+    let cookie = get_captcha_cookie(&client).unwrap();
     let req = client.post("/entries")
                     .header(ContentType::JSON)
+                    .cookie(cookie)
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","foo"]}"#);
     let _res = req.dispatch();
     let (place, _) = db.exclusive().unwrap().all_places().unwrap()[0].clone();
@@ -1238,14 +1253,17 @@ fn ratings_with_and_without_source() {
     assert_eq!(ratings[0].comments.len(), 1);
 }
 
-fn user_id_cookie(response: &Response) -> Option<Cookie<'static>> {
+pub fn cookie_from_response(response: &Response, key: &str) -> Option<Cookie<'static>> {
     let cookie = response
         .headers()
         .get("Set-Cookie")
-        .find(|v| v.starts_with("user_id"))
+        .find(|v| v.starts_with(key))
         .and_then(|val| Cookie::parse_encoded(val).ok());
-
     cookie.map(|c| c.into_owned())
+}
+
+fn user_id_cookie(response: &Response) -> Option<Cookie<'static>> {
+    cookie_from_response(response, "user_id")
 }
 
 #[test]
@@ -1781,8 +1799,10 @@ fn entries_export_csv() {
 #[test]
 fn search_duplicates() {
     let (client, db) = setup();
+    let cookie = get_captcha_cookie(&client).unwrap();
     let res = client.post("/entries")
                     .header(ContentType::JSON)
+        .cookie(cookie)
                     .body(r#"{"title":"foo","description":"bla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#)
                     .dispatch();
     assert_eq!(res.status(), Status::Ok);

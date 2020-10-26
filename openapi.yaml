@@ -97,6 +97,10 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/NewEntryWithLicense'
+      security:
+        - bearerAuth: []
+        - captchaCookieAuth: []
+        - userEmailCookieAuth: []
       responses:
         '200':
           description: Successful response
@@ -133,6 +137,10 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/NewEntryWithVersion'
+      security:
+        - bearerAuth: []
+        - captchaCookieAuth: []
+        - userEmailCookieAuth: []
       responses:
         '200':
           description: Successful response
@@ -783,6 +791,56 @@ paths:
                 type: string
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /captcha:
+    post:
+      summary: Request a new captcha challenge
+      tags:
+        - Captcha
+      responses:
+        '200':
+          $ref: '#/components/parameters/CaptchaToken'
+  '/captcha/{captcha-token}':
+    get:
+      summary: Get the captcha challenge
+      description: |
+        Returns an image with a captcha challenge for the given token.
+      tags:
+        - Captcha
+      parameters:
+        - $ref: '#/components/parameters/CaptchaToken'
+      responses:
+        '200':
+          $ref: '#/components/schemas/CaptchaImage'
+        '404':
+          description: Unknown or expired token
+  '/captcha/{captcha-token}/verify':
+    post:
+      summary: Verify a captcha answer for the given token
+      tags:
+        - Captcha
+      parameters:
+        - $ref: '#/components/parameters/CaptchaToken'
+      requestBody:
+        required: true
+        content:
+          text/plain:
+            schema:
+              $ref: '#/components/schemas/CaptchaAnswer'
+      responses:
+        '200':
+          description: |
+            The answer to the capcha challenge was correct.
+
+            A token is returned in a cookie named `ofdb-captcha`.
+            You need to include this cookie in subsequent requests.
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: ofdb-captcha=2f006JTvKBr5KJggwirdTzTssdzschIwThWF8LdqPZTr4wSY6r%2F79ayYNz46NTrKn4VR6KPxpkNeIOoGbA%3D%3D; HttpOnly; Path=/;
+        '400':
+          description: The answer to the capcha challenge was not correct
+
 components:
   schemas:
     NewEntry:
@@ -1474,6 +1532,13 @@ components:
       maximum: 180.0
       example: 120.7
       description: Geographic longitude (in degrees)
+    CaptchaAnswer:
+      type: string
+      description: The answer to a given captcha challenge
+    CaptchaImage:
+      description: The capcha image
+      type: string
+      format: binary
   parameters:
     IdPath:
       name: id
@@ -1604,10 +1669,27 @@ components:
         type: integer
         format: int64
         example: 1000
+    CaptchaToken:
+      name: captcha-token
+      description: |
+        A unique captcha token
+      in: path
+      required: true
+      schema:
+        type: string
+
   securitySchemes:
     bearerAuth:
       type: http
       scheme: bearer
+    captchaCookieAuth:
+      type: apiKey
+      in: cookie
+      name: ofdb-captcha
+    userEmailCookieAuth:
+      type: apiKey
+      in: cookie
+      name: ofdb-user-email
   responses:
     ParameterError:
       description: Parameters are missing or invalid

@@ -85,7 +85,11 @@ pub(crate) fn rocket_instance(
         Some(cfg) => rocket::custom(cfg),
         None => rocket::ignite(),
     };
-    let mut instance = r.manage(connections).manage(search_engine);
+    let captcha_cache = api::captcha::CaptchaCache::new();
+    let mut instance = r
+        .manage(connections)
+        .manage(search_engine)
+        .manage(captcha_cache);
 
     for (m, r) in mounts {
         instance = instance.mount(m, r);

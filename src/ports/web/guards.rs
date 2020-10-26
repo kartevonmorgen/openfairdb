@@ -1,3 +1,4 @@
+use chrono::prelude::*;
 use rocket::{
     self,
     http::Status,
@@ -5,9 +6,11 @@ use rocket::{
     request::{self, FromRequest, Request},
     Outcome,
 };
+use std::time::Duration;
 
 pub const COOKIE_EMAIL_KEY: &str = "ofdb-user-email";
 pub const COOKIE_USER_KEY: &str = "user_id";
+pub const COOKIE_CAPTCHA_KEY: &str = "ofdb-captcha";
 
 #[derive(Debug)]
 pub struct Bearer(pub String);
@@ -70,5 +73,61 @@ impl<'a, 'r> FromRequest<'a, 'r> for Account {
             .and_then(|cookie| cookie.value().parse().ok())
             .map(Account)
             .or_forward(())
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct Captcha;
+
+pub const MAX_CAPTCHA_TTL: Duration = Duration::from_secs(120);
+
+impl<'a, 'r> FromRequest<'a, 'r> for Captcha {
+    type Error = ();
+    fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, ()> {
+        let valid = request
+            .cookies()
+            .get_private(COOKIE_CAPTCHA_KEY)
+            .and_then(|cookie| cookie.value().parse().ok())
+            .and_then(|ts: DateTime<Utc>| Utc::now().signed_duration_since(ts).to_std().ok())
+            .map(|duration: Duration| duration <= MAX_CAPTCHA_TTL)
+            .unwrap_or(false);
+        if valid {
+            Outcome::Success(Captcha)
+        } else {
+            Outcome::Failure((Status::Unauthorized, ()))
+        }
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct Auth {
+    account: Option<String>,
+    bearer: Option<String>,
+}
+
+impl Auth {
+    pub fn email(&self) -> Option<&str> {
+        self.account.as_deref()
+    }
+    pub fn bearer(&self) -> Option<&str> {
+        self.bearer.as_deref()
+    }
+}
+
+impl<'a, 'r> FromRequest<'a, 'r> for Auth {
+    type Error = ();
+    fn from_request(req: &'a Request<'r>) -> request::Outcome<Self, ()> {
+        let mut auth = Auth::default();
+        if let Outcome::Success(b) = Bearer::from_request(req) {
+            auth.bearer = Some(b.0);
+        }
+        if let Outcome::Success(a) = Account::from_request(req) {
+            auth.account = Some(a.0);
+        }
+        let captcha = Outcome::Success(Captcha) == Captcha::from_request(req);
+        if !captcha && auth.account.is_none() && auth.bearer.is_none() {
+            return Outcome::Failure((Status::Unauthorized, ()));
+        }
+        Outcome::Success(auth)
     }
 }
