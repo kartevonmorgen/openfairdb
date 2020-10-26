@@ -13,6 +13,7 @@ ofdb-boundary = { path = "ofdb-boundary" }
 ofdb-core = { path = "ofdb-core" }
 ofdb-entities = { path = "ofdb-entities" }
 ofdb-gateways = { path = "ofdb-gateways" }
+captcha = { git = "https://github.com/kartevonmorgen/captcha", branch = "updates" }
 
 [workspace]
 members = [
@@ -25,6 +26,7 @@ exclude = [ "ofdb-app-clearance" ]
 
 [dependencies]
 anyhow = "*"
+captcha = "*"
 chrono = "*"
 # clap 3 is supposed to introduce breaking changes
 clap = "2"
@@ -55,6 +57,7 @@ serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 strum = "*"
 tantivy = "*"
+time = "*"
 thiserror = "1"
 url = { version = "*", features = ["serde"] }
 uuid = { version = "*", features = ["v4"] }
