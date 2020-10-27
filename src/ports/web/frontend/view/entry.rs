@@ -60,7 +60,7 @@ fn entry_detail(e: EntryPresenter) -> Markup {
                 @if e.allow_archiving {
                      a href=(format!("/places/{}/history", e.place.id)) { (rev) }
                      " | "
-                     a href=(format!("/places/{}/review", e.place.id)) { "review" }
+                     a href=(format!("/places/{}/review", e.place.id)) { "archive" }
                 } @else {
                     (rev)
                 }
