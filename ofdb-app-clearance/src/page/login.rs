@@ -97,7 +97,7 @@ pub fn view(mdl: &Mdl) -> Node<Msg> {
                 style! {
                     St::Width => "50%",
                 },
-                input_ev(Ev::Input, Msg::TokenInput),
+                ev(Ev::Input, |_| Msg::TokenInput),
             ],
             " ",
             input![
@@ -105,7 +105,7 @@ pub fn view(mdl: &Mdl) -> Node<Msg> {
                     At::Type => "submit",
                     At::Value => "Login",
                 },
-                simple_ev(Ev::Click, Msg::Login),
+                ev(Ev::Click, |_| Msg::Login),
             ],
             div![
                 input![
@@ -114,7 +114,7 @@ pub fn view(mdl: &Mdl) -> Node<Msg> {
                         At::Type => "checkbox",
                         At::Checked => mdl.show_password.as_at_value(),
                     },
-                    simple_ev(Ev::Click, Msg::TogglePasswordVisible),
+                    ev(Ev::Click, |_| Msg::TogglePasswordVisible),
                 ],
                 label![
                     attrs! {

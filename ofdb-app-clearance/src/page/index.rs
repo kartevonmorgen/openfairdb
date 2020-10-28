@@ -2,7 +2,7 @@ use crate::api;
 use difference::{Changeset, Difference};
 use ofdb_boundary::ClearanceForPlace;
 use ofdb_entities::{place::PlaceHistory, place::PlaceRevision};
-use ofdb_seed::OfdbApi;
+use ofdb_seed::Api;
 use seed::{prelude::*, *};
 use std::collections::HashMap;
 
@@ -45,7 +45,7 @@ pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
             let clearances = vec![c];
             let token = mdl.token.to_owned();
             orders.perform_cmd(async move {
-                let api = OfdbApi::new(api::API_ROOT.into());
+                let api = Api::new(api::API_ROOT.into());
                 let _res = api
                     .post_places_clearance_with_api_token(&token, clearances)
                     .await;
@@ -182,20 +182,23 @@ pub fn view(mdl: &Mdl) -> Node<Msg> {
         });
         let tags_cs = changeset_split(lastrev, currrev, "\n", |r| r.tags.join("<br>\n"));
         let expanded = *mdl.expanded.get(id).unwrap_or(&false);
+        let toggle_msg = Msg::Toggle(id.clone());
+        let accept_msg = Msg::Accept(id.clone(), pc.current_rev_nr());
+
         li![
             pc.overview_title(),
             " ",
             button![
-                simple_ev(Ev::Click, Msg::Toggle(id.clone())),
+                ev(Ev::Click, |_| toggle_msg),
                 i![
                     style! {
                         St::Width => px(20),
                         St::TextAlign => "center",
                     },
                     if expanded {
-                        class!["fa", "fa-chevron-down"]
+                        C!["fa", "fa-chevron-down"]
                     } else {
-                        class!["fa", "fa-chevron-right"]
+                        C!["fa", "fa-chevron-right"]
                     }
                 ],
             ],
@@ -231,10 +234,7 @@ pub fn view(mdl: &Mdl) -> Node<Msg> {
                                 format!("(rev {})", pc.current_rev_nr())
                             ],
                             " ",
-                            button![
-                                "Accept",
-                                simple_ev(Ev::Click, Msg::Accept(id.clone(), pc.current_rev_nr()))
-                            ],
+                            button!["Accept", ev(Ev::Click, |_| accept_msg)],
                         ]
                     ],
                     table_row_always("Title", &title_cs),
@@ -255,7 +255,7 @@ pub fn view(mdl: &Mdl) -> Node<Msg> {
             style! {
                 St::Float => "right",
             },
-            button![simple_ev(Ev::Click, Msg::Logout), "Logout",],
+            button![ev(Ev::Click, |_| Msg::Logout), "Logout",],
         ],
         h1![crate::TITLE],
         h2!["Overview"],
@@ -319,7 +319,7 @@ pub fn diffy_last<Ms>(cs: &Changeset) -> Node<Ms> {
 }
 
 pub async fn get_pending_clearances_full(api_token: String) -> Option<Msg> {
-    let api = OfdbApi::new(api::API_ROOT.into());
+    let api = Api::new(api::API_ROOT.into());
     match api.get_places_clearance_with_api_token(&api_token).await {
         Ok(pend) => {
             let mut rezz = Vec::new();
