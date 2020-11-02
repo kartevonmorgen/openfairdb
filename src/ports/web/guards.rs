@@ -100,34 +100,49 @@ impl<'a, 'r> FromRequest<'a, 'r> for Captcha {
 }
 
 #[derive(Debug, Default)]
-pub struct Auth {
-    account: Option<String>,
-    bearer: Option<String>,
+pub struct Credentials {
+    account_email: Option<String>,
+    bearer_token: Option<String>,
 }
 
-impl Auth {
-    pub fn email(&self) -> Option<&str> {
-        self.account.as_deref()
+impl Credentials {
+    pub fn account_email(&self) -> Option<&str> {
+        self.account_email.as_deref()
     }
-    pub fn bearer(&self) -> Option<&str> {
-        self.bearer.as_deref()
+    pub fn bearer_token(&self) -> Option<&str> {
+        self.bearer_token.as_deref()
+    }
+    pub fn is_empty(&self) -> bool {
+        self.account_email
+            .as_deref()
+            .map(str::is_empty)
+            .unwrap_or(true)
+            || self
+                .bearer_token
+                .as_deref()
+                .map(str::is_empty)
+                .unwrap_or(true)
     }
 }
 
-impl<'a, 'r> FromRequest<'a, 'r> for Auth {
+impl<'a, 'r> FromRequest<'a, 'r> for Credentials {
     type Error = ();
     fn from_request(req: &'a Request<'r>) -> request::Outcome<Self, ()> {
-        let mut auth = Auth::default();
-        if let Outcome::Success(b) = Bearer::from_request(req) {
-            auth.bearer = Some(b.0);
-        }
-        if let Outcome::Success(a) = Account::from_request(req) {
-            auth.account = Some(a.0);
-        }
-        let captcha = Outcome::Success(Captcha) == Captcha::from_request(req);
-        if !captcha && auth.account.is_none() && auth.bearer.is_none() {
+        let account_email = match Bearer::from_request(req) {
+            Outcome::Success(account_email) => Some(account_email.0),
+            _ => None,
+        };
+        let bearer_token = match Bearer::from_request(req) {
+            Outcome::Success(bearer_token) => Some(bearer_token.0),
+            _ => None,
+        };
+        let credentials = Credentials {
+            account_email,
+            bearer_token,
+        };
+        if credentials.is_empty() && Captcha::from_request(req) != Outcome::Success(Captcha) {
             return Outcome::Failure((Status::Unauthorized, ()));
         }
-        Outcome::Success(auth)
+        Outcome::Success(credentials)
     }
 }
