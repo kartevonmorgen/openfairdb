@@ -157,13 +157,13 @@ pub fn get_entries_most_popular_tags(
 
 #[post("/entries", format = "application/json", data = "<body>")]
 pub fn post_entry(
-    auth: Auth,
+    credentials: Credentials,
     connections: sqlite::Connections,
     notify: Notify,
     mut search_engine: tantivy::SearchEngine,
     body: Json<json::NewPlace>,
 ) -> Result<String> {
-    let created_by_org = created_by_org(&connections, &auth)?;
+    let created_by_org = created_by_org(&connections, &credentials)?;
     let new_place = body.into_inner().into();
     Ok(Json(
         flows::create_place(
@@ -171,7 +171,7 @@ pub fn post_entry(
             &mut search_engine,
             &*notify,
             new_place,
-            auth.email(),
+            credentials.account_email(),
             created_by_org.as_ref(),
         )?
         .id
@@ -181,14 +181,14 @@ pub fn post_entry(
 
 #[put("/entries/<id>", format = "application/json", data = "<data>")]
 pub fn put_entry(
-    auth: Auth,
+    credentials: Credentials,
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
     notify: Notify,
     id: String,
     data: Json<json::UpdatePlace>,
 ) -> Result<String> {
-    let created_by_org = created_by_org(&connections, &auth)?;
+    let created_by_org = created_by_org(&connections, &credentials)?;
     Ok(Json(
         flows::update_place(
             &connections,
@@ -196,7 +196,7 @@ pub fn put_entry(
             &*notify,
             id.into(),
             data.into_inner().into(),
-            auth.email(),
+            credentials.account_email(),
             created_by_org.as_ref(),
         )?
         .id
@@ -206,9 +206,9 @@ pub fn put_entry(
 
 fn created_by_org(
     connections: &sqlite::Connections,
-    auth: &Auth,
+    credentials: &Credentials,
 ) -> StdResult<Option<Org>, AppError> {
-    Ok(if let Some(api_token) = auth.bearer() {
+    Ok(if let Some(api_token) = credentials.bearer_token() {
         Some(usecases::authorize_organization_by_api_token(
             &*connections.shared()?,
             api_token,
