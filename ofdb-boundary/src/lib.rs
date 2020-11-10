@@ -1160,3 +1160,56 @@ impl From<ReviewStatusLog> for e::review::ReviewStatusLog {
         }
     }
 }
+
+impl From<Entry> for UpdatePlace {
+    fn from(e: Entry) -> Self {
+        let Entry {
+            version,
+            title,
+            description,
+            lat,
+            lng,
+            street,
+            zip,
+            city,
+            country,
+            state,
+            contact_name,
+            email,
+            telephone,
+            homepage,
+            opening_hours,
+            founded_on,
+            categories,
+            tags,
+            image_url,
+            image_link_url,
+            custom_links,
+            ..
+        } = e;
+
+        UpdatePlace {
+            version,
+            title,
+            description,
+            lat,
+            lng,
+            street,
+            zip,
+            city,
+            country,
+            state,
+            contact_name,
+            email,
+            telephone,
+            homepage,
+            opening_hours,
+            founded_on,
+            categories,
+            tags,
+            image_url,
+            image_link_url,
+            links: custom_links,
+        }
+    }
+}
