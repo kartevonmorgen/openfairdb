@@ -298,7 +298,7 @@ pub fn csv_export(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     bearer: Option<Bearer>,
-    login: Login,
+    account: Account,
     query: usecases::EventQuery,
 ) -> result::Result<Content<String>, AppError> {
     let db = connections.shared()?;
@@ -311,7 +311,7 @@ pub fn csv_export(
         vec![]
     };
 
-    let user = usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+    let user = usecases::authorize_user_by_email(&*db, account.email(), Role::Scout)?;
 
     let limit = if let Some(limit) = query.limit {
         // Limited
@@ -354,7 +354,7 @@ pub fn csv_export(
 
 #[post("/events/<ids>/archive")]
 pub fn post_events_archive(
-    login: Login,
+    account: Account,
     db: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
     ids: String,
@@ -366,7 +366,7 @@ pub fn post_events_archive(
     let archived_by_email = {
         let db = db.shared()?;
         // Only scouts and admins are entitled to review events
-        usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?.email
+        usecases::authorize_user_by_email(&*db, &account.email(), Role::Scout)?.email
     };
     let update_count = flows::archive_events(&db, &mut search_engine, &ids, &archived_by_email)?;
     if update_count < ids.len() {

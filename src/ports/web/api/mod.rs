@@ -113,7 +113,7 @@ pub fn get_place(
 #[get("/places/<id>/history/<revision>")]
 pub fn get_place_history_revision(
     db: sqlite::Connections,
-    login: Option<Login>,
+    account: Option<Account>,
     bearer: Option<Bearer>,
     id: String,
     revision: RevisionValue,
@@ -123,8 +123,8 @@ pub fn get_place_history_revision(
 
         // The history contains e-mail addresses of registered users
         // is only permitted for scouts and admins or organizations!
-        if let Some(login) = login {
-            usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+        if let Some(account) = account {
+            usecases::authorize_user_by_email(&*db, account.email(), Role::Scout)?;
         } else if let Some(bearer) = bearer {
             let api_token = bearer.0;
             usecases::authorize_organization_by_api_token(&*db, &api_token)?;
@@ -140,7 +140,7 @@ pub fn get_place_history_revision(
 #[get("/places/<id>/history", rank = 2)]
 pub fn get_place_history(
     db: sqlite::Connections,
-    login: Option<Login>,
+    account: Option<Account>,
     bearer: Option<Bearer>,
     id: String,
 ) -> Result<json::PlaceHistory> {
@@ -149,8 +149,8 @@ pub fn get_place_history(
 
         // The history contains e-mail addresses of registered users
         // is only permitted for scouts and admins or for organizations!
-        if let Some(login) = login {
-            usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+        if let Some(account) = account {
+            usecases::authorize_user_by_email(&*db, account.email(), Role::Scout)?;
         } else if let Some(bearer) = bearer {
             let api_token = bearer.0;
             usecases::authorize_organization_by_api_token(&*db, &api_token)?;
@@ -165,7 +165,7 @@ pub fn get_place_history(
 
 #[post("/places/<ids>/review", data = "<review>")]
 pub fn post_places_review(
-    login: Login,
+    account: Account,
     db: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
     ids: String,
@@ -178,7 +178,7 @@ pub fn post_places_review(
     let reviewer_email = {
         let db = db.shared()?;
         // Only scouts and admins are entitled to review places
-        usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?.email
+        usecases::authorize_user_by_email(&*db, account.email(), Role::Scout)?.email
     };
     let json::Review { status, comment } = review.into_inner();
     // TODO: Record context information
@@ -248,7 +248,7 @@ fn post_login(
         usecases::login_with_email(&*db.shared()?, &credentials)?;
     }
     cookies.add_private(
-        Cookie::build(COOKIE_USER_KEY, login.email)
+        Cookie::build(COOKIE_EMAIL_KEY, login.email)
             .same_site(rocket::http::SameSite::None)
             .finish(),
     );
@@ -257,7 +257,7 @@ fn post_login(
 
 #[post("/logout", format = "application/json")]
 fn post_logout(mut cookies: Cookies) -> Result<()> {
-    cookies.remove_private(Cookie::named(COOKIE_USER_KEY));
+    cookies.remove_private(Cookie::named(COOKIE_EMAIL_KEY));
     Ok(Json(()))
 }
 
@@ -284,7 +284,7 @@ fn confirm_email_address(db: sqlite::Connections, token: Json<ConfirmationToken>
 )]
 fn subscribe_to_bbox(
     db: sqlite::Connections,
-    user: Login,
+    account: Account,
     coordinates: Json<Vec<json::Coordinate>>,
 ) -> Result<()> {
     let sw_ne: Vec<_> = coordinates
@@ -296,14 +296,14 @@ fn subscribe_to_bbox(
         return Err(Error::Parameter(ParameterError::Bbox).into());
     }
     let bbox = geo::MapBbox::new(sw_ne[0], sw_ne[1]);
-    let Login(email) = user;
-    usecases::subscribe_to_bbox(&*db.exclusive()?, email, bbox)?;
+    let email = account.email();
+    usecases::subscribe_to_bbox(&*db.exclusive()?, email.to_string(), bbox)?;
     Ok(Json(()))
 }
 
 #[delete("/unsubscribe-all-bboxes")]
-fn unsubscribe_all_bboxes(db: sqlite::Connections, user: Login) -> Result<()> {
-    let Login(email) = user;
+fn unsubscribe_all_bboxes(db: sqlite::Connections, account: Account) -> Result<()> {
+    let email = account.email();
     usecases::unsubscribe_all_bboxes(&*db.exclusive()?, &email)?;
     Ok(Json(()))
 }
@@ -311,9 +311,9 @@ fn unsubscribe_all_bboxes(db: sqlite::Connections, user: Login) -> Result<()> {
 #[get("/bbox-subscriptions")]
 fn get_bbox_subscriptions(
     db: sqlite::Connections,
-    user: Login,
+    account: Account,
 ) -> Result<Vec<json::BboxSubscription>> {
-    let Login(email) = user;
+    let email = account.email();
     let user_subscriptions = usecases::get_bbox_subscriptions(&*db.shared()?, &email)?
         .into_iter()
         .map(|s| json::BboxSubscription {
@@ -367,7 +367,7 @@ fn entries_csv_export(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     bearer: Option<Bearer>,
-    login: Login,
+    account: Account,
     query: Form<search::SearchQuery>,
 ) -> result::Result<Content<String>, AppError> {
     let db = connections.shared()?;
@@ -380,7 +380,7 @@ fn entries_csv_export(
         vec![]
     };
 
-    let user = usecases::authorize_user_by_email(&*db, &login.0, Role::Scout)?;
+    let user = usecases::authorize_user_by_email(&*db, account.email(), Role::Scout)?;
 
     let (req, limit) = search::parse_search_query(&query)?;
     let limit = if let Some(limit) = limit {

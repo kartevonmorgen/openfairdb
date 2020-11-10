@@ -37,8 +37,8 @@ const CLEARANCE_WASM: &[u8] =
 type Result<T> = std::result::Result<T, AppError>;
 
 #[get("/")]
-pub fn get_index_user(account: Account) -> Markup {
-    view::index(Some(&account.email()))
+pub fn get_index_user(account: Option<Account>) -> Markup {
+    view::index(account.as_ref().map(Account::email))
 }
 
 #[get("/", rank = 2)]
@@ -403,7 +403,6 @@ pub fn routes() -> Vec<Route> {
         post_change_user_role,
         post_archive_event,
         login::get_login,
-        login::get_login_user,
         login::post_login,
         login::post_logout,
         register::get_register,

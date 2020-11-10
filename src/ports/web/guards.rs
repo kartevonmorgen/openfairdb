@@ -9,7 +9,6 @@ use rocket::{
 use std::time::Duration;
 
 pub const COOKIE_EMAIL_KEY: &str = "ofdb-user-email";
-pub const COOKIE_USER_KEY: &str = "user_id";
 pub const COOKIE_CAPTCHA_KEY: &str = "ofdb-captcha";
 
 #[derive(Debug)]
@@ -34,26 +33,6 @@ impl<'a, 'r> FromRequest<'a, 'r> for Bearer {
     }
 }
 
-//TODO: remove and use Account instead
-#[derive(Debug)]
-pub struct Login(pub String);
-
-impl<'a, 'r> FromRequest<'a, 'r> for Login {
-    type Error = ();
-
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Login, ()> {
-        let user = request
-            .cookies()
-            .get_private(COOKIE_USER_KEY)
-            .and_then(|cookie| cookie.value().parse().ok())
-            .map(Login);
-        match user {
-            Some(user) => Outcome::Success(user),
-            None => Outcome::Failure((Status::Unauthorized, ())),
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct Account(String);
 
@@ -64,15 +43,14 @@ impl Account {
 }
 
 impl<'a, 'r> FromRequest<'a, 'r> for Account {
-    type Error = !;
-
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Account, !> {
+    type Error = ();
+    fn from_request(request: &'a Request<'r>) -> request::Outcome<Account, ()> {
         request
             .cookies()
             .get_private(COOKIE_EMAIL_KEY)
             .and_then(|cookie| cookie.value().parse().ok())
             .map(Account)
-            .or_forward(())
+            .into_outcome((Status::Unauthorized, ()))
     }
 }
 
@@ -84,18 +62,19 @@ pub const MAX_CAPTCHA_TTL: Duration = Duration::from_secs(120);
 impl<'a, 'r> FromRequest<'a, 'r> for Captcha {
     type Error = ();
     fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, ()> {
-        let valid = request
+        request
             .cookies()
             .get_private(COOKIE_CAPTCHA_KEY)
             .and_then(|cookie| cookie.value().parse().ok())
             .and_then(|ts: DateTime<Utc>| Utc::now().signed_duration_since(ts).to_std().ok())
-            .map(|duration: Duration| duration <= MAX_CAPTCHA_TTL)
-            .unwrap_or(false);
-        if valid {
-            Outcome::Success(Captcha)
-        } else {
-            Outcome::Failure((Status::Unauthorized, ()))
-        }
+            .and_then(|duration: Duration| {
+                if duration <= MAX_CAPTCHA_TTL {
+                    Some(Captcha)
+                } else {
+                    None
+                }
+            })
+            .into_outcome((Status::Unauthorized, ()))
     }
 }
 

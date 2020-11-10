@@ -29,13 +29,15 @@ impl<'a> LoginCredentials {
 }
 
 #[get("/login")]
-pub fn get_login_user(_account: Account) -> Redirect {
-    Redirect::to(uri!(super::get_index))
-}
-
-#[get("/login", rank = 2)]
-pub fn get_login(flash: Option<FlashMessage>) -> Markup {
-    view::login(flash, "/reset-password")
+pub fn get_login(
+    account: Option<Account>,
+    flash: Option<FlashMessage>,
+) -> std::result::Result<Markup, Redirect> {
+    if account.is_some() {
+        Err(Redirect::to(uri!(super::get_index)))
+    } else {
+        Ok(view::login(flash, "/reset-password"))
+    }
 }
 
 #[post("/login", data = "<credentials>")]

@@ -1262,8 +1262,9 @@ pub fn cookie_from_response(response: &Response, key: &str) -> Option<Cookie<'st
     cookie.map(|c| c.into_owned())
 }
 
+// TOOD: rename to account_cookie
 fn user_id_cookie(response: &Response) -> Option<Cookie<'static>> {
-    cookie_from_response(response, "user_id")
+    cookie_from_response(response, COOKIE_EMAIL_KEY)
 }
 
 #[test]
@@ -1399,15 +1400,7 @@ fn confirm_email_address() {
         .header(ContentType::JSON)
         .body(r#"{"email": "a@bar.de", "password": "secret"}"#)
         .dispatch();
-    let cookie: Cookie = response
-        .headers()
-        .iter()
-        .filter(|h| h.name == "Set-Cookie")
-        .find(|h| h.value.contains("user_id="))
-        .unwrap()
-        .value
-        .parse()
-        .unwrap();
+    let cookie = user_id_cookie(&response).expect("cookie");
 
     assert_eq!(response.status(), Status::Ok);
     assert!(cookie.value().len() > 25);

@@ -452,7 +452,7 @@ mod entry {
             .header(ContentType::Form)
             .body(format!("ids={}&place_id={}", c_id, e_id))
             .dispatch();
-        assert_eq!(res.status(), Status::NotFound);
+        assert_eq!(res.status(), Status::Unauthorized);
         let comment = db.shared().unwrap().load_comment(&c_id).unwrap();
         assert!(comment.archived_at.is_none());
     }
@@ -466,7 +466,7 @@ mod entry {
             .header(ContentType::Form)
             .body(format!("ids={}&place_id={}", r_id, e_id))
             .dispatch();
-        assert_eq!(res.status(), Status::NotFound);
+        assert_eq!(res.status(), Status::Unauthorized);
     }
 }
 

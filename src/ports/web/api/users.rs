@@ -43,20 +43,20 @@ pub fn post_reset_password(
 }
 
 #[delete("/users/<email>")]
-pub fn delete_user(db: sqlite::Connections, user: Login, email: String) -> Result<()> {
-    usecases::delete_user(&*db.exclusive()?, &user.0, &email)?;
+pub fn delete_user(db: sqlite::Connections, account: Account, email: String) -> Result<()> {
+    usecases::delete_user(&*db.exclusive()?, account.email(), &email)?;
     Ok(Json(()))
 }
 
 #[get("/users/current", format = "application/json")]
-pub fn get_current_user(db: sqlite::Connections, user: Login) -> Result<json::User> {
-    let user = usecases::get_user(&*db.shared()?, &user.0, &user.0)?;
+pub fn get_current_user(db: sqlite::Connections, account: Account) -> Result<json::User> {
+    let user = usecases::get_user(&*db.shared()?, account.email(), account.email())?;
     Ok(Json(user.into()))
 }
 
 #[get("/users/<email>", format = "application/json", rank = 2)]
-pub fn get_user(db: sqlite::Connections, user: Login, email: String) -> Result<json::User> {
-    let user = usecases::get_user(&*db.shared()?, &user.0, &email)?;
+pub fn get_user(db: sqlite::Connections, account: Account, email: String) -> Result<json::User> {
+    let user = usecases::get_user(&*db.shared()?, account.email(), &email)?;
     Ok(Json(user.into()))
 }
 
