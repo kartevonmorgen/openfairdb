@@ -626,3 +626,12 @@ impl From<Entry> for UpdatePlace {
 pub struct JwtToken {
     pub token: String,
 }
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq))]
+pub struct Error {
+    /// HTTP status code
+    pub status: u16,
+    /// Error message
+    pub message: String,
+}
