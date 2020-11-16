@@ -15,6 +15,7 @@ pub mod api;
 #[cfg(feature = "frontend")]
 mod frontend;
 mod guards;
+pub mod jwt;
 #[cfg(test)]
 mod mockdb;
 pub mod notify;
@@ -86,10 +87,12 @@ pub(crate) fn rocket_instance(
         None => rocket::ignite(),
     };
     let captcha_cache = api::captcha::CaptchaCache::new();
+    let jwt_state = jwt::JwtState::new();
     let mut instance = r
         .manage(connections)
         .manage(search_engine)
-        .manage(captcha_cache);
+        .manage(captcha_cache)
+        .manage(jwt_state);
 
     for (m, r) in mounts {
         instance = instance.mount(m, r);

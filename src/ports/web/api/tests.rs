@@ -1355,6 +1355,50 @@ fn login_logout_succeeds() {
 }
 
 #[test]
+#[cfg(feature = "jwt")]
+fn login_logout_succeeds_jwt() {
+    let (client, db) = setup();
+    let users = vec![User {
+        email: "foo@bar".into(),
+        email_confirmed: true,
+        password: "secret".parse::<Password>().unwrap(),
+        role: Role::Guest,
+    }];
+    for u in users {
+        db.exclusive().unwrap().create_user(&u).unwrap();
+    }
+
+    // Login
+    let mut res = client
+        .post("/login")
+        .header(ContentType::JSON)
+        .body(r#"{"email": "foo@bar", "password": "secret"}"#)
+        .dispatch();
+    assert_eq!(res.status(), Status::Ok);
+    test_json(&res);
+    let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+    let jwt_token: ofdb_boundary::JwtToken = serde_json::from_str(&body_str).unwrap();
+
+    // Logout
+    let auth_header =
+        rocket::http::Header::new("Authorization", format!("Bearer {}", jwt_token.token));
+    let response = client
+        .post("/logout")
+        .header(ContentType::JSON)
+        .header(auth_header.clone())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // Assert logout succeeded
+    let res = client
+        .get("/users/current")
+        .header(ContentType::JSON)
+        .header(auth_header)
+        .dispatch();
+    assert_eq!(res.status(), Status::Unauthorized);
+}
+
+#[test]
 fn confirm_email_address() {
     let (client, db) = setup();
     let users = vec![User {

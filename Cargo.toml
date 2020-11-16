@@ -26,6 +26,7 @@ exclude = [ "ofdb-app-clearance" ]
 
 [dependencies]
 anyhow = "*"
+base64 = { version = "*", optional = true }
 captcha = "*"
 chrono = "*"
 # clap 3 is supposed to introduce breaking changes
@@ -38,6 +39,7 @@ env_logger = "*"
 # failure is only required for TantivyError
 failure = "*"
 fast_chemail = "*"
+jsonwebtoken = { version = "*", optional = true }
 lazy_static = "*"
 log = "*"
 num-traits = "*"
@@ -49,6 +51,7 @@ ofdb-gateways = "*"
 owning_ref = "*"
 passwords = "*"
 pwhash = "*"
+rand = { version = "*", optional = true }
 regex = "*"
 rocket = "*"
 rocket_contrib = "*"
@@ -71,10 +74,13 @@ ofdb-entities = { version = "*", features = ["builders"] }
 walkdir = "2"
 
 [features]
-default = ["frontend", "email", "clearance"]
+default = ["frontend", "email", "clearance", "cookies", "jwt"]
+
+clearance = []
+cookies = []
 email = []
 frontend = ["maud"]
-clearance = []
+jwt = ["jsonwebtoken", "base64", "rand"]
 
 [profile.release]
 lto = true

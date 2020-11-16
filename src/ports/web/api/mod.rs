@@ -11,14 +11,14 @@ use crate::{
         error::AppError,
         flows::prelude as flows,
     },
-    ports::web::notify::*,
+    ports::web::{jwt, notify::*},
 };
 use rocket::{
     self,
     http::{ContentType, Cookie, Cookies, Status},
     request::Form,
     response::{content::Content, Responder, Response},
-    Route,
+    Route, State,
 };
 use rocket_contrib::json::Json;
 use std::result;
@@ -238,7 +238,8 @@ fn post_login(
     db: sqlite::Connections,
     mut cookies: Cookies,
     login: Json<json::Credentials>,
-) -> Result<()> {
+    jwt_state: State<jwt::JwtState>,
+) -> Result<Option<ofdb_boundary::JwtToken>> {
     let login = usecases::Login::from(login.into_inner());
     {
         let credentials = usecases::Credentials {
@@ -247,17 +248,34 @@ fn post_login(
         };
         usecases::login_with_email(&*db.shared()?, &credentials)?;
     }
-    cookies.add_private(
-        Cookie::build(COOKIE_EMAIL_KEY, login.email)
-            .same_site(rocket::http::SameSite::None)
-            .finish(),
-    );
-    Ok(Json(()))
+
+    let mut response = None;
+    if cfg!(feature = "jwt") {
+        let token = jwt_state.generate_token(&login.email)?;
+        response = Some(ofdb_boundary::JwtToken { token });
+    }
+    if cfg!(feature = "cookies") {
+        cookies.add_private(
+            Cookie::build(COOKIE_EMAIL_KEY, login.email)
+                .same_site(rocket::http::SameSite::None)
+                .finish(),
+        );
+    }
+    Ok(Json(response))
 }
 
 #[post("/logout", format = "application/json")]
-fn post_logout(mut cookies: Cookies) -> Result<()> {
+fn post_logout(
+    mut cookies: Cookies,
+    jwt_state: State<jwt::JwtState>,
+    bearer: Option<Bearer>,
+) -> Result<()> {
     cookies.remove_private(Cookie::named(COOKIE_EMAIL_KEY));
+    if cfg!(feature = "jwt") {
+        if let Some(bearer) = bearer {
+            jwt_state.blacklist_token(bearer.0);
+        }
+    }
     Ok(Json(()))
 }
 

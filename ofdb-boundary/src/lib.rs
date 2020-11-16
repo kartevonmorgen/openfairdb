@@ -613,3 +613,9 @@ impl From<Entry> for UpdatePlace {
         }
     }
 }
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+pub struct JwtToken {
+    pub token: String,
+}
