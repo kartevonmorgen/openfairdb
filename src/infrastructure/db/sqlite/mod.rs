@@ -111,11 +111,11 @@ impl Connections {
         }
     }
 
-    pub fn shared<'a>(&'a self) -> Fallible<DbReadOnly<'a>> {
+    pub fn shared(&self) -> Fallible<DbReadOnly> {
         DbReadOnly::try_new(&self.pool)
     }
 
-    pub fn exclusive<'a>(&'a self) -> Fallible<DbReadWrite<'a>> {
+    pub fn exclusive(&self) -> Fallible<DbReadWrite> {
         DbReadWrite::try_new(&self.pool)
     }
 }

@@ -99,7 +99,7 @@ fn place_email(place: &Place, category_names: &[String], intro_sentence: &str) -
         name: _,
         email,
         phone,
-    } = place.contact.clone().unwrap_or_else(|| Contact {
+    } = place.contact.clone().unwrap_or(Contact {
         name: None,
         email: None,
         phone: None,
@@ -159,7 +159,7 @@ fn event_email(event: &Event, intro_sentence: &str) -> String {
         name: _,
         email,
         phone,
-    } = event.contact.clone().unwrap_or_else(|| Contact {
+    } = event.contact.clone().unwrap_or(Contact {
         name: None,
         email: None,
         phone: None,

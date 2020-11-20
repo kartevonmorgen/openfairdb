@@ -166,7 +166,7 @@ impl LatCoord {
 
     pub fn try_from_deg<T: Into<f64>>(deg: T) -> Result<Self, CoordRangeError> {
         let deg = deg.into();
-        if deg >= Self::DEG_MIN && deg <= Self::DEG_MAX {
+        if (Self::DEG_MIN..=Self::DEG_MAX).contains(&deg) {
             Ok(Self::from_deg(deg))
         } else {
             Err(CoordRangeError::Degrees(deg))
@@ -292,7 +292,7 @@ impl LngCoord {
 
     pub fn try_from_deg<T: Into<f64>>(deg: T) -> Result<Self, CoordRangeError> {
         let deg = deg.into();
-        if deg >= Self::DEG_MIN && deg <= Self::DEG_MAX {
+        if (Self::DEG_MIN..=Self::DEG_MAX).contains(&deg) {
             Ok(Self::from_deg(deg))
         } else {
             Err(CoordRangeError::Degrees(deg))
