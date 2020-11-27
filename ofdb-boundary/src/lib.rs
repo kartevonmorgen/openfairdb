@@ -654,11 +654,29 @@ impl From<e::geo::MapPoint> for LatLonDegrees {
     }
 }
 
+impl From<e::geo::MapPoint> for MapPoint {
+    fn from(from: e::geo::MapPoint) -> Self {
+        Self {
+            lat: from.lat().to_deg(),
+            lng: from.lng().to_deg(),
+        }
+    }
+}
+
 impl TryFrom<LatLonDegrees> for e::geo::MapPoint {
     type Error = e::geo::CoordRangeError;
 
     fn try_from(from: LatLonDegrees) -> Result<Self, Self::Error> {
         e::geo::MapPoint::try_from_lat_lng_deg(from.0, from.1)
+    }
+}
+
+impl From<e::geo::MapBbox> for MapBbox {
+    fn from(bbox: e::geo::MapBbox) -> Self {
+        Self {
+            sw: MapPoint::from(bbox.southwest()),
+            ne: MapPoint::from(bbox.northeast()),
+        }
     }
 }
 
