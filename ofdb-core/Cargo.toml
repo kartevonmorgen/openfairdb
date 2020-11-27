@@ -12,3 +12,8 @@ url = "*"
 
 [dev-dependencies]
 ofdb-entities = { version = "*", features = ["builders"] }
+criterion = "*"
+
+[[bench]]
+name = "calc_avg_rating"
+harness = false
