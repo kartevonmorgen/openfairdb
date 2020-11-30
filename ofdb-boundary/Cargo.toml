@@ -9,14 +9,15 @@ repository = "https://github.com/kartevonmorgen/openfairdb"
 edition = "2018"
 
 [dependencies]
-ofdb-entities = { version = "0.9", path = "../ofdb-entities" }
+ofdb-entities = { version = "0.9", path = "../ofdb-entities", optional = true }
 chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
-url = { version = "2", features = ["serde"] }
+url = { version = "2", features = ["serde"], optional = true }
 
 [features]
-default = []
+default = ["entity-conversions"]
 extra-derive = []
+entity-conversions = ["ofdb-entities", "url"]
 wasm-bindgen = ["ofdb-entities/wasm-bindgen"]
 
 [badges]
