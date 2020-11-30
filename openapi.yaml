@@ -100,6 +100,7 @@ paths:
       security:
         - bearerAuth: []
         - captchaCookieAuth: []
+        - jwtAuth: []
         - userEmailCookieAuth: []
       responses:
         '200':
@@ -140,6 +141,7 @@ paths:
       security:
         - bearerAuth: []
         - captchaCookieAuth: []
+        - jwtAuth: []
         - userEmailCookieAuth: []
       responses:
         '200':
@@ -548,12 +550,18 @@ paths:
                   type: string
       responses:
         '200':
-          description: Sucessful response
+          description: Sucessful response - the JWT token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JwtToken'
   '/logout':
     post:
       summary: User logout
       tags:
         - Users
+      security:
+        - jwtAuth: []
       responses:
         '200':
           description: Sucessful response
@@ -562,6 +570,8 @@ paths:
       summary: Get the current user
       tags:
         - Users
+      security:
+        - jwtAuth: []
       responses:
         '200':
           description: The current user
@@ -1539,6 +1549,12 @@ components:
       description: The capcha image
       type: string
       format: binary
+    JwtToken:
+      description: A JWT bearer token to authorize requests - it is currently valid for 24 hours.
+      properties:
+        token:
+          type: string
+          example: "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJtYWdudXMuaGVyb2xkQHNsb3d0ZWMuZGUiLCJleHAiOjE2MDY4MjIyMTZ9.3lO245XVvqZ16FuKfBtHP7ybSsZZTng6HmPIKK6UBLI"
   parameters:
     IdPath:
       name: id
@@ -1686,6 +1702,10 @@ components:
       type: apiKey
       in: cookie
       name: ofdb-captcha
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
     userEmailCookieAuth:
       type: apiKey
       in: cookie
