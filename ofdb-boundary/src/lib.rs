@@ -307,7 +307,7 @@ pub struct MapBbox {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, Copy))]
 pub struct MapPoint {
     pub lat: f64,
     pub lng: f64,
@@ -371,11 +371,24 @@ pub struct ResultCount {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Clone, Copy))]
 pub struct LatLonDegrees(f64, f64);
 
+impl From<MapPoint> for LatLonDegrees {
+    fn from(p: MapPoint) -> Self {
+        Self(p.lat, p.lng)
+    }
+}
+
+impl From<LatLonDegrees> for MapPoint {
+    fn from(latlng: LatLonDegrees) -> Self {
+        let LatLonDegrees(lat, lng) = latlng;
+        Self { lat, lng }
+    }
+}
+
 #[derive(Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq, Clone))]
 pub struct Address {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub street: Option<String>,
@@ -404,7 +417,7 @@ impl Address {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Clone))]
 pub struct Location {
     #[serde(rename = "deg")]
     pub latlon: LatLonDegrees,
@@ -418,7 +431,7 @@ pub struct Location {
 }
 
 #[derive(Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq, Clone))]
 pub struct Contact {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
@@ -437,7 +450,7 @@ impl Contact {
 }
 
 #[derive(Serialize, Deserialize, Default)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq, Clone))]
 pub struct Links {
     #[serde(rename = "www", skip_serializing_if = "Option::is_none")]
     pub homepage: Option<Url>,
@@ -469,7 +482,7 @@ impl Links {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq, Clone))]
 pub struct Activity {
     pub at: i64,
 
@@ -478,7 +491,7 @@ pub struct Activity {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
 pub struct PlaceRoot {
     pub id: String,
 
@@ -487,7 +500,7 @@ pub struct PlaceRoot {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
 pub struct PlaceRevision {
     #[serde(rename = "rev")]
     pub revision: u64,
@@ -532,14 +545,14 @@ pub struct PlaceRevision {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
 pub struct PlaceHistory {
     pub place: PlaceRoot,
     pub revisions: Vec<(PlaceRevision, Vec<ReviewStatusLog>)>,
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
 pub struct ActivityLog {
     pub at: i64,
 
@@ -554,7 +567,7 @@ pub struct ActivityLog {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
 pub struct ReviewStatusLog {
     pub rev: u64,
     pub act: ActivityLog,
