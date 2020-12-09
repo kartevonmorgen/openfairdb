@@ -8,16 +8,14 @@ use std::{io::Result, thread};
 #[derive(Debug, Clone)]
 pub struct Mailgun {
     pub api_key: String,
+    pub api_url: String,
     pub domain: String,
     pub from_email: Email,
 }
 
 impl Mailgun {
-    fn api_url(&self) -> String {
-        format!("https://api.mailgun.net/v3/{}/messages", self.domain)
-    }
     fn send(&self, params: Vec<(&'static str, String)>) {
-        let url = self.api_url();
+        let url = self.api_url.clone();
         let key = self.api_key.clone();
         thread::spawn(move || {
             if let Err(err) = send_raw(&url, &key, params) {
