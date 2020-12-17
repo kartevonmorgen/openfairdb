@@ -6,12 +6,10 @@ use crate::{
         db::{sqlite, tantivy},
         flows::prelude as flows,
     },
-    ports::web::{notify::*, AppError},
+    ports::web::notify::*,
 };
-use ofdb_entities::organization::Organization as Org;
 use rocket::{self, request::Form};
 use rocket_contrib::json::Json;
-use std::result::Result as StdResult;
 
 #[derive(FromForm, Clone)]
 pub struct GetEntryQuery {
@@ -157,13 +155,16 @@ pub fn get_entries_most_popular_tags(
 
 #[post("/entries", format = "application/json", data = "<body>")]
 pub fn post_entry(
-    credentials: Credentials,
+    auth: Auth,
     connections: sqlite::Connections,
     notify: Notify,
     mut search_engine: tantivy::SearchEngine,
     body: Json<json::NewPlace>,
 ) -> Result<String> {
-    let created_by_org = created_by_org(&connections, &credentials)?;
+    let org = auth.organization(&*connections.shared()?).ok();
+    if org.is_none() && auth.account_email().is_err() {
+        auth.has_captcha()?;
+    }
     let new_place = body.into_inner().into();
     Ok(Json(
         flows::create_place(
@@ -171,8 +172,8 @@ pub fn post_entry(
             &mut search_engine,
             &*notify,
             new_place,
-            credentials.account_email(),
-            created_by_org.as_ref(),
+            auth.account_email().ok(),
+            org.as_ref(),
         )?
         .id
         .to_string(),
@@ -181,14 +182,17 @@ pub fn post_entry(
 
 #[put("/entries/<id>", format = "application/json", data = "<data>")]
 pub fn put_entry(
-    credentials: Credentials,
+    auth: Auth,
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
     notify: Notify,
     id: String,
     data: Json<json::UpdatePlace>,
 ) -> Result<String> {
-    let created_by_org = created_by_org(&connections, &credentials)?;
+    let org = auth.organization(&*connections.shared()?).ok();
+    if org.is_none() && auth.account_email().is_err() {
+        auth.has_captcha()?;
+    }
     Ok(Json(
         flows::update_place(
             &connections,
@@ -196,24 +200,10 @@ pub fn put_entry(
             &*notify,
             id.into(),
             data.into_inner().into(),
-            credentials.account_email(),
-            created_by_org.as_ref(),
+            auth.account_email().ok(),
+            org.as_ref(),
         )?
         .id
         .into(),
     ))
-}
-
-fn created_by_org(
-    connections: &sqlite::Connections,
-    credentials: &Credentials,
-) -> StdResult<Option<Org>, AppError> {
-    Ok(if let Some(api_token) = credentials.bearer_token() {
-        Some(usecases::authorize_organization_by_api_token(
-            &*connections.shared()?,
-            api_token,
-        )?)
-    } else {
-        None
-    })
 }

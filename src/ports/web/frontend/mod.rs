@@ -37,8 +37,8 @@ const CLEARANCE_WASM: &[u8] =
 type Result<T> = std::result::Result<T, AppError>;
 
 #[get("/")]
-pub fn get_index_user(account: Option<Account>) -> Markup {
-    view::index(account.as_ref().map(Account::email))
+pub fn get_index_user(auth: Auth) -> Markup {
+    view::index(auth.account_email().ok())
 }
 
 #[get("/", rank = 2)]
@@ -74,15 +74,11 @@ pub fn get_search(search_engine: SearchEngine, q: &RawStr, limit: Option<usize>)
 }
 
 #[get("/search-users?<email>")]
-pub fn get_search_users(
-    pool: sqlite::Connections,
-    email: &RawStr,
-    account: Account,
-) -> Result<Markup> {
+pub fn get_search_users(pool: sqlite::Connections, email: &RawStr, auth: Auth) -> Result<Markup> {
     let email = email.url_decode()?;
     {
         let db = pool.shared()?;
-        let admin = usecases::authorize_user_by_email(&*db, account.email(), Role::Admin)?;
+        let admin = auth.user_with_min_role(&*db, Role::Admin)?;
         let users: Vec<_> = db.try_get_user_by_email(&email)?.into_iter().collect();
         Ok(view::user_search_result(&admin.email, &users))
     }

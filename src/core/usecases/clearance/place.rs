@@ -12,36 +12,24 @@ pub(crate) fn add_pending_clearance<R: PlaceClearanceRepo>(
 
 pub fn count_pending_clearances<R: OrganizationRepo + PlaceClearanceRepo>(
     repo: &R,
-    org_token: &str,
+    org: &Organization,
 ) -> Result<u64> {
-    let org = repo.get_org_by_api_token(org_token).map_err(|e| match e {
-        RepoError::NotFound => Error::Parameter(ParameterError::Unauthorized),
-        _ => Error::Repo(e),
-    })?;
     Ok(repo.count_pending_clearances_for_places(&org.id)?)
 }
 
 pub fn list_pending_clearances<R: OrganizationRepo + PlaceClearanceRepo>(
     repo: &R,
-    org_token: &str,
+    org: &Organization,
     pagination: &Pagination,
 ) -> Result<Vec<PendingClearanceForPlace>> {
-    let org = repo.get_org_by_api_token(org_token).map_err(|e| match e {
-        RepoError::NotFound => Error::Parameter(ParameterError::Unauthorized),
-        _ => Error::Repo(e),
-    })?;
     Ok(repo.list_pending_clearances_for_places(&org.id, pagination)?)
 }
 
 pub fn update_pending_clearances<R: OrganizationRepo + PlaceClearanceRepo>(
     repo: &R,
-    org_token: &str,
+    org: &Organization,
     clearances: &[ClearanceForPlace],
 ) -> Result<usize> {
-    let org = repo.get_org_by_api_token(org_token).map_err(|e| match e {
-        RepoError::NotFound => Error::Parameter(ParameterError::Unauthorized),
-        _ => Error::Repo(e),
-    })?;
     let count = repo.update_pending_clearances_for_places(&org.id, clearances)?;
     log::info!(
         "Updated {} of {} pending clearance(s) for places on behalf of organization '{}'",

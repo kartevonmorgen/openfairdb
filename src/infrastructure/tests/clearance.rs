@@ -234,7 +234,7 @@ impl PlaceClearanceFixture {
 #[test]
 fn should_create_pending_clearance_when_creating_place_with_moderated_tags() -> flows::Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
-    let org = &fixture.organization_with_add_clearance_tag;
+    let org = fixture.organization_with_add_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
 
     let new_place = usecases::NewPlace {
@@ -256,7 +256,7 @@ fn should_create_pending_clearance_when_creating_place_with_moderated_tags() -> 
     assert!(created_place.tags.contains(tag));
     let pending_clearances = usecases::clearance::place::list_pending_clearances(
         &*fixture.backend.db_connections.shared()?,
-        &org.api_token,
+        &org,
         &Default::default(),
     )?;
     assert_eq!(1, pending_clearances.len());
@@ -309,7 +309,7 @@ fn should_deny_creation_of_place_with_moderated_tags_if_not_allowed() -> flows::
 fn should_create_pending_clearance_once_when_updating_place_with_moderated_tags(
 ) -> flows::Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
-    let org = &fixture.organization_with_add_remove_clearance_tag;
+    let org = fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.created_place;
     let place_id = &old_place.id;
@@ -333,7 +333,7 @@ fn should_create_pending_clearance_once_when_updating_place_with_moderated_tags(
     assert!(new_place.tags.contains(tag));
     let pending_clearances = usecases::clearance::place::list_pending_clearances(
         &*fixture.backend.db_connections.shared()?,
-        &org.api_token,
+        &org,
         &Default::default(),
     )?;
     assert_eq!(1, pending_clearances.len());
@@ -359,7 +359,7 @@ fn should_create_pending_clearance_once_when_updating_place_with_moderated_tags(
     assert!(new_place.tags.is_empty());
     let pending_clearances = usecases::clearance::place::list_pending_clearances(
         &*fixture.backend.db_connections.shared()?,
-        &org.api_token,
+        &org,
         &Default::default(),
     )?;
     // Pending clearance is unchanged
@@ -456,7 +456,7 @@ fn should_deny_removing_of_moderated_tag_from_place_if_not_allowed() -> flows::R
 fn should_create_pending_clearance_when_updating_an_archived_place_with_moderated_tags(
 ) -> flows::Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
-    let org = &fixture.organization_with_add_remove_clearance_tag;
+    let org = fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.archived_place;
     let place_id = &fixture.archived_place.id;
@@ -480,7 +480,7 @@ fn should_create_pending_clearance_when_updating_an_archived_place_with_moderate
     assert!(new_place.tags.contains(tag));
     let pending_clearances = usecases::clearance::place::list_pending_clearances(
         &*fixture.backend.db_connections.shared()?,
-        &org.api_token,
+        &org,
         &Default::default(),
     )?;
     assert_eq!(1, pending_clearances.len());
@@ -496,7 +496,7 @@ fn should_create_pending_clearance_when_updating_an_archived_place_with_moderate
 fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_places(
 ) -> flows::Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
-    let org = &fixture.organization_with_add_remove_clearance_tag;
+    let org = fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.confirmed_place;
     assert!(old_place.tags.contains(tag));
@@ -507,7 +507,7 @@ fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_pla
         0,
         usecases::clearance::place::count_pending_clearances(
             &*fixture.backend.db_connections.shared()?,
-            &org.api_token,
+            &org,
         )?
     );
 
@@ -530,7 +530,7 @@ fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_pla
     assert_eq!(new_revision, new_place.revision);
     let pending_clearances = usecases::clearance::place::list_pending_clearances(
         &*fixture.backend.db_connections.shared()?,
-        &org.api_token,
+        &org,
         &Default::default(),
     )?;
     assert_eq!(1, pending_clearances.len());
@@ -615,7 +615,7 @@ fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_pla
         1,
         usecases::clearance::place::update_pending_clearances(
             &*fixture.backend.db_connections.exclusive()?,
-            &org.api_token,
+            &org,
             &[ClearanceForPlace {
                 place_id: place_id.clone(),
                 cleared_revision: None,
@@ -710,7 +710,7 @@ fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_pla
 fn should_hide_untagged_cleared_revision_when_loading_or_searching_for_cleared_places(
 ) -> flows::Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
-    let org = &fixture.organization_with_add_remove_clearance_tag;
+    let org = fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.created_place;
     let place_id = &old_place.id;
@@ -740,7 +740,7 @@ fn should_hide_untagged_cleared_revision_when_loading_or_searching_for_cleared_p
     assert!(new_place.tags.contains(tag));
     let pending_clearances = usecases::clearance::place::list_pending_clearances(
         &*fixture.backend.db_connections.shared()?,
-        &org.api_token,
+        &org,
         &Default::default(),
     )?;
     assert_eq!(1, pending_clearances.len());
@@ -799,7 +799,7 @@ fn should_hide_untagged_cleared_revision_when_loading_or_searching_for_cleared_p
 #[test]
 fn should_fail_when_trying_to_clear_future_revisions_of_places() -> flows::Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
-    let org = &fixture.organization_with_add_remove_clearance_tag;
+    let org = fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
     let old_place = &fixture.created_place;
     let place_id = &old_place.id;
@@ -829,7 +829,7 @@ fn should_fail_when_trying_to_clear_future_revisions_of_places() -> flows::Resul
     assert!(new_place.tags.contains(tag));
     let pending_clearances = usecases::clearance::place::list_pending_clearances(
         &*fixture.backend.db_connections.shared()?,
-        &org.api_token,
+        &org,
         &Default::default(),
     )?;
     assert_eq!(1, pending_clearances.len());
@@ -851,7 +851,7 @@ fn should_fail_when_trying_to_clear_future_revisions_of_places() -> flows::Resul
     // Try to clear the next, non-existent revision of the place
     assert!(usecases::clearance::place::update_pending_clearances(
         &*fixture.backend.db_connections.exclusive()?,
-        &org.api_token,
+        &org,
         &[ClearanceForPlace {
             place_id: place_id.clone(),
             cleared_revision: Some(new_revision.next()),
@@ -876,7 +876,7 @@ fn should_fail_when_trying_to_clear_future_revisions_of_places() -> flows::Resul
 #[test]
 fn should_do_nothing_when_clearing_places_without_pending_clearances() -> flows::Result<()> {
     let fixture = PlaceClearanceFixture::new();
-    let org = &fixture.organization_with_add_remove_clearance_tag;
+    let org = fixture.organization_with_add_remove_clearance_tag;
 
     assert_eq!(
         0,
@@ -892,7 +892,7 @@ fn should_do_nothing_when_clearing_places_without_pending_clearances() -> flows:
         0,
         usecases::clearance::place::update_pending_clearances(
             &*fixture.backend.db_connections.exclusive()?,
-            &org.api_token,
+            &org,
             &[
                 ClearanceForPlace {
                     place_id: fixture.created_place.id.clone(),

@@ -1,10 +1,17 @@
 use crate::core::prelude::*;
 
-pub fn authorize_organization_by_api_token<D: Db>(db: &D, api_token: &str) -> Result<Organization> {
-    db.get_org_by_api_token(api_token).map_err(|e| match e {
-        RepoError::NotFound => Error::Parameter(ParameterError::Unauthorized),
-        _ => Error::Repo(e),
-    })
+pub fn authorize_organization_by_possible_api_tokens<D: OrganizationRepo>(
+    db: &D,
+    tokens: &[String],
+) -> Result<Organization> {
+    for token in tokens {
+        match db.get_org_by_api_token(token) {
+            Ok(org) => return Ok(org),
+            Err(RepoError::NotFound) => (),
+            Err(e) => return Err(Error::Repo(e)),
+        }
+    }
+    Err(Error::Parameter(ParameterError::Unauthorized))
 }
 
 pub fn authorize_user_by_email(db: &dyn Db, email: &str, min_required_role: Role) -> Result<User> {
