@@ -57,11 +57,23 @@ jobs:
           command: check
           args: --manifest-path ofdb-entities/Cargo.toml
 
+      - name: Check ofdb-core crate
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --manifest-path ofdb-core/Cargo.toml
+
       - name: Check ofdb-boundary crate
         uses: actions-rs/cargo@v1
         with:
           command: check
           args: --manifest-path ofdb-boundary/Cargo.toml
+
+      - name: Check ofdb-gateways crate
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --manifest-path ofdb-gateways/Cargo.toml
 
       - name: Test project
         id: test
