@@ -16,14 +16,15 @@ num-derive = "0.3"
 num-traits = "0.2"
 pwhash = "0.3"
 uuid = { version = "0.8", features = ["v4"] }
-url = "2"
+url = { version = "2", optional = true }
 strum = "0.19"
 strum_macros = "0.19"
 thiserror = "1"
 
 [features]
-default = []
+default = ["rusturl"]
 builders = []
+rusturl = ["url"]
 wasm-bindgen = ["uuid/wasm-bindgen"]
 
 [dev-dependencies]

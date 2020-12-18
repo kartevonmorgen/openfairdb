@@ -32,9 +32,12 @@ pub mod subscription;
 pub mod tag;
 pub mod time;
 pub mod user;
+#[cfg(feature = "rusturl")]
 pub mod url {
     pub use url::{ParseError, Url};
 }
+#[cfg(not(feature = "rusturl"))]
+pub mod url;
 
 #[cfg(any(test, feature = "builders"))]
 pub mod builders;

@@ -1873,7 +1873,6 @@ dependencies = [
  "ofdb-entities",
  "quoted_printable",
  "reqwest",
- "url 2.1.1",
 ]
 
 [[package]]
