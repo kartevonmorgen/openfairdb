@@ -13,7 +13,6 @@ log = "*"
 ofdb-core = "*"
 ofdb-entities = "*"
 quoted_printable = "*"
-url = "2"
 
 [dependencies.geocoding]
 version = "*"

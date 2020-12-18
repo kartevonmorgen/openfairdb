@@ -1830,7 +1830,6 @@ dependencies = [
  "chrono",
  "ofdb-entities",
  "serde",
- "url 2.1.1",
 ]
 
 [[package]]
@@ -1940,7 +1939,6 @@ dependencies = [
  "tantivy",
  "thiserror",
  "time",
- "url 2.1.1",
  "uuid",
  "walkdir",
 ]
@@ -3289,7 +3287,6 @@ dependencies = [
  "idna 0.2.0",
  "matches",
  "percent-encoding 2.1.0",
- "serde",
 ]
 
 [[package]]

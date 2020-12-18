@@ -9,9 +9,8 @@ use crate::core::{
     },
 };
 use chrono::prelude::*;
-use url::Url;
 
-pub(crate) fn load_url(url: String) -> Option<Url> {
+pub(crate) fn load_url(url: String) -> Option<e::Url> {
     match url.parse() {
         Ok(url) => Some(url),
         Err(err) => {

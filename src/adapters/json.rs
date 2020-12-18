@@ -1,7 +1,5 @@
 use crate::core::{db::IndexedPlace, entities as e, usecases};
 
-use url::Url;
-
 pub use ofdb_boundary::*;
 
 impl From<Credentials> for usecases::Login {
@@ -244,15 +242,15 @@ pub fn entry_from_place_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -
         contact_name,
         email: email.map(Into::into),
         telephone,
-        homepage: homepage_url.map(Url::into_string),
+        homepage: homepage_url.map(e::Url::into_string),
         opening_hours: opening_hours.map(Into::into),
         founded_on: founded_on.map(Into::into),
         categories: categories.into_iter().map(|c| c.id.to_string()).collect(),
         tags,
         ratings: ratings.into_iter().map(|r| r.id.to_string()).collect(),
         license: Some(license),
-        image_url: image_url.map(Url::into_string),
-        image_link_url: image_link_url.map(Url::into_string),
+        image_url: image_url.map(e::Url::into_string),
+        image_link_url: image_link_url.map(e::Url::into_string),
         custom_links: custom_links.into_iter().map(Into::into).collect(),
     }
 }

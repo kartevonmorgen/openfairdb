@@ -485,7 +485,6 @@ dependencies = [
  "ofdb-entities",
  "ofdb-seed",
  "seed",
- "url",
  "web-sys",
 ]
 
@@ -496,7 +495,6 @@ dependencies = [
  "chrono",
  "ofdb-entities",
  "serde",
- "url",
 ]
 
 [[package]]
@@ -1046,7 +1044,6 @@ dependencies = [
  "idna",
  "matches",
  "percent-encoding",
- "serde",
 ]
 
 [[package]]

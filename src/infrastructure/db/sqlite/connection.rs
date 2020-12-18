@@ -8,7 +8,6 @@ use diesel::{
     result::{DatabaseErrorKind, Error as DieselError},
 };
 use std::result;
-use url::Url;
 
 type Result<T> = result::Result<T, RepoError>;
 

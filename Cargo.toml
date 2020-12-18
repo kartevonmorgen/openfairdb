@@ -62,7 +62,6 @@ strum = "*"
 tantivy = "*"
 time = "0.1"
 thiserror = "1"
-url = { version = "2", features = ["serde"] }
 uuid = { version = "*", features = ["v4"] }
 
 [dev-dependencies]

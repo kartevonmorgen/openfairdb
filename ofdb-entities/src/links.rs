@@ -1,4 +1,4 @@
-use url::Url;
+use crate::url::Url;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Links {

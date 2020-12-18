@@ -1,7 +1,5 @@
 use crate::core::{entities::*, util::time::Timestamp};
 
-use url::Url;
-
 #[derive(Debug, Serialize)]
 pub struct CsvRecord {
     pub id: String,

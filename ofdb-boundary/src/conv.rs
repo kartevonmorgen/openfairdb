@@ -1,7 +1,7 @@
 use super::*;
+use e::url::Url;
 use ofdb_entities as e;
 use std::convert::{TryFrom, TryInto};
-use url::Url;
 
 impl From<e::links::CustomLink> for CustomLink {
     fn from(from: e::links::CustomLink) -> Self {

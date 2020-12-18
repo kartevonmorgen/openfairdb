@@ -253,8 +253,6 @@ mod tests {
     use super::super::tests::MockDb;
     use super::*;
 
-    use url::Url;
-
     #[test]
     fn update_place_valid() {
         let id = Id::new();

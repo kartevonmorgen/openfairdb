@@ -1,5 +1,4 @@
-use ofdb_entities::{address::*, contact::*, event::*, place::*};
-use url::Url;
+use ofdb_entities::{address::*, contact::*, event::*, place::*, url::*};
 
 pub struct EmailContent {
     pub subject: String,

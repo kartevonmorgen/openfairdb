@@ -32,6 +32,9 @@ pub mod subscription;
 pub mod tag;
 pub mod time;
 pub mod user;
+pub mod url {
+    pub use url::{ParseError, Url};
+}
 
 #[cfg(any(test, feature = "builders"))]
 pub mod builders;

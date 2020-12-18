@@ -1,5 +1,5 @@
 use crate::core::error::ParameterError;
-use url::{ParseError, Url};
+use ofdb_entities::url::{ParseError, Url};
 
 /// Completes incomplete URLs before parsing
 pub fn parse_lazy_url(url: &str) -> Result<Option<Url>, ParseError> {

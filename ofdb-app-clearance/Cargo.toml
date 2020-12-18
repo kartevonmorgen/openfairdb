@@ -15,7 +15,6 @@ ofdb-seed = "*"
 seed = "*"
 difference = "*"
 web-sys = { version = "*", features = ["HtmlFormElement"] }
-url = { version = "2", features = ["serde"] }
 
 [patch.crates-io]
 ofdb-boundary = { path = "../ofdb-boundary" }

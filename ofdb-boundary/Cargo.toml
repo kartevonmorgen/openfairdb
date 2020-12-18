@@ -11,7 +11,6 @@ edition = "2018"
 [dependencies]
 chrono = { version = "0.4", features = ["serde"] }
 serde = { version = "1", features = ["derive"] }
-url = { version = "2", features = ["serde"], optional = true }
 
 [dependencies.ofdb-entities]
 version = "0.9"
@@ -21,7 +20,7 @@ optional = true
 [features]
 default = ["entity-conversions"]
 extra-derive = []
-entity-conversions = ["ofdb-entities", "url"]
+entity-conversions = ["ofdb-entities"]
 wasm-bindgen = ["ofdb-entities/wasm-bindgen"]
 
 [badges]
