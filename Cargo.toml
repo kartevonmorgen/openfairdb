@@ -46,7 +46,7 @@ num-traits = "*"
 maud = { version = "*", optional = true, features = ["rocket"] }
 ofdb-boundary = "*"
 ofdb-core = "*"
-ofdb-entities = "*"
+ofdb-entities = { version = "*", features = ["rusturl"] }
 ofdb-gateways = "*"
 owning_ref = "*"
 passwords = "*"

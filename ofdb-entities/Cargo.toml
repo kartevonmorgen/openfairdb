@@ -22,7 +22,7 @@ strum_macros = "0.19"
 thiserror = "1"
 
 [features]
-default = ["rusturl"]
+default = []
 builders = []
 rusturl = ["url"]
 wasm-bindgen = ["uuid/wasm-bindgen"]
