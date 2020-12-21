@@ -1113,7 +1113,7 @@ components:
         $ref: '#/components/schemas/Id'
     Revision:
       type: integer
-      format: i64
+      format: int64
       minimum: 0
       description: |
         A revision number
@@ -1371,8 +1371,8 @@ components:
     ResultCount:
       properties:
         count:
-          type: number
-          format: i64
+          type: integer
+          format: int64
       required:
         - count
       additionalProperties: false
@@ -1526,7 +1526,7 @@ components:
           oneOf:
             - type: string
             - type: integer
-              format: in64
+              format: int64
       example: [["tag1", 52], ["tag2", 0]]
     Latitude:
       type: number
