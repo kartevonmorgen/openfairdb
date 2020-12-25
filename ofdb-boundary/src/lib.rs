@@ -334,7 +334,7 @@ pub struct Credentials {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
 pub struct TagFrequency(pub String, pub u64);
 
 #[derive(Serialize, Deserialize)]
