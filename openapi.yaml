@@ -210,6 +210,12 @@ paths:
             format: int64
         - $ref: '#/components/parameters/PaginationLimit'
         - $ref: '#/components/parameters/PaginationOffset'
+        - name: disable_cache
+          in: query
+          required: false
+          description: Do not receive cached results but the newest state.
+          schema:
+            type: boolean
       responses:
         '200':
           description: Successful response

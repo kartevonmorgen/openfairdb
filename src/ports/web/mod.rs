@@ -19,6 +19,7 @@ pub mod jwt;
 #[cfg(test)]
 mod mockdb;
 pub mod notify;
+mod popular_tags_cache;
 mod sqlite;
 mod tantivy;
 #[cfg(test)]
@@ -81,17 +82,24 @@ pub(crate) fn rocket_instance(
     info!("Deleting expired user e-mail tokens...");
     usecases::delete_expired_user_tokens(&*connections.exclusive().unwrap()).unwrap();
 
+    info!("Caching most popular tags...");
+    let tags_cache = popular_tags_cache::new_from_db(&*connections.shared().unwrap()).unwrap();
+
+    let captcha_cache = api::captcha::CaptchaCache::new();
+    let jwt_state = jwt::JwtState::new();
+
     info!("Initialization finished");
+
     let r = match cfg {
         Some(cfg) => rocket::custom(cfg),
         None => rocket::ignite(),
     };
-    let captcha_cache = api::captcha::CaptchaCache::new();
-    let jwt_state = jwt::JwtState::new();
+
     let mut instance = r
         .manage(connections)
         .manage(search_engine)
         .manage(captcha_cache)
+        .manage(tags_cache)
         .manage(jwt_state);
 
     for (m, r) in mounts {

@@ -6,9 +6,9 @@ use crate::{
         db::{sqlite, tantivy},
         flows::prelude as flows,
     },
-    ports::web::notify::*,
+    ports::web::{notify::*, popular_tags_cache::PopularTagsCache},
 };
-use rocket::{self, request::Form};
+use rocket::{self, request::Form, State};
 use rocket_contrib::json::Json;
 
 #[derive(FromForm, Clone)]
@@ -128,13 +128,15 @@ pub fn get_entries_recently_changed(
 
 const ENTRIES_MOST_POPULAR_TAGS_PAGINATION_LIMIT_MAX: u64 = 1000;
 
-#[get("/entries/most-popular-tags?<min_count>&<max_count>&<offset>&<limit>")]
+#[get("/entries/most-popular-tags?<min_count>&<max_count>&<offset>&<limit>&<disable_cache>")]
 pub fn get_entries_most_popular_tags(
     db: sqlite::Connections,
+    tags_cache: State<PopularTagsCache>,
     min_count: Option<u64>,
     max_count: Option<u64>,
     offset: Option<u64>,
     limit: Option<u64>,
+    disable_cache: Option<bool>,
 ) -> Result<Vec<json::TagFrequency>> {
     let params = MostPopularTagsParams {
         min_count,
@@ -146,11 +148,16 @@ pub fn get_entries_most_popular_tags(
             .min(ENTRIES_MOST_POPULAR_TAGS_PAGINATION_LIMIT_MAX),
     );
     let pagination = Pagination { offset, limit };
-    let results = {
-        let db = db.shared()?;
-        db.most_popular_place_revision_tags(&params, &pagination)?
+    let results = if disable_cache == Some(true) {
+        let results = {
+            let db = db.shared()?;
+            db.most_popular_place_revision_tags(&params, &pagination)?
+        };
+        results.into_iter().map(Into::into).collect()
+    } else {
+        tags_cache.most_popular_place_revision_tags(&params, &pagination)?
     };
-    Ok(Json(results.into_iter().map(Into::into).collect()))
+    Ok(Json(results))
 }
 
 #[post("/entries", format = "application/json", data = "<body>")]
