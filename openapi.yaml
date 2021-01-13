@@ -210,12 +210,16 @@ paths:
             format: int64
         - $ref: '#/components/parameters/PaginationLimit'
         - $ref: '#/components/parameters/PaginationOffset'
-        - name: disable_cache
+        - name: max_cache_age
           in: query
           required: false
-          description: Do not receive cached results but the newest state.
+          description: | 
+            By default, cached data is returned for performance, if the cache is not older than one hour.
+            If you need newer data, you can set the maximum tolerable age of the cache here, in seconds.
+            A value of 0 disables the cache and gets the newest state. 
           schema:
-            type: boolean
+            type: integer
+            format: int64
       responses:
         '200':
           description: Successful response

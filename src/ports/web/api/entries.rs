@@ -127,8 +127,9 @@ pub fn get_entries_recently_changed(
 }
 
 const ENTRIES_MOST_POPULAR_TAGS_PAGINATION_LIMIT_MAX: u64 = 1000;
+const ENTRIES_MOST_POPULAR_TAGS_DEFAULT_MAX_CACHE_AGE_SECONDS: u64 = 3600;
 
-#[get("/entries/most-popular-tags?<min_count>&<max_count>&<offset>&<limit>&<disable_cache>")]
+#[get("/entries/most-popular-tags?<min_count>&<max_count>&<offset>&<limit>&<max_cache_age>")]
 pub fn get_entries_most_popular_tags(
     db: sqlite::Connections,
     tags_cache: State<PopularTagsCache>,
@@ -136,7 +137,7 @@ pub fn get_entries_most_popular_tags(
     max_count: Option<u64>,
     offset: Option<u64>,
     limit: Option<u64>,
-    disable_cache: Option<bool>,
+    max_cache_age: Option<u64>,
 ) -> Result<Vec<json::TagFrequency>> {
     let params = MostPopularTagsParams {
         min_count,
@@ -148,15 +149,16 @@ pub fn get_entries_most_popular_tags(
             .min(ENTRIES_MOST_POPULAR_TAGS_PAGINATION_LIMIT_MAX),
     );
     let pagination = Pagination { offset, limit };
-    let results = if disable_cache == Some(true) {
+    let max_cache_age =
+        max_cache_age.unwrap_or(ENTRIES_MOST_POPULAR_TAGS_DEFAULT_MAX_CACHE_AGE_SECONDS);
+    if tags_cache.age_in_seconds() > max_cache_age {
         let results = {
             let db = db.shared()?;
             db.most_popular_place_revision_tags(&params, &pagination)?
         };
-        results.into_iter().map(Into::into).collect()
-    } else {
-        tags_cache.most_popular_place_revision_tags(&params, &pagination)?
-    };
+        tags_cache.update_cache(results.into_iter().map(Into::into).collect());
+    }
+    let results = tags_cache.most_popular_place_revision_tags(&params, &pagination)?;
     Ok(Json(results))
 }
 

@@ -1581,7 +1581,7 @@ fn count_most_popular_tags_on_empty_db_to_verify_sql() {
     let (client, _) = setup();
     // All parameters
     let mut response = client
-        .get("/entries/most-popular-tags?offset=10&limit=1000&min_count=10&max_count=100&disable_cache=true")
+        .get("/entries/most-popular-tags?offset=10&limit=1000&min_count=10&max_count=100&max_cache_age=0")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.body().and_then(|b| b.into_string()).unwrap();
@@ -1589,25 +1589,25 @@ fn count_most_popular_tags_on_empty_db_to_verify_sql() {
 
     // Only offset parameter
     let response = client
-        .get("/entries/most-popular-tags?offset=1&disable_cache=true")
+        .get("/entries/most-popular-tags?offset=1&max_cache_age=0")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
     // Only limit parameter
     let response = client
-        .get("/entries/most-popular-tags?limit=1&disable_cache=true")
+        .get("/entries/most-popular-tags?limit=1&max_cache_age=0")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
     // Only min_count parameter
     let response = client
-        .get("/entries/most-popular-tags?min_count=1&disable_cache=true")
+        .get("/entries/most-popular-tags?min_count=1&max_cache_age=0")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 
     // Only max_count parameter
     let response = client
-        .get("/entries/most-popular-tags?max_count=1&disable_cache=true")
+        .get("/entries/most-popular-tags?max_count=1&max_cache_age=0")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
 }
