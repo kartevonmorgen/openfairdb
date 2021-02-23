@@ -254,9 +254,3 @@ pub fn entry_from_place_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -
         custom_links: custom_links.into_iter().map(Into::into).collect(),
     }
 }
-
-#[derive(Debug, Deserialize)]
-pub struct Review {
-    pub status: ReviewStatus,
-    pub comment: Option<String>,
-}

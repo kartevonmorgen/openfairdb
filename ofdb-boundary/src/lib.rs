@@ -271,6 +271,13 @@ pub enum ReviewStatus {
 
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+pub struct Review {
+    pub status: ReviewStatus,
+    pub comment: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
 pub struct SearchResponse {
     pub visible: Vec<PlaceSearchResult>,
     pub invisible: Vec<PlaceSearchResult>,
