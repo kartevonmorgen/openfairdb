@@ -58,6 +58,7 @@ COPY [ \
     "./ofdb-boundary/" ]
 COPY [ \
     "ofdb-core/Cargo.toml", \
+    "ofdb-core/benches", \
     "./ofdb-core/" ]
 COPY [ \
     "ofdb-entities/Cargo.toml", \

@@ -16,4 +16,5 @@ criterion = "*"
 
 [[bench]]
 name = "calc_avg_rating"
+path = "benches/calc_avg_rating.rs"
 harness = false
