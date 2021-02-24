@@ -253,14 +253,14 @@ fn post_login(
 }
 
 #[post("/logout", format = "application/json")]
-fn post_logout(auth: Auth, mut cookies: Cookies, jwt_state: State<jwt::JwtState>) -> Result<()> {
+fn post_logout(auth: Auth, mut cookies: Cookies, jwt_state: State<jwt::JwtState>) -> Json<()> {
     cookies.remove_private(Cookie::named(COOKIE_EMAIL_KEY));
     if cfg!(feature = "jwt") {
         for bearer in auth.bearer_tokens() {
             jwt_state.blacklist_token(bearer.to_owned());
         }
     }
-    Ok(Json(()))
+    Json(())
 }
 
 #[derive(Deserialize, Debug, Clone)]
@@ -461,10 +461,8 @@ impl<'r> Responder<'r> for AppError {
                         _ => Status::BadRequest,
                     });
                 }
-                Error::Repo(ref err) => {
-                    if let RepoError::NotFound = *err {
-                        return Err(Status::NotFound);
-                    }
+                Error::Repo(RepoError::NotFound) => {
+                    return Err(Status::NotFound);
                 }
                 _ => {}
             }

@@ -14,7 +14,7 @@ pub fn find_duplicates(
     places: &[(Place, ReviewStatus)],
 ) -> Result<Vec<(Id, Id, DuplicateType)>> {
     let mut duplicates = Vec::new();
-    for (p1, _) in &places[..] {
+    for (p1, _) in places {
         let nearby_places = search_nearby_places(place_index, p1.location.pos)?;
         for p2 in nearby_places {
             if let Some(t) = is_duplicate(p1, &p2) {

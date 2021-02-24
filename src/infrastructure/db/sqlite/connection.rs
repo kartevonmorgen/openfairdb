@@ -933,7 +933,7 @@ impl PlaceRepo for SqliteConnection {
             ))
             .filter(dsl::id.eq(id));
         let row = query.first::<models::JoinedPlaceRevision>(self)?;
-        Ok(load_place(self, row)?)
+        load_place(self, row)
     }
 }
 
@@ -1742,15 +1742,8 @@ impl Db for SqliteConnection {
             .execute(self);
         if let Err(err) = res {
             match err {
-                DieselError::DatabaseError(conn_err, _) => {
-                    match conn_err {
-                        DatabaseErrorKind::UniqueViolation => {
-                            // that's ok :)
-                        }
-                        _ => {
-                            return Err(err.into());
-                        }
-                    }
+                DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
+                    // that's ok :)
                 }
                 _ => {
                     return Err(err.into());

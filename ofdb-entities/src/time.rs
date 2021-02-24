@@ -4,6 +4,7 @@ use std::fmt;
 pub trait InnerTimestampConverter: Clone + Copy + PartialEq + Eq + PartialOrd + Ord {
     type Inner: Clone + Copy + PartialEq + Eq + PartialOrd + Ord;
 
+    #[allow(clippy::wrong_self_convention)]
     fn into_inner(ts: NaiveDateTime) -> Self::Inner;
 
     fn from_inner(ts: Self::Inner) -> NaiveDateTime;
