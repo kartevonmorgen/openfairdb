@@ -1,5 +1,5 @@
 // Copyright (c) 2015 - 2018 Markus Kohlhase <mail@markus-kohlhase.de>
-// Copyright (c) 2018 - 2020 slowtec GmbH <post@slowtec.de>
+// Copyright (c) 2018 - 2021 slowtec GmbH <post@slowtec.de>
 
 #![feature(plugin, test, proc_macro_hygiene, decl_macro, never_type)]
 #![allow(proc_macro_derive_resolution_fallback)]

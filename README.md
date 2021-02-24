@@ -170,6 +170,6 @@ Note: Currently the rendered class diagram must be updated manually by uploading
 # License
 
 Copyright (c) 2015 - 2018 Markus Kohlhase\
-Copyright (c) 2018 - 2020 [slowtec GmbH](https://slowtec.de)
+Copyright (c) 2018 - 2021 [slowtec GmbH](https://slowtec.de)
 
 This project is licensed under the AGPLv3 license.
