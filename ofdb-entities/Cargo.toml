@@ -9,16 +9,15 @@ repository = "https://github.com/kartevonmorgen/openfairdb"
 edition = "2018"
 
 [dependencies]
-bs58 = "0.3"
+bs58 = "0.4"
 chrono = "0.4"
-itertools = "0.9"
+itertools = "0.10"
 num-derive = "0.3"
 num-traits = "0.2"
 pwhash = "0.3"
 uuid = { version = "0.8", features = ["v4"] }
 url = { version = "2", optional = true }
-strum = "0.19"
-strum_macros = "0.19"
+strum = { version = "0.20", features = ["derive"] }
 thiserror = "1"
 
 [features]

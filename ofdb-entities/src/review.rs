@@ -1,7 +1,7 @@
 use crate::{activity::*, revision::*};
 use num_derive::{FromPrimitive, ToPrimitive};
 use num_traits::*;
-use strum_macros::{EnumCount, EnumIter};
+use strum::{EnumCount, EnumIter};
 
 pub type ReviewStatusPrimitive = i16;
 
