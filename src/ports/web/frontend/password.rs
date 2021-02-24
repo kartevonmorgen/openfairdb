@@ -49,12 +49,13 @@ pub fn post_reset_password_request(
     let ResetPasswordRequest { email } = data.into_inner();
     match reset_password_request(&db, &*notify, &email) {
         Err(_) => Err(Flash::error(
-            Redirect::to(uri!(get_reset_password:token = _, success = _)),
+            Redirect::to(uri!(get_reset_password: token = _, success = _)),
             "Failed to request a password reset.",
         )),
-        Ok(_) => Ok(Redirect::to(
-            uri!(get_reset_password: token=_, success = "true"),
-        )),
+        Ok(_) => Ok(Redirect::to(uri!(
+            get_reset_password: token = _,
+            success = "true"
+        ))),
     }
 }
 
@@ -74,13 +75,13 @@ pub fn post_reset_password(
 
     if req.new_password != req.new_password_repeated {
         return Err(Flash::error(
-            Redirect::to(uri!(get_reset_password: token = req.token, success =_)),
+            Redirect::to(uri!(get_reset_password: token = req.token, success = _)),
             "Your passwords do not match.",
         ));
     }
     match req.new_password.parse::<Password>() {
         Err(_) => Err(Flash::error(
-            Redirect::to(uri!(get_reset_password: token=req.token, success=_)),
+            Redirect::to(uri!(get_reset_password: token = req.token, success = _)),
             "Your new password is not allowed.",
         )),
         Ok(new_password) => match EmailNonce::decode_from_str(&req.token) {
@@ -91,8 +92,7 @@ pub fn post_reset_password(
             Ok(email_nonce) => {
                 match reset_password_with_email_nonce(&db, email_nonce, new_password) {
                     Err(_) => Err(Flash::error(
-                        Redirect::to(uri!(
-                                get_reset_password: token = req.token, success = _)),
+                        Redirect::to(uri!(get_reset_password: token = req.token, success = _)),
                         "Failed to request a password reset.",
                     )),
                     Ok(_) => Ok(Redirect::to(uri!(
