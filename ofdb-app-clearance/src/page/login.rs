@@ -39,13 +39,13 @@ pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
     }
 }
 
-pub fn init(mut url: Url) -> Option<Mdl> {
-    let invalid = url.next_hash_path_part().unwrap_or("") == "invalid";
-    Some(Mdl {
+pub fn init(mut url: Url) -> Mdl {
+    let invalid = url.next_hash_path_part().unwrap_or("") == crate::HASH_PATH_INVALID;
+    Mdl {
         token: String::new(),
         invalid,
         show_password: false,
-    })
+    }
 }
 
 pub fn view(mdl: &Mdl) -> Node<Msg> {
@@ -97,7 +97,7 @@ pub fn view(mdl: &Mdl) -> Node<Msg> {
                 style! {
                     St::Width => "50%",
                 },
-                ev(Ev::Input, |_| Msg::TokenInput),
+                input_ev(Ev::Input, Msg::TokenInput),
             ],
             " ",
             input![

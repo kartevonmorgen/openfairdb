@@ -14,9 +14,17 @@ pub enum Page {
 impl Page {
     pub fn init(mut url: Url, orders: &mut impl Orders<Msg>) -> Self {
         match url.next_hash_path_part() {
-            None => index::init(url, &mut orders.proxy(Msg::PageIndex))
-                .map_or(Self::NotFound, Self::Home),
-            Some("login") => login::init(url).map_or(Self::NotFound, Self::Login),
+            None => match index::init(&mut orders.proxy(Msg::PageIndex)) {
+                Some(mdl) => Self::Home(mdl),
+                None => {
+                    let url = Url::new()
+                        .set_path(&[crate::PAGE_URL])
+                        .set_hash_path(&[crate::HASH_PATH_LOGIN]);
+                    orders.request_url(url);
+                    Self::NotFound
+                }
+            },
+            Some(crate::HASH_PATH_LOGIN) => Self::Login(login::init(url)),
             _ => {
                 log!("not found:", url);
                 Self::NotFound

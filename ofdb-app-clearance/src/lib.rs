@@ -8,9 +8,11 @@ use page::Page;
 const TOKEN_KEY: &str = "org-token";
 const TITLE: &str = "Clearance Center";
 const PAGE_URL: &str = "clearance";
+const HASH_PATH_LOGIN: &str = "login";
+const HASH_PATH_INVALID: &str = "invalid";
 
 #[derive(Debug)]
-pub struct Mdl {
+struct Mdl {
     page: Page,
 }
 
@@ -21,7 +23,7 @@ pub enum Msg {
     PageLogin(page::login::Msg),
 }
 
-pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
+fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
     match msg {
         Msg::UrlChanged(subs::UrlChanged(url)) => {
             mdl.page = Page::init(url, orders);
@@ -46,7 +48,7 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Mdl {
     }
 }
 
-pub fn view(mdl: &Mdl) -> Node<Msg> {
+fn view(mdl: &Mdl) -> Node<Msg> {
     match &mdl.page {
         Page::Home(mdl) => page::index::view(&mdl).map_msg(Msg::PageIndex),
         Page::Login(mdl) => page::login::view(&mdl).map_msg(Msg::PageLogin),
@@ -57,14 +59,4 @@ pub fn view(mdl: &Mdl) -> Node<Msg> {
 #[wasm_bindgen(start)]
 pub fn start() {
     App::start("app", init, update, view);
-}
-
-pub fn load_token_from_storage() -> Option<String> {
-    match SessionStorage::get(TOKEN_KEY) {
-        Ok(token) => Some(token),
-        Err(err) => {
-            log!(err);
-            None
-        }
-    }
 }

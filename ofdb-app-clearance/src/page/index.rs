@@ -62,31 +62,20 @@ pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
     }
 }
 
-pub fn init(_url: Url, orders: &mut impl Orders<Msg>) -> Option<Mdl> {
-    let token = match SessionStorage::get(crate::TOKEN_KEY) {
-        Ok(token) => {
+pub fn init(orders: &mut impl Orders<Msg>) -> Option<Mdl> {
+    SessionStorage::get(crate::TOKEN_KEY)
+        .map_err(|err| {
+            log!("No token found", err);
+        })
+        .ok()
+        .map(|token| {
             orders.send_msg(Msg::GetPendingClearancesFull);
-            token
-        }
-        Err(web_storage::WebStorageError::KeyNotFoundError) => {
-            let url = Url::new()
-                .set_path(&[crate::PAGE_URL])
-                .set_hash_path(&["login"]);
-            url.go_and_load();
-            String::new()
-        }
-        Err(err) => {
-            error!(err);
-            String::new()
-        }
-    };
-    let url = Url::new().set_path(&[crate::PAGE_URL]);
-    url.go_and_replace();
-    Some(Mdl {
-        token,
-        place_clearances: Vec::new(),
-        expanded: HashMap::new(),
-    })
+            Mdl {
+                token,
+                place_clearances: Vec::new(),
+                expanded: HashMap::new(),
+            }
+        })
 }
 
 pub fn view(mdl: &Mdl) -> Node<Msg> {
@@ -350,7 +339,7 @@ pub async fn get_pending_clearances_full(api_token: String) -> Option<Msg> {
                 if code == 401 {
                     let url = Url::new()
                         .set_path(&[crate::PAGE_URL])
-                        .set_hash_path(&["login", "invalid"]);
+                        .set_hash_path(&[crate::HASH_PATH_LOGIN, crate::HASH_PATH_INVALID]);
                     url.go_and_load();
                 }
             }
