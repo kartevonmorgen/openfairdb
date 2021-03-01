@@ -38,9 +38,10 @@ pub fn update_pending_clearances(
         .into_iter()
         .map(Into::into)
         .collect();
+    let org = auth.organization(&*db.shared()?)?;
     let count = usecases::clearance::place::update_pending_clearances(
         &*db.exclusive()?,
-        &auth.organization(&*db.shared()?)?,
+        &org,
         &clearances,
     )?;
     Ok(Json(json::ResultCount {
