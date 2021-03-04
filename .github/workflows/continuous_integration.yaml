@@ -30,27 +30,6 @@ jobs:
           profile: minimal
           components: rustfmt, clippy
 
-      - name: Cache Cargo build artefacts
-        uses: actions/cache@v2
-        id: cache
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-            target
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ github.head_ref }}-${{ github.run_number }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ github.head_ref }}
-            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-            ${{ runner.os }}-cargo
-
-      - name: Build project
-        id: build
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --release
-
       - name: Check ofdb-entities crate
         uses: actions-rs/cargo@v1
         with:
@@ -75,13 +54,6 @@ jobs:
           command: check
           args: --manifest-path ofdb-gateways/Cargo.toml
 
-      - name: Test project
-        id: test
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --all
-
       - name: Check code formatting
         id: fmt
         uses: actions-rs/cargo@v1
@@ -95,3 +67,31 @@ jobs:
         with:
           command: clippy
           args: -- -D warnings
+
+      - name: Build project
+        id: build
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+
+      - name: Test project
+        id: test
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all
+
+      - name: Cache Cargo build artefacts
+        uses: actions/cache@v2
+        id: cache
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ github.head_ref }}-${{ github.run_number }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ github.head_ref }}
+            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+            ${{ runner.os }}-cargo
