@@ -24,6 +24,8 @@ pub enum Msg {
     ClearanceResult(Result<Vec<String>, ClearanceError>),
     ConsoleLog(String),
     Navbar(navbar::Msg),
+    ExpandAll,
+    CollapseAll,
 }
 
 #[derive(Clone, Debug)]
@@ -84,6 +86,18 @@ pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
                 .entry(id)
                 .and_modify(|e| *e = !*e)
                 .or_insert(true);
+        }
+        Msg::ExpandAll => {
+            mdl.expanded = mdl
+                .place_clearances
+                .iter()
+                .map(|(id, _)| (id.clone(), true))
+                .collect();
+        }
+        Msg::CollapseAll => {
+            mdl.expanded.iter_mut().for_each(|(_, state)| {
+                *state = false;
+            });
         }
         Msg::Accept(id, rev_nr) => {
             let c = ClearanceForPlace {
@@ -171,7 +185,26 @@ pub fn view(mdl: &Mdl) -> Node<Msg> {
                 if li.clone().count() == 0 {
                     p!["There is nothing to clear :)"]
                 } else {
-                    ul![C!["panel"], li]
+                    div![
+                        C!["panel"],
+                        div![
+                            C!["panel-block"],
+                            div![
+                                C!["field", "is-grouped"],
+                                button![
+                                    C!["button"],
+                                    ev(Ev::Click, |_| Msg::ExpandAll),
+                                    "expand all"
+                                ],
+                                button![
+                                    C!["button"],
+                                    ev(Ev::Click, |_| Msg::CollapseAll),
+                                    "collapse all"
+                                ]
+                            ]
+                        ],
+                        ul![li]
+                    ]
                 }
             ]
         ]]
