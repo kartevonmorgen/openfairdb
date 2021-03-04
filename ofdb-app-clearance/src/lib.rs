@@ -1,6 +1,7 @@
 use seed::{prelude::*, *};
 
 mod api;
+mod components;
 mod page;
 
 use page::Page;

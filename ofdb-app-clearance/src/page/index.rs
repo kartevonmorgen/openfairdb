@@ -1,4 +1,4 @@
-use crate::api;
+use crate::{api, components::navbar};
 use difference::{Changeset, Difference};
 use ofdb_boundary::{ClearanceForPlace, PendingClearanceForPlace, ResultCount};
 use ofdb_entities::{place::PlaceHistory, place::PlaceRevision};
@@ -11,6 +11,7 @@ pub struct Mdl {
     token: String,
     place_clearances: HashMap<String, api::PlaceClearance>,
     expanded: HashMap<String, bool>,
+    navbar: navbar::Mdl,
 }
 
 #[derive(Clone)]
@@ -21,14 +22,34 @@ pub enum Msg {
     Toggle(String),
     Accept(String, u64),
     ClearanceResult(Result<Vec<String>, ClearanceError>),
-    Logout,
     ConsoleLog(String),
+    Navbar(navbar::Msg),
 }
 
 #[derive(Clone, Debug)]
 pub enum ClearanceError {
     Fetch,
     Incomplete,
+}
+
+pub fn init(orders: &mut impl Orders<Msg>) -> Option<Mdl> {
+    SessionStorage::get(crate::TOKEN_KEY)
+        .map_err(|err| {
+            log!("No token found", err);
+        })
+        .ok()
+        .map(|token| {
+            orders.send_msg(Msg::GetPendingClearances);
+            Mdl {
+                token,
+                place_clearances: HashMap::new(),
+                expanded: HashMap::new(),
+                navbar: navbar::Mdl {
+                    login_status: navbar::LoginStatus::LoggedIn,
+                    menu_is_active: false,
+                },
+            }
+        })
 }
 
 pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
@@ -83,30 +104,19 @@ pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
             // TODO: handle error, e.g. show error message to the user
             error!(err);
         }
-        Msg::Logout => {
-            if let Err(err) = SessionStorage::remove(crate::TOKEN_KEY) {
-                error!(err);
-            }
-            Url::reload();
-        }
         Msg::ConsoleLog(str) => log!(str),
-    }
-}
-
-pub fn init(orders: &mut impl Orders<Msg>) -> Option<Mdl> {
-    SessionStorage::get(crate::TOKEN_KEY)
-        .map_err(|err| {
-            log!("No token found", err);
-        })
-        .ok()
-        .map(|token| {
-            orders.send_msg(Msg::GetPendingClearances);
-            Mdl {
-                token,
-                place_clearances: HashMap::new(),
-                expanded: HashMap::new(),
+        Msg::Navbar(msg) => match msg {
+            navbar::Msg::Logout => {
+                if let Err(err) = SessionStorage::remove(crate::TOKEN_KEY) {
+                    error!(err);
+                }
+                Url::reload();
             }
-        })
+            _ => {
+                navbar::update(msg, &mut mdl.navbar, &mut orders.proxy(Msg::Navbar));
+            }
+        },
+    }
 }
 
 pub fn view(mdl: &Mdl) -> Node<Msg> {
@@ -116,52 +126,55 @@ pub fn view(mdl: &Mdl) -> Node<Msg> {
         let toggle_msg = Msg::Toggle(id.clone());
 
         li![
-            pc.overview_title(),
-            " ",
-            button![
-                ev(Ev::Click, |_| toggle_msg),
-                i![
-                    style! {
-                        St::Width => px(20),
-                        St::TextAlign => "center",
-                    },
-                    if expanded {
-                        C!["fa", "fa-chevron-down"]
-                    } else {
-                        C!["fa", "fa-chevron-right"]
-                    }
+            C!["panel-block"],
+            div![
+                div![
+                    button![
+                        C!["button", "is-small"],
+                        ev(Ev::Click, |_| toggle_msg),
+                        span![
+                            C!["icon", "is-small"],
+                            i![if expanded {
+                                C!["fa", "fa-chevron-down"]
+                            } else {
+                                C!["fa", "fa-chevron-right"]
+                            }],
+                        ]
+                    ],
+                    " ",
+                    pc.overview_title(),
                 ],
-            ],
-            if expanded {
-                if let Some(curr_rev) = pc.current_rev() {
-                    div![details_table(
-                        &pc.pending.place_id,
-                        pc.last_cleared_rev_nr(),
-                        pc.last_cleared_rev(),
-                        curr_rev,
-                    )]
+                if expanded {
+                    if let Some(curr_rev) = pc.current_rev() {
+                        div![details_table(
+                            &pc.pending.place_id,
+                            pc.last_cleared_rev_nr(),
+                            pc.last_cleared_rev(),
+                            curr_rev,
+                        )]
+                    } else {
+                        p!["Loading current revision ..."]
+                    }
                 } else {
-                    p!["Loading current revision ..."]
+                    empty![]
                 }
-            } else {
-                empty![]
-            }
+            ]
         ]
     });
     div![
-        div![
-            style! {
-                St::Float => "right",
-            },
-            button![ev(Ev::Click, |_| Msg::Logout), "Logout",],
-        ],
-        h1![crate::TITLE],
-        h2!["Overview"],
-        if li.clone().count() == 0 {
-            p!["There is nothing to clear :)"]
-        } else {
-            ul![li]
-        }
+        navbar::view(&mdl.navbar).map_msg(Msg::Navbar),
+        main![div![
+            C!["container"],
+            div![
+                C!["section"],
+                h2![C!["title"], "Overview"],
+                if li.clone().count() == 0 {
+                    p!["There is nothing to clear :)"]
+                } else {
+                    ul![C!["panel"], li]
+                }
+            ]
+        ]]
     ]
 }
 
@@ -212,7 +225,11 @@ fn details_table(
                     format!("(rev {})", u64::from(currrev.revision))
                 ],
                 " ",
-                button!["Accept", ev(Ev::Click, |_| accept_msg)],
+                button![
+                    C!["button", "is-primary"],
+                    "Accept",
+                    ev(Ev::Click, |_| accept_msg)
+                ],
             ]
         ],
         table_row_always("Title", &title_cs),

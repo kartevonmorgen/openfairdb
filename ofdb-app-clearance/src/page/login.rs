@@ -1,3 +1,4 @@
+use crate::components::navbar;
 use seed::{prelude::*, *};
 
 #[derive(Debug)]
@@ -5,6 +6,7 @@ pub struct Mdl {
     token: String,
     invalid: bool,
     show_password: bool,
+    navbar: navbar::Mdl,
 }
 
 #[derive(Clone)]
@@ -12,6 +14,20 @@ pub enum Msg {
     TogglePasswordVisible,
     Login,
     TokenInput(String),
+    Navbar(navbar::Msg),
+}
+
+pub fn init(mut url: Url) -> Mdl {
+    let invalid = url.next_hash_path_part().unwrap_or("") == crate::HASH_PATH_INVALID;
+    Mdl {
+        token: String::new(),
+        invalid,
+        show_password: false,
+        navbar: navbar::Mdl {
+            login_status: navbar::LoginStatus::LoggedOut,
+            menu_is_active: false,
+        },
+    }
 }
 
 pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
@@ -36,15 +52,9 @@ pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
             }
         }
         Msg::TokenInput(token) => mdl.token = token,
-    }
-}
-
-pub fn init(mut url: Url) -> Mdl {
-    let invalid = url.next_hash_path_part().unwrap_or("") == crate::HASH_PATH_INVALID;
-    Mdl {
-        token: String::new(),
-        invalid,
-        show_password: false,
+        Msg::Navbar(msg) => {
+            navbar::update(msg, &mut mdl.navbar, &mut orders.proxy(Msg::Navbar));
+        }
     }
 }
 
@@ -55,74 +65,88 @@ pub fn view(mdl: &Mdl) -> Node<Msg> {
         "password"
     };
     div![
-        h1![crate::TITLE],
-        h2!["Login"],
-        if mdl.invalid {
+        navbar::view(&mdl.navbar).map_msg(Msg::Navbar),
+        main![div![
+            C!["container"],
             div![
-                style! {
-                    St::Color => "red",
-                    St::PaddingBottom => px(20),
+                C!["section"],
+                h2![C!["title"], "Login"],
+                if mdl.invalid {
+                    div![
+                        style! {
+                            St::Color => "red",
+                            St::PaddingBottom => px(20),
+                        },
+                        "Your API token is invalid. Please try again"
+                    ]
+                } else {
+                    empty!()
                 },
-                "Your API token is invalid. Please try again"
+                div![
+                    style! {
+                        St::PaddingBottom => px(20),
+                    },
+                    "Enter your organization's API token: ",
+                ],
+                form![
+                    id!("login-form"),
+                    attrs! {
+                        At::Action => crate::PAGE_URL,
+                    },
+                    input![
+                        C!["input"],
+                        attrs! {
+                            At::Name => "username",
+                            At::Type => "text",
+                            At::Value => crate::TITLE,
+                        },
+                        style! {
+                            St::Display => "none",
+                        },
+                    ],
+                    div![
+                        C!["field"],
+                        label![C!["label"], "Token"],
+                        input![
+                            C!["input"],
+                            attrs! {
+                                At::Name => "password",
+                                At::Type => pwfield_type,
+                            },
+                            style! {
+                                St::Width => "50%",
+                            },
+                            input_ev(Ev::Input, Msg::TokenInput),
+                        ],
+                    ],
+                    div![
+                        C!["field"],
+                        div![
+                            C!["control"],
+                            label![
+                                C!["checkbox"],
+                                input![
+                                    C!["checkbox"],
+                                    attrs! {
+                                        At::Type => "checkbox",
+                                        At::Checked => mdl.show_password.as_at_value(),
+                                    },
+                                    ev(Ev::Click, |_| Msg::TogglePasswordVisible),
+                                ],
+                                " show token",
+                            ],
+                        ]
+                    ],
+                    input![
+                        C!["button", "is-primary"],
+                        attrs! {
+                            At::Type => "submit",
+                            At::Value => "Login",
+                        },
+                        ev(Ev::Click, |_| Msg::Login),
+                    ],
+                ]
             ]
-        } else {
-            empty!()
-        },
-        div![
-            style! {
-                St::PaddingBottom => px(20),
-            },
-            "Enter your organization's API token: ",
-        ],
-        form![
-            id!("login-form"),
-            attrs! {
-                At::Action => crate::PAGE_URL,
-            },
-            input![
-                attrs! {
-                    At::Name => "username",
-                    At::Type => "text",
-                    At::Value => crate::TITLE,
-                },
-                style! {
-                    St::Display => "none",
-                },
-            ],
-            input![
-                attrs! {
-                    At::Name => "password",
-                    At::Type => pwfield_type,
-                },
-                style! {
-                    St::Width => "50%",
-                },
-                input_ev(Ev::Input, Msg::TokenInput),
-            ],
-            " ",
-            input![
-                attrs! {
-                    At::Type => "submit",
-                    At::Value => "Login",
-                },
-                ev(Ev::Click, |_| Msg::Login),
-            ],
-            div![
-                input![
-                    attrs! {
-                        At::Id => "pw-visi",
-                        At::Type => "checkbox",
-                        At::Checked => mdl.show_password.as_at_value(),
-                    },
-                    ev(Ev::Click, |_| Msg::TogglePasswordVisible),
-                ],
-                label![
-                    attrs! {
-                        At::For => "pw-visi",
-                    },
-                    "Show token",
-                ],
-            ],
-        ]
+        ]]
     ]
 }
