@@ -30,6 +30,13 @@ jobs:
           profile: minimal
           components: rustfmt, clippy
 
+      - name: Install wasm-pack
+        uses: actions-rs/install@v0.1
+        with:
+          crate: wasm-pack
+          version: latest
+          use-tool-cache: true
+
       - name: Check ofdb-entities crate
         uses: actions-rs/cargo@v1
         with:
