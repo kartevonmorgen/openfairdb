@@ -21,6 +21,7 @@ pub enum Msg {
     GotPlaceHistory(PlaceHistory),
     Toggle(String),
     Accept(String, u64),
+    AcceptAll,
     ClearanceResult(Result<Vec<String>, ClearanceError>),
     ConsoleLog(String),
     Navbar(navbar::Msg),
@@ -105,6 +106,25 @@ pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
                 cleared_revision: Some(rev_nr),
             };
             let clearances = vec![c];
+            let token = mdl.token.to_owned();
+            orders.perform_cmd(places_clearance(token, clearances));
+        }
+        Msg::AcceptAll => {
+            let clearances = mdl
+                .place_clearances
+                .iter()
+                .filter_map(|(id, pc)| {
+                    pc.current_rev()
+                        .map(|rev| rev.revision)
+                        .map(u64::from)
+                        .map(Option::Some)
+                        .map(|rev| (id.to_string(), rev))
+                })
+                .map(|(place_id, cleared_revision)| ClearanceForPlace {
+                    place_id,
+                    cleared_revision,
+                })
+                .collect();
             let token = mdl.token.to_owned();
             orders.perform_cmd(places_clearance(token, clearances));
         }
@@ -203,7 +223,15 @@ pub fn view(mdl: &Mdl) -> Node<Msg> {
                                 ]
                             ]
                         ],
-                        ul![li]
+                        ul![li],
+                        div![
+                            C!["panel-block"],
+                            button![
+                                C!["button", "is-danger", "is-outlined", "is-fullwidth"],
+                                ev(Ev::Click, |_| Msg::AcceptAll),
+                                "Accept all"
+                            ]
+                        ]
                     ]
                 }
             ]
