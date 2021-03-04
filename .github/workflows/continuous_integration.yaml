@@ -61,6 +61,12 @@ jobs:
           command: check
           args: --manifest-path ofdb-gateways/Cargo.toml
 
+      - name: Check ofdb-app-clearance crate
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --manifest-path ofdb-app-clearance/Cargo.toml
+
       - name: Check code formatting
         id: fmt
         uses: actions-rs/cargo@v1
