@@ -4,13 +4,14 @@ use ofdb_boundary::{ClearanceForPlace, PendingClearanceForPlace, ResultCount};
 use ofdb_entities::{place::PlaceHistory, place::PlaceRevision};
 use ofdb_seed::Api;
 use seed::{prelude::*, *};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 #[derive(Debug)]
 pub struct Mdl {
     token: String,
     place_clearances: HashMap<String, api::PlaceClearance>,
-    expanded: HashMap<String, bool>,
+    expanded: HashSet<String>,
+    selected: HashSet<String>,
     navbar: navbar::Mdl,
 }
 
@@ -19,13 +20,16 @@ pub enum Msg {
     GetPendingClearances,
     GotPendingClearances(Vec<PendingClearanceForPlace>),
     GotPlaceHistory(PlaceHistory),
-    Toggle(String),
+    ToggleExpand(String),
+    ToggleSelect(String),
     Accept(String, u64),
-    AcceptAll,
+    AcceptAllSelected,
     ClearanceResult(Result<Vec<String>, ClearanceError>),
     ConsoleLog(String),
     Navbar(navbar::Msg),
     ExpandAll,
+    SelectAll,
+    DeselectAll,
     CollapseAll,
 }
 
@@ -46,7 +50,8 @@ pub fn init(orders: &mut impl Orders<Msg>) -> Option<Mdl> {
             Mdl {
                 token,
                 place_clearances: HashMap::new(),
-                expanded: HashMap::new(),
+                expanded: HashSet::new(),
+                selected: HashSet::new(),
                 navbar: navbar::Mdl {
                     login_status: navbar::LoginStatus::LoggedIn,
                     menu_is_active: false,
@@ -82,23 +87,41 @@ pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
                 pc.history = Some(ph);
             }
         }
-        Msg::Toggle(id) => {
-            mdl.expanded
-                .entry(id)
-                .and_modify(|e| *e = !*e)
-                .or_insert(true);
+        Msg::ToggleExpand(id) => {
+            if mdl.expanded.contains(&id) {
+                mdl.expanded.remove(&id);
+            } else {
+                mdl.expanded.insert(id);
+            }
+        }
+        Msg::ToggleSelect(id) => {
+            if mdl.selected.contains(&id) {
+                mdl.selected.remove(&id);
+            } else {
+                mdl.selected.insert(id);
+            }
         }
         Msg::ExpandAll => {
             mdl.expanded = mdl
                 .place_clearances
                 .iter()
-                .map(|(id, _)| (id.clone(), true))
+                .map(|(id, _)| id)
+                .cloned()
                 .collect();
         }
+        Msg::SelectAll => {
+            mdl.selected = mdl
+                .place_clearances
+                .iter()
+                .map(|(id, _)| id)
+                .cloned()
+                .collect();
+        }
+        Msg::DeselectAll => {
+            mdl.selected.clear();
+        }
         Msg::CollapseAll => {
-            mdl.expanded.iter_mut().for_each(|(_, state)| {
-                *state = false;
-            });
+            mdl.expanded.clear();
         }
         Msg::Accept(id, rev_nr) => {
             let c = ClearanceForPlace {
@@ -109,10 +132,11 @@ pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
             let token = mdl.token.to_owned();
             orders.perform_cmd(places_clearance(token, clearances));
         }
-        Msg::AcceptAll => {
+        Msg::AcceptAllSelected => {
             let clearances = mdl
-                .place_clearances
+                .selected
                 .iter()
+                .filter_map(|id| mdl.place_clearances.get(id).map(|pc| (id, pc)))
                 .filter_map(|(id, pc)| {
                     pc.current_rev()
                         .map(|rev| rev.revision)
@@ -131,6 +155,8 @@ pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
         Msg::ClearanceResult(Ok(ids)) => {
             for id in ids {
                 mdl.place_clearances.remove(&id);
+                mdl.selected.remove(&id);
+                mdl.expanded.remove(&id);
             }
             orders.perform_cmd(get_pending_clearances(mdl.token.clone()));
         }
@@ -156,27 +182,54 @@ pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
 pub fn view(mdl: &Mdl) -> Node<Msg> {
     let li = mdl.place_clearances.iter().map(|(_, pc)| {
         let id = &pc.pending.place_id;
-        let expanded = *mdl.expanded.get(id).unwrap_or(&false);
-        let toggle_msg = Msg::Toggle(id.clone());
+        let expanded = mdl.expanded.contains(id);
+        let selected = mdl.selected.contains(id);
+        let toggle_expand_msg = Msg::ToggleExpand(id.clone());
+        let toggle_select_msg = Msg::ToggleSelect(id.clone());
 
         li![
             C!["panel-block"],
             div![
                 div![
-                    button![
-                        C!["button", "is-small"],
-                        ev(Ev::Click, |_| toggle_msg),
-                        span![
-                            C!["icon", "is-small"],
-                            i![if expanded {
-                                C!["fa", "fa-chevron-down"]
-                            } else {
-                                C!["fa", "fa-chevron-right"]
-                            }],
-                        ]
+                    C!["level"],
+                    div![
+                        C!["level-left"],
+                        div![
+                            C!["level-item"],
+                            div![
+                                C!["field", "is-grouped"],
+                                p![
+                                    C!["control"],
+                                    label![
+                                        C!["checkbox"],
+                                        input![
+                                            attrs! {
+                                                At::Type => "checkbox";
+                                                At::Checked => selected.as_at_value(),
+                                            },
+                                            ev(Ev::Click, |_| toggle_select_msg),
+                                        ]
+                                    ]
+                                ],
+                                p![
+                                    C!["control"],
+                                    button![
+                                        C!["button", "is-small"],
+                                        ev(Ev::Click, |_| toggle_expand_msg),
+                                        span![
+                                            C!["icon", "is-small"],
+                                            i![if expanded {
+                                                C!["fa", "fa-chevron-down"]
+                                            } else {
+                                                C!["fa", "fa-chevron-right"]
+                                            }],
+                                        ]
+                                    ],
+                                ]
+                            ]
+                        ],
+                        div![C!["level-item"], pc.overview_title(),]
                     ],
-                    " ",
-                    pc.overview_title(),
                 ],
                 if expanded {
                     if let Some(curr_rev) = pc.current_rev() {
@@ -201,41 +254,76 @@ pub fn view(mdl: &Mdl) -> Node<Msg> {
             C!["container"],
             div![
                 C!["section"],
-                h2![C!["title"], "Overview"],
                 if li.clone().count() == 0 {
                     p!["There is nothing to clear :)"]
                 } else {
                     div![
                         C!["panel"],
-                        div![
-                            C!["panel-block"],
-                            div![
-                                C!["field", "is-grouped"],
-                                button![
-                                    C!["button"],
-                                    ev(Ev::Click, |_| Msg::ExpandAll),
-                                    "expand all"
-                                ],
-                                button![
-                                    C!["button"],
-                                    ev(Ev::Click, |_| Msg::CollapseAll),
-                                    "collapse all"
-                                ]
+                        p![
+                            C!["panel-heading"],
+                            "Pending Clearances",
+                            span![
+                                C!["subtitle", "is-5"],
+                                " (",
+                                mdl.place_clearances.len(),
+                                ")"
                             ]
                         ],
+                        div![C!["panel-block"], panel_actions()],
                         ul![li],
                         div![
                             C!["panel-block"],
                             button![
                                 C!["button", "is-danger", "is-outlined", "is-fullwidth"],
-                                ev(Ev::Click, |_| Msg::AcceptAll),
-                                "Accept all"
+                                ev(Ev::Click, |_| Msg::AcceptAllSelected),
+                                attrs! {
+                                    At::Disabled => mdl.selected.is_empty().as_at_value();
+                                },
+                                format!("Accept all ({}) selected", mdl.selected.len())
                             ]
                         ]
                     ]
                 }
             ]
         ]]
+    ]
+}
+
+fn panel_actions() -> Node<Msg> {
+    div![
+        C!["field", "is-grouped"],
+        p![
+            C!["control"],
+            button![
+                C!["button"],
+                ev(Ev::Click, |_| Msg::ExpandAll),
+                "expand all"
+            ],
+        ],
+        p![
+            C!["control"],
+            button![
+                C!["button"],
+                ev(Ev::Click, |_| Msg::CollapseAll),
+                "collapse all"
+            ]
+        ],
+        p![
+            C!["control"],
+            button![
+                C!["button"],
+                ev(Ev::Click, |_| Msg::SelectAll),
+                "select all"
+            ]
+        ],
+        p![
+            C!["control"],
+            button![
+                C!["button"],
+                ev(Ev::Click, |_| Msg::DeselectAll),
+                "deselect all"
+            ]
+        ]
     ]
 }
 
