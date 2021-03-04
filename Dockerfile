@@ -23,7 +23,7 @@ ARG BUILD_BIN=${PROJECT_NAME}
 # 1st Build Stage
 # The tag of the base image must match the version in the file rust-toolchain!
 # Available images can be found at https://hub.docker.com/r/clux/muslrust/tags/
-FROM clux/muslrust:nightly-2021-02-23 AS build
+FROM clux/muslrust:nightly-2021-03-04 AS build
 
 # Import global ARGs
 ARG WORKDIR_ROOT
