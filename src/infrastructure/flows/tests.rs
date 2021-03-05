@@ -10,7 +10,7 @@ pub mod prelude {
     }
 
     pub use crate::{
-        infrastructure::{error::AppError, flows::prelude as flows},
+        infrastructure::{cfg::Cfg, error::AppError, flows::prelude as flows},
         ports::web::api,
     };
 
@@ -46,6 +46,7 @@ pub mod prelude {
                 new_place.into(),
                 account_email,
                 None,
+                &Cfg::default(),
             )
             .unwrap()
             .id

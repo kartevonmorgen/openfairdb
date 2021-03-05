@@ -1,5 +1,5 @@
 use super::*;
-use crate::core::error::RepoError;
+use crate::{core::error::RepoError, infrastructure::cfg::Cfg};
 use diesel::Connection;
 use ofdb_core::gateways::notify::NotificationGateway;
 
@@ -10,6 +10,7 @@ pub fn create_place(
     new_place: usecases::NewPlace,
     created_by_email: Option<&str>,
     created_by_org: Option<&Organization>,
+    cfg: &Cfg,
 ) -> Result<Place> {
     // Create and add new entry
     let (place, ratings) = {
@@ -22,6 +23,7 @@ pub fn create_place(
                     new_place,
                     created_by_email,
                     created_by_org,
+                    &cfg.accepted_licenses,
                 ) {
                     Ok(storable) => {
                         let (place, ratings) = usecases::store_new_place(&*connection, storable)

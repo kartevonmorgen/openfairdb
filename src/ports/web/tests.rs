@@ -1,9 +1,12 @@
 use crate::{
     core::{prelude::*, usecases},
-    infrastructure::db::{sqlite, tantivy},
+    infrastructure::{
+        cfg::Cfg,
+        db::{sqlite, tantivy},
+    },
 };
 use rocket::{
-    config::{Config, Environment},
+    config::{Config as RocketCfg, Environment},
     local::Client,
     logger::LoggingLevel,
     Route,
@@ -28,7 +31,7 @@ pub fn setup(
     sqlite::Connections,
     tantivy::SearchEngine,
 ) {
-    let cfg = Config::build(Environment::Development)
+    let rocket_cfg = RocketCfg::build(Environment::Development)
         .log_level(LoggingLevel::Debug)
         .finalize()
         .unwrap();
@@ -39,7 +42,8 @@ pub fn setup(
         connections.clone(),
         search_engine.clone(),
         mounts,
-        Some(cfg),
+        Some(rocket_cfg),
+        Cfg::default(),
     );
     let client = Client::new(rocket).unwrap();
     (client, connections, search_engine)

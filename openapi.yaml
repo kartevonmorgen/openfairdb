@@ -1141,7 +1141,7 @@ components:
     License:
       type: string
       minLength: 1
-      example: CC0-1.0
+      example: ODbL-1.0
     Email:
       type: string
       minLength: 3

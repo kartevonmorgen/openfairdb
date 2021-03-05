@@ -3,6 +3,7 @@ use crate::{
     adapters::json,
     core::{prelude::*, usecases, util},
     infrastructure::{
+        cfg::Cfg,
         db::{sqlite, tantivy},
         flows::prelude as flows,
     },
@@ -169,6 +170,7 @@ pub fn post_entry(
     notify: Notify,
     mut search_engine: tantivy::SearchEngine,
     body: Json<json::NewPlace>,
+    cfg: State<Cfg>,
 ) -> Result<String> {
     let org = auth.organization(&*connections.shared()?).ok();
     if org.is_none() && auth.account_email().is_err() {
@@ -183,6 +185,7 @@ pub fn post_entry(
             new_place,
             auth.account_email().ok(),
             org.as_ref(),
+            &cfg,
         )?
         .id
         .to_string(),
@@ -197,6 +200,7 @@ pub fn put_entry(
     notify: Notify,
     id: String,
     data: Json<json::UpdatePlace>,
+    cfg: State<Cfg>,
 ) -> Result<String> {
     let org = auth.organization(&*connections.shared()?).ok();
     if org.is_none() && auth.account_email().is_err() {
@@ -211,6 +215,7 @@ pub fn put_entry(
             data.into_inner().into(),
             auth.account_email().ok(),
             org.as_ref(),
+            &cfg,
         )?
         .id
         .into(),

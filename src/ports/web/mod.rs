@@ -4,10 +4,10 @@ use crate::{
         prelude::*,
         usecases,
     },
-    infrastructure::error::AppError,
+    infrastructure::{cfg::Cfg, error::AppError},
 };
 use ofdb_core::rating::Rated;
-use rocket::{config::Config, Rocket, Route};
+use rocket::{config::Config as RocketCfg, Rocket, Route};
 use rocket_contrib::json::Json;
 use std::result;
 
@@ -70,7 +70,8 @@ pub(crate) fn rocket_instance(
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
     mounts: Vec<(&str, Vec<Route>)>,
-    cfg: Option<Config>,
+    rocket_cfg: Option<RocketCfg>,
+    cfg: Cfg,
 ) -> Rocket {
     info!("Indexing all places...");
     index_all_places(&*connections.exclusive().unwrap(), &mut search_engine).unwrap();
@@ -90,7 +91,7 @@ pub(crate) fn rocket_instance(
 
     info!("Initialization finished");
 
-    let r = match cfg {
+    let r = match rocket_cfg {
         Some(cfg) => rocket::custom(cfg),
         None => rocket::ignite(),
     };
@@ -100,7 +101,8 @@ pub(crate) fn rocket_instance(
         .manage(search_engine)
         .manage(captcha_cache)
         .manage(tags_cache)
-        .manage(jwt_state);
+        .manage(jwt_state)
+        .manage(cfg);
 
     for (m, r) in mounts {
         instance = instance.mount(m, r);
@@ -122,6 +124,7 @@ pub fn run(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     enable_cors: bool,
+    cfg: Cfg,
 ) {
     if enable_cors {
         let cors = rocket_cors::CorsOptions {
@@ -129,10 +132,10 @@ pub fn run(
         }
         .to_cors()
         .unwrap();
-        rocket_instance(connections, search_engine, mounts(), None)
+        rocket_instance(connections, search_engine, mounts(), None, cfg)
             .attach(cors)
             .launch();
     } else {
-        rocket_instance(connections, search_engine, mounts(), None).launch();
+        rocket_instance(connections, search_engine, mounts(), None, cfg).launch();
     }
 }

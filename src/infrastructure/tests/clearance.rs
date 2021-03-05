@@ -53,6 +53,7 @@ impl PlaceClearanceFixture {
             },
             None,
             None,
+            &Cfg::default(),
         )
         .unwrap();
 
@@ -67,6 +68,7 @@ impl PlaceClearanceFixture {
             },
             None,
             None,
+            &Cfg::default(),
         )
         .unwrap();
         flows::review_places(
@@ -93,6 +95,7 @@ impl PlaceClearanceFixture {
             },
             None,
             None,
+            &Cfg::default(),
         )
         .unwrap();
         flows::review_places(
@@ -178,6 +181,7 @@ impl PlaceClearanceFixture {
             },
             None,
             None,
+            &Cfg::default(),
         )
         .unwrap();
         flows::review_places(
@@ -250,6 +254,7 @@ fn should_create_pending_clearance_when_creating_place_with_moderated_tags() -> 
         new_place,
         None,
         None,
+        &Cfg::default(),
     )?;
 
     assert!(created_place.revision.is_initial());
@@ -288,6 +293,7 @@ fn should_deny_creation_of_place_with_moderated_tags_if_not_allowed() -> flows::
         new_place,
         None,
         None,
+        &Cfg::default()
     )
     .is_err());
     // No pending clearances created
@@ -327,6 +333,7 @@ fn should_create_pending_clearance_once_when_updating_place_with_moderated_tags(
         update_place,
         None,
         None,
+        &Cfg::default(),
     )?;
 
     assert_eq!(new_revision, new_place.revision);
@@ -354,6 +361,7 @@ fn should_create_pending_clearance_once_when_updating_place_with_moderated_tags(
         update_place,
         None,
         None,
+        &Cfg::default(),
     )?;
     assert_eq!(new_revision, new_place.revision);
     assert!(new_place.tags.is_empty());
@@ -392,6 +400,7 @@ fn should_deny_adding_of_moderated_tag_to_place_if_not_allowed() -> flows::Resul
         update_place,
         None,
         None,
+        &Cfg::default(),
     )
     .is_err());
     // No pending clearances created
@@ -435,6 +444,7 @@ fn should_deny_removing_of_moderated_tag_from_place_if_not_allowed() -> flows::R
         update_place,
         None,
         None,
+        &Cfg::default(),
     )
     .is_err());
     // No pending clearances created
@@ -474,6 +484,7 @@ fn should_create_pending_clearance_when_updating_an_archived_place_with_moderate
         update_place,
         None,
         None,
+        &Cfg::default(),
     )?;
 
     assert_eq!(new_revision, new_place.revision);
@@ -525,6 +536,7 @@ fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_pla
         update_place,
         None,
         None,
+        &Cfg::default(),
     )?;
 
     assert_eq!(new_revision, new_place.revision);
@@ -734,6 +746,7 @@ fn should_hide_untagged_cleared_revision_when_loading_or_searching_for_cleared_p
         update_place,
         None,
         None,
+        &Cfg::default(),
     )?;
 
     assert_eq!(new_revision, new_place.revision);
@@ -823,6 +836,7 @@ fn should_fail_when_trying_to_clear_future_revisions_of_places() -> flows::Resul
         update_place,
         None,
         None,
+        &Cfg::default(),
     )?;
 
     assert_eq!(new_revision, new_place.revision);

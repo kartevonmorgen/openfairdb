@@ -6,6 +6,7 @@ use crate::core::{
 };
 
 use chrono::NaiveDate;
+use std::collections::HashSet;
 
 #[rustfmt::skip]
 #[derive(Debug, Clone)]
@@ -44,6 +45,7 @@ pub fn prepare_new_place<D: Db>(
     e: NewPlace,
     created_by_email: Option<&str>,
     created_by_org: Option<&Organization>,
+    accepted_licenses: &HashSet<String>,
 ) -> Result<Storable> {
     let NewPlace {
         title,
@@ -152,6 +154,9 @@ pub fn prepare_new_place<D: Db>(
         tags: new_tags,
     };
     place.validate()?;
+    if !accepted_licenses.contains(&place.license) {
+        return Err(Error::Parameter(ParameterError::License));
+    }
     Ok(Storable {
         place,
         clearance_org_ids,
@@ -183,9 +188,8 @@ pub fn store_new_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>
 
 #[cfg(test)]
 mod tests {
-
-    use super::super::tests::MockDb;
     use super::*;
+    use crate::{core::usecases::tests::MockDb, infrastructure::cfg::Cfg};
 
     #[test]
     fn create_new_valid_place() {
@@ -208,14 +212,21 @@ mod tests {
             founded_on  : None,
             categories  : vec![],
             tags        : vec![],
-            license     : "CC0-1.0".into(),
+            license     : "ODbL-1.0".into(),
             image_url     : None,
             image_link_url: None,
             custom_links: vec![],
         };
         let mock_db = MockDb::default();
         let now = TimestampMs::now();
-        let storable = prepare_new_place(&mock_db, x, Some("test@example.com"), None).unwrap();
+        let storable = prepare_new_place(
+            &mock_db,
+            x,
+            Some("test@example.com"),
+            None,
+            &Cfg::default().accepted_licenses,
+        )
+        .unwrap();
         let (_, initial_ratings) = store_new_place(&mock_db, storable).unwrap();
         assert!(initial_ratings.is_empty());
         assert_eq!(mock_db.entries.borrow().len(), 1);
@@ -248,13 +259,15 @@ mod tests {
             founded_on  : None,
             categories  : vec![],
             tags        : vec![],
-            license     : "CC0-1.0".into(),
+            license     : "ODbL-1.0".into(),
             image_url     : None,
             image_link_url: None,
             custom_links: vec![],
         };
         let mock_db: MockDb = MockDb::default();
-        assert!(prepare_new_place(&mock_db, x, None, None).is_err());
+        assert!(
+            prepare_new_place(&mock_db, x, None, None, &Cfg::default().accepted_licenses).is_err()
+        );
     }
 
     #[test]
@@ -278,13 +291,14 @@ mod tests {
             founded_on  : None,
             categories  : vec![],
             tags        : vec!["foo".into(),"bar".into()],
-            license     : "CC0-1.0".into(),
+            license     : "ODbL-1.0".into(),
             image_url     : None,
             image_link_url: None,
             custom_links: vec![],
         };
         let mock_db = MockDb::default();
-        let e = prepare_new_place(&mock_db, x, None, None).unwrap();
+        let e =
+            prepare_new_place(&mock_db, x, None, None, &Cfg::default().accepted_licenses).unwrap();
         assert!(store_new_place(&mock_db, e).is_ok());
         assert_eq!(mock_db.tags.borrow().len(), 2);
         assert_eq!(mock_db.entries.borrow().len(), 1);

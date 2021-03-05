@@ -6,6 +6,7 @@ use crate::core::{
 };
 
 use chrono::NaiveDate;
+use std::collections::HashSet;
 
 #[rustfmt::skip]
 #[derive(Debug, Clone)]
@@ -103,6 +104,7 @@ pub fn prepare_updated_place<D: Db>(
     e: UpdatePlace,
     created_by_email: Option<&str>,
     created_by_org: Option<&Organization>,
+    accepted_licenses: &HashSet<String>,
 ) -> Result<Storable> {
     let UpdatePlace {
         version,
@@ -217,6 +219,9 @@ pub fn prepare_updated_place<D: Db>(
         tags: new_tags,
     };
     place.validate()?;
+    if !accepted_licenses.contains(&place.license) {
+        return Err(Error::Parameter(ParameterError::License));
+    }
     Ok(Storable {
         place,
         clearance_org_ids,
@@ -249,9 +254,8 @@ pub fn store_updated_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rat
 
 #[cfg(test)]
 mod tests {
-
-    use super::super::tests::MockDb;
     use super::*;
+    use crate::{core::usecases::tests::MockDb, infrastructure::cfg::Cfg};
 
     #[test]
     fn update_place_valid() {
@@ -263,7 +267,7 @@ mod tests {
             .description("bar")
             .image_url(Some("http://img"))
             .image_link_url(Some("http://imglink"))
-            .license("CC0-1.0")
+            .license("ODbL-1.0")
             .finish();
 
         #[rustfmt::skip]
@@ -293,8 +297,15 @@ mod tests {
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![(old, ReviewStatus::Created)].into();
         let now = TimestampMs::now();
-        let storable =
-            prepare_updated_place(&mock_db, id, new, Some("test@example.com"), None).unwrap();
+        let storable = prepare_updated_place(
+            &mock_db,
+            id,
+            new,
+            Some("test@example.com"),
+            None,
+            &Cfg::default().accepted_licenses,
+        )
+        .unwrap();
         assert!(store_updated_place(&mock_db, storable).is_ok());
         assert_eq!(mock_db.entries.borrow().len(), 1);
         let (x, _) = &mock_db.entries.borrow()[0];
@@ -368,7 +379,14 @@ mod tests {
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![(old, ReviewStatus::Created)].into();
-        let err = match prepare_updated_place(&mock_db, id, new, None, None) {
+        let err = match prepare_updated_place(
+            &mock_db,
+            id,
+            new,
+            None,
+            None,
+            &Cfg::default().accepted_licenses,
+        ) {
             Ok(storable) => store_updated_place(&mock_db, storable).err(),
             Err(err) => Some(err),
         };
@@ -377,11 +395,11 @@ mod tests {
             Error::Repo(err) => match err {
                 RepoError::InvalidVersion => {}
                 e => {
-                    panic!(format!("Unexpected error: {:?}", e));
+                    panic!("Unexpected error: {:?}", e);
                 }
             },
             e => {
-                panic!(format!("Unexpected error: {:?}", e));
+                panic!("Unexpected error: {:?}", e);
             }
         }
         assert_eq!(mock_db.entries.borrow().len(), 1);
@@ -416,7 +434,14 @@ mod tests {
         };
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![].into();
-        let result = prepare_updated_place(&mock_db, id, new, None, None);
+        let result = prepare_updated_place(
+            &mock_db,
+            id,
+            new,
+            None,
+            None,
+            &Cfg::default().accepted_licenses,
+        );
         assert!(result.is_err());
         match result.err().unwrap() {
             Error::Repo(err) => match err {
@@ -468,7 +493,15 @@ mod tests {
         let mut mock_db = MockDb::default();
         mock_db.entries = vec![(old, ReviewStatus::Created)].into();
         mock_db.tags = vec![Tag { id: "bio".into() }, Tag { id: "fair".into() }].into();
-        let storable = prepare_updated_place(&mock_db, id.clone(), new, None, None).unwrap();
+        let storable = prepare_updated_place(
+            &mock_db,
+            id.clone(),
+            new,
+            None,
+            None,
+            &Cfg::default().accepted_licenses,
+        )
+        .unwrap();
         assert!(store_updated_place(&mock_db, storable).is_ok());
         let (e, _) = mock_db.get_place(id.as_ref()).unwrap();
         assert_eq!(e.tags, vec!["vegan"]);

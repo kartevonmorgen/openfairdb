@@ -15,6 +15,7 @@ fn should_find_places_by_tags() -> flows::Result<()> {
         },
         None,
         None,
+        &Cfg::default(),
     )
     .unwrap();
     assert!(place_without_tags.tags.is_empty());
@@ -31,6 +32,7 @@ fn should_find_places_by_tags() -> flows::Result<()> {
         },
         None,
         None,
+        &Cfg::default(),
     )
     .unwrap();
 
@@ -46,6 +48,7 @@ fn should_find_places_by_tags() -> flows::Result<()> {
         },
         None,
         None,
+        &Cfg::default(),
     )
     .unwrap();
 
@@ -61,6 +64,7 @@ fn should_find_places_by_tags() -> flows::Result<()> {
         },
         None,
         None,
+        &Cfg::default(),
     )
     .unwrap();
 
@@ -76,6 +80,7 @@ fn should_find_places_by_tags() -> flows::Result<()> {
         },
         None,
         None,
+        &Cfg::default(),
     )
     .unwrap();
 

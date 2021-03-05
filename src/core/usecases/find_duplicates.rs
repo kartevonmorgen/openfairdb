@@ -313,7 +313,7 @@ mod tests {
             founded_on: None,
             categories: vec![],
             tags: vec![],
-            license: "CC0-1.0".into(),
+            license: "ODbL-1.0".into(),
             image_url: None,
             image_link_url: None,
             custom_links: vec![],

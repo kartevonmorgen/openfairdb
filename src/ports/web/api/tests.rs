@@ -5,7 +5,7 @@ use ofdb_core::rating::Rated;
 pub mod prelude {
     pub use crate::{
         core::db::*,
-        infrastructure::flows::prelude as flows,
+        infrastructure::{cfg::Cfg, flows::prelude as flows},
         ports::web::{
             api::captcha::tests::get_valid_captcha_cookie as get_captcha_cookie, tests::prelude::*,
         },
@@ -141,7 +141,7 @@ fn update_place_with_tag_duplicates() {
     let req = client.post("/entries")
                     .header(ContentType::JSON)
                     .cookie(cookie)
-                    .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","foo"]}"#);
+                    .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"ODbL-1.0","tags":["foo","foo"]}"#);
     let _res = req.dispatch();
     let (place, _) = db.exclusive().unwrap().all_places().unwrap()[0].clone();
     let mut json = String::new();
@@ -291,10 +291,18 @@ fn search_with_categories_and_bbox() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, &notify, e, None, None)
-                .unwrap()
-                .id
-                .to_string()
+            flows::create_place(
+                &connections,
+                &mut search_engine,
+                &notify,
+                e,
+                None,
+                None,
+                &Cfg::default(),
+            )
+            .unwrap()
+            .id
+            .to_string()
         })
         .collect();
 
@@ -379,10 +387,18 @@ fn search_with_text() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, &notify, e, None, None)
-                .unwrap()
-                .id
-                .to_string()
+            flows::create_place(
+                &connections,
+                &mut search_engine,
+                &notify,
+                e,
+                None,
+                None,
+                &Cfg::default(),
+            )
+            .unwrap()
+            .id
+            .to_string()
         })
         .collect();
 
@@ -456,10 +472,18 @@ fn search_partial_text() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, &notify, e, None, None)
-                .unwrap()
-                .id
-                .to_string()
+            flows::create_place(
+                &connections,
+                &mut search_engine,
+                &notify,
+                e,
+                None,
+                None,
+                &Cfg::default(),
+            )
+            .unwrap()
+            .id
+            .to_string()
         })
         .collect();
 
@@ -495,10 +519,18 @@ fn search_with_text_terms_inclusive_exclusive() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, &notify, e, None, None)
-                .unwrap()
-                .id
-                .to_string()
+            flows::create_place(
+                &connections,
+                &mut search_engine,
+                &notify,
+                e,
+                None,
+                None,
+                &Cfg::default(),
+            )
+            .unwrap()
+            .id
+            .to_string()
         })
         .collect();
 
@@ -595,10 +627,18 @@ fn search_with_city() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, &notify, e, None, None)
-                .unwrap()
-                .id
-                .to_string()
+            flows::create_place(
+                &connections,
+                &mut search_engine,
+                &notify,
+                e,
+                None,
+                None,
+                &Cfg::default(),
+            )
+            .unwrap()
+            .id
+            .to_string()
         })
         .collect();
     search_engine.flush_index().unwrap();
@@ -659,10 +699,18 @@ fn search_with_tags() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, &notify, e, None, None)
-                .unwrap()
-                .id
-                .to_string()
+            flows::create_place(
+                &connections,
+                &mut search_engine,
+                &notify,
+                e,
+                None,
+                None,
+                &Cfg::default(),
+            )
+            .unwrap()
+            .id
+            .to_string()
         })
         .collect();
 
@@ -721,10 +769,18 @@ fn search_with_uppercase_tags() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, &notify, e, None, None)
-                .unwrap()
-                .id
-                .to_string()
+            flows::create_place(
+                &connections,
+                &mut search_engine,
+                &notify,
+                e,
+                None,
+                None,
+                &Cfg::default(),
+            )
+            .unwrap()
+            .id
+            .to_string()
         })
         .collect();
 
@@ -770,10 +826,18 @@ fn search_with_hashtag() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, &notify, e, None, None)
-                .unwrap()
-                .id
-                .to_string()
+            flows::create_place(
+                &connections,
+                &mut search_engine,
+                &notify,
+                e,
+                None,
+                None,
+                &Cfg::default(),
+            )
+            .unwrap()
+            .id
+            .to_string()
         })
         .collect();
 
@@ -819,9 +883,17 @@ fn search_with_two_hashtags() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, &notify, e, None, None)
-                .unwrap()
-                .id
+            flows::create_place(
+                &connections,
+                &mut search_engine,
+                &notify,
+                e,
+                None,
+                None,
+                &Cfg::default(),
+            )
+            .unwrap()
+            .id
         })
         .collect();
 
@@ -873,10 +945,18 @@ fn search_with_commata() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, &notify, e, None, None)
-                .unwrap()
-                .id
-                .to_string()
+            flows::create_place(
+                &connections,
+                &mut search_engine,
+                &notify,
+                e,
+                None,
+                None,
+                &Cfg::default(),
+            )
+            .unwrap()
+            .id
+            .to_string()
         })
         .collect();
 
@@ -953,10 +1033,18 @@ fn search_without_specifying_hashtag_symbol() {
     let place_ids: Vec<_> = entries
         .into_iter()
         .map(|e| {
-            flows::create_place(&connections, &mut search_engine, &notify, e, None, None)
-                .unwrap()
-                .id
-                .to_string()
+            flows::create_place(
+                &connections,
+                &mut search_engine,
+                &notify,
+                e,
+                None,
+                None,
+                &Cfg::default(),
+            )
+            .unwrap()
+            .id
+            .to_string()
         })
         .collect();
 
@@ -1040,10 +1128,18 @@ fn search_with_status() {
         .into_iter()
         .map(|p| {
             let status = p.title.clone();
-            let id = flows::create_place(&connections, &mut search_engine, &notify, p, None, None)
-                .unwrap()
-                .id
-                .to_string();
+            let id = flows::create_place(
+                &connections,
+                &mut search_engine,
+                &notify,
+                p,
+                None,
+                None,
+                &Cfg::default(),
+            )
+            .unwrap()
+            .id
+            .to_string();
             (id, status)
         })
         .collect();

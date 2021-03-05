@@ -1,4 +1,5 @@
 use super::*;
+use crate::infrastructure::cfg::Cfg;
 use diesel::connection::Connection;
 use ofdb_core::gateways::notify::NotificationGateway;
 
@@ -10,6 +11,7 @@ pub fn update_place(
     update_place: usecases::UpdatePlace,
     created_by_email: Option<&str>,
     created_by_org: Option<&Organization>,
+    cfg: &Cfg,
 ) -> Result<Place> {
     // Update existing entry
     let (place, ratings) = {
@@ -23,6 +25,7 @@ pub fn update_place(
                     update_place,
                     created_by_email,
                     created_by_org,
+                    &cfg.accepted_licenses,
                 ) {
                     Ok(storable) => {
                         let (place, ratings) =

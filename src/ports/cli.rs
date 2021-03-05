@@ -1,6 +1,7 @@
 use crate::{
     core::prelude::*,
     infrastructure::{
+        cfg::Cfg,
         db::{sqlite, tantivy},
         GEO_CODING_GW,
     },
@@ -11,9 +12,6 @@ use clap::{crate_authors, App, Arg};
 use dotenv::dotenv;
 use ofdb_core::gateways::geocode::GeoCodingGateway;
 use std::{env, path::Path};
-
-const DEFAULT_DB_URL: &str = "openfair.db";
-const DB_CONNECTION_POOL_SIZE: u32 = 10;
 
 embed_migrations!();
 
@@ -69,15 +67,16 @@ pub fn run() {
         )
         .get_matches();
 
-    let db_url = matches
-        .value_of("db-url")
-        .map(ToString::to_string)
-        .unwrap_or_else(|| env::var("DATABASE_URL").unwrap_or_else(|_| DEFAULT_DB_URL.to_string()));
+    let mut cfg = Cfg::from_env_or_default();
+
+    if let Some(db_url) = matches.value_of("db-url").map(ToString::to_string) {
+        cfg.db_url = db_url
+    }
     info!(
         "Connecting to SQLite database '{}' (pool size = {})",
-        db_url, DB_CONNECTION_POOL_SIZE
+        cfg.db_url, cfg.db_connection_pool_size
     );
-    let connections = sqlite::Connections::init(&db_url, DB_CONNECTION_POOL_SIZE).unwrap();
+    let connections = sqlite::Connections::init(&cfg.db_url, cfg.db_connection_pool_size).unwrap();
 
     info!("Running embedded database migrations");
     embedded_migrations::run(&*connections.exclusive().unwrap()).unwrap();
@@ -101,6 +100,7 @@ pub fn run() {
                 connections,
                 search_engine,
                 matches.is_present("enable-cors"),
+                cfg,
             );
         }
     }

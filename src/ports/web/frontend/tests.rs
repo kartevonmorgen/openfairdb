@@ -1,6 +1,9 @@
 use super::*;
 use crate::{
-    infrastructure::db::{sqlite::Connections, tantivy},
+    infrastructure::{
+        cfg::Cfg,
+        db::{sqlite::Connections, tantivy},
+    },
     ports::web::tests::{prelude::*, register_user},
 };
 
@@ -337,7 +340,7 @@ mod entry {
             custom_links: vec![],
         };
         let gw = DummyNotifyGW;
-        let e_id = flows::prelude::create_place(db, search, &gw, e, None, None)
+        let e_id = flows::prelude::create_place(db, search, &gw, e, None, None, &Cfg::default())
             .unwrap()
             .id;
         let r = usecases::NewPlaceRating {

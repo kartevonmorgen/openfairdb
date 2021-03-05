@@ -22,9 +22,13 @@ pub fn email(email: &str) -> Result<(), ParameterError> {
 }
 
 fn license(s: &str) -> Result<(), ParameterError> {
-    match s {
-        "CC0-1.0" | "ODbL-1.0" => Ok(()),
-        _ => Err(ParameterError::License),
+    if s.is_empty() {
+        // NOTE:
+        // The actual license has to be checked
+        // in the corresponding use case.
+        Err(ParameterError::License)
+    } else {
+        Ok(())
     }
 }
 
@@ -153,9 +157,8 @@ mod tests {
 
     #[test]
     fn license_test() {
-        assert!(license("CC0-1.0").is_ok());
-        assert!(license("CC0").is_err());
-        assert!(license("ODbL-1.0").is_ok());
+        assert!(license("").is_err());
+        assert!(license("non-empty-string").is_ok());
     }
 
     #[test]
