@@ -16,10 +16,6 @@ seed = "*"
 difference = "*"
 web-sys = { version = "*", features = ["HtmlFormElement"] }
 
-[patch.crates-io]
-ofdb-boundary = { path = "../ofdb-boundary" }
-ofdb-entities = { path = "../ofdb-entities" }
-
 [profile.release]
 lto = true
 opt-level = 'z'

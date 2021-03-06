@@ -1,6 +1,6 @@
 [package]
 name = "openfairdb"
-version = "0.9.3"
+version = "0.10.0"
 authors = ["Markus Kohlhase <mail@markus-kohlhase.de>", "slowtec GmbH <post@slowtec.de>"]
 keywords = ["geo", "fair", "sustainability"]
 homepage = "https://github.com/kartevonmorgen/openfairdb"
@@ -58,7 +58,7 @@ rocket_cors = "*"
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 strum = "*"
-tantivy = "*"
+tantivy = "0.13"
 time = "0.1"
 thiserror = "1"
 uuid = { version = "*", features = ["v4"] }

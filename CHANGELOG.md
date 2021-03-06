@@ -1,6 +1,6 @@
 # Changelog
 
-## v0.10.0 (2020-03-05)
+## v0.10.0 (2020-03-06)
 
 - new(web): Clearance center: Allow to accept multiple entries at once
 - new(api): Add capthca service
