@@ -1,4 +1,4 @@
-use super::{util::load_url, *};
+use super::{util::load_url, Connection, *};
 use crate::core::prelude::*;
 use anyhow::anyhow;
 use chrono::prelude::*;
@@ -462,12 +462,12 @@ fn into_new_place_revision(
     Ok((place_id, new_place, tags, custom_links))
 }
 
-impl PlaceRepo for SqliteConnection {
+impl PlaceRepo for Connection {
     fn create_or_update_place(&self, place: Place) -> Result<()> {
-        let (_place_id, new_place, tags, custom_links) = into_new_place_revision(self, place)?;
+        let (_place_id, new_place, tags, custom_links) = into_new_place_revision(&self.0, place)?;
         diesel::insert_into(schema::place_revision::table)
             .values(&new_place)
-            .execute(self)?;
+            .execute(&self.0)?;
 
         use schema::place_revision::dsl;
         let parent_rowid = schema::place_revision::table
@@ -497,7 +497,7 @@ impl PlaceRepo for SqliteConnection {
         };
         diesel::insert_into(schema::place_revision_review::table)
             .values(new_review)
-            .execute(self)?;
+            .execute(&self.0)?;
 
         // Insert into place_revision_tag
         let insertable_tags: Vec<_> = tags
@@ -509,7 +509,7 @@ impl PlaceRepo for SqliteConnection {
             .collect();
         diesel::insert_into(schema::place_revision_tag::table)
             .values(&insertable_tags)
-            .execute(self)?;
+            .execute(&self.0)?;
 
         // Insert into place_revision_custom_link
         let insertable_custom_links: Vec<_> = custom_links
@@ -529,7 +529,7 @@ impl PlaceRepo for SqliteConnection {
             .collect();
         diesel::insert_into(schema::place_revision_custom_link::table)
             .values(&insertable_custom_links)
-            .execute(self)?;
+            .execute(&self.0)?;
 
         Ok(())
     }
@@ -552,7 +552,7 @@ impl PlaceRepo for SqliteConnection {
             .select(rev_dsl::rowid)
             .filter(dsl::id.eq_any(ids))
             .filter(rev_dsl::current_status.ne(ReviewStatusPrimitive::from(status)))
-            .load(self)?;
+            .load(&self.0)?;
         let ActivityLog {
             activity,
             context,
@@ -560,7 +560,7 @@ impl PlaceRepo for SqliteConnection {
         } = activity_log;
         let changed_at = activity.at.into_inner();
         let changed_by = if let Some(ref email) = activity.by {
-            Some(resolve_user_created_by_email(self, email.as_ref())?)
+            Some(resolve_user_created_by_email(&self.0, email.as_ref())?)
         } else {
             None
         };
@@ -573,7 +573,7 @@ impl PlaceRepo for SqliteConnection {
                     .filter(rev_dsl::current_status.ne(status)),
             )
             .set(rev_dsl::current_status.eq(status))
-            .execute(self)?;
+            .execute(&self.0)?;
             debug_assert!(update_count <= 1);
             if update_count > 0 {
                 use schema::place_revision_review::dsl as review_dsl;
@@ -596,7 +596,7 @@ impl PlaceRepo for SqliteConnection {
                 };
                 diesel::insert_into(schema::place_revision_review::table)
                     .values(new_review)
-                    .execute(self)?;
+                    .execute(&self.0)?;
                 total_update_count += update_count;
             }
         }
@@ -648,10 +648,10 @@ impl PlaceRepo for SqliteConnection {
             query = query.filter(dsl::id.eq_any(place_ids));
         }
 
-        let rows = query.load::<models::JoinedPlaceRevision>(self)?;
+        let rows = query.load::<models::JoinedPlaceRevision>(&self.0)?;
         let mut results = Vec::with_capacity(rows.len());
         for row in rows {
-            results.push(load_place(self, row)?);
+            results.push(load_place(&self.0, row)?);
         }
         Ok(results)
     }
@@ -739,10 +739,10 @@ impl PlaceRepo for SqliteConnection {
             query = query.limit(limit as i64);
         }
 
-        let rows = query.load::<models::JoinedPlaceRevisionWithStatusReview>(self)?;
+        let rows = query.load::<models::JoinedPlaceRevisionWithStatusReview>(&self.0)?;
         let mut results = Vec::with_capacity(rows.len());
         for row in rows {
-            results.push(load_place_with_status_review(self, row)?);
+            results.push(load_place_with_status_review(&self.0, row)?);
         }
         Ok(results)
     }
@@ -839,12 +839,12 @@ impl PlaceRepo for SqliteConnection {
         if let Some(revision) = revision {
             query = query.filter(rev_dsl::rev.eq(RevisionValue::from(revision) as i64));
         }
-        let rows = query.load::<models::JoinedPlaceRevision>(self)?;
+        let rows = query.load::<models::JoinedPlaceRevision>(&self.0)?;
         let mut place_history = None;
         let num_revisions = rows.len();
         for row in rows {
             let parent_rowid = row.id;
-            let (place, _) = load_place(self, row)?;
+            let (place, _) = load_place(&self.0, row)?;
             let (place, place_revision) = place.into();
             if place_history.is_none() {
                 place_history = Some(PlaceHistory {
@@ -869,7 +869,7 @@ impl PlaceRepo for SqliteConnection {
                 ))
                 .filter(review_dsl::parent_rowid.eq(parent_rowid))
                 .order_by(review_dsl::rev.desc())
-                .load::<models::PlaceReviewedRevision>(self)?;
+                .load::<models::PlaceReviewedRevision>(&self.0)?;
             let mut review_logs = Vec::with_capacity(rows.len());
             for row in rows {
                 let review_log = ReviewStatusLog {
@@ -932,8 +932,8 @@ impl PlaceRepo for SqliteConnection {
                 dsl::license,
             ))
             .filter(dsl::id.eq(id));
-        let row = query.first::<models::JoinedPlaceRevision>(self)?;
-        load_place(self, row)
+        let row = query.first::<models::JoinedPlaceRevision>(&self.0)?;
+        load_place(&self.0, row)
     }
 }
 
@@ -1034,15 +1034,15 @@ fn resolve_event_id(conn: &SqliteConnection, uid: &str) -> Result<i64> {
         .first(conn)?)
 }
 
-impl EventGateway for SqliteConnection {
+impl EventGateway for Connection {
     fn create_event(&self, e: Event) -> Result<()> {
-        let (new_event, tags) = into_new_event_with_tags(self, e)?;
+        let (new_event, tags) = into_new_event_with_tags(&self.0, e)?;
         self.transaction::<_, diesel::result::Error, _>(|| {
             // Insert event
             diesel::insert_into(schema::events::table)
                 .values(&new_event)
-                .execute(self)?;
-            let id = resolve_event_id(self, new_event.uid.as_ref()).map_err(|err| {
+                .execute(&self.0)?;
+            let id = resolve_event_id(&self.0, new_event.uid.as_ref()).map_err(|err| {
                 warn!(
                     "Failed to resolve id of newly created event {}: {}",
                     new_event.uid, err,
@@ -1059,28 +1059,28 @@ impl EventGateway for SqliteConnection {
                 .collect();
             diesel::insert_or_ignore_into(schema::event_tags::table)
                 .values(&tags)
-                .execute(self)?;
+                .execute(&self.0)?;
             Ok(())
         })?;
         Ok(())
     }
 
     fn update_event(&self, event: &Event) -> Result<()> {
-        let id = resolve_event_id(self, event.id.as_ref())?;
-        let (new_event, new_tags) = into_new_event_with_tags(self, event.clone())?;
+        let id = resolve_event_id(&self.0, event.id.as_ref())?;
+        let (new_event, new_tags) = into_new_event_with_tags(&self.0, event.clone())?;
         self.transaction::<_, diesel::result::Error, _>(|| {
             use schema::event_tags::dsl as et_dsl;
             use schema::events::dsl as e_dsl;
             // Update event
             diesel::update(e_dsl::events.filter(e_dsl::id.eq(&id)))
                 .set(&new_event)
-                .execute(self)?;
+                .execute(&self.0)?;
             // Update event tags
             let tags_diff = {
                 let old_tags = et_dsl::event_tags
                     .select(et_dsl::tag)
                     .filter(et_dsl::event_id.eq(id))
-                    .load(self)?;
+                    .load(&self.0)?;
                 super::util::tags_diff(&old_tags, &new_tags)
             };
             diesel::delete(
@@ -1088,7 +1088,7 @@ impl EventGateway for SqliteConnection {
                     .filter(et_dsl::event_id.eq(id))
                     .filter(et_dsl::tag.eq_any(&tags_diff.deleted)),
             )
-            .execute(self)?;
+            .execute(&self.0)?;
             {
                 let new_tags: Vec<_> = tags_diff
                     .added
@@ -1100,7 +1100,7 @@ impl EventGateway for SqliteConnection {
                     .collect();
                 diesel::insert_or_ignore_into(et_dsl::event_tags)
                     .values(&new_tags)
-                    .execute(self)?;
+                    .execute(&self.0)?;
             }
             Ok(())
         })?;
@@ -1173,7 +1173,7 @@ impl EventGateway for SqliteConnection {
             let tags = et_dsl::event_tags
                 .select(et_dsl::tag)
                 .filter(et_dsl::event_id.eq(id))
-                .load::<String>(self)?;
+                .load::<String>(&self.0)?;
 
             let address = Address {
                 street,
@@ -1276,7 +1276,7 @@ impl EventGateway for SqliteConnection {
             .filter(e_dsl::archived.is_null())
             .order_by(e_dsl::start)
             .load::<models::EventEntity>(self)?;
-        let tag_rels = et_dsl::event_tags.load(self)?;
+        let tag_rels = et_dsl::event_tags.load(&self.0)?;
         Ok(events
             .into_iter()
             .map(|e| util::event_from_event_entity_and_tags(e, &tag_rels))
@@ -1288,7 +1288,7 @@ impl EventGateway for SqliteConnection {
         Ok(dsl::events
             .select(diesel::dsl::count(dsl::id))
             .filter(dsl::archived.is_null())
-            .first::<i64>(self)? as usize)
+            .first::<i64>(&self.0)? as usize)
     }
 
     fn archive_events(&self, ids: &[&str], archived: Timestamp) -> Result<usize> {
@@ -1299,14 +1299,14 @@ impl EventGateway for SqliteConnection {
                 .filter(dsl::archived.is_null()),
         )
         .set(dsl::archived.eq(Some(archived.into_inner())))
-        .execute(self)?;
+        .execute(&self.0)?;
         debug_assert!(count <= ids.len());
         Ok(count)
     }
 
     fn delete_event_with_matching_tags(&self, id: &str, tags: &[&str]) -> Result<bool> {
         use schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl};
-        let id = resolve_event_id(self, id)?;
+        let id = resolve_event_id(&self.0, id)?;
         if !tags.is_empty() {
             let ids: Vec<_> = et_dsl::event_tags
                 .select(et_dsl::event_id)
@@ -1320,8 +1320,8 @@ impl EventGateway for SqliteConnection {
             }
             debug_assert_eq!(id, *ids.first().unwrap());
         }
-        diesel::delete(et_dsl::event_tags.filter(et_dsl::event_id.eq(id))).execute(self)?;
-        diesel::delete(e_dsl::events.filter(e_dsl::id.eq(id))).execute(self)?;
+        diesel::delete(et_dsl::event_tags.filter(et_dsl::event_id.eq(id))).execute(&self.0)?;
+        diesel::delete(e_dsl::events.filter(e_dsl::id.eq(id))).execute(&self.0)?;
         Ok(true)
     }
 
@@ -1338,7 +1338,7 @@ impl EventGateway for SqliteConnection {
                     ),
                 ),
             )
-            .first::<i64>(self)
+            .first::<i64>(&self.0)
             .optional()?
             .is_some())
     }
@@ -1356,12 +1356,12 @@ fn resolve_user_created_by_email(conn: &SqliteConnection, email: &str) -> Result
         })?)
 }
 
-impl UserGateway for SqliteConnection {
+impl UserGateway for Connection {
     fn create_user(&self, u: &User) -> Result<()> {
         let new_user = models::NewUser::from(u);
         diesel::insert_into(schema::users::table)
             .values(&new_user)
-            .execute(self)?;
+            .execute(&self.0)?;
         Ok(())
     }
 
@@ -1370,13 +1370,13 @@ impl UserGateway for SqliteConnection {
         let new_user = models::NewUser::from(u);
         diesel::update(dsl::users.filter(dsl::email.eq(new_user.email)))
             .set(&new_user)
-            .execute(self)?;
+            .execute(&self.0)?;
         Ok(())
     }
 
     fn delete_user_by_email(&self, email: &str) -> Result<()> {
         use schema::users::dsl;
-        diesel::delete(dsl::users.filter(dsl::email.eq(email))).execute(self)?;
+        diesel::delete(dsl::users.filter(dsl::email.eq(email))).execute(&self.0)?;
         Ok(())
     }
 
@@ -1384,7 +1384,7 @@ impl UserGateway for SqliteConnection {
         use schema::users::dsl;
         Ok(dsl::users
             .filter(dsl::email.eq(email))
-            .first::<models::UserEntity>(self)?
+            .first::<models::UserEntity>(&self.0)?
             .into())
     }
 
@@ -1392,7 +1392,7 @@ impl UserGateway for SqliteConnection {
         use schema::users::dsl;
         Ok(dsl::users
             .filter(dsl::email.eq(email))
-            .first::<models::UserEntity>(self)
+            .first::<models::UserEntity>(&self.0)
             .optional()?
             .map(Into::into))
     }
@@ -1400,7 +1400,7 @@ impl UserGateway for SqliteConnection {
     fn all_users(&self) -> Result<Vec<User>> {
         use schema::users::dsl;
         Ok(dsl::users
-            .load::<models::UserEntity>(self)?
+            .load::<models::UserEntity>(&self.0)?
             .into_iter()
             .map(Into::into)
             .collect())
@@ -1410,11 +1410,11 @@ impl UserGateway for SqliteConnection {
         use schema::users::dsl;
         Ok(dsl::users
             .select(diesel::dsl::count(dsl::id))
-            .first::<i64>(self)? as usize)
+            .first::<i64>(&self.0)? as usize)
     }
 }
 
-impl RatingRepository for SqliteConnection {
+impl RatingRepository for Connection {
     fn create_rating(&self, rating: Rating) -> Result<()> {
         let Rating {
             id,
@@ -1426,7 +1426,7 @@ impl RatingRepository for SqliteConnection {
             context,
             source,
         } = rating;
-        let parent_rowid = resolve_place_rowid(self, &place_id)?;
+        let parent_rowid = resolve_place_rowid(&self.0, &place_id)?;
         let new_place_rating = models::NewPlaceRating {
             id: id.into(),
             parent_rowid,
@@ -1441,7 +1441,7 @@ impl RatingRepository for SqliteConnection {
         };
         let _count = diesel::insert_into(schema::place_rating::table)
             .values(&new_place_rating)
-            .execute(self)?;
+            .execute(&self.0)?;
         debug_assert_eq!(1, _count);
         Ok(())
     }
@@ -1466,7 +1466,7 @@ impl RatingRepository for SqliteConnection {
             ))
             .filter(rating_dsl::id.eq_any(ids))
             .filter(rating_dsl::archived_at.is_null())
-            .load::<models::PlaceRating>(self)?
+            .load::<models::PlaceRating>(&self.0)?
             .into_iter()
             .map(Into::into)
             .collect())
@@ -1498,7 +1498,7 @@ impl RatingRepository for SqliteConnection {
             ))
             .filter(dsl::id.eq(place_id))
             .filter(rating_dsl::archived_at.is_null())
-            .load::<models::PlaceRating>(self)?
+            .load::<models::PlaceRating>(&self.0)?
             .into_iter()
             .map(Into::into)
             .collect())
@@ -1511,14 +1511,14 @@ impl RatingRepository for SqliteConnection {
             .inner_join(schema::place::table)
             .select(dsl::id)
             .filter(rating_dsl::id.eq_any(ids))
-            .load::<String>(self)?)
+            .load::<String>(&self.0)?)
     }
 
     fn archive_ratings(&self, ids: &[&str], activity: &Activity) -> Result<usize> {
         use schema::place_rating::dsl;
         let archived_at = Some(activity.at.into_inner());
         let archived_by = if let Some(ref email) = activity.by {
-            Some(resolve_user_created_by_email(self, email.as_ref())?)
+            Some(resolve_user_created_by_email(&self.0, email.as_ref())?)
         } else {
             None
         };
@@ -1531,7 +1531,7 @@ impl RatingRepository for SqliteConnection {
             dsl::archived_at.eq(archived_at),
             dsl::archived_by.eq(archived_by),
         ))
-        .execute(self)?;
+        .execute(&self.0)?;
         debug_assert!(count <= ids.len());
         Ok(count)
     }
@@ -1541,7 +1541,7 @@ impl RatingRepository for SqliteConnection {
         use schema::place_rating::dsl as rating_dsl;
         let archived_at = Some(activity.at.into_inner());
         let archived_by = if let Some(ref email) = activity.by {
-            Some(resolve_user_created_by_email(self, email.as_ref())?)
+            Some(resolve_user_created_by_email(&self.0, email.as_ref())?)
         } else {
             None
         };
@@ -1560,11 +1560,11 @@ impl RatingRepository for SqliteConnection {
             rating_dsl::archived_at.eq(archived_at),
             rating_dsl::archived_by.eq(archived_by),
         ))
-        .execute(self)?)
+        .execute(&self.0)?)
     }
 }
 
-impl CommentRepository for SqliteConnection {
+impl CommentRepository for Connection {
     fn create_comment(&self, comment: Comment) -> Result<()> {
         let Comment {
             id,
@@ -1574,7 +1574,7 @@ impl CommentRepository for SqliteConnection {
             text,
             ..
         } = comment;
-        let parent_rowid = resolve_rating_rowid(self, rating_id.as_ref())?;
+        let parent_rowid = resolve_rating_rowid(&self.0, rating_id.as_ref())?;
         let new_place_rating_comment = models::NewPlaceRatingComment {
             id: id.into(),
             parent_rowid,
@@ -1586,7 +1586,7 @@ impl CommentRepository for SqliteConnection {
         };
         let _count = diesel::insert_into(schema::place_rating_comment::table)
             .values(&new_place_rating_comment)
-            .execute(self)?;
+            .execute(&self.0)?;
         debug_assert_eq!(1, _count);
         Ok(())
     }
@@ -1610,7 +1610,7 @@ impl CommentRepository for SqliteConnection {
             ))
             .filter(comment_dsl::id.eq_any(ids))
             .filter(comment_dsl::archived_at.is_null())
-            .load::<models::PlaceRatingComment>(self)?
+            .load::<models::PlaceRatingComment>(&self.0)?
             .into_iter()
             .map(Into::into)
             .collect())
@@ -1639,7 +1639,7 @@ impl CommentRepository for SqliteConnection {
             ))
             .filter(rating_dsl::id.eq(rating_id))
             .filter(comment_dsl::archived_at.is_null())
-            .load::<models::PlaceRatingComment>(self)?
+            .load::<models::PlaceRatingComment>(&self.0)?
             .into_iter()
             .map(Into::into)
             .collect())
@@ -1649,7 +1649,7 @@ impl CommentRepository for SqliteConnection {
         use schema::place_rating_comment::dsl;
         let archived_at = Some(activity.at.into_inner());
         let archived_by = if let Some(ref email) = activity.by {
-            Some(resolve_user_created_by_email(self, email.as_ref())?)
+            Some(resolve_user_created_by_email(&self.0, email.as_ref())?)
         } else {
             None
         };
@@ -1662,7 +1662,7 @@ impl CommentRepository for SqliteConnection {
             dsl::archived_at.eq(archived_at),
             dsl::archived_by.eq(archived_by),
         ))
-        .execute(self)?;
+        .execute(&self.0)?;
         debug_assert!(count <= ids.len());
         Ok(count)
     }
@@ -1676,7 +1676,7 @@ impl CommentRepository for SqliteConnection {
         use schema::place_rating_comment::dsl as comment_dsl;
         let archived_at = Some(activity.at.into_inner());
         let archived_by = if let Some(ref email) = activity.by {
-            Some(resolve_user_created_by_email(self, email.as_ref())?)
+            Some(resolve_user_created_by_email(&self.0, email.as_ref())?)
         } else {
             None
         };
@@ -1695,7 +1695,7 @@ impl CommentRepository for SqliteConnection {
             comment_dsl::archived_at.eq(archived_at),
             comment_dsl::archived_by.eq(archived_by),
         ))
-        .execute(self)?)
+        .execute(&self.0)?)
     }
 
     fn archive_comments_of_places(&self, place_ids: &[&str], activity: &Activity) -> Result<usize> {
@@ -1704,7 +1704,7 @@ impl CommentRepository for SqliteConnection {
         use schema::place_rating_comment::dsl as comment_dsl;
         let archived_at = Some(activity.at.into_inner());
         let archived_by = if let Some(ref email) = activity.by {
-            Some(resolve_user_created_by_email(self, email.as_ref())?)
+            Some(resolve_user_created_by_email(&self.0, email.as_ref())?)
         } else {
             None
         };
@@ -1729,17 +1729,17 @@ impl CommentRepository for SqliteConnection {
             comment_dsl::archived_at.eq(archived_at),
             comment_dsl::archived_by.eq(archived_by),
         ))
-        .execute(self)
+        .execute(&self.0)
         .optional()?
         .unwrap_or_default())
     }
 }
 
-impl Db for SqliteConnection {
+impl Db for Connection {
     fn create_tag_if_it_does_not_exist(&self, t: &Tag) -> Result<()> {
         let res = diesel::insert_into(schema::tags::table)
             .values(&models::Tag::from(t.clone()))
-            .execute(self);
+            .execute(&self.0);
         if let Err(err) = res {
             match err {
                 DieselError::DatabaseError(DatabaseErrorKind::UniqueViolation, _) => {
@@ -1754,7 +1754,7 @@ impl Db for SqliteConnection {
     }
 
     fn create_bbox_subscription(&self, new: &BboxSubscription) -> Result<()> {
-        let user_id = resolve_user_created_by_email(self, &new.user_email)?;
+        let user_id = resolve_user_created_by_email(&self.0, &new.user_email)?;
         let (south_west_lat, south_west_lng) = new.bbox.southwest().to_lat_lng_deg();
         let (north_east_lat, north_east_lng) = new.bbox.northeast().to_lat_lng_deg();
         let insertable = models::NewBboxSubscription {
@@ -1767,7 +1767,7 @@ impl Db for SqliteConnection {
         };
         diesel::insert_into(schema::bbox_subscriptions::table)
             .values(&insertable)
-            .execute(self)?;
+            .execute(&self.0)?;
         Ok(())
     }
 
@@ -1786,7 +1786,7 @@ impl Db for SqliteConnection {
                 s_dsl::north_east_lng,
                 u_dsl::email,
             ))
-            .load::<models::BboxSubscriptionEntity>(self)?
+            .load::<models::BboxSubscriptionEntity>(&self.0)?
             .into_iter()
             .map(BboxSubscription::from)
             .collect())
@@ -1807,7 +1807,7 @@ impl Db for SqliteConnection {
                 s_dsl::north_east_lng,
                 u_dsl::email,
             ))
-            .load::<models::BboxSubscriptionEntity>(self)?
+            .load::<models::BboxSubscriptionEntity>(&self.0)?
             .into_iter()
             .map(BboxSubscription::from)
             .collect())
@@ -1819,24 +1819,24 @@ impl Db for SqliteConnection {
             .select(u_dsl::id)
             .filter(u_dsl::email.eq(email));
         diesel::delete(s_dsl::bbox_subscriptions.filter(s_dsl::user_id.eq_any(users_id)))
-            .execute(self)?;
+            .execute(&self.0)?;
         Ok(())
     }
     fn all_tags(&self) -> Result<Vec<Tag>> {
         use schema::tags::dsl::*;
         Ok(tags
-            .load::<models::Tag>(self)?
+            .load::<models::Tag>(&self.0)?
             .into_iter()
             .map(Tag::from)
             .collect())
     }
     fn count_tags(&self) -> Result<usize> {
         use schema::tags::dsl::*;
-        Ok(tags.select(diesel::dsl::count(id)).first::<i64>(self)? as usize)
+        Ok(tags.select(diesel::dsl::count(id)).first::<i64>(&self.0)? as usize)
     }
 }
 
-impl OrganizationRepo for SqliteConnection {
+impl OrganizationRepo for Connection {
     fn create_org(&mut self, mut o: Organization) -> Result<()> {
         let org_id = o.id.clone();
         let moderated_tags = std::mem::replace(&mut o.moderated_tags, vec![]);
@@ -1845,7 +1845,7 @@ impl OrganizationRepo for SqliteConnection {
             diesel::insert_into(schema::organization::table)
                 .values(&new_org)
                 .execute(self)?;
-            let org_rowid = resolve_organization_rowid(self, &org_id).map_err(|err| {
+            let org_rowid = resolve_organization_rowid(&self.0, &org_id).map_err(|err| {
                 warn!(
                     "Failed to resolve id of newly created organization '{}': {}",
                     org_id, err
@@ -1868,7 +1868,7 @@ impl OrganizationRepo for SqliteConnection {
                 };
                 diesel::insert_into(schema::organization_tag::table)
                     .values(&org_tag)
-                    .execute(self)?;
+                    .execute(&self.0)?;
             }
             Ok(())
         })?;
@@ -1889,7 +1889,7 @@ impl OrganizationRepo for SqliteConnection {
 
         let moderated_tags = org_tag_dsl::organization_tag
             .filter(org_tag_dsl::org_rowid.eq(rowid))
-            .load::<models::OrganizationTag>(self)?
+            .load::<models::OrganizationTag>(&self.0)?
             .into_iter()
             .map(Into::into)
             .collect();
@@ -1909,7 +1909,7 @@ impl OrganizationRepo for SqliteConnection {
             .select(dsl::id)
             .filter(tag_dsl::tag_label.eq(tag))
             .filter(tag_dsl::require_clearance.ne(0))
-            .first::<String>(self)
+            .first::<String>(&self.0)
             .optional()?
             .map(Into::into))
     }
@@ -1933,15 +1933,15 @@ impl OrganizationRepo for SqliteConnection {
         let moderated_tags = if let Some(excluded_org_id) = excluded_org_id {
             query
                 .filter(org_dsl::id.ne(excluded_org_id.as_str()))
-                .load::<models::OrganizationTagWithId>(self)?
+                .load::<models::OrganizationTagWithId>(&self.0)?
         } else {
-            query.load::<models::OrganizationTagWithId>(self)?
+            query.load::<models::OrganizationTagWithId>(&self.0)?
         };
         Ok(moderated_tags.into_iter().map(Into::into).collect())
     }
 }
 
-impl PlaceClearanceRepo for SqliteConnection {
+impl PlaceClearanceRepo for Connection {
     fn add_pending_clearance_for_places(
         &self,
         org_ids: &[Id],
@@ -1952,13 +1952,13 @@ impl PlaceClearanceRepo for SqliteConnection {
             created_at,
             last_cleared_revision,
         } = pending_clearance;
-        let place_rowid = resolve_place_rowid(self, place_id)?;
+        let place_rowid = resolve_place_rowid(&self.0, place_id)?;
         let created_at = created_at.into_inner();
         let last_cleared_revision =
             last_cleared_revision.map(|rev| RevisionValue::from(rev) as i64);
         let mut insert_count = 0;
         for org_id in org_ids {
-            let org_rowid = resolve_organization_rowid(self, org_id)?;
+            let org_rowid = resolve_organization_rowid(&self.0, org_id)?;
             let insertable = models::NewPendingClearanceForPlace {
                 org_rowid,
                 place_rowid,
@@ -1968,7 +1968,7 @@ impl PlaceClearanceRepo for SqliteConnection {
             insert_count +=
                 diesel::insert_or_ignore_into(schema::organization_place_clearance::table)
                     .values(&insertable)
-                    .execute(self)?;
+                    .execute(&self.0)?;
         }
         Ok(insert_count)
     }
@@ -2055,7 +2055,7 @@ impl PlaceClearanceRepo for SqliteConnection {
         org_id: &Id,
         clearances: &[ClearanceForPlace],
     ) -> Result<usize> {
-        let org_rowid = resolve_organization_rowid(self, org_id)?;
+        let org_rowid = resolve_organization_rowid(&self.0, org_id)?;
         let created_at = TimestampMs::now().into_inner();
         let mut total_rows_affected = 0;
         for clearance in clearances {
@@ -2065,11 +2065,11 @@ impl PlaceClearanceRepo for SqliteConnection {
             } = clearance;
             let (place_rowid, cleared_revision) = if let Some(cleared_revision) = cleared_revision {
                 let place_rowid =
-                    resolve_place_rowid_verify_revision(self, place_id, *cleared_revision)?;
+                    resolve_place_rowid_verify_revision(&self.0, place_id, *cleared_revision)?;
                 (place_rowid, *cleared_revision)
             } else {
                 let (place_rowid, current_revision) =
-                    resolve_place_rowid_with_current_revision(self, place_id)?;
+                    resolve_place_rowid_with_current_revision(&self.0, place_id)?;
                 (place_rowid, current_revision)
             };
             use schema::organization::dsl as org_dsl;
@@ -2099,7 +2099,7 @@ impl PlaceClearanceRepo for SqliteConnection {
     }
 
     fn cleanup_pending_clearances_for_places(&self, org_id: &Id) -> Result<u64> {
-        let org_rowid = resolve_organization_rowid(self, org_id)?;
+        let org_rowid = resolve_organization_rowid(&self.0, org_id)?;
         use schema::organization_place_clearance::dsl;
         use schema::place::dsl as place_dsl;
         use schema::place_revision::dsl as place_rev_dsl;
@@ -2126,10 +2126,10 @@ impl PlaceClearanceRepo for SqliteConnection {
     }
 }
 
-impl UserTokenRepo for SqliteConnection {
+impl UserTokenRepo for Connection {
     fn replace_user_token(&self, token: UserToken) -> Result<EmailNonce> {
         use schema::user_tokens::dsl;
-        let user_id = resolve_user_created_by_email(self, &token.email_nonce.email)?;
+        let user_id = resolve_user_created_by_email(&self.0, &token.email_nonce.email)?;
         let model = models::NewUserToken {
             user_id,
             nonce: token.email_nonce.nonce.to_string(),
@@ -2161,7 +2161,7 @@ impl UserTokenRepo for SqliteConnection {
         let target = t_dsl::user_tokens
             .filter(t_dsl::nonce.eq(email_nonce.nonce.to_string()))
             .filter(t_dsl::user_id.eq_any(user_id_subselect));
-        if diesel::delete(target).execute(self)? == 0 {
+        if diesel::delete(target).execute(&self.0)? == 0 {
             return Err(RepoError::NotFound);
         }
         debug_assert_eq!(email_nonce, &token.email_nonce);
@@ -2174,7 +2174,7 @@ impl UserTokenRepo for SqliteConnection {
             diesel::delete(
                 dsl::user_tokens.filter(dsl::expires_at.lt(expired_before.into_inner())),
             )
-            .execute(self)?,
+            .execute(&self.0)?,
         )
     }
 
@@ -2185,7 +2185,7 @@ impl UserTokenRepo for SqliteConnection {
             .inner_join(u_dsl::users)
             .select((u_dsl::id, t_dsl::nonce, t_dsl::expires_at, u_dsl::email))
             .filter(u_dsl::email.eq(email))
-            .first::<models::UserTokenEntity>(self)?
+            .first::<models::UserTokenEntity>(&self.0)?
             .into())
     }
 }

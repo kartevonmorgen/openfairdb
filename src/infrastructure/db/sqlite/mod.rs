@@ -11,7 +11,51 @@ use std::{
     sync::{Arc, RwLock},
 };
 
-pub type Connection = SqliteConnection;
+pub struct Connection(SqliteConnection);
+
+impl diesel::connection::SimpleConnection for Connection {
+    fn batch_execute(&self, x: &str) -> std::result::Result<(), diesel::result::Error> {
+        self.0.batch_execute(x)
+    }
+}
+
+impl diesel::connection::Connection for Connection {
+    type Backend = <SqliteConnection as diesel::connection::Connection>::Backend;
+    type TransactionManager =
+        <SqliteConnection as diesel::connection::Connection>::TransactionManager;
+    fn establish(url: &str) -> std::result::Result<Self, diesel::ConnectionError> {
+        Ok(Self(SqliteConnection::establish(url)?))
+    }
+    fn execute(&self, query: &str) -> std::result::Result<usize, diesel::result::Error> {
+        self.0.execute(query)
+    }
+    fn query_by_index<T, U>(&self, source: T) -> diesel::QueryResult<Vec<U>>
+    where
+        T: diesel::query_builder::AsQuery,
+        T::Query:
+            diesel::query_builder::QueryFragment<Self::Backend> + diesel::query_builder::QueryId,
+        Self::Backend: diesel::types::HasSqlType<T::SqlType>,
+        U: diesel::Queryable<T::SqlType, Self::Backend>,
+    {
+        self.0.query_by_index(source)
+    }
+    fn query_by_name<T, U>(&self, source: &T) -> diesel::QueryResult<Vec<U>>
+    where
+        T: diesel::query_builder::QueryFragment<Self::Backend> + diesel::query_builder::QueryId,
+        U: diesel::query_source::QueryableByName<Self::Backend>,
+    {
+        self.0.query_by_name(source)
+    }
+    fn execute_returning_count<T>(&self, source: &T) -> diesel::QueryResult<usize>
+    where
+        T: diesel::query_builder::QueryFragment<Self::Backend> + diesel::query_builder::QueryId,
+    {
+        self.0.execute_returning_count(source)
+    }
+    fn transaction_manager(&self) -> &<Self as diesel::Connection>::TransactionManager {
+        self.0.transaction_manager()
+    }
+}
 
 pub type ConnectionManager = r2d2::ConnectionManager<Connection>;
 pub type ConnectionPool = r2d2::Pool<ConnectionManager>;
