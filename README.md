@@ -34,7 +34,7 @@ Download the latest build
 unpack and start it:
 
 ```sh
-wget https://github.com/kartevonmorgen/openfairdb/releases/download/v0.9.3/openfairdb_x86_64-unknown-linux-musl_v0.10.0.tar.xz
+wget https://github.com/kartevonmorgen/openfairdb/releases/download/v0.10.0/openfairdb_x86_64-unknown-linux-musl_v0.10.0.tar.xz
 tar xJf openfairdb_x86_64-unknown-linux-musl_v0.10.0.tar.xz
 RUST_LOG=info ./openfairdb
 ```
