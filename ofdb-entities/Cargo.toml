@@ -14,7 +14,7 @@ chrono = "0.4"
 itertools = "0.10"
 num-derive = "0.3"
 num-traits = "0.2"
-pwhash = "0.3"
+pwhash = "1"
 uuid = { version = "0.8", features = ["v4"] }
 url = { version = "2", optional = true }
 strum = { version = "0.20", features = ["derive"] }

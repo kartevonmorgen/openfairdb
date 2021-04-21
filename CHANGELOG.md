@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.10.1 (2020-04-21)
+
+- new(api): Make capthca protection optional
+- chore(*): update dependencies
+
 ## v0.10.0 (2020-03-06)
 
 - new(web): Clearance center: Allow to accept multiple entries at once

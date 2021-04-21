@@ -30,12 +30,12 @@ The API might still change sometimes. We will try to let you know in that case.
 ## Quick start
 
 Download the latest build
-[openfairdb_x86_64-unknown-linux-musl_v0.10.0.tar.xz](https://github.com/kartevonmorgen/openfairdb/releases/download/v0.10.0/openfairdb_x86_64-unknown-linux-musl_v0.10.0.tar.xz),
+[openfairdb_x86_64-unknown-linux-musl_v0.10.1.tar.xz](https://github.com/kartevonmorgen/openfairdb/releases/download/v0.10.1/openfairdb_x86_64-unknown-linux-musl_v0.10.1.tar.xz),
 unpack and start it:
 
 ```sh
-wget https://github.com/kartevonmorgen/openfairdb/releases/download/v0.10.0/openfairdb_x86_64-unknown-linux-musl_v0.10.0.tar.xz
-tar xJf openfairdb_x86_64-unknown-linux-musl_v0.10.0.tar.xz
+wget https://github.com/kartevonmorgen/openfairdb/releases/download/v0.10.1/openfairdb_x86_64-unknown-linux-musl_v0.10.1.tar.xz
+tar xJf openfairdb_x86_64-unknown-linux-musl_v0.10.1.tar.xz
 RUST_LOG=info ./openfairdb
 ```
 
@@ -158,7 +158,7 @@ docker cp <container id>:entrypoint openfairdb
 
 At the moment the OpenFairDB does not support online backups.
 Therefore we use a simple
-[script](https://github.com/kartevonmorgen/openfairdb/blob/master/scripts/backup-sqlite.sh)
+[script](https://github.com/kartevonmorgen/openfairdb/blob/master/scripts/backup_db.sh)
 that copies the DB file once a day.
 
 # Domain Model
