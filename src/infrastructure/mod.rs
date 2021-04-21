@@ -9,6 +9,7 @@ use std::env;
 
 lazy_static! {
 
+    // TODO: move this to crate::cfg
     pub static ref GEO_CODING_GW: OpenCage = {
         let key = match env::var("OPENCAGE_API_KEY") {
             Ok(key) => Some(key),
@@ -21,11 +22,13 @@ lazy_static! {
     };
 
     pub static ref MAILGUN_GW: Option<Mailgun> = {
+        // TODO: move this to crate::cfg
         let api_key = env::var("MAILGUN_API_KEY");
         let domain = env::var("MAILGUN_DOMAIN");
         let from = env::var("MAIL_GATEWAY_SENDER_ADDRESS");
 
         if let (Ok(api_key), Ok(mail), Ok(domain)) = (api_key, from, domain) {
+            // TODO: move this to crate::cfg
             let api_url = env::var("MAILGUN_API_URL").unwrap_or_else(|_|format!("https://api.eu.mailgun.net/v3/{}/messages", domain));
             // TODO: validate values
             Some(Mailgun {

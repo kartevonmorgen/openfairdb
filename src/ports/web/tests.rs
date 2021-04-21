@@ -31,6 +31,17 @@ pub fn setup(
     sqlite::Connections,
     tantivy::SearchEngine,
 ) {
+    setup_with_cfg(mounts, Cfg::default())
+}
+
+pub fn setup_with_cfg(
+    mounts: Vec<(&'static str, Vec<Route>)>,
+    cfg: Cfg,
+) -> (
+    rocket::local::Client,
+    sqlite::Connections,
+    tantivy::SearchEngine,
+) {
     let rocket_cfg = RocketCfg::build(Environment::Development)
         .log_level(LoggingLevel::Debug)
         .finalize()
@@ -43,7 +54,7 @@ pub fn setup(
         search_engine.clone(),
         mounts,
         Some(rocket_cfg),
-        Cfg::default(),
+        cfg,
     );
     let client = Client::new(rocket).unwrap();
     (client, connections, search_engine)

@@ -17,7 +17,11 @@ pub mod prelude {
     use ofdb_core::gateways::notify::NotificationGateway;
 
     pub fn setup() -> (Client, sqlite::Connections) {
-        let (client, conn, _) = web::tests::setup(vec![("/", api::routes())]);
+        setup_with_cfg(Cfg::default())
+    }
+
+    pub fn setup_with_cfg(cfg: Cfg) -> (Client, sqlite::Connections) {
+        let (client, conn, _) = web::tests::setup_with_cfg(vec![("/", api::routes())], cfg);
         (client, conn)
     }
 
@@ -37,6 +41,7 @@ pub mod prelude {
             "application/json"
         );
     }
+
     pub use super::cookie_from_response;
 }
 
@@ -45,10 +50,8 @@ use self::prelude::*;
 #[test]
 fn create_place() {
     let (client, db) = setup();
-    let cookie = get_captcha_cookie(&client).unwrap();
     let req = client.post("/entries")
                     .header(ContentType::JSON)
-                    .cookie(cookie)
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#);
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -85,10 +88,8 @@ fn create_place_with_reserved_tag() {
 #[test]
 fn create_place_with_tag_duplicates() {
     let (client, db) = setup();
-    let cookie = get_captcha_cookie(&client).unwrap();
     let req = client.post("/entries")
                     .header(ContentType::JSON)
-                    .cookie(cookie)
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","foo"]}"#);
     let mut response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -105,11 +106,9 @@ fn create_place_with_tag_duplicates() {
 fn create_place_with_sharp_tag_and_custom_link() {
     let (client, db) = setup();
     let json = r##"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","#bar"],"links":[{"url":"example.com","title":"Auto-completed URL"}]}"##;
-    let cookie = get_captcha_cookie(&client).unwrap();
     let response = client
         .post("/entries")
         .header(ContentType::JSON)
-        .cookie(cookie)
         .body(json)
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
@@ -137,10 +136,8 @@ fn create_place_with_sharp_tag_and_custom_link() {
 #[test]
 fn update_place_with_tag_duplicates() {
     let (client, db) = setup();
-    let cookie = get_captcha_cookie(&client).unwrap();
     let req = client.post("/entries")
                     .header(ContentType::JSON)
-                    .cookie(cookie)
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"ODbL-1.0","tags":["foo","foo"]}"#);
     let _res = req.dispatch();
     let (place, _) = db.exclusive().unwrap().all_places().unwrap()[0].clone();
@@ -1936,10 +1933,8 @@ fn entries_export_csv() {
 #[test]
 fn search_duplicates() {
     let (client, db) = setup();
-    let cookie = get_captcha_cookie(&client).unwrap();
     let res = client.post("/entries")
                     .header(ContentType::JSON)
-        .cookie(cookie)
                     .body(r#"{"title":"foo","description":"bla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#)
                     .dispatch();
     assert_eq!(res.status(), Status::Ok);
@@ -1962,4 +1957,43 @@ fn search_duplicates() {
         serde_json::from_str(&body_str).unwrap();
     assert_eq!(1, duplicate_places.len());
     assert_eq!(place.id.to_string(), duplicate_places.first().unwrap().id);
+}
+
+mod with_captcha_protection_enabled {
+    use super::*;
+
+    fn captcha_setup() -> (Client, sqlite::Connections) {
+        let mut cfg = Cfg::default();
+        cfg.protect_with_captcha = true;
+        setup_with_cfg(cfg)
+    }
+
+    #[test]
+    fn create_place_without_captcha_cookie() {
+        let (client, _) = captcha_setup();
+        let req = client.post("/entries")
+                        .header(ContentType::JSON)
+                        .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#);
+        let response = req.dispatch();
+        assert_eq!(response.status(), Status::Unauthorized);
+    }
+
+    #[test]
+    fn create_place_with_valid_captcha_cookie() {
+        let (client, db) = captcha_setup();
+        let cookie = get_captcha_cookie(&client).unwrap();
+        let req = client.post("/entries")
+                        .header(ContentType::JSON)
+                        .cookie(cookie)
+                        .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#);
+        let mut response = req.dispatch();
+        assert_eq!(response.status(), Status::Ok);
+        test_json(&response);
+        let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+        let eid = db.exclusive().unwrap().all_places().unwrap()[0]
+            .0
+            .id
+            .clone();
+        assert_eq!(body_str, format!("\"{}\"", eid));
+    }
 }

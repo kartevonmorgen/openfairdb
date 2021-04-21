@@ -174,7 +174,9 @@ pub fn post_entry(
 ) -> Result<String> {
     let org = auth.organization(&*connections.shared()?).ok();
     if org.is_none() && auth.account_email().is_err() {
-        auth.has_captcha()?;
+        if cfg.protect_with_captcha {
+            auth.has_captcha()?;
+        }
     }
     let new_place = body.into_inner().into();
     Ok(Json(
@@ -204,7 +206,9 @@ pub fn put_entry(
 ) -> Result<String> {
     let org = auth.organization(&*connections.shared()?).ok();
     if org.is_none() && auth.account_email().is_err() {
-        auth.has_captcha()?;
+        if cfg.protect_with_captcha {
+            auth.has_captcha()?;
+        }
     }
     Ok(Json(
         flows::update_place(

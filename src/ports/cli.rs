@@ -39,7 +39,7 @@ fn update_event_locations<D: Db>(db: &mut D) -> Result<()> {
 
 #[allow(deprecated)]
 pub fn run() {
-    dotenv().ok();
+    dotenv().ok(); // TODO: either use environment variables XOR cli arguments
     let matches = App::new("openFairDB")
         .version(env!("CARGO_PKG_VERSION"))
         .author(crate_authors!("\n"))
