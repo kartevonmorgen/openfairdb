@@ -11,6 +11,7 @@ use crate::{
 };
 use rocket::{self, request::Form, State};
 use rocket_contrib::json::Json;
+use std::time::Duration;
 
 #[derive(FromForm, Clone)]
 pub struct GetEntryQuery {
@@ -152,14 +153,13 @@ pub fn get_entries_most_popular_tags(
     let pagination = Pagination { offset, limit };
     let max_cache_age =
         max_cache_age.unwrap_or(ENTRIES_MOST_POPULAR_TAGS_DEFAULT_MAX_CACHE_AGE_SECONDS);
-    if tags_cache.age_in_seconds() > max_cache_age {
-        let results = {
-            let db = db.shared()?;
-            db.most_popular_place_revision_tags(&params, &pagination)?
-        };
-        tags_cache.update_cache(results.into_iter().map(Into::into).collect());
-    }
-    let results = tags_cache.most_popular_place_revision_tags(&params, &pagination)?;
+
+    let results = tags_cache.most_popular_place_revision_tags(
+        &db,
+        &params,
+        &pagination,
+        Duration::from_secs(max_cache_age),
+    )?;
     Ok(Json(results))
 }
 

@@ -37,7 +37,7 @@ pub mod place_builder {
             self.place.location.pos = pos;
             self
         }
-        pub fn tags(mut self, tags: Vec<&str>) -> Self {
+        pub fn tags(mut self, tags: Vec<impl Into<String>>) -> Self {
             self.place.tags = tags.into_iter().map(|x| x.into()).collect();
             self
         }

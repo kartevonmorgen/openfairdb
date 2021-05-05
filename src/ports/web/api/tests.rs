@@ -1705,6 +1705,53 @@ fn count_most_popular_tags_on_empty_db_to_verify_sql() {
     assert_eq!(response.status(), Status::Ok);
 }
 
+fn init_tags_cache_test_db(cnt: usize, db: &sqlite::Connections) {
+    (1..=cnt)
+        .into_iter()
+        .map(|i| (1..=i).into_iter().map(|i| i.to_string()).collect())
+        .map(|tags| Place::build().tags(tags).finish())
+        .for_each(|place| {
+            db.exclusive()
+                .unwrap()
+                .create_or_update_place(place)
+                .unwrap();
+        });
+}
+
+#[test]
+fn update_most_popular_tags_on_outdated_cache() {
+    let (client, db) = setup();
+
+    // init
+    init_tags_cache_test_db(10, &db);
+
+    // get only popular tags
+    let mut response = client
+        .get("/entries/most-popular-tags?min_count=8&max_cache_age=0")
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let tags: Vec<ofdb_boundary::TagFrequency> = serde_json::from_str(&body_str).unwrap();
+    assert_eq!(tags.len(), 3);
+
+    let mut response = client
+        .get("/entries/most-popular-tags?max_count=1")
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let tags: Vec<ofdb_boundary::TagFrequency> = serde_json::from_str(&body_str).unwrap();
+    assert_eq!(tags.len(), 1);
+
+    // get cached popular tags again
+    let mut response = client
+        .get("/entries/most-popular-tags?min_count=8")
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let tags: Vec<ofdb_boundary::TagFrequency> = serde_json::from_str(&body_str).unwrap();
+    assert_eq!(tags.len(), 3);
+}
+
 #[test]
 fn openapi() {
     let (client, _) = setup();

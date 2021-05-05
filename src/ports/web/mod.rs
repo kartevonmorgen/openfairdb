@@ -7,6 +7,7 @@ use crate::{
     infrastructure::{cfg::Cfg, error::AppError},
 };
 use ofdb_core::rating::Rated;
+use popular_tags_cache::PopularTagsCache;
 use rocket::{config::Config as RocketCfg, Rocket, Route};
 use rocket_contrib::json::Json;
 use std::result;
@@ -84,7 +85,7 @@ pub(crate) fn rocket_instance(
     usecases::delete_expired_user_tokens(&*connections.exclusive().unwrap()).unwrap();
 
     info!("Caching most popular tags...");
-    let tags_cache = popular_tags_cache::new_from_db(&*connections.shared().unwrap()).unwrap();
+    let tags_cache = PopularTagsCache::new_from_db(&*connections.shared().unwrap()).unwrap();
 
     let captcha_cache = api::captcha::CaptchaCache::new();
     let jwt_state = jwt::JwtState::new();

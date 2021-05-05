@@ -1,80 +1,62 @@
 use crate::{
     core::db::PlaceRepo,
+    infrastructure::db::sqlite,
     ports::web::{MostPopularTagsParams, Pagination},
 };
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use ofdb_boundary::TagFrequency;
-use std::sync::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::{
+    collections::HashMap,
+    sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
+    time::Duration,
+};
+
+type Request = (MostPopularTagsParams, Pagination);
+type Cache = HashMap<Request, (DateTime<Utc>, Vec<TagFrequency>)>;
 
 pub struct PopularTagsCache(RwLock<Cache>);
 
-pub fn new_from_db<R: PlaceRepo>(db: &R) -> Result<PopularTagsCache> {
-    let params = MostPopularTagsParams {
-        min_count: None,
-        max_count: None,
-    };
-    let offset = None;
-    let limit = None;
-    let pagination = Pagination { offset, limit };
-    let results = db
-        .most_popular_place_revision_tags(&params, &pagination)?
-        .into_iter()
-        .map(Into::into)
-        .collect();
-    let cache = Cache {
-        created_at: Utc::now(),
-        data: results,
-    };
-    Ok(PopularTagsCache(RwLock::new(cache)))
-}
-
 impl PopularTagsCache {
+    pub fn new_from_db<R: PlaceRepo>(db: &R) -> Result<PopularTagsCache> {
+        let params = MostPopularTagsParams::default();
+        let pagination = Pagination::default();
+        let cache = Self(RwLock::new(HashMap::new()));
+        let _ = cache.query_and_update(db, &params, &pagination)?;
+        Ok(cache)
+    }
+
     pub fn most_popular_place_revision_tags(
         &self,
+        db: &sqlite::Connections,
+        params: &MostPopularTagsParams,
+        pagination: &Pagination,
+        max_cache_age: Duration,
+    ) -> Result<Vec<TagFrequency>> {
+        let cached_results = self.read().get(&(*params, *pagination)).cloned();
+        if let Some((created_at, data)) = cached_results {
+            let age_in_seconds = (Utc::now() - created_at).num_seconds() as u64;
+            if age_in_seconds < max_cache_age.as_secs() {
+                return Ok(data);
+            }
+        }
+        self.query_and_update(&*db.shared()?, params, pagination)
+    }
+
+    fn query_and_update<R: PlaceRepo>(
+        &self,
+        db: &R,
         params: &MostPopularTagsParams,
         pagination: &Pagination,
     ) -> Result<Vec<TagFrequency>> {
-        let MostPopularTagsParams {
-            min_count,
-            max_count,
-        } = params;
-        let Pagination { offset, limit } = pagination;
-        let offset = offset.unwrap_or(0) as usize;
-        let cached_data = &self.read().data;
-        let res = cached_data
-            .iter()
-            .filter(|t| {
-                if let Some(min) = min_count {
-                    t.1 >= *min
-                } else {
-                    true
-                }
-            })
-            .filter(|t| {
-                if let Some(max) = max_count {
-                    t.1 <= *max
-                } else {
-                    true
-                }
-            })
-            .skip(offset);
-        let res = if let Some(limit) = limit {
-            res.take(*limit as usize).cloned().collect()
-        } else {
-            res.cloned().collect()
-        };
-        Ok(res)
-    }
-
-    pub fn age_in_seconds(&self) -> u64 {
-        (Utc::now() - self.read().created_at).num_seconds() as u64
-    }
-
-    pub fn update_cache(&self, data: Vec<TagFrequency>) {
+        let results = db
+            .most_popular_place_revision_tags(&params, &pagination)?
+            .into_iter()
+            .map(Into::into)
+            .collect::<Vec<_>>();
         let mut cache = self.write();
-        cache.created_at = Utc::now();
-        cache.data = data;
+        cache.insert((*params, *pagination), (Utc::now(), results.clone()));
+        Ok(results)
     }
 
     fn read(&self) -> RwLockReadGuard<Cache> {
@@ -96,9 +78,4 @@ impl PopularTagsCache {
             }
         }
     }
-}
-
-struct Cache {
-    created_at: DateTime<Utc>,
-    data: Vec<TagFrequency>,
 }

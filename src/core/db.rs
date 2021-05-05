@@ -12,7 +12,7 @@ use anyhow::Result as Fallible;
 
 type Result<T> = std::result::Result<T, RepoError>;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct MostPopularTagsParams {
     pub min_count: Option<u64>,
     pub max_count: Option<u64>,
@@ -130,7 +130,7 @@ pub trait PlaceClearanceRepo {
 //  - TagGeatway
 //  - SubscriptionGateway
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Copy, Default, PartialEq, Eq, Hash)]
 pub struct Pagination {
     pub offset: Option<u64>,
     pub limit: Option<u64>,
