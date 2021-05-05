@@ -17,7 +17,7 @@ impl Cfg {
     pub fn from_env_or_default() -> Self {
         let mut cfg = Self::default();
         if let Ok(l) = env::var("ACCEPTED_LICENSES") {
-            cfg.accepted_licenses = l.split(",").map(ToString::to_string).collect();
+            cfg.accepted_licenses = l.split(',').map(ToString::to_string).collect();
         }
         if let Ok(db_url) = env::var("DATABASE_URL") {
             cfg.db_url = db_url;
@@ -32,7 +32,7 @@ impl Cfg {
 impl Default for Cfg {
     fn default() -> Self {
         let accepted_licenses = DEFAULT_ACCEPTED_LICENSES
-            .split(",")
+            .split(',')
             .map(ToString::to_string)
             .collect();
         let db_url = DEFAULT_DB_URL.to_string();

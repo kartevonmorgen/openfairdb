@@ -173,10 +173,8 @@ pub fn post_entry(
     cfg: State<Cfg>,
 ) -> Result<String> {
     let org = auth.organization(&*connections.shared()?).ok();
-    if org.is_none() && auth.account_email().is_err() {
-        if cfg.protect_with_captcha {
-            auth.has_captcha()?;
-        }
+    if org.is_none() && auth.account_email().is_err() && cfg.protect_with_captcha {
+        auth.has_captcha()?;
     }
     let new_place = body.into_inner().into();
     Ok(Json(
@@ -205,10 +203,8 @@ pub fn put_entry(
     cfg: State<Cfg>,
 ) -> Result<String> {
     let org = auth.organization(&*connections.shared()?).ok();
-    if org.is_none() && auth.account_email().is_err() {
-        if cfg.protect_with_captcha {
-            auth.has_captcha()?;
-        }
+    if org.is_none() && auth.account_email().is_err() && cfg.protect_with_captcha {
+        auth.has_captcha()?;
     }
     Ok(Json(
         flows::update_place(

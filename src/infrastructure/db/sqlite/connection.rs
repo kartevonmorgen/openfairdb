@@ -1839,7 +1839,7 @@ impl Db for SqliteConnection {
 impl OrganizationRepo for SqliteConnection {
     fn create_org(&mut self, mut o: Organization) -> Result<()> {
         let org_id = o.id.clone();
-        let moderated_tags = std::mem::replace(&mut o.moderated_tags, vec![]);
+        let moderated_tags = std::mem::take(&mut o.moderated_tags);
         let new_org = models::NewOrganization::from(o);
         self.transaction::<_, diesel::result::Error, _>(|| {
             diesel::insert_into(schema::organization::table)

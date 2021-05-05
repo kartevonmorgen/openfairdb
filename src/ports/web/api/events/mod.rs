@@ -213,11 +213,11 @@ impl<'q> FromQuery<'q> for usecases::EventQuery {
         Ok(usecases::EventQuery {
             bbox,
             created_by,
-            limit,
-            start_max,
             start_min,
+            start_max,
             tags,
             text,
+            limit,
         })
     }
 }
