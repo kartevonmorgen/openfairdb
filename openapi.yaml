@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: OpenFairDB API
-  version: 0.9.3
+  version: 0.10.3
   contact:
     name: slowtec GmbH
     url: 'https://slowtec.de'
@@ -24,7 +24,7 @@ paths:
 
         The default result contains up to 100 entries. Use the `limit` parameter
         to customize the desired amount. The server may decide to deliver less
-        results than requested up to some internal upper limit (currently 500).
+        results than requested up to some internal upper limit (currently 2000).
 
         If the review status list is empty or missing only visible places
         (created, confirmed) are returned.
@@ -213,10 +213,10 @@ paths:
         - name: max_cache_age
           in: query
           required: false
-          description: | 
+          description: |
             By default, cached data is returned for performance, if the cache is not older than one hour.
             If you need newer data, you can set the maximum tolerable age of the cache here, in seconds.
-            A value of 0 disables the cache and gets the newest state. 
+            A value of 0 disables the cache and gets the newest state.
           schema:
             type: integer
             format: int64

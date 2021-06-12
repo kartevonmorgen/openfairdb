@@ -222,7 +222,7 @@ impl<'q> FromQuery<'q> for usecases::EventQuery {
     }
 }
 
-const MAX_RESULT_LIMIT: usize = 500;
+const MAX_RESULT_LIMIT: usize = 2000;
 
 #[allow(clippy::absurd_extreme_comparisons)]
 fn validate_and_adjust_query_limit(limit: usize) -> CoreResult<usize> {

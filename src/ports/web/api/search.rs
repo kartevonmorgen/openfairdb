@@ -97,7 +97,7 @@ pub fn parse_search_query(
 type Result<T> = result::Result<Json<T>, AppError>;
 
 const DEFAULT_RESULT_LIMIT: usize = 100;
-const MAX_RESULT_LIMIT: usize = 500;
+const MAX_RESULT_LIMIT: usize = 2000;
 
 #[get("/search?<query..>")]
 #[allow(clippy::absurd_extreme_comparisons)]
