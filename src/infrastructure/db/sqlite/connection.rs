@@ -453,11 +453,11 @@ fn into_new_place_revision(
         contact_name,
         email: email.map(Into::into),
         phone,
-        homepage: homepage.map(Url::into_string),
+        homepage: homepage.map(Into::into),
         opening_hours: opening_hours.map(Into::into),
         founded_on,
-        image_url: image_url.map(Url::into_string),
-        image_link_url: image_link_url.map(Url::into_string),
+        image_url: image_url.map(Into::into),
+        image_link_url: image_link_url.map(Into::into),
     };
     Ok((place_id, new_place, tags, custom_links))
 }
@@ -1014,13 +1014,13 @@ fn into_new_event_with_tags(
             state,
             telephone,
             email: email.map(Into::into),
-            homepage: homepage.map(Url::into_string),
+            homepage: homepage.map(Into::into),
             created_by,
             registration,
             organizer,
             archived: archived.map(Timestamp::into_inner),
-            image_url: image_url.map(Url::into_string),
-            image_link_url: image_link_url.map(Url::into_string),
+            image_url: image_url.map(Into::into),
+            image_link_url: image_link_url.map(Into::into),
         },
         tags,
     ))

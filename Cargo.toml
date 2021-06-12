@@ -57,11 +57,11 @@ rocket_contrib = "*"
 rocket_cors = "*"
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
-strum = "*"
+strum = "0.21"
 tantivy = "0.13"
 time = "0.1"
 thiserror = "1"
-uuid = { version = "*", features = ["v4"] }
+uuid = { version = "0.8", features = ["v4"] }
 
 [dev-dependencies]
 rand = "*"

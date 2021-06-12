@@ -1,5 +1,4 @@
 use super::*;
-use e::url::Url;
 use ofdb_entities as e;
 use std::convert::{TryFrom, TryInto};
 
@@ -241,12 +240,12 @@ impl From<e::event::Event> for Event {
             state,
             email: email.map(Into::into),
             telephone,
-            homepage: homepage.map(Url::into_string),
+            homepage: homepage.map(Into::into),
             tags,
             registration,
             organizer,
-            image_url: image_url.map(Url::into_string),
-            image_link_url: image_link_url.map(Url::into_string),
+            image_url: image_url.map(Into::into),
+            image_link_url: image_link_url.map(Into::into),
         }
     }
 }
@@ -390,9 +389,9 @@ impl From<e::links::Links> for Links {
             custom,
         } = from;
         Self {
-            homepage: homepage.map(Url::into_string),
-            image: image.map(Url::into_string),
-            image_href: image_href.map(Url::into_string),
+            homepage: homepage.map(Into::into),
+            image: image.map(Into::into),
+            image_href: image_href.map(Into::into),
             custom: custom.into_iter().map(Into::into).collect(),
         }
     }

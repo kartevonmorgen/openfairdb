@@ -242,15 +242,15 @@ pub fn entry_from_place_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -
         contact_name,
         email: email.map(Into::into),
         telephone,
-        homepage: homepage_url.map(e::Url::into_string),
+        homepage: homepage_url.map(Into::into),
         opening_hours: opening_hours.map(Into::into),
         founded_on: founded_on.map(Into::into),
         categories: categories.into_iter().map(|c| c.id.to_string()).collect(),
         tags,
         ratings: ratings.into_iter().map(|r| r.id.to_string()).collect(),
         license: Some(license),
-        image_url: image_url.map(e::Url::into_string),
-        image_link_url: image_link_url.map(e::Url::into_string),
+        image_url: image_url.map(Into::into),
+        image_link_url: image_link_url.map(Into::into),
         custom_links: custom_links.into_iter().map(Into::into).collect(),
     }
 }

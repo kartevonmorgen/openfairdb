@@ -21,7 +21,7 @@ use std::{
     path::Path,
     sync::{Arc, Mutex},
 };
-use strum::IntoEnumIterator;
+use strum::IntoEnumIterator as _;
 use tantivy::{
     collector::TopDocs,
     query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
