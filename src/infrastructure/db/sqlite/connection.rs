@@ -7,6 +7,7 @@ use diesel::{
     prelude::{Connection as DieselConnection, *},
     result::{DatabaseErrorKind, Error as DieselError},
 };
+use snailquote::escape;
 use std::result;
 
 type Result<T> = result::Result<T, RepoError>;
@@ -764,7 +765,7 @@ impl PlaceRepo for SqliteConnection {
 
         let mut like_condition = "".to_string();
         if let Some(like) = &params.like {
-            like_condition = format!("tag LIKE \"%{}%\" AND ", &like[..]);
+            like_condition = format!("tag LIKE \"%{}%\" AND ", escape(like));
         }
 
         sql = sql.replace("{like_condition}", &like_condition[..]);
