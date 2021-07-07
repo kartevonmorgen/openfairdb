@@ -20,6 +20,8 @@ You can render the API documentation e.g. with the swagger editor:
 - enter `https://raw.githubusercontent.com/kartevonmorgen/openfairdb/master/openapi.yaml`
 - enjoy ;-)
 
+Make sure you use the Data appropriate to the ODbL-License: https://blog.vonmorgen.org/copyright/
+
 An other way to see how the API can be used, you can open the `network` tab in the developer
 tools of your browser and see the requests that are made to `https://kartevonmorgen.org`.
 
