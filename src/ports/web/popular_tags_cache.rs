@@ -50,7 +50,7 @@ impl PopularTagsCache {
         pagination: &Pagination,
     ) -> Result<Vec<TagFrequency>> {
         let results = db
-            .most_popular_place_revision_tags(&params, &pagination)?
+            .most_popular_place_revision_tags(params, pagination)?
             .into_iter()
             .map(Into::into)
             .collect::<Vec<_>>();

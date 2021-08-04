@@ -382,7 +382,7 @@ impl TantivyIndex {
                 let id = &query.ids[0];
                 debug!("Query single id: {:?}", id);
                 debug_assert!(!id.trim().is_empty());
-                let id_term = Term::from_field_text(self.fields.id, &id);
+                let id_term = Term::from_field_text(self.fields.id, id);
                 Box::new(TermQuery::new(id_term, IndexRecordOption::Basic))
             };
             sub_queries.push((Occur::Must, ids_query));

@@ -18,10 +18,10 @@ pub struct Storable(Place, ReviewStatus, Rating, Comment);
 
 impl Storable {
     pub fn rating_id(&self) -> &str {
-        &self.2.id.as_ref()
+        self.2.id.as_ref()
     }
     pub fn comment_id(&self) -> &str {
-        &self.3.id.as_ref()
+        self.3.id.as_ref()
     }
 }
 

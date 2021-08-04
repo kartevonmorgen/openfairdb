@@ -131,9 +131,9 @@ pub fn get_place_history(db: sqlite::Connections, id: &RawStr, account: Account)
     let place_history = {
         // The history contains e-mail addresses of registered users
         // and is only permitted for scouts and admins!
-        usecases::authorize_user_by_email(&*db, &account.email(), Role::Scout)?;
+        usecases::authorize_user_by_email(&*db, account.email(), Role::Scout)?;
 
-        db.get_place_history(&id, None)?
+        db.get_place_history(id, None)?
     };
     Ok(view::place_history(&user, &place_history))
 }
@@ -143,8 +143,8 @@ pub fn get_place_review(db: sqlite::Connections, id: &RawStr, account: Account) 
     let db = db.shared()?;
     // Only scouts and admins are entitled to review places
     let reviewer_email =
-        usecases::authorize_user_by_email(&*db, &account.email(), Role::Scout)?.email;
-    let (place, review_status) = db.get_place(&id)?;
+        usecases::authorize_user_by_email(&*db, account.email(), Role::Scout)?.email;
+    let (place, review_status) = db.get_place(id)?;
     Ok(view::place_review(&reviewer_email, &place, review_status))
 }
 
@@ -196,7 +196,7 @@ fn review_place(
         status,
         comment: Some(comment),
     };
-    let update_count = review_places(&db, &mut search_engine, &[&id], review)?;
+    let update_count = review_places(db, &mut search_engine, &[id], review)?;
     if update_count == 0 {
         return Err(Error::Repo(RepoError::NotFound).into());
     }
@@ -236,7 +236,7 @@ pub fn get_event(
 ) -> Result<Markup> {
     let (user, mut ev): (Option<User>, _) = {
         let db = pool.shared()?;
-        let ev = usecases::get_event(&*db, &id)?;
+        let ev = usecases::get_event(&*db, id)?;
         let user = if let Some(a) = account {
             db.try_get_user_by_email(a.email())?
         } else {
@@ -263,7 +263,7 @@ pub fn post_archive_event(
         .shared()
         .and_then(|db| {
             // Only scouts and admins are entitled to review events
-            let user = usecases::authorize_user_by_email(&*db, &account.email(), Role::Scout)?;
+            let user = usecases::authorize_user_by_email(&*db, account.email(), Role::Scout)?;
             Ok(user.email)
         })
         .map_err(|_| {

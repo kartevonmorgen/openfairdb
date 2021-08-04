@@ -25,7 +25,7 @@ pub fn reset_password_request(
     // requires exclusive access to the database connection for
     // writing.
     let user = connections.shared()?.get_user_by_email(email)?;
-    let email_nonce = refresh_user_token(&connections, &user)?;
+    let email_nonce = refresh_user_token(connections, &user)?;
     notify.user_reset_password_requested(&email_nonce);
     Ok(email_nonce)
 }

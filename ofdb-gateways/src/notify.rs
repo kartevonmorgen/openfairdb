@@ -79,7 +79,7 @@ impl NotificationGateway for Notify {
         }
     }
     fn event_created(&self, email_addresses: &[String], event: &Event) {
-        let content = user_communication::event_created_email(&event);
+        let content = user_communication::event_created_email(event);
 
         {
             info!(
@@ -96,7 +96,7 @@ impl NotificationGateway for Notify {
         }
     }
     fn event_updated(&self, email_addresses: &[String], event: &Event) {
-        let content = user_communication::event_updated_email(&event);
+        let content = user_communication::event_updated_email(event);
 
         {
             info!(
@@ -131,7 +131,7 @@ impl NotificationGateway for Notify {
         self.user_registered(user, &url);
     }
     fn user_registered(&self, user: &User, url: &str) {
-        let content = user_communication::user_registration_email(&url);
+        let content = user_communication::user_registration_email(url);
 
         {
             info!("Sending confirmation e-mail to user {}", user.email);

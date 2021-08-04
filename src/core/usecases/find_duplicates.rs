@@ -68,7 +68,7 @@ pub fn search_duplicates(
         LngCoord::from_deg(new_place.lng),
     );
     let nearby_places = search_nearby_places(place_index, center)?;
-    Ok(retain_duplicates_of(nearby_places, &new_place))
+    Ok(retain_duplicates_of(nearby_places, new_place))
 }
 
 pub fn nearby_bbox(center: MapPoint) -> MapBbox {
@@ -101,8 +101,8 @@ fn is_similar_text(
 ) -> bool {
     let max_levenshtein_dist =
         (min(text1.len(), text2.len()) as f64 * max_text_relative_edit_distance).ceil() as usize;
-    levenshtein_distance_small(&text1, &text2, max_levenshtein_dist)
-        || words_equal_except_k_words(&text1, &text2, max_words_hamming_distance)
+    levenshtein_distance_small(text1, text2, max_levenshtein_dist)
+        || words_equal_except_k_words(text1, text2, max_words_hamming_distance)
 }
 
 fn is_duplicate_of(new_place: &NewPlace, indexed_place: &IndexedPlace) -> bool {

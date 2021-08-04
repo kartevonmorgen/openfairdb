@@ -1052,10 +1052,7 @@ impl EventGateway for SqliteConnection {
             // Insert event tags
             let tags: Vec<_> = tags
                 .iter()
-                .map(|tag| models::NewEventTag {
-                    event_id: id,
-                    tag: &tag,
-                })
+                .map(|tag| models::NewEventTag { event_id: id, tag })
                 .collect();
             diesel::insert_or_ignore_into(schema::event_tags::table)
                 .values(&tags)
@@ -1093,10 +1090,7 @@ impl EventGateway for SqliteConnection {
                 let new_tags: Vec<_> = tags_diff
                     .added
                     .iter()
-                    .map(|tag| models::NewEventTag {
-                        event_id: id,
-                        tag: &tag,
-                    })
+                    .map(|tag| models::NewEventTag { event_id: id, tag })
                     .collect();
                 diesel::insert_or_ignore_into(et_dsl::event_tags)
                     .values(&new_tags)

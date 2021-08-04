@@ -162,7 +162,7 @@ pub fn search<D: Db>(
         .any(|e| visible_bbox.contains_point(e.pos)));
     if let Some(org_tag) = org_tag {
         if let Some(org_id) = db.map_tag_to_clearance_org_id(org_tag)? {
-            invisible_places = clear_search_results(db, &org_id, &org_tag, invisible_places)?;
+            invisible_places = clear_search_results(db, &org_id, org_tag, invisible_places)?;
         }
     }
 

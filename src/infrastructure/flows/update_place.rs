@@ -3,6 +3,7 @@ use crate::infrastructure::cfg::Cfg;
 use diesel::connection::Connection;
 use ofdb_core::gateways::notify::NotificationGateway;
 
+#[allow(clippy::too_many_arguments)]
 pub fn update_place(
     connections: &sqlite::Connections,
     indexer: &mut dyn PlaceIndexer,
@@ -84,6 +85,6 @@ fn notify_place_updated(
         let all_categories = connection.all_categories()?;
         (email_addresses, all_categories)
     };
-    notify.place_updated(&email_addresses, &place, all_categories);
+    notify.place_updated(&email_addresses, place, all_categories);
     Ok(())
 }

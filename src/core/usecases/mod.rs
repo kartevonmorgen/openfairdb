@@ -53,7 +53,7 @@ pub fn load_ratings_with_comments<D: Db>(
     db: &D,
     rating_ids: &[&str],
 ) -> Result<Vec<(Rating, Vec<Comment>)>> {
-    let ratings = db.load_ratings(&rating_ids)?;
+    let ratings = db.load_ratings(rating_ids)?;
     let results = db.zip_ratings_with_comments(ratings)?;
     Ok(results)
 }
@@ -127,7 +127,7 @@ pub fn subscribe_to_bbox(db: &dyn Db, user_email: String, bbox: MapBbox) -> Resu
 }
 
 pub fn unsubscribe_all_bboxes(db: &dyn Db, user_email: &str) -> Result<()> {
-    Ok(db.delete_bbox_subscriptions_by_email(&user_email)?)
+    Ok(db.delete_bbox_subscriptions_by_email(user_email)?)
 }
 
 pub fn get_bbox_subscriptions(db: &dyn Db, user_email: &str) -> Result<Vec<BboxSubscription>> {

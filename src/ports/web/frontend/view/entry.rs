@@ -96,7 +96,7 @@ fn entry_detail(e: EntryPresenter) -> Markup {
                     @if !a.is_empty() {
                         tr {
                             td { "Address" }
-                            td { (address_to_html(&a)) }
+                            td { (address_to_html(a)) }
                         }
                     }
                 }

@@ -43,7 +43,7 @@ pub fn place_history(user: &User, h: &PlaceHistory) -> Markup {
                                 td{
                                     ul class="log" {
                                         @for l in logs {
-                                            li { (review_status_log(r.revision, &l)) }
+                                            li { (review_status_log(r.revision, l)) }
                                         }
                                     }
                                 }
@@ -142,7 +142,7 @@ pub fn place_review(email: &str, place: &Place, status: ReviewStatus) -> Markup 
     ];
     page(
         "Place Review",
-        Some(&email),
+        Some(email),
         None,
         None,
         html! {

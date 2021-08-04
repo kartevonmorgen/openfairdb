@@ -323,7 +323,7 @@ fn get_bbox_subscriptions(
     account: Account,
 ) -> Result<Vec<json::BboxSubscription>> {
     let email = account.email();
-    let user_subscriptions = usecases::get_bbox_subscriptions(&*db.shared()?, &email)?
+    let user_subscriptions = usecases::get_bbox_subscriptions(&*db.shared()?, email)?
         .into_iter()
         .map(|s| json::BboxSubscription {
             id: s.id.into(),

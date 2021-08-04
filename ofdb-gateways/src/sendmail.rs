@@ -158,7 +158,7 @@ pub fn compose(from: &str, to: &[&str], subject: &str, body: &str) -> Result<Str
         date = now.to_rfc2822(),
         from = from,
         to = to.join(","),
-        subject_header = encode_header_field("Subject", &subject),
+        subject_header = encode_header_field("Subject", subject),
         body = body
     );
 
