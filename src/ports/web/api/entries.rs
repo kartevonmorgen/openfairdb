@@ -1,4 +1,4 @@
-use super::{super::guards::*, Result};
+use super::{super::guards::*, JsonResult, Result};
 use crate::{
     adapters::json,
     core::{prelude::*, usecases, util},
@@ -169,14 +169,14 @@ pub fn post_entry(
     connections: sqlite::Connections,
     notify: Notify,
     mut search_engine: tantivy::SearchEngine,
-    body: Json<json::NewPlace>,
+    body: JsonResult<json::NewPlace>,
     cfg: State<Cfg>,
 ) -> Result<String> {
     let org = auth.organization(&*connections.shared()?).ok();
     if org.is_none() && auth.account_email().is_err() && cfg.protect_with_captcha {
         auth.has_captcha()?;
     }
-    let new_place = body.into_inner().into();
+    let new_place = body?.into_inner().into();
     Ok(Json(
         flows::create_place(
             &connections,
@@ -199,7 +199,7 @@ pub fn put_entry(
     mut search_engine: tantivy::SearchEngine,
     notify: Notify,
     id: String,
-    data: Json<json::UpdatePlace>,
+    data: JsonResult<json::UpdatePlace>,
     cfg: State<Cfg>,
 ) -> Result<String> {
     let org = auth.organization(&*connections.shared()?).ok();
@@ -212,7 +212,7 @@ pub fn put_entry(
             &mut search_engine,
             &*notify,
             id.into(),
-            data.into_inner().into(),
+            data?.into_inner().into(),
             auth.account_email().ok(),
             org.as_ref(),
             &cfg,

@@ -61,10 +61,10 @@ pub fn post_event_with_token(
     mut search_engine: tantivy::SearchEngine,
     notify: Notify,
     auth: Auth,
-    e: Json<usecases::NewEvent>,
+    e: JsonResult<usecases::NewEvent>,
 ) -> Result<String> {
     let org = auth.organization(&*connections.shared()?)?;
-    let mut e = e.into_inner();
+    let mut e = e?.into_inner();
     check_and_set_address_location(&mut e);
     let event = flows::create_event(
         &connections,
@@ -80,7 +80,7 @@ pub fn post_event_with_token(
 // NOTE:
 // At the moment we don't want to allow anonymous event creation.
 // So for now we assure that it's blocked:
-pub fn post_event(mut _db: sqlite::Connections, _e: Json<usecases::NewEvent>) -> HttpStatus {
+pub fn post_event(mut _db: sqlite::Connections, _e: JsonResult<usecases::NewEvent>) -> HttpStatus {
     HttpStatus::Unauthorized
 }
 // But in the future we might allow anonymous event creation:
@@ -106,7 +106,7 @@ pub fn get_event(db: sqlite::Connections, id: String) -> Result<json::Event> {
 pub fn put_event(
     mut _db: sqlite::Connections,
     _id: &RawStr,
-    _e: Json<usecases::NewEvent>,
+    _e: JsonResult<usecases::NewEvent>,
 ) -> HttpStatus {
     HttpStatus::Unauthorized
 }
@@ -118,10 +118,10 @@ pub fn put_event_with_token(
     notify: Notify,
     auth: Auth,
     id: &RawStr,
-    e: Json<usecases::NewEvent>,
+    e: JsonResult<usecases::NewEvent>,
 ) -> Result<()> {
     let org = auth.organization(&*connections.shared()?)?;
-    let mut e = e.into_inner();
+    let mut e = e?.into_inner();
     check_and_set_address_location(&mut e);
     flows::update_event(
         &connections,
@@ -254,7 +254,7 @@ pub fn get_events_with_token(
             drop(db);
             return get_events_chronologically(connections, search_engine, query);
         }
-        Err(e) => return Err(e),
+        Err(e) => return Err(e.into()),
     };
     let events = usecases::query_events(&*db, &search_engine, query)?;
     // Release the database connection asap

@@ -11,6 +11,7 @@ use crate::{
     },
 };
 
+use super::{JsonResult, Result};
 use rocket::{self, request::Form};
 use rocket_contrib::json::Json;
 use std::result;
@@ -94,8 +95,6 @@ pub fn parse_search_query(
     ))
 }
 
-type Result<T> = result::Result<Json<T>, AppError>;
-
 const DEFAULT_RESULT_LIMIT: usize = 100;
 const MAX_RESULT_LIMIT: usize = 2000;
 
@@ -118,9 +117,7 @@ pub fn get_search(
             MAX_RESULT_LIMIT
         } else if limit <= 0 {
             warn!("Invalid search limit: {}", limit);
-            return Err(AppError::Business(Error::Parameter(
-                ParameterError::InvalidLimit,
-            )));
+            return Err(Error::Parameter(ParameterError::InvalidLimit).into());
         } else {
             limit
         }
@@ -145,9 +142,9 @@ pub fn get_search(
 #[post("/search/duplicates", data = "<body>")]
 pub fn post_search_duplicates(
     search_engine: tantivy::SearchEngine,
-    body: Json<ofdb_boundary::NewPlace>,
+    body: JsonResult<ofdb_boundary::NewPlace>,
 ) -> Result<Vec<json::PlaceSearchResult>> {
-    let new_place = usecases::NewPlace::from(body.into_inner());
+    let new_place = usecases::NewPlace::from(body?.into_inner());
     let duplicate_places = usecases::search_duplicates(&search_engine, &new_place)?;
     Ok(Json(duplicate_places.into_iter().map(Into::into).collect()))
 }

@@ -31,9 +31,9 @@ pub fn list_pending_clearances(
 pub fn update_pending_clearances(
     db: sqlite::Connections,
     auth: Auth,
-    clearances: Json<Vec<json::ClearanceForPlace>>,
+    clearances: JsonResult<Vec<json::ClearanceForPlace>>,
 ) -> Result<json::ResultCount> {
-    let clearances: Vec<_> = clearances
+    let clearances: Vec<_> = clearances?
         .into_inner()
         .into_iter()
         .map(Into::into)

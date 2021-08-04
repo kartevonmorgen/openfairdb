@@ -13,6 +13,7 @@ use crate::{
     },
     ports::web::{jwt, notify::*},
 };
+use ofdb_boundary::Error as JsonErrorResponse;
 use rocket::{
     self,
     http::{ContentType, Cookie, Cookies, Status},
@@ -20,12 +21,13 @@ use rocket::{
     response::{content::Content, Responder, Response},
     Route, State,
 };
-use rocket_contrib::json::Json;
-use std::result;
+use rocket_contrib::json::{Json, JsonError};
+use std::{fmt::Display, result};
 
 pub mod captcha;
 mod count;
 mod entries;
+mod error;
 pub mod events;
 mod places;
 mod ratings;
@@ -33,9 +35,11 @@ mod search;
 #[cfg(test)]
 pub mod tests;
 mod users;
+use error::Error as ApiError;
 
-type Result<T> = result::Result<Json<T>, AppError>;
-type StatusResult = result::Result<Status, AppError>;
+type Result<T> = result::Result<Json<T>, ApiError>;
+type JsonResult<'a, T> = result::Result<Json<T>, JsonError<'a>>;
+type StatusResult = result::Result<Status, ApiError>;
 
 pub fn routes() -> Vec<Route> {
     routes![
@@ -157,7 +161,7 @@ pub fn post_places_review(
     db: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
     ids: String,
-    review: Json<json::Review>,
+    review: JsonResult<json::Review>,
 ) -> Result<()> {
     let ids = util::split_ids(&ids);
     if ids.is_empty() {
@@ -168,7 +172,7 @@ pub fn post_places_review(
         // Only scouts and admins are entitled to review places
         auth.user_with_min_role(&*db, Role::Scout)?.email
     };
-    let json::Review { status, comment } = review.into_inner();
+    let json::Review { status, comment } = review?.into_inner();
     // TODO: Record context information
     let context = None;
     let review = usecases::Review {
@@ -225,10 +229,10 @@ fn get_api() -> Content<&'static str> {
 fn post_login(
     db: sqlite::Connections,
     mut cookies: Cookies,
-    login: Json<json::Credentials>,
+    login: JsonResult<json::Credentials>,
     jwt_state: State<jwt::JwtState>,
 ) -> Result<Option<ofdb_boundary::JwtToken>> {
-    let login = usecases::Login::from(login.into_inner());
+    let login = usecases::Login::from(login?.into_inner());
     {
         let credentials = usecases::Credentials {
             email: &login.email,
@@ -273,8 +277,11 @@ struct ConfirmationToken {
     format = "application/json",
     data = "<token>"
 )]
-fn confirm_email_address(db: sqlite::Connections, token: Json<ConfirmationToken>) -> Result<()> {
-    let token = token.into_inner().token;
+fn confirm_email_address(
+    db: sqlite::Connections,
+    token: JsonResult<ConfirmationToken>,
+) -> Result<()> {
+    let token = token?.into_inner().token;
     usecases::confirm_email_address(&*db.exclusive()?, &token)?;
     Ok(Json(()))
 }
@@ -287,9 +294,10 @@ fn confirm_email_address(db: sqlite::Connections, token: Json<ConfirmationToken>
 fn subscribe_to_bbox(
     db: sqlite::Connections,
     auth: Auth,
-    coordinates: Json<Vec<json::Coordinate>>,
+    coordinates: JsonResult<Vec<json::Coordinate>>,
 ) -> Result<()> {
-    let sw_ne: Vec<_> = coordinates
+    let email = auth.account_email()?;
+    let sw_ne: Vec<_> = coordinates?
         .into_inner()
         .into_iter()
         .map(MapPoint::from)
@@ -298,7 +306,6 @@ fn subscribe_to_bbox(
         return Err(Error::Parameter(ParameterError::Bbox).into());
     }
     let bbox = geo::MapBbox::new(sw_ne[0], sw_ne[1]);
-    let email = auth.account_email()?;
     usecases::subscribe_to_bbox(&*db.exclusive()?, email.to_string(), bbox)?;
     Ok(Json(()))
 }
@@ -443,26 +450,24 @@ fn entries_csv_export(
 }
 
 impl<'r> Responder<'r> for AppError {
-    fn respond_to(self, _: &rocket::Request) -> result::Result<Response<'r>, Status> {
+    fn respond_to(self, req: &rocket::Request) -> result::Result<Response<'r>, Status> {
         if let AppError::Business(ref err) = self {
             match *err {
                 Error::Parameter(ref err) => {
-                    return Err(match *err {
+                    return match *err {
                         ParameterError::Credentials | ParameterError::Unauthorized => {
-                            Status::Unauthorized
+                            json_error_response(req, err, Status::Unauthorized)
                         }
-                        ParameterError::UserExists => <Status>::new(400, "UserExists"),
-                        ParameterError::EmailNotConfirmed => {
-                            <Status>::new(403, "EmailNotConfirmed")
+                        ParameterError::Forbidden
+                        | ParameterError::ModeratedTag
+                        | ParameterError::EmailNotConfirmed => {
+                            json_error_response(req, err, Status::Forbidden)
                         }
-                        ParameterError::Forbidden | ParameterError::ModeratedTag => {
-                            Status::Forbidden
-                        }
-                        _ => Status::BadRequest,
-                    });
+                        _ => json_error_response(req, err, Status::BadRequest),
+                    };
                 }
                 Error::Repo(RepoError::NotFound) => {
-                    return Err(Status::NotFound);
+                    return json_error_response(req, err, Status::NotFound);
                 }
                 _ => {}
             }
@@ -470,4 +475,20 @@ impl<'r> Responder<'r> for AppError {
         error!("Error: {}", self);
         Err(Status::InternalServerError)
     }
+}
+
+fn json_error_response<'r, E: Display>(
+    req: &rocket::Request,
+    err: &E,
+    status: Status,
+) -> result::Result<Response<'r>, Status> {
+    let message = err.to_string();
+    let boundary_error = JsonErrorResponse {
+        http_status: status.code,
+        message,
+    };
+    Json(boundary_error).respond_to(req).map(|mut res| {
+        res.set_status(status);
+        res
+    })
 }

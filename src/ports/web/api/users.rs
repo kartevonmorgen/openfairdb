@@ -1,8 +1,12 @@
 use super::*;
 
 #[post("/users", format = "application/json", data = "<u>")]
-pub fn post_user(db: sqlite::Connections, n: Notify, u: Json<usecases::NewUser>) -> Result<()> {
-    let new_user = u.into_inner();
+pub fn post_user(
+    db: sqlite::Connections,
+    n: Notify,
+    u: JsonResult<usecases::NewUser>,
+) -> Result<()> {
+    let new_user = u?.into_inner();
     let user = {
         let db = db.exclusive()?;
         usecases::create_new_user(&*db, new_user.clone())?;
@@ -20,9 +24,9 @@ pub fn post_user(db: sqlite::Connections, n: Notify, u: Json<usecases::NewUser>)
 pub fn post_request_password_reset(
     connections: sqlite::Connections,
     notify: Notify,
-    data: Json<json::RequestPasswordReset>,
+    data: JsonResult<json::RequestPasswordReset>,
 ) -> Result<()> {
-    let req = data.into_inner();
+    let req = data?.into_inner();
     flows::reset_password_request(&connections, &*notify, &req.email)?;
 
     Ok(Json(()))
@@ -31,9 +35,9 @@ pub fn post_request_password_reset(
 #[post("/users/reset-password", format = "application/json", data = "<data>")]
 pub fn post_reset_password(
     connections: sqlite::Connections,
-    data: Json<json::ResetPassword>,
+    data: JsonResult<json::ResetPassword>,
 ) -> Result<()> {
-    let req = data.into_inner();
+    let req = data?.into_inner();
 
     let email_nonce = EmailNonce::decode_from_str(&req.token)?;
     let new_password = req.new_password.parse::<Password>()?;

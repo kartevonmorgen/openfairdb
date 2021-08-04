@@ -39,3 +39,9 @@ impl fmt::Display for Url {
         write!(f, "{}", self)
     }
 }
+
+impl From<Url> for String {
+    fn from(url: Url) -> Self {
+        url.0
+    }
+}
