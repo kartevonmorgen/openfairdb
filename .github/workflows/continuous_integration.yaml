@@ -26,8 +26,11 @@ jobs:
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         id: toolchain
+        # The inputs should match those in rust-toolchain.toml with the
+        # exception of specifying an explicit target for the CI build.
         with:
-          channel: nightly-2021-06-09
+          target: x86_64-unknown-linux-musl
+          toolchain: nightly-2021-06-09
           profile: minimal
           components: rustfmt, clippy
 
