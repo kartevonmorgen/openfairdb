@@ -627,7 +627,7 @@ paths:
       responses:
         '200':
            description: Successful response
-  /'subscribe-to-bbox':
+  /subscribe-to-bbox:
     post:
       summary: Subscribe to a bounding box
       tags:
@@ -648,7 +648,7 @@ paths:
       responses:
         '200':
           description: Successful response
-  /'bbox-subscriptions':
+  /bbox-subscriptions:
     get:
       summary: Fetch subscriptions
       tags:
@@ -662,7 +662,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/BboxSubscription'
-  /'unsubscribe-all-bboxes':
+  /unsubscribe-all-bboxes:
     delete:
       summary: Delete all subscriptions
       tags:
