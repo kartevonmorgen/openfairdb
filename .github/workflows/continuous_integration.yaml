@@ -27,6 +27,7 @@ jobs:
         uses: actions-rs/toolchain@v1
         id: toolchain
         with:
+          channel: nightly-2021-06-09
           profile: minimal
           components: rustfmt, clippy
 
