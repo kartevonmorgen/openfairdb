@@ -36,6 +36,7 @@ diesel_migrations = { version = "*", features = ["sqlite"] }
 dotenv = "*"
 env_logger = "*"
 # failure is only required for TantivyError
+# TODO: Remove after updating Tantivy version
 failure = "*"
 fast_chemail = "*"
 jsonwebtoken = { version = "*", optional = true }
@@ -52,16 +53,19 @@ passwords = "*"
 pwhash = "*"
 rand = { version = "*", optional = true }
 regex = "*"
-rocket = "*"
+# TODO: Update to Rocket 0.5 and switch toolchain from nightly to stable
+rocket = "0.4"
 rocket_contrib = "*"
 rocket_cors = "*"
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
-strum = "0.21"
+strum = "*"
+# TODO: Update Tantivy version
 tantivy = "0.13"
+# TODO: Pinning of version required for rocket_http
 time = "0.1"
-thiserror = "1"
-uuid = { version = "0.8", features = ["v4"] }
+thiserror = "*"
+uuid = { version = "*", features = ["v4"] }
 
 [dev-dependencies]
 rand = "*"
