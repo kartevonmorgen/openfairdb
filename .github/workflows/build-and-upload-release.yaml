@@ -1,0 +1,59 @@
+name: Build and upload release
+
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+  workflow_dispatch:
+    ref: master
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-and-upload-release:
+    name: Building and uploading release artifacts
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        include:
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            artifact_suffix: .exe
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          target: ${{ matrix.target }}
+          profile: minimal
+
+      - name: Build project
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+
+      - name: Upload tagged version
+        id: upload_tagged_version
+        if: ${{ github.ref }} == 'v[0-9]+.[0-9]+.[0-9]+'
+        uses: actions/upload-artifact@v2
+        with:
+          name: aoide_${{ matrix.target }}_${{ github.ref }}${{ matrix.artifact_suffix }}
+          path: target/release/aoide${{ matrix.artifact_suffix }}
+
+      - name: Upload latest version
+        id: upload_latest_version
+        if: ${{ github.ref }} == 'main'
+        uses: actions/upload-artifact@v2
+        with:
+          name: aoide_${{ matrix.target }}_latest${{ matrix.artifact_suffix }}
+          path: target/release/aoide${{ matrix.artifact_suffix }}
