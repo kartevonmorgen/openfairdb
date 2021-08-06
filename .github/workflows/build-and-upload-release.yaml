@@ -33,11 +33,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install musl libc tools on Linux
-        if: ${{ runner.os }} != 'Linux'
-        run: |
-          sudo apt install -y musl-tools
-
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -47,12 +42,12 @@ jobs:
           components: rustfmt, clippy
 
       - name: Download and install trunk on macOS
-        if: ${{ runner.os }} == 'macOS'
+        if: runner.os == 'macOS'
         run: |
           wget -qO- https://github.com/thedodd/trunk/releases/download/v0.13/trunk-${{ matrix.target }}.tar.gz | tar -C ~/.cargo/bin -xzf-
 
       - name: Download and install trunk on Linux
-        if: ${{ runner.os }} == 'Linux'
+        if: runner.os == 'Linux'
         run: |
           wget -qO- https://github.com/thedodd/trunk/releases/download/v0.13/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -C ~/.cargo/bin -xzf-
 
