@@ -75,7 +75,7 @@ jobs:
           path: target/release/openfairdb${{ matrix.executable_suffix }}
 
       - name: Upload latest artifact
-        if: github.ref == 'refs/heads/master'
+        if: startsWith(${{ github.ref }}, 'refs/heads/')
         uses: actions/upload-artifact@v2
         with:
           # Artifact is stored and downloaded as .zip archive
