@@ -34,7 +34,9 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           target: ${{ matrix.target }}
+          toolchain: nightly-2021-06-09
           profile: minimal
+          components: rustfmt, clippy
 
       - name: Install trunk
         run: |
