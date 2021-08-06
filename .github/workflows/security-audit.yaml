@@ -8,7 +8,7 @@ on:
 #    - cron: '0 0 * * *'
 
 jobs:
-  security_audit:
+  security-audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
