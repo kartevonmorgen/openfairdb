@@ -79,5 +79,5 @@ jobs:
         if: github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@v2
         with:
-          name: openfairdb_${{ matrix.target }}_latest$
+          name: openfairdb_${{ matrix.target }}_latest
           path: target/release/openfairdb${{ matrix.executable_suffix }}
