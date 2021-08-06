@@ -1,8 +1,11 @@
 # Changelog
 
-## unreleased
+## v0.10.4 (2021-08-06)
 
+- fix(api): Implement JSON errors for most cases
 - chore(web): Clearance center: Use trunk to build the app
+- chore(ci): Some GithubCI improvements
+- chore(*): Update dependencies
 
 ## v0.10.3 (2021-06-13)
 
