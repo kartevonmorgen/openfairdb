@@ -27,7 +27,7 @@ jobs:
           # TODO: Build on Windows
           #- os: windows-latest
           #  target: x86_64-pc-windows-msvc
-          #  artifact_suffix: .exe
+          #  executable_suffix: .exe
 
     steps:
       - name: Checkout code
@@ -71,13 +71,13 @@ jobs:
         if: github.ref == 'v[0-9]+.[0-9]+.[0-9]+'
         uses: actions/upload-artifact@v2
         with:
-          name: openfairdb_${{ matrix.target }}_${{ github.ref }}${{ matrix.artifact_suffix }}
-          path: target/release/openfairdb${{ matrix.artifact_suffix }}
+          name: openfairdb_${{ matrix.target }}_${{ github.ref }}
+          path: target/release/openfairdb${{ matrix.executable_suffix }}
 
       - name: Upload latest version
         id: upload_latest_version
         if: github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@v2
         with:
-          name: openfairdb_${{ matrix.target }}_latest${{ matrix.artifact_suffix }}
-          path: target/release/openfairdb${{ matrix.artifact_suffix }}
+          name: openfairdb_${{ matrix.target }}_latest$
+          path: target/release/openfairdb${{ matrix.executable_suffix }}
