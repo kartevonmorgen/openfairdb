@@ -66,23 +66,18 @@ jobs:
           command: build
           args: --release
 
-      - name: Archive server executable
-        if: runner.os != 'Windows'
-        run: >
-          tar -cJvf
-          openfairdb.tar.xz
-          target/release/openfairdb
-
-      - name: Upload tagged archive (Unix)
-        if: github.ref == 'v[0-9]+.[0-9]+.[0-9]+' && runner.os != 'Windows'
+      - name: Upload tagged artifact
+        if: github.ref == 'v[0-9]+.[0-9]+.[0-9]+'
         uses: actions/upload-artifact@v2
         with:
-          name: openfairdb_${{ matrix.target }}_${{ github.ref }}.tar.xz
-          path: openfairdb.tar.xz
+          # Artifact is stored and downloaded as .zip archive
+          name: openfairdb_${{ matrix.target }}_${{ github.ref }}${{ matrix.executable_suffix }}
+          path: target/release/openfairdb${{ matrix.executable_suffix }}
 
-      - name: Upload latest archive (Unix)
-        if: github.ref == 'refs/heads/master' && runner.os != 'Windows'
+      - name: Upload latest artifact
+        if: github.ref == 'refs/heads/master'
         uses: actions/upload-artifact@v2
         with:
-          name: openfairdb_${{ matrix.target }}_latest.tar.xz
-          path: openfairdb.tar.xz
+          # Artifact is stored and downloaded as .zip archive
+          name: openfairdb_${{ matrix.target }}_${{ github.ref }}${{ matrix.executable_suffix }}
+          path: target/release/openfairdb${{ matrix.executable_suffix }}
