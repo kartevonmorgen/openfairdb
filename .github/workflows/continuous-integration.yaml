@@ -19,17 +19,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v2
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get install libsqlite3-dev
-
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         id: toolchain
         # The inputs should match those in rust-toolchain.toml with the
         # exception of specifying an explicit target for the CI build.
         with:
-          target: x86_64-unknown-linux-musl
           toolchain: nightly-2021-06-09
           profile: minimal
           components: rustfmt, clippy
