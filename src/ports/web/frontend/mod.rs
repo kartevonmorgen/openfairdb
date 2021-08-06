@@ -11,14 +11,17 @@ use maud::Markup;
 use num_traits::FromPrimitive;
 use rocket::{
     self,
-    http::{ContentType, RawStr},
+    http::{ContentType, RawStr, Status},
     request::Form,
     response::{
-        content::{Content, Css, Html, JavaScript},
-        Flash, Redirect,
+        self,
+        content::{Css, JavaScript},
+        Flash, Redirect, Response,
     },
     Route,
 };
+use rust_embed::RustEmbed;
+use std::{ffi::OsStr, io::Cursor, path::PathBuf};
 
 mod login;
 mod password;
@@ -29,10 +32,10 @@ mod view;
 
 const MAP_JS: &str = include_str!("map.js");
 const MAIN_CSS: &str = include_str!("main.css");
-const CLEARANCE_HTML: &str = include_str!("../../../../ofdb-app-clearance/index.html");
-const CLEARANCE_JS: &str = include_str!("../../../../ofdb-app-clearance/pkg/clearance.js");
-const CLEARANCE_WASM: &[u8] =
-    include_bytes!("../../../../ofdb-app-clearance/pkg/clearance_bg.wasm");
+
+#[derive(RustEmbed)]
+#[folder = "ofdb-app-clearance/dist/"]
+struct ClearanceAsset;
 
 type Result<T> = std::result::Result<T, AppError>;
 
@@ -52,18 +55,37 @@ pub fn get_index_html() -> Markup {
 }
 
 #[get("/clearance")]
-pub fn get_clearance_html() -> Html<&'static str> {
-    Html(CLEARANCE_HTML)
+pub fn get_clearance_index<'r>() -> response::Result<'r> {
+    ClearanceAsset::get("index.html").map_or_else(
+        || Err(Status::NotFound),
+        |d| {
+            Response::build()
+                .header(ContentType::HTML)
+                .sized_body(Cursor::new(d.data))
+                .ok()
+        },
+    )
 }
 
-#[get("/pkg/clearance.js")]
-pub fn get_clearance_js() -> JavaScript<&'static str> {
-    JavaScript(CLEARANCE_JS)
-}
-
-#[get("/pkg/clearance_bg.wasm")]
-pub fn get_clearance_wasm() -> Content<&'static [u8]> {
-    Content(ContentType::WASM, CLEARANCE_WASM)
+#[get("/clearance/<file..>")]
+pub fn get_clearance<'r>(file: PathBuf) -> response::Result<'r> {
+    let filename = file.display().to_string();
+    ClearanceAsset::get(&filename).map_or_else(
+        || Err(Status::NotFound),
+        |d| {
+            let ext = file
+                .as_path()
+                .extension()
+                .and_then(OsStr::to_str)
+                .ok_or_else(|| Status::new(400, "Could not get file extension"))?;
+            let content_type = ContentType::from_extension(ext)
+                .ok_or_else(|| Status::new(400, "Could not get file content type"))?;
+            Response::build()
+                .header(content_type)
+                .sized_body(Cursor::new(d.data))
+                .ok()
+        },
+    )
 }
 
 #[get("/search?<q>&<limit>")]
@@ -377,9 +399,8 @@ pub fn post_ratings_archive(
 
 pub fn routes() -> Vec<Route> {
     routes![
-        get_clearance_html,
-        get_clearance_js,
-        get_clearance_wasm,
+        get_clearance,
+        get_clearance_index,
         get_index_user,
         get_index,
         get_index_html,

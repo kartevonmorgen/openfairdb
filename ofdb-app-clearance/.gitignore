@@ -3,3 +3,5 @@
 
 # Build directories (or a symbolic link, i.e. without a trailing slash)
 /target
+/dist
+/pkg

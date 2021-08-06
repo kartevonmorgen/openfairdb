@@ -1,5 +1,9 @@
 # Changelog
 
+## unreleased
+
+- chore(web): Clearance center: Use trunk to build the app
+
 ## v0.10.3 (2021-06-13)
 
 - new(api): Increase max. result limit from 500 to 2000 for places and events

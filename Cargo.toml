@@ -53,6 +53,7 @@ passwords = "*"
 pwhash = "*"
 rand = { version = "*", optional = true }
 regex = "*"
+rust-embed = "*"
 # TODO: Update to Rocket 0.5 and switch toolchain from nightly to stable
 rocket = "0.4"
 rocket_contrib = "*"

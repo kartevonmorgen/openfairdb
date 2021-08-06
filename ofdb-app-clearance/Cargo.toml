@@ -5,9 +5,6 @@ authors = ["slowtec GmbH <post@slowtec.de>"]
 edition = "2018"
 publish = false
 
-[lib]
-crate-type = ["cdylib"]
-
 [dependencies]
 ofdb-boundary = { version = "*", features = ["extra-derive"] }
 ofdb-entities = "*"
