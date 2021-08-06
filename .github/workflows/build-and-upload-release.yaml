@@ -79,5 +79,5 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           # Artifact is stored and downloaded as .zip archive
-          name: openfairdb_${{ matrix.target }}_${{ github.ref }}${{ matrix.executable_suffix }}
+          name: openfairdb_${{ matrix.target }}${{ matrix.executable_suffix }}
           path: target/release/openfairdb${{ matrix.executable_suffix }}
