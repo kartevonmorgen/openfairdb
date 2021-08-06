@@ -16,7 +16,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest, ubuntu-latest]
+        # TODO: Enable Windows
+        #os: [macos-latest, ubuntu-latest, windows-latest]
         include:
           - os: macos-latest
             target: x86_64-apple-darwin
