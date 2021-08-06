@@ -44,12 +44,12 @@ jobs:
       - name: Download and install trunk on macOS
         if: runner.os == 'macOS'
         run: |
-          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.13/trunk-${{ matrix.target }}.tar.gz | tar -C ~/.cargo/bin -xzf-
+          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.13.1/trunk-${{ matrix.target }}.tar.gz | tar -C ~/.cargo/bin -xzf-
 
       - name: Download and install trunk on Linux
         if: runner.os == 'Linux'
         run: |
-          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.13/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -C ~/.cargo/bin -xzf-
+          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.13.1/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -C ~/.cargo/bin -xzf-
 
       # TODO: Install trunk on Windows
 
