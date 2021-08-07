@@ -35,9 +35,6 @@ diesel = { version = "*", features = ["sqlite", "r2d2", "chrono"] }
 diesel_migrations = { version = "*", features = ["sqlite"] }
 dotenv = "*"
 env_logger = "*"
-# failure is only required for TantivyError
-# TODO: Remove after updating Tantivy version
-failure = "*"
 fast_chemail = "*"
 jsonwebtoken = { version = "*", optional = true }
 lazy_static = "*"
@@ -61,8 +58,7 @@ rocket_cors = "*"
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 strum = "*"
-# TODO: Update Tantivy version
-tantivy = "0.13"
+tantivy = "*"
 # TODO: Pinning of version required for rocket_http
 time = "0.1"
 thiserror = "*"
