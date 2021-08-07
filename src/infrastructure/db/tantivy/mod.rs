@@ -14,7 +14,6 @@ use crate::core::{
 };
 
 use anyhow::{bail, Result as Fallible};
-use failure::Fail;
 use num_traits::ToPrimitive;
 use std::{
     ops::Bound,
@@ -24,6 +23,7 @@ use std::{
 use strum::IntoEnumIterator as _;
 use tantivy::{
     collector::TopDocs,
+    fastfield::FastFieldReader as _,
     query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
     schema::*,
     tokenizer::{LowerCaser, RawTokenizer, RemoveLongFilter, SimpleTokenizer, TextAnalyzer},
@@ -136,16 +136,18 @@ impl IndexedFields {
         for field_value in doc.field_values() {
             match field_value {
                 fv if fv.field() == self.status => {
-                    let status = fv.value().i64_value() as ReviewStatusPrimitive;
-                    place.status = ReviewStatus::try_from(status);
+                    place.status = fv
+                        .value()
+                        .i64_value()
+                        .and_then(|v| ReviewStatus::try_from(v as ReviewStatusPrimitive));
                 }
                 fv if fv.field() == self.lat => {
                     debug_assert!(lat.is_none());
-                    lat = Some(LatCoord::from_deg(fv.value().f64_value()));
+                    lat = fv.value().f64_value().map(LatCoord::from_deg);
                 }
                 fv if fv.field() == self.lng => {
                     debug_assert!(lng.is_none());
-                    lng = Some(LngCoord::from_deg(fv.value().f64_value()));
+                    lng = fv.value().f64_value().map(LngCoord::from_deg);
                 }
                 fv if fv.field() == self.id => {
                     debug_assert!(place.id.is_empty());
@@ -180,27 +182,33 @@ impl IndexedFields {
                 }
                 fv if fv.field() == self.ratings_diversity => {
                     debug_assert!(place.ratings.diversity == Default::default());
-                    place.ratings.diversity = fv.value().f64_value().into();
+                    place.ratings.diversity =
+                        fv.value().f64_value().map(Into::into).unwrap_or_default();
                 }
                 fv if fv.field() == self.ratings_fairness => {
                     debug_assert!(place.ratings.fairness == Default::default());
-                    place.ratings.fairness = fv.value().f64_value().into();
+                    place.ratings.fairness =
+                        fv.value().f64_value().map(Into::into).unwrap_or_default();
                 }
                 fv if fv.field() == self.ratings_humanity => {
                     debug_assert!(place.ratings.humanity == Default::default());
-                    place.ratings.humanity = fv.value().f64_value().into();
+                    place.ratings.humanity =
+                        fv.value().f64_value().map(Into::into).unwrap_or_default();
                 }
                 fv if fv.field() == self.ratings_renewable => {
                     debug_assert!(place.ratings.renewable == Default::default());
-                    place.ratings.renewable = fv.value().f64_value().into();
+                    place.ratings.renewable =
+                        fv.value().f64_value().map(Into::into).unwrap_or_default();
                 }
                 fv if fv.field() == self.ratings_solidarity => {
                     debug_assert!(place.ratings.solidarity == Default::default());
-                    place.ratings.solidarity = fv.value().f64_value().into();
+                    place.ratings.solidarity =
+                        fv.value().f64_value().map(Into::into).unwrap_or_default();
                 }
                 fv if fv.field() == self.ratings_transparency => {
                     debug_assert!(place.ratings.transparency == Default::default());
-                    place.ratings.transparency = fv.value().f64_value().into();
+                    place.ratings.transparency =
+                        fv.value().f64_value().map(Into::into).unwrap_or_default();
                 }
                 fv if fv.field() == self.total_rating => (),
                 // Address fields are currently not stored
@@ -318,7 +326,7 @@ impl TantivyIndex {
                 "Creating full-text search index in directory: {}",
                 path.as_ref().to_string_lossy()
             );
-            Index::create_in_dir(path, schema).map_err(Fail::compat)?
+            Index::create_in_dir(path, schema)?
         } else {
             warn!("Creating full-text search index in RAM");
             Index::create_in_ram(schema)
@@ -333,11 +341,8 @@ impl TantivyIndex {
         let index_reader = index
             .reader_builder()
             .reload_policy(ReloadPolicy::Manual)
-            .try_into()
-            .map_err(Fail::compat)?;
-        let index_writer = index
-            .writer(OVERALL_INDEX_HEAP_SIZE_IN_BYTES)
-            .map_err(Fail::compat)?;
+            .try_into()?;
+        let index_writer = index.writer(OVERALL_INDEX_HEAP_SIZE_IN_BYTES)?;
         let text_query_parser = QueryParser::for_index(
             &index,
             vec![
@@ -699,9 +704,7 @@ impl TantivyIndex {
         match top_docs_mode {
             TopDocsMode::Score => {
                 let collector = TopDocs::with_limit(limit);
-                let top_docs = searcher
-                    .search(&search_query, &collector)
-                    .map_err(Fail::compat)?;
+                let top_docs = searcher.search(&search_query, &collector)?;
                 for (_, doc_addr) in top_docs {
                     match searcher.doc(doc_addr) {
                         Ok(doc) => {
@@ -717,12 +720,8 @@ impl TantivyIndex {
             TopDocsMode::Rating => {
                 let collector =
                     TopDocs::with_limit(limit).order_by_u64_field(self.fields.total_rating);
-                searcher
-                    .search(&search_query, &collector)
-                    .map_err(Fail::compat)?;
-                let top_docs = searcher
-                    .search(&search_query, &collector)
-                    .map_err(Fail::compat)?;
+                searcher.search(&search_query, &collector)?;
+                let top_docs = searcher.search(&search_query, &collector)?;
                 for (_, doc_addr) in top_docs {
                     match searcher.doc(doc_addr) {
                         Ok(doc) => {
@@ -770,9 +769,7 @@ impl TantivyIndex {
                         }
                     })
                 };
-                let top_docs = searcher
-                    .search(&search_query, &collector)
-                    .map_err(Fail::compat)?;
+                let top_docs = searcher.search(&search_query, &collector)?;
                 for (_, doc_addr) in top_docs {
                     match searcher.doc(doc_addr) {
                         Ok(doc) => {
@@ -868,10 +865,10 @@ impl IdIndex for TantivyIndex {
 
 impl Indexer for TantivyIndex {
     fn flush_index(&mut self) -> Fallible<()> {
-        self.index_writer.commit().map_err(Fail::compat)?;
+        self.index_writer.commit()?;
         // Manually reload the reader to ensure that all committed changes
         // become visible immediately.
-        self.index_reader.reload().map_err(Fail::compat)?;
+        self.index_reader.reload()?;
         Ok(())
     }
 }
@@ -891,14 +888,14 @@ impl PlaceIndexer for TantivyIndex {
         status: ReviewStatus,
         ratings: &AvgRatings,
     ) -> Fallible<()> {
-        let id_term = Term::from_field_text(self.fields.id, place.id.as_ref());
+        let id_term = Term::from_field_text(self.fields.id, place.id.as_str());
         self.index_writer.delete_term(id_term);
         let mut doc = Document::default();
         doc.add_i64(self.fields.kind, PLACE_KIND_FLAG);
         if let Some(status) = status.to_i64() {
             doc.add_i64(self.fields.status, status);
         }
-        doc.add_text(self.fields.id, place.id.as_ref());
+        doc.add_text(self.fields.id, &place.id);
         doc.add_f64(self.fields.lat, place.location.pos.lat().to_deg());
         doc.add_f64(self.fields.lng, place.location.pos.lng().to_deg());
         doc.add_text(self.fields.title, &place.title);
@@ -953,11 +950,11 @@ impl PlaceIndexer for TantivyIndex {
 
 impl EventIndexer for TantivyIndex {
     fn add_or_update_event(&self, event: &Event) -> Fallible<()> {
-        let id_term = Term::from_field_text(self.fields.id, event.id.as_ref());
+        let id_term = Term::from_field_text(self.fields.id, event.id.as_str());
         self.index_writer.delete_term(id_term);
         let mut doc = Document::default();
         doc.add_i64(self.fields.kind, EVENT_KIND_FLAG);
-        doc.add_text(self.fields.id, event.id.as_ref());
+        doc.add_text(self.fields.id, &event.id);
         if let Some(ref location) = event.location {
             doc.add_f64(self.fields.lat, location.pos.lat().to_deg());
             doc.add_f64(self.fields.lng, location.pos.lng().to_deg());
