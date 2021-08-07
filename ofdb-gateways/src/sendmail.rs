@@ -141,7 +141,7 @@ pub fn compose(from: &str, to: &[&str], subject: &str, body: &str) -> Result<Str
     if to.is_empty() {
         return Err(Error::new(
             ErrorKind::Other,
-            "No valid email adresses specified",
+            "No valid email addresses specified",
         ));
     }
 

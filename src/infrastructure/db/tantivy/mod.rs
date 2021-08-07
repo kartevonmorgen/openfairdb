@@ -399,7 +399,7 @@ impl TantivyIndex {
             // only MustNot sub-queries does not work as expected, especially
             // for events that do not have a status (yet). Therefore we need to
             // also query for all other variants that are not explicitly excluded
-            // with a Should occurence.
+            // with a Should occurrence.
             //
             // Desired implementation (...that didn't work as intended):
             // let exclude_status: Vec<_> = if status.is_empty() {

@@ -25,7 +25,7 @@
 - new(web): Clearance center: Allow to accept multiple entries at once
 - new(api): Add capthca service
 - new(api): Add JWT authorization for API
-- new(api): Chache most popular tags to accelerate response time
+- new(api): Cache most popular tags to accelerate response time
 - new(api): Make accepted licenses configurable
 - new(*): Allow to use custom MailGun API URL
 - chore(web): update rocket: v0.4.5 -> v0.4.7

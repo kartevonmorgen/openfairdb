@@ -1355,7 +1355,7 @@ pub fn cookie_from_response(response: &Response, key: &str) -> Option<Cookie<'st
     cookie.map(|c| c.into_owned())
 }
 
-// TOOD: rename to account_cookie
+// TODO: rename to account_cookie
 fn user_id_cookie(response: &Response) -> Option<Cookie<'static>> {
     cookie_from_response(response, COOKIE_EMAIL_KEY)
 }

@@ -75,7 +75,7 @@ pub fn nearby_bbox(center: MapPoint) -> MapBbox {
     MapBbox::centered_around(center, MAX_NEARBY_DIAMETER, MAX_NEARBY_DIAMETER)
 }
 
-// returns a DuplicateType if the two places have a similar title and location, otherweise returns None.
+// returns a DuplicateType if the two places have a similar title and location, otherwise returns None.
 fn is_duplicate(e1: &Place, e2: &IndexedPlace) -> Option<DuplicateType> {
     if e1.id.as_str() == e2.id.as_str() {
         // Skip identical places

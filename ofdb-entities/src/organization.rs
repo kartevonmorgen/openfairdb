@@ -8,7 +8,7 @@ pub struct ModeratedTag {
     pub require_clearance: bool,
 }
 
-// Workaround for backwards compatbility
+// Workaround for backwards compatibility
 // TODO: Remove after updating tests
 impl From<&str> for ModeratedTag {
     fn from(from: &str) -> Self {

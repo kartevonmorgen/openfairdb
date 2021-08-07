@@ -553,7 +553,7 @@ mod pw_reset {
             .unwrap();
         assert_eq!(h.value, "/reset-password?success=true");
 
-        // User gets a sucess message
+        // User gets a success message
         let mut res = client.get("/reset-password?success=true").dispatch();
         assert_eq!(res.status(), Status::Ok);
         let body_str = res.body().and_then(|b| b.into_string()).unwrap();

@@ -291,14 +291,14 @@ pub fn post_archive_event(
         .map_err(|_| {
             Flash::error(
                 Redirect::to(uri!(get_event: id)),
-                "Failed to achive the event.",
+                "Failed to archive the event.",
             )
         })?;
     archive_events(&pool, &mut search_engine, &[id], &archived_by_email)
         .map_err(|_| {
             Flash::error(
                 Redirect::to(uri!(get_event: id)),
-                "Failed to achive the event.",
+                "Failed to archive the event.",
             )
         })
         .map(|update_count| {
@@ -373,7 +373,7 @@ pub fn post_comments_archive(
     match archive_comments(&db, account.email(), &ids) {
         Err(_) => Err(Flash::error(
             Redirect::to(uri!(get_entry:d.place_id)),
-            "Failed to achive the comment.",
+            "Failed to archive the comment.",
         )),
         Ok(_) => Ok(Redirect::to(uri!(get_entry:d.place_id))),
     }

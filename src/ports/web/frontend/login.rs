@@ -142,7 +142,7 @@ pub mod tests {
     }
 
     #[test]
-    fn post_login_sucess() {
+    fn post_login_success() {
         let (client, pool) = setup();
         register_user(&pool, "foo@bar.com", "baz baz", true);
         let res = client
