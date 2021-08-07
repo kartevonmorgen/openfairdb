@@ -329,7 +329,7 @@ mod tests {
         .is_err());
         assert!(Event {
             start: min_valid_event_date_time(now) + Duration::seconds(10),
-            ..e.clone()
+            ..e
         }
         .validate()
         .is_ok());

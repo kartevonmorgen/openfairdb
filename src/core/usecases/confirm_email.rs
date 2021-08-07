@@ -35,7 +35,7 @@ mod tests {
             nonce: Nonce::new(),
         };
         assert!(confirm_email_address(&db, &email_nonce.encode_to_string()).is_ok());
-        assert_eq!(db.users.borrow()[0].email_confirmed, true);
+        assert!(db.users.borrow()[0].email_confirmed);
         assert_eq!(db.users.borrow()[0].role, Role::User);
     }
 }

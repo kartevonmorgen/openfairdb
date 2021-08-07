@@ -294,8 +294,10 @@ mod tests {
             image_link_url: old.links.as_ref().and_then(|l| l.image_href.as_ref()).map(|url| url.as_str().to_string()),
             custom_links: vec![],
         };
-        let mut mock_db = MockDb::default();
-        mock_db.entries = vec![(old, ReviewStatus::Created)].into();
+        let mock_db = MockDb {
+            entries: vec![(old, ReviewStatus::Created)].into(),
+            ..Default::default()
+        };
         let now = TimestampMs::now();
         let storable = prepare_updated_place(
             &mock_db,
@@ -377,8 +379,10 @@ mod tests {
             image_link_url: None,
             custom_links: vec![],
         };
-        let mut mock_db = MockDb::default();
-        mock_db.entries = vec![(old, ReviewStatus::Created)].into();
+        let mock_db = MockDb {
+            entries: vec![(old, ReviewStatus::Created)].into(),
+            ..Default::default()
+        };
         let err = match prepare_updated_place(
             &mock_db,
             id,
@@ -392,12 +396,9 @@ mod tests {
         };
         assert!(err.is_some());
         match err.unwrap() {
-            Error::Repo(err) => match err {
-                RepoError::InvalidVersion => {}
-                e => {
-                    panic!("Unexpected error: {:?}", e);
-                }
-            },
+            Error::Repo(RepoError::InvalidVersion) => {
+                // ok
+            }
             e => {
                 panic!("Unexpected error: {:?}", e);
             }
@@ -432,8 +433,7 @@ mod tests {
             image_link_url: None,
             custom_links: vec![],
         };
-        let mut mock_db = MockDb::default();
-        mock_db.entries = vec![].into();
+        let mock_db = MockDb::default();
         let result = prepare_updated_place(
             &mock_db,
             id,
@@ -444,12 +444,9 @@ mod tests {
         );
         assert!(result.is_err());
         match result.err().unwrap() {
-            Error::Repo(err) => match err {
-                RepoError::NotFound => {}
-                _ => {
-                    panic!("invalid error type");
-                }
-            },
+            Error::Repo(RepoError::NotFound) => {
+                // ok
+            }
             _ => {
                 panic!("invalid error type");
             }
@@ -490,9 +487,11 @@ mod tests {
             image_link_url: None,
             custom_links: vec![],
         };
-        let mut mock_db = MockDb::default();
-        mock_db.entries = vec![(old, ReviewStatus::Created)].into();
-        mock_db.tags = vec![Tag { id: "bio".into() }, Tag { id: "fair".into() }].into();
+        let mock_db = MockDb {
+            entries: vec![(old, ReviewStatus::Created)].into(),
+            tags: vec![Tag { id: "bio".into() }, Tag { id: "fair".into() }].into(),
+            ..Default::default()
+        };
         let storable = prepare_updated_place(
             &mock_db,
             id.clone(),

@@ -101,7 +101,7 @@ mod tests {
         // User 1
         let email1 = "user1@some.org";
         let credentials1 = usecases::Credentials {
-            email: &email1,
+            email: email1,
             password: "new pass1",
         };
         fixture.create_user(
@@ -115,7 +115,7 @@ mod tests {
         // User 2
         let email2 = "user2@some.org";
         let credentials2 = usecases::Credentials {
-            email: &email2,
+            email: email2,
             password: "new pass2",
         };
         fixture.create_user(
@@ -143,7 +143,7 @@ mod tests {
         assert_eq!(email1, email_nonce1.email);
 
         // Request and reset password for user 2
-        let email_nonce2 = reset_password_request(&fixture, &email2).unwrap();
+        let email_nonce2 = reset_password_request(&fixture, email2).unwrap();
         assert_eq!(email2, email_nonce2.email);
 
         // Reset the password of user 1

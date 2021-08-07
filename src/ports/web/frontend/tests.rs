@@ -17,7 +17,7 @@ fn setup() -> (
 
 fn create_user(pool: &Connections, name: &str, role: Role) {
     let email = format!("{}@example.com", name);
-    register_user(&pool, &email, "secret", true);
+    register_user(pool, &email, "secret", true);
     let mut user = get_user(pool, name);
     user.role = role;
     pool.exclusive().unwrap().update_user(&user).unwrap();
@@ -363,11 +363,8 @@ mod entry {
         let mut res = client.get(format!("/entries/{}", id)).dispatch();
         assert_eq!(res.status(), Status::Ok);
         let body_str = res.body().and_then(|b| b.into_string()).unwrap();
-        assert_eq!(body_str.contains("<form"), false);
-        assert_eq!(
-            body_str.contains("action=\"/comments/actions/archive\""),
-            false
-        );
+        assert!(!body_str.contains("<form"));
+        assert!(!body_str.contains("action=\"/comments/actions/archive\""));
     }
 
     #[test]
@@ -379,11 +376,8 @@ mod entry {
         let mut res = client.get(format!("/entries/{}", id)).dispatch();
         assert_eq!(res.status(), Status::Ok);
         let body_str = res.body().and_then(|b| b.into_string()).unwrap();
-        assert_eq!(body_str.contains("<form"), true);
-        assert_eq!(
-            body_str.contains("action=\"/comments/actions/archive\""),
-            true
-        );
+        assert!(body_str.contains("<form"));
+        assert!(body_str.contains("action=\"/comments/actions/archive\""));
     }
 
     #[test]
@@ -395,11 +389,8 @@ mod entry {
         let mut res = client.get(format!("/entries/{}", id)).dispatch();
         assert_eq!(res.status(), Status::Ok);
         let body_str = res.body().and_then(|b| b.into_string()).unwrap();
-        assert_eq!(body_str.contains("<form"), true);
-        assert_eq!(
-            body_str.contains("action=\"/comments/actions/archive\""),
-            true
-        );
+        assert!(body_str.contains("<form"));
+        assert!(body_str.contains("action=\"/comments/actions/archive\""));
     }
 
     #[test]

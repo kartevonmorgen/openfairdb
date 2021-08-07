@@ -76,13 +76,13 @@ mod tests {
             .description("bar")
             .pos(MapPoint::from_lat_lng_deg(5.0, 5.0))
             .finish();
-        assert_eq!(e.in_bbox(&bb), true);
+        assert!(e.in_bbox(&bb));
         let e = Place::build()
             .title("foo")
             .description("bar")
             .pos(MapPoint::from_lat_lng_deg(10.1, 10.0))
             .finish();
-        assert_eq!(e.in_bbox(&bb), false);
+        assert!(!e.in_bbox(&bb));
     }
 
     #[test]

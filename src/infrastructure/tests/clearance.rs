@@ -202,7 +202,7 @@ impl PlaceClearanceFixture {
             .db_connections
             .exclusive()
             .unwrap()
-            .create_org(organization_without_moderated_tags.clone())
+            .create_org(organization_without_moderated_tags)
             .unwrap();
         backend
             .db_connections
@@ -345,11 +345,11 @@ fn should_create_pending_clearance_once_when_updating_place_with_moderated_tags(
     )?;
     assert_eq!(1, pending_clearances.len());
     assert_eq!(
-        Some(last_cleared_revision.clone()),
+        Some(last_cleared_revision),
         pending_clearances.first().unwrap().last_cleared_revision
     );
 
-    let mut update_place = usecases::UpdatePlace::from(new_place.clone());
+    let mut update_place = usecases::UpdatePlace::from(new_place);
     let new_revision = new_revision.next();
     update_place.version = new_revision.into();
     update_place.tags = vec![];
@@ -496,7 +496,7 @@ fn should_create_pending_clearance_when_updating_an_archived_place_with_moderate
     )?;
     assert_eq!(1, pending_clearances.len());
     assert_eq!(
-        Some(last_cleared_revision.clone()),
+        Some(last_cleared_revision),
         pending_clearances.first().unwrap().last_cleared_revision
     );
 
@@ -547,7 +547,7 @@ fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_pla
     )?;
     assert_eq!(1, pending_clearances.len());
     assert_eq!(
-        Some(last_cleared_revision.clone()),
+        Some(last_cleared_revision),
         pending_clearances.first().unwrap().last_cleared_revision
     );
 
@@ -567,7 +567,7 @@ fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_pla
     // Load uncleared (default)
     let uncleared_load_result = usecases::load_places(
         &*fixture.backend.db_connections.shared()?,
-        &vec![place_id.as_ref()],
+        &[place_id.as_ref()],
         None,
     )?;
     assert_eq!(1, uncleared_load_result.len());
@@ -592,7 +592,7 @@ fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_pla
     // Load cleared
     let cleared_load_result = usecases::load_places(
         &*fixture.backend.db_connections.shared()?,
-        &vec![place_id.as_ref()],
+        &[place_id.as_ref()],
         Some(tag.as_str()),
     )?;
     assert_eq!(1, cleared_load_result.len());
@@ -660,7 +660,7 @@ fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_pla
     // Load & search uncleared (default)
     let uncleared_load_result = usecases::load_places(
         &*fixture.backend.db_connections.shared()?,
-        &vec![place_id.as_ref()],
+        &[place_id.as_ref()],
         None,
     )?;
     let (uncleared_search_result, _) = usecases::search(
@@ -689,7 +689,7 @@ fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_pla
     // Load & search cleared - Not filtered, because no more pending clearances
     let cleared_load_result = usecases::load_places(
         &*fixture.backend.db_connections.shared()?,
-        &vec![place_id.as_ref()],
+        &[place_id.as_ref()],
         Some(tag.as_str()),
     )?;
     let (cleared_search_result, _) = usecases::search(
@@ -758,14 +758,14 @@ fn should_hide_untagged_cleared_revision_when_loading_or_searching_for_cleared_p
     )?;
     assert_eq!(1, pending_clearances.len());
     assert_eq!(
-        Some(last_cleared_revision.clone()),
+        Some(last_cleared_revision),
         pending_clearances.first().unwrap().last_cleared_revision
     );
 
     // Load & search uncleared (default)
     let uncleared_load_result = usecases::load_places(
         &*fixture.backend.db_connections.shared()?,
-        &vec![place_id.as_ref()],
+        &[place_id.as_ref()],
         None,
     )?;
     let (uncleared_search_result, _) = usecases::search(
@@ -788,7 +788,7 @@ fn should_hide_untagged_cleared_revision_when_loading_or_searching_for_cleared_p
     // Load & search cleared
     let cleared_load_result = usecases::load_places(
         &*fixture.backend.db_connections.shared()?,
-        &vec![place_id.as_ref()],
+        &[place_id.as_ref()],
         Some(tag.as_str()),
     )?;
     let (cleared_search_result, _) = usecases::search(
@@ -825,8 +825,8 @@ fn should_fail_when_trying_to_clear_future_revisions_of_places() -> flows::Resul
     let new_revision = old_place.revision.next();
 
     let mut update_place = usecases::UpdatePlace::from(old_place.clone());
-    update_place.title = new_title.clone();
-    update_place.tags = new_tags.clone();
+    update_place.title = new_title;
+    update_place.tags = new_tags;
     update_place.version = new_revision.into();
     let new_place = flows::update_place(
         &fixture.backend.db_connections,
@@ -848,7 +848,7 @@ fn should_fail_when_trying_to_clear_future_revisions_of_places() -> flows::Resul
     )?;
     assert_eq!(1, pending_clearances.len());
     assert_eq!(
-        Some(last_cleared_revision.clone()),
+        Some(last_cleared_revision),
         pending_clearances.first().unwrap().last_cleared_revision
     );
 

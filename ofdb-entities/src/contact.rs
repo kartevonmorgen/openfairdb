@@ -27,9 +27,9 @@ pub mod tests {
         assert!(Contact::default().is_empty());
         let mut c = Contact::default();
         c.email = Some("foo@bar".into());
-        assert_eq!(c.is_empty(), false);
+        assert!(!c.is_empty());
         let mut c = Contact::default();
         c.phone = Some("123".into());
-        assert_eq!(c.is_empty(), false);
+        assert!(!c.is_empty());
     }
 }
