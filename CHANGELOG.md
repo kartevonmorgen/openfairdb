@@ -2,7 +2,8 @@
 
 ## v0.10.5 (Unreleased)
 
-- new(api): Filtering events by end_min/end_max
+- new(api): Filtering events by `end_min`/`end_max`
+- fix(api): Only require title, description, lat, lng for /search/duplicates
 
 ## v0.10.4 (2021-08-06)
 

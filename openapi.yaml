@@ -912,8 +912,6 @@ components:
         - description
         - lat
         - lng
-        - categories
-        - tags
     NewEntryWithLicense:
       allOf:
         - $ref: '#/components/schemas/NewEntry'
@@ -921,8 +919,6 @@ components:
           properties:
             license:
               $ref: '#/components/schemas/License'
-          required:
-            - license
     NewEntryWithVersion:
       allOf:
         - $ref: '#/components/schemas/NewEntry'

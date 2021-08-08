@@ -79,9 +79,16 @@ pub struct NewPlace {
     pub homepage       : Option<String>,
     pub opening_hours  : Option<String>,
     pub founded_on     : Option<NaiveDate>,
+
+    #[serde(default = "Default::default")]
     pub categories     : Vec<String>,
+
+    #[serde(default = "Default::default")]
     pub tags           : Vec<String>,
+
+    #[serde(default = "Default::default")]
     pub license        : String,
+
     pub image_url      : Option<String>,
     pub image_link_url : Option<String>,
 
