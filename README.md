@@ -13,12 +13,13 @@ written in [Rust](http://rustlang.org/).
 The Test-API is available under `http://dev.ofdb.io/v0/`.
 
 The current API is documented within the [openapi.yaml](https://github.com/kartevonmorgen/openfairdb/blob/master/openapi.yaml) file.
-You can render the API documentation e.g. with the swagger editor:
+You can render the API documentation e.g. with the [swagger editor](https://app.swaggerhub.com/apis/Kartevonmorgen/open-fair_db_api):
 
+Most updated way is this:
 - go to [https://editor.swagger.io](https://editor.swagger.io/)
 - go to `File` -> `import URL`
 - enter `https://raw.githubusercontent.com/kartevonmorgen/openfairdb/master/openapi.yaml`
-- enjoy ;-)
+- enjoy ;-) 
 
 An other way to see how the API can be used, you can open the `network` tab in the developer
 tools of your browser and see the requests that are made to `https://kartevonmorgen.org`.
