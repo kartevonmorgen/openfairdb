@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.10.5 (Unreleased)
+
+- fix(api): Only require title, description, lat, lng for /search/duplicates
+
 ## v0.10.4 (2021-08-06)
 
 - fix(api): Implement JSON errors for most cases
