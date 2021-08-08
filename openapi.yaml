@@ -76,7 +76,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewEntry'
+              $ref: '#/components/schemas/NewEntryWithLicense'
       responses:
         '200':
           description: Successful response
