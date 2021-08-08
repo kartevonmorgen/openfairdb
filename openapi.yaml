@@ -914,7 +914,6 @@ components:
         - lng
         - categories
         - tags
-        - links
     NewEntryWithLicense:
       allOf:
         - $ref: '#/components/schemas/NewEntry'
