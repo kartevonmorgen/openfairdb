@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.10.4 (2021-08-06)
+
+- fix(api): Implement JSON errors for most cases
+- chore(web): Clearance center: Use trunk to build the app
+- chore(ci): Some GithubCI improvements
+- chore(*): Update dependencies
+
 ## v0.10.3 (2021-06-13)
 
 - new(api): Increase max. result limit from 500 to 2000 for places and events
@@ -18,7 +25,7 @@
 - new(web): Clearance center: Allow to accept multiple entries at once
 - new(api): Add capthca service
 - new(api): Add JWT authorization for API
-- new(api): Chache most popular tags to accelerate response time
+- new(api): Cache most popular tags to accelerate response time
 - new(api): Make accepted licenses configurable
 - new(*): Allow to use custom MailGun API URL
 - chore(web): update rocket: v0.4.5 -> v0.4.7

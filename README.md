@@ -27,7 +27,7 @@ tools of your browser and see the requests that are made to `https://kartevonmor
 Make sure you use the Data appropriate to the ODbL-License: https://blog.vonmorgen.org/copyright/
 
 If you want to use the API in your project, please contact us at helmut@kartevonmorgen.org .
-When your aplication is running stable you can switch from the dev.ofdb.io to the prductive api.ofdb.io.
+When your application is running stable you can switch from the dev.ofdb.io to the prductive api.ofdb.io.
 The API might still change sometimes. We will try to let you know in that case.
 
 ## Quick start

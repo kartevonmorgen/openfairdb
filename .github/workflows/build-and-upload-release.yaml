@@ -1,0 +1,83 @@
+name: Build and upload release
+
+on:
+  push:
+    tags:
+      - v[0-9]+.[0-9]+.[0-9]+
+  workflow_dispatch:
+    ref: master
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build-and-upload-release:
+    name: Building and uploading release artifacts
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+        # TODO: Enable Windows
+        #os: [macos-latest, ubuntu-latest, windows-latest]
+        include:
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+          # TODO: Build on Windows
+          #- os: windows-latest
+          #  target: x86_64-pc-windows-msvc
+          #  executable_suffix: .exe
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          target: ${{ matrix.target }}
+          toolchain: nightly-2021-06-09
+          profile: minimal
+          components: rustfmt, clippy
+
+      - name: Download and install trunk on macOS
+        if: runner.os == 'macOS'
+        run: |
+          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.13.1/trunk-${{ matrix.target }}.tar.gz | tar -C ~/.cargo/bin -xzf-
+
+      - name: Download and install trunk on Linux
+        if: runner.os == 'Linux'
+        run: |
+          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.13.1/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -C ~/.cargo/bin -xzf-
+
+      # TODO: Install trunk on Windows
+
+      - name: Build ofdb-app-clearance
+        run: |
+          cd ofdb-app-clearance/
+          rustup target add wasm32-unknown-unknown
+          trunk -V
+          trunk build
+
+      - name: Build server executable
+        uses: actions-rs/cargo@v1
+        with:
+          command: build
+          args: --release
+
+      - name: Upload tagged artifact
+        if: github.ref == 'v[0-9]+.[0-9]+.[0-9]+'
+        uses: actions/upload-artifact@v2
+        with:
+          # Artifact is stored and downloaded as .zip archive
+          name: openfairdb_${{ matrix.target }}_${{ github.ref }}${{ matrix.executable_suffix }}
+          path: target/release/openfairdb${{ matrix.executable_suffix }}
+
+      - name: Upload latest artifact
+        if: startsWith(${{ github.ref }}, 'refs/heads/')
+        uses: actions/upload-artifact@v2
+        with:
+          # Artifact is stored and downloaded as .zip archive
+          name: openfairdb_${{ matrix.target }}${{ matrix.executable_suffix }}
+          path: target/release/openfairdb${{ matrix.executable_suffix }}

@@ -126,13 +126,8 @@ mod tests {
             password: "secret".into(),
         };
         match create_new_user(&db, u).err().unwrap() {
-            Error::Parameter(err) => {
-                match err {
-                    ParameterError::UserExists => {
-                        // ok
-                    }
-                    _ => panic!("invalid error"),
-                }
+            Error::Parameter(ParameterError::UserExists) => {
+                // ok
             }
             _ => panic!("invalid error"),
         }
@@ -146,7 +141,7 @@ mod tests {
             password: "secret".into(),
         };
         assert!(create_new_user(&db, u).is_ok());
-        assert_eq!(db.users.borrow()[0].email_confirmed, false);
+        assert!(!db.users.borrow()[0].email_confirmed);
     }
 
     #[test]

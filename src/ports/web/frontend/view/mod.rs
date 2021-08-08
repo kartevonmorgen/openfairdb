@@ -51,7 +51,7 @@ pub fn global_search_form(search_term: Option<&str>) -> Markup {
                     value=(search_term.unwrap_or(""))
                     size=(50)
                     maxlength=(200)
-                    placeholer="search term, empty = all";
+                    placeholder="search term, empty = all";
                 br;
                 input class="btn" type="submit" value="search";
             }

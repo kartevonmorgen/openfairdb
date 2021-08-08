@@ -75,7 +75,7 @@ pub fn nearby_bbox(center: MapPoint) -> MapBbox {
     MapBbox::centered_around(center, MAX_NEARBY_DIAMETER, MAX_NEARBY_DIAMETER)
 }
 
-// returns a DuplicateType if the two places have a similar title and location, otherweise returns None.
+// returns a DuplicateType if the two places have a similar title and location, otherwise returns None.
 fn is_duplicate(e1: &Place, e2: &IndexedPlace) -> Option<DuplicateType> {
     if e1.id.as_str() == e2.id.as_str() {
         // Skip identical places
@@ -416,10 +416,10 @@ mod tests {
 
     #[test]
     fn test_words_equal() {
-        assert_eq!(true, words_equal_except_k_words("ab abc a", "ab abc b", 1));
-        assert_eq!(true, words_equal_except_k_words("ab abc a", "abc ab", 1));
-        assert_eq!(true, words_equal_except_k_words("ab ac a", "abc ab ab", 2));
-        assert_eq!(false, words_equal_except_k_words("a a a", "ab abc", 2));
+        assert!(words_equal_except_k_words("ab abc a", "ab abc b", 1));
+        assert!(words_equal_except_k_words("ab abc a", "abc ab", 1));
+        assert!(words_equal_except_k_words("ab ac a", "abc ab ab", 2));
+        assert!(!words_equal_except_k_words("a a a", "ab abc", 2));
     }
 
     #[test]

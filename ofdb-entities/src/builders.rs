@@ -164,10 +164,10 @@ pub mod address_builder {
     #[test]
     fn empty_address() {
         assert!(Address::default().is_empty());
-        assert_eq!(Address::build().street("x").finish().is_empty(), false);
-        assert_eq!(Address::build().zip("x").finish().is_empty(), false);
-        assert_eq!(Address::build().city("x").finish().is_empty(), false);
-        assert_eq!(Address::build().country("x").finish().is_empty(), false);
-        assert_eq!(Address::build().state("x").finish().is_empty(), false);
+        assert!(!Address::build().street("x").finish().is_empty());
+        assert!(!Address::build().zip("x").finish().is_empty());
+        assert!(!Address::build().city("x").finish().is_empty());
+        assert!(!Address::build().country("x").finish().is_empty());
+        assert!(!Address::build().state("x").finish().is_empty());
     }
 }

@@ -1355,7 +1355,7 @@ pub fn cookie_from_response(response: &Response, key: &str) -> Option<Cookie<'st
     cookie.map(|c| c.into_owned())
 }
 
-// TOOD: rename to account_cookie
+// TODO: rename to account_cookie
 fn user_id_cookie(response: &Response) -> Option<Cookie<'static>> {
     cookie_from_response(response, COOKIE_EMAIL_KEY)
 }
@@ -1511,10 +1511,7 @@ fn confirm_email_address() {
         .dispatch();
 
     assert_eq!(response.status(), Status::Forbidden);
-    assert_eq!(
-        db.exclusive().unwrap().all_users().unwrap()[0].email_confirmed,
-        false
-    );
+    assert!(!db.exclusive().unwrap().all_users().unwrap()[0].email_confirmed);
 
     let token = EmailNonce {
         email: "a@bar.de".into(),
@@ -1527,10 +1524,7 @@ fn confirm_email_address() {
         .body(format!("{{\"token\":\"{}\"}}", token))
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    assert_eq!(
-        db.exclusive().unwrap().all_users().unwrap()[0].email_confirmed,
-        true
-    );
+    assert!(db.exclusive().unwrap().all_users().unwrap()[0].email_confirmed);
 
     let response = client
         .post("/login")
@@ -1907,7 +1901,7 @@ fn entries_export_csv() {
             .load_ratings_of_place(place.id.as_ref())
             .unwrap();
         search_engine
-            .add_or_update_place(&place, *status, &place.avg_ratings(&ratings))
+            .add_or_update_place(place, *status, &place.avg_ratings(&ratings))
             .unwrap();
     }
     search_engine.flush_index().unwrap();
@@ -2010,8 +2004,10 @@ mod with_captcha_protection_enabled {
     use super::*;
 
     fn captcha_setup() -> (Client, sqlite::Connections) {
-        let mut cfg = Cfg::default();
-        cfg.protect_with_captcha = true;
+        let cfg = Cfg {
+            protect_with_captcha: true,
+            ..Default::default()
+        };
         setup_with_cfg(cfg)
     }
 

@@ -49,7 +49,7 @@ pub fn post_register(
                         debug_assert_eq!(user.email, credentials.email);
                         notify.user_registered_ofdb(&user);
 
-                        let msg = "Registered sucessfully. Please confirm your email address.";
+                        let msg = "Registered successfully. Please confirm your email address.";
                         return Ok(Flash::success(
                             Redirect::to(uri!(super::login::get_login)),
                             msg,

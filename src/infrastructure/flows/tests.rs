@@ -185,7 +185,7 @@ pub mod prelude {
             usecases::NewPlace {
                 lat: pos.lat().to_deg(),
                 lng: pos.lng().to_deg(),
-                title: title,
+                title,
                 description,
                 categories,
                 tags,

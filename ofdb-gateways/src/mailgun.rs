@@ -60,7 +60,7 @@ fn send_raw(_: &str, _: &str, params: Vec<(&'static str, String)>) -> Result<()>
 impl EmailGateway for Mailgun {
     fn compose_and_send(&self, recipients: &[Email], subject: &str, body: &str) {
         if recipients.is_empty() {
-            warn!("No valid email adresses specified");
+            warn!("No valid email addresses specified");
             return;
         }
         debug!("Sending e-mails to: {:?}", recipients);

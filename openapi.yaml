@@ -20,7 +20,7 @@ paths:
       description: |
         Query the database for entries/places according to the search criteria
         and order the top matching results by their total rating in descending
-        oder.
+        order.
 
         The default result contains up to 100 entries. Use the `limit` parameter
         to customize the desired amount. The server may decide to deliver less
@@ -61,7 +61,7 @@ paths:
     post:
       summary: Search for duplicate places
       description: |
-        Search for similiar places that might be duplicates of a
+        Search for similar places that might be duplicates of a
         given place.
 
         Currently only the geographical location and title and are
@@ -190,7 +190,7 @@ paths:
         Get most popular tags for entries with their total usage count.
         Results are sorted in descending order of counts, i.e. most popular
         tags appear first. A maximum of 1000 tag with their count is returned
-        if no limit is specifid.
+        if no limit is specified.
       tags:
         - Entries/Places
       parameters:
@@ -340,7 +340,7 @@ paths:
       description: |
         Reviews the latest revision of multiple places at once. An audit log
         is written into the history of all place revisions.
-        Dependening on the review status the affected places might be
+        Depending on the review status the affected places might be
         hidden from search results (archived, rejected) or re-appear
         (created, confirmed).
         Only scouts and admins are entitled to invoke this function.
@@ -499,7 +499,7 @@ paths:
               $ref: '#/components/schemas/Event'
       responses:
         '200':
-          description: Sucessfully updated the event
+          description: Successfully updated the event
         '401':
           $ref: '#/components/responses/UnauthorizedError'
     delete:
@@ -519,7 +519,7 @@ paths:
             type: string
       responses:
         '200':
-          description: Sucessfully deleted the event
+          description: Successfully deleted the event
         '401':
           $ref: '#/components/responses/UnauthorizedError'
   '/events/{ids}/archive':
@@ -560,7 +560,7 @@ paths:
                   type: string
       responses:
         '200':
-          description: Sucessful response - the JWT token
+          description: Successful response - the JWT token
           content:
             application/json:
               schema:
@@ -574,7 +574,7 @@ paths:
         - jwtAuth: []
       responses:
         '200':
-          description: Sucessful response
+          description: Successful response
   '/users/current':
     get:
       summary: Get the current user
@@ -605,7 +605,7 @@ paths:
                   $ref: '#/components/schemas/UserEmail'
       responses:
         '200':
-           description: Sucessful response
+           description: Successful response
   '/users/reset-password':
     post:
       summary: Request a users password
@@ -626,7 +626,7 @@ paths:
                   type: string
       responses:
         '200':
-           description: Sucessful response
+           description: Successful response
   /subscribe-to-bbox:
     post:
       summary: Subscribe to a bounding box
@@ -647,7 +647,7 @@ paths:
                lng: 9.2
       responses:
         '200':
-          description: Sucessful response
+          description: Successful response
   /bbox-subscriptions:
     get:
       summary: Fetch subscriptions
@@ -655,7 +655,7 @@ paths:
         - Subscriptions
       responses:
         '200':
-          description: Sucessful response
+          description: Successful response
           content:
             application/json:
               schema:
@@ -669,7 +669,7 @@ paths:
         - Subscriptions
       responses:
         '200':
-          description: Sucessful response
+          description: Successful response
   /tags:
     get:
       summary: Get tags
@@ -677,7 +677,7 @@ paths:
         - Tags
       responses:
         '200':
-          description: Sucessful response
+          description: Successful response
           content:
             application/json:
               schema:
@@ -692,7 +692,7 @@ paths:
         - Stats
       responses:
         '200':
-          description: Sucessful response
+          description: Successful response
           content:
             application/json:
               schema:
@@ -739,7 +739,7 @@ paths:
       description: |
         The CSV export is only available for logged in users with the role _Admin_ or _Scout_.
 
-        This request supports the same paramaters as the corresponding search request.
+        This request supports the same parameters as the corresponding search request.
 
         Contact details (email/phone) are only visible for users with the role _Admin_ or _Scout_.
 
@@ -786,7 +786,7 @@ paths:
       description: |
         The CSV export is only available for logged in users with the role _Admin_ or _Scout_.
 
-        This request supports the same paramaters as the corresponding search request.
+        This request supports the same parameters as the corresponding search request.
 
         **Example**:
 
@@ -1501,7 +1501,7 @@ components:
 
         Event times are always specified in UTC, independent of the geographical
         location and the actual time zone at this location at the given time.
-        Therfore these time stamps should be interpreted as a *naive* date time
+        Therefore these time stamps should be interpreted as a *naive* date time
         without any time zone. The calculation of the actual, absolute point that
         is needed for chronological ordering of events at different geographical
         locations would require a time zone database to perform this conversion.

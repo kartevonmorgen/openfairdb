@@ -1,6 +1,6 @@
 [package]
 name = "openfairdb"
-version = "0.10.3"
+version = "0.10.4"
 authors = ["Markus Kohlhase <mail@markus-kohlhase.de>", "slowtec GmbH <post@slowtec.de>"]
 keywords = ["geo", "fair", "sustainability"]
 homepage = "https://github.com/kartevonmorgen/openfairdb"
@@ -35,9 +35,6 @@ diesel = { version = "*", features = ["sqlite", "r2d2", "chrono"] }
 diesel_migrations = { version = "*", features = ["sqlite"] }
 dotenv = "*"
 env_logger = "*"
-# failure is only required for TantivyError
-# TODO: Remove after updating Tantivy version
-failure = "*"
 fast_chemail = "*"
 jsonwebtoken = { version = "*", optional = true }
 lazy_static = "*"
@@ -53,6 +50,7 @@ passwords = "*"
 pwhash = "*"
 rand = { version = "*", optional = true }
 regex = "*"
+rust-embed = "*"
 # TODO: Update to Rocket 0.5 and switch toolchain from nightly to stable
 rocket = "0.4"
 rocket_contrib = "*"
@@ -60,8 +58,7 @@ rocket_cors = "*"
 serde = { version = "*", features = ["derive"] }
 serde_json = "*"
 strum = "*"
-# TODO: Update Tantivy version
-tantivy = "0.13"
+tantivy = "*"
 # TODO: Pinning of version required for rocket_http
 time = "0.1"
 thiserror = "*"

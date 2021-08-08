@@ -29,7 +29,7 @@ pub(crate) fn registration_type_from_i16(i: i16) -> e::RegistrationType {
         3 => Homepage,
         _ => {
             error!(
-                "Convertion Error:
+                "Conversion Error:
                        Invalid registration type:
                        {} should be one of 1,2,3;
                        Use 'Phone' instead.",

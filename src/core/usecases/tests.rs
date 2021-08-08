@@ -16,7 +16,7 @@ trait Key {
 
 impl Key for (Place, ReviewStatus) {
     fn key(&self) -> &str {
-        &self.0.id.as_ref()
+        self.0.id.as_ref()
     }
 }
 
@@ -46,13 +46,13 @@ impl Key for User {
 
 impl Key for Comment {
     fn key(&self) -> &str {
-        &self.id.as_ref()
+        self.id.as_ref()
     }
 }
 
 impl Key for Rating {
     fn key(&self) -> &str {
-        &self.id.as_ref()
+        self.id.as_ref()
     }
 }
 

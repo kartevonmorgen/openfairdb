@@ -1,3 +1,7 @@
+# FIXME: Trunk installation
+# Use prebuild release binary as soon as it is available for musl.
+# See: https://trunkrs.dev/
+
 # Dockerfile for creating a statically-linked Rust application using Docker's
 # multi-stage build feature. This also leverages the docker build cache to
 # avoid re-downloading dependencies if they have not changed between builds.
