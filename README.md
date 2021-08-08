@@ -12,7 +12,7 @@ written in [Rust](http://rustlang.org/).
 
 The Test-API is available under `http://dev.ofdb.io/v0/`.
 
-The current API is documented within the [openapi.yaml](https://github.com/kartevonmorgen/openfairdb/blob/master/openapi.yaml) file.
+The current API is documented within the [openapi.yaml](openapi.yaml) file.
 You can render the API documentation e.g. with the swagger editor:
 
 - go to [https://editor.swagger.io](https://editor.swagger.io/)
@@ -23,8 +23,8 @@ You can render the API documentation e.g. with the swagger editor:
 An other way to see how the API can be used, you can open the `network` tab in the developer
 tools of your browser and see the requests that are made to `https://kartevonmorgen.org`.
 
-### Datalicense
-Make sure you use the Data appropriate to the ODbL-License: https://blog.vonmorgen.org/copyright/
+### Data License
+Make sure you use the Data appropriate to the [ODbL-License](https://blog.vonmorgen.org/copyright/)
 
 If you want to use the API in your project, please contact us at helmut@kartevonmorgen.org .
 When your application is running stable you can switch from the dev.ofdb.io to the prductive api.ofdb.io.

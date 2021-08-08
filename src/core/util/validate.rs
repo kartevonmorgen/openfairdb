@@ -3,7 +3,6 @@ use super::super::{
     error::ParameterError,
     util::geo::{MapBbox, MapPoint},
 };
-use chrono::{prelude::*, Duration};
 use fast_chemail::is_valid_email;
 
 pub trait Validate {
@@ -84,18 +83,6 @@ impl AutoCorrect for Event {
     }
 }
 
-fn min_valid_event_date_time(now: NaiveDateTime) -> NaiveDateTime {
-    // Allow edits up to 7 days = 1 week in the past to compensate for
-    // different time zones (up to 1 day) and for testing
-    now - Duration::from_std(std::time::Duration::from_secs(7 * 24 * 60 * 60)).unwrap()
-}
-
-fn max_valid_event_date_time(now: NaiveDateTime) -> NaiveDateTime {
-    // Allow only up to 100 years in the future to distinguish invalid
-    // millisecond timestamps from valid second timestamps
-    now + Duration::from_std(std::time::Duration::from_secs(100 * 365 * 24 * 60 * 60)).unwrap()
-}
-
 impl Validate for Event {
     fn validate(&self) -> Result<(), ParameterError> {
         if self.title.is_empty() {
@@ -104,16 +91,7 @@ impl Validate for Event {
         if let Some(ref c) = self.contact {
             c.validate()?;
         }
-        let now = Utc::now().naive_utc();
-        let min_since = min_valid_event_date_time(now);
-        let max_until = max_valid_event_date_time(now);
-        if self.start < min_since || self.start > max_until {
-            return Err(ParameterError::DateTimeOutOfRange);
-        }
         if let Some(end) = self.end {
-            if end < min_since || end > max_until {
-                return Err(ParameterError::DateTimeOutOfRange);
-            }
             if end < self.start {
                 return Err(ParameterError::EndDateBeforeStart);
             }
@@ -153,6 +131,8 @@ impl AutoCorrect for Address {
 
 #[cfg(test)]
 mod tests {
+    use chrono::{Duration, NaiveDateTime, Utc};
+
     use super::*;
 
     #[test]
@@ -310,25 +290,13 @@ mod tests {
         };
         assert!(e.validate().is_ok());
         assert!(Event {
-            start: max_valid_event_date_time(now),
+            start: now - Duration::days(10_000),
             ..e.clone()
         }
         .validate()
         .is_ok());
         assert!(Event {
-            start: max_valid_event_date_time(now) + Duration::seconds(10),
-            ..e.clone()
-        }
-        .validate()
-        .is_err());
-        assert!(Event {
-            start: min_valid_event_date_time(now),
-            ..e.clone()
-        }
-        .validate()
-        .is_err());
-        assert!(Event {
-            start: min_valid_event_date_time(now) + Duration::seconds(10),
+            start: now + Duration::days(10_000),
             ..e
         }
         .validate()

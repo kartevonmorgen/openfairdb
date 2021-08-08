@@ -39,8 +39,6 @@ pub enum ParameterError {
     Forbidden,
     #[error("This is not allowed without auth")]
     Unauthorized,
-    #[error("The date/time is out of range")]
-    DateTimeOutOfRange,
     #[error("The end date is before the start")]
     EndDateBeforeStart,
     #[error("The tag is owned by an organization")]
