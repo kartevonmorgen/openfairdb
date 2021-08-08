@@ -1647,6 +1647,18 @@ components:
       description: Filter events by `event.start` <= `start_max`
       schema:
         $ref: '#/components/schemas/EventTime'
+    EventEndMin:
+      name: end_min
+      in: query
+      description: Filter events by `event.end` >= `end_min`
+      schema:
+        $ref: '#/components/schemas/EventTime'
+    EventEndMax:
+      name: end_max
+      in: query
+      description: Filter events by `event.end` <= `end_max`
+      schema:
+        $ref: '#/components/schemas/EventTime'
     EventFilterText:
       name: text
       in: query

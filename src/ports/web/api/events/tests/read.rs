@@ -239,6 +239,37 @@ fn filtered_by_start_min() {
 }
 
 #[test]
+fn filtered_by_end_min() {
+    let (client, db, mut search_engine, notify) = setup2();
+    let now = Utc::now().naive_utc().timestamp();
+    let end_offsets = vec![100, 1, 300, 50, 200];
+    for (start_offset, end_offset) in end_offsets.into_iter().enumerate() {
+        // Differing start dates are required for ordering of search results!
+        let start = now + start_offset as i64;
+        let end = Some(now + end_offset);
+        let e = usecases::NewEvent {
+            title: start.to_string(),
+            start,
+            end,
+            created_by: Some("test@example.com".into()),
+            ..Default::default()
+        };
+        flows::create_event(&db, &mut search_engine, &notify, None, e).unwrap();
+    }
+    let mut res = client
+        .get(format!("/events?end_min={}", now + 150))
+        .header(ContentType::JSON)
+        .dispatch();
+    assert_eq!(res.status(), HttpStatus::Ok);
+    test_json(&res);
+    let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+    let objects: Vec<_> = body_str.split("},{").collect();
+    assert_eq!(objects.len(), 2);
+    assert!(objects[0].contains(&format!("\"end\":{}", now + 300)));
+    assert!(objects[1].contains(&format!("\"end\":{}", now + 200)));
+}
+
+#[test]
 fn filtered_by_start_max() {
     let (client, db, mut search_engine, notify) = setup2();
     let now = Utc::now().naive_utc().timestamp();
@@ -266,6 +297,39 @@ fn filtered_by_start_max() {
     assert!(objects[1].contains(&format!("\"start\":{}", now + 50)));
     assert!(objects[2].contains(&format!("\"start\":{}", now + 100)));
     assert!(objects[3].contains(&format!("\"start\":{}", now + 200)));
+}
+
+#[test]
+fn filtered_by_end_max() {
+    let (client, db, mut search_engine, notify) = setup2();
+    let now = Utc::now().naive_utc().timestamp();
+    let end_offsets = vec![100, 1, 300, 50, 200];
+    for (start_offset, end_offset) in end_offsets.into_iter().enumerate() {
+        // Differing start dates are required for ordering of search results!
+        let start = now + start_offset as i64;
+        let end = Some(now + end_offset);
+        let e = usecases::NewEvent {
+            title: start.to_string(),
+            start,
+            end,
+            created_by: Some("test@example.com".into()),
+            ..Default::default()
+        };
+        flows::create_event(&db, &mut search_engine, &notify, None, e).unwrap();
+    }
+    let mut res = client
+        .get(format!("/events?end_max={}", now + 250))
+        .header(ContentType::JSON)
+        .dispatch();
+    assert_eq!(res.status(), HttpStatus::Ok);
+    test_json(&res);
+    let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+    let objects: Vec<_> = body_str.split("},{").collect();
+    assert_eq!(objects.len(), 4);
+    assert!(objects[0].contains(&format!("\"end\":{}", now + 100)));
+    assert!(objects[1].contains(&format!("\"end\":{}", now + 1)));
+    assert!(objects[2].contains(&format!("\"end\":{}", now + 50)));
+    assert!(objects[3].contains(&format!("\"end\":{}", now + 200)));
 }
 
 #[test]

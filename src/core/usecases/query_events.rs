@@ -18,6 +18,8 @@ pub fn query_events<D: Db>(db: &D, index: &dyn IdIndex, query: EventQuery) -> Re
         created_by,
         start_min,
         start_max,
+        end_min,
+        end_max,
         tags,
         text,
         limit,
@@ -53,6 +55,8 @@ pub fn query_events<D: Db>(db: &D, index: &dyn IdIndex, query: EventQuery) -> Re
         text,
         ts_min_lb: start_min,
         ts_min_ub: start_max,
+        ts_max_lb: end_min,
+        ts_max_ub: end_max,
         ..Default::default()
     };
 

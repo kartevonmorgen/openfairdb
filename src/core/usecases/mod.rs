@@ -75,6 +75,8 @@ pub struct EventQuery {
     pub created_by: Option<Email>,
     pub start_min: Option<Timestamp>,
     pub start_max: Option<Timestamp>,
+    pub end_min: Option<Timestamp>,
+    pub end_max: Option<Timestamp>,
     pub tags: Option<Vec<String>>,
     pub text: Option<String>,
 
@@ -84,18 +86,22 @@ pub struct EventQuery {
 impl EventQuery {
     pub fn is_empty(&self) -> bool {
         let Self {
-            ref bbox,
-            ref created_by,
-            ref start_min,
-            ref start_max,
-            ref tags,
-            ref text,
-            ref limit,
+            bbox,
+            created_by,
+            start_min,
+            start_max,
+            end_min,
+            end_max,
+            tags,
+            text,
+            limit,
         } = self;
         bbox.is_none()
             && created_by.is_none()
             && start_min.is_none()
             && start_max.is_none()
+            && end_min.is_none()
+            && end_max.is_none()
             && tags.is_none()
             && text.is_none()
             && limit.is_none()

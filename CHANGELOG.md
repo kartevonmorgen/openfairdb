@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.10.5 (Unreleased)
+
+- new(api): Filtering events by end_min/end_max
+
 ## v0.10.4 (2021-08-06)
 
 - fix(api): Implement JSON errors for most cases

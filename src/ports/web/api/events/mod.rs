@@ -195,6 +195,28 @@ impl<'q> FromQuery<'q> for usecases::EventQuery {
             None
         };
 
+        let end_max = if let Some(end_max) = query
+            .clone()
+            .filter(|i| i.key == "end_max")
+            .map(|i| i.value.url_decode_lossy())
+            .find(|v| !v.is_empty())
+        {
+            Some(Timestamp::from_inner(end_max.parse()?))
+        } else {
+            None
+        };
+
+        let end_min = if let Some(end_min) = query
+            .clone()
+            .filter(|i| i.key == "end_min")
+            .map(|i| i.value.url_decode_lossy())
+            .find(|v| !v.is_empty())
+        {
+            Some(Timestamp::from_inner(end_min.parse()?))
+        } else {
+            None
+        };
+
         let tags: Vec<_> = query
             .clone()
             .filter(|i| i.key == "tag")
@@ -215,6 +237,8 @@ impl<'q> FromQuery<'q> for usecases::EventQuery {
             created_by,
             start_min,
             start_max,
+            end_min,
+            end_max,
             tags,
             text,
             limit,
