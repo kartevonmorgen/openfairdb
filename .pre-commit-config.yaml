@@ -16,8 +16,6 @@ repos:
   - id: forbid-new-submodules
   - id: mixed-line-ending
     args: [--fix, 'no']
-  - id: no-commit-to-branch
-    args: [--branch, master ]
   - id: trailing-whitespace
 - repo: https://github.com/codespell-project/codespell
   rev: v2.1.0
