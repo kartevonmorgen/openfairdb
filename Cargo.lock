@@ -70,12 +70,6 @@ dependencies = [
 
 [[package]]
 name = "ahash"
-version = "0.4.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "739f4a8db6605981345c5654f3a85b056ce52f37a39d34da03f25bf2151ea16e"
-
-[[package]]
-name = "ahash"
 version = "0.7.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "43bb833f0bf979d8475d38fbf09ed3b8a55e1885fe93ad3f93239fc6a4f17b98"
@@ -677,11 +671,11 @@ dependencies = [
 
 [[package]]
 name = "fallible_collections"
-version = "0.4.2"
+version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4ad9169582543d2cfe9961be1e9eaf4fc42f9aa3483f7c485717b8dde36466ea"
+checksum = "eaefd4190151d458f16f0793d3452d7f13aeb3701566a4cefc4c37598876cc00"
 dependencies = [
- "hashbrown 0.9.1",
+ "hashbrown",
 ]
 
 [[package]]
@@ -701,9 +695,9 @@ checksum = "4a99a2d53cf90642500986ad22e5083b09e42d44c408f5f112e2a4a0925a643c"
 
 [[package]]
 name = "filetime"
-version = "0.2.14"
+version = "0.2.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1d34cfa13a63ae058bfa601fe9e313bbdb3746427c1459185464ce0fcf62e1e8"
+checksum = "975ccf83d8d9d0d84682850a38c8169027be83368805971cc4f238c2b245bc98"
 dependencies = [
  "cfg-if 1.0.0",
  "libc",
@@ -993,20 +987,11 @@ checksum = "62aca2aba2d62b4a7f5b33f3712cb1b0692779a56fb510499d5c0aa594daeaf3"
 
 [[package]]
 name = "hashbrown"
-version = "0.9.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d7afe4a420e3fe79967a00898cc1f4db7c8a49a9333a29f8a4bd76a253d5cd04"
-dependencies = [
- "ahash 0.4.7",
-]
-
-[[package]]
-name = "hashbrown"
 version = "0.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ab5ef0d4909ef3724cc8cce6ccc8572c5c817592e9285f5464f8e86f8bd3726e"
 dependencies = [
- "ahash 0.7.4",
+ "ahash",
 ]
 
 [[package]]
@@ -1205,7 +1190,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc633605454125dec4b66843673f01c7df2b89479b32e0ed634e43a91cff62a5"
 dependencies = [
  "autocfg",
- "hashbrown 0.11.2",
+ "hashbrown",
 ]
 
 [[package]]
@@ -1335,9 +1320,9 @@ checksum = "0c2cdeb66e45e9f36bfad5bbdb4d2384e70936afbee843c6f6543f0c551ebb25"
 
 [[package]]
 name = "libc"
-version = "0.2.98"
+version = "0.2.99"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "320cfe77175da3a483efed4bc0adc1968ca050b098ce4f2f1c13a56626128790"
+checksum = "a7f823d141fe0a24df1e23b4af4e3c7ba9e5966ec514ea068c93024aa7deb765"
 
 [[package]]
 name = "libsqlite3-sys"
@@ -1394,7 +1379,7 @@ version = "0.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7ea2d928b485416e8908cff2d97d621db22b27f7b3b6729e438bcf42c671ba91"
 dependencies = [
- "hashbrown 0.11.2",
+ "hashbrown",
 ]
 
 [[package]]
