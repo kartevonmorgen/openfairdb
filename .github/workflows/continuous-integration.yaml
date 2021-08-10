@@ -25,7 +25,7 @@ jobs:
         # The inputs should match those in rust-toolchain.toml with the
         # exception of specifying an explicit target for the CI build.
         with:
-          toolchain: nightly-2021-06-09
+          toolchain: nightly-2021-08-10
           profile: minimal
           components: rustfmt, clippy
 
