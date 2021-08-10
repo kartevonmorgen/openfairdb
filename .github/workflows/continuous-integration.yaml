@@ -51,7 +51,6 @@ jobs:
       - name: Build ofdb-app-clearance
         run: |
           cd ofdb-app-clearance/
-          rustup target add wasm32-unknown-unknown
           trunk -V
           trunk build
 

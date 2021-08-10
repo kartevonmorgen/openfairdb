@@ -2,3 +2,4 @@
 channel = "nightly-2021-08-10"
 profile = "minimal"
 components = [ "rustfmt", "clippy" ]
+targets = [ "wasm32-unknown-unknown" ]
