@@ -171,6 +171,31 @@ mod with_api_token {
     }
 
     #[test]
+    fn with_negative_start_end() {
+        let (client, db) = setup();
+        db.exclusive()
+            .unwrap()
+            .create_org(Organization {
+                id: "foo".into(),
+                name: "bar".into(),
+                moderated_tags: vec!["org-tag".into()],
+                api_token: "foo".into(),
+            })
+            .unwrap();
+        let res = client
+                    .post("/events")
+                    .header(ContentType::JSON)
+                    .header(Header::new("Authorization", "Bearer foo"))
+                    .body(r#"{"title":"title","description":"","start":-4132508400,"end":-4132508399,"created_by":"foo@bar.com"}"#)
+                    .dispatch();
+        assert_eq!(res.status(), HttpStatus::Ok);
+        test_json(&res);
+        let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
+        assert_eq!(NaiveDateTime::from_timestamp(-4132508400, 0), ev.start);
+        assert_eq!(Some(NaiveDateTime::from_timestamp(-4132508399, 0)), ev.end);
+    }
+
+    #[test]
     fn with_registration_type() {
         let (client, db) = setup();
         db.exclusive()
