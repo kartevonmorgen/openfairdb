@@ -35,7 +35,7 @@ jobs:
 
       - name: Install musl-tools for Linux
         if: matrix.target == 'x86_64-unknown-linux-musl'
-        run: apt install -y musl-tools
+        run: apt-get -y install musl-tools
 
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
