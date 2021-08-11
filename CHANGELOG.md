@@ -1,13 +1,13 @@
 # Changelog
 
-## v0.10.5 (Unreleased)
+## v0.10.5 (2021-08-11)
 
 - new(api): Filtering events by `end_min`/`end_max`
-- fix(api): Only require title, description, lat, lng for /search/duplicates
 - new(api): Remove min/max restrictions on event start/end date
+- fix(api): Only require title, description, lat, lng for /search/duplicates
 - fix(web): Clearance center: fix public URL in generated `index.html`
 
-## v0.10.5 (2021-08-06)
+## v0.10.4 (2021-08-06)
 
 - fix(api): Implement JSON errors for most cases
 - chore(web): Clearance center: Use trunk to build the app
