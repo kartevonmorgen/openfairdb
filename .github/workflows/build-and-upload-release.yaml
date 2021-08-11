@@ -63,7 +63,7 @@ jobs:
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release
+          args: --release --target ${{ matrix.target }}
 
       - name: Upload tagged artifact
         if: github.ref == 'v[0-9]+.[0-9]+.[0-9]+'
