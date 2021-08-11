@@ -33,12 +33,12 @@ The API might still change sometimes. We will try to let you know in that case.
 ## Quick start
 
 Download the latest build
-[openfairdb_x86_64-unknown-linux-musl_v0.10.4.tar.xz](https://github.com/kartevonmorgen/openfairdb/releases/download/v0.10.4/openfairdb_x86_64-unknown-linux-musl_v0.10.4.tar.xz),
+[openfairdb_x86_64-unknown-linux-musl_v0.10.5.tar.xz](https://github.com/kartevonmorgen/openfairdb/releases/download/v0.10.5/openfairdb_x86_64-unknown-linux-musl_v0.10.5.tar.xz),
 unpack and start it:
 
 ```sh
-wget https://github.com/kartevonmorgen/openfairdb/releases/download/v0.10.4/openfairdb_x86_64-unknown-linux-musl_v0.10.4.tar.xz
-tar xJf openfairdb_x86_64-unknown-linux-musl_v0.10.4.tar.xz
+wget https://github.com/kartevonmorgen/openfairdb/releases/download/v0.10.5/openfairdb_x86_64-unknown-linux-musl_v0.10.5.tar.xz
+tar xJf openfairdb_x86_64-unknown-linux-musl_v0.10.5.tar.xz
 RUST_LOG=info ./openfairdb
 ```
 
