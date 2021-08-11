@@ -24,6 +24,7 @@ jobs:
             target: x86_64-apple-darwin
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
+            target_path: x86_64-unknown-linux-musl
           # TODO: Build on Windows
           #- os: windows-latest
           #  target: x86_64-pc-windows-msvc
@@ -75,7 +76,7 @@ jobs:
         with:
           # Artifact is stored and downloaded as .zip archive
           name: openfairdb_${{ matrix.target }}_${{ github.ref }}${{ matrix.executable_suffix }}
-          path: target/release/openfairdb${{ matrix.executable_suffix }}
+          path: target/${{ matrix.target_path }}/release/openfairdb${{ matrix.executable_suffix }}
 
       - name: Upload latest artifact
         if: startsWith(${{ github.ref }}, 'refs/heads/')
@@ -83,4 +84,4 @@ jobs:
         with:
           # Artifact is stored and downloaded as .zip archive
           name: openfairdb_${{ matrix.target }}${{ matrix.executable_suffix }}
-          path: target/release/openfairdb${{ matrix.executable_suffix }}
+          path: target/${{ matrix.target_path }}/release/openfairdb${{ matrix.executable_suffix }}
