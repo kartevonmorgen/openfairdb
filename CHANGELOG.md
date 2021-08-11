@@ -5,6 +5,7 @@
 - new(api): Filtering events by `end_min`/`end_max`
 - fix(api): Only require title, description, lat, lng for /search/duplicates
 - new(api): Remove min/max restrictions on event start/end date
+- fix(web): Clearance center: fix public URL in generated `index.html`
 
 ## v0.10.5 (2021-08-06)
 
