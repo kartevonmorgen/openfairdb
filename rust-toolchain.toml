@@ -1,3 +1,6 @@
+# Intended for local usage for the default target + WASM.
+# Must be overridden in CI builds to specify different,
+# custom targets!
 [toolchain]
 channel = "nightly-2021-08-10"
 profile = "minimal"
