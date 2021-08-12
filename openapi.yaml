@@ -414,6 +414,8 @@ paths:
         - $ref: '#/components/parameters/EventTagList'
         - $ref: '#/components/parameters/EventStartMin'
         - $ref: '#/components/parameters/EventStartMax'
+        - $ref: '#/components/parameters/EventEndMin'
+        - $ref: '#/components/parameters/EventEndMax'
         - $ref: '#/components/parameters/EventFilterText'
         - $ref: '#/components/parameters/EventCreatedBy'
       responses:
