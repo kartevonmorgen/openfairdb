@@ -24,10 +24,6 @@ config:
   # fenced code block should be allowed depending on the use case.
   code-block-style: false
 
-  # MD026/no-trailing-punctuation: Trailing punctuation in heading
-  # Used in README.md
-  no-trailing-punctuation: false
-
 # Fix any fixable errors
 fix: true
 
