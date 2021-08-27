@@ -21,8 +21,8 @@ then
     exit 1
 fi
 
-DB_FILE="$(basename ${DB_PATH})"
-DB_DIR="$(dirname ${DB_PATH})"
+DB_FILE=$(basename "${DB_PATH}")
+DB_DIR=$(dirname "${DB_PATH}")
 echo "DB_DIR = ${DB_DIR}"
 if [ ! -d "${DB_DIR}" ];
 then
@@ -39,12 +39,12 @@ then
     exit 1
 fi
 
-let MIN_LOOP_COUNTER=1
-let MAX_LOOP_COUNTER=10
-let LOOP_COUNTER=MIN_LOOP_COUNTER
-while [ ${LOOP_COUNTER} -le ${MAX_LOOP_COUNTER} ];
+(( MIN_LOOP_COUNTER = 1  ))
+(( MAX_LOOP_COUNTER = 10 ))
+(( LOOP_COUNTER = MIN_LOOP_COUNTER ))
+while [ "${LOOP_COUNTER}" -le "${MAX_LOOP_COUNTER}" ];
 do
-    if [ ${LOOP_COUNTER} -gt ${MIN_LOOP_COUNTER} ];
+    if [ "${LOOP_COUNTER}" -gt "${MIN_LOOP_COUNTER}" ];
     then
         echo "Trying again: ${LOOP_COUNTER} of ${MAX_LOOP_COUNTER}"
     fi
@@ -67,7 +67,7 @@ do
 
     if [ "${DB_SIZE}" = "${BACKUP_SIZE}" ];
     then
-        ARCHIVE_PATH="$(realpath -sm ${BACKUP_DIR}/${DB_FILE}_${TIMESTAMP}.tar.xz)"
+        ARCHIVE_PATH=$(realpath -sm "${BACKUP_DIR}/${DB_FILE}_${TIMESTAMP}.tar.xz")
         tar -C "${BACKUP_DIR}" -cJf "${ARCHIVE_PATH}" "${TIMESTAMP}"
         rm -rf "${TMP_DIR}"
         echo "Backup succeeded: ${ARCHIVE_PATH}"
@@ -76,7 +76,7 @@ do
     rm -rf "${TMP_DIR}"
 
     echo "[ERROR] Size of copied file differs from original: expected = ${DB_SIZE}, actual = ${BACKUP_SIZE}"
-    let LOOP_COUNTER=LOOP_COUNTER+1
+    (( LOOP_COUNTER = LOOP_COUNTER + 1 ))
 done
 
 echo "[ERROR] Backup failed!"
