@@ -24,6 +24,7 @@ An other way to see how the API can be used, you can open the `network` tab in t
 tools of your browser and see the requests that are made to `https://kartevonmorgen.org`.
 
 ### Data License
+
 Make sure you use the Data appropriate to the [ODbL-License](https://blog.vonmorgen.org/copyright/)
 
 If you want to use the API in your project, please contact us at helmut@kartevonmorgen.org .
@@ -164,17 +165,18 @@ Therefore we use a simple
 [script](https://github.com/kartevonmorgen/openfairdb/blob/master/scripts/backup_db.sh)
 that copies the DB file once a day.
 
-# System Architecture
+## System Architecture
+
 This overview shows, how Karte von morgen is created and how it interacts with the other modules
 ![grafik](https://user-images.githubusercontent.com/15019030/125709247-47128e6a-6a23-43cc-839e-33a0f2715def.png)
 
-## Domain Model
+### Domain Model
 
 *![The rendered class diagram should appear here!](http://www.plantuml.com/plantuml/svg/RLJ1Yjim4BtxAqIEWLtQQp1XswM7maAXsvx3n1uKiVQCaSRj9gN_NbLZErQK76BhlQStencDduA0bx7lgghf80JpgMqznkUVoiHVu-IyCw_Y7La5U2JnEHR48qe6NTomhF_Erf-F_5vL___Dzk5XRpQ1HpaTVcCGyt5ZdfbzwmW4rnfY7pK8XMPb-ZeUG-FT88x9r3MInBJt-wegoCrsOv9jzFePq9kT2SeVCHXXKvTxjlC6pL_3FeEWPN_EmaqKztt4CcR6eiqI_pk88nipQ9GCPcL10erCJS0UN9ULzyGz3c0n0mKx74vCM5R-MhR9iWFPcHSG9sEBYf2D29DLQDdwXIGxvMpW6gIG9-1wi7WOVNS7xHozPLGCeDRQalHOYXfheg_kWi7KfV87s2WIi0kxj6aktYtymj7JCIq7-tNRf8H4RN556eyWceXAxYUYR9b83XU9NDVpswJzyFWOvTD0tf831vUMTwVYcxT0xg8RYkR1u0x2RqZhRcHRYXFstA87mTKbrVjRkZTCWk_vzy0dxSvyZPH5dx30es-mk13tPqHZrqjixZ157ljby5AcnJXg3wzmELCQEydc7YN_gdf2QiU--mS0)*
 
 Note: Currently the rendered class diagram must be updated manually by uploading the contents of the file [classes.puml](classes.puml) to the [PlantUML Online Editor](http://www.plantuml.com/plantuml/uml/) and replace the link for the rendered diagram with one of the generated URLs.
 
-# License
+## License
 
 Copyright (c) 2015 - 2018 Markus Kohlhase\
 Copyright (c) 2018 - 2021 [slowtec GmbH](https://slowtec.de)

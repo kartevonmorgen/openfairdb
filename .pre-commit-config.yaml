@@ -17,6 +17,11 @@ repos:
   - id: mixed-line-ending
     args: [--fix, 'no']
   - id: trailing-whitespace
+- repo: https://github.com/DavidAnson/markdownlint-cli2
+  rev: v0.2.0
+  hooks:
+  - id: markdownlint-cli2
+    exclude: ^LICENSE\.md$
 - repo: https://github.com/codespell-project/codespell
   rev: v2.1.0
   hooks:

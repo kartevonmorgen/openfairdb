@@ -136,8 +136,8 @@
 
 ## v0.8.6 (2020-01-13)
 
-- new(web): POST /events/\<ids>/archive for scouts and admins to archive multiple events
-- new(web): GET /export/events.csv?<query-params> for scouts and admins to export events as CSV
+- new(web): `POST /events/\<ids>/archive` for scouts and admins to archive multiple events
+- new(web): `GET /export/events.csv?<query-params>` for scouts and admins to export events as CSV
 - chore(web): Change OpenAPI download endpoint from /server/api.yaml to /server/openapi.yaml
 - new(frontend): Add button to archive events (visible for Admins and Scouts)
 - new(frontend): Add "places" and "events" to menu
@@ -166,8 +166,8 @@
 ## v0.8.0 (2019-12-13)
 
 - new(web): Query the current user with GET /users/current
-- new(web): Query the history of all place revisions with GET /places/<id>/history
-- new(web): Review multiple places with POST /places/<ids>/review
+- new(web): Query the history of all place revisions with `GET /places/<id>/history`
+- new(web): Review multiple places with `POST /places/<ids>/review`
 - new(web/db): Events are now indexed and searchable
 - refactor(web): Extract JSON objects into a separate crate (`ofdb-boundary`)
 - new(db): Query revision/version history of places
@@ -425,6 +425,7 @@ from 250 to 500. The default number of results if no limit is requested is still
   instead of [neo4j](https://neo4j.com/)
 
 ## v0.2.9 (2017-09-16)
+
 - new(api): always respond with 'application/json'
 - fix(emails): fix encoding of emails
 - new(emails): change links in emails from prototype to main app
