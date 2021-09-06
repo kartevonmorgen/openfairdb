@@ -33,20 +33,8 @@ jobs:
         run: |
           wget -qO- https://github.com/thedodd/trunk/releases/download/v0.13.1/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -C ~/.cargo/bin -xzf-
 
-      - name: Cache Cargo build artifacts
-        id: cache-cargo-build
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.cargo/bin
-            ~/.cargo/registry
-            ~/.cargo/git
-            target/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ github.head_ref }}-${{ github.run_number }}
-          restore-keys: |
-            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}-${{ github.head_ref }}
-            ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-            ${{ runner.os }}-cargo
+      - name: Cache Rust toolchain and build artifacts
+        uses: Swatinem/rust-cache@v1
 
       - name: Build ofdb-app-clearance
         run: |
