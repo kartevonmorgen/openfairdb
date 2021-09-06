@@ -72,15 +72,19 @@ jobs:
           command: check
           args: --manifest-path ofdb-app-clearance/Cargo.toml
 
-      - name: Test project
-        id: test-all
+      - name: Build workspace tests
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --workspace --locked
+          args: --workspace --locked --no-run
 
-      - name: Build project
-        id: build-all
+      - name: Run workspace tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --workspace -- --nocapture --quiet
+
+      - name: Build release
         uses: actions-rs/cargo@v1
         with:
           command: build
