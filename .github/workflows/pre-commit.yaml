@@ -17,9 +17,6 @@ jobs:
     - name: Check out repository
       uses: actions/checkout@v2
 
-    - name: Setup Python
-      uses: actions/setup-python@v2
-
     - name: Install Rust toolchain
       id: rust-toolchain
       uses: actions-rs/toolchain@v1
@@ -27,6 +24,12 @@ jobs:
         toolchain: stable
         profile: minimal
         components: rustfmt, clippy
+
+    - name: Cache Rust toolchain and build artifacts
+      uses: Swatinem/rust-cache@v1
+
+    - name: Setup Python
+      uses: actions/setup-python@v2
 
     - name: Detect code style issues (push)
       uses: pre-commit/action@v2.0.3
