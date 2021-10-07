@@ -76,7 +76,7 @@ jobs:
       - name: Download and install trunk on Linux/macOS
         if: runner.os == 'Linux' || runner.os == 'macOS'
         run: |
-          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.13.1/trunk-${{ matrix.runner_platform }}.tar.gz | tar -C ~/.cargo/bin -xzf-
+          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.14.0/trunk-${{ matrix.runner_platform }}.tar.gz | tar -C ~/.cargo/bin -xzf-
 
       # TODO: Download and install trunk on Windows
 
