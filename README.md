@@ -10,15 +10,16 @@ written in [Rust](http://rustlang.org/).
 
 ## Schnittstelle: REST API
 
+**You find our public API with all major changes in [Swagger](https://app.swaggerhub.com/apis/Kartevonmorgen/openfairdb/).**
+
 The Test-API is available under `http://dev.ofdb.io/v0/`.
 
-The current API is documented within the [openapi.yaml](openapi.yaml) file.
+The most updated API is documented within the [openapi.yaml](openapi.yaml) file.
 You can render the API documentation e.g. with the swagger editor:
 
 - go to [https://editor.swagger.io](https://editor.swagger.io/)
 - go to `File` -> `import URL`
-- enter `https://raw.githubusercontent.com/kartevonmorgen/openfairdb/master/openapi.yaml`
-- enjoy ;-)
+- and enter `https://raw.githubusercontent.com/kartevonmorgen/openfairdb/master/openapi.yaml`
 
 An other way to see how the API can be used, you can open the `network` tab in the developer
 tools of your browser and see the requests that are made to `https://kartevonmorgen.org`.
