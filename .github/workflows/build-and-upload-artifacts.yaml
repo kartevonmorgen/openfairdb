@@ -59,18 +59,18 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           target: ${{ matrix.target }}
-          toolchain: nightly-2021-08-10
+          toolchain: nightly-2021-08-23
           profile: minimal
 
       - name: Set Rust default toolchain
         run: |
-          rustup default nightly-2021-08-10
+          rustup default nightly-2021-08-23
 
       - name: Install Rust toolchain for WASM
         uses: actions-rs/toolchain@v1
         with:
           target: wasm32-unknown-unknown
-          toolchain: nightly-2021-08-10
+          toolchain: nightly-2021-08-23
           profile: minimal
 
       - name: Download and install trunk on Linux/macOS
