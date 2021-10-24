@@ -41,7 +41,7 @@ lazy_static = "*"
 log = "*"
 num-traits = "*"
 maud = { version = "*", optional = true, features = ["rocket"] }
-ofdb-boundary = "*"
+ofdb-boundary = { version = "*", features = ["extra-derive"] }
 ofdb-core = "*"
 ofdb-entities = { version = "*", features = ["rusturl"] }
 ofdb-gateways = "*"
@@ -66,7 +66,6 @@ uuid = { version = "*", features = ["v4"] }
 
 [dev-dependencies]
 rand = "*"
-ofdb-boundary = { version = "*", features = ["extra-derive"] }
 ofdb-entities = { version = "*", features = ["builders"] }
 
 [build-dependencies]
