@@ -12,6 +12,7 @@ use thiserror::Error;
 use super::json_error_response;
 
 #[derive(Debug, Error)]
+#[allow(clippy::large_enum_variant)]
 pub enum Error {
     #[error(transparent)]
     App(#[from] AppError),

@@ -85,7 +85,7 @@ pub fn run() {
         .value_of("idx-dir")
         .map(ToString::to_string)
         .or_else(|| env::var("INDEX_DIR").map(Option::Some).unwrap_or(None));
-    let idx_path = idx_dir.as_ref().map(|dir| Path::new(dir));
+    let idx_path = idx_dir.as_ref().map(Path::new);
     info!("Initializing Tantivy full-text search engine");
     let search_engine = tantivy::SearchEngine::init_with_path(idx_path).unwrap();
 

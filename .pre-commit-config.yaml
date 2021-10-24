@@ -18,7 +18,7 @@ repos:
     args: [--fix, 'no']
   - id: trailing-whitespace
 - repo: https://github.com/DavidAnson/markdownlint-cli2
-  rev: v0.3.1
+  rev: v0.3.2
   hooks:
   - id: markdownlint-cli2
     exclude: ^LICENSE\.md$
@@ -37,6 +37,8 @@ repos:
   rev: v1.0
   hooks:
   - id: fmt
+    args: [--all, --]
   - id: cargo-check
+    args: [--workspace, --all-features, --]
   - id: clippy
     args: [--all-targets, --all-features, --, -D, warnings]
