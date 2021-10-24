@@ -1,0 +1,13 @@
+disallowed-methods = [
+]
+
+disallowed-types = [
+    # Probably not suitable for any use case
+    "std::collections::LinkedList",
+
+    # Use the faster, simpler, and non-poisonable primitives in `parking_lot` instead
+    # TODO: Move to disallowed-types after switching to Rust 1.55
+    "std::sync::Mutex",
+    "std::sync::RwLock",
+    "std::sync::CondVar",
+]
