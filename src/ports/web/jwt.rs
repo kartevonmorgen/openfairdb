@@ -4,7 +4,6 @@ use jwt_service::JwtService;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashSet,
-    convert::TryFrom,
     sync::{Mutex, MutexGuard},
 };
 

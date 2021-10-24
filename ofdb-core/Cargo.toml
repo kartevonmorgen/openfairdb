@@ -2,7 +2,7 @@
 name = "ofdb-core"
 version = "0.0.0" # will stay 0.0.0 until published
 authors = ["slowtec GmbH <post@slowtec.de>"]
-edition = "2018"
+edition = "2021"
 publish = false
 
 [dependencies]

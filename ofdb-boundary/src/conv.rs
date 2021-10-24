@@ -1,6 +1,5 @@
 use super::*;
 use ofdb_entities as e;
-use std::convert::{TryFrom, TryInto};
 
 impl From<e::links::CustomLink> for CustomLink {
     fn from(from: e::links::CustomLink) -> Self {
