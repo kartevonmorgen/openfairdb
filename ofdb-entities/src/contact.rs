@@ -25,11 +25,15 @@ pub mod tests {
     #[test]
     fn empty_contact() {
         assert!(Contact::default().is_empty());
-        let mut c = Contact::default();
-        c.email = Some("foo@bar".into());
+        let c = Contact {
+            email: Some("foo@bar".into()),
+            ..Default::default()
+        };
         assert!(!c.is_empty());
-        let mut c = Contact::default();
-        c.phone = Some("123".into());
+        let c = Contact {
+            phone: Some("123".into()),
+            ..Default::default()
+        };
         assert!(!c.is_empty());
     }
 }
