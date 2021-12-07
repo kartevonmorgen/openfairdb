@@ -15,7 +15,10 @@ repos:
   - id: fix-byte-order-marker
   - id: forbid-new-submodules
   - id: mixed-line-ending
-    args: [--fix, 'no']
+    args: [
+      --fix,
+      'no',
+    ]
   - id: trailing-whitespace
 - repo: https://github.com/DavidAnson/markdownlint-cli2
   rev: v0.3.2
@@ -30,7 +33,9 @@ repos:
   rev: v2.1.0
   hooks:
   - id: codespell
-    args: [ --ignore-words=.codespellignore ]
+    args: [
+      --ignore-words=.codespellignore,
+    ]
     # TODO: Remove localized text from source code
     exclude: .*\.json|src/ports/web/frontend/login.rs|ofdb-gateways/src/user_communication.rs
 - repo: https://github.com/doublify/pre-commit-rust
