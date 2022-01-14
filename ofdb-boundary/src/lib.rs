@@ -277,7 +277,7 @@ pub enum ReviewStatus {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq, Hash))]
 pub struct Review {
     pub status: ReviewStatus,
     pub comment: Option<String>,
