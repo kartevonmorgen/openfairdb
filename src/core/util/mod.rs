@@ -31,7 +31,7 @@ pub fn remove_hash_tags(text: &str) -> String {
         .replace_all(text, "")
         .into_owned()
         .replace("  ", " ")
-        .replace(",", "")
+        .replace(',', "")
         .trim()
         .into()
 }

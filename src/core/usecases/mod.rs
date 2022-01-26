@@ -168,7 +168,7 @@ pub fn prepare_tag_list<'a>(tags: impl IntoIterator<Item = &'a str>) -> Vec<Stri
         // Split by whitespace
         .flat_map(|t| t.split_whitespace())
         // Remove reserved character
-        .map(|t| t.replace("#", ""))
+        .map(|t| t.replace('#', ""))
         // Filter empty tags (2nd pass) and conversion to lowercase
         .filter_map(|t| match t.trim() {
             t if t.is_empty() => None,
