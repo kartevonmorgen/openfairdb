@@ -57,7 +57,6 @@ pub fn routes() -> Vec<Route> {
         get_place,
         get_place_history,
         get_place_history_revision,
-        post_places_review,
         events::post_event,
         events::post_event_with_token,
         events::get_event,
@@ -90,6 +89,7 @@ pub fn routes() -> Vec<Route> {
         entries_csv_export,
         places::count_pending_clearances,
         places::list_pending_clearances,
+        places::post_review,
         places::update_pending_clearances,
         captcha::post_captcha,
         captcha::get_captcha,
@@ -155,44 +155,6 @@ pub fn get_place_history(
     Ok(Json(place_history.into()))
 }
 
-#[post("/places/<ids>/review", data = "<review>")]
-pub fn post_places_review(
-    auth: Auth,
-    db: sqlite::Connections,
-    mut search_engine: tantivy::SearchEngine,
-    ids: String,
-    review: JsonResult<json::Review>,
-) -> Result<()> {
-    let ids = util::split_ids(&ids);
-    if ids.is_empty() {
-        return Err(Error::Parameter(ParameterError::EmptyIdList).into());
-    }
-    let reviewer_email = {
-        let db = db.shared()?;
-        // Only scouts and admins are entitled to review places
-        auth.user_with_min_role(&*db, Role::Scout)?.email
-    };
-    let json::Review { status, comment } = review?.into_inner();
-    // TODO: Record context information
-    let context = None;
-    let review = usecases::Review {
-        context,
-        reviewer_email: reviewer_email.into(),
-        status: status.into(),
-        comment,
-    };
-    let update_count = flows::review_places(&db, &mut search_engine, &ids, review)?;
-    if update_count < ids.len() {
-        log::warn!(
-            "Applied review to only {} of {} place(s): {:?}",
-            update_count,
-            ids.len(),
-            ids
-        );
-    }
-    Ok(Json(()))
-}
-
 #[get("/duplicates/<ids>")]
 pub fn get_duplicates(
     connections: sqlite::Connections,
@@ -238,7 +200,10 @@ fn post_login(
             email: &login.email,
             password: &login.password,
         };
-        usecases::login_with_email(&*db.shared()?, &credentials)?;
+        usecases::login_with_email(&*db.shared()?, &credentials).map_err(|err| {
+            log::debug!("Login with email '{}' failed: {}", login.email, err);
+            err
+        })?;
     }
 
     let mut response = None;
