@@ -200,7 +200,7 @@ fn create_or_replace<T: Clone + Key>(objects: &mut Vec<T>, e: T) -> RepoResult<(
     Ok(())
 }
 
-fn update<T: Clone + Key>(objects: &mut Vec<T>, e: &T) -> RepoResult<()> {
+fn update<T: Clone + Key>(objects: &mut [T], e: &T) -> RepoResult<()> {
     if let Some(pos) = objects.iter().position(|x| x.key() == e.key()) {
         objects[pos] = e.clone();
     } else {

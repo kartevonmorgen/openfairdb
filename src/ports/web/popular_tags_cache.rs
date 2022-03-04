@@ -6,11 +6,8 @@ use crate::{
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use ofdb_boundary::TagFrequency;
-use std::{
-    collections::HashMap,
-    sync::{RwLock, RwLockReadGuard, RwLockWriteGuard},
-    time::Duration,
-};
+use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::{collections::HashMap, time::Duration};
 
 type Request = (MostPopularTagsParams, Pagination);
 type Cache = HashMap<Request, (DateTime<Utc>, Vec<TagFrequency>)>;
@@ -60,22 +57,10 @@ impl PopularTagsCache {
     }
 
     fn read(&self) -> RwLockReadGuard<Cache> {
-        match self.0.read() {
-            Ok(guard) => guard,
-            Err(poison_err) => {
-                log::error!("A poisoned RwLockReadGuard for the PopularTagsCache was found.");
-                poison_err.into_inner()
-            }
-        }
+        self.0.read()
     }
 
     fn write(&self) -> RwLockWriteGuard<Cache> {
-        match self.0.write() {
-            Ok(guard) => guard,
-            Err(poison_err) => {
-                log::error!("A poisoned RwLockWriteGuard for the PopularTagsCache was found.");
-                poison_err.into_inner()
-            }
-        }
+        self.0.write()
     }
 }

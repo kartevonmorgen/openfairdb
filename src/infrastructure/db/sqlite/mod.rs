@@ -5,10 +5,10 @@ mod util;
 
 use anyhow::Result as Fallible;
 use diesel::{r2d2, sqlite::SqliteConnection};
-use owning_ref::{RwLockReadGuardRef, RwLockWriteGuardRefMut};
+use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::{
     ops::{Deref, DerefMut},
-    sync::{Arc, RwLock},
+    sync::Arc,
 };
 
 pub type Connection = SqliteConnection;
@@ -20,16 +20,13 @@ pub type PooledConnection = r2d2::PooledConnection<ConnectionManager>;
 pub type SharedConnectionPool = Arc<RwLock<ConnectionPool>>;
 
 pub struct DbReadOnly<'a> {
-    _locked_pool: RwLockReadGuardRef<'a, ConnectionPool>,
+    _locked_pool: RwLockReadGuard<'a, ConnectionPool>,
     conn: PooledConnection,
 }
 
 impl<'a> DbReadOnly<'a> {
     fn try_new(pool: &'a SharedConnectionPool) -> Fallible<Self> {
-        let locked_pool = RwLockReadGuardRef::new(pool.read().unwrap_or_else(|err| {
-            error!("Failed to lock database connection pool for read-only access");
-            err.into_inner()
-        }));
+        let locked_pool = pool.read();
         let conn = locked_pool.get().map_err(|err| {
             error!("Failed to obtain pooled database connection for read-only access");
             err
@@ -50,16 +47,13 @@ impl<'a> Deref for DbReadOnly<'a> {
 }
 
 pub struct DbReadWrite<'a> {
-    _locked_pool: RwLockWriteGuardRefMut<'a, ConnectionPool>,
+    _locked_pool: RwLockWriteGuard<'a, ConnectionPool>,
     conn: PooledConnection,
 }
 
 impl<'a> DbReadWrite<'a> {
     fn try_new(pool: &'a SharedConnectionPool) -> Fallible<Self> {
-        let locked_pool = RwLockWriteGuardRefMut::new(pool.write().unwrap_or_else(|err| {
-            error!("Failed to lock database connection pool for read/write access");
-            err.into_inner()
-        }));
+        let locked_pool = pool.write();
         let conn = locked_pool.get().map_err(|err| {
             error!("Failed to obtain pooled database connection for read/write access");
             err
