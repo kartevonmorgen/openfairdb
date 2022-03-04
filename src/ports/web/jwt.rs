@@ -95,13 +95,13 @@ mod jwt_service {
 
     pub struct Key {
         encoding_key: EncodingKey,
-        decoding_key: DecodingKey<'static>,
+        decoding_key: DecodingKey,
     }
 
     impl Key {
         pub fn new(secret: String) -> Self {
             let encoding_key = EncodingKey::from_secret(secret.as_ref());
-            let decoding_key = DecodingKey::from_secret(secret.as_ref()).into_static();
+            let decoding_key = DecodingKey::from_secret(secret.as_ref());
             Self {
                 encoding_key,
                 decoding_key,
