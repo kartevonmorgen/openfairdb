@@ -1803,6 +1803,7 @@ dependencies = [
  "ofdb-entities",
  "ofdb-gateways",
  "owning_ref",
+ "parking_lot",
  "passwords",
  "pwhash",
  "rand 0.8.5",

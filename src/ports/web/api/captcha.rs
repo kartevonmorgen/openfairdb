@@ -1,17 +1,14 @@
 use super::super::guards::{COOKIE_CAPTCHA_KEY, MAX_CAPTCHA_TTL};
 use ::captcha::{gen, Difficulty};
 use chrono::prelude::*;
+use parking_lot::{Mutex, MutexGuard};
 use rocket::{
     data::Data,
     http::{ContentType, Cookie, Cookies, RawStr, Status},
     response::Content,
     State,
 };
-use std::{
-    collections::HashMap,
-    io::Read,
-    sync::{Mutex, MutexGuard},
-};
+use std::{collections::HashMap, io::Read};
 use uuid::Uuid;
 
 pub struct CaptchaCache(Mutex<HashMap<Uuid, Option<String>>>);
@@ -37,13 +34,7 @@ impl CaptchaCache {
         is_valid
     }
     fn lock(&self) -> MutexGuard<HashMap<Uuid, Option<String>>> {
-        match self.0.lock() {
-            Ok(guard) => guard,
-            Err(poison_err) => {
-                log::error!("A poisoned mutex guard for the CaptchaCache was found.");
-                poison_err.into_inner()
-            }
-        }
+        self.0.lock()
     }
 }
 

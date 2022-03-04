@@ -46,6 +46,7 @@ ofdb-core = "*"
 ofdb-entities = { version = "*", features = ["rusturl"] }
 ofdb-gateways = "*"
 owning_ref = "*"
+parking_lot = "*"
 passwords = "*"
 pwhash = "*"
 rand = { version = "*", optional = true }

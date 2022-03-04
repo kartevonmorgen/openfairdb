@@ -1,11 +1,9 @@
 use anyhow::{anyhow, Result};
 use chrono::{Duration, Utc};
 use jwt_service::JwtService;
+use parking_lot::{Mutex, MutexGuard};
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashSet,
-    sync::{Mutex, MutexGuard},
-};
+use std::collections::HashSet;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -72,13 +70,7 @@ impl JwtState {
     }
 
     fn lock(&self) -> MutexGuard<HashSet<String>> {
-        match self.blacklist.lock() {
-            Ok(guard) => guard,
-            Err(poison_err) => {
-                log::error!("A poisoned mutex guard for the JwtState was found.");
-                poison_err.into_inner()
-            }
-        }
+        self.blacklist.lock()
     }
 }
 

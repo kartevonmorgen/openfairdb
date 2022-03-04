@@ -15,11 +15,8 @@ use crate::core::{
 
 use anyhow::{bail, Result as Fallible};
 use num_traits::ToPrimitive;
-use std::{
-    ops::Bound,
-    path::Path,
-    sync::{Arc, Mutex},
-};
+use parking_lot::Mutex;
+use std::{ops::Bound, path::Path, sync::Arc};
 use strum::IntoEnumIterator as _;
 use tantivy::{
     collector::TopDocs,
@@ -1037,10 +1034,7 @@ impl SearchEngine {
 
 impl Indexer for SearchEngine {
     fn flush_index(&mut self) -> Fallible<()> {
-        let mut inner = match self.0.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
+        let mut inner = self.0.lock();
         inner.flush_index()
     }
 }
@@ -1052,30 +1046,21 @@ impl IdIndex for SearchEngine {
         query: &IndexQuery,
         limit: usize,
     ) -> Fallible<Vec<Id>> {
-        let inner = match self.0.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
+        let inner = self.0.lock();
         inner.query_ids(mode, query, limit)
     }
 }
 
 impl IdIndexer for SearchEngine {
     fn remove_by_id(&self, id: &Id) -> Fallible<()> {
-        let inner = match self.0.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
+        let inner = self.0.lock();
         inner.remove_by_id(id)
     }
 }
 
 impl PlaceIndex for SearchEngine {
     fn query_places(&self, query: &IndexQuery, limit: usize) -> Fallible<Vec<IndexedPlace>> {
-        let inner = match self.0.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
+        let inner = self.0.lock();
         inner.query_places(query, limit)
     }
 }
@@ -1087,20 +1072,14 @@ impl PlaceIndexer for SearchEngine {
         status: ReviewStatus,
         ratings: &AvgRatings,
     ) -> Fallible<()> {
-        let inner = match self.0.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
+        let inner = self.0.lock();
         inner.add_or_update_place(place, status, ratings)
     }
 }
 
 impl EventIndexer for SearchEngine {
     fn add_or_update_event(&self, event: &Event) -> Fallible<()> {
-        let inner = match self.0.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
+        let inner = self.0.lock();
         inner.add_or_update_event(event)
     }
 }
