@@ -11,6 +11,23 @@ use std::result;
 
 type Result<T> = result::Result<T, RepoError>;
 
+fn load_email_by_user_id(conn: &SqliteConnection, user_id: i64) -> Result<Option<String>> {
+    use schema::users::dsl;
+    let email = schema::users::table
+        .select(dsl::email)
+        .filter(dsl::id.eq(&user_id))
+        .first::<String>(conn)
+        .optional()?;
+    if email.is_none() {
+        // This should never happen
+        log::warn!(
+            "Referential integrity violation: User with id = {} not found",
+            user_id
+        );
+    }
+    Ok(email)
+}
+
 fn load_review_status(status: ReviewStatusPrimitive) -> Result<ReviewStatus> {
     ReviewStatus::try_from(status)
         .ok_or_else(|| RepoError::Other(anyhow!("Invalid review status: {}", status)))
@@ -114,17 +131,10 @@ fn load_place(
 
     let custom_links = load_place_revision_custom_links(conn, id)?;
 
-    let created_by = if let Some(user_id) = created_by_id {
-        use schema::users::dsl;
-        Some(
-            schema::users::table
-                .select(dsl::email)
-                .filter(dsl::id.eq(&user_id))
-                .first::<String>(conn)?,
-        )
-    } else {
-        None
-    };
+    let created_by = created_by_id
+        .map(|user_id| load_email_by_user_id(conn, user_id))
+        .transpose()?
+        .flatten();
 
     let place = Place {
         id: place_id.into(),
@@ -207,17 +217,10 @@ fn load_place_with_status_review(
 
     let custom_links = load_place_revision_custom_links(conn, id)?;
 
-    let created_by = if let Some(user_id) = created_by_id {
-        use schema::users::dsl;
-        Some(
-            schema::users::table
-                .select(dsl::email)
-                .filter(dsl::id.eq(&user_id))
-                .first::<String>(conn)?,
-        )
-    } else {
-        None
-    };
+    let created_by = created_by_id
+        .map(|user_id| load_email_by_user_id(conn, user_id))
+        .transpose()?
+        .flatten();
 
     let links = Links {
         homepage: homepage.and_then(load_url),
