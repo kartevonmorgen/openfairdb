@@ -135,20 +135,20 @@ impl IndexedFields {
                 fv if fv.field() == self.status => {
                     place.status = fv
                         .value()
-                        .i64_value()
+                        .as_i64()
                         .and_then(|v| ReviewStatus::try_from(v as ReviewStatusPrimitive));
                 }
                 fv if fv.field() == self.lat => {
                     debug_assert!(lat.is_none());
-                    lat = fv.value().f64_value().map(LatCoord::from_deg);
+                    lat = fv.value().as_f64().map(LatCoord::from_deg);
                 }
                 fv if fv.field() == self.lng => {
                     debug_assert!(lng.is_none());
-                    lng = fv.value().f64_value().map(LngCoord::from_deg);
+                    lng = fv.value().as_f64().map(LngCoord::from_deg);
                 }
                 fv if fv.field() == self.id => {
                     debug_assert!(place.id.is_empty());
-                    if let Some(id) = fv.value().text() {
+                    if let Some(id) = fv.value().as_text() {
                         place.id = id.into();
                     } else {
                         error!("Invalid id value: {:?}", fv.value());
@@ -156,23 +156,23 @@ impl IndexedFields {
                 }
                 fv if fv.field() == self.title => {
                     debug_assert!(place.title.is_empty());
-                    if let Some(title) = fv.value().text() {
-                        place.title = title.into();
+                    if let Some(title) = fv.value().as_text() {
+                        place.title = title.to_owned();
                     } else {
                         error!("Invalid title value: {:?}", fv.value());
                     }
                 }
                 fv if fv.field() == self.description => {
                     debug_assert!(place.description.is_empty());
-                    if let Some(description) = fv.value().text() {
-                        place.description = description.into();
+                    if let Some(description) = fv.value().as_text() {
+                        place.description = description.to_owned();
                     } else {
                         error!("Invalid description value: {:?}", fv.value());
                     }
                 }
                 fv if fv.field() == self.tag => {
-                    if let Some(tag) = fv.value().text() {
-                        place.tags.push(tag.into());
+                    if let Some(tag) = fv.value().as_text() {
+                        place.tags.push(tag.to_owned());
                     } else {
                         error!("Invalid tag value: {:?}", fv.value());
                     }
@@ -180,32 +180,32 @@ impl IndexedFields {
                 fv if fv.field() == self.ratings_diversity => {
                     debug_assert!(place.ratings.diversity == Default::default());
                     place.ratings.diversity =
-                        fv.value().f64_value().map(Into::into).unwrap_or_default();
+                        fv.value().as_f64().map(Into::into).unwrap_or_default();
                 }
                 fv if fv.field() == self.ratings_fairness => {
                     debug_assert!(place.ratings.fairness == Default::default());
                     place.ratings.fairness =
-                        fv.value().f64_value().map(Into::into).unwrap_or_default();
+                        fv.value().as_f64().map(Into::into).unwrap_or_default();
                 }
                 fv if fv.field() == self.ratings_humanity => {
                     debug_assert!(place.ratings.humanity == Default::default());
                     place.ratings.humanity =
-                        fv.value().f64_value().map(Into::into).unwrap_or_default();
+                        fv.value().as_f64().map(Into::into).unwrap_or_default();
                 }
                 fv if fv.field() == self.ratings_renewable => {
                     debug_assert!(place.ratings.renewable == Default::default());
                     place.ratings.renewable =
-                        fv.value().f64_value().map(Into::into).unwrap_or_default();
+                        fv.value().as_f64().map(Into::into).unwrap_or_default();
                 }
                 fv if fv.field() == self.ratings_solidarity => {
                     debug_assert!(place.ratings.solidarity == Default::default());
                     place.ratings.solidarity =
-                        fv.value().f64_value().map(Into::into).unwrap_or_default();
+                        fv.value().as_f64().map(Into::into).unwrap_or_default();
                 }
                 fv if fv.field() == self.ratings_transparency => {
                     debug_assert!(place.ratings.transparency == Default::default());
                     place.ratings.transparency =
-                        fv.value().f64_value().map(Into::into).unwrap_or_default();
+                        fv.value().as_f64().map(Into::into).unwrap_or_default();
                 }
                 fv if fv.field() == self.total_rating => (),
                 // Address fields are currently not stored
@@ -809,7 +809,7 @@ impl From<IdCollector> for Vec<Id> {
 
 impl DocumentCollector for IdCollector {
     fn collect_document(&mut self, doc_addr: DocAddress, doc: Document) {
-        if let Some(id) = doc.get_first(self.id_field).and_then(Value::text) {
+        if let Some(id) = doc.get_first(self.id_field).and_then(Value::as_text) {
             self.collected_ids.push(Id::from(id));
         } else {
             error!(
@@ -940,7 +940,7 @@ impl PlaceIndexer for TantivyIndex {
             self.fields.ratings_transparency,
             ratings.transparency.into(),
         );
-        self.index_writer.add_document(doc);
+        self.index_writer.add_document(doc)?;
         Ok(())
     }
 }
@@ -1001,7 +1001,7 @@ impl EventIndexer for TantivyIndex {
         for tag in &event.tags {
             doc.add_text(self.fields.tag, tag);
         }
-        self.index_writer.add_document(doc);
+        self.index_writer.add_document(doc)?;
         Ok(())
     }
 }
