@@ -45,7 +45,7 @@ impl From<&str> for Id {
 
 impl From<Uuid> for Id {
     fn from(from: Uuid) -> Self {
-        from.to_simple_ref().to_string().into()
+        from.as_simple().to_string().into()
     }
 }
 

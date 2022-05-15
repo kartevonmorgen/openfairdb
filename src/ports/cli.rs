@@ -8,7 +8,7 @@ use crate::{
     ports::web,
 };
 
-use clap::{crate_authors, App, Arg};
+use clap::{crate_authors, Command, Arg};
 use dotenv::dotenv;
 use ofdb_core::gateways::geocode::GeoCodingGateway;
 use std::{env, path::Path};
@@ -40,7 +40,7 @@ fn update_event_locations<D: Db>(db: &mut D) -> Result<()> {
 #[allow(deprecated)]
 pub fn run() {
     dotenv().ok(); // TODO: either use environment variables XOR cli arguments
-    let matches = App::new("openFairDB")
+    let matches = Command::new("openFairDB")
         .version(env!("CARGO_PKG_VERSION"))
         .author(crate_authors!("\n"))
         .arg(

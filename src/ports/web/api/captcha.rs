@@ -41,7 +41,7 @@ impl CaptchaCache {
 #[post("/captcha", rank = 2)]
 pub fn post_captcha(captcha_cache: State<CaptchaCache>) -> Result<String, Status> {
     let uuid = captcha_cache.prepare();
-    Ok(uuid.to_simple().to_string())
+    Ok(uuid.simple().to_string())
 }
 
 #[get("/captcha/<token>")]
@@ -116,7 +116,7 @@ pub mod tests {
     #[test]
     fn request_invalid_captcha_image() {
         let (client, _) = setup();
-        let token = Uuid::new_v4().to_simple().to_string();
+        let token = Uuid::new_v4().simple().to_string();
         let res = client.get(format!("/captcha/{}", token)).dispatch();
         assert_eq!(res.status(), Status::BadRequest);
     }
@@ -124,7 +124,7 @@ pub mod tests {
     #[test]
     fn verify_invalid_captcha_answer() {
         let (client, _) = setup();
-        let token = Uuid::new_v4().to_simple().to_string();
+        let token = Uuid::new_v4().simple().to_string();
         let res = client
             .post(format!("/captcha/{}/verify", token))
             .header(ContentType::Plain)

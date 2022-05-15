@@ -35,7 +35,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install musl-tools on Linux
         if: matrix.target == 'x86_64-unknown-linux-musl'
@@ -59,24 +59,20 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           target: ${{ matrix.target }}
-          toolchain: nightly-2021-08-23
+          toolchain: nightly-2022-05-12
           profile: minimal
-
-      - name: Set Rust default toolchain
-        run: |
-          rustup default nightly-2021-08-23
 
       - name: Install Rust toolchain for WASM
         uses: actions-rs/toolchain@v1
         with:
           target: wasm32-unknown-unknown
-          toolchain: nightly-2021-08-23
+          toolchain: nightly-2022-05-12
           profile: minimal
 
       - name: Download and install trunk on Linux/macOS
         if: runner.os == 'Linux' || runner.os == 'macOS'
         run: |
-          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.14.0/trunk-${{ matrix.runner_platform }}.tar.gz | tar -C ~/.cargo/bin -xzf-
+          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.15.0/trunk-${{ matrix.runner_platform }}.tar.gz | tar -C ~/.cargo/bin -xzf-
 
       # TODO: Download and install trunk on Windows
 

@@ -6,20 +6,21 @@ edition = "2021"
 publish = false
 
 [dependencies]
-chrono = "*"
-fast_chemail = "*"
-itertools = "*"
-log = "*"
-ofdb-core = "*"
-ofdb-entities = "*"
-quoted_printable = "*"
+ofdb-core = "=0.0.0"
+ofdb-entities = "=0.10.1"
+
+chrono = "0.4.19"
+fast_chemail = "0.9.6"
+itertools = "0.10.3"
+log = "0.4.17"
+quoted_printable = "0.4.5"
 
 [dependencies.geocoding]
-version = "*"
+version = "0.3.1"
 default-features = false
 features = ["rustls-tls"]
 
 [dependencies.reqwest]
-version = "0.10"
+version = "0.11.10"
 default-features = false
 features = ["blocking", "rustls-tls", "json"]

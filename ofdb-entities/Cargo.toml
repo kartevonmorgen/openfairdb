@@ -9,25 +9,25 @@ repository = "https://github.com/kartevonmorgen/openfairdb"
 edition = "2021"
 
 [dependencies]
-bs58 = "0.4"
-chrono = { version = "0.4", default-features = false, features = ["clock"] }
-itertools = "0.10"
-num-derive = "0.3"
-num-traits = "0.2"
-pwhash = "1"
-uuid = { version = "0.8", features = ["v4"] }
-url = { version = "2", optional = true }
-strum = { version = "0.24", features = ["derive"] }
-thiserror = "1"
+bs58 = "0.4.0"
+chrono = { version = "0.4.19", default-features = false, features = ["clock"] }
+itertools = "0.10.3"
+num-derive = "0.3.3"
+num-traits = "0.2.15"
+pwhash = "1.0.0"
+uuid = { version = "1.0.0", features = ["v4"] }
+url = { version = "2.2.2", optional = true }
+strum = { version = "0.24.0", features = ["derive"] }
+thiserror = "1.0.31"
 
 [features]
 default = []
 builders = []
-rusturl = ["url"]
-wasm-bindgen = ["uuid/wasm-bindgen", "chrono/wasmbind"]
+url = ["dep:url"]
+wasm-bindgen = ["chrono/wasmbind"]
 
 [dev-dependencies]
-rand = "0.8"
+rand = "0.8.5"
 
 [badges]
 maintenance = { status = "actively-developed" }

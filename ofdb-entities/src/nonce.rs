@@ -61,7 +61,7 @@ impl FromStr for Nonce {
 
 impl fmt::Display for Nonce {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", self.0.to_simple_ref())
+        write!(f, "{}", self.0.as_simple())
     }
 }
 
