@@ -1,4 +1,5 @@
-//#![deny(missing_docs)] // TODO: Complete missing documentation and enable this option
+//#![deny(missing_docs)] // TODO: Complete missing documentation and enable this
+//#![deny(missing_docs)] option
 #![deny(missing_debug_implementations)]
 #![deny(rustdoc::broken_intra_doc_links)]
 #![cfg_attr(test, deny(warnings))]
@@ -7,7 +8,8 @@
 //!
 //! Reusable, agnostic domain entities for OpenFairDB.
 //!
-//! The entities only contain generic functionality that does not reveal any application-specific business logic.
+//! The entities only contain generic functionality that does not reveal any
+//! application-specific business logic.
 
 pub mod activity;
 pub mod address;

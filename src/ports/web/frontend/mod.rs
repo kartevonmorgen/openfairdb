@@ -1,12 +1,5 @@
-use crate::{
-    core::{
-        error::{Error, ParameterError},
-        prelude::*,
-        usecases,
-    },
-    infrastructure::{db::sqlite, error::*, flows::prelude::*},
-    ports::web::{guards::*, tantivy::SearchEngine},
-};
+use std::{ffi::OsStr, io::Cursor, path::PathBuf};
+
 use maud::Markup;
 use num_traits::FromPrimitive;
 use rocket::{
@@ -21,7 +14,16 @@ use rocket::{
     Route,
 };
 use rust_embed::RustEmbed;
-use std::{ffi::OsStr, io::Cursor, path::PathBuf};
+
+use crate::{
+    core::{
+        error::{Error, ParameterError},
+        prelude::*,
+        usecases,
+    },
+    infrastructure::{db::sqlite, error::*, flows::prelude::*},
+    ports::web::{guards::*, tantivy::SearchEngine},
+};
 
 mod login;
 mod password;

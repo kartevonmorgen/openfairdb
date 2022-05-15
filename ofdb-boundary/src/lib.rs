@@ -1,13 +1,16 @@
-//#![deny(missing_docs)] // TODO: Complete missing documentation and enable this option
+//#![deny(missing_docs)] // TODO: Complete missing documentation and enable this
+//#![deny(missing_docs)] option
 #![cfg_attr(features = "extra-derive", deny(missing_debug_implementations))]
 #![deny(rustdoc::broken_intra_doc_links)]
 #![cfg_attr(test, deny(warnings))]
 
 //! # ofdb-boundary
 //!
-//! Serializable, anemic data structures for accessing the OpenFairDB API in a type-safe manner.
+//! Serializable, anemic data structures for accessing the OpenFairDB API in a
+//! type-safe manner.
 //!
-//! Only supposed to be used as short-lived, transitional instances for (de-)serializing entities!
+//! Only supposed to be used as short-lived, transitional instances for
+//! (de-)serializing entities!
 
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};

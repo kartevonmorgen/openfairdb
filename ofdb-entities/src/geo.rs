@@ -1,8 +1,9 @@
-use itertools::*;
 use std::{
     num::ParseFloatError,
     ops::{Add, Sub},
 };
+
+use itertools::*;
 use thiserror::Error;
 
 pub type RawCoord = i32;
@@ -820,8 +821,9 @@ mod tests {
     // use crate::test::Bencher;
     //
     // fn random_map_point<T: rand::Rng>(rng: &mut T) -> MapPoint {
-    //     let lat = rng.gen_range(LatCoord::min().to_deg(), LatCoord::max().to_deg());
-    //     let lng = rng.gen_range(LngCoord::min().to_deg(), LngCoord::max().to_deg());
+    //     let lat = rng.gen_range(LatCoord::min().to_deg(),
+    // LatCoord::max().to_deg());     let lng =
+    // rng.gen_range(LngCoord::min().to_deg(), LngCoord::max().to_deg());
     //     MapPoint::from_lat_lng_deg(lat, lng)
     // }
     //

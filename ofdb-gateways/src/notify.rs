@@ -1,6 +1,7 @@
-use crate::user_communication;
 use ofdb_core::gateways::{email::EmailGateway, notify::NotificationGateway};
 use ofdb_entities::{category::*, email::*, event::*, nonce::*, place::*, user::*};
+
+use crate::user_communication;
 
 pub struct Notify {
     email_gw: Box<dyn EmailGateway + Send + Sync + 'static>,

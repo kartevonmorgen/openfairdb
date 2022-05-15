@@ -1,9 +1,9 @@
-pub use crate::infrastructure::db::sqlite::*;
-
 use rocket::{
     request::{self, FromRequest},
     Outcome, Request, State,
 };
+
+pub use crate::infrastructure::db::sqlite::*;
 
 impl<'a, 'r> FromRequest<'a, 'r> for Connections {
     type Error = ();

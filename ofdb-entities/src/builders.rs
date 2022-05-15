@@ -7,9 +7,10 @@ pub use self::{address_builder::*, place_builder::*};
 
 pub mod place_builder {
 
+    use std::str::FromStr;
+
     use super::*;
     use crate::{activity::*, geo::*, id::*, links::*, location::*, place::*, revision::*};
-    use std::str::FromStr;
 
     #[derive(Debug)]
     pub struct PlaceBuild {

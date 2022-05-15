@@ -1,9 +1,10 @@
+use ofdb_core::{bbox, tag};
+
 use super::EventQuery;
 use crate::core::{
     prelude::*,
     util::{extract_hash_tags, remove_hash_tags},
 };
-use ofdb_core::{bbox, tag};
 
 const DEFAULT_RESULT_LIMIT: usize = 100;
 

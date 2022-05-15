@@ -1,6 +1,6 @@
-use crate::core::{db::IndexedPlace, entities as e, usecases};
-
 pub use ofdb_boundary::*;
+
+use crate::core::{db::IndexedPlace, entities as e, usecases};
 
 impl From<Credentials> for usecases::Login {
     fn from(from: Credentials) -> Self {

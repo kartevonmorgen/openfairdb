@@ -1,5 +1,6 @@
-use super::*;
 use ofdb_entities as e;
+
+use super::*;
 
 impl From<e::links::CustomLink> for CustomLink {
     fn from(from: e::links::CustomLink) -> Self {

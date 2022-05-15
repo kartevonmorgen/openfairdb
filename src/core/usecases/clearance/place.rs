@@ -1,6 +1,6 @@
-use crate::core::prelude::*;
-
 use std::collections::HashMap;
+
+use crate::core::prelude::*;
 
 pub(crate) fn add_pending_clearance<R: PlaceClearanceRepo>(
     repo: &R,

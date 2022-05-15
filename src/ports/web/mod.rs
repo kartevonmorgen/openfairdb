@@ -1,3 +1,10 @@
+use std::result;
+
+use ofdb_core::rating::Rated;
+use popular_tags_cache::PopularTagsCache;
+use rocket::{config::Config as RocketCfg, Rocket, Route};
+use rocket_contrib::json::Json;
+
 use crate::{
     core::{
         db::{EventIndexer, PlaceIndexer},
@@ -6,11 +13,6 @@ use crate::{
     },
     infrastructure::{cfg::Cfg, error::AppError},
 };
-use ofdb_core::rating::Rated;
-use popular_tags_cache::PopularTagsCache;
-use rocket::{config::Config as RocketCfg, Rocket, Route};
-use rocket_contrib::json::Json;
-use std::result;
 
 pub mod api;
 #[cfg(feature = "frontend")]

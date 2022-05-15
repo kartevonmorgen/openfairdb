@@ -206,9 +206,10 @@ das Karte von morgen-Team\n
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use chrono::Utc;
     use ofdb_entities::{activity::*, geo::*, links::*, location::*, revision::*, time::*};
+
+    use super::*;
 
     // To verify the formatting manually run these tests and examine
     // the output on stdout:

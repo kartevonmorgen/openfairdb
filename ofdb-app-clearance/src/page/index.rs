@@ -1,10 +1,12 @@
-use crate::{api, components::navbar};
+use std::collections::{HashMap, HashSet};
+
 use difference::{Changeset, Difference};
 use ofdb_boundary::{ClearanceForPlace, PendingClearanceForPlace, ResultCount};
-use ofdb_entities::{place::PlaceHistory, place::PlaceRevision};
+use ofdb_entities::place::{PlaceHistory, PlaceRevision};
 use ofdb_seed::Api;
 use seed::{prelude::*, *};
-use std::collections::{HashMap, HashSet};
+
+use crate::{api, components::navbar};
 
 #[derive(Debug)]
 pub struct Mdl {

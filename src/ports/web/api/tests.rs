@@ -1,8 +1,11 @@
-use super::*;
-use crate::{adapters::json, core::usecases};
 use ofdb_core::rating::Rated;
 
+use super::*;
+use crate::{adapters::json, core::usecases};
+
 pub mod prelude {
+    use ofdb_core::gateways::notify::NotificationGateway;
+
     pub use crate::{
         core::db::*,
         infrastructure::{cfg::Cfg, flows::prelude as flows},
@@ -14,7 +17,6 @@ pub mod prelude {
         infrastructure::db::{sqlite, tantivy},
         ports::web::{self, api},
     };
-    use ofdb_core::gateways::notify::NotificationGateway;
 
     pub fn setup() -> (Client, sqlite::Connections) {
         setup_with_cfg(Cfg::default())

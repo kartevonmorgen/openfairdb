@@ -1,3 +1,9 @@
+use std::{env, path::Path};
+
+use clap::{crate_authors, Arg, Command};
+use dotenv::dotenv;
+use ofdb_core::gateways::geocode::GeoCodingGateway;
+
 use crate::{
     core::prelude::*,
     infrastructure::{
@@ -7,11 +13,6 @@ use crate::{
     },
     ports::web,
 };
-
-use clap::{crate_authors, Command, Arg};
-use dotenv::dotenv;
-use ofdb_core::gateways::geocode::GeoCodingGateway;
-use std::{env, path::Path};
 
 embed_migrations!();
 

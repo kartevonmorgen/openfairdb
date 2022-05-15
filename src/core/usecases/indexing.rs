@@ -1,7 +1,7 @@
-use crate::core::prelude::*;
+use anyhow::Result as Fallible;
 use ofdb_core::rating::Rated;
 
-use anyhow::Result as Fallible;
+use crate::core::prelude::*;
 
 pub fn reindex_place(
     indexer: &dyn PlaceIndexer,

@@ -9,14 +9,13 @@ pub mod prelude {
         pub use crate::infrastructure::db::tantivy::SearchEngine;
     }
 
+    use std::cell::RefCell;
+
+    use crate::ports::web::tests::DummyNotifyGW;
     pub use crate::{
         infrastructure::{cfg::Cfg, error::AppError, flows::prelude as flows},
         ports::web::api,
     };
-
-    use crate::ports::web::tests::DummyNotifyGW;
-
-    use std::cell::RefCell;
 
     embed_migrations!();
 

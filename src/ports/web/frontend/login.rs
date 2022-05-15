@@ -1,15 +1,15 @@
-use super::super::guards::*;
-use super::view;
-use crate::{
-    core::{prelude::*, usecases},
-    ports::web::sqlite::Connections,
-};
 use maud::Markup;
 use rocket::{
     self,
     http::{Cookie, Cookies, SameSite},
     request::{FlashMessage, Form},
     response::{Flash, Redirect},
+};
+
+use super::{super::guards::*, view};
+use crate::{
+    core::{prelude::*, usecases},
+    ports::web::sqlite::Connections,
 };
 
 #[derive(FromForm)]
@@ -91,12 +91,13 @@ pub fn post_logout(mut cookies: Cookies) -> Flash<Redirect> {
 
 #[cfg(test)]
 pub mod tests {
+    use rocket::http::Status as HttpStatus;
+
     use super::*;
     use crate::ports::web::{
         self,
         tests::{prelude::*, register_user},
     };
-    use rocket::http::Status as HttpStatus;
 
     fn setup() -> (Client, Connections) {
         let (client, db, _) = web::tests::setup(vec![("/", super::super::routes())]);

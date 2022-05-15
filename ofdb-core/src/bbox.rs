@@ -62,8 +62,9 @@ impl InBBox for Event {
 #[cfg(test)]
 mod tests {
 
-    use super::*;
     use ofdb_entities::builders::*;
+
+    use super::*;
 
     #[test]
     fn is_in_bounding_box() {

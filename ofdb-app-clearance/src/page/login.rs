@@ -1,5 +1,6 @@
-use crate::components::navbar;
 use seed::{prelude::*, *};
+
+use crate::components::navbar;
 
 #[derive(Debug)]
 pub struct Mdl {

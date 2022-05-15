@@ -1,6 +1,7 @@
+use maud::{html, Markup};
+
 use super::page;
 use crate::core::prelude::*;
-use maud::{html, Markup};
 
 pub fn place_history(user: &User, h: &PlaceHistory) -> Markup {
     page(

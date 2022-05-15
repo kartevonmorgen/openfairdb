@@ -1,15 +1,15 @@
-use super::login::LoginCredentials;
-use super::view;
-use crate::{
-    core::{prelude::*, usecases},
-    ports::web::{notify::*, sqlite::Connections},
-};
 use maud::Markup;
 use rocket::{
     self,
     http::RawStr,
     request::{FlashMessage, Form},
     response::{Flash, Redirect},
+};
+
+use super::{login::LoginCredentials, view};
+use crate::{
+    core::{prelude::*, usecases},
+    ports::web::{notify::*, sqlite::Connections},
 };
 
 #[get("/register")]

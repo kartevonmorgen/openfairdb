@@ -1,10 +1,3 @@
-use crate::{
-    core::{prelude::*, usecases},
-    infrastructure::{
-        cfg::Cfg,
-        db::{sqlite, tantivy},
-    },
-};
 use rocket::{
     config::{Config as RocketCfg, Environment},
     local::Client,
@@ -12,14 +5,23 @@ use rocket::{
     Route,
 };
 
+use crate::{
+    core::{prelude::*, usecases},
+    infrastructure::{
+        cfg::Cfg,
+        db::{sqlite, tantivy},
+    },
+};
+
 pub mod prelude {
-    pub use super::DummyNotifyGW;
-    pub use crate::core::db::*;
     pub use rocket::{
         http::{ContentType, Cookie, Status},
         local::Client,
         response::Response,
     };
+
+    pub use super::DummyNotifyGW;
+    pub use crate::core::db::*;
 }
 
 embed_migrations!();

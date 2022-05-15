@@ -1,3 +1,9 @@
+use std::result;
+
+use rocket::{self, request::Form};
+use rocket_contrib::json::Json;
+
+use super::{JsonResult, Result};
 use crate::{
     adapters::json,
     core::{
@@ -10,11 +16,6 @@ use crate::{
         error::AppError,
     },
 };
-
-use super::{JsonResult, Result};
-use rocket::{self, request::Form};
-use rocket_contrib::json::Json;
-use std::result;
 
 #[derive(FromForm, Clone)]
 pub struct SearchQuery {

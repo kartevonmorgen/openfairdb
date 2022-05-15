@@ -1,5 +1,6 @@
-use crate::core::{prelude::*, usecases::NewPlace};
 use std::{cmp::min, collections::HashSet};
+
+use crate::core::{prelude::*, usecases::NewPlace};
 
 #[derive(Debug, PartialEq, Serialize)]
 pub enum DuplicateType {
@@ -75,7 +76,8 @@ pub fn nearby_bbox(center: MapPoint) -> MapBbox {
     MapBbox::centered_around(center, MAX_NEARBY_DIAMETER, MAX_NEARBY_DIAMETER)
 }
 
-// returns a DuplicateType if the two places have a similar title and location, otherwise returns None.
+// returns a DuplicateType if the two places have a similar title and location,
+// otherwise returns None.
 fn is_duplicate(e1: &Place, e2: &IndexedPlace) -> Option<DuplicateType> {
     if e1.id.as_str() == e2.id.as_str() {
         // Skip identical places
@@ -131,7 +133,8 @@ fn is_in_close_proximity_pos(p1: &MapPoint, p2: &MapPoint, max_dist: Distance) -
 
 // returns true if all but k words are equal in str1 and str2
 // (and one of them has more than one word)
-// (words in str1 and str2 are treated as sets, order & multiplicity of words doesn't matter)
+// (words in str1 and str2 are treated as sets, order & multiplicity of words
+// doesn't matter)
 fn words_equal_except_k_words(str1: &str, str2: &str, k: u32) -> bool {
     let len1 = str1.split_whitespace().count();
     let len2 = str2.split_whitespace().count();
@@ -291,7 +294,8 @@ mod tests {
         assert!(is_similar_text(&e1.title, &e2.title, 0.2, 0)); // only 2 characters changed
         assert!(!is_similar_text(&e1.title, &e2.title, 0.1, 0)); // more than one character changed
         assert!(is_similar_text(&e3.title, &e4.title, 0.0, 2)); // only 2 words changed
-        assert!(!is_similar_text(&e3.title, &e4.title, 0.0, 1)); // more than 1 word changed
+        assert!(!is_similar_text(&e3.title, &e4.title, 0.0, 1)); // more than 1
+                                                                 // word changed
     }
     #[test]
     fn test_is_duplicate_of() {

@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
+use maud::{html, Markup};
+
 use super::{address_to_html, leaflet_css_link, map_scripts, page};
 use crate::core::prelude::*;
-use maud::{html, Markup};
-use std::collections::HashMap;
 
 type Ratings = Vec<(Rating, Vec<Comment>)>;
 

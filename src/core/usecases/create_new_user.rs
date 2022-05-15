@@ -1,6 +1,7 @@
+use passwords::PasswordGenerator;
+
 use super::super::util::validate;
 use crate::core::prelude::*;
-use passwords::PasswordGenerator;
 
 #[derive(Deserialize, Debug, Clone)]
 pub struct NewUser {
@@ -53,9 +54,10 @@ pub fn create_user_from_email<D: Db>(db: &D, email: &str) -> Result<User> {
 #[cfg(test)]
 mod tests {
 
-    use super::super::tests::MockDb;
-    use super::super::*;
-    use super::*;
+    use super::{
+        super::{tests::MockDb, *},
+        *,
+    };
 
     #[test]
     fn create_two_users() {

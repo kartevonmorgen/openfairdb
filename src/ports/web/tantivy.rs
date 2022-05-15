@@ -1,7 +1,9 @@
-pub use crate::infrastructure::db::tantivy::*;
+use rocket::{
+    request::{self, FromRequest},
+    Outcome, Request, State,
+};
 
-use rocket::request::{self, FromRequest};
-use rocket::{Outcome, Request, State};
+pub use crate::infrastructure::db::tantivy::*;
 
 impl<'a, 'r> FromRequest<'a, 'r> for SearchEngine {
     type Error = ();

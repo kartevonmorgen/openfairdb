@@ -1,8 +1,5 @@
-#[cfg(not(test))]
-use crate::infrastructure::{MAILGUN_GW, SENDMAIL_GW};
-#[cfg(test)]
-use crate::ports::web::tests::DummyNotifyGW;
 use core::ops::Deref;
+
 use ofdb_core::gateways::email::EmailGateway;
 use ofdb_entities::email::*;
 #[cfg(not(test))]
@@ -11,6 +8,11 @@ use rocket::{
     request::{self, FromRequest},
     Outcome, Request,
 };
+
+#[cfg(not(test))]
+use crate::infrastructure::{MAILGUN_GW, SENDMAIL_GW};
+#[cfg(test)]
+use crate::ports::web::tests::DummyNotifyGW;
 
 #[cfg(not(test))]
 pub struct Notify(notify::Notify);

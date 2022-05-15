@@ -1,5 +1,6 @@
-use crate::password::Password;
 use num_derive::{FromPrimitive, ToPrimitive};
+
+use crate::password::Password;
 
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq)]

@@ -1,5 +1,6 @@
-use super::*;
 use rocket::http::Header;
+
+use super::*;
 
 #[test]
 fn export_csv() {
@@ -112,7 +113,8 @@ fn export_csv() {
     assert!(!body_str.contains("createdby1@example.com"));
     assert!(!body_str.contains("createdby2@example.com"));
 
-    // Scout with token sees contact details of all events and created_by for their owned events
+    // Scout with token sees contact details of all events and created_by for their
+    // owned events
     let login = client
         .post("/login")
         .header(ContentType::JSON)

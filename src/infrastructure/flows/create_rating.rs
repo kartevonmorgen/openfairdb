@@ -1,6 +1,6 @@
-use super::*;
-
 use diesel::connection::Connection;
+
+use super::*;
 
 pub fn create_rating(
     connections: &sqlite::Connections,

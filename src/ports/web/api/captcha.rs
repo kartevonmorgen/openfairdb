@@ -1,4 +1,5 @@
-use super::super::guards::{COOKIE_CAPTCHA_KEY, MAX_CAPTCHA_TTL};
+use std::{collections::HashMap, io::Read};
+
 use ::captcha::{gen, Difficulty};
 use chrono::prelude::*;
 use parking_lot::{Mutex, MutexGuard};
@@ -8,8 +9,9 @@ use rocket::{
     response::Content,
     State,
 };
-use std::{collections::HashMap, io::Read};
 use uuid::Uuid;
+
+use super::super::guards::{COOKIE_CAPTCHA_KEY, MAX_CAPTCHA_TTL};
 
 pub struct CaptchaCache(Mutex<HashMap<Uuid, Option<String>>>);
 
@@ -90,10 +92,14 @@ pub fn post_captcha_verify(
 
 #[cfg(test)]
 pub mod tests {
-    use super::super::{super::guards::COOKIE_CAPTCHA_KEY, tests::prelude::*};
-    use super::*;
     use std::str::FromStr;
+
     use uuid::Uuid;
+
+    use super::{
+        super::{super::guards::COOKIE_CAPTCHA_KEY, tests::prelude::*},
+        *,
+    };
 
     #[test]
     fn request_new_captcha_challenge() {

@@ -1,8 +1,9 @@
-use crate::core::{prelude::*, util};
+use std::collections::HashMap;
+
 use ofdb_core::{bbox, tag};
 use ofdb_entities::geo::MapBbox;
 
-use std::collections::HashMap;
+use crate::core::{prelude::*, util};
 
 #[rustfmt::skip]
 #[derive(Debug, Clone)]

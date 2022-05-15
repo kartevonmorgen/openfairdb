@@ -1,9 +1,10 @@
-use crate::core::error::{Error as BError, RepoError};
-use diesel::r2d2;
-use diesel::result::Error as DieselError;
-use diesel_migrations::RunMigrationsError;
 use std::io;
+
+use diesel::{r2d2, result::Error as DieselError};
+use diesel_migrations::RunMigrationsError;
 use thiserror::Error;
+
+use crate::core::error::{Error as BError, RepoError};
 
 impl From<RepoError> for AppError {
     fn from(err: RepoError) -> AppError {

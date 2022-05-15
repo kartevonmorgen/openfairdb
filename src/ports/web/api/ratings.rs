@@ -1,5 +1,4 @@
 use super::*;
-
 use crate::{core::util, infrastructure::flows::prelude as flows};
 
 #[post("/ratings", format = "application/json", data = "<data>")]

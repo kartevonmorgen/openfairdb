@@ -1,7 +1,8 @@
-use super::*;
-use crate::infrastructure::cfg::Cfg;
 use diesel::connection::Connection;
 use ofdb_core::gateways::notify::NotificationGateway;
+
+use super::*;
+use crate::infrastructure::cfg::Cfg;
 
 #[allow(clippy::too_many_arguments)]
 pub fn update_place(

@@ -1,6 +1,6 @@
-use super::schema::*;
-
 use chrono::NaiveDate;
+
+use super::schema::*;
 
 #[derive(Insertable)]
 #[table_name = "place"]

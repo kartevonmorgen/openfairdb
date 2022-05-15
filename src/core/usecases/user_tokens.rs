@@ -1,6 +1,6 @@
-use crate::core::prelude::*;
-
 use chrono::{Duration, Utc};
+
+use crate::core::prelude::*;
 
 pub fn refresh_user_token<D: Db>(db: &D, email: String) -> Result<EmailNonce> {
     let email_nonce = EmailNonce {

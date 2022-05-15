@@ -1,3 +1,15 @@
+use std::{fmt::Display, result};
+
+use ofdb_boundary::Error as JsonErrorResponse;
+use rocket::{
+    self,
+    http::{ContentType, Cookie, Cookies, Status},
+    request::Form,
+    response::{content::Content, Responder, Response},
+    Route, State,
+};
+use rocket_contrib::json::{Json, JsonError};
+
 use super::guards::*;
 use crate::{
     adapters::{self, json},
@@ -13,16 +25,6 @@ use crate::{
     },
     ports::web::{jwt, notify::*},
 };
-use ofdb_boundary::Error as JsonErrorResponse;
-use rocket::{
-    self,
-    http::{ContentType, Cookie, Cookies, Status},
-    request::Form,
-    response::{content::Content, Responder, Response},
-    Route, State,
-};
-use rocket_contrib::json::{Json, JsonError};
-use std::{fmt::Display, result};
 
 pub mod captcha;
 mod count;

@@ -1,4 +1,5 @@
 use std::{borrow::Borrow, fmt, str::FromStr};
+
 use uuid::Uuid;
 
 /// Portable public identifier with a string representation.

@@ -1,6 +1,6 @@
-use ofdb_entities::user::{Role, User};
-
 use std::result::Result as StdResult;
+
+use ofdb_entities::user::{Role, User};
 use thiserror::Error;
 
 #[derive(Debug, Error)]

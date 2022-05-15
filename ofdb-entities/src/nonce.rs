@@ -1,6 +1,8 @@
-use crate::time::*;
 use std::{fmt, ops::Deref, str::FromStr};
+
 use uuid::Uuid;
+
+use crate::time::*;
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Nonce(Uuid);

@@ -1,9 +1,8 @@
 pub mod parse;
 pub mod validate;
 
-use regex::Regex;
-
 pub use ofdb_entities::{geo, nonce, time};
+use regex::Regex;
 
 pub const ID_LIST_SEPARATOR: char = ',';
 

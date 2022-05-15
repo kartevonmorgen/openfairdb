@@ -22,8 +22,9 @@ impl Rated for Place {
 
 #[cfg(test)]
 pub mod tests {
-    use super::*;
     use ofdb_entities::{builders::*, time::*};
+
+    use super::*;
 
     fn new_place(id: &str) -> Place {
         Place::build().id(id).finish()

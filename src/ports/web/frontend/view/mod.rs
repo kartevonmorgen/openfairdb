@@ -1,6 +1,7 @@
-use crate::core::prelude::*;
 use maud::{html, Markup};
 use num_traits::ToPrimitive;
+
+use crate::core::prelude::*;
 
 const LEAFLET_CSS_URL: &str = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.4.0/leaflet.css";
 const LEAFLET_CSS_SHA512: &str="sha512-puBpdR0798OZvTTbP4A8Ix/l+A4dHDD0DGqYW6RQ+9jxkRFclaxxQb/SJAWZfWAkuyeQUytO7+7N4QKrDh+drA==";

@@ -1,9 +1,10 @@
+use fast_chemail::is_valid_email;
+
 use super::super::{
     entities::*,
     error::ParameterError,
     util::geo::{MapBbox, MapPoint},
 };
-use fast_chemail::is_valid_email;
 
 pub trait Validate {
     fn validate(&self) -> Result<(), ParameterError>;

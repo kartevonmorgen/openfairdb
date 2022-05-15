@@ -1,8 +1,9 @@
-use ofdb_core::gateways::email::EmailGateway;
-use ofdb_entities::email::*;
 #[cfg(not(test))]
 use std::io::{Error, ErrorKind};
 use std::{io::Result, thread};
+
+use ofdb_core::gateways::email::EmailGateway;
+use ofdb_entities::email::*;
 
 /// An email notification manager based on mailgun.net.
 #[derive(Debug, Clone)]

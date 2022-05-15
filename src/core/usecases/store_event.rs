@@ -1,3 +1,7 @@
+use std::str::FromStr;
+
+use chrono::prelude::*;
+
 use crate::core::{
     prelude::*,
     usecases::create_user_from_email,
@@ -6,8 +10,6 @@ use crate::core::{
         validate::{AutoCorrect, Validate},
     },
 };
-use chrono::prelude::*;
-use std::str::FromStr;
 
 #[rustfmt::skip]
 #[derive(Deserialize, Default, Debug, Clone)]
@@ -147,7 +149,8 @@ pub fn import_new_event<D: Db>(
                     new_tags.sort_unstable();
                     new_tags.dedup();
                 }
-                // Verify that the org is entitled to update this event according to the owned tags
+                // Verify that the org is entitled to update this event according to the owned
+                // tags
                 super::authorize_editing_of_tagged_entry(db, &old_tags, &new_tags, Some(&org))?
             }
         }
@@ -317,8 +320,7 @@ pub fn store_updated_event<D: Db>(db: &D, storable: Storable) -> Result<Event> {
 #[cfg(test)]
 mod tests {
 
-    use super::super::tests::MockDb;
-    use super::*;
+    use super::{super::tests::MockDb, *};
 
     fn create_new_event<D: Db>(db: &D, token: Option<&str>, e: NewEvent) -> Result<Event> {
         let s = import_new_event(db, token, e, NewEventMode::Create)?;

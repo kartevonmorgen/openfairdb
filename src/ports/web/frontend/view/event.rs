@@ -1,5 +1,6 @@
-use super::*;
 use maud::{html, Markup};
+
+use super::*;
 
 pub fn event(user: Option<User>, ev: Event) -> Markup {
     page(

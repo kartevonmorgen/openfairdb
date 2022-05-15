@@ -1,5 +1,6 @@
-use pwhash::bcrypt;
 use std::{fmt, str::FromStr};
+
+use pwhash::bcrypt;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Password(String);

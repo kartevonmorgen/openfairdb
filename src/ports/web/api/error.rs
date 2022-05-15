@@ -1,5 +1,3 @@
-use crate::core::error::{Error as BError, RepoError};
-use crate::infrastructure::error::AppError;
 use anyhow::anyhow;
 use rocket::{
     self,
@@ -10,6 +8,10 @@ use rocket_contrib::json::JsonError;
 use thiserror::Error;
 
 use super::json_error_response;
+use crate::{
+    core::error::{Error as BError, RepoError},
+    infrastructure::error::AppError,
+};
 
 #[derive(Debug, Error)]
 #[allow(clippy::large_enum_variant)]

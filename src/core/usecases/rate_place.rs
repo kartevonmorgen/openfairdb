@@ -71,9 +71,10 @@ pub fn store_new_rating<D: Db>(db: &D, s: Storable) -> Result<(Place, ReviewStat
 #[cfg(test)]
 mod tests {
 
-    use super::super::tests::MockDb;
-    use super::super::*;
-    use super::*;
+    use super::{
+        super::{tests::MockDb, *},
+        *,
+    };
 
     #[test]
     fn rate_non_existing_entry() {

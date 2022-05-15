@@ -1,6 +1,6 @@
-use super::*;
-
 use diesel::connection::Connection;
+
+use super::*;
 
 fn exec_archive_events(
     connections: &sqlite::Connections,
@@ -51,7 +51,8 @@ pub fn archive_events(
     archived_by_email: &str,
 ) -> Result<usize> {
     let count = exec_archive_events(connections, ids, archived_by_email)?;
-    // TODO: Move post processing to a separate task/thread that doesn't delay this request
+    // TODO: Move post processing to a separate task/thread that doesn't delay this
+    // request
     post_archive_events(indexer, ids);
     Ok(count)
 }

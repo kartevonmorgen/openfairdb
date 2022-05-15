@@ -1,12 +1,12 @@
-use super::{parse_custom_link_param, CustomLinkParam};
+use std::collections::HashSet;
 
+use chrono::NaiveDate;
+
+use super::{parse_custom_link_param, CustomLinkParam};
 use crate::core::{
     prelude::*,
     util::{parse::parse_url_param, validate::Validate},
 };
-
-use chrono::NaiveDate;
-use std::collections::HashSet;
 
 #[rustfmt::skip]
 #[derive(Debug, Clone)]

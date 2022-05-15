@@ -1,4 +1,8 @@
-use crate::core::usecases::tests::MockDb;
+use std::{
+    io,
+    ops::{Deref, DerefMut},
+};
+
 #[cfg(not(test))]
 use diesel::r2d2::PoolError;
 use diesel::r2d2::{ManageConnection, Pool, PooledConnection};
@@ -7,8 +11,8 @@ use rocket::{
     request::{self, FromRequest},
     Outcome, Request, State,
 };
-use std::io;
-use std::ops::{Deref, DerefMut};
+
+use crate::core::usecases::tests::MockDb;
 
 #[derive(Debug)]
 pub struct MockDbConnectionManager;

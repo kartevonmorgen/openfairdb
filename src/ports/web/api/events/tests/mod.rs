@@ -1,7 +1,7 @@
-use super::super::tests::prelude::*;
-use super::*;
 use chrono::prelude::*;
 use rocket::http::Header;
+
+use super::{super::tests::prelude::*, *};
 
 mod archive;
 mod create;

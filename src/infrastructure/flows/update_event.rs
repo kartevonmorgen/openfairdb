@@ -1,7 +1,8 @@
-use super::*;
-use crate::core::error::RepoError;
 use diesel::Connection;
 use ofdb_core::gateways::notify::NotificationGateway;
+
+use super::*;
+use crate::core::error::RepoError;
 
 pub fn update_event(
     connections: &sqlite::Connections,

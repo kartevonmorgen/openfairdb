@@ -1,6 +1,6 @@
-use super::*;
-
 use diesel::connection::Connection;
+
+use super::*;
 
 pub fn exec_archive_ratings(
     connections: &sqlite::Connections,

@@ -3,9 +3,10 @@ pub mod db;
 pub mod error;
 pub mod flows;
 
+use std::env;
+
 use ofdb_entities::email::*;
 use ofdb_gateways::{mailgun::*, opencage::*, sendmail::*};
-use std::env;
 
 lazy_static! {
 

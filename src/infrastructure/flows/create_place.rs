@@ -1,7 +1,8 @@
-use super::*;
-use crate::{core::error::RepoError, infrastructure::cfg::Cfg};
 use diesel::Connection;
 use ofdb_core::gateways::notify::NotificationGateway;
+
+use super::*;
+use crate::{core::error::RepoError, infrastructure::cfg::Cfg};
 
 pub fn create_place(
     connections: &sqlite::Connections,

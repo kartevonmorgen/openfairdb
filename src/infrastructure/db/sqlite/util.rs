@@ -1,3 +1,5 @@
+use chrono::prelude::*;
+
 use super::models::*;
 use crate::core::{
     entities as e,
@@ -8,7 +10,6 @@ use crate::core::{
         time::Timestamp,
     },
 };
-use chrono::prelude::*;
 
 pub(crate) fn load_url(url: String) -> Option<e::Url> {
     match url.parse() {

@@ -43,9 +43,10 @@ fn login_user(client: &Client, name: &str) {
 }
 
 mod events {
+    use chrono::prelude::*;
+
     use super::*;
     use crate::infrastructure::flows::prelude as flows;
-    use chrono::prelude::*;
 
     #[test]
     fn search_events() {

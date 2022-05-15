@@ -1,10 +1,10 @@
-use super::*;
-
-use crate::core::{usecases, util::geo};
+use std::{cell::RefCell, result};
 
 use anyhow::Result as Fallible;
 use chrono::prelude::*;
-use std::{cell::RefCell, result};
+
+use super::*;
+use crate::core::{usecases, util::geo};
 
 //TODO: move tests to corresponding usecase
 

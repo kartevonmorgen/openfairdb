@@ -1,13 +1,15 @@
+use std::{collections::HashMap, time::Duration};
+
+use anyhow::Result;
+use chrono::{DateTime, Utc};
+use ofdb_boundary::TagFrequency;
+use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+
 use crate::{
     core::db::PlaceRepo,
     infrastructure::db::sqlite,
     ports::web::{MostPopularTagsParams, Pagination},
 };
-use anyhow::Result;
-use chrono::{DateTime, Utc};
-use ofdb_boundary::TagFrequency;
-use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-use std::{collections::HashMap, time::Duration};
 
 type Request = (MostPopularTagsParams, Pagination);
 type Cache = HashMap<Request, (DateTime<Utc>, Vec<TagFrequency>)>;

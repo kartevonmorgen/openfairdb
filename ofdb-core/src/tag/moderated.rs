@@ -1,6 +1,6 @@
-use ofdb_entities::{id::Id, organization::ModeratedTag};
-
 use std::result::Result as StdResult;
+
+use ofdb_entities::{id::Id, organization::ModeratedTag};
 use thiserror::Error;
 
 #[derive(Debug, Error)]

@@ -1,5 +1,6 @@
-use chrono::{DateTime, NaiveDateTime, Utc};
 use std::fmt;
+
+use chrono::{DateTime, NaiveDateTime, Utc};
 
 pub trait InnerTimestampConverter: Clone + Copy + PartialEq + Eq + PartialOrd + Ord {
     type Inner: Clone + Copy + PartialEq + Eq + PartialOrd + Ord;

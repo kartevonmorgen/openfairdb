@@ -1,6 +1,7 @@
-use super::page::*;
 use maud::{html, Markup};
 use rocket::request::FlashMessage;
+
+use super::page::*;
 
 pub fn login(flash: Option<FlashMessage>, reset_pw_link: &str) -> Markup {
     page(

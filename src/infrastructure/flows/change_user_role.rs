@@ -1,5 +1,6 @@
-use super::*;
 use diesel::connection::Connection;
+
+use super::*;
 
 pub fn change_user_role(
     connections: &sqlite::Connections,

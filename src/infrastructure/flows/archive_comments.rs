@@ -1,5 +1,6 @@
-use super::*;
 use diesel::connection::Connection;
+
+use super::*;
 
 pub fn archive_comments(
     connections: &sqlite::Connections,

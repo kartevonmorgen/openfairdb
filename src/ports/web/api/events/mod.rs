@@ -1,3 +1,9 @@
+use ofdb_core::gateways::geocode::GeoCodingGateway;
+use rocket::{
+    http::{RawStr, Status as HttpStatus},
+    request::{FromQuery, Query},
+};
+
 use super::*;
 use crate::{
     adapters,
@@ -6,12 +12,6 @@ use crate::{
         util::{geo::MapBbox, validate},
     },
     infrastructure::{flows::prelude as flows, GEO_CODING_GW},
-};
-use ofdb_core::gateways::geocode::GeoCodingGateway;
-
-use rocket::{
-    http::{RawStr, Status as HttpStatus},
-    request::{FromQuery, Query},
 };
 
 #[cfg(test)]
@@ -85,8 +85,8 @@ pub fn post_event(mut _db: sqlite::Connections, _e: JsonResult<usecases::NewEven
 }
 // But in the future we might allow anonymous event creation:
 //
-// pub fn post_event(mut db: sqlite::Connections, e: Json<usecases::NewEvent>) -> Result<String> {
-//     let mut e = e.into_inner();
+// pub fn post_event(mut db: sqlite::Connections, e: Json<usecases::NewEvent>)
+// -> Result<String> {     let mut e = e.into_inner();
 //     e.created_by = None; // ignore because of missing authorization
 //     e.token = None; // ignore token
 //     let id = flows::create_event(&*db, &search_engine, e.clone())?;

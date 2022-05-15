@@ -1,7 +1,3 @@
-use chrono::*;
-use fast_chemail::is_valid_email;
-use ofdb_core::gateways::email::EmailGateway;
-use ofdb_entities::email::*;
 #[cfg(not(test))]
 use std::{
     io::prelude::*,
@@ -11,6 +7,11 @@ use std::{
     io::{Error, ErrorKind, Result},
     thread,
 };
+
+use chrono::*;
+use fast_chemail::is_valid_email;
+use ofdb_core::gateways::email::EmailGateway;
+use ofdb_entities::email::*;
 
 #[derive(Debug, Clone)]
 pub struct Sendmail {

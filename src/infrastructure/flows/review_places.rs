@@ -1,6 +1,6 @@
-use super::*;
-
 use diesel::connection::Connection;
+
+use super::*;
 
 fn exec_review_places(
     connections: &sqlite::Connections,
@@ -68,7 +68,8 @@ pub fn review_places(
     review: usecases::Review,
 ) -> Result<usize> {
     let count = exec_review_places(connections, ids, review)?;
-    // TODO: Move post processing to a separate task/thread that doesn't delay this request?
+    // TODO: Move post processing to a separate task/thread that doesn't delay this
+    // request?
     post_review_places(connections, indexer, ids)?;
     Ok(count)
 }

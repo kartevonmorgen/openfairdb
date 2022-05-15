@@ -1,3 +1,19 @@
+use std::{ops::Bound, path::Path, sync::Arc};
+
+use anyhow::{bail, Result as Fallible};
+use num_traits::ToPrimitive;
+use parking_lot::Mutex;
+use strum::IntoEnumIterator as _;
+use tantivy::{
+    collector::TopDocs,
+    fastfield::FastFieldReader as _,
+    query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
+    schema::*,
+    tokenizer::{LowerCaser, RawTokenizer, RemoveLongFilter, SimpleTokenizer, TextAnalyzer},
+    DocAddress, DocId, Document, Index, IndexReader, IndexWriter, ReloadPolicy, Score,
+    SegmentReader,
+};
+
 use crate::core::{
     db::{
         EventAndPlaceIndexer, EventIndexer, IdIndex, IdIndexer, IndexQuery, IndexQueryMode,
@@ -11,21 +27,6 @@ use crate::core::{
         geo::{LatCoord, LngCoord, MapPoint},
         time::Timestamp,
     },
-};
-
-use anyhow::{bail, Result as Fallible};
-use num_traits::ToPrimitive;
-use parking_lot::Mutex;
-use std::{ops::Bound, path::Path, sync::Arc};
-use strum::IntoEnumIterator as _;
-use tantivy::{
-    collector::TopDocs,
-    fastfield::FastFieldReader as _,
-    query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
-    schema::*,
-    tokenizer::{LowerCaser, RawTokenizer, RemoveLongFilter, SimpleTokenizer, TextAnalyzer},
-    DocAddress, DocId, Document, Index, IndexReader, IndexWriter, ReloadPolicy, Score,
-    SegmentReader,
 };
 
 const OVERALL_INDEX_HEAP_SIZE_IN_BYTES: usize = 50_000_000;
@@ -413,15 +414,16 @@ impl TantivyIndex {
             //     .into_iter()
             //     .map(|status| {
             //         let status = status.to_i64().unwrap();
-            //         let boxed_query: Box<dyn Query> = Box::new(RangeQuery::new_i64_bounds(
-            //             self.fields.status,
-            //             Bound::Included(status),
+            //         let boxed_query: Box<dyn Query> =
+            // Box::new(RangeQuery::new_i64_bounds(
+            // self.fields.status,             Bound::Included(status),
             //             Bound::Included(status),
             //         ));
             //         (Occur::MustNot, boxed_query)
             //     })
             //     .collect();
-            // sub_queries.push((Occur::Must, Box::new(BooleanQuery::from(exclude_status_queries))));
+            // sub_queries.push((Occur::Must,
+            // Box::new(BooleanQuery::from(exclude_status_queries))));
             let status: Vec<_> = if status.is_empty() {
                 ReviewStatus::iter()
                     .map(|s| {
@@ -752,8 +754,9 @@ impl TantivyIndex {
                                 } else {
                                     // Default rating results in a boost factor of 1
                                     // Positive ratings result in a boost factor > 1
-                                    // The total rating is scaled by the number of different rating context
-                                    // variants to achieve better results by emphasizing the rating factor.
+                                    // The total rating is scaled by the number of different rating
+                                    // context variants to
+                                    // achieve better results by emphasizing the rating factor.
                                     1.0 + f64::from(RatingContext::total_count())
                                         * (total_rating - f64::from(AvgRatingValue::default()))
                                 };

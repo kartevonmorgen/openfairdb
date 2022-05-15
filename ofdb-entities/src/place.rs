@@ -1,7 +1,8 @@
-use crate::{activity::*, contact::*, id::*, links::*, location::*, review::*, revision::*};
+use std::str::FromStr;
 
 use chrono::NaiveDate;
-use std::str::FromStr;
+
+use crate::{activity::*, contact::*, id::*, links::*, location::*, review::*, revision::*};
 
 // Immutable part of a place.
 #[derive(Debug, Clone, PartialEq, Eq)]

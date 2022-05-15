@@ -1,5 +1,5 @@
-use super::{util::load_url, *};
-use crate::core::prelude::*;
+use std::result;
+
 use anyhow::anyhow;
 use chrono::prelude::*;
 use diesel::{
@@ -7,7 +7,9 @@ use diesel::{
     prelude::{Connection as DieselConnection, *},
     result::{DatabaseErrorKind, Error as DieselError},
 };
-use std::result;
+
+use super::{util::load_url, *};
+use crate::core::prelude::*;
 
 type Result<T> = result::Result<T, RepoError>;
 
@@ -317,8 +319,7 @@ fn resolve_place_rowid_verify_revision(
     id: &Id,
     revision: Revision,
 ) -> Result<i64> {
-    use schema::place::dsl;
-    use schema::place_revision::dsl as rev_dsl;
+    use schema::{place::dsl, place_revision::dsl as rev_dsl};
     let revision = RevisionValue::from(revision);
     Ok(schema::place::table
         .inner_join(schema::place_revision::table)
@@ -399,7 +400,8 @@ fn into_new_place_revision(
     } else {
         // Update the existing place with a new revision
         let (rowid, revision) = resolve_place_rowid_with_current_revision(conn, &place_id)?;
-        // Check for a contiguous revision history without conflicts (optimistic locking)
+        // Check for a contiguous revision history without conflicts (optimistic
+        // locking)
         if revision.next() != new_revision {
             return Err(RepoError::InvalidVersion);
         }
@@ -543,8 +545,7 @@ impl PlaceRepo for SqliteConnection {
         status: ReviewStatus,
         activity_log: &ActivityLog,
     ) -> Result<usize> {
-        use schema::place::dsl;
-        use schema::place_revision::dsl as rev_dsl;
+        use schema::{place::dsl, place_revision::dsl as rev_dsl};
 
         let rev_ids = schema::place_revision::table
             .inner_join(
@@ -607,8 +608,7 @@ impl PlaceRepo for SqliteConnection {
     }
 
     fn get_places(&self, place_ids: &[&str]) -> Result<Vec<(Place, ReviewStatus)>> {
-        use schema::place::dsl;
-        use schema::place_revision::dsl as rev_dsl;
+        use schema::{place::dsl, place_revision::dsl as rev_dsl};
 
         let mut query = schema::place_revision::table
             .inner_join(
@@ -674,9 +674,9 @@ impl PlaceRepo for SqliteConnection {
         params: &RecentlyChangedEntriesParams,
         pagination: &Pagination,
     ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>> {
-        use schema::place::dsl;
-        use schema::place_revision::dsl as rev_dsl;
-        use schema::place_revision_review::dsl as review_dsl;
+        use schema::{
+            place::dsl, place_revision::dsl as rev_dsl, place_revision_review::dsl as review_dsl,
+        };
 
         let mut query = schema::place_revision::table
             .inner_join(
@@ -791,8 +791,7 @@ impl PlaceRepo for SqliteConnection {
     }
 
     fn count_places(&self) -> Result<usize> {
-        use schema::place::dsl;
-        use schema::place_revision::dsl as rev_dsl;
+        use schema::{place::dsl, place_revision::dsl as rev_dsl};
         Ok(schema::place_revision::table
             .inner_join(
                 schema::place::table.on(rev_dsl::parent_rowid
@@ -805,8 +804,7 @@ impl PlaceRepo for SqliteConnection {
     }
 
     fn get_place_history(&self, id: &str, revision: Option<Revision>) -> Result<PlaceHistory> {
-        use schema::place::dsl;
-        use schema::place_revision::dsl as rev_dsl;
+        use schema::{place::dsl, place_revision::dsl as rev_dsl};
 
         let mut query = schema::place_revision::table
             .inner_join(schema::place::table.on(rev_dsl::parent_rowid.eq(dsl::rowid)))
@@ -855,8 +853,7 @@ impl PlaceRepo for SqliteConnection {
                     revisions: Vec::with_capacity(num_revisions),
                 });
             };
-            use schema::place_revision_review::dsl as review_dsl;
-            use schema::users::dsl as user_dsl;
+            use schema::{place_revision_review::dsl as review_dsl, users::dsl as user_dsl};
             let rows = schema::place_revision_review::table
                 .left_outer_join(
                     schema::users::table.on(review_dsl::created_by.eq(user_dsl::id.nullable())),
@@ -899,8 +896,7 @@ impl PlaceRepo for SqliteConnection {
     }
 
     fn load_place_revision(&self, id: &str, rev: Revision) -> Result<(Place, ReviewStatus)> {
-        use schema::place::dsl;
-        use schema::place_revision::dsl as rev_dsl;
+        use schema::{place::dsl, place_revision::dsl as rev_dsl};
 
         let query = schema::place_revision::table
             .inner_join(
@@ -1069,8 +1065,7 @@ impl EventGateway for SqliteConnection {
         let id = resolve_event_id(self, event.id.as_ref())?;
         let (new_event, new_tags) = into_new_event_with_tags(self, event.clone())?;
         self.transaction::<_, diesel::result::Error, _>(|| {
-            use schema::event_tags::dsl as et_dsl;
-            use schema::events::dsl as e_dsl;
+            use schema::{event_tags::dsl as et_dsl, events::dsl as e_dsl};
             // Update event
             diesel::update(e_dsl::events.filter(e_dsl::id.eq(&id)))
                 .set(&new_event)
@@ -1444,8 +1439,7 @@ impl RatingRepository for SqliteConnection {
     }
 
     fn load_ratings(&self, ids: &[&str]) -> Result<Vec<Rating>> {
-        use schema::place::dsl;
-        use schema::place_rating::dsl as rating_dsl;
+        use schema::{place::dsl, place_rating::dsl as rating_dsl};
         Ok(schema::place_rating::table
             .inner_join(schema::place::table)
             .select((
@@ -1476,8 +1470,7 @@ impl RatingRepository for SqliteConnection {
     }
 
     fn load_ratings_of_place(&self, place_id: &str) -> Result<Vec<Rating>> {
-        use schema::place::dsl;
-        use schema::place_rating::dsl as rating_dsl;
+        use schema::{place::dsl, place_rating::dsl as rating_dsl};
         Ok(schema::place_rating::table
             .inner_join(schema::place::table)
             .select((
@@ -1502,8 +1495,7 @@ impl RatingRepository for SqliteConnection {
     }
 
     fn load_place_ids_of_ratings(&self, ids: &[&str]) -> Result<Vec<String>> {
-        use schema::place::dsl;
-        use schema::place_rating::dsl as rating_dsl;
+        use schema::{place::dsl, place_rating::dsl as rating_dsl};
         Ok(schema::place_rating::table
             .inner_join(schema::place::table)
             .select(dsl::id)
@@ -1534,8 +1526,7 @@ impl RatingRepository for SqliteConnection {
     }
 
     fn archive_ratings_of_places(&self, place_ids: &[&str], activity: &Activity) -> Result<usize> {
-        use schema::place::dsl;
-        use schema::place_rating::dsl as rating_dsl;
+        use schema::{place::dsl, place_rating::dsl as rating_dsl};
         let archived_at = Some(activity.at.into_inner());
         let archived_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
@@ -1589,8 +1580,7 @@ impl CommentRepository for SqliteConnection {
     }
 
     fn load_comments(&self, ids: &[&str]) -> Result<Vec<Comment>> {
-        use schema::place_rating::dsl as rating_dsl;
-        use schema::place_rating_comment::dsl as comment_dsl;
+        use schema::{place_rating::dsl as rating_dsl, place_rating_comment::dsl as comment_dsl};
         // TODO: Split loading into chunks of fixed size
         info!("Loading multiple ({}) comments at once", ids.len());
         Ok(schema::place_rating_comment::table
@@ -1620,8 +1610,7 @@ impl CommentRepository for SqliteConnection {
     }
 
     fn load_comments_of_rating(&self, rating_id: &str) -> Result<Vec<Comment>> {
-        use schema::place_rating::dsl as rating_dsl;
-        use schema::place_rating_comment::dsl as comment_dsl;
+        use schema::{place_rating::dsl as rating_dsl, place_rating_comment::dsl as comment_dsl};
         Ok(schema::place_rating_comment::table
             .inner_join(schema::place_rating::table)
             .select((
@@ -1669,8 +1658,7 @@ impl CommentRepository for SqliteConnection {
         rating_ids: &[&str],
         activity: &Activity,
     ) -> Result<usize> {
-        use schema::place_rating::dsl as rating_dsl;
-        use schema::place_rating_comment::dsl as comment_dsl;
+        use schema::{place_rating::dsl as rating_dsl, place_rating_comment::dsl as comment_dsl};
         let archived_at = Some(activity.at.into_inner());
         let archived_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
@@ -1696,9 +1684,9 @@ impl CommentRepository for SqliteConnection {
     }
 
     fn archive_comments_of_places(&self, place_ids: &[&str], activity: &Activity) -> Result<usize> {
-        use schema::place::dsl;
-        use schema::place_rating::dsl as rating_dsl;
-        use schema::place_rating_comment::dsl as comment_dsl;
+        use schema::{
+            place::dsl, place_rating::dsl as rating_dsl, place_rating_comment::dsl as comment_dsl,
+        };
         let archived_at = Some(activity.at.into_inner());
         let archived_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
@@ -1769,8 +1757,7 @@ impl Db for SqliteConnection {
     }
 
     fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>> {
-        use schema::bbox_subscriptions::dsl as s_dsl;
-        use schema::users::dsl as u_dsl;
+        use schema::{bbox_subscriptions::dsl as s_dsl, users::dsl as u_dsl};
         Ok(s_dsl::bbox_subscriptions
             .inner_join(u_dsl::users)
             .select((
@@ -1789,8 +1776,7 @@ impl Db for SqliteConnection {
             .collect())
     }
     fn all_bbox_subscriptions_by_email(&self, email: &str) -> Result<Vec<BboxSubscription>> {
-        use schema::bbox_subscriptions::dsl as s_dsl;
-        use schema::users::dsl as u_dsl;
+        use schema::{bbox_subscriptions::dsl as s_dsl, users::dsl as u_dsl};
         Ok(s_dsl::bbox_subscriptions
             .inner_join(u_dsl::users)
             .filter(u_dsl::email.eq(email))
@@ -1810,8 +1796,7 @@ impl Db for SqliteConnection {
             .collect())
     }
     fn delete_bbox_subscriptions_by_email(&self, email: &str) -> Result<()> {
-        use schema::bbox_subscriptions::dsl as s_dsl;
-        use schema::users::dsl as u_dsl;
+        use schema::{bbox_subscriptions::dsl as s_dsl, users::dsl as u_dsl};
         let users_id = u_dsl::users
             .select(u_dsl::id)
             .filter(u_dsl::email.eq(email));
@@ -1915,8 +1900,7 @@ impl OrganizationRepo for SqliteConnection {
         &self,
         excluded_org_id: Option<&Id>,
     ) -> Result<Vec<(Id, ModeratedTag)>> {
-        use schema::organization::dsl as org_dsl;
-        use schema::organization_tag::dsl as org_tag_dsl;
+        use schema::{organization::dsl as org_dsl, organization_tag::dsl as org_tag_dsl};
         let query = org_tag_dsl::organization_tag
             .inner_join(org_dsl::organization)
             .select((
@@ -1971,8 +1955,7 @@ impl PlaceClearanceRepo for SqliteConnection {
     }
 
     fn count_pending_clearances_for_places(&self, org_id: &Id) -> Result<u64> {
-        use schema::organization::dsl as org_dsl;
-        use schema::organization_place_clearance::dsl;
+        use schema::{organization::dsl as org_dsl, organization_place_clearance::dsl};
         Ok(schema::organization_place_clearance::table
             .filter(
                 dsl::org_rowid.eq_any(
@@ -1990,9 +1973,10 @@ impl PlaceClearanceRepo for SqliteConnection {
         org_id: &Id,
         pagination: &Pagination,
     ) -> Result<Vec<PendingClearanceForPlace>> {
-        use schema::organization::dsl as org_dsl;
-        use schema::organization_place_clearance::dsl;
-        use schema::place::dsl as place_dsl;
+        use schema::{
+            organization::dsl as org_dsl, organization_place_clearance::dsl,
+            place::dsl as place_dsl,
+        };
         let mut query = schema::organization_place_clearance::table
             .inner_join(schema::place::table)
             .select((place_dsl::id, dsl::created_at, dsl::last_cleared_revision))
@@ -2027,9 +2011,10 @@ impl PlaceClearanceRepo for SqliteConnection {
         org_id: &Id,
         place_ids: &[&str],
     ) -> Result<Vec<PendingClearanceForPlace>> {
-        use schema::organization::dsl as org_dsl;
-        use schema::organization_place_clearance::dsl;
-        use schema::place::dsl as place_dsl;
+        use schema::{
+            organization::dsl as org_dsl, organization_place_clearance::dsl,
+            place::dsl as place_dsl,
+        };
         Ok(schema::organization_place_clearance::table
             .inner_join(schema::place::table)
             .select((place_dsl::id, dsl::created_at, dsl::last_cleared_revision))
@@ -2069,8 +2054,7 @@ impl PlaceClearanceRepo for SqliteConnection {
                     resolve_place_rowid_with_current_revision(self, place_id)?;
                 (place_rowid, current_revision)
             };
-            use schema::organization::dsl as org_dsl;
-            use schema::organization_place_clearance::dsl;
+            use schema::{organization::dsl as org_dsl, organization_place_clearance::dsl};
             let last_cleared_revision = Some(RevisionValue::from(cleared_revision) as i64);
             let updatable = models::NewPendingClearanceForPlace {
                 org_rowid,
@@ -2097,9 +2081,10 @@ impl PlaceClearanceRepo for SqliteConnection {
 
     fn cleanup_pending_clearances_for_places(&self, org_id: &Id) -> Result<u64> {
         let org_rowid = resolve_organization_rowid(self, org_id)?;
-        use schema::organization_place_clearance::dsl;
-        use schema::place::dsl as place_dsl;
-        use schema::place_revision::dsl as place_rev_dsl;
+        use schema::{
+            organization_place_clearance::dsl, place::dsl as place_dsl,
+            place_revision::dsl as place_rev_dsl,
+        };
         let current_place_revisions = schema::place::table
             .inner_join(schema::place_revision::table)
             .filter(place_dsl::current_rev.eq(place_rev_dsl::rev));
@@ -2149,8 +2134,7 @@ impl UserTokenRepo for SqliteConnection {
     }
 
     fn consume_user_token(&self, email_nonce: &EmailNonce) -> Result<UserToken> {
-        use schema::user_tokens::dsl as t_dsl;
-        use schema::users::dsl as u_dsl;
+        use schema::{user_tokens::dsl as t_dsl, users::dsl as u_dsl};
         let token = self.get_user_token_by_email(&email_nonce.email)?;
         let user_id_subselect = u_dsl::users
             .select(u_dsl::id)
@@ -2176,8 +2160,7 @@ impl UserTokenRepo for SqliteConnection {
     }
 
     fn get_user_token_by_email(&self, email: &str) -> Result<UserToken> {
-        use schema::user_tokens::dsl as t_dsl;
-        use schema::users::dsl as u_dsl;
+        use schema::{user_tokens::dsl as t_dsl, users::dsl as u_dsl};
         Ok(t_dsl::user_tokens
             .inner_join(u_dsl::users)
             .select((u_dsl::id, t_dsl::nonce, t_dsl::expires_at, u_dsl::email))

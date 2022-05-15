@@ -1,6 +1,8 @@
-use crate::{contact::*, id::*, location::*, time::*, url::*};
-use chrono::prelude::*;
 use std::str::FromStr;
+
+use chrono::prelude::*;
+
+use crate::{contact::*, id::*, location::*, time::*, url::*};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum RegistrationType {

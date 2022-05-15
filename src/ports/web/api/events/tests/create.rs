@@ -20,8 +20,8 @@ fn without_creator_email() {
     // assert_eq!(response.status(), HttpStatus::Ok);
     // test_json(&response);
     // let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    // let eid = db.get().unwrap().all_events_chronologically().unwrap()[0].id.clone();
-    // assert_eq!(body_str, format!("\"{}\"", eid));
+    // let eid = db.get().unwrap().all_events_chronologically().unwrap()[0].id.
+    // clone(); assert_eq!(body_str, format!("\"{}\"", eid));
 }
 
 #[test]
@@ -41,8 +41,8 @@ fn without_api_token_but_with_creator_email() {
     // assert_eq!(response.status(), HttpStatus::Ok);
     // test_json(&response);
     // let body_str = response.body().and_then(|b| b.into_string()).unwrap();
-    // let ev = db.get().unwrap().all_events_chronologically().unwrap()[0].clone();
-    // let eid = ev.id.clone();
+    // let ev = db.get().unwrap().all_events_chronologically().unwrap()[0].
+    // clone(); let eid = ev.id.clone();
     // assert!(ev.created_by.is_none());
     // assert_eq!(body_str, format!("\"{}\"", eid));
     // let req = client
@@ -55,8 +55,8 @@ fn without_api_token_but_with_creator_email() {
     // assert_eq!(
     //     body_str,
     //     format!(
-    //         "{{\"id\":\"{}\",\"title\":\"x\",\"start\":0,\"lat\":0.0,\"lng\":0.0,\"tags\":[]}}",
-    //         eid
+    //         "{{\"id\":\"{}\",\"title\":\"x\",\"start\":0,\"lat\":0.0,\"lng\":
+    // 0.0,\"tags\":[]}}",         eid
     //     )
     // );
 }

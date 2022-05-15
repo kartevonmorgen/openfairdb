@@ -1,5 +1,6 @@
-use crate::Msg;
 use seed::{prelude::*, *};
+
+use crate::Msg;
 
 pub mod index;
 pub mod login;

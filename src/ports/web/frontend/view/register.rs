@@ -1,6 +1,7 @@
-use super::page::*;
 use maud::{html, Markup};
 use rocket::request::FlashMessage;
+
+use super::page::*;
 
 pub fn register(flash: Option<FlashMessage>) -> Markup {
     page(

@@ -1,15 +1,16 @@
-use super::view;
-use crate::{
-    core::prelude::*,
-    infrastructure::flows::prelude::*,
-    ports::web::{notify::*, sqlite::Connections},
-};
 use maud::Markup;
 use rocket::{
     self,
     http::RawStr,
     request::{FlashMessage, Form},
     response::{Flash, Redirect},
+};
+
+use super::view;
+use crate::{
+    core::prelude::*,
+    infrastructure::flows::prelude::*,
+    ports::web::{notify::*, sqlite::Connections},
 };
 
 #[get("/reset-password?<token>&<success>")]

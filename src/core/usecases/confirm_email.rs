@@ -17,8 +17,7 @@ pub fn confirm_email_address(db: &dyn Db, token: &str) -> Result<()> {
 
 #[cfg(test)]
 mod tests {
-    use super::super::tests::MockDb;
-    use super::*;
+    use super::{super::tests::MockDb, *};
 
     #[test]
     fn confirm_email_of_existing_user() {

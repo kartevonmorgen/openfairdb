@@ -1,9 +1,10 @@
+use std::collections::HashSet;
+
 use anyhow::{anyhow, Result};
 use chrono::{Duration, Utc};
 use jwt_service::JwtService;
 use parking_lot::{Mutex, MutexGuard};
 use serde::{Deserialize, Serialize};
-use std::collections::HashSet;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -76,8 +77,9 @@ impl JwtState {
 
 #[cfg(feature = "jwt")]
 mod jwt_service {
-    use super::{Claims, Result};
     use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+
+    use super::{Claims, Result};
 
     /// generate a Rocket-compatible secret (Rocket expects a
     /// 256-bit base64 encoded string)

@@ -1,6 +1,7 @@
+use maud::{html, Markup};
+
 use super::page;
 use crate::core::entities::*;
-use maud::{html, Markup};
 
 pub struct DashBoardPresenter {
     pub user: User,

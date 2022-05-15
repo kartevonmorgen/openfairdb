@@ -1,3 +1,5 @@
+use anyhow::Result as Fallible;
+
 use super::{
     entities::*,
     error::RepoError,
@@ -7,8 +9,6 @@ use super::{
         time::{Timestamp, TimestampMs},
     },
 };
-
-use anyhow::Result as Fallible;
 
 type Result<T> = std::result::Result<T, RepoError>;
 

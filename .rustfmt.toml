@@ -1,0 +1,14 @@
+# Only add deviations from the default settings!
+
+# Consistently use a single edition for all workspace crates, should match Cargo.toml
+edition = "2021"
+
+use_field_init_shorthand = true
+use_try_shorthand = true
+
+imports_granularity = "Crate"
+group_imports = "StdExternalCrate"
+
+format_code_in_doc_comments = true
+
+wrap_comments = true

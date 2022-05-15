@@ -1,7 +1,5 @@
-use crate::{
-    core::db::OrganizationRepo, core::prelude::*, core::usecases, infrastructure::error::AppError,
-    ports::web::jwt,
-};
+use std::time::Duration;
+
 use chrono::prelude::*;
 use rocket::{
     self,
@@ -9,7 +7,12 @@ use rocket::{
     request::{self, FromRequest, Request},
     Outcome, State,
 };
-use std::time::Duration;
+
+use crate::{
+    core::{db::OrganizationRepo, prelude::*, usecases},
+    infrastructure::error::AppError,
+    ports::web::jwt,
+};
 
 pub const COOKIE_EMAIL_KEY: &str = "ofdb-user-email";
 pub const COOKIE_CAPTCHA_KEY: &str = "ofdb-captcha";
