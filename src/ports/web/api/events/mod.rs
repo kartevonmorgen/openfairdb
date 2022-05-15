@@ -231,7 +231,6 @@ impl<'q> FromQuery<'q> for usecases::EventQuery {
             .map(|i| i.value.url_decode_lossy())
             .find(|v| !v.is_empty());
 
-        drop(query); // silence clippy warning
         Ok(usecases::EventQuery {
             bbox,
             created_by,

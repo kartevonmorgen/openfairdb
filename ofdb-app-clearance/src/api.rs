@@ -16,7 +16,7 @@ impl PlaceClearance {
     pub fn current_rev(&self) -> Option<&PlaceRevision> {
         self.history
             .as_ref()
-            .and_then(|h| h.revisions.iter().nth(0).map(|(rev, _)| rev))
+            .and_then(|h| h.revisions.get(0).map(|(rev, _)| rev))
     }
     pub fn last_cleared_rev(&self) -> Option<&PlaceRevision> {
         let nr = self.last_cleared_rev_nr()?;
@@ -29,12 +29,10 @@ impl PlaceClearance {
     pub fn overview_title(&self) -> &str {
         if let Some(rev) = self.last_cleared_rev() {
             &rev.title
+        } else if let Some(r) = self.current_rev() {
+            &r.title
         } else {
-            if let Some(r) = self.current_rev() {
-                &r.title
-            } else {
-                &self.pending.place_id
-            }
+            &self.pending.place_id
         }
     }
 }

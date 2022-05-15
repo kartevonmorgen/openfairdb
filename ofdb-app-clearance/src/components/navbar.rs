@@ -21,6 +21,7 @@ pub enum LoginStatus {
 }
 
 pub fn update(msg: Msg, mdl: &mut Mdl, _: &mut impl Orders<Msg>) {
+    #[allow(clippy::single_match)]
     match msg {
         Msg::ToggleMenu => {
             mdl.menu_is_active = !mdl.menu_is_active;

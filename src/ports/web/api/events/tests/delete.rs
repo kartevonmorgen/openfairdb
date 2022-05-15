@@ -121,8 +121,7 @@ fn with_api_token_by_organization_without_any_moderated_tags() {
 #[test]
 fn with_api_token_from_different_org_unauthorized() {
     let (client, db, mut search_engine, notify) = setup2();
-    let _creator_org = db
-        .exclusive()
+    db.exclusive()
         .unwrap()
         .create_org(Organization {
             id: "creator".into(),
@@ -131,8 +130,7 @@ fn with_api_token_from_different_org_unauthorized() {
             api_token: "creator".into(),
         })
         .unwrap();
-    let _deleter_org = db
-        .exclusive()
+    db.exclusive()
         .unwrap()
         .create_org(Organization {
             id: "deleter".into(),

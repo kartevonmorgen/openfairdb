@@ -1,4 +1,4 @@
-use std::result;
+use std::{fmt::Write as _, result};
 
 use anyhow::anyhow;
 use chrono::prelude::*;
@@ -765,22 +765,22 @@ impl PlaceRepo for SqliteConnection {
             .to_string();
         if params.min_count.is_some() || params.max_count.is_some() {
             if let Some(min_count) = params.min_count {
-                sql.push_str(&format!(" HAVING count>={}", min_count));
+                write!(&mut sql, " HAVING count>={min_count}").unwrap();
                 if let Some(max_count) = params.max_count {
-                    sql.push_str(&format!(" AND count<={}", max_count));
+                    write!(&mut sql, " AND count<={max_count}").unwrap();
                 }
             } else if let Some(max_count) = params.max_count {
-                sql.push_str(&format!(" HAVING count<={}", max_count));
+                write!(&mut sql, " HAVING count<={max_count}").unwrap();
             }
         }
         sql.push_str(" ORDER BY count DESC, tag");
         if let Some(limit) = pagination.limit {
-            sql.push_str(&format!(" LIMIT {}", limit));
+            write!(&mut sql, " LIMIT {limit}").unwrap();
             // LIMIT must precede OFFSET, i.e. OFFSET without LIMIT
             // is not supported!
             let offset = pagination.offset.unwrap_or(0);
             if offset > 0 {
-                sql.push_str(&format!(" OFFSET {}", offset));
+                write!(&mut sql, " OFFSET {offset}").unwrap();
             }
         }
         let rows = diesel::dsl::sql_query(sql).load::<TagCountRow>(self)?;

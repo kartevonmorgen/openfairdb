@@ -51,8 +51,8 @@ fn init(url: Url, orders: &mut impl Orders<Msg>) -> Mdl {
 
 fn view(mdl: &Mdl) -> Node<Msg> {
     match &mdl.page {
-        Page::Home(mdl) => page::index::view(&mdl).map_msg(Msg::PageIndex),
-        Page::Login(mdl) => page::login::view(&mdl).map_msg(Msg::PageLogin),
+        Page::Home(mdl) => page::index::view(mdl).map_msg(Msg::PageIndex),
+        Page::Login(mdl) => page::login::view(mdl).map_msg(Msg::PageLogin),
         Page::NotFound => div!["Not Found!"],
     }
 }

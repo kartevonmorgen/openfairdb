@@ -286,8 +286,7 @@ fn with_api_token_created_by() {
 #[test]
 fn with_api_token_from_different_org_unauthorized() {
     let (client, db, mut search_engine, notify) = setup2();
-    let _creator_org = db
-        .exclusive()
+    db.exclusive()
         .unwrap()
         .create_org(Organization {
             id: "creator".into(),
@@ -296,8 +295,7 @@ fn with_api_token_from_different_org_unauthorized() {
             api_token: "creator".into(),
         })
         .unwrap();
-    let _updater_org = db
-        .exclusive()
+    db.exclusive()
         .unwrap()
         .create_org(Organization {
             id: "updater".into(),

@@ -408,15 +408,11 @@ fn location_cs(lastrev: Option<&PlaceRevision>, currrev: &PlaceRevision) -> Chan
            "#,
             lat = pos.lat(),
             lon = pos.lng(),
-            street = addr.clone().map(|a| a.street).flatten().unwrap_or_default(),
-            zip = addr.clone().map(|a| a.zip).flatten().unwrap_or_default(),
-            city = addr.clone().map(|a| a.city).flatten().unwrap_or_default(),
-            country = addr
-                .clone()
-                .map(|a| a.country)
-                .flatten()
-                .unwrap_or_default(),
-            state = addr.clone().map(|a| a.state).flatten().unwrap_or_default(),
+            street = addr.clone().and_then(|a| a.street).unwrap_or_default(),
+            zip = addr.clone().and_then(|a| a.zip).unwrap_or_default(),
+            city = addr.clone().and_then(|a| a.city).unwrap_or_default(),
+            country = addr.clone().and_then(|a| a.country).unwrap_or_default(),
+            state = addr.clone().and_then(|a| a.state).unwrap_or_default(),
         )
     })
 }
@@ -431,13 +427,11 @@ fn contact_cs(lastrev: Option<&PlaceRevision>, currrev: &PlaceRevision) -> Chang
         "#,
             email = c
                 .clone()
-                .map(|c| c.email.map(String::from))
-                .flatten()
+                .and_then(|c| c.email.map(String::from))
                 .unwrap_or_default(),
             phone = c
                 .clone()
-                .map(|c| c.phone.map(String::from))
-                .flatten()
+                .and_then(|c| c.phone.map(String::from))
                 .unwrap_or_default(),
         )
     })
@@ -469,20 +463,17 @@ fn links_cs(lastrev: Option<&PlaceRevision>, currrev: &PlaceRevision) -> Changes
         "#,
             homepage = l
                 .clone()
-                .map(|l| l.homepage)
-                .flatten()
+                .and_then(|l| l.homepage)
                 .map(|h| h.into_string())
                 .unwrap_or_default(),
             image = l
                 .clone()
-                .map(|l| l.image)
-                .flatten()
+                .and_then(|l| l.image)
                 .map(|h| h.into_string())
                 .unwrap_or_default(),
             imagehref = l
                 .clone()
-                .map(|l| l.image_href)
-                .flatten()
+                .and_then(|l| l.image_href)
                 .map(|h| h.into_string())
                 .unwrap_or_default(),
         )
@@ -568,7 +559,7 @@ async fn get_place_history(api_token: String, id: String) -> Option<Msg> {
         }
         Err(err) => {
             error!(err);
-            return None;
+            None
         }
     }
 }

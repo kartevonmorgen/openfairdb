@@ -43,6 +43,7 @@ repos:
     hooks:
       - id: codespell
         args: [--ignore-words=.codespellignore]
+        exclude: ^search_results\.json|src/ports/web/frontend/login\.rs|ofdb-gateways/src/user_communication\.rs$
   - repo: https://github.com/sirosen/check-jsonschema
     rev: 0.15.0
     hooks:

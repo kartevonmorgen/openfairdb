@@ -1,3 +1,5 @@
+use std::fmt::Write as _;
+
 use ofdb_core::rating::Rated;
 
 use super::*;
@@ -144,11 +146,13 @@ fn update_place_with_tag_duplicates() {
     let _res = req.dispatch();
     let (place, _) = db.exclusive().unwrap().all_places().unwrap()[0].clone();
     let mut json = String::new();
-    json.push_str(&format!(
+    write!(
+        &mut json,
         "{{\"version\":{},\"id\":\"{}\"",
         u64::from(place.revision.next()),
         place.id
-    ));
+    )
+    .unwrap();
     json.push_str(r#","title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["bar","bar"]}"#);
     let url = format!("/entries/{}", place.id);
     let req = client.put(url).header(ContentType::JSON).body(json);
