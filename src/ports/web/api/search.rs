@@ -1,7 +1,7 @@
 use std::result;
 
-use rocket::{self, request::Form};
-use rocket_contrib::json::Json;
+use rocket::serde::json::Json;
+use rocket::{self, get, post, FromForm};
 
 use super::{JsonResult, Result};
 use crate::{
@@ -104,9 +104,8 @@ const MAX_RESULT_LIMIT: usize = 2000;
 pub fn get_search(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
-    query: Form<SearchQuery>,
+    query: SearchQuery,
 ) -> Result<json::SearchResponse> {
-    let query = query.into_inner();
     let (req, limit) = parse_search_query(&query)?;
 
     let limit = if let Some(limit) = limit {

@@ -5,8 +5,8 @@ use ofdb_entities::email::*;
 #[cfg(not(test))]
 use ofdb_gateways::notify;
 use rocket::{
-    request::{self, FromRequest},
-    Outcome, Request,
+    request::{FromRequest, Outcome},
+    Request,
 };
 
 #[cfg(not(test))]
@@ -35,11 +35,12 @@ impl Deref for Notify {
     }
 }
 
-impl<'a, 'r> FromRequest<'a, 'r> for Notify {
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for Notify {
     type Error = ();
 
     #[cfg(not(test))]
-    fn from_request(_: &'a Request<'r>) -> request::Outcome<Self, ()> {
+    async fn from_request(_: &'r Request<'_>) -> Outcome<Self, ()> {
         if let Some(gw) = &*MAILGUN_GW {
             info!("Use Mailgun gateway");
             Outcome::Success(Notify(notify::Notify::new(gw.clone())))
@@ -52,7 +53,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for Notify {
         }
     }
     #[cfg(test)]
-    fn from_request(_: &'a Request<'r>) -> request::Outcome<Self, ()> {
+    async fn from_request(_: &'r Request<'_>) -> Outcome<Self, ()> {
         Outcome::Success(Notify(DummyNotifyGW))
     }
 }

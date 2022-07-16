@@ -26,7 +26,7 @@ fn oc_resolve_address_lat_lng(oc_api_key: String, addr: &Address) -> Option<(f64
             if !res.is_empty() {
                 let point = &res[0];
                 debug!("Resolved address location '{}': {:?}", addr_str, point);
-                return Some((point.lat(), point.lng()));
+                return Some((point.y(), point.x()));
             }
         }
         Err(err) => {

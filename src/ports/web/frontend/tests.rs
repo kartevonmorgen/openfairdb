@@ -8,7 +8,7 @@ use crate::{
 };
 
 fn setup() -> (
-    rocket::local::Client,
+    rocket::local::blocking::Client,
     sqlite::Connections,
     tantivy::SearchEngine,
 ) {
@@ -119,63 +119,63 @@ mod events {
         };
 
         // All events
-        let mut res = client.get("/events").dispatch();
+        let res = client.get("/events").dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
         assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
         assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
         assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[3])));
 
         // Search with simple text
-        let mut res = client.get("/events?text=foo").dispatch();
+        let res = client.get("/events?text=foo").dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
         assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
         assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[3])));
 
         // Search with hashtag text
-        let mut res = client.get("/events?text=%23foo").dispatch();
+        let res = client.get("/events?text=%23foo").dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
         assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[3])));
 
         // Search with tag
-        let mut res = client.get("/events?tag=foo").dispatch();
+        let res = client.get("/events?tag=foo").dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
         assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[3])));
 
         // Search with simple text (not found)
-        let mut res = client.get("/events?text=bar").dispatch();
+        let res = client.get("/events?text=bar").dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[3])));
 
         // Search with hashtag text (not found)
-        let mut res = client.get("/events?text=%23bar").dispatch();
+        let res = client.get("/events?text=%23bar").dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[3])));
 
         // Search with tag (not found)
-        let mut res = client.get("/events?tag=bar").dispatch();
+        let res = client.get("/events?tag=bar").dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
@@ -239,16 +239,16 @@ mod events {
             event_ids
         };
 
-        let mut res = client.get("/events?tag=blub&tag=bli").dispatch();
+        let res = client.get("/events?tag=blub&tag=bli").dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
         assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
 
-        let mut res = client.get("/events?tag=blub").dispatch();
+        let res = client.get("/events?tag=blub").dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[0])));
         assert!(body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[1])));
         assert!(!body_str.contains(&format!("<li><a href=\"/events/{}\">", event_ids[2])));
@@ -281,9 +281,9 @@ mod events {
             }
         }
 
-        let mut res = client.get("/events/1234").dispatch();
+        let res = client.get("/events/1234").dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(body_str.contains("<h2>A great event</h2>"));
         assert!(body_str.contains("Foo bar baz</p>"));
     }
@@ -294,14 +294,14 @@ mod index {
     #[test]
     fn get_the_index_html() {
         let (client, _db, _) = setup();
-        let mut index = client.get("/").dispatch();
+        let index = client.get("/").dispatch();
         assert_eq!(index.status(), Status::Ok);
 
-        let mut index_html = client.get("/index.html").dispatch();
+        let index_html = client.get("/index.html").dispatch();
         assert_eq!(index_html.status(), Status::Ok);
 
-        let index_str = index.body().and_then(|b| b.into_string()).unwrap();
-        let index_html_str = index_html.body().and_then(|b| b.into_string()).unwrap();
+        let index_str = index.into_string().unwrap();
+        let index_html_str = index_html.into_string().unwrap();
 
         assert_eq!(index_html_str, index_str);
         assert!(index_str.contains("<form action=\"search\""));
@@ -361,9 +361,9 @@ mod entry {
     fn get_entry_details() {
         let (client, db, mut search) = setup();
         let (id, _, _) = create_place_with_rating(&db, &mut search);
-        let mut res = client.get(format!("/entries/{}", id)).dispatch();
+        let res = client.get(format!("/entries/{}", id)).dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(!body_str.contains("<form"));
         assert!(!body_str.contains("action=\"/comments/actions/archive\""));
     }
@@ -374,9 +374,9 @@ mod entry {
         let (id, _, _) = create_place_with_rating(&db, &mut search);
         create_user(&db, "foo", Role::Admin);
         login_user(&client, "foo");
-        let mut res = client.get(format!("/entries/{}", id)).dispatch();
+        let res = client.get(format!("/entries/{}", id)).dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(body_str.contains("<form"));
         assert!(body_str.contains("action=\"/comments/actions/archive\""));
     }
@@ -387,9 +387,9 @@ mod entry {
         let (id, _, _) = create_place_with_rating(&db, &mut search);
         create_user(&db, "foo", Role::Scout);
         login_user(&client, "foo");
-        let mut res = client.get(format!("/entries/{}", id)).dispatch();
+        let res = client.get(format!("/entries/{}", id)).dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(body_str.contains("<form"));
         assert!(body_str.contains("action=\"/comments/actions/archive\""));
     }
@@ -523,9 +523,9 @@ mod pw_reset {
         register_user(&db, "user@example.com", "secret", true);
 
         // User opens the form to request a new password
-        let mut res = client.get("/reset-password").dispatch();
+        let res = client.get("/reset-password").dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(body_str.contains("<form"));
         assert!(body_str.contains("action=\"/users/actions/reset-password-request\""));
         assert!(body_str.contains("name=\"email\""));
@@ -546,9 +546,9 @@ mod pw_reset {
         assert_eq!(h.value, "/reset-password?success=true");
 
         // User gets a success message
-        let mut res = client.get("/reset-password?success=true").dispatch();
+        let res = client.get("/reset-password?success=true").dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(body_str.contains("success"));
 
         // User gets an email with the corresponding token
@@ -561,11 +561,11 @@ mod pw_reset {
             .encode_to_string();
 
         // User opens the link
-        let mut res = client
+        let res = client
             .get(format!("/reset-password?token={}", token))
             .dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(body_str.contains("<form"));
         assert!(body_str.contains("action=\"/users/actions/reset-password\""));
         assert!(body_str.contains("name=\"new_password\""));
@@ -592,11 +592,11 @@ mod pw_reset {
             h.value,
             format!("/reset-password?token={}&success=true", token)
         );
-        let mut res = client
+        let res = client
             .get(format!("/reset-password?token={}&success=true", token))
             .dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         assert!(body_str.contains("success"));
 
         // User can't login with old password

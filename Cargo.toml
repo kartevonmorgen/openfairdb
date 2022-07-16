@@ -29,40 +29,48 @@ ofdb-core = "=0.0.0"
 ofdb-entities = { version = "=0.10.1", features = ["url"] }
 ofdb-gateways = "=0.0.0"
 
-anyhow = "1.0.57"
+anyhow = "1.0.58"
 base64 = { version = "0.13.0", optional = true }
 captcha = "0.0.9"
 chrono = "0.4.19"
-clap =  { version = "3.1.18", features = ["cargo"] }
+clap =  { version = "3.2.12", features = ["cargo"] }
 csv = "1.1.6"
 diesel = { version = "1.4.8", features = ["sqlite", "r2d2", "chrono"] }
 diesel_migrations = { version = "1.4.0", features = ["sqlite"] }
 dotenv = "0.15.0"
 env_logger = "0.9.0"
 fast_chemail = "0.9.6"
-jsonwebtoken = { version = "8.1.0", optional = true }
+jsonwebtoken = { version = "8.1.1", optional = true }
 lazy_static = "1.4.0"
 log = "0.4.17"
 num-traits = "0.2.15"
 maud = { version = "0.23.0", optional = true, features = ["rocket"] }
-parking_lot = "0.12.0"
+parking_lot = "0.12.1"
 passwords = "3.1.9"
 pwhash = "1.0.0"
 rand = { version = "0.8.5", optional = true }
-regex = "1.5.6"
+regex = "1.6.0"
 rust-embed = "6.4.0"
-# TODO: Update to Rocket 0.5 and switch toolchain from nightly to stable
-rocket = "0.4.11"
-rocket_contrib = "0.4.11"
-rocket_cors = "0.5.2"
-serde = { version = "1.0.137", features = ["derive"] }
-serde_json = "1.0.81"
-strum = "0.24.0"
+rocket = { version = "0.5.0-rc.2", features = ["secrets", "json"] }
+rocket_cors = "0.6.0-alpha1"
+serde = { version = "1.0.139", features = ["derive"] }
+serde_json = "1.0.82"
+strum = "0.24.1"
 tantivy = "0.18.0"
-# TODO: Version 0.1.x required for rocket_http
-time = "0.1.44"
+time = "0.3.11"
+tokio = "1.20.0"
 thiserror = "1.0.31"
-uuid = { version = "1.1.0", features = ["v4"] }
+uuid = { version = "1.1.2", features = ["v4"] }
+
+[patch.crates-io.maud]
+# TODO: use v0.24.0 as soon as it's published
+git = "https://github.com/slowtec/maud"
+branch = "rocket-0.5.0-rc.2"
+
+[patch.crates-io.rocket_cors]
+# TODO: use v0.6.0 as soon as it's published
+git = "https://github.com/lawliet89/rocket_cors.git"
+branch = "master"
 
 [dev-dependencies]
 rand = "0.8.5"

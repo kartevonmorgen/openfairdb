@@ -17,10 +17,10 @@ fn by_id() {
     let req = client
         .get(format!("/events/{}", e.id))
         .header(ContentType::JSON);
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), HttpStatus::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert_eq!(
                 body_str,
                 format!("{{\"id\":\"{}\",\"title\":\"x\",\"start\":{},\"email\":\"test@example.com\",\"tags\":[\"bla\"],\"registration\":\"email\"}}", e.id, now)
@@ -53,10 +53,10 @@ fn all() {
             .unwrap();
     }
     let req = client.get("/events").header(ContentType::JSON);
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), HttpStatus::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains("\"id\":\"a\""));
 }
 
@@ -75,10 +75,10 @@ fn sorted_by_start() {
         };
         flows::create_event(&db, &mut search_engine, &notify, None, e).unwrap();
     }
-    let mut res = client.get("/events").header(ContentType::JSON).dispatch();
+    let res = client.get("/events").header(ContentType::JSON).dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
     test_json(&res);
-    let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = res.into_string().unwrap();
     let objects: Vec<_> = body_str.split("},{").collect();
     assert!(objects[0].contains(&format!("\"start\":{}", now)));
     assert!(objects[1].contains(&format!("\"start\":{}", now + 50)));
@@ -103,37 +103,37 @@ fn filtered_by_tags() {
     }
 
     let req = client.get("/events?tag=a").header(ContentType::JSON);
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), HttpStatus::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains("\"tags\":[\"a\"]"));
     assert!(!body_str.contains("\"tags\":[\"b\"]"));
     assert!(!body_str.contains("\"tags\":[\"c\"]"));
     assert!(body_str.contains("\"tags\":[\"a\",\"b\"]"));
 
     let req = client.get("/events?tag=b").header(ContentType::JSON);
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), HttpStatus::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains("\"tags\":[\"a\"]"));
     assert!(body_str.contains("\"tags\":[\"b\"]"));
     assert!(!body_str.contains("\"tags\":[\"c\"]"));
     assert!(body_str.contains("\"tags\":[\"a\",\"b\"]"));
 
     let req = client.get("/events?tag=c").header(ContentType::JSON);
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), HttpStatus::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains("\"tags\":[\"a\"]"));
     assert!(!body_str.contains("\"tags\":[\"b\"]"));
     assert!(body_str.contains("\"tags\":[\"c\"]"));
     assert!(!body_str.contains("\"tags\":[\"a\",\"b\"]"));
 
     let req = client.get("/events?tag=a&tag=b").header(ContentType::JSON);
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), HttpStatus::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains("\"tags\":[\"a\"]"));
     assert!(!body_str.contains("\"tags\":[\"b\"]"));
     assert!(!body_str.contains("\"tags\":[\"c\"]"));
@@ -177,13 +177,13 @@ fn filtered_by_creator_with_valid_api_token() {
                 .id
         })
         .collect();
-    let mut res = client
+    let res = client
         .get("/events?created_by=test%40test.com")
         .header(ContentType::JSON)
         .header(Header::new("Authorization", "Bearer foo"))
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
-    let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = res.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"id\":\"{}\"", ids[0])));
     assert!(body_str.contains(&format!("\"id\":\"{}\"", ids[1])));
     assert!(!body_str.contains(&format!("\"id\":\"{}\"", ids[2])));
@@ -225,13 +225,13 @@ fn filtered_by_start_min() {
         };
         flows::create_event(&db, &mut search_engine, &notify, None, e).unwrap();
     }
-    let mut res = client
+    let res = client
         .get(format!("/events?start_min={}", now + 150))
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
     test_json(&res);
-    let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = res.into_string().unwrap();
     let objects: Vec<_> = body_str.split("},{").collect();
     assert_eq!(objects.len(), 2);
     assert!(objects[0].contains(&format!("\"start\":{}", now + 200)));
@@ -256,13 +256,13 @@ fn filtered_by_end_min() {
         };
         flows::create_event(&db, &mut search_engine, &notify, None, e).unwrap();
     }
-    let mut res = client
+    let res = client
         .get(format!("/events?end_min={}", now + 150))
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
     test_json(&res);
-    let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = res.into_string().unwrap();
     let objects: Vec<_> = body_str.split("},{").collect();
     assert_eq!(objects.len(), 2);
     assert!(objects[0].contains(&format!("\"end\":{}", now + 300)));
@@ -284,13 +284,13 @@ fn filtered_by_start_max() {
         };
         flows::create_event(&db, &mut search_engine, &notify, None, e).unwrap();
     }
-    let mut res = client
+    let res = client
         .get(format!("/events?start_max={}", now + 250))
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
     test_json(&res);
-    let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = res.into_string().unwrap();
     let objects: Vec<_> = body_str.split("},{").collect();
     assert_eq!(objects.len(), 4);
     assert!(objects[0].contains(&format!("\"start\":{}", now)));
@@ -317,13 +317,13 @@ fn filtered_by_end_max() {
         };
         flows::create_event(&db, &mut search_engine, &notify, None, e).unwrap();
     }
-    let mut res = client
+    let res = client
         .get(format!("/events?end_max={}", now + 250))
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
     test_json(&res);
-    let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = res.into_string().unwrap();
     let objects: Vec<_> = body_str.split("},{").collect();
     assert_eq!(objects.len(), 4);
     assert!(objects[0].contains(&format!("\"end\":{}", now + 100)));
@@ -347,25 +347,25 @@ fn filtered_by_bounding_box() {
         };
         flows::create_event(&db, &mut search_engine, &notify, None, e).unwrap();
     }
-    let mut res = client
+    let res = client
         .get("/events?bbox=-8,-5,10,7.9")
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
     test_json(&res);
-    let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = res.into_string().unwrap();
     assert!(body_str.contains("\"title\":\"-8-0\""));
     assert!(body_str.contains("\"title\":\"7-7.9\""));
     assert!(body_str.contains("\"title\":\"0.3-5\""));
     assert!(!body_str.contains("\"title\":\"12-0\""));
 
-    let mut res = client
+    let res = client
         .get("/events?bbox=10,-1,13,1")
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
     test_json(&res);
-    let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = res.into_string().unwrap();
     assert!(!body_str.contains("\"title\":\"-8-0\""));
     assert!(!body_str.contains("\"title\":\"7-7.9\""));
     assert!(!body_str.contains("\"title\":\"0.3-5\""));

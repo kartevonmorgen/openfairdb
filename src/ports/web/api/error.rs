@@ -1,10 +1,10 @@
 use anyhow::anyhow;
+use rocket::serde::json::Error as JsonError;
 use rocket::{
     self,
     http::Status,
-    response::{Responder, Response},
+    response::{self, Responder},
 };
-use rocket_contrib::json::JsonError;
 use thiserror::Error;
 
 use super::json_error_response;
@@ -35,8 +35,8 @@ impl From<JsonError<'_>> for Error {
     }
 }
 
-impl<'r> Responder<'r> for Error {
-    fn respond_to(self, req: &rocket::Request) -> std::result::Result<Response<'r>, Status> {
+impl<'r, 'o: 'r> Responder<'r, 'o> for Error {
+    fn respond_to(self, req: &rocket::Request) -> response::Result<'o> {
         match self {
             Error::App(err) => err.respond_to(req),
             Error::OtherWithStatus(err, status) => json_error_response(req, &err, status),

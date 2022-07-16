@@ -16,11 +16,11 @@ log = "0.4.17"
 quoted_printable = "0.4.5"
 
 [dependencies.geocoding]
-version = "0.3.1"
+version = "0.4.0"
 default-features = false
 features = ["rustls-tls"]
 
 [dependencies.reqwest]
-version = "0.11.10"
+version = "0.11.11"
 default-features = false
 features = ["blocking", "rustls-tls", "json"]

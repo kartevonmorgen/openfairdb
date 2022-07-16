@@ -19,10 +19,10 @@ pub fn event(user: Option<User>, ev: Event) -> Markup {
                 div class="entity-type" { "Event"  }
                 h2{ (ev.title) }
                 p class="time" {
-                    (ev.start.format("%d.%m.%Y %H:%M"))
+                    (ev.start.format("%d.%m.%Y %H:%M").to_string())
                         @if let Some(end) = ev.end{
                             " - "
-                            (end.format("%d.%m.%Y %H:%M"))
+                            (end.format("%d.%m.%Y %H:%M").to_string())
                         }
                 }
                 p class="description" { (ev.description.unwrap_or_default()) }
@@ -58,7 +58,7 @@ pub fn event(user: Option<User>, ev: Event) -> Markup {
                         }
                         h4{ "Kontakt" }
                         @if let Some(email) = contact.email{
-                            (email)
+                            (email.as_str())
                             br;
                         }
                         @if let Some(phone) = contact.phone{
@@ -69,7 +69,7 @@ pub fn event(user: Option<User>, ev: Event) -> Markup {
                 @if let Some(url) = ev.homepage{
                         h4{ "Webseite" }
                         p{
-                            a href=(url) { (url) }
+                            a href=(url.as_str()) { (url.as_str()) }
                         }
                 }
                 @if let Some(reg) = ev.registration{
@@ -144,7 +144,7 @@ pub fn events(email: Option<&str>, events: &[Event]) -> Markup {
                                             span class="title" { (e.title) }
                                             " "
                                             span class="date" {
-                                                (e.start.format("%d.%m.%y"))
+                                                (e.start.format("%d.%m.%y").to_string())
                                             }
                                         }
                                         p {

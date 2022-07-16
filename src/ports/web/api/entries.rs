@@ -1,7 +1,7 @@
 use std::time::Duration;
 
-use rocket::{self, request::Form, State};
-use rocket_contrib::json::Json;
+use rocket::serde::json::Json;
+use rocket::{self, get, post, put, FromForm, State};
 
 use super::{super::guards::*, JsonResult, Result};
 use crate::{
@@ -16,15 +16,15 @@ use crate::{
 };
 
 #[derive(FromForm, Clone)]
-pub struct GetEntryQuery {
-    org_tag: Option<String>,
+pub struct GetEntryQuery<'r> {
+    org_tag: Option<&'r str>,
 }
 
 #[get("/entries/<ids>?<query..>")]
 pub fn get_entry(
     db: sqlite::Connections,
     ids: String,
-    query: Form<GetEntryQuery>,
+    query: GetEntryQuery,
 ) -> Result<Vec<json::Entry>> {
     // TODO: Only lookup and return a single entity
     // TODO: Add a new method for searching multiple ids
@@ -32,10 +32,10 @@ pub fn get_entry(
     if ids.is_empty() {
         return Ok(Json(vec![]));
     }
-    let GetEntryQuery { ref org_tag } = query.into_inner();
+    let GetEntryQuery { ref org_tag } = query;
     let results = {
         let db = db.shared()?;
-        let places = usecases::load_places(&*db, &ids, org_tag.as_ref().map(String::as_str))?;
+        let places = usecases::load_places(&*db, &ids, *org_tag)?;
         let mut results = Vec::with_capacity(places.len());
         for (place, _) in places.into_iter() {
             let r = db.load_ratings_of_place(place.id.as_ref())?;
@@ -136,7 +136,7 @@ const ENTRIES_MOST_POPULAR_TAGS_DEFAULT_MAX_CACHE_AGE_SECONDS: u64 = 3600;
 #[get("/entries/most-popular-tags?<min_count>&<max_count>&<offset>&<limit>&<max_cache_age>")]
 pub fn get_entries_most_popular_tags(
     db: sqlite::Connections,
-    tags_cache: State<PopularTagsCache>,
+    tags_cache: &State<PopularTagsCache>,
     min_count: Option<u64>,
     max_count: Option<u64>,
     offset: Option<u64>,
@@ -172,7 +172,7 @@ pub fn post_entry(
     notify: Notify,
     mut search_engine: tantivy::SearchEngine,
     body: JsonResult<json::NewPlace>,
-    cfg: State<Cfg>,
+    cfg: &State<Cfg>,
 ) -> Result<String> {
     let org = auth.organization(&*connections.shared()?).ok();
     if org.is_none() && auth.account_email().is_err() && cfg.protect_with_captcha {
@@ -187,7 +187,7 @@ pub fn post_entry(
             new_place,
             auth.account_email().ok(),
             org.as_ref(),
-            &cfg,
+            cfg,
         )?
         .id
         .to_string(),
@@ -202,7 +202,7 @@ pub fn put_entry(
     notify: Notify,
     id: String,
     data: JsonResult<json::UpdatePlace>,
-    cfg: State<Cfg>,
+    cfg: &State<Cfg>,
 ) -> Result<String> {
     let org = auth.organization(&*connections.shared()?).ok();
     if org.is_none() && auth.account_email().is_err() && cfg.protect_with_captcha {
@@ -217,7 +217,7 @@ pub fn put_entry(
             data?.into_inner().into(),
             auth.account_email().ok(),
             org.as_ref(),
-            &cfg,
+            cfg,
         )?
         .id
         .into(),

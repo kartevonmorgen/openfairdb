@@ -8,8 +8,9 @@ use diesel::r2d2::PoolError;
 use diesel::r2d2::{ManageConnection, Pool, PooledConnection};
 use rocket::{
     http::Status,
-    request::{self, FromRequest},
-    Outcome, Request, State,
+    outcome::try_outcome,
+    request::{FromRequest, Outcome},
+    Request, State,
 };
 
 use crate::core::usecases::tests::MockDb;
@@ -44,11 +45,12 @@ pub fn init_connections(_: &str) -> Result<ConnectionPool, PoolError> {
     Pool::builder().max_size(1).build(manager)
 }
 
-impl<'a, 'r> FromRequest<'a, 'r> for Connections {
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for Connections {
     type Error = ();
 
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Connections, ()> {
-        let pool = request.guard::<State<ConnectionPool>>()?;
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let pool = try_outcome!(request.guard::<&State<ConnectionPool>>().await);
         match pool.get() {
             Ok(conn) => Outcome::Success(Connections(conn)),
             Err(_) => Outcome::Failure((Status::ServiceUnavailable, ())),

@@ -2,8 +2,8 @@ use std::result;
 
 use ofdb_core::rating::Rated;
 use popular_tags_cache::PopularTagsCache;
+use rocket::serde::json::Json;
 use rocket::{config::Config as RocketCfg, Rocket, Route};
-use rocket_contrib::json::Json;
 
 use crate::{
     core::{
@@ -75,7 +75,7 @@ pub(crate) fn rocket_instance(
     mounts: Vec<(&str, Vec<Route>)>,
     rocket_cfg: Option<RocketCfg>,
     cfg: Cfg,
-) -> Rocket {
+) -> Rocket<rocket::Build> {
     info!("Indexing all places...");
     index_all_places(&*connections.exclusive().unwrap(), &mut search_engine).unwrap();
 
@@ -96,7 +96,7 @@ pub(crate) fn rocket_instance(
 
     let r = match rocket_cfg {
         Some(cfg) => rocket::custom(cfg),
-        None => rocket::ignite(),
+        None => rocket::build(),
     };
 
     let mut instance = r
@@ -123,13 +123,14 @@ fn mounts() -> Vec<(&'static str, Vec<Route>)> {
     vec![("/api", api::routes()), ("/", frontend::routes())]
 }
 
-pub fn run(
+#[tokio::main]
+pub async fn run(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     enable_cors: bool,
     cfg: Cfg,
 ) {
-    if enable_cors {
+    let server_task = if enable_cors {
         let cors = rocket_cors::CorsOptions {
             ..Default::default()
         }
@@ -137,8 +138,11 @@ pub fn run(
         .unwrap();
         rocket_instance(connections, search_engine, mounts(), None, cfg)
             .attach(cors)
-            .launch();
+            .launch()
     } else {
-        rocket_instance(connections, search_engine, mounts(), None, cfg).launch();
+        rocket_instance(connections, search_engine, mounts(), None, cfg).launch()
+    };
+    if let Err(err) = server_task.await {
+        log::error!("Unable to run web server: {err}");
     }
 }

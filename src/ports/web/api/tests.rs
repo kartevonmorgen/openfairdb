@@ -12,7 +12,8 @@ pub mod prelude {
         core::db::*,
         infrastructure::{cfg::Cfg, flows::prelude as flows},
         ports::web::{
-            api::captcha::tests::get_valid_captcha_cookie as get_captcha_cookie, tests::prelude::*,
+            api::captcha::tests::get_valid_captcha_cookie as get_captcha_cookie,
+            tests::prelude::{LocalResponse as Response, *},
         },
     };
     use crate::{
@@ -57,10 +58,10 @@ fn create_place() {
     let req = client.post("/entries")
                     .header(ContentType::JSON)
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#);
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     let eid = db.exclusive().unwrap().all_places().unwrap()[0]
         .0
         .id
@@ -95,10 +96,10 @@ fn create_place_with_tag_duplicates() {
     let req = client.post("/entries")
                     .header(ContentType::JSON)
                     .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","foo"]}"#);
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     let eid = db.exclusive().unwrap().all_places().unwrap()[0]
         .0
         .id
@@ -192,10 +193,10 @@ fn get_one_entry() {
     )
     .unwrap();
     let req = client.get("/entries/get_one_entry_test");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert_eq!(body_str.as_str().chars().next().unwrap(), '[');
     let entries: Vec<json::Entry> = serde_json::from_str(&body_str).unwrap();
     let rating = connections
@@ -233,10 +234,10 @@ fn get_multiple_places() {
         .create_or_update_place(two.clone())
         .unwrap();
     let req = client.get("/entries/get_multiple_entry_test_one,get_multiple_entry_test_two");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert_eq!(body_str.as_str().chars().next().unwrap(), '[');
     let entries: Vec<json::Entry> = serde_json::from_str(&body_str).unwrap();
     assert_eq!(entries.len(), 2);
@@ -313,10 +314,10 @@ fn search_with_categories_and_bbox() {
         "/search?bbox=-10,-10,10,10&categories={}",
         Category::ID_NON_PROFIT
     ));
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -325,10 +326,10 @@ fn search_with_categories_and_bbox() {
         "/search?bbox=1.8,0.5,3.0,3.0&categories={}",
         Category::ID_NON_PROFIT
     ));
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -337,9 +338,9 @@ fn search_with_categories_and_bbox() {
         "/search?bbox=-10,-10,10,10&categories={}",
         Category::ID_COMMERCIAL
     ));
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -349,9 +350,9 @@ fn search_with_categories_and_bbox() {
         Category::ID_NON_PROFIT,
         Category::ID_COMMERCIAL
     ));
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -361,9 +362,9 @@ fn search_with_categories_and_bbox() {
         Category::ID_NON_PROFIT,
         Category::ID_COMMERCIAL
     ));
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -410,40 +411,40 @@ fn search_with_text() {
     // rating is equal. The match score is currently not considered when
     // ordering the results!
     let req = client.get("/search?bbox=-10,-10,10,10&text=Foo&limit=2");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
 
     // Search case insensitive "Foo" and "foo" with bbox
     let req = client.get("/search?bbox=1.8,0.5,3.0,3.0&text=Foo");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
 
     // Search with whitespace
     let req = client.get("/search?bbox=-10,-10,10,10&text=blub%20foo");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
 
     // Search with whitespace and bbox
     let req = client.get("/search?bbox=0.9,0.5,2.5,2.0&text=blub%20foo");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -453,10 +454,10 @@ fn search_with_text() {
     // See also: https://github.com/slowtec/openfairdb/issues/82
     /*
     let req = client.get("/search?bbox=-10,-10,10,10&text=blub,Foo");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -491,20 +492,20 @@ fn search_partial_text() {
         .collect();
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=bar-baz");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[3])));
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=blub-");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2]))); // trailing '-' is ignored by Tantivy!
@@ -538,73 +539,73 @@ fn search_with_text_terms_inclusive_exclusive() {
         .collect();
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=+Foo");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=+Foo%20-BAZ");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=+Foo%20+BAZ&limit=1");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=+Foo%20+BAZ%20-bar");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=+bAz%20+BAr&limit=1");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=-foo%20+bAz%20+BAr");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=-foo%20+bar");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=+foo+bar");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -650,10 +651,10 @@ fn search_with_city() {
     // rating is equal. The match score is currently not considered when
     // ordering the results!
     let req = client.get("/search?bbox=-10,-10,10,10&text=stuttgart&limit=2");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -718,10 +719,10 @@ fn search_with_tags() {
         .collect();
 
     let req = client.get("/search?bbox=-10,-10,10,10&tags=bla-blubb");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!(
         "\"visible\":[{{\"id\":\"{}\",\"status\":\"created\",\"lat\":0.0,\"lng\":0.0,\"title\":\"\",\"description\":\"\",\"categories\":[\"{}\"],\"tags\":[\"bla-blubb\",\"foo-bar\"],\"ratings\":{{\"total\":0.0,\"diversity\":0.0,\"fairness\":0.0,\"humanity\":0.0,\"renewable\":0.0,\"solidarity\":0.0,\"transparency\":0.0}}}}]",
         place_ids[1],
@@ -729,9 +730,9 @@ fn search_with_tags() {
     )));
 
     let req = client.get("/search?bbox=-10,-10,10,10&tags=foo-bar");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -788,9 +789,9 @@ fn search_with_uppercase_tags() {
         .collect();
 
     let req = client.get("/search?bbox=-10,-10,10,10&tags=Foo");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -845,9 +846,9 @@ fn search_with_hashtag() {
         .collect();
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23foo-bar");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -901,9 +902,9 @@ fn search_with_two_hashtags() {
         .collect();
 
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23bla-blubb%20%23foo-bar");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -966,9 +967,9 @@ fn search_with_commata() {
     // With hashtag symbol '#' -> all hashtags are mandatory
     // #eins + #zwei
     let req = client.get("/search?bbox=-10,-10,10,10&text=%23eins%2C%20%23zwei");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -978,9 +979,9 @@ fn search_with_commata() {
     // Without hashtag symbol '#' -> tags are optional
     // eins + #zwei
     let req = client.get("/search?bbox=-10,-10,10,10&text=eins%2C%20%23zwei");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -990,9 +991,9 @@ fn search_with_commata() {
     // Without hashtag symbol '#' -> tags are optional
     // eins + zwei
     let req = client.get("/search?bbox=-10,-10,10,10&text=eins%2C%20zwei");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -1051,55 +1052,55 @@ fn search_without_specifying_hashtag_symbol() {
         })
         .collect();
 
-    let mut response = client.get("/search?bbox=-10,-10,10,10&text=foo").dispatch();
+    let response = client.get("/search?bbox=-10,-10,10,10&text=foo").dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
 
-    let mut response = client
+    let response = client
         .get("/search?bbox=-10,-10,10,10&text=%23foo")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
 
     // Text "foo-bar" is tokenized into "foo" and "bar"
-    let mut response = client
+    let response = client
         .get("/search?bbox=-10,-10,10,10&text=foo-bar")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
 
-    let mut response = client
+    let response = client
         .get("/search?bbox=-10,-10,10,10&text=%23foo-bar")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[2])));
 
-    let mut response = client
+    let response = client
         .get("/search?bbox=-10,-10,10,10&text=%23bla-blubb")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
 
-    let mut response = client
+    let response = client
         .get("/search?bbox=-10,-10,10,10&text=bla-blubb")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[2])));
@@ -1175,9 +1176,9 @@ fn search_with_status() {
 
     // All visible = created + confirmed
     let req = client.get("/search?bbox=-10,-10,10,10");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", places[0].0)));
     assert!(body_str.contains(&format!("\"{}\"", places[0].1)));
     assert!(body_str.contains(&format!("\"{}\"", places[1].0)));
@@ -1190,9 +1191,9 @@ fn search_with_status() {
     // Single status search
     for (id, status) in &places {
         let req = client.get(format!("/search?bbox=-10,-10,10,10&status={}", status));
-        let mut response = req.dispatch();
+        let response = req.dispatch();
         assert_eq!(response.status(), Status::Ok);
-        let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = response.into_string().unwrap();
         assert!(body_str.contains(&format!("\"{}\"", id)));
         assert!(body_str.contains(&format!("\"{}\"", status)));
         for (other_id, other_status) in places.iter().filter(|(other_id, _)| other_id != id) {
@@ -1280,10 +1281,10 @@ fn get_one_rating() {
         .id
         .clone();
     let req = client.get(format!("/ratings/{}", rid));
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert_eq!(body_str.as_str().chars().next().unwrap(), '[');
     let ratings: Vec<json::Rating> = serde_json::from_str(&body_str).unwrap();
     assert_eq!(ratings[0].comments.len(), 1);
@@ -1342,10 +1343,10 @@ fn ratings_with_and_without_source() {
         .id
         .clone();
     let req = client.get(format!("/ratings/{}", rid));
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     test_json(&response);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert_eq!(body_str.as_str().chars().next().unwrap(), '[');
     let ratings: Vec<json::Rating> = serde_json::from_str(&body_str).unwrap();
     assert_eq!(ratings[0].id, rid.to_string());
@@ -1468,14 +1469,14 @@ fn login_logout_succeeds_jwt() {
     }
 
     // Login
-    let mut res = client
+    let res = client
         .post("/login")
         .header(ContentType::JSON)
         .body(r#"{"email": "foo@bar", "password": "secret"}"#)
         .dispatch();
     assert_eq!(res.status(), Status::Ok);
     test_json(&res);
-    let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = res.into_string().unwrap();
     let jwt_token: ofdb_boundary::JwtToken = serde_json::from_str(&body_str).unwrap();
 
     // Logout
@@ -1625,31 +1626,31 @@ fn recently_changed_entries() {
         db.exclusive().unwrap().create_or_update_place(e).unwrap();
     }
 
-    let mut response_since = client
+    let response_since = client
         .get(format!(
             "/entries/recently-changed?since={}",
             since_inclusive.into_inner(),
         ))
         .dispatch();
     assert_eq!(response_since.status(), Status::Ok);
-    let body_since_str = response_since.body().and_then(|b| b.into_string()).unwrap();
+    let body_since_str = response_since.into_string().unwrap();
     assert!(!body_since_str.contains("\"id\":\"old\""));
     assert!(body_since_str.contains("\"id\":\"recent\""));
     assert!(body_since_str.contains("\"id\":\"new\""));
 
-    let mut response_until = client
+    let response_until = client
         .get(format!(
             "/entries/recently-changed?until={}",
             until_exclusive.into_inner(),
         ))
         .dispatch();
     assert_eq!(response_until.status(), Status::Ok);
-    let body_until_str = response_until.body().and_then(|b| b.into_string()).unwrap();
+    let body_until_str = response_until.into_string().unwrap();
     assert!(body_until_str.contains("\"id\":\"old\""));
     assert!(body_until_str.contains("\"id\":\"recent\""));
     assert!(!body_until_str.contains("\"id\":\"new\""));
 
-    let mut response_since_until = client
+    let response_since_until = client
         .get(format!(
             "/entries/recently-changed?since={}&until={}",
             since_inclusive.into_inner(),
@@ -1657,10 +1658,7 @@ fn recently_changed_entries() {
         ))
         .dispatch();
     assert_eq!(response_since_until.status(), Status::Ok);
-    let body_since_until_str = response_since_until
-        .body()
-        .and_then(|b| b.into_string())
-        .unwrap();
+    let body_since_until_str = response_since_until.into_string().unwrap();
     assert!(!body_since_until_str.contains("\"id\":\"old\""));
     assert!(body_since_until_str.contains("\"id\":\"recent\""));
     assert!(!body_since_until_str.contains("\"id\":\"new\""));
@@ -1673,11 +1671,11 @@ fn count_most_popular_tags_on_empty_db_to_verify_sql() {
     // at compile-time still matches the current database schema!
     let (client, _) = setup();
     // All parameters
-    let mut response = client
+    let response = client
         .get("/entries/most-popular-tags?offset=10&limit=1000&min_count=10&max_count=100&max_cache_age=0")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert_eq!(body_str, "[]");
 
     // Only offset parameter
@@ -1726,28 +1724,28 @@ fn update_most_popular_tags_on_outdated_cache() {
     init_tags_cache_test_db(10, &db);
 
     // get only popular tags
-    let mut response = client
+    let response = client
         .get("/entries/most-popular-tags?min_count=8&max_cache_age=0")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     let tags: Vec<ofdb_boundary::TagFrequency> = serde_json::from_str(&body_str).unwrap();
     assert_eq!(tags.len(), 3);
 
-    let mut response = client
+    let response = client
         .get("/entries/most-popular-tags?max_count=1")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     let tags: Vec<ofdb_boundary::TagFrequency> = serde_json::from_str(&body_str).unwrap();
     assert_eq!(tags.len(), 1);
 
     // get cached popular tags again
-    let mut response = client
+    let response = client
         .get("/entries/most-popular-tags?min_count=8")
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     let tags: Vec<ofdb_boundary::TagFrequency> = serde_json::from_str(&body_str).unwrap();
     assert_eq!(tags.len(), 3);
 }
@@ -1756,13 +1754,13 @@ fn update_most_popular_tags_on_outdated_cache() {
 fn openapi() {
     let (client, _) = setup();
     let req = client.get("/server/openapi.yaml");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     assert_eq!(
         response.headers().get("Content-Type").collect::<Vec<_>>()[0],
         "text/yaml"
     );
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains("openapi:"))
 }
 
@@ -1921,14 +1919,14 @@ fn entries_export_csv() {
     assert_eq!(response.status(), Status::Ok);
 
     let req = client.get("/export/entries.csv?bbox=-1,-1,1,1");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     for h in response.headers().iter() {
         if h.name.as_str() == "Content-Type" {
             assert_eq!(h.value, "text/csv; charset=utf-8");
         }
     }
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     //eprintln!("{}", body_str);
     assert!(body_str.starts_with("id,created_at,created_by,version,title,description,lat,lng,street,zip,city,country,state,homepage,contact_name,contact_email,contact_phone,opening_hours,founded_on,categories,tags,license,image_url,image_link_url,avg_rating\n"));
     assert!(body_str.contains(&format!("entry1,1111,user@example.com,0,title1,desc1,{lat},{lng},street1,zip1,city1,country1,state1,http://homepage1/,John Smith,john.smith@example.com,0123456789,24/7,1945-10-24,\"{cat1},{cat2}\",\"bla,bli\",license1,https://img/,\"https://img,link/\",0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg(), cat1 = Category::ID_NON_PROFIT, cat2 = Category::ID_COMMERCIAL)));
@@ -1947,14 +1945,14 @@ fn entries_export_csv() {
     assert_eq!(response.status(), Status::Ok);
 
     let req = client.get("/export/entries.csv?bbox=-1,-1,1,1");
-    let mut response = req.dispatch();
+    let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
     for h in response.headers().iter() {
         if h.name.as_str() == "Content-Type" {
             assert_eq!(h.value, "text/csv; charset=utf-8");
         }
     }
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     //eprintln!("{}", body_str);
     assert!(body_str.starts_with("id,created_at,created_by,version,title,description,lat,lng,street,zip,city,country,state,homepage,contact_name,contact_email,contact_phone,opening_hours,founded_on,categories,tags,license,image_url,image_link_url,avg_rating\n"));
     assert!(body_str.contains(&format!("entry1,1111,,0,title1,desc1,{lat},{lng},street1,zip1,city1,country1,state1,http://homepage1/,John Smith,john.smith@example.com,0123456789,24/7,1945-10-24,\"{cat1},{cat2}\",\"bla,bli\",license1,https://img/,\"https://img,link/\",0.25\n", lat = LatCoord::from_deg(0.1).to_deg(), lng = LngCoord::from_deg(0.2).to_deg(), cat1 = Category::ID_NON_PROFIT, cat2 = Category::ID_COMMERCIAL)));
@@ -1993,14 +1991,14 @@ fn search_duplicates() {
         .into_iter()
         .next()
         .unwrap();
-    let mut res = client
+    let res = client
         .post("/search/duplicates")
         .header(ContentType::JSON)
         .body(r#"{"title":"foO","description":"bla","lat":0.0005,"lng":0.0005}"#)
         .dispatch();
     assert_eq!(res.status(), Status::Ok);
     test_json(&res);
-    let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = res.into_string().unwrap();
     let duplicate_places: Vec<ofdb_boundary::PlaceSearchResult> =
         serde_json::from_str(&body_str).unwrap();
     assert_eq!(1, duplicate_places.len());
@@ -2036,10 +2034,10 @@ mod with_captcha_protection_enabled {
                         .header(ContentType::JSON)
                         .cookie(cookie)
                         .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#);
-        let mut response = req.dispatch();
+        let response = req.dispatch();
         assert_eq!(response.status(), Status::Ok);
         test_json(&response);
-        let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = response.into_string().unwrap();
         let eid = db.exclusive().unwrap().all_places().unwrap()[0]
             .0
             .id

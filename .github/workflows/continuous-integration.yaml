@@ -25,14 +25,14 @@ jobs:
         # The inputs should match those in rust-toolchain.toml with the
         # exception of specifying an explicit target for the CI build.
         with:
-          toolchain: nightly-2022-05-12
+          toolchain: stable
           profile: minimal
           components: rustfmt, clippy
           target: wasm32-unknown-unknown
 
       - name: Install trunk
         run: |
-          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.15.0/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -C ~/.cargo/bin -xzf-
+          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.16.0/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -C ~/.cargo/bin -xzf-
 
       - name: Cache Rust toolchain and build artifacts
         uses: Swatinem/rust-cache@v1

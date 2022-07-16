@@ -97,9 +97,9 @@ fn export_csv() {
         .body(r#"{"email": "scout@example.com", "password": "secret"}"#)
         .dispatch();
     assert_eq!(login.status(), Status::Ok);
-    let mut response = client.get("/export/events.csv").dispatch();
+    let response = client.get("/export/events.csv").dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     eprintln!("{}", body_str);
     assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,state,email,phone,homepage,image_url,image_link_url,tags\n"));
     assert!(body_str.contains(&format!(
@@ -121,12 +121,12 @@ fn export_csv() {
         .body(r#"{"email": "scout@example.com", "password": "secret"}"#)
         .dispatch();
     assert_eq!(login.status(), Status::Ok);
-    let mut response = client
+    let response = client
         .get("/export/events.csv")
         .header(Header::new("Authorization", "Bearer foo"))
         .dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,state,email,phone,homepage,image_url,image_link_url,tags\n"));
     assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,state,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1)));
     assert!(body_str.contains(&format!(
@@ -142,9 +142,9 @@ fn export_csv() {
         .body(r#"{"email": "admin@example.com", "password": "secret"}"#)
         .dispatch();
     assert_eq!(login.status(), Status::Ok);
-    let mut response = client.get("/export/events.csv").dispatch();
+    let response = client.get("/export/events.csv").dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,state,email,phone,homepage,image_url,image_link_url,tags\n"));
     assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,state,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1)));
     assert!(body_str.contains(&format!(
