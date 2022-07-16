@@ -1,7 +1,10 @@
 use ofdb_core::gateways::geocode::GeoCodingGateway;
 use rocket::{
-    http::{RawStr, Status as HttpStatus},
-    request::{FromQuery, Query},
+    delete,
+    form::{self, DataField, FromForm, ValueField},
+    get,
+    http::Status as HttpStatus,
+    post, put,
 };
 
 use super::*;
@@ -105,7 +108,7 @@ pub fn get_event(db: sqlite::Connections, id: String) -> Result<json::Event> {
 // So for now we assure that it's blocked:
 pub fn put_event(
     mut _db: sqlite::Connections,
-    _id: &RawStr,
+    _id: &str,
     _e: JsonResult<usecases::NewEvent>,
 ) -> HttpStatus {
     HttpStatus::Unauthorized
@@ -117,7 +120,7 @@ pub fn put_event_with_token(
     mut search_engine: tantivy::SearchEngine,
     notify: Notify,
     auth: Auth,
-    id: &RawStr,
+    id: &str,
     e: JsonResult<usecases::NewEvent>,
 ) -> Result<()> {
     let org = auth.organization(&*connections.shared()?)?;
@@ -134,114 +137,159 @@ pub fn put_event_with_token(
     Ok(Json(()))
 }
 
-impl<'q> FromQuery<'q> for usecases::EventQuery {
-    type Error = crate::core::prelude::Error;
+pub struct EventQueryContext<'r> {
+    query: usecases::EventQuery,
+    errors: form::Errors<'r>,
+}
 
-    fn from_query(query: Query<'q>) -> std::result::Result<Self, Self::Error> {
-        let created_by = query
-            .clone()
-            .filter(|i| i.key == "created_by")
-            .map(|i| i.value.url_decode_lossy())
-            .find(|v| !v.is_empty())
-            .map(|s| s.parse::<Email>())
-            .transpose()
-            .map_err(|_| ParameterError::Email)?;
+#[rocket::async_trait]
+impl<'r> FromForm<'r> for usecases::EventQuery {
+    type Context = EventQueryContext<'r>;
 
-        let bbox = if let Some(bbox) = query
-            .clone()
-            .filter(|i| i.key == "bbox")
-            .map(|i| i.value.url_decode_lossy())
-            .find(|v| !v.is_empty())
-        {
-            let bbox = bbox
-                .parse::<MapBbox>()
-                .map_err(|_err| ParameterError::Bbox)?;
-            validate::bbox(&bbox)?;
-            Some(bbox)
+    // TODO: use Options
+    fn init(_: form::Options) -> Self::Context {
+        Self::Context {
+            query: Default::default(),
+            errors: form::Errors::new(),
+        }
+    }
+
+    fn push_value(ctx: &mut Self::Context, field: ValueField<'r>) {
+        // TODO: improve error messages
+        // TODO: check duplicate fields
+
+        let ValueField { name, value } = field;
+        use form::error::{Error, ErrorKind};
+        match name.as_name().as_str() {
+            "created_by" => {
+                match value
+                    .parse::<Email>()
+                    .map_err(|_| Error::from(ErrorKind::Validation("Invalid email address".into())))
+                {
+                    Ok(email) => {
+                        ctx.query.created_by = Some(email);
+                    }
+                    Err(err) => {
+                        ctx.errors.push(err.with_name(name));
+                    }
+                }
+            }
+            "bbox" => {
+                let result = value
+                    .parse::<MapBbox>()
+                    .map_err(|_| ())
+                    .and_then(|bbox| validate::bbox(&bbox).map(|_| bbox).map_err(|_| ()))
+                    .map_err(|_| Error::from(ErrorKind::Validation("Invalid bounding box".into())));
+
+                match result {
+                    Ok(bbox) => {
+                        ctx.query.bbox = Some(bbox);
+                    }
+                    Err(err) => {
+                        ctx.errors.push(err.with_name(name));
+                    }
+                }
+            }
+            "limit" => {
+                let result = value.parse().map_err(Error::from).and_then(|limit| {
+                    validate_and_adjust_query_limit(limit)
+                        .map_err(|_| Error::from(ErrorKind::Validation("Invalid limit".into())))
+                });
+                match result {
+                    Ok(limit) => {
+                        ctx.query.limit = Some(limit);
+                    }
+                    Err(err) => {
+                        ctx.errors.push(err.with_name(name));
+                    }
+                }
+            }
+            "start_max" => {
+                let result = value
+                    .parse()
+                    .map(Timestamp::from_inner)
+                    .map_err(Error::from);
+                match result {
+                    Ok(max) => {
+                        ctx.query.start_max = Some(max);
+                    }
+                    Err(err) => {
+                        ctx.errors.push(err.with_name(name));
+                    }
+                }
+            }
+            "start_min" => {
+                let result = value
+                    .parse()
+                    .map(Timestamp::from_inner)
+                    .map_err(Error::from);
+                match result {
+                    Ok(min) => {
+                        ctx.query.start_min = Some(min);
+                    }
+                    Err(err) => {
+                        ctx.errors.push(err.with_name(name));
+                    }
+                }
+            }
+            "end_max" => {
+                let result = value
+                    .parse()
+                    .map(Timestamp::from_inner)
+                    .map_err(Error::from);
+                match result {
+                    Ok(max) => {
+                        ctx.query.end_max = Some(max);
+                    }
+                    Err(err) => {
+                        ctx.errors.push(err.with_name(name));
+                    }
+                }
+            }
+            "end_min" => {
+                let result = value
+                    .parse()
+                    .map(Timestamp::from_inner)
+                    .map_err(Error::from);
+                match result {
+                    Ok(min) => {
+                        ctx.query.end_min = Some(min);
+                    }
+                    Err(err) => {
+                        ctx.errors.push(err.with_name(name));
+                    }
+                }
+            }
+            "tag" => {
+                if !value.is_empty() {
+                    let tag = value.to_string();
+                    ctx.query.tags.get_or_insert(vec![]).push(tag);
+                }
+            }
+            "text" => {
+                if !value.is_empty() {
+                    ctx.query.text = Some(value.to_string());
+                }
+            }
+            name => {
+                ctx.errors
+                    .push(Error::from(ErrorKind::Unexpected).with_name(name));
+            }
+        }
+    }
+
+    async fn push_data(ctx: &mut Self::Context, field: DataField<'r, '_>) {
+        use form::error::{Error, ErrorKind};
+        ctx.errors
+            .push(Error::from(ErrorKind::Unexpected).with_name(field.name));
+    }
+
+    fn finalize(this: Self::Context) -> form::Result<'r, Self> {
+        if this.errors.is_empty() {
+            Ok(this.query)
         } else {
-            None
-        };
-
-        let limit = if let Some(limit) = query
-            .clone()
-            .filter(|i| i.key == "limit")
-            .map(|i| i.value.url_decode_lossy())
-            .find(|v| !v.is_empty())
-        {
-            Some(validate_and_adjust_query_limit(limit.parse()?)?)
-        } else {
-            None
-        };
-
-        let start_max = if let Some(start_max) = query
-            .clone()
-            .filter(|i| i.key == "start_max")
-            .map(|i| i.value.url_decode_lossy())
-            .find(|v| !v.is_empty())
-        {
-            Some(Timestamp::from_inner(start_max.parse()?))
-        } else {
-            None
-        };
-
-        let start_min = if let Some(start_min) = query
-            .clone()
-            .filter(|i| i.key == "start_min")
-            .map(|i| i.value.url_decode_lossy())
-            .find(|v| !v.is_empty())
-        {
-            Some(Timestamp::from_inner(start_min.parse()?))
-        } else {
-            None
-        };
-
-        let end_max = if let Some(end_max) = query
-            .clone()
-            .filter(|i| i.key == "end_max")
-            .map(|i| i.value.url_decode_lossy())
-            .find(|v| !v.is_empty())
-        {
-            Some(Timestamp::from_inner(end_max.parse()?))
-        } else {
-            None
-        };
-
-        let end_min = if let Some(end_min) = query
-            .clone()
-            .filter(|i| i.key == "end_min")
-            .map(|i| i.value.url_decode_lossy())
-            .find(|v| !v.is_empty())
-        {
-            Some(Timestamp::from_inner(end_min.parse()?))
-        } else {
-            None
-        };
-
-        let tags: Vec<_> = query
-            .clone()
-            .filter(|i| i.key == "tag")
-            .map(|i| i.value.to_string())
-            .filter(|v| !v.is_empty())
-            .collect();
-        let tags = if tags.is_empty() { None } else { Some(tags) };
-
-        let text = query
-            .clone()
-            .filter(|i| i.key == "text")
-            .map(|i| i.value.url_decode_lossy())
-            .find(|v| !v.is_empty());
-
-        Ok(usecases::EventQuery {
-            bbox,
-            created_by,
-            start_min,
-            start_max,
-            end_min,
-            end_max,
-            tags,
-            text,
-            limit,
-        })
+            Err(this.errors)
+        }
     }
 }
 
@@ -331,7 +379,7 @@ pub fn csv_export(
     search_engine: tantivy::SearchEngine,
     auth: Auth,
     query: usecases::EventQuery,
-) -> result::Result<Content<String>, AppError> {
+) -> result::Result<(ContentType, String), AppError> {
     let db = connections.shared()?;
 
     let moderated_tags = if let Ok(org) = auth.organization(&*db) {
@@ -378,7 +426,7 @@ pub fn csv_export(
     wtr.flush()?;
     let data = String::from_utf8(wtr.into_inner()?)?;
 
-    Ok(Content(ContentType::CSV, data))
+    Ok((ContentType::CSV, data))
 }
 
 #[post("/events/<ids>/archive")]
@@ -410,12 +458,12 @@ pub fn post_events_archive(
 }
 
 #[delete("/events/<_id>", rank = 2)]
-pub fn delete_event(mut _db: sqlite::Connections, _id: &RawStr) -> HttpStatus {
+pub fn delete_event(mut _db: sqlite::Connections, _id: &str) -> HttpStatus {
     HttpStatus::Unauthorized
 }
 
 #[delete("/events/<id>")]
-pub fn delete_event_with_token(db: sqlite::Connections, auth: Auth, id: &RawStr) -> StatusResult {
+pub fn delete_event_with_token(db: sqlite::Connections, auth: Auth, id: &str) -> StatusResult {
     let org = auth.organization(&*db.shared()?)?;
     usecases::delete_event(&mut *db.exclusive()?, &org.api_token, id)?;
     // TODO: Replace with HttpStatus::NoContent

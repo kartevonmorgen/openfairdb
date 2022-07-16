@@ -1,9 +1,13 @@
 use maud::Markup;
 use rocket::{
     self,
-    http::{Cookie, Cookies, SameSite},
-    request::{FlashMessage, Form},
+    form::Form,
+    get,
+    http::{Cookie, CookieJar, SameSite},
+    post,
+    request::FlashMessage,
     response::{Flash, Redirect},
+    uri, FromForm,
 };
 
 use super::{super::guards::*, view};
@@ -13,17 +17,14 @@ use crate::{
 };
 
 #[derive(FromForm)]
-pub struct LoginCredentials {
-    pub email: String,
-    password: String,
+pub struct LoginCredentials<'r> {
+    pub email: &'r str,
+    password: &'r str,
 }
 
-impl<'a> LoginCredentials {
-    pub fn as_login(&'a self) -> usecases::Credentials<'a> {
-        let LoginCredentials {
-            ref email,
-            ref password,
-        } = self;
+impl LoginCredentials<'_> {
+    pub fn as_login(&self) -> usecases::Credentials<'_> {
+        let LoginCredentials { email, password } = self;
         usecases::Credentials { email, password }
     }
 }
@@ -44,44 +45,40 @@ pub fn get_login(
 pub fn post_login(
     db: Connections,
     credentials: Form<LoginCredentials>,
-    mut cookies: Cookies,
+    cookies: &CookieJar<'_>,
 ) -> std::result::Result<Redirect, Flash<Redirect>> {
     match db.shared() {
         Err(_) => Err(Flash::error(
             Redirect::to(uri!(get_login)),
             "We are so sorry! An internal server error has occurred. Please try again later.",
         )),
-        Ok(db) => {
-            let credentials = credentials.into_inner();
-            match usecases::login_with_email(&*db, &credentials.as_login()) {
-                Err(err) => {
-                    let msg = match err {
-                        Error::Parameter(ParameterError::EmailNotConfirmed) => {
-                            "You have to confirm your email address first."
-                        }
-                        Error::Parameter(ParameterError::Credentials) => {
-                            "Invalid email or password."
-                        }
-                        _ => panic!(),
-                    };
-                    Err(Flash::error(Redirect::to(uri!(get_login)), msg))
-                }
-                Ok(_) => {
-                    cookies.add_private(
-                        Cookie::build(COOKIE_EMAIL_KEY, credentials.email)
-                            .http_only(true)
-                            .same_site(SameSite::Lax)
-                            .finish(),
-                    );
-                    Ok(Redirect::to(uri!(super::get_index)))
-                }
+        Ok(db) => match usecases::login_with_email(&*db, &credentials.as_login()) {
+            Err(err) => {
+                let msg = match err {
+                    Error::Parameter(ParameterError::EmailNotConfirmed) => {
+                        "You have to confirm your email address first."
+                    }
+                    Error::Parameter(ParameterError::Credentials) => "Invalid email or password.",
+                    _ => panic!(),
+                };
+                Err(Flash::error(Redirect::to(uri!(get_login)), msg))
             }
-        }
+            Ok(_) => {
+                let email = credentials.email.to_string();
+                cookies.add_private(
+                    Cookie::build(COOKIE_EMAIL_KEY, email)
+                        .http_only(true)
+                        .same_site(SameSite::Lax)
+                        .finish(),
+                );
+                Ok(Redirect::to(uri!(super::get_index)))
+            }
+        },
     }
 }
 
 #[post("/logout")]
-pub fn post_logout(mut cookies: Cookies) -> Flash<Redirect> {
+pub fn post_logout(cookies: &CookieJar<'_>) -> Flash<Redirect> {
     cookies.remove_private(Cookie::named(COOKIE_EMAIL_KEY));
     Flash::success(
         Redirect::to(uri!(super::get_index)),
@@ -104,7 +101,7 @@ pub mod tests {
         (client, db)
     }
 
-    fn user_id_cookie(response: &Response) -> Option<Cookie<'static>> {
+    fn user_id_cookie(response: &LocalResponse) -> Option<Cookie<'static>> {
         let cookie = response
             .headers()
             .get("Set-Cookie")
@@ -116,11 +113,11 @@ pub mod tests {
     #[test]
     fn get_login() {
         let (client, _) = setup();
-        let mut res = client.get("/login").dispatch();
+        let res = client.get("/login").dispatch();
         assert_eq!(res.status(), HttpStatus::Ok);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
-        assert!(body_str.contains("action=\"login\""));
         assert!(user_id_cookie(&res).is_none());
+        let body_str = res.into_string().unwrap();
+        assert!(body_str.contains("action=\"login\""));
     }
 
     #[test]

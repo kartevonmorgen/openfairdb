@@ -1,5 +1,9 @@
 # Changelog
 
+## unreleased
+
+- chore: Compile on stable Rust with rocket v0.5.0-rc.2
+
 ## v0.10.5 (2021-08-11)
 
 - new(api): Filtering events by `end_min`/`end_max`

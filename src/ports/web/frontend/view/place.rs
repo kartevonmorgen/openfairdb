@@ -70,16 +70,16 @@ pub fn place_history(user: &User, h: &PlaceHistory) -> Markup {
                                     td{ }
                                 }
                                 @if let Some(c) = &r.contact {
-                                    td{ @if let Some(x) = &c.email  { a href=(format!("mailto:{}",x)) { (x) } } }
+                                    td{ @if let Some(x) = &c.email  { a href=(format!("mailto:{}",x)) { (x.as_str()) } } }
                                     td{ @if let Some(x) = &c.phone  { (x) } }
                                 } @else {
                                     td {}
                                     td {}
                                 }
                                 @if let Some(l) = &r.links {
-                                    td{ @if let Some(x) = &l.homepage   { a href=(x) { (x) } } }
-                                    td{ @if let Some(x) = &l.image      { img src=(x); } }
-                                    td{ @if let Some(x) = &l.image_href { a href=(x) { (x) } } }
+                                    td{ @if let Some(x) = &l.homepage   { a href=(x.as_str()) { (x.as_str()) } } }
+                                    td{ @if let Some(x) = &l.image      { img src=(x.as_str()); } }
+                                    td{ @if let Some(x) = &l.image_href { a href=(x.as_str()) { (x.as_str()) } } }
                                 } @else {
                                     td {}
                                     td {}
@@ -118,10 +118,10 @@ fn review_status_log(place_rev: Revision, l: &ReviewStatusLog) -> Markup {
     html! {
         span class="status" { (status) }
         " at "
-        (l.activity.activity.at)
+        (l.activity.activity.at.to_string())
         " by "
         @if let Some(email) = &l.activity.activity.by {
-            (email)
+            (email.as_str())
         } @else {
             "anonymous visitor"
         }

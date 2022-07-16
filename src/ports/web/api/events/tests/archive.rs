@@ -102,9 +102,9 @@ fn archive_events() {
         .unwrap()
         .id;
 
-    let mut response = client.get("/events").dispatch();
+    let response = client.get("/events").dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"id\":\"{}\"", id1)));
     assert!(body_str.contains(&format!("\"id\":\"{}\"", id2)));
 
@@ -118,9 +118,9 @@ fn archive_events() {
     let response = client.post(format!("/events/{}/archive", id2)).dispatch();
     assert_eq!(response.status(), Status::NoContent);
 
-    let mut response = client.get("/events").dispatch();
+    let response = client.get("/events").dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"id\":\"{}\"", id1)));
     assert!(!body_str.contains(&format!("\"id\":\"{}\"", id2)));
 
@@ -129,9 +129,9 @@ fn archive_events() {
         .dispatch();
     assert_eq!(response.status(), Status::NoContent);
 
-    let mut response = client.get("/events").dispatch();
+    let response = client.get("/events").dispatch();
     assert_eq!(response.status(), Status::Ok);
-    let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"id\":\"{}\"", id1)));
     assert!(!body_str.contains(&format!("\"id\":\"{}\"", id2)));
 }

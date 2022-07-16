@@ -76,7 +76,7 @@ fn entry_detail(e: EntryPresenter) -> Markup {
                     @if let Some(ref h) = l.homepage {
                         tr {
                             td { "Homepage" }
-                            td { a href=(h) { (h) } }
+                            td { a href=(h.as_str()) { (h.as_str()) } }
                         }
                     }
                 }
@@ -84,7 +84,7 @@ fn entry_detail(e: EntryPresenter) -> Markup {
                     @if let Some(ref m) = c.email {
                         tr {
                             td { "eMail" }
-                            td { a href=(format!("mailto:{}",m)) { (m) } }
+                            td { a href=(format!("mailto:{}",m)) { (m.as_str()) } }
                         }
                     }
                     @if let Some(ref t) = c.phone {

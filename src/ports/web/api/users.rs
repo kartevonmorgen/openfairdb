@@ -148,12 +148,12 @@ mod tests {
         assert_eq!(res.status(), Status::Ok);
 
         // After login
-        let mut res = client
+        let res = client
             .get("/users/current")
             .header(ContentType::JSON)
             .dispatch();
         assert_eq!(res.status(), Status::Ok);
-        let body = res.body().and_then(|b| b.into_string()).unwrap();
+        let body = res.into_string().unwrap();
         let current_user: json::User = serde_json::from_str(&body).unwrap();
         assert_eq!(email, current_user.email.into());
         assert_eq!(email_confirmed, current_user.email_confirmed);

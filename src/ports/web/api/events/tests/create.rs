@@ -19,7 +19,7 @@ fn without_creator_email() {
     //
     // assert_eq!(response.status(), HttpStatus::Ok);
     // test_json(&response);
-    // let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    // let body_str = response.into_string().unwrap();
     // let eid = db.get().unwrap().all_events_chronologically().unwrap()[0].id.
     // clone(); assert_eq!(body_str, format!("\"{}\"", eid));
 }
@@ -40,7 +40,7 @@ fn without_api_token_but_with_creator_email() {
     //
     // assert_eq!(response.status(), HttpStatus::Ok);
     // test_json(&response);
-    // let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    // let body_str = response.into_string().unwrap();
     // let ev = db.get().unwrap().all_events_chronologically().unwrap()[0].
     // clone(); let eid = ev.id.clone();
     // assert!(ev.created_by.is_none());
@@ -48,10 +48,10 @@ fn without_api_token_but_with_creator_email() {
     // let req = client
     //     .get(format!("/events/{}", eid))
     //     .header(ContentType::JSON);
-    // let mut response = req.dispatch();
+    // let response = req.dispatch();
     // assert_eq!(response.status(), HttpStatus::Ok);
     // test_json(&response);
-    // let body_str = response.body().and_then(|b| b.into_string()).unwrap();
+    // let body_str = response.into_string().unwrap();
     // assert_eq!(
     //     body_str,
     //     format!(
@@ -76,7 +76,7 @@ mod with_api_token {
                 api_token: "foo".into(),
             })
             .unwrap();
-        let mut res = client
+        let res = client
             .post("/events")
             .header(ContentType::JSON)
             .header(Header::new("Authorization", "Bearer foo"))
@@ -84,7 +84,7 @@ mod with_api_token {
             .dispatch();
         assert_eq!(res.status(), HttpStatus::Ok);
         test_json(&res);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
         let eid = ev.id.clone();
         assert_eq!(ev.created_by.unwrap(), "foo@bar.com");
@@ -103,7 +103,7 @@ mod with_api_token {
                 api_token: "foo".into(),
             })
             .unwrap();
-        let mut res = client
+        let res = client
             .post("/events")
             .header(ContentType::JSON)
             .header(Header::new("Authorization", "Bearer foo"))
@@ -111,7 +111,7 @@ mod with_api_token {
             .dispatch();
         assert_eq!(res.status(), HttpStatus::Ok);
         test_json(&res);
-        let body_str = res.body().and_then(|b| b.into_string()).unwrap();
+        let body_str = res.into_string().unwrap();
         let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
         let eid = ev.id.clone();
         assert_eq!(ev.created_by.unwrap(), "foo@bar.com");

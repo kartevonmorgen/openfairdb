@@ -4,8 +4,9 @@ use chrono::prelude::*;
 use rocket::{
     self,
     http::Status,
-    request::{self, FromRequest, Request},
-    Outcome, State,
+    outcome::try_outcome,
+    request::{FromRequest, Outcome, Request},
+    State,
 };
 
 use crate::{
@@ -94,11 +95,11 @@ impl Auth {
             .and_then(|cookie| cookie.value().parse().ok())
     }
 
-    fn account_email_from_jwt_in_header(
-        request: &Request,
+    async fn account_email_from_jwt_in_header(
+        request: &Request<'_>,
         bearer_tokens: &[String],
     ) -> Option<String> {
-        let jwt_state = request.guard::<State<jwt::JwtState>>().succeeded()?;
+        let jwt_state = request.guard::<&State<jwt::JwtState>>().await.succeeded()?;
         bearer_tokens
             .iter()
             .filter_map(|token| jwt_state.validate_token_and_get_email(token).ok())
@@ -115,9 +116,10 @@ impl Auth {
     }
 }
 
-impl<'a, 'r> FromRequest<'a, 'r> for Auth {
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for Auth {
     type Error = ();
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let bearer_tokens = Self::bearer_tokens_from_header(request);
 
         // decide account_email source
@@ -126,7 +128,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for Auth {
             account_email = Self::account_email_from_cookie(request);
         }
         if cfg!(feature = "jwt") && account_email.is_none() {
-            account_email = Self::account_email_from_jwt_in_header(request, &bearer_tokens);
+            account_email = Self::account_email_from_jwt_in_header(request, &bearer_tokens).await;
         }
 
         let has_captcha = Self::captcha_from_cookie(request);
@@ -150,10 +152,11 @@ impl Account {
     }
 }
 
-impl<'a, 'r> FromRequest<'a, 'r> for Account {
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for Account {
     type Error = ();
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Account, Self::Error> {
-        let auth = Auth::from_request(request)?;
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let auth = try_outcome!(Auth::from_request(request).await);
         match auth.account_email() {
             Ok(email) => Outcome::Success(Account(email.to_owned())),
             _ => Outcome::Failure((Status::Unauthorized, ())),

@@ -59,20 +59,20 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           target: ${{ matrix.target }}
-          toolchain: nightly-2022-05-12
+          toolchain: stable
           profile: minimal
 
       - name: Install Rust toolchain for WASM
         uses: actions-rs/toolchain@v1
         with:
           target: wasm32-unknown-unknown
-          toolchain: nightly-2022-05-12
+          toolchain: stable
           profile: minimal
 
       - name: Download and install trunk on Linux/macOS
         if: runner.os == 'Linux' || runner.os == 'macOS'
         run: |
-          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.15.0/trunk-${{ matrix.runner_platform }}.tar.gz | tar -C ~/.cargo/bin -xzf-
+          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.16.0/trunk-${{ matrix.runner_platform }}.tar.gz | tar -C ~/.cargo/bin -xzf-
 
       # TODO: Download and install trunk on Windows
 

@@ -1,9 +1,4 @@
-use rocket::{
-    config::{Config as RocketCfg, Environment},
-    local::Client,
-    logger::LoggingLevel,
-    Route,
-};
+use rocket::{config::Config as RocketCfg, local::blocking::Client, Route};
 
 use crate::{
     core::{prelude::*, usecases},
@@ -16,7 +11,7 @@ use crate::{
 pub mod prelude {
     pub use rocket::{
         http::{ContentType, Cookie, Status},
-        local::Client,
+        local::blocking::{Client, LocalResponse},
         response::Response,
     };
 
@@ -28,26 +23,15 @@ embed_migrations!();
 
 pub fn setup(
     mounts: Vec<(&'static str, Vec<Route>)>,
-) -> (
-    rocket::local::Client,
-    sqlite::Connections,
-    tantivy::SearchEngine,
-) {
+) -> (Client, sqlite::Connections, tantivy::SearchEngine) {
     setup_with_cfg(mounts, Cfg::default())
 }
 
 pub fn setup_with_cfg(
     mounts: Vec<(&'static str, Vec<Route>)>,
     cfg: Cfg,
-) -> (
-    rocket::local::Client,
-    sqlite::Connections,
-    tantivy::SearchEngine,
-) {
-    let rocket_cfg = RocketCfg::build(Environment::Development)
-        .log_level(LoggingLevel::Debug)
-        .finalize()
-        .unwrap();
+) -> (Client, sqlite::Connections, tantivy::SearchEngine) {
+    let rocket_cfg = RocketCfg::debug_default();
     let connections = sqlite::Connections::init(":memory:", 1).unwrap();
     embedded_migrations::run(&*connections.exclusive().unwrap()).unwrap();
     let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
@@ -58,7 +42,7 @@ pub fn setup_with_cfg(
         Some(rocket_cfg),
         cfg,
     );
-    let client = Client::new(rocket).unwrap();
+    let client = Client::tracked(rocket).unwrap();
     (client, connections, search_engine)
 }
 

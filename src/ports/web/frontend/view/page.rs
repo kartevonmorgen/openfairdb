@@ -32,8 +32,8 @@ pub fn page(
 fn flash_msg(flash: Option<FlashMessage>) -> Markup {
     html! {
         @if let Some(msg) = flash {
-            div class=(format!("flash {}", msg.name())) {
-                (msg.msg())
+            div class=(format!("flash {}", msg.kind())) {
+                (msg.message())
             }
         }
     }

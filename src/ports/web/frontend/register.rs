@@ -1,9 +1,11 @@
 use maud::Markup;
 use rocket::{
     self,
-    http::RawStr,
-    request::{FlashMessage, Form},
+    form::Form,
+    get, post,
+    request::FlashMessage,
     response::{Flash, Redirect},
+    uri,
 };
 
 use super::{login::LoginCredentials, view};
@@ -45,7 +47,7 @@ pub fn post_register(
                     Err(Flash::error(Redirect::to(uri!(get_register)), msg))
                 }
                 Ok(()) => {
-                    if let Ok(user) = db.get_user_by_email(&credentials.email) {
+                    if let Ok(user) = db.get_user_by_email(credentials.email) {
                         debug_assert_eq!(user.email, credentials.email);
                         notify.user_registered_ofdb(&user);
 
@@ -68,20 +70,20 @@ pub fn post_register(
 #[get("/register/confirm/<token>")]
 pub fn get_email_confirmation(
     db: Connections,
-    token: &RawStr,
+    token: &str,
 ) -> std::result::Result<Flash<Redirect>, Flash<Redirect>> {
     match db.exclusive() {
         Err(_) => Err(Flash::error(
-            Redirect::to(uri!(get_email_confirmation: token)),
+            Redirect::to(uri!(get_email_confirmation(token))),
             "We are so sorry! An internal server error has occurred. Please try again later.",
         )),
-        Ok(db) => match usecases::confirm_email_address(&*db, token.as_str()) {
+        Ok(db) => match usecases::confirm_email_address(&*db, token) {
             Ok(_) => Ok(Flash::success(
-                Redirect::to(uri!(super::login::get_login)),
+                Redirect::to(uri!(super::login::get_login())),
                 "Your email address is now confirmed :)",
             )),
             Err(_) => Err(Flash::error(
-                Redirect::to(uri!(get_email_confirmation: token)),
+                Redirect::to(uri!(get_email_confirmation(token))),
                 "We are sorry but seems to be something wrong.",
             )),
         },

@@ -1,15 +1,17 @@
 use rocket::{
-    request::{self, FromRequest},
-    Outcome, Request, State,
+    outcome::try_outcome,
+    request::{FromRequest, Outcome},
+    Request, State,
 };
 
 pub use crate::infrastructure::db::tantivy::*;
 
-impl<'a, 'r> FromRequest<'a, 'r> for SearchEngine {
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for SearchEngine {
     type Error = ();
 
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<SearchEngine, ()> {
-        let search_engine = request.guard::<State<SearchEngine>>()?;
-        Outcome::Success(search_engine.clone())
+    async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
+        let search_engine = try_outcome!(request.guard::<&State<SearchEngine>>().await);
+        Outcome::Success(search_engine.inner().clone())
     }
 }

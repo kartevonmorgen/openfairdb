@@ -48,7 +48,7 @@ RUST_LOG=info ./openfairdb
 
 Requirements:
 
-- [Rust](https://www.rust-lang.org/) (nightly)
+- [Rust](https://www.rust-lang.org/)
 - [SQLite](https://sqlite.org/) 3.x
 
 ### Installing Rust & Cargo

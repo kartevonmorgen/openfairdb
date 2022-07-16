@@ -1,14 +1,14 @@
 use std::{fmt::Display, result};
 
 use ofdb_boundary::Error as JsonErrorResponse;
+use rocket::serde::json::{Error as JsonError, Json};
 use rocket::{
-    self,
-    http::{ContentType, Cookie, Cookies, Status},
-    request::Form,
-    response::{content::Content, Responder, Response},
-    Route, State,
+    self, delete, get,
+    http::{ContentType, Cookie, CookieJar, Status},
+    post,
+    response::{self, Responder},
+    routes, Request, Route, State,
 };
-use rocket_contrib::json::{Json, JsonError};
 
 use super::guards::*;
 use crate::{
@@ -183,18 +183,18 @@ fn get_version() -> &'static str {
 }
 
 #[get("/server/openapi.yaml")]
-fn get_api() -> Content<&'static str> {
+fn get_api() -> (ContentType, &'static str) {
     let data = include_str!("../../../../openapi.yaml");
     let c_type = ContentType::new("text", "yaml");
-    Content(c_type, data)
+    (c_type, data)
 }
 
 #[post("/login", format = "application/json", data = "<login>")]
 fn post_login(
     db: sqlite::Connections,
-    mut cookies: Cookies,
+    cookies: &CookieJar<'_>,
     login: JsonResult<json::Credentials>,
-    jwt_state: State<jwt::JwtState>,
+    jwt_state: &State<jwt::JwtState>,
 ) -> Result<Option<ofdb_boundary::JwtToken>> {
     let login = usecases::Login::from(login?.into_inner());
     {
@@ -224,7 +224,7 @@ fn post_login(
 }
 
 #[post("/logout", format = "application/json")]
-fn post_logout(auth: Auth, mut cookies: Cookies, jwt_state: State<jwt::JwtState>) -> Json<()> {
+fn post_logout(auth: Auth, cookies: &CookieJar<'_>, jwt_state: &State<jwt::JwtState>) -> Json<()> {
     cookies.remove_private(Cookie::named(COOKIE_EMAIL_KEY));
     if cfg!(feature = "jwt") {
         for bearer in auth.bearer_tokens() {
@@ -343,8 +343,8 @@ fn entries_csv_export(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     auth: Auth,
-    query: Form<search::SearchQuery>,
-) -> result::Result<Content<String>, AppError> {
+    query: search::SearchQuery,
+) -> result::Result<(ContentType, String), AppError> {
     let db = connections.shared()?;
 
     let moderated_tags = match auth.organization(&*db) {
@@ -413,11 +413,11 @@ fn entries_csv_export(
     wtr.flush()?;
     let data = String::from_utf8(wtr.into_inner()?)?;
 
-    Ok(Content(ContentType::CSV, data))
+    Ok((ContentType::CSV, data))
 }
 
-impl<'r> Responder<'r> for AppError {
-    fn respond_to(self, req: &rocket::Request) -> result::Result<Response<'r>, Status> {
+impl<'r, 'o: 'r> Responder<'r, 'o> for AppError {
+    fn respond_to(self, req: &'r Request<'_>) -> response::Result<'o> {
         if let AppError::Business(ref err) = self {
             match *err {
                 Error::Parameter(ref err) => {
@@ -444,11 +444,11 @@ impl<'r> Responder<'r> for AppError {
     }
 }
 
-fn json_error_response<'r, E: Display>(
-    req: &rocket::Request,
+fn json_error_response<'r, 'o: 'r, E: Display>(
+    req: &'r rocket::Request<'_>,
     err: &E,
     status: Status,
-) -> result::Result<Response<'r>, Status> {
+) -> response::Result<'o> {
     let message = err.to_string();
     let boundary_error = JsonErrorResponse {
         http_status: status.code,

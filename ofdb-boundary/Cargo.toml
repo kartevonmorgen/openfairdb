@@ -10,7 +10,7 @@ edition = "2021"
 
 [dependencies]
 chrono = { version = "0.4.19", default-features = false, features = ["serde"] }
-serde = { version = "1.0.137", features = ["derive"] }
+serde = { version = "1.0.139", features = ["derive"] }
 
 [dependencies.ofdb-entities]
 version = "=0.10.1"
