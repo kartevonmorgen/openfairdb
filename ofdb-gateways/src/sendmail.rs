@@ -8,7 +8,7 @@ use std::{
     thread,
 };
 
-use chrono::*;
+use time::{OffsetDateTime, format_description::well_known::Rfc2822};
 use fast_chemail::is_valid_email;
 use ofdb_core::gateways::email::EmailGateway;
 use ofdb_entities::email::*;
@@ -146,7 +146,7 @@ pub fn compose(from: &str, to: &[&str], subject: &str, body: &str) -> Result<Str
         ));
     }
 
-    let now = Local::now();
+    let now = OffsetDateTime::now_local().unwrap();
 
     let email = format!(
         "Date:{date}\r\n\
@@ -156,7 +156,7 @@ pub fn compose(from: &str, to: &[&str], subject: &str, body: &str) -> Result<Str
          MIME-Version:1.0\r\n\
          Content-Type:text/plain;charset=utf-8\r\n\r\n\
          {body}",
-        date = now.to_rfc2822(),
+        date = now.format(&Rfc2822).unwrap(),
         from = from,
         to = to.join(","),
         subject_header = encode_header_field("Subject", subject),

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use time::OffsetDateTime;
 use ::captcha::{gen, Difficulty};
 use chrono::prelude::*;
 use parking_lot::{Mutex, MutexGuard};
@@ -78,9 +79,9 @@ pub async fn post_captcha_verify(
         .into_inner();
     let token: Uuid = token.parse().map_err(|_| Status::BadRequest)?;
     if captcha_cache.verify(token, answer) {
-        let now = Utc::now().to_string();
+        let now = OffsetDateTime::now_utc().to_string();
         let expires =
-            time::OffsetDateTime::now_utc() + time::Duration::try_from(MAX_CAPTCHA_TTL).unwrap();
+            OffsetDateTime::now_utc() + time::Duration::try_from(MAX_CAPTCHA_TTL).unwrap();
         cookies.add_private(
             Cookie::build(COOKIE_CAPTCHA_KEY, now)
                 .expires(expires)

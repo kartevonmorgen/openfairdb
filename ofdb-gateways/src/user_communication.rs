@@ -1,11 +1,12 @@
 use ofdb_entities::{address::*, contact::*, event::*, place::*, url::*};
+use time::{format_description::FormatItem, macros::format_description};
 
 pub struct EmailContent {
     pub subject: String,
     pub body: String,
 }
 
-const DATE_TIME_FORMAT: &str = "%Y.%m.%d %H:%M:%S";
+const DATE_TIME_FORMAT: &[FormatItem<'_>] = format_description!("%Y.%m.%d %H:%M:%S");
 
 const INTRO_ENTRY_CREATED: &str = "ein neuer Eintrag auf der Karte von morgen wurde erstellt";
 
@@ -189,10 +190,10 @@ das Karte von morgen-Team\n
         category = "Event",
         id = &event.id,
         title = &event.title,
-        start = event.start.format(DATE_TIME_FORMAT),
+        start = event.start.format(&DATE_TIME_FORMAT).unwrap(),
         end = event
             .end
-            .map(|end| end.format(DATE_TIME_FORMAT).to_string())
+            .map(|end| end.format(&DATE_TIME_FORMAT).unwrap())
             .unwrap_or_default(),
         description = event.description.as_deref().unwrap_or(""),
         organizer = event.organizer().map(String::as_str).unwrap_or(""),

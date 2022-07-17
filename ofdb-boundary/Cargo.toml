@@ -9,8 +9,8 @@ repository = "https://github.com/kartevonmorgen/openfairdb"
 edition = "2021"
 
 [dependencies]
-chrono = { version = "0.4.19", default-features = false, features = ["serde"] }
 serde = { version = "1.0.139", features = ["derive"] }
+time = { version = "0.3.11", default-features = false, features = ["serde"] }
 
 [dependencies.ofdb-entities]
 version = "=0.10.1"

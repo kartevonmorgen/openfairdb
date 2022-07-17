@@ -1,8 +1,6 @@
-use std::str::FromStr;
-
-use chrono::prelude::*;
-
 use crate::{contact::*, id::*, location::*, time::*, url::*};
+use std::str::FromStr;
+use time::PrimitiveDateTime;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum RegistrationType {
@@ -33,8 +31,8 @@ pub struct Event {
     pub title        : String,
     pub description  : Option<String>,
     // Both start/end time stamps are stored with second precision!
-    pub start        : NaiveDateTime,
-    pub end          : Option<NaiveDateTime>,
+    pub start        : PrimitiveDateTime,
+    pub end          : Option<PrimitiveDateTime>,
     pub location     : Option<Location>,
     pub contact      : Option<Contact>,
     pub tags         : Vec<String>,

@@ -1,12 +1,12 @@
 use std::{fmt::Write as _, result};
 
 use anyhow::anyhow;
-use chrono::prelude::*;
 use diesel::{
     self,
     prelude::{Connection as DieselConnection, *},
     result::{DatabaseErrorKind, Error as DieselError},
 };
+use time::OffsetDateTime;
 
 use super::{util::load_url, *};
 use crate::core::prelude::*;
@@ -1002,8 +1002,8 @@ fn into_new_event_with_tags(
             uid: id.into(),
             title,
             description,
-            start: start.timestamp(),
-            end: end.map(|x| x.timestamp()),
+            start: start.assume_utc().unix_timestamp(),
+            end: end.map(|x| x.assume_utc().unix_timestamp()),
             lat,
             lng,
             street,
@@ -1211,8 +1211,8 @@ impl EventGateway for SqliteConnection {
             let event = Event {
                 id: uid.into(),
                 title,
-                start: NaiveDateTime::from_timestamp(start, 0),
-                end: end.map(|x| NaiveDateTime::from_timestamp(x, 0)),
+                start: OffsetDateTime::from_unix_timestamp(start),
+                end: end.map(|x| OffsetDateTime::from_unix_timestamp(x)),
                 description,
                 location,
                 contact,

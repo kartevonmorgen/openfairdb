@@ -1,8 +1,6 @@
-use std::str::FromStr;
-
-use chrono::NaiveDate;
-
 use crate::{activity::*, contact::*, id::*, links::*, location::*, review::*, revision::*};
+use std::str::FromStr;
+use time::Date;
 
 // Immutable part of a place.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -59,7 +57,7 @@ pub struct PlaceRevision {
     pub location: Location,
     pub contact: Option<Contact>,
     pub opening_hours: Option<OpeningHours>,
-    pub founded_on: Option<NaiveDate>,
+    pub founded_on: Option<Date>,
     pub links: Option<Links>,
     pub tags: Vec<String>,
 }
@@ -77,7 +75,7 @@ pub struct Place {
     pub location: Location,
     pub contact: Option<Contact>,
     pub opening_hours: Option<OpeningHours>,
-    pub founded_on: Option<NaiveDate>,
+    pub founded_on: Option<Date>,
     pub links: Option<Links>,
     pub tags: Vec<String>,
 }

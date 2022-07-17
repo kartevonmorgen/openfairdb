@@ -1,5 +1,5 @@
 use chrono::prelude::*;
-
+use time::OffsetDateTime;
 use super::models::*;
 use crate::core::{
     entities as e,
@@ -153,8 +153,8 @@ pub(crate) fn event_from_event_entity_and_tags(e: EventEntity, tag_rels: &[Event
         id: uid.into(),
         title,
         description,
-        start: NaiveDateTime::from_timestamp(start, 0),
-        end: end.map(|x| NaiveDateTime::from_timestamp(x, 0)),
+        start: OffsetDateTime::from_unix_timestamp(start).unwrap(),
+        end: end.map(|x| OffsetDateTime::from_unix_timestamp(x).unwrap()),
         location,
         contact,
         homepage: homepage.and_then(load_url),

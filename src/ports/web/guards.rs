@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use chrono::prelude::*;
+use time::OffsetDateTime;
 use rocket::{
     self,
     http::Status,
@@ -111,7 +111,7 @@ impl Auth {
             .cookies()
             .get_private(COOKIE_CAPTCHA_KEY)
             .and_then(|cookie| cookie.value().parse().ok())
-            .and_then(|ts: DateTime<Utc>| Utc::now().signed_duration_since(ts).to_std().ok())
+            .and_then(|ts: OffsetDateTime| std::time::Duration::try_from(OffsetDateTime::now_utc() - ts).ok())
             .map_or(false, |duration: Duration| duration <= MAX_CAPTCHA_TTL)
     }
 }

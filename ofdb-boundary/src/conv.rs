@@ -222,8 +222,8 @@ impl From<e::event::Event> for Event {
             .to_string()
         });
 
-        let start = start.timestamp();
-        let end = end.map(|end| end.timestamp());
+        let start = start.assume_utc().unix_timestamp();
+        let end = end.map(|end| end.assume_utc().unix_timestamp());
 
         Event {
             id: id.into(),

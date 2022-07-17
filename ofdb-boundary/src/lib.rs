@@ -12,7 +12,7 @@
 //! Only supposed to be used as short-lived, transitional instances for
 //! (de-)serializing entities!
 
-use chrono::NaiveDate;
+use time::Date as NaiveDate;
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "entity-conversions")]

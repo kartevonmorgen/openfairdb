@@ -263,8 +263,8 @@ pub fn import_new_event<D: Db>(
         None => None,
     };
 
-    let start = NaiveDateTime::from_timestamp(start, 0);
-    let end = end.map(|e| NaiveDateTime::from_timestamp(e, 0));
+    let start = OffsetDateTime::from_unix_timestamp(start);
+    let end = end.map(|e| OffsetDateTime::from_unix_timestamp(e));
 
     let homepage = homepage
         .and_then(|ref url| parse_url_param(url).transpose())

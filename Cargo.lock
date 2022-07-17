@@ -290,13 +290,11 @@ version = "0.4.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "670ad68c9088c2a963aaa298cb369688cf3f9465ce5e2d4ca10e6e0098a1ce73"
 dependencies = [
- "js-sys",
  "libc",
  "num-integer",
  "num-traits",
  "serde",
  "time 0.1.44",
- "wasm-bindgen",
  "winapi",
 ]
 
@@ -618,7 +616,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b28135ecf6b7d446b43e27e225622a038cc4e2930a1022f51cdb97ada19b8e4d"
 dependencies = [
  "byteorder",
- "chrono",
  "diesel_derives",
  "libsqlite3-sys",
  "r2d2",
@@ -1615,9 +1612,9 @@ dependencies = [
 name = "ofdb-boundary"
 version = "0.10.1"
 dependencies = [
- "chrono",
  "ofdb-entities",
  "serde",
+ "time 0.3.11",
 ]
 
 [[package]]
@@ -1635,7 +1632,6 @@ name = "ofdb-entities"
 version = "0.10.1"
 dependencies = [
  "bs58",
- "chrono",
  "itertools",
  "num-derive",
  "num-traits",
@@ -1643,6 +1639,7 @@ dependencies = [
  "rand",
  "strum",
  "thiserror",
+ "time 0.3.11",
  "url",
  "uuid",
 ]
@@ -1651,7 +1648,6 @@ dependencies = [
 name = "ofdb-gateways"
 version = "0.0.0"
 dependencies = [
- "chrono",
  "fast_chemail",
  "geocoding",
  "itertools",
@@ -1660,6 +1656,7 @@ dependencies = [
  "ofdb-entities",
  "quoted_printable",
  "reqwest",
+ "time 0.3.11",
 ]
 
 [[package]]
@@ -1696,7 +1693,6 @@ dependencies = [
  "anyhow",
  "base64",
  "captcha",
- "chrono",
  "clap 3.2.12",
  "csv",
  "diesel",
