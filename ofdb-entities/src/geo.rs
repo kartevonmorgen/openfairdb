@@ -465,7 +465,7 @@ impl MapPoint {
     /// Calculate the great-circle distance on the surface
     /// of the earth using a special case of the Vincenty
     /// formula for numerical accuracy.
-    /// Reference: https://en.wikipedia.org/wiki/Great-circle_distance
+    /// Reference: <https://en.wikipedia.org/wiki/Great-circle_distance>
     pub fn distance(p1: MapPoint, p2: MapPoint) -> Option<Distance> {
         if !p1.is_valid() || !p2.is_valid() {
             return None;
