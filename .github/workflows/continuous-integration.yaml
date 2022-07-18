@@ -99,11 +99,11 @@ jobs:
           command: test
           args: --locked --workspace --all-targets --all-features --no-run
 
-      - name: Run workspace tests
+      - name: Run workspace tests (excluding benchmarks)
         uses: actions-rs/cargo@v1
         with:
           command: test
-          args: --locked --workspace --all-targets --all-features -- --nocapture --quiet
+          args: --locked --workspace --lib --bins --tests --examples --all-features -- --nocapture --quiet
 
       - name: Build ofdb-app-clearance
         run: |
