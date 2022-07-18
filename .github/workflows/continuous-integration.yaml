@@ -1,41 +1,109 @@
-name: Continuous integration
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow
+
+name: continuous-integration
+
+permissions:
+  contents: read
 
 on:
   pull_request:
   push:
     branches:
       - master
+  workflow_dispatch:
 
 env:
+  CARGO_INCREMENTAL: 0
   CARGO_TERM_COLOR: always
+  RUST_BACKTRACE: short
+  BUILD_TARGET: x86_64-unknown-linux-musl
 
 jobs:
   continuous-integration:
     name: Building project and running tests
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.runner_os }}
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-musl
+        include:
+          - target: x86_64-unknown-linux-musl
+            runner_os: ubuntu-latest
 
     steps:
-      - name: Check out repository
-        id: checkout
-        uses: actions/checkout@v3
+      - name: Install dependencies for `musl libc` on Linux
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: |
+          sudo apt -y install musl-tools
 
-      - name: Install Rust toolchain
+      - name: Install Rust toolchain for target
         uses: actions-rs/toolchain@v1
         id: toolchain
-        # The inputs should match those in rust-toolchain.toml with the
-        # exception of specifying an explicit target for the CI build.
         with:
+          target: ${{ matrix.target }}
           toolchain: stable
           profile: minimal
-          components: rustfmt, clippy
-          target: wasm32-unknown-unknown
+          override: true
 
-      - name: Install trunk
+      - name: Install Rust toolchain for WASM
+        uses: actions-rs/toolchain@v1
+        with:
+          target: wasm32-unknown-unknown
+          toolchain: stable
+          profile: minimal
+          override: true
+
+      - name: Install Trunk for building the webapp
         run: |
-          wget -qO- https://github.com/thedodd/trunk/releases/download/v0.16.0/trunk-x86_64-unknown-linux-gnu.tar.gz | tar -C ~/.cargo/bin -xzf-
+          cargo install --locked trunk
+
+      - name: Check out repository
+        uses: actions/checkout@v3
 
       - name: Cache Rust toolchain and build artifacts
         uses: Swatinem/rust-cache@v1
+
+      - name: Check ofdb-entities crate
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --locked --all-targets --all-features --manifest-path  ofdb-entities/Cargo.toml
+
+      - name: Check ofdb-core crate
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --locked --all-targets --all-features --manifest-path  ofdb-core/Cargo.toml
+
+      - name: Check ofdb-boundary crate
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --locked --all-targets --all-features --manifest-path  ofdb-boundary/Cargo.toml
+
+      - name: Check ofdb-gateways crate
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --locked --all-targets --all-features --manifest-path  ofdb-gateways/Cargo.toml
+
+      - name: Check ofdb-app-clearance crate
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --locked --all-targets --all-features --manifest-path  ofdb-app-clearance/Cargo.toml
+
+      - name: Build workspace tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --locked --workspace --all-targets --all-features --no-run
+
+      - name: Run workspace tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --locked --workspace --all-targets --all-features -- --nocapture --quiet
 
       - name: Build ofdb-app-clearance
         run: |
@@ -43,50 +111,8 @@ jobs:
           trunk -V
           trunk build
 
-      - name: Check ofdb-entities crate
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --manifest-path ofdb-entities/Cargo.toml
-
-      - name: Check ofdb-core crate
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --manifest-path ofdb-core/Cargo.toml
-
-      - name: Check ofdb-boundary crate
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --manifest-path ofdb-boundary/Cargo.toml
-
-      - name: Check ofdb-gateways crate
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --manifest-path ofdb-gateways/Cargo.toml
-
-      - name: Check ofdb-app-clearance crate
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --manifest-path ofdb-app-clearance/Cargo.toml
-
-      - name: Build workspace tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --workspace --locked --no-run
-
-      - name: Run workspace tests
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --workspace -- --nocapture --quiet
-
       - name: Build release
         uses: actions-rs/cargo@v1
         with:
           command: build
-          args: --release --locked
+          args: --locked --workspace --all-targets --profile release
