@@ -82,7 +82,7 @@ jobs:
         id: upload-tagged-release-artifact
         # Only triggered by version tags that start with 'v'
         if: startsWith(github.ref, 'refs/tags/v') && startsWith(github.event.release.tag_name, 'v')
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           # Artifact is stored and downloaded as .zip archive
           name: openfairdb_${{ github.event.release.tag_name }}_${{ matrix.target }}${{ matrix.executable_suffix }}
@@ -90,7 +90,7 @@ jobs:
 
       - name: Upload untagged artifact
         if: steps.upload-tagged-release-artifact.outcome == 'skipped'
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           # Artifact is stored and downloaded as .zip archive
           name: openfairdb_${{ github.sha }}_${{ matrix.target }}${{ matrix.executable_suffix }}
