@@ -33,21 +33,21 @@ impl Timestamp {
         Self(OffsetDateTime::now_utc())
     }
 
-    pub fn from_seconds(seconds: i64) -> Self {
+    pub fn from_secs(seconds: i64) -> Self {
         Self(time::OffsetDateTime::from_unix_timestamp(seconds).unwrap())
     }
 
-    pub fn from_milliseconds(milliseconds: i64) -> Self {
-        let nanos = millis_into_nanos(milliseconds);
+    pub fn from_millis(milliseconds: i64) -> Self {
+        let nanos = millis_to_nanos(milliseconds);
         Self(time::OffsetDateTime::from_unix_timestamp_nanos(nanos).unwrap())
     }
 
-    pub fn into_seconds(self) -> i64 {
+    pub fn as_secs(self) -> i64 {
         self.0.unix_timestamp()
     }
 
-    pub fn into_milliseconds(self) -> i64 {
-        nanos_into_millis(self.0.unix_timestamp_nanos())
+    pub fn as_millis(self) -> i64 {
+        nanos_to_millis(self.0.unix_timestamp_nanos())
     }
 
     pub fn format(&self, fmt: &[FormatItem<'_>]) -> String {
@@ -58,11 +58,11 @@ impl Timestamp {
     }
 }
 
-fn nanos_into_millis(nanos: i128) -> i64 {
+fn nanos_to_millis(nanos: i128) -> i64 {
     (nanos / 1_000_000).try_into().unwrap()
 }
 
-fn millis_into_nanos(millis: i64) -> i128 {
+fn millis_to_nanos(millis: i64) -> i128 {
     i128::from(millis) * 1_000_000
 }
 
@@ -92,7 +92,7 @@ mod tests {
 
     #[test]
     fn format_timestamp() {
-        let ts = Timestamp::from_milliseconds(1_658_146_497_321);
+        let ts = Timestamp::from_millis(1_658_146_497_321);
         assert_eq!("2022-07-18 12:14:57.321", format!("{ts}"));
     }
 }

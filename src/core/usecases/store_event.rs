@@ -261,8 +261,8 @@ pub fn import_new_event<D: Db>(
         None => None,
     };
 
-    let start = Timestamp::from_seconds(start);
-    let end = end.map(Timestamp::from_seconds);
+    let start = Timestamp::from_secs(start);
+    let end = end.map(Timestamp::from_secs);
 
     let homepage = homepage
         .and_then(|ref url| parse_url_param(url).transpose())
@@ -327,7 +327,7 @@ mod tests {
 
     #[test]
     fn create_new_valid_event() {
-        let now = Timestamp::now().into_seconds();
+        let now = Timestamp::now().as_secs();
         #[rustfmt::skip]
         let x = NewEvent {
             title        : "foo".into(),
@@ -358,7 +358,7 @@ mod tests {
         assert_eq!(mock_db.tags.borrow().len(), 2);
         let x = &mock_db.events.borrow()[0];
         assert_eq!(x.title, "foo");
-        assert_eq!(x.start.into_seconds(), now);
+        assert_eq!(x.start.as_secs(), now);
         assert!(x.location.is_none());
         assert_eq!(x.description.as_ref().unwrap(), "bar");
         assert!(x.id.is_valid());
@@ -379,7 +379,7 @@ mod tests {
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),
-            start        : Timestamp::now().into_seconds(),
+            start        : Timestamp::now().as_secs(),
             end          : None,
             lat          : None,
             lng          : None,
@@ -408,7 +408,7 @@ mod tests {
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),
-            start        : Timestamp::now().into_seconds(),
+            start        : Timestamp::now().as_secs(),
             end          : None,
             lat          : None,
             lng          : None,
@@ -451,7 +451,7 @@ mod tests {
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),
-            start        : Timestamp::now().into_seconds(),
+            start        : Timestamp::now().as_secs(),
             end          : None,
             lat          : None,
             lng          : None,

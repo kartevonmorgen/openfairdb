@@ -631,11 +631,11 @@ impl TantivyIndex {
         // ts_min
         let ts_min_lb = query
             .ts_min_lb
-            .map(|x| Bound::Included(x.into_seconds()))
+            .map(|x| Bound::Included(x.as_secs()))
             .unwrap_or(Bound::Unbounded);
         let ts_min_ub = query
             .ts_min_ub
-            .map(|x| Bound::Included(x.into_seconds()))
+            .map(|x| Bound::Included(x.as_secs()))
             .unwrap_or(Bound::Unbounded);
         if (ts_min_lb, ts_min_ub) != (Bound::Unbounded, Bound::Unbounded) {
             let ts_min_query = RangeQuery::new_i64_bounds(self.fields.ts_min, ts_min_lb, ts_min_ub);
@@ -645,11 +645,11 @@ impl TantivyIndex {
         // ts_max
         let ts_max_lb = query
             .ts_max_lb
-            .map(|x| Bound::Included(x.into_seconds()))
+            .map(|x| Bound::Included(x.as_secs()))
             .unwrap_or(Bound::Unbounded);
         let ts_max_ub = query
             .ts_max_ub
-            .map(|x| Bound::Included(x.into_seconds()))
+            .map(|x| Bound::Included(x.as_secs()))
             .unwrap_or(Bound::Unbounded);
         if (ts_max_lb, ts_max_ub) != (Bound::Unbounded, Bound::Unbounded) {
             let ts_max_query = RangeQuery::new_i64_bounds(self.fields.ts_max, ts_max_lb, ts_max_ub);
@@ -980,10 +980,10 @@ impl EventIndexer for TantivyIndex {
                 }
             }
         }
-        doc.add_i64(self.fields.ts_min, event.start.into_seconds());
+        doc.add_i64(self.fields.ts_min, event.start.as_secs());
         if let Some(end) = event.end {
             debug_assert!(event.start <= end);
-            doc.add_i64(self.fields.ts_max, end.into_seconds());
+            doc.add_i64(self.fields.ts_max, end.as_secs());
         }
         doc.add_text(self.fields.title, &event.title);
         if let Some(ref description) = event.description {

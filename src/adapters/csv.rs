@@ -86,7 +86,7 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
 
         CsvRecord {
             id: id.into(),
-            created_at: created_at.into_seconds(),
+            created_at: created_at.as_secs(),
             created_by: created_by.map(Into::into),
             version: revision.into(),
             title,
@@ -189,8 +189,8 @@ impl From<Event> for EventRecord {
             created_by,
             title,
             description,
-            start: start.into_seconds(),
-            end: end.map(|end| end.into_seconds()),
+            start: start.as_secs(),
+            end: end.map(|end| end.as_secs()),
             lat,
             lng,
             street,
