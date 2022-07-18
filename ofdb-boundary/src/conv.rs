@@ -463,7 +463,7 @@ impl From<Activity> for e::activity::Activity {
     fn from(from: Activity) -> Self {
         let Activity { at, by } = from;
         Self {
-            at: e::time::Timestamp::from(at),
+            at: at.into(),
             by: by.map(Into::into),
         }
     }
@@ -607,9 +607,8 @@ impl From<ActivityLog> for e::activity::ActivityLog {
             ctx: context,
             comment,
         } = from;
-        let at = e::time::Timestamp::from(at);
         let activity = e::activity::Activity {
-            at,
+            at: at.into(),
             by: by.map(Into::into),
         };
         Self {
