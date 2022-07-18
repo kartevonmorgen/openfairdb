@@ -54,7 +54,7 @@ mod events {
         let new_events = vec![
             usecases::NewEvent {
                 title: "x".into(),
-                start: (Timestamp::now() - Duration::days(2)).into_seconds(),
+                start: (Timestamp::now() - Duration::days(2)).as_secs(),
                 tags: Some(vec!["foo".into()]),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
@@ -66,7 +66,7 @@ mod events {
                 start: Timestamp::now()
                     .checked_sub(Duration::hours(2))
                     .unwrap()
-                    .into_seconds(),
+                    .as_secs(),
                 tags: Some(vec!["bla".into()]),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
@@ -75,7 +75,7 @@ mod events {
             },
             usecases::NewEvent {
                 title: "foo".into(),
-                start: (Timestamp::now() + Duration::days(1)).into_seconds(),
+                start: (Timestamp::now() + Duration::days(1)).as_secs(),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
                 created_by: Some("test@example.com".into()),
@@ -83,7 +83,7 @@ mod events {
             },
             usecases::NewEvent {
                 title: "x".into(),
-                start: (Timestamp::now() + Duration::days(2)).into_seconds(),
+                start: (Timestamp::now() + Duration::days(2)).as_secs(),
                 tags: Some(vec!["foo".into()]),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
@@ -174,7 +174,7 @@ mod events {
                 start: Timestamp::now()
                     .checked_sub(Duration::hours(2))
                     .unwrap()
-                    .into_seconds(),
+                    .as_secs(),
                 tags: Some(vec!["bla".into(), "blub".into()]),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
@@ -183,7 +183,7 @@ mod events {
             },
             usecases::NewEvent {
                 title: "x".into(),
-                start: (Timestamp::now() + Duration::days(2)).into_seconds(),
+                start: (Timestamp::now() + Duration::days(2)).as_secs(),
                 tags: Some(vec!["bli".into(), "blub".into()]),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
@@ -195,7 +195,7 @@ mod events {
                 start: Timestamp::now()
                     .checked_sub(Duration::days(2))
                     .unwrap()
-                    .into_seconds(),
+                    .as_secs(),
                 tags: Some(vec!["blub".into()]),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
@@ -235,7 +235,7 @@ mod events {
             id: "1234".into(),
             title: "A great event".into(),
             description: Some("Foo bar baz".into()),
-            start: Timestamp::from_seconds(0),
+            start: Timestamp::from_secs(0),
             end: None,
             location: None,
             contact: None,

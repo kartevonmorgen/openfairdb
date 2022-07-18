@@ -4,25 +4,25 @@ use super::*;
 
 impl From<e::time::Timestamp> for UnixTimeMillis {
     fn from(from: e::time::Timestamp) -> Self {
-        Self(from.into_milliseconds())
+        Self(from.as_millis())
     }
 }
 
 impl From<e::time::Timestamp> for UnixTimeSeconds {
     fn from(from: e::time::Timestamp) -> Self {
-        Self(from.into_seconds())
+        Self(from.as_secs())
     }
 }
 
 impl From<UnixTimeSeconds> for e::time::Timestamp {
     fn from(from: UnixTimeSeconds) -> Self {
-        Self::from_seconds(from.0)
+        Self::from_secs(from.0)
     }
 }
 
 impl From<UnixTimeMillis> for e::time::Timestamp {
     fn from(from: UnixTimeMillis) -> Self {
-        Self::from_milliseconds(from.0)
+        Self::from_millis(from.0)
     }
 }
 

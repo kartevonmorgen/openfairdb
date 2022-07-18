@@ -63,7 +63,7 @@ fn all() {
 #[test]
 fn sorted_by_start() {
     let (client, db, mut search_engine, notify) = setup2();
-    let now = Timestamp::now().into_seconds();
+    let now = Timestamp::now().as_secs();
     let start_offsets = vec![100, 0, 300, 50, 200];
     for start_offset in start_offsets {
         let start = now + start_offset;

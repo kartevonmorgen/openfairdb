@@ -228,7 +228,7 @@ pub fn entry_from_place_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -
 
     Entry {
         id: id.into(),
-        created: created.at.into_seconds(),
+        created: created.at.as_secs(),
         version: revision.into(),
         title,
         description,

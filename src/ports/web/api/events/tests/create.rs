@@ -191,8 +191,8 @@ mod with_api_token {
         assert_eq!(res.status(), HttpStatus::Ok);
         test_json(&res);
         let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
-        assert_eq!(-4132508400, ev.start.into_seconds());
-        assert_eq!(Some(-4132508399), ev.end.map(Timestamp::into_seconds));
+        assert_eq!(-4132508400, ev.start.as_secs());
+        assert_eq!(Some(-4132508399), ev.end.map(Timestamp::as_secs));
     }
 
     #[test]

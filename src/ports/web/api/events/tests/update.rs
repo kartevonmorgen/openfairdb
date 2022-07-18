@@ -65,7 +65,7 @@ fn with_api_token() {
     assert_eq!(res.status(), HttpStatus::Ok);
     let new = db.shared().unwrap().get_event(id.as_ref()).unwrap();
     assert_eq!(new.title, "new");
-    assert_eq!(new.start.into_seconds(), 4_132_508_400);
+    assert_eq!(new.start.as_secs(), 4_132_508_400);
     assert_eq!(new.created_by.unwrap(), "changed@bar.com");
 }
 
@@ -101,7 +101,7 @@ fn with_api_token_for_organization_without_any_moderated_tags() {
     assert_eq!(res.status(), HttpStatus::Ok);
     let new = db.shared().unwrap().get_event(id.as_ref()).unwrap();
     assert_eq!(new.title, "new");
-    assert_eq!(new.start.into_seconds(), 4_132_508_400);
+    assert_eq!(new.start.as_secs(), 4_132_508_400);
     assert_eq!(new.created_by.unwrap(), "changed@bar.com");
 }
 
