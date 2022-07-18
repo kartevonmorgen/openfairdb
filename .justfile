@@ -35,20 +35,21 @@ fix:
 # Run tests
 test:
     RUST_BACKTRACE=1 cargo test --locked --workspace --all-features -- --nocapture
-    cd ofdb-app-clearance && RUST_BACKTRACE=1 cargo test --locked --all-features -- --nocapture
+    RUST_BACKTRACE=1 cd ofdb-app-clearance && cargo test --locked --all-features -- --nocapture
 
 # Set up (and update) tooling
 setup:
-    rustup self update
-    cargo install \
-        cargo-edit \
-        trunk
+    # Ignore rustup failures, because not everyone might use it
+    rustup self update || true
+    # cargo-edit is needed for `cargo upgrade`
+    cargo install cargo-edit
     pip install -U pre-commit
     pre-commit autoupdate
     #pre-commit install --hook-type commit-msg --hook-type pre-commit
 
-# Upgrade (and update) depenencies
+# Upgrade (and update) dependencies
 upgrade:
+    cargo update
     cargo upgrade --workspace \
         --exclude ofdb-boundary \
         --exclude ofdb-core \
@@ -57,8 +58,15 @@ upgrade:
         --exclude libsqlite3-sys \
         --exclude time
     cargo update
-    cd ofdb-app-clearance && cargo update
-    cargo minimal-versions check --workspace
+    cd ofdb-app-clearance \
+        && cargo update \
+        && cargo upgrade \
+            --exclude ofdb-boundary \
+            --exclude ofdb-core \
+            --exclude ofdb-entities \
+            --exclude time \
+        && cargo update
+    #cargo minimal-versions check --workspace
 
 # Run pre-commit hooks
 pre-commit:
