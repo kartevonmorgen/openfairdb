@@ -3,10 +3,10 @@
 The backend for [Karte von morgen](https://github.com/kartevonmorgen/kartevonmorgen/)
 written in [Rust](http://rustlang.org/).
 
-[![GitHub CI](https://github.com/kartevonmorgen/openfairdb/workflows/Continuous%20integration/badge.svg?branch=master)](https://github.com/kartevonmorgen/openfairdb/actions?query=workflow%3A%22Continuous+integration%22)
-[![Coverage Status](https://coveralls.io/repos/github/kartevonmorgen/openfairdb/badge.svg?branch=master)](https://coveralls.io/github/kartevonmorgen/openfairdb?branch=master)
+[![GitHub CI](https://github.com/kartevonmorgen/openfairdb/workflows/Continuous%20integration/badge.svg?branch=main)](https://github.com/kartevonmorgen/openfairdb/actions?query=workflow%3A%22Continuous+integration%22)
+[![Coverage Status](https://coveralls.io/repos/github/kartevonmorgen/openfairdb/badge.svg?branch=main)](https://coveralls.io/github/kartevonmorgen/openfairdb?branch=main)
 [![dependency status](https://deps.rs/repo/github/kartevonmorgen/openfairdb/status.svg)](https://deps.rs/repo/github/kartevonmorgen/openfairdb)
-[![License](https://img.shields.io/badge/license-AGPLv3-blue.svg?style=flat)](https://github.com/kartevonmorgen/openfairdb/blob/master/LICENSE)
+[![License](https://img.shields.io/badge/license-AGPLv3-blue.svg?style=flat)](https://github.com/kartevonmorgen/openfairdb/blob/main/LICENSE)
 
 ## Schnittstelle: REST API
 
@@ -19,7 +19,7 @@ You can render the API documentation e.g. with the swagger editor:
 
 - go to [https://editor.swagger.io](https://editor.swagger.io/)
 - go to `File` -> `import URL`
-- and enter `https://raw.githubusercontent.com/kartevonmorgen/openfairdb/master/openapi.yaml`
+- and enter `https://raw.githubusercontent.com/kartevonmorgen/openfairdb/main/openapi.yaml`
 
 An other way to see how the API can be used, you can open the `network` tab in the developer
 tools of your browser and see the requests that are made to `https://kartevonmorgen.org`.
@@ -163,7 +163,7 @@ docker cp <container id>:entrypoint openfairdb
 
 At the moment the OpenFairDB does not support online backups.
 Therefore we use a simple
-[script](https://github.com/kartevonmorgen/openfairdb/blob/master/scripts/backup_db.sh)
+[script](https://github.com/kartevonmorgen/openfairdb/blob/main/scripts/backup_db.sh)
 that copies the DB file once a day.
 
 ## System Architecture

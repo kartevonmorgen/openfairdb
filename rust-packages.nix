@@ -23,7 +23,7 @@ in
 
 runCommand "rustRegistry-${version}-${builtins.substring 0 7 rev}" {} ''
   # For some reason, cargo doesn't like fetchgit's git repositories, not even
-  # if we set leaveDotGit to true, set the fetchgit branch to 'master' and clone
+  # if we set leaveDotGit to true, set the fetchgit branch to 'main' and clone
   # the repository (tested with registry rev
   # 965b634156cc5c6f10c7a458392bfd6f27436e7e), failing with the message:
   #

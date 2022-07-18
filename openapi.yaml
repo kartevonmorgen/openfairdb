@@ -7,7 +7,7 @@ info:
     url: 'https://slowtec.de'
   license:
     name: AGPLv3
-    url: 'https://github.com/slowtec/openfairdb/blob/master/LICENSE'
+    url: 'https://github.com/slowtec/openfairdb/blob/main/LICENSE'
 servers:
   - url: 'https://api.ofdb.io/v0/'
     description: Public production server
