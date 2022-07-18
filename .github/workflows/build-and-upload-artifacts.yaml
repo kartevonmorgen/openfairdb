@@ -61,12 +61,15 @@ jobs:
           profile: minimal
           override: true
 
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Cache Rust toolchain and build artifacts
+        uses: Swatinem/rust-cache@v2
+
       - name: Install Trunk for building the webapp
         run: |
           cargo install --locked trunk
-
-      - name: Checkout code
-        uses: actions/checkout@v3
 
       - name: Build ofdb-app-clearance
         run: |

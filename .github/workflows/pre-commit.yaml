@@ -32,22 +32,22 @@ jobs:
           profile: minimal
           components: rustfmt, clippy
 
-      - name: Install Rust toolchain for webapp
+      - name: Install Rust toolchain for WASM
         uses: actions-rs/toolchain@v1
         with:
           target: wasm32-unknown-unknown
           toolchain: stable
           profile: minimal
 
-      - name: Install Trunk for building the webapp
-        run: |
-          cargo install --locked trunk
-
       - name: Check out repository
         uses: actions/checkout@v3
 
       - name: Cache Rust toolchain and build artifacts
-        uses: Swatinem/rust-cache@v1
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install Trunk for building the webapp
+        run: |
+          cargo install --locked trunk
 
       - name: Detect code style issues (push)
         uses: pre-commit/action@v3.0.0
