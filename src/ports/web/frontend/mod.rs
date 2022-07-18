@@ -303,11 +303,10 @@ pub fn get_events_chronologically(
     }
 
     if query.start_min.is_none() && query.start_max.is_none() {
-        let start_min = chrono::Utc::now()
-            .checked_sub_signed(chrono::Duration::days(1))
-            .unwrap()
-            .naive_utc();
-        query.start_min = Some(start_min.into());
+        let start_min = Timestamp::now()
+            .checked_sub(time::Duration::days(1))
+            .unwrap();
+        query.start_min = Some(start_min);
     }
 
     let events = usecases::query_events(&*db.shared()?, &search_engine, query)?;

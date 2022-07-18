@@ -207,7 +207,7 @@ impl<'r> FromForm<'r> for usecases::EventQuery {
             "start_max" => {
                 let result = value
                     .parse()
-                    .map(Timestamp::from_inner)
+                    .map(Timestamp::from_seconds)
                     .map_err(Error::from);
                 match result {
                     Ok(max) => {
@@ -221,7 +221,7 @@ impl<'r> FromForm<'r> for usecases::EventQuery {
             "start_min" => {
                 let result = value
                     .parse()
-                    .map(Timestamp::from_inner)
+                    .map(Timestamp::from_seconds)
                     .map_err(Error::from);
                 match result {
                     Ok(min) => {
@@ -235,7 +235,7 @@ impl<'r> FromForm<'r> for usecases::EventQuery {
             "end_max" => {
                 let result = value
                     .parse()
-                    .map(Timestamp::from_inner)
+                    .map(Timestamp::from_seconds)
                     .map_err(Error::from);
                 match result {
                     Ok(max) => {
@@ -249,7 +249,7 @@ impl<'r> FromForm<'r> for usecases::EventQuery {
             "end_min" => {
                 let result = value
                     .parse()
-                    .map(Timestamp::from_inner)
+                    .map(Timestamp::from_seconds)
                     .map_err(Error::from);
                 match result {
                     Ok(min) => {

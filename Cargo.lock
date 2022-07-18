@@ -285,22 +285,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
-name = "chrono"
-version = "0.4.19"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "670ad68c9088c2a963aaa298cb369688cf3f9465ce5e2d4ca10e6e0098a1ce73"
-dependencies = [
- "js-sys",
- "libc",
- "num-integer",
- "num-traits",
- "serde",
- "time 0.1.44",
- "wasm-bindgen",
- "winapi",
-]
-
-[[package]]
 name = "cipher"
 version = "0.2.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -383,7 +367,7 @@ dependencies = [
  "rand",
  "sha2 0.10.2",
  "subtle",
- "time 0.3.11",
+ "time",
  "version_check",
 ]
 
@@ -618,7 +602,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b28135ecf6b7d446b43e27e225622a038cc4e2930a1022f51cdb97ada19b8e4d"
 dependencies = [
  "byteorder",
- "chrono",
  "diesel_derives",
  "libsqlite3-sys",
  "r2d2",
@@ -930,10 +913,8 @@ dependencies = [
 [[package]]
 name = "geocoding"
 version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa5cbcc647209c5e0526a0ce3503e57413e1f17dca846b36c402587b2959a719"
+source = "git+https://github.com/slowtec/geocoding?branch=remove-chrono#3f58fa786c3187cc19002a05119474beeb35d9a1"
 dependencies = [
- "chrono",
  "geo-types",
  "hyper",
  "num-traits",
@@ -951,7 +932,7 @@ checksum = "4eb1a864a501629691edf6c15a593b7a51eebaa1e8468e9ddc623de7c9b58ec6"
 dependencies = [
  "cfg-if",
  "libc",
- "wasi 0.11.0+wasi-snapshot-preview1",
+ "wasi",
 ]
 
 [[package]]
@@ -1478,7 +1459,7 @@ checksum = "57ee1c23c7c63b0c9250c339ffdc69255f110b298b901b9f6c82547b7b87caaf"
 dependencies = [
  "libc",
  "log",
- "wasi 0.11.0+wasi-snapshot-preview1",
+ "wasi",
  "windows-sys",
 ]
 
@@ -1615,9 +1596,9 @@ dependencies = [
 name = "ofdb-boundary"
 version = "0.10.1"
 dependencies = [
- "chrono",
  "ofdb-entities",
  "serde",
+ "time",
 ]
 
 [[package]]
@@ -1635,7 +1616,6 @@ name = "ofdb-entities"
 version = "0.10.1"
 dependencies = [
  "bs58",
- "chrono",
  "itertools",
  "num-derive",
  "num-traits",
@@ -1643,6 +1623,7 @@ dependencies = [
  "rand",
  "strum",
  "thiserror",
+ "time",
  "url",
  "uuid",
 ]
@@ -1651,7 +1632,6 @@ dependencies = [
 name = "ofdb-gateways"
 version = "0.0.0"
 dependencies = [
- "chrono",
  "fast_chemail",
  "geocoding",
  "itertools",
@@ -1660,6 +1640,7 @@ dependencies = [
  "ofdb-entities",
  "quoted_printable",
  "reqwest",
+ "time",
 ]
 
 [[package]]
@@ -1696,7 +1677,6 @@ dependencies = [
  "anyhow",
  "base64",
  "captcha",
- "chrono",
  "clap 3.2.12",
  "csv",
  "diesel",
@@ -1726,7 +1706,7 @@ dependencies = [
  "strum",
  "tantivy",
  "thiserror",
- "time 0.3.11",
+ "time",
  "tokio",
  "uuid",
  "walkdir",
@@ -2303,7 +2283,7 @@ dependencies = [
  "serde_json",
  "state",
  "tempfile",
- "time 0.3.11",
+ "time",
  "tokio",
  "tokio-stream",
  "tokio-util",
@@ -2366,7 +2346,7 @@ dependencies = [
  "smallvec",
  "stable-pattern",
  "state",
- "time 0.3.11",
+ "time",
  "tokio",
  "uncased",
 ]
@@ -2638,7 +2618,7 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "thiserror",
- "time 0.3.11",
+ "time",
 ]
 
 [[package]]
@@ -2790,7 +2770,7 @@ dependencies = [
  "tantivy-query-grammar",
  "tempfile",
  "thiserror",
- "time 0.3.11",
+ "time",
  "uuid",
  "winapi",
 ]
@@ -2898,17 +2878,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5516c27b78311c50bf42c071425c560ac799b11c30b31f87e3081965fe5e0180"
 dependencies = [
  "once_cell",
-]
-
-[[package]]
-name = "time"
-version = "0.1.44"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6db9e6914ab8b1ae1c260a4ae7a49b6c5611b40328a735b21862567685e73255"
-dependencies = [
- "libc",
- "wasi 0.10.0+wasi-snapshot-preview1",
- "winapi",
 ]
 
 [[package]]
@@ -3274,12 +3243,6 @@ dependencies = [
  "log",
  "try-lock",
 ]
-
-[[package]]
-name = "wasi"
-version = "0.10.0+wasi-snapshot-preview1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a143597ca7c7793eff794def352d41792a93c481eb1042423ff7ff72ba2c31f"
 
 [[package]]
 name = "wasi"

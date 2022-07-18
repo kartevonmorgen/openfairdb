@@ -19,7 +19,7 @@ pub mod prelude {
         util::{
             geo::{Distance, LatCoord, LngCoord, MapPoint},
             nonce::Nonce,
-            time::{Timestamp, TimestampMs},
+            time::Timestamp,
         },
     };
 

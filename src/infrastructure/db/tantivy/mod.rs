@@ -23,10 +23,7 @@ use crate::core::{
         Address, AvgRatingValue, AvgRatings, Category, Contact, Event, Id, Place, RatingContext,
         ReviewStatus, ReviewStatusPrimitive,
     },
-    util::{
-        geo::{LatCoord, LngCoord, MapPoint},
-        time::Timestamp,
-    },
+    util::geo::{LatCoord, LngCoord, MapPoint},
 };
 
 const OVERALL_INDEX_HEAP_SIZE_IN_BYTES: usize = 50_000_000;
@@ -634,11 +631,11 @@ impl TantivyIndex {
         // ts_min
         let ts_min_lb = query
             .ts_min_lb
-            .map(|x| Bound::Included(x.into_inner()))
+            .map(|x| Bound::Included(x.into_seconds()))
             .unwrap_or(Bound::Unbounded);
         let ts_min_ub = query
             .ts_min_ub
-            .map(|x| Bound::Included(x.into_inner()))
+            .map(|x| Bound::Included(x.into_seconds()))
             .unwrap_or(Bound::Unbounded);
         if (ts_min_lb, ts_min_ub) != (Bound::Unbounded, Bound::Unbounded) {
             let ts_min_query = RangeQuery::new_i64_bounds(self.fields.ts_min, ts_min_lb, ts_min_ub);
@@ -648,11 +645,11 @@ impl TantivyIndex {
         // ts_max
         let ts_max_lb = query
             .ts_max_lb
-            .map(|x| Bound::Included(x.into_inner()))
+            .map(|x| Bound::Included(x.into_seconds()))
             .unwrap_or(Bound::Unbounded);
         let ts_max_ub = query
             .ts_max_ub
-            .map(|x| Bound::Included(x.into_inner()))
+            .map(|x| Bound::Included(x.into_seconds()))
             .unwrap_or(Bound::Unbounded);
         if (ts_max_lb, ts_max_ub) != (Bound::Unbounded, Bound::Unbounded) {
             let ts_max_query = RangeQuery::new_i64_bounds(self.fields.ts_max, ts_max_lb, ts_max_ub);
@@ -983,13 +980,10 @@ impl EventIndexer for TantivyIndex {
                 }
             }
         }
-        doc.add_i64(
-            self.fields.ts_min,
-            Timestamp::from(event.start).into_inner(),
-        );
+        doc.add_i64(self.fields.ts_min, event.start.into_seconds());
         if let Some(end) = event.end {
             debug_assert!(event.start <= end);
-            doc.add_i64(self.fields.ts_max, Timestamp::from(end).into_inner());
+            doc.add_i64(self.fields.ts_max, end.into_seconds());
         }
         doc.add_text(self.fields.title, &event.title);
         if let Some(ref description) = event.description {

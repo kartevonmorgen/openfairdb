@@ -43,10 +43,10 @@ fn login_user(client: &Client, name: &str) {
 }
 
 mod events {
-    use chrono::prelude::*;
 
     use super::*;
     use crate::infrastructure::flows::prelude as flows;
+    use time::Duration;
 
     #[test]
     fn search_events() {
@@ -54,12 +54,7 @@ mod events {
         let new_events = vec![
             usecases::NewEvent {
                 title: "x".into(),
-                start: Timestamp::from(
-                    chrono::Utc::now()
-                        .checked_sub_signed(chrono::Duration::days(2))
-                        .unwrap(),
-                )
-                .into_inner(),
+                start: (Timestamp::now() - Duration::days(2)).into_seconds(),
                 tags: Some(vec!["foo".into()]),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
@@ -68,12 +63,10 @@ mod events {
             },
             usecases::NewEvent {
                 title: "x".into(),
-                start: Timestamp::from(
-                    chrono::Utc::now()
-                        .checked_sub_signed(chrono::Duration::hours(2))
-                        .unwrap(),
-                )
-                .into_inner(),
+                start: Timestamp::now()
+                    .checked_sub(Duration::hours(2))
+                    .unwrap()
+                    .into_seconds(),
                 tags: Some(vec!["bla".into()]),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
@@ -82,12 +75,7 @@ mod events {
             },
             usecases::NewEvent {
                 title: "foo".into(),
-                start: Timestamp::from(
-                    chrono::Utc::now()
-                        .checked_add_signed(chrono::Duration::days(1))
-                        .unwrap(),
-                )
-                .into_inner(),
+                start: (Timestamp::now() + Duration::days(1)).into_seconds(),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
                 created_by: Some("test@example.com".into()),
@@ -95,12 +83,7 @@ mod events {
             },
             usecases::NewEvent {
                 title: "x".into(),
-                start: Timestamp::from(
-                    chrono::Utc::now()
-                        .checked_add_signed(chrono::Duration::days(2))
-                        .unwrap(),
-                )
-                .into_inner(),
+                start: (Timestamp::now() + Duration::days(2)).into_seconds(),
                 tags: Some(vec!["foo".into()]),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
@@ -188,12 +171,10 @@ mod events {
         let new_events = vec![
             usecases::NewEvent {
                 title: "x".into(),
-                start: Timestamp::from(
-                    chrono::Utc::now()
-                        .checked_sub_signed(chrono::Duration::hours(2))
-                        .unwrap(),
-                )
-                .into_inner(),
+                start: Timestamp::now()
+                    .checked_sub(Duration::hours(2))
+                    .unwrap()
+                    .into_seconds(),
                 tags: Some(vec!["bla".into(), "blub".into()]),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
@@ -202,12 +183,7 @@ mod events {
             },
             usecases::NewEvent {
                 title: "x".into(),
-                start: Timestamp::from(
-                    chrono::Utc::now()
-                        .checked_add_signed(chrono::Duration::days(2))
-                        .unwrap(),
-                )
-                .into_inner(),
+                start: (Timestamp::now() + Duration::days(2)).into_seconds(),
                 tags: Some(vec!["bli".into(), "blub".into()]),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
@@ -216,12 +192,10 @@ mod events {
             },
             usecases::NewEvent {
                 title: "x".into(),
-                start: Timestamp::from(
-                    chrono::Utc::now()
-                        .checked_sub_signed(chrono::Duration::days(2))
-                        .unwrap(),
-                )
-                .into_inner(),
+                start: Timestamp::now()
+                    .checked_sub(Duration::days(2))
+                    .unwrap()
+                    .into_seconds(),
                 tags: Some(vec!["blub".into()]),
                 registration: Some("email".into()),
                 email: Some("test@example.com".into()),
@@ -261,7 +235,7 @@ mod events {
             id: "1234".into(),
             title: "A great event".into(),
             description: Some("Foo bar baz".into()),
-            start: NaiveDateTime::from_timestamp(0, 0),
+            start: Timestamp::from_seconds(0),
             end: None,
             location: None,
             contact: None,

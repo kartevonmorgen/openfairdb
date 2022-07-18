@@ -104,10 +104,9 @@ pub fn get_entries_recently_changed(
         limit = Some(limit.unwrap_or(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT - offset.unwrap_or(0)));
     }
     debug_assert!(limit.is_some());
-    // Conversion from seconds (external) to milliseconds (internal)
     let params = RecentlyChangedEntriesParams {
-        since: since.map(TimestampMs::from_seconds),
-        until: until.map(TimestampMs::from_seconds),
+        since: since.map(Timestamp::from_seconds),
+        until: until.map(Timestamp::from_seconds),
     };
     let pagination = Pagination { offset, limit };
     let results = {

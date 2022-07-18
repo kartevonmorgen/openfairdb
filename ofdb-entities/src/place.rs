@@ -1,6 +1,5 @@
 use std::str::FromStr;
-
-use chrono::NaiveDate;
+use time::Date;
 
 use crate::{activity::*, contact::*, id::*, links::*, location::*, review::*, revision::*};
 
@@ -59,7 +58,7 @@ pub struct PlaceRevision {
     pub location: Location,
     pub contact: Option<Contact>,
     pub opening_hours: Option<OpeningHours>,
-    pub founded_on: Option<NaiveDate>,
+    pub founded_on: Option<Date>,
     pub links: Option<Links>,
     pub tags: Vec<String>,
 }
@@ -77,7 +76,7 @@ pub struct Place {
     pub location: Location,
     pub contact: Option<Contact>,
     pub opening_hours: Option<OpeningHours>,
-    pub founded_on: Option<NaiveDate>,
+    pub founded_on: Option<Date>,
     pub links: Option<Links>,
     pub tags: Vec<String>,
 }

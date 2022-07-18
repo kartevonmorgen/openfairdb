@@ -1,9 +1,9 @@
 use std::{collections::HashMap, time::Duration};
 
 use anyhow::Result;
-use chrono::{DateTime, Utc};
 use ofdb_boundary::TagFrequency;
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use time::OffsetDateTime;
 
 use crate::{
     core::db::PlaceRepo,
@@ -12,7 +12,7 @@ use crate::{
 };
 
 type Request = (MostPopularTagsParams, Pagination);
-type Cache = HashMap<Request, (DateTime<Utc>, Vec<TagFrequency>)>;
+type Cache = HashMap<Request, (OffsetDateTime, Vec<TagFrequency>)>;
 
 pub struct PopularTagsCache(RwLock<Cache>);
 
@@ -34,8 +34,8 @@ impl PopularTagsCache {
     ) -> Result<Vec<TagFrequency>> {
         let cached_results = self.read().get(&(*params, *pagination)).cloned();
         if let Some((created_at, data)) = cached_results {
-            let age_in_seconds = (Utc::now() - created_at).num_seconds() as u64;
-            if age_in_seconds < max_cache_age.as_secs() {
+            let age = Duration::try_from(OffsetDateTime::now_utc() - created_at)?;
+            if age < max_cache_age {
                 return Ok(data);
             }
         }
@@ -54,7 +54,10 @@ impl PopularTagsCache {
             .map(Into::into)
             .collect::<Vec<_>>();
         let mut cache = self.write();
-        cache.insert((*params, *pagination), (Utc::now(), results.clone()));
+        cache.insert(
+            (*params, *pagination),
+            (OffsetDateTime::now_utc(), results.clone()),
+        );
         Ok(results)
     }
 

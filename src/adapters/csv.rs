@@ -1,4 +1,4 @@
-use crate::core::{entities::*, util::time::Timestamp};
+use crate::core::entities::*;
 
 #[derive(Debug, Serialize)]
 pub struct CsvRecord {
@@ -189,8 +189,8 @@ impl From<Event> for EventRecord {
             created_by,
             title,
             description,
-            start: Timestamp::from(start).into_seconds(),
-            end: end.map(|end| Timestamp::from(end).into_seconds()),
+            start: start.into_seconds(),
+            end: end.map(|end| end.into_seconds()),
             lat,
             lng,
             street,

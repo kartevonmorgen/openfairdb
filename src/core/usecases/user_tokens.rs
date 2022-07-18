@@ -1,4 +1,4 @@
-use chrono::{Duration, Utc};
+use time::Duration;
 
 use crate::core::prelude::*;
 
@@ -9,7 +9,7 @@ pub fn refresh_user_token<D: Db>(db: &D, email: String) -> Result<EmailNonce> {
     };
     let token = UserToken {
         email_nonce,
-        expires_at: Timestamp::from(Utc::now() + Duration::days(1)),
+        expires_at: Timestamp::now() + Duration::days(1),
     };
     Ok(db.replace_user_token(token)?)
 }

@@ -1,7 +1,6 @@
 use std::{cell::RefCell, result};
 
 use anyhow::Result as Fallible;
-use chrono::prelude::*;
 
 use super::*;
 use crate::core::{usecases, util::geo};
@@ -825,7 +824,7 @@ fn receive_event_with_creators_email() {
         id: "x".into(),
         title: "t".into(),
         description: None,
-        start: NaiveDateTime::from_timestamp(0, 0),
+        start: Timestamp::from_seconds(0),
         end: None,
         contact: None,
         location: None,

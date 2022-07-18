@@ -1,10 +1,10 @@
 use std::collections::HashSet;
 
 use anyhow::{anyhow, Result};
-use chrono::{Duration, Utc};
 use jwt_service::JwtService;
 use parking_lot::{Mutex, MutexGuard};
 use serde::{Deserialize, Serialize};
+use time::{Duration, OffsetDateTime};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
@@ -30,7 +30,7 @@ impl JwtState {
     }
 
     pub fn generate_token(&self, email: &str) -> Result<String> {
-        let exp = usize::try_from((Utc::now() + self.time_valid).timestamp())?;
+        let exp = usize::try_from((OffsetDateTime::now_utc() + self.time_valid).unix_timestamp())?;
         let claims = Claims {
             sub: email.to_string(),
             exp,

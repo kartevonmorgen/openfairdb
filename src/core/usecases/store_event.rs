@@ -1,7 +1,5 @@
 use std::str::FromStr;
 
-use chrono::prelude::*;
-
 use crate::core::{
     prelude::*,
     usecases::create_user_from_email,
@@ -263,8 +261,8 @@ pub fn import_new_event<D: Db>(
         None => None,
     };
 
-    let start = NaiveDateTime::from_timestamp(start, 0);
-    let end = end.map(|e| NaiveDateTime::from_timestamp(e, 0));
+    let start = Timestamp::from_seconds(start);
+    let end = end.map(Timestamp::from_seconds);
 
     let homepage = homepage
         .and_then(|ref url| parse_url_param(url).transpose())
@@ -329,7 +327,7 @@ mod tests {
 
     #[test]
     fn create_new_valid_event() {
-        let now = Utc::now().naive_utc().timestamp();
+        let now = Timestamp::now().into_seconds();
         #[rustfmt::skip]
         let x = NewEvent {
             title        : "foo".into(),
@@ -360,7 +358,7 @@ mod tests {
         assert_eq!(mock_db.tags.borrow().len(), 2);
         let x = &mock_db.events.borrow()[0];
         assert_eq!(x.title, "foo");
-        assert_eq!(x.start.timestamp(), now);
+        assert_eq!(x.start.into_seconds(), now);
         assert!(x.location.is_none());
         assert_eq!(x.description.as_ref().unwrap(), "bar");
         assert!(x.id.is_valid());
@@ -381,7 +379,7 @@ mod tests {
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),
-            start        : Utc::now().naive_utc().timestamp(),
+            start        : Timestamp::now().into_seconds(),
             end          : None,
             lat          : None,
             lng          : None,
@@ -410,7 +408,7 @@ mod tests {
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),
-            start        : Utc::now().naive_utc().timestamp(),
+            start        : Timestamp::now().into_seconds(),
             end          : None,
             lat          : None,
             lng          : None,
@@ -453,7 +451,7 @@ mod tests {
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),
-            start        : Utc::now().naive_utc().timestamp(),
+            start        : Timestamp::now().into_seconds(),
             end          : None,
             lat          : None,
             lng          : None,

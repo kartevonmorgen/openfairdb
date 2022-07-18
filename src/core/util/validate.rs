@@ -132,7 +132,7 @@ impl AutoCorrect for Address {
 
 #[cfg(test)]
 mod tests {
-    use chrono::{Duration, NaiveDateTime, Utc};
+    use time::Duration;
 
     use super::*;
 
@@ -173,7 +173,7 @@ mod tests {
             id: "x".into(),
             title: "foo".into(),
             description: None,
-            start: NaiveDateTime::from_timestamp(0, 0),
+            start: Timestamp::from_seconds(0),
             end: None,
             location: None,
             contact: None,
@@ -272,7 +272,7 @@ mod tests {
 
     #[test]
     fn validate_event_start() {
-        let now = Utc::now().naive_utc();
+        let now = Timestamp::now();
         let e = Event {
             id: "x".into(),
             title: "foo".into(),
@@ -310,8 +310,8 @@ mod tests {
             id: "x".into(),
             title: "foo".into(),
             description: None,
-            start: NaiveDateTime::from_timestamp(100, 0),
-            end: Some(NaiveDateTime::from_timestamp(99, 0)),
+            start: Timestamp::from_seconds(100),
+            end: Some(Timestamp::from_seconds(99)),
             location: None,
             contact: None,
             tags: vec![],

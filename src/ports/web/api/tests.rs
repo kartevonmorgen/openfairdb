@@ -1629,7 +1629,7 @@ fn recently_changed_entries() {
     let response_since = client
         .get(format!(
             "/entries/recently-changed?since={}",
-            since_inclusive.into_inner(),
+            since_inclusive.into_seconds(),
         ))
         .dispatch();
     assert_eq!(response_since.status(), Status::Ok);
@@ -1641,7 +1641,7 @@ fn recently_changed_entries() {
     let response_until = client
         .get(format!(
             "/entries/recently-changed?until={}",
-            until_exclusive.into_inner(),
+            until_exclusive.into_seconds(),
         ))
         .dispatch();
     assert_eq!(response_until.status(), Status::Ok);
@@ -1653,8 +1653,8 @@ fn recently_changed_entries() {
     let response_since_until = client
         .get(format!(
             "/entries/recently-changed?since={}&until={}",
-            since_inclusive.into_inner(),
-            until_exclusive.into_inner()
+            since_inclusive.into_seconds(),
+            until_exclusive.into_seconds()
         ))
         .dispatch();
     assert_eq!(response_since_until.status(), Status::Ok);
@@ -1817,7 +1817,7 @@ fn entries_export_csv() {
             .finish(),
     ];
     entries[0].location.address = Some(Address::build().street("street1").finish());
-    entries[0].created.at = TimestampMs::from_seconds(1111);
+    entries[0].created.at = Timestamp::from_seconds(1111);
     entries[0].created.by = Some("user@example.com".into());
     entries[0].contact = Some(Contact {
         name: Some("John Smith".to_string()),
@@ -1842,8 +1842,9 @@ fn entries_export_csv() {
         )],
     });
     entries[0].opening_hours = Some("24/7".parse().unwrap());
-    entries[0].founded_on = Some("1945-10-24".parse().unwrap());
-    entries[1].created.at = TimestampMs::from_seconds(2222);
+    entries[0].founded_on =
+        Some(time::Date::from_calendar_date(1945, time::Month::October, 24).unwrap());
+    entries[1].created.at = Timestamp::from_seconds(2222);
 
     db.exclusive()
         .unwrap()
