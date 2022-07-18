@@ -83,7 +83,7 @@ fn archive_events() {
         .unwrap();
     let e1 = usecases::NewEvent {
         title: "x".into(),
-        start: Utc::now().naive_utc().timestamp(),
+        start: now(),
         tags: Some(vec!["bla".into()]), // org tag will be added implicitly!
         created_by: Some("foo@bar.com".into()),
         ..Default::default()
@@ -93,7 +93,7 @@ fn archive_events() {
         .id;
     let e2 = usecases::NewEvent {
         title: "x".into(),
-        start: Utc::now().naive_utc().timestamp(),
+        start: now(),
         tags: Some(vec!["bla".into()]), // org tag will be added implicitly!
         created_by: Some("foo@bar.com".into()),
         ..Default::default()

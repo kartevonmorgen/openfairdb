@@ -48,7 +48,7 @@ fn export_csv() {
             api_token: "bar".into(),
         })
         .unwrap();
-    let start1 = Utc::now().naive_utc().timestamp();
+    let start1 = now();
     let e1 = usecases::NewEvent {
         title: "title1".into(),
         start: start1,
@@ -62,7 +62,7 @@ fn export_csv() {
     let id1 = flows::create_event(&db, &mut search_engine, &notify, Some("foo"), e1)
         .unwrap()
         .id;
-    let start2 = Utc::now().naive_utc().timestamp();
+    let start2 = now();
     let e2 = usecases::NewEvent {
         title: "title2".into(),
         start: start2,

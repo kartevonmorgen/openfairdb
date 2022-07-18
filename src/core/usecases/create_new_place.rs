@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use chrono::NaiveDate;
+use time::Date;
 
 use super::{parse_custom_link_param, CustomLinkParam};
 use crate::core::{
@@ -25,7 +25,7 @@ pub struct NewPlace {
     pub telephone      : Option<String>,
     pub homepage       : Option<String>,
     pub opening_hours  : Option<String>,
-    pub founded_on     : Option<NaiveDate>,
+    pub founded_on     : Option<Date>,
     pub categories     : Vec<String>,
     pub tags           : Vec<String>,
     pub license        : String,
@@ -218,7 +218,7 @@ mod tests {
             custom_links: vec![],
         };
         let mock_db = MockDb::default();
-        let now = TimestampMs::now();
+        let now = Timestamp::now();
         let storable = prepare_new_place(
             &mock_db,
             x,

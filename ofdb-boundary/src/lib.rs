@@ -12,14 +12,22 @@
 //! Only supposed to be used as short-lived, transitional instances for
 //! (de-)serializing entities!
 
-use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
+use time::Date;
 
 #[cfg(feature = "entity-conversions")]
 mod conv;
 
 type RevisionValue = u64;
 type Url = String;
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, Copy, Eq, PartialEq))]
+pub struct UnixTimeMillis(i64);
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, Copy, Eq, PartialEq))]
+pub struct UnixTimeSeconds(i64);
 
 #[rustfmt::skip]
 #[derive(Serialize, Deserialize)]
@@ -42,7 +50,7 @@ pub struct Entry {
     pub telephone      : Option<String>,
     pub homepage       : Option<Url>,
     pub opening_hours  : Option<String>,
-    pub founded_on     : Option<NaiveDate>,
+    pub founded_on     : Option<Date>,
     pub categories     : Vec<String>,
     pub tags           : Vec<String>,
     pub ratings        : Vec<String>,
@@ -81,7 +89,7 @@ pub struct NewPlace {
     pub telephone      : Option<String>,
     pub homepage       : Option<String>,
     pub opening_hours  : Option<String>,
-    pub founded_on     : Option<NaiveDate>,
+    pub founded_on     : Option<Date>,
 
     #[serde(default = "Default::default")]
     pub categories     : Vec<String>,
@@ -118,7 +126,7 @@ pub struct UpdatePlace {
     pub telephone      : Option<String>,
     pub homepage       : Option<String>,
     pub opening_hours  : Option<String>,
-    pub founded_on     : Option<NaiveDate>,
+    pub founded_on     : Option<Date>,
     pub categories     : Vec<String>,
     pub tags           : Vec<String>,
     pub image_url      : Option<String>,
@@ -135,9 +143,9 @@ pub struct Event {
     pub title: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub description: Option<String>,
-    pub start: i64,
+    pub start: UnixTimeSeconds,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub end: Option<i64>,
+    pub end: Option<UnixTimeSeconds>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lat: Option<f64>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -370,7 +378,7 @@ pub struct Rating {
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
 pub struct PendingClearanceForPlace {
     pub place_id: String,
-    pub created_at: i64,
+    pub created_at: UnixTimeMillis,
     pub last_cleared_revision: Option<RevisionValue>,
 }
 
@@ -488,7 +496,7 @@ impl Links {
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, PartialEq, Eq))]
 pub struct Activity {
-    pub at: i64,
+    pub at: UnixTimeMillis,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub by: Option<String>,
@@ -531,7 +539,7 @@ pub struct PlaceRevision {
     pub opening_hours: Option<String>,
 
     #[serde(rename = "fnd", skip_serializing_if = "Option::is_none")]
-    pub founded_on: Option<NaiveDate>,
+    pub founded_on: Option<Date>,
 
     #[serde(
         rename = "lnk",
@@ -558,7 +566,7 @@ pub struct PlaceHistory {
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug))]
 pub struct ActivityLog {
-    pub at: i64,
+    pub at: UnixTimeMillis,
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub by: Option<String>,

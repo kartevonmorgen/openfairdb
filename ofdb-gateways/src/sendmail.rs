@@ -8,10 +8,10 @@ use std::{
     thread,
 };
 
-use chrono::*;
 use fast_chemail::is_valid_email;
 use ofdb_core::gateways::email::EmailGateway;
 use ofdb_entities::email::*;
+use time::format_description::well_known::Rfc2822;
 
 #[derive(Debug, Clone)]
 pub struct Sendmail {
@@ -146,17 +146,20 @@ pub fn compose(from: &str, to: &[&str], subject: &str, body: &str) -> Result<Str
         ));
     }
 
-    let now = Local::now();
+    let date = time::OffsetDateTime::now_local()
+        .ok()
+        .and_then(|now| now.format(&Rfc2822).ok())
+        .map(|date| format!("Date:{date}\r\n"))
+        .unwrap_or_default();
 
     let email = format!(
-        "Date:{date}\r\n\
+        "{date}
          From:{from}\r\n\
          To:{to}\r\n\
          {subject_header}\r\n\
          MIME-Version:1.0\r\n\
          Content-Type:text/plain;charset=utf-8\r\n\r\n\
          {body}",
-        date = now.to_rfc2822(),
         from = from,
         to = to.join(","),
         subject_header = encode_header_field("Subject", subject),

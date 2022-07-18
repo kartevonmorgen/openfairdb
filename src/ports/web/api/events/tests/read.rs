@@ -3,7 +3,7 @@ use super::*;
 #[test]
 fn by_id() {
     let (client, db, mut search_engine, notify) = setup2();
-    let now = Utc::now().naive_utc().timestamp();
+    let now = now();
     let e = usecases::NewEvent {
         title: "x".into(),
         start: now,
@@ -38,7 +38,7 @@ fn all() {
                 id: id.into(),
                 title: id.into(),
                 description: None,
-                start: Utc::now().naive_utc(),
+                start: Timestamp::now(),
                 end: None,
                 location: None,
                 contact: None,
@@ -63,7 +63,7 @@ fn all() {
 #[test]
 fn sorted_by_start() {
     let (client, db, mut search_engine, notify) = setup2();
-    let now = Utc::now().naive_utc().timestamp();
+    let now = Timestamp::now().into_seconds();
     let start_offsets = vec![100, 0, 300, 50, 200];
     for start_offset in start_offsets {
         let start = now + start_offset;
@@ -94,7 +94,7 @@ fn filtered_by_tags() {
     for tags in tags {
         let e = usecases::NewEvent {
             title: format!("{:?}", tags),
-            start: Utc::now().naive_utc().timestamp(),
+            start: now(),
             tags: Some(tags.into_iter().map(str::to_string).collect()),
             created_by: Some("test@example.com".into()),
             ..Default::default()
@@ -169,7 +169,7 @@ fn filtered_by_creator_with_valid_api_token() {
             let new_event = usecases::NewEvent {
                 title: m.to_string(),
                 created_by: Some(m.to_string()),
-                start: Utc::now().naive_utc().timestamp(),
+                start: now(),
                 ..Default::default()
             };
             flows::create_event(&db, &mut search_engine, &notify, Some("foo"), new_event)
@@ -213,7 +213,7 @@ fn filtered_by_creator_with_invalid_api_token() {
 #[test]
 fn filtered_by_start_min() {
     let (client, db, mut search_engine, notify) = setup2();
-    let now = Utc::now().naive_utc().timestamp();
+    let now = now();
     let start_offsets = vec![100, 0, 300, 50, 200];
     for start_offset in start_offsets {
         let start = now + start_offset;
@@ -241,7 +241,7 @@ fn filtered_by_start_min() {
 #[test]
 fn filtered_by_end_min() {
     let (client, db, mut search_engine, notify) = setup2();
-    let now = Utc::now().naive_utc().timestamp();
+    let now = now();
     let end_offsets = vec![100, 1, 300, 50, 200];
     for (start_offset, end_offset) in end_offsets.into_iter().enumerate() {
         // Differing start dates are required for ordering of search results!
@@ -272,7 +272,7 @@ fn filtered_by_end_min() {
 #[test]
 fn filtered_by_start_max() {
     let (client, db, mut search_engine, notify) = setup2();
-    let now = Utc::now().naive_utc().timestamp();
+    let now = now();
     let start_offsets = vec![100, 0, 300, 50, 200];
     for start_offset in start_offsets {
         let start = now + start_offset;
@@ -302,7 +302,7 @@ fn filtered_by_start_max() {
 #[test]
 fn filtered_by_end_max() {
     let (client, db, mut search_engine, notify) = setup2();
-    let now = Utc::now().naive_utc().timestamp();
+    let now = now();
     let end_offsets = vec![100, 1, 300, 50, 200];
     for (start_offset, end_offset) in end_offsets.into_iter().enumerate() {
         // Differing start dates are required for ordering of search results!
@@ -339,7 +339,7 @@ fn filtered_by_bounding_box() {
     for &(lat, lng) in coordinates {
         let e = usecases::NewEvent {
             title: format!("{}-{}", lat, lng),
-            start: Utc::now().naive_utc().timestamp(),
+            start: now(),
             lat: Some(lat),
             lng: Some(lng),
             created_by: Some("test@example.com".into()),

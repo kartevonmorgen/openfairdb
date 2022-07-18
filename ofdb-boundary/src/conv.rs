@@ -2,6 +2,30 @@ use ofdb_entities as e;
 
 use super::*;
 
+impl From<e::time::Timestamp> for UnixTimeMillis {
+    fn from(from: e::time::Timestamp) -> Self {
+        Self(from.into_milliseconds())
+    }
+}
+
+impl From<e::time::Timestamp> for UnixTimeSeconds {
+    fn from(from: e::time::Timestamp) -> Self {
+        Self(from.into_seconds())
+    }
+}
+
+impl From<UnixTimeSeconds> for e::time::Timestamp {
+    fn from(from: UnixTimeSeconds) -> Self {
+        Self::from_seconds(from.0)
+    }
+}
+
+impl From<UnixTimeMillis> for e::time::Timestamp {
+    fn from(from: UnixTimeMillis) -> Self {
+        Self::from_milliseconds(from.0)
+    }
+}
+
 impl From<e::links::CustomLink> for CustomLink {
     fn from(from: e::links::CustomLink) -> Self {
         let e::links::CustomLink {
@@ -222,8 +246,8 @@ impl From<e::event::Event> for Event {
             .to_string()
         });
 
-        let start = start.timestamp();
-        let end = end.map(|end| end.timestamp());
+        let start = start.into();
+        let end = end.map(e::time::Timestamp::from).map(Into::into);
 
         Event {
             id: id.into(),
@@ -259,7 +283,7 @@ impl From<e::clearance::PendingClearanceForPlace> for PendingClearanceForPlace {
         } = from;
         Self {
             place_id: place_id.into(),
-            created_at: created_at.into_inner(),
+            created_at: created_at.into(),
             last_cleared_revision: last_cleared_revision.map(Into::into),
         }
     }
@@ -429,7 +453,7 @@ impl From<e::activity::Activity> for Activity {
     fn from(from: e::activity::Activity) -> Self {
         let e::activity::Activity { at, by } = from;
         Self {
-            at: at.into_inner(),
+            at: at.into(),
             by: by.map(Into::into),
         }
     }
@@ -439,7 +463,7 @@ impl From<Activity> for e::activity::Activity {
     fn from(from: Activity) -> Self {
         let Activity { at, by } = from;
         Self {
-            at: e::time::TimestampMs::from_inner(at),
+            at: e::time::Timestamp::from(at),
             by: by.map(Into::into),
         }
     }
@@ -567,7 +591,7 @@ impl From<e::activity::ActivityLog> for ActivityLog {
             comment,
         } = from;
         Self {
-            at: at.into_inner(),
+            at: at.into(),
             by: by.map(Into::into),
             ctx,
             comment,
@@ -583,7 +607,7 @@ impl From<ActivityLog> for e::activity::ActivityLog {
             ctx: context,
             comment,
         } = from;
-        let at = e::time::TimestampMs::from_inner(at);
+        let at = e::time::Timestamp::from(at);
         let activity = e::activity::Activity {
             at,
             by: by.map(Into::into),

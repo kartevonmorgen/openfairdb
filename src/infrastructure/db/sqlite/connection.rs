@@ -1,7 +1,12 @@
+// NOTE:
+// All timestamps with the `_at` postfix are stored
+// as unix timestamp in **milli**seconds.
+//
+// TODO: Create a new type for milliseconds and seconds.
+
 use std::{fmt::Write as _, result};
 
 use anyhow::anyhow;
-use chrono::prelude::*;
 use diesel::{
     self,
     prelude::{Connection as DieselConnection, *},
@@ -138,12 +143,14 @@ fn load_place(
         .transpose()?
         .flatten();
 
+    let founded_on = founded_on.map(util::parse_date).transpose()?;
+
     let place = Place {
         id: place_id.into(),
         license,
         revision: Revision::from(rev as u64),
         created: Activity {
-            at: TimestampMs::from_inner(created_at),
+            at: Timestamp::from_milliseconds(created_at),
             by: created_by.map(Into::into),
         },
         title,
@@ -251,12 +258,14 @@ fn load_place_with_status_review(
         None
     };
 
+    let founded_on = founded_on.map(util::parse_date).transpose()?;
+
     let place = Place {
         id: place_id.into(),
         license,
         revision: Revision::from(rev as u64),
         created: Activity {
-            at: TimestampMs::from_inner(created_at),
+            at: Timestamp::from_milliseconds(created_at),
             by: created_by.map(Into::into),
         },
         title,
@@ -271,7 +280,7 @@ fn load_place_with_status_review(
 
     let activity_log = ActivityLog {
         activity: Activity {
-            at: TimestampMs::from_inner(review_created_at),
+            at: Timestamp::from_milliseconds(review_created_at),
             by: review_created_by.map(Into::into),
         },
         context: review_context,
@@ -443,7 +452,7 @@ fn into_new_place_revision(
     let new_place = models::NewPlaceRevision {
         parent_rowid,
         rev: u64::from(new_revision) as i64,
-        created_at: created.at.into_inner(),
+        created_at: created.at.into_milliseconds(),
         created_by,
         current_status: ReviewStatus::Created.into(),
         title,
@@ -460,7 +469,7 @@ fn into_new_place_revision(
         phone,
         homepage: homepage.map(Into::into),
         opening_hours: opening_hours.map(Into::into),
-        founded_on,
+        founded_on: founded_on.map(util::to_date_string),
         image_url: image_url.map(Into::into),
         image_link_url: image_link_url.map(Into::into),
     };
@@ -562,7 +571,7 @@ impl PlaceRepo for SqliteConnection {
             context,
             comment,
         } = activity_log;
-        let changed_at = activity.at.into_inner();
+        let changed_at = activity.at.into_milliseconds();
         let changed_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
         } else {
@@ -725,12 +734,12 @@ impl PlaceRepo for SqliteConnection {
 
         // Since (inclusive)
         if let Some(since) = params.since {
-            query = query.filter(review_dsl::created_at.ge(since.into_inner()));
+            query = query.filter(review_dsl::created_at.ge(since.into_milliseconds()));
         }
 
         // Until (exclusive)
         if let Some(until) = params.until {
-            query = query.filter(review_dsl::created_at.lt(until.into_inner()));
+            query = query.filter(review_dsl::created_at.lt(until.into_milliseconds()));
         }
 
         // Pagination
@@ -876,7 +885,7 @@ impl PlaceRepo for SqliteConnection {
                     revision: Revision::from(row.rev as u64),
                     activity: ActivityLog {
                         activity: Activity {
-                            at: TimestampMs::from_inner(row.created_at),
+                            at: Timestamp::from_milliseconds(row.created_at),
                             by: row.created_by_email.map(Into::into),
                         },
                         context: row.context,
@@ -1002,8 +1011,8 @@ fn into_new_event_with_tags(
             uid: id.into(),
             title,
             description,
-            start: start.timestamp(),
-            end: end.map(|x| x.timestamp()),
+            start: start.into_seconds(),
+            end: end.map(Timestamp::into_seconds),
             lat,
             lng,
             street,
@@ -1017,7 +1026,7 @@ fn into_new_event_with_tags(
             created_by,
             registration,
             organizer,
-            archived: archived.map(Timestamp::into_inner),
+            archived: archived.map(Timestamp::into_seconds),
             image_url: image_url.map(Into::into),
             image_link_url: image_link_url.map(Into::into),
         },
@@ -1211,8 +1220,8 @@ impl EventGateway for SqliteConnection {
             let event = Event {
                 id: uid.into(),
                 title,
-                start: NaiveDateTime::from_timestamp(start, 0),
-                end: end.map(|x| NaiveDateTime::from_timestamp(x, 0)),
+                start: Timestamp::from_seconds(start),
+                end: end.map(Timestamp::from_seconds),
                 description,
                 location,
                 contact,
@@ -1220,7 +1229,7 @@ impl EventGateway for SqliteConnection {
                 tags,
                 created_by: created_by_email,
                 registration,
-                archived: archived.map(Timestamp::from_inner),
+                archived: archived.map(Timestamp::from_seconds),
                 image_url: image_url.and_then(load_url),
                 image_link_url: image_link_url.and_then(load_url),
             };
@@ -1290,7 +1299,7 @@ impl EventGateway for SqliteConnection {
                 .filter(dsl::uid.eq_any(ids))
                 .filter(dsl::archived.is_null()),
         )
-        .set(dsl::archived.eq(Some(archived.into_inner())))
+        .set(dsl::archived.eq(Some(archived.into_seconds())))
         .execute(self)?;
         debug_assert!(count <= ids.len());
         Ok(count)
@@ -1422,9 +1431,9 @@ impl RatingRepository for SqliteConnection {
         let new_place_rating = models::NewPlaceRating {
             id: id.into(),
             parent_rowid,
-            created_at: created_at.into_inner(),
+            created_at: created_at.into_milliseconds(),
             created_by: None,
-            archived_at: archived_at.map(Timestamp::into_inner),
+            archived_at: archived_at.map(Timestamp::into_milliseconds),
             archived_by: None,
             title,
             value: i8::from(value).into(),
@@ -1505,7 +1514,7 @@ impl RatingRepository for SqliteConnection {
 
     fn archive_ratings(&self, ids: &[&str], activity: &Activity) -> Result<usize> {
         use schema::place_rating::dsl;
-        let archived_at = Some(activity.at.into_inner());
+        let archived_at = Some(activity.at.into_milliseconds());
         let archived_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
         } else {
@@ -1527,7 +1536,7 @@ impl RatingRepository for SqliteConnection {
 
     fn archive_ratings_of_places(&self, place_ids: &[&str], activity: &Activity) -> Result<usize> {
         use schema::{place::dsl, place_rating::dsl as rating_dsl};
-        let archived_at = Some(activity.at.into_inner());
+        let archived_at = Some(activity.at.into_milliseconds());
         let archived_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
         } else {
@@ -1566,9 +1575,9 @@ impl CommentRepository for SqliteConnection {
         let new_place_rating_comment = models::NewPlaceRatingComment {
             id: id.into(),
             parent_rowid,
-            created_at: created_at.into_inner(),
+            created_at: created_at.into_milliseconds(),
             created_by: None,
-            archived_at: archived_at.map(Timestamp::into_inner),
+            archived_at: archived_at.map(Timestamp::into_milliseconds),
             archived_by: None,
             text,
         };
@@ -1633,7 +1642,7 @@ impl CommentRepository for SqliteConnection {
 
     fn archive_comments(&self, ids: &[&str], activity: &Activity) -> Result<usize> {
         use schema::place_rating_comment::dsl;
-        let archived_at = Some(activity.at.into_inner());
+        let archived_at = Some(activity.at.into_milliseconds());
         let archived_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
         } else {
@@ -1659,7 +1668,7 @@ impl CommentRepository for SqliteConnection {
         activity: &Activity,
     ) -> Result<usize> {
         use schema::{place_rating::dsl as rating_dsl, place_rating_comment::dsl as comment_dsl};
-        let archived_at = Some(activity.at.into_inner());
+        let archived_at = Some(activity.at.into_milliseconds());
         let archived_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
         } else {
@@ -1687,7 +1696,7 @@ impl CommentRepository for SqliteConnection {
         use schema::{
             place::dsl, place_rating::dsl as rating_dsl, place_rating_comment::dsl as comment_dsl,
         };
-        let archived_at = Some(activity.at.into_inner());
+        let archived_at = Some(activity.at.into_milliseconds());
         let archived_by = if let Some(ref email) = activity.by {
             Some(resolve_user_created_by_email(self, email.as_ref())?)
         } else {
@@ -1934,7 +1943,7 @@ impl PlaceClearanceRepo for SqliteConnection {
             last_cleared_revision,
         } = pending_clearance;
         let place_rowid = resolve_place_rowid(self, place_id)?;
-        let created_at = created_at.into_inner();
+        let created_at = created_at.into_milliseconds();
         let last_cleared_revision =
             last_cleared_revision.map(|rev| RevisionValue::from(rev) as i64);
         let mut insert_count = 0;
@@ -2038,7 +2047,7 @@ impl PlaceClearanceRepo for SqliteConnection {
         clearances: &[ClearanceForPlace],
     ) -> Result<usize> {
         let org_rowid = resolve_organization_rowid(self, org_id)?;
-        let created_at = TimestampMs::now().into_inner();
+        let created_at = Timestamp::now().into_milliseconds();
         let mut total_rows_affected = 0;
         for clearance in clearances {
             let ClearanceForPlace {
@@ -2115,7 +2124,7 @@ impl UserTokenRepo for SqliteConnection {
         let model = models::NewUserToken {
             user_id,
             nonce: token.email_nonce.nonce.to_string(),
-            expires_at: token.expires_at.into_inner(),
+            expires_at: token.expires_at.into_milliseconds(),
         };
         // Insert...
         if diesel::insert_into(schema::user_tokens::table)
@@ -2151,12 +2160,10 @@ impl UserTokenRepo for SqliteConnection {
 
     fn delete_expired_user_tokens(&self, expired_before: Timestamp) -> Result<usize> {
         use schema::user_tokens::dsl;
-        Ok(
-            diesel::delete(
-                dsl::user_tokens.filter(dsl::expires_at.lt(expired_before.into_inner())),
-            )
-            .execute(self)?,
+        Ok(diesel::delete(
+            dsl::user_tokens.filter(dsl::expires_at.lt(expired_before.into_milliseconds())),
         )
+        .execute(self)?)
     }
 
     fn get_user_token_by_email(&self, email: &str) -> Result<UserToken> {

@@ -1,4 +1,7 @@
 use maud::{html, Markup};
+use time::{format_description::FormatItem, macros::format_description};
+
+const DATE_TIME_FORMAT: &[FormatItem] = format_description!("[year]-[month]-[day] [hour]:[minute]");
 
 use super::*;
 
@@ -19,10 +22,10 @@ pub fn event(user: Option<User>, ev: Event) -> Markup {
                 div class="entity-type" { "Event"  }
                 h2{ (ev.title) }
                 p class="time" {
-                    (ev.start.format("%d.%m.%Y %H:%M").to_string())
+                    (ev.start.format(DATE_TIME_FORMAT))
                         @if let Some(end) = ev.end{
                             " - "
-                            (end.format("%d.%m.%Y %H:%M").to_string())
+                            (end.format(DATE_TIME_FORMAT))
                         }
                 }
                 p class="description" { (ev.description.unwrap_or_default()) }
@@ -144,7 +147,7 @@ pub fn events(email: Option<&str>, events: &[Event]) -> Markup {
                                             span class="title" { (e.title) }
                                             " "
                                             span class="date" {
-                                                (e.start.format("%d.%m.%y").to_string())
+                                                (e.start.format(DATE_TIME_FORMAT))
                                             }
                                         }
                                         p {

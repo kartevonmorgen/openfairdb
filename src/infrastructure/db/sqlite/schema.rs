@@ -107,7 +107,7 @@ table! {
         phone -> Nullable<Text>,
         homepage -> Nullable<Text>,
         opening_hours -> Nullable<Text>,
-        founded_on -> Nullable<Date>,
+        founded_on -> Nullable<Text>,
         image_url -> Nullable<Text>,
         image_link_url -> Nullable<Text>,
     }

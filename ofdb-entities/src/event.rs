@@ -1,7 +1,5 @@
 use std::str::FromStr;
 
-use chrono::prelude::*;
-
 use crate::{contact::*, id::*, location::*, time::*, url::*};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
@@ -33,8 +31,8 @@ pub struct Event {
     pub title        : String,
     pub description  : Option<String>,
     // Both start/end time stamps are stored with second precision!
-    pub start        : NaiveDateTime,
-    pub end          : Option<NaiveDateTime>,
+    pub start        : Timestamp,
+    pub end          : Option<Timestamp>,
     pub location     : Option<Location>,
     pub contact      : Option<Contact>,
     pub tags         : Vec<String>,

@@ -1,6 +1,5 @@
-use std::time::Duration;
+use time::{Duration, OffsetDateTime};
 
-use chrono::prelude::*;
 use rocket::{
     self,
     http::Status,
@@ -17,7 +16,7 @@ use crate::{
 
 pub const COOKIE_EMAIL_KEY: &str = "ofdb-user-email";
 pub const COOKIE_CAPTCHA_KEY: &str = "ofdb-captcha";
-pub const MAX_CAPTCHA_TTL: Duration = Duration::from_secs(120);
+pub const MAX_CAPTCHA_TTL: Duration = Duration::seconds(120);
 
 type Result<T> = std::result::Result<T, AppError>;
 
@@ -111,7 +110,12 @@ impl Auth {
             .cookies()
             .get_private(COOKIE_CAPTCHA_KEY)
             .and_then(|cookie| cookie.value().parse().ok())
-            .and_then(|ts: DateTime<Utc>| Utc::now().signed_duration_since(ts).to_std().ok())
+            .and_then(|unix_ts: i64| {
+                OffsetDateTime::now_utc()
+                    .unix_timestamp()
+                    .checked_sub(unix_ts)
+            })
+            .map(Duration::seconds)
             .map_or(false, |duration: Duration| duration <= MAX_CAPTCHA_TTL)
     }
 }

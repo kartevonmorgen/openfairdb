@@ -1,4 +1,4 @@
-use chrono::prelude::*;
+use time::{format_description::FormatItem, macros::format_description, Date};
 
 use super::models::*;
 use crate::core::{
@@ -48,6 +48,19 @@ pub(crate) fn registration_type_into_i16(x: e::RegistrationType) -> i16 {
         Phone => 2,
         Homepage => 3,
     }
+}
+
+const DATE_FORMAT: &[FormatItem] = format_description!("[year]-[month]-[day]");
+
+pub(crate) fn parse_date(
+    date_string: String,
+) -> std::result::Result<time::Date, crate::core::error::RepoError> {
+    let date = Date::parse(&date_string, &DATE_FORMAT).map_err(anyhow::Error::from)?;
+    Ok(date)
+}
+
+pub(crate) fn to_date_string(date: time::Date) -> String {
+    date.format(&DATE_FORMAT).unwrap()
 }
 
 #[cfg(test)]
@@ -153,15 +166,15 @@ pub(crate) fn event_from_event_entity_and_tags(e: EventEntity, tag_rels: &[Event
         id: uid.into(),
         title,
         description,
-        start: NaiveDateTime::from_timestamp(start, 0),
-        end: end.map(|x| NaiveDateTime::from_timestamp(x, 0)),
+        start: Timestamp::from_seconds(start),
+        end: end.map(Timestamp::from_seconds),
         location,
         contact,
         homepage: homepage.and_then(load_url),
         tags,
         created_by: created_by_email,
         registration,
-        archived: archived.map(Timestamp::from_inner),
+        archived: archived.map(Timestamp::from_seconds),
         image_url: image_url.and_then(load_url),
         image_link_url: image_link_url.and_then(load_url),
     }
@@ -233,8 +246,8 @@ impl From<PlaceRatingComment> for e::Comment {
         Self {
             id: id.into(),
             rating_id: rating_id.into(),
-            created_at: Timestamp::from_inner(created_at),
-            archived_at: archived_at.map(Timestamp::from_inner),
+            created_at: Timestamp::from_milliseconds(created_at),
+            archived_at: archived_at.map(Timestamp::from_milliseconds),
             text,
         }
     }
@@ -256,8 +269,8 @@ impl From<PlaceRating> for e::Rating {
         Self {
             id: id.into(),
             place_id: place_id.into(),
-            created_at: Timestamp::from_inner(created_at),
-            archived_at: archived_at.map(Timestamp::from_inner),
+            created_at: Timestamp::from_milliseconds(created_at),
+            archived_at: archived_at.map(Timestamp::from_milliseconds),
             title,
             value: (value as i8).into(),
             context: rating_context_from_str(&context).unwrap(),
@@ -297,7 +310,7 @@ impl From<UserTokenEntity> for e::UserToken {
                 email: from.user_email,
                 nonce: from.nonce.parse::<Nonce>().unwrap_or_default(),
             },
-            expires_at: Timestamp::from_inner(from.expires_at),
+            expires_at: Timestamp::from_milliseconds(from.expires_at),
         }
     }
 }
@@ -425,7 +438,7 @@ impl From<PendingClearanceForPlace> for e::PendingClearanceForPlace {
         let last_cleared_revision = last_cleared_revision.map(|rev| e::Revision::from(rev as u64));
         Self {
             place_id: place_id.into(),
-            created_at: e::TimestampMs::from_inner(created_at),
+            created_at: e::Timestamp::from_milliseconds(created_at),
             last_cleared_revision,
         }
     }

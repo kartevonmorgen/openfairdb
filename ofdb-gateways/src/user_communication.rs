@@ -1,11 +1,13 @@
 use ofdb_entities::{address::*, contact::*, event::*, place::*, url::*};
+use time::{format_description::FormatItem, macros::format_description};
 
 pub struct EmailContent {
     pub subject: String,
     pub body: String,
 }
 
-const DATE_TIME_FORMAT: &str = "%Y.%m.%d %H:%M:%S";
+const DATE_TIME_FORMAT: &[FormatItem] =
+    format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
 
 const INTRO_ENTRY_CREATED: &str = "ein neuer Eintrag auf der Karte von morgen wurde erstellt";
 
@@ -192,7 +194,7 @@ das Karte von morgen-Team\n
         start = event.start.format(DATE_TIME_FORMAT),
         end = event
             .end
-            .map(|end| end.format(DATE_TIME_FORMAT).to_string())
+            .map(|end| end.format(DATE_TIME_FORMAT))
             .unwrap_or_default(),
         description = event.description.as_deref().unwrap_or(""),
         organizer = event.organizer().map(String::as_str).unwrap_or(""),
@@ -206,7 +208,6 @@ das Karte von morgen-Team\n
 
 #[cfg(test)]
 mod tests {
-    use chrono::Utc;
     use ofdb_entities::{activity::*, geo::*, links::*, location::*, revision::*, time::*};
 
     use super::*;
@@ -237,7 +238,7 @@ mod tests {
             license: "<license>".into(),
             revision: Revision::initial(),
             created: Activity {
-                at: TimestampMs::now(),
+                at: Timestamp::now(),
                 by: Some("created_by@example.com".into()),
             },
             title: "<title>".into(),
@@ -258,7 +259,9 @@ mod tests {
                 phone: Some("<phone>".into()),
             }),
             opening_hours: Some("24/7".parse().unwrap()),
-            founded_on: Some("1945-10-24".parse().unwrap()),
+            founded_on: Some(
+                time::Date::from_calendar_date(1945, time::Month::October, 24).unwrap(),
+            ),
             links: Some(Links {
                 homepage: Some("https://kartevonmorgen.org".parse().unwrap()),
                 ..Default::default()
@@ -272,7 +275,7 @@ mod tests {
             id: "<id>".into(),
             created_by: Some("created_by@example.com".into()),
             archived: None,
-            start: Utc::now().naive_utc(),
+            start: Timestamp::now(),
             end: None,
             registration: None,
             title: "<title>".into(),

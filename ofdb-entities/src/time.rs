@@ -1,135 +1,98 @@
-use std::fmt;
+use std::{
+    fmt,
+    ops::{Add, Sub},
+};
+use time::{
+    format_description::FormatItem, macros::format_description, Duration, OffsetDateTime,
+    PrimitiveDateTime,
+};
 
-use chrono::{DateTime, NaiveDateTime, Utc};
+/// A primitive unix timestamp without time zone.
+///
+/// We assume that all timestamps must be specified in the UTC time zone.
 
-pub trait InnerTimestampConverter: Clone + Copy + PartialEq + Eq + PartialOrd + Ord {
-    type Inner: Clone + Copy + PartialEq + Eq + PartialOrd + Ord;
+// This is a temporary workaround because
+// [`time`](::time) does not allow to convert [`OffsetDateTime`] to [`PrimitiveDateTime`]
+// (see <https://github.com/time-rs/time/pull/458>)
+// and [`PrimitiveDateTime`] has e.g. no `unix_timestamp` method.
+// So we internally use [`OffsetDateTime`] but the semantic is like [`PrimitiveDateTime`].
+#[derive(Debug, Copy, PartialEq, Eq, Clone, PartialOrd, Ord)]
+pub struct Timestamp(time::OffsetDateTime);
 
-    #[allow(clippy::wrong_self_convention)]
-    fn into_inner(ts: NaiveDateTime) -> Self::Inner;
+const TIMESTAMP_FORMAT: &[FormatItem] =
+    format_description!("[year]-[month]-[day] [hour]:[minute]:[second].[subsecond]");
 
-    fn from_inner(ts: Self::Inner) -> NaiveDateTime;
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct SecondsTimestampConverter;
-
-impl InnerTimestampConverter for SecondsTimestampConverter {
-    type Inner = i64;
-
-    fn into_inner(ts: NaiveDateTime) -> Self::Inner {
-        ts.timestamp()
-    }
-
-    fn from_inner(ts: Self::Inner) -> NaiveDateTime {
-        NaiveDateTime::from_timestamp(ts, 0)
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct MillisecondsTimestampConverter;
-
-impl InnerTimestampConverter for MillisecondsTimestampConverter {
-    type Inner = i64;
-
-    fn into_inner(ts: NaiveDateTime) -> Self::Inner {
-        ts.timestamp_millis()
-    }
-
-    fn from_inner(ts: Self::Inner) -> NaiveDateTime {
-        NaiveDateTime::from_timestamp(ts / 1000i64, (ts % 1000i64) as u32 * 1_000_000u32)
+impl fmt::Display for Timestamp {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self.0.format(TIMESTAMP_FORMAT).unwrap())
     }
 }
 
-// A generic timestamp
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
-pub struct GenericTimestamp<C: InnerTimestampConverter>(C::Inner);
-
-impl<C: InnerTimestampConverter> GenericTimestamp<C> {
+impl Timestamp {
     pub fn now() -> Self {
-        Utc::now().into()
-    }
-
-    pub fn from_inner(from: C::Inner) -> Self {
-        Self(from)
-    }
-
-    pub fn into_inner(self) -> C::Inner {
-        self.0
+        Self(OffsetDateTime::now_utc())
     }
 
     pub fn from_seconds(seconds: i64) -> Self {
-        Self(C::into_inner(SecondsTimestampConverter::from_inner(
-            seconds,
-        )))
+        Self(time::OffsetDateTime::from_unix_timestamp(seconds).unwrap())
     }
 
     pub fn from_milliseconds(milliseconds: i64) -> Self {
-        Self(C::into_inner(MillisecondsTimestampConverter::from_inner(
-            milliseconds,
-        )))
+        let nanos = millis_into_nanos(milliseconds);
+        Self(time::OffsetDateTime::from_unix_timestamp_nanos(nanos).unwrap())
     }
 
     pub fn into_seconds(self) -> i64 {
-        C::from_inner(self.0).timestamp()
+        self.0.unix_timestamp()
     }
 
     pub fn into_milliseconds(self) -> i64 {
-        C::from_inner(self.0).timestamp_millis()
+        nanos_into_millis(self.0.unix_timestamp_nanos())
+    }
+
+    pub fn format(&self, fmt: &[FormatItem<'_>]) -> String {
+        self.0.format(fmt).unwrap()
+    }
+    pub fn checked_sub(self, duration: Duration) -> Option<Self> {
+        self.0.checked_sub(duration).map(Self)
     }
 }
 
-impl<C: InnerTimestampConverter> From<NaiveDateTime> for GenericTimestamp<C> {
-    fn from(from: NaiveDateTime) -> Self {
-        Self(C::into_inner(from))
+fn nanos_into_millis(nanos: i128) -> i64 {
+    (nanos / 1_000_000).try_into().unwrap()
+}
+
+fn millis_into_nanos(millis: i64) -> i128 {
+    i128::from(millis) * 1_000_000
+}
+
+impl From<PrimitiveDateTime> for Timestamp {
+    fn from(ts: PrimitiveDateTime) -> Self {
+        Self(ts.assume_utc())
     }
 }
 
-impl<C: InnerTimestampConverter> From<GenericTimestamp<C>> for NaiveDateTime {
-    fn from(from: GenericTimestamp<C>) -> Self {
-        C::from_inner(from.0)
+impl Add<Duration> for Timestamp {
+    type Output = Self;
+    fn add(self, d: time::Duration) -> Self {
+        Self(self.0.add(d))
     }
 }
 
-impl<C: InnerTimestampConverter> From<DateTime<Utc>> for GenericTimestamp<C> {
-    fn from(from: DateTime<Utc>) -> Self {
-        Self(C::into_inner(from.naive_utc()))
+impl Sub<Duration> for Timestamp {
+    type Output = Self;
+    fn sub(self, d: time::Duration) -> Self {
+        Self(self.0.sub(d))
     }
 }
-
-impl<C: InnerTimestampConverter> From<GenericTimestamp<C>> for DateTime<Utc> {
-    fn from(from: GenericTimestamp<C>) -> Self {
-        Self::from_utc(NaiveDateTime::from(from), Utc)
-    }
-}
-
-impl<C: InnerTimestampConverter> fmt::Display for GenericTimestamp<C> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), std::fmt::Error> {
-        write!(f, "{}", DateTime::<Utc>::from(self.to_owned()))
-    }
-}
-
-pub type Timestamp = GenericTimestamp<SecondsTimestampConverter>;
-
-pub type TimestampMs = GenericTimestamp<MillisecondsTimestampConverter>;
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
-    fn convert_from_into_inner() {
-        let t1 = Timestamp::now();
-        let i1 = t1.into_inner();
-        let t2 = Timestamp::from_inner(i1);
-        assert_eq!(t1, t2);
-    }
-
-    #[test]
-    fn convert_from_into_inner_ms() {
-        let t1 = TimestampMs::now();
-        let i1 = t1.into_inner();
-        let t2 = TimestampMs::from_inner(i1);
-        assert_eq!(t1, t2);
+    fn format_timestamp() {
+        let ts = Timestamp::from_milliseconds(1_658_146_497_321);
+        assert_eq!("2022-07-18 12:14:57.321", format!("{ts}"));
     }
 }

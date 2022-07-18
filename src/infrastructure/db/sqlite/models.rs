@@ -1,6 +1,10 @@
 #![allow(clippy::extra_unused_lifetimes)]
 
-use chrono::NaiveDate;
+// NOTE:
+// All timestamps with the `_at` postfix are stored
+// as unix timestamp in **milli**seconds.
+//
+// TODO: Create a new type for milliseconds and seconds.
 
 use super::schema::*;
 
@@ -42,7 +46,7 @@ pub struct NewPlaceRevision {
     pub phone: Option<String>,
     pub homepage: Option<String>,
     pub opening_hours: Option<String>,
-    pub founded_on: Option<NaiveDate>,
+    pub founded_on: Option<String>,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
 }
@@ -68,7 +72,7 @@ pub struct JoinedPlaceRevision {
     pub phone: Option<String>,
     pub homepage: Option<String>,
     pub opening_hours: Option<String>,
-    pub founded_on: Option<NaiveDate>,
+    pub founded_on: Option<String>,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
     // Joined columns
@@ -96,7 +100,7 @@ pub struct JoinedPlaceRevisionWithStatusReview {
     pub phone: Option<String>,
     pub homepage: Option<String>,
     pub opening_hours: Option<String>,
-    pub founded_on: Option<NaiveDate>,
+    pub founded_on: Option<String>,
     pub image_url: Option<String>,
     pub image_link_url: Option<String>,
     // Joined columns

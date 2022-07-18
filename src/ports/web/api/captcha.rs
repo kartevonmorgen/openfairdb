@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use ::captcha::{gen, Difficulty};
-use chrono::prelude::*;
 use parking_lot::{Mutex, MutexGuard};
 use rocket::{
     data::{Data, ToByteUnit},
@@ -78,11 +77,11 @@ pub async fn post_captcha_verify(
         .into_inner();
     let token: Uuid = token.parse().map_err(|_| Status::BadRequest)?;
     if captcha_cache.verify(token, answer) {
-        let now = Utc::now().to_string();
-        let expires =
-            time::OffsetDateTime::now_utc() + time::Duration::try_from(MAX_CAPTCHA_TTL).unwrap();
+        let now_utc = time::OffsetDateTime::now_utc();
+        let expires = now_utc + MAX_CAPTCHA_TTL;
+        let cookie_value = now_utc.unix_timestamp().to_string();
         cookies.add_private(
-            Cookie::build(COOKIE_CAPTCHA_KEY, now)
+            Cookie::build(COOKIE_CAPTCHA_KEY, cookie_value)
                 .expires(expires)
                 .same_site(rocket::http::SameSite::None)
                 .finish(),

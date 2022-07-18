@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use chrono::NaiveDate;
+use time::Date;
 
 use super::{parse_custom_link_param, CustomLinkParam};
 use crate::core::{
@@ -26,7 +26,7 @@ pub struct UpdatePlace {
     pub telephone      : Option<String>,
     pub homepage       : Option<String>,
     pub opening_hours  : Option<String>,
-    pub founded_on     : Option<NaiveDate>,
+    pub founded_on     : Option<Date>,
     pub categories     : Vec<String>,
     pub tags           : Vec<String>,
     pub image_url      : Option<String>,
@@ -298,7 +298,7 @@ mod tests {
             entries: vec![(old, ReviewStatus::Created)].into(),
             ..Default::default()
         };
-        let now = TimestampMs::now();
+        let now = Timestamp::now();
         let storable = prepare_updated_place(
             &mock_db,
             id,
