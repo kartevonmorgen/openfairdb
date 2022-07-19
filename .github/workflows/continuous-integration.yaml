@@ -59,9 +59,21 @@ jobs:
       - name: Cache Rust toolchain and build artifacts
         uses: Swatinem/rust-cache@v2
 
-      - name: Install Trunk for building the webapp
-        run: |
-          cargo install --locked trunk
+      - uses: actions/cache@v3
+        id: cache-cargo-bins
+        with:
+          path: |
+            ~/.cargo/bin/trunk*
+            ~/.cargo/bin/wasm-pack*
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Install wasm-pack
+        if: steps.cache-cargo-bins.outputs.cache-hit != 'true'
+        run: curl https://rustwasm.github.io/wasm-pack/installer/init.sh -sSf | sh
+
+      - name: Install Trunk
+        if: steps.cache-cargo-bins.outputs.cache-hit != 'true'
+        run: cargo install --locked trunk
 
       - name: Check ofdb-entities crate
         uses: actions-rs/cargo@v1
