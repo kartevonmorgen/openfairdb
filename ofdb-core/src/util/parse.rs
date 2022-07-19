@@ -1,7 +1,5 @@
 use ofdb_entities::url::{ParseError, Url};
 
-use crate::core::error::ParameterError;
-
 /// Completes incomplete URLs before parsing
 pub fn parse_lazy_url(url: &str) -> Result<Option<Url>, ParseError> {
     let url = url.trim();
@@ -20,9 +18,8 @@ pub fn parse_lazy_url(url: &str) -> Result<Option<Url>, ParseError> {
     }
 }
 
-pub fn parse_url_param(url: &str) -> Result<Option<Url>, ParameterError> {
-    parse_lazy_url(url).map_err(|_| ParameterError::Url)
-}
+// TODO: remove
+pub use parse_lazy_url as parse_url_param;
 
 #[cfg(test)]
 mod tests {

@@ -1,5 +1,5 @@
+use ofdb_core::util::validate::{ContactInvalidation, EventInvalidation, PlaceInvalidation};
 use std::io;
-
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -112,5 +112,40 @@ impl From<ofdb_entities::event::RegistrationTypeParseError> for Error {
 impl From<ofdb_entities::nonce::EmailNonceDecodingError> for Error {
     fn from(_: ofdb_entities::nonce::EmailNonceDecodingError) -> Self {
         Error::Parameter(ParameterError::InvalidNonce)
+    }
+}
+
+impl From<ofdb_entities::url::ParseError> for Error {
+    fn from(_: ofdb_entities::url::ParseError) -> Self {
+        Error::Parameter(ParameterError::Url)
+    }
+}
+
+impl From<PlaceInvalidation> for Error {
+    fn from(err: PlaceInvalidation) -> Self {
+        match err {
+            PlaceInvalidation::License => ParameterError::License,
+            PlaceInvalidation::Contact(err) => err.into(),
+        }
+        .into()
+    }
+}
+
+impl From<EventInvalidation> for Error {
+    fn from(err: EventInvalidation) -> Self {
+        match err {
+            EventInvalidation::Title => ParameterError::Title,
+            EventInvalidation::EndDateBeforeStart => ParameterError::EndDateBeforeStart,
+            EventInvalidation::Contact(err) => err.into(),
+        }
+        .into()
+    }
+}
+
+impl From<ContactInvalidation> for ParameterError {
+    fn from(err: ContactInvalidation) -> Self {
+        match err {
+            ContactInvalidation::Email => ParameterError::Email,
+        }
     }
 }

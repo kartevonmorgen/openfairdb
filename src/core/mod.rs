@@ -3,7 +3,8 @@ pub mod entities;
 pub mod error;
 pub mod repositories;
 pub mod usecases;
-pub mod util;
+
+pub use ofdb_core::util;
 
 pub mod prelude {
 

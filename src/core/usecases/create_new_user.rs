@@ -11,7 +11,9 @@ pub struct NewUser {
 
 pub fn create_new_user<D: UserGateway>(db: &D, u: NewUser) -> Result<()> {
     let password = u.password.parse::<Password>()?;
-    validate::email(&u.email)?;
+    if !validate::is_valid_email(&u.email) {
+        return Err(ParameterError::Email.into());
+    }
     if db.try_get_user_by_email(&u.email)?.is_some() {
         return Err(ParameterError::UserExists.into());
     }

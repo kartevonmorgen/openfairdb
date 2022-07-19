@@ -116,7 +116,9 @@ pub fn delete_user(db: &dyn Db, login_email: &str, email: &str) -> Result<()> {
 }
 
 pub fn subscribe_to_bbox(db: &dyn Db, user_email: String, bbox: MapBbox) -> Result<()> {
-    validate::bbox(&bbox)?;
+    if !validate::is_valid_bbox(&bbox) {
+        return Err(ParameterError::Bbox.into());
+    }
 
     // TODO: support multiple subscriptions in KVM (frontend)
     // In the meanwhile we just replace existing subscriptions

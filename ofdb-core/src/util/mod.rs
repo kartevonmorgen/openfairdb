@@ -1,8 +1,9 @@
-pub mod parse;
-pub mod validate;
-
+use lazy_static::lazy_static;
 pub use ofdb_entities::{geo, nonce, time};
 use regex::Regex;
+
+pub mod parse;
+pub mod validate;
 
 pub const ID_LIST_SEPARATOR: char = ',';
 

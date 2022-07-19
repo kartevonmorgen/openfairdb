@@ -6,6 +6,7 @@
 //! is resolved.
 
 use std::{fmt, str::FromStr};
+use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Url(String);
@@ -21,7 +22,8 @@ impl Url {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
+#[error("Unable to parset URL")]
 pub struct ParseError;
 
 impl FromStr for Url {

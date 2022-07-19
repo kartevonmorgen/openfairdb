@@ -178,7 +178,13 @@ impl<'r> FromForm<'r> for usecases::EventQuery {
                 let result = value
                     .parse::<MapBbox>()
                     .map_err(|_| ())
-                    .and_then(|bbox| validate::bbox(&bbox).map(|_| bbox).map_err(|_| ()))
+                    .and_then(|bbox| {
+                        if !validate::is_valid_bbox(&bbox) {
+                            Err(())
+                        } else {
+                            Ok(bbox)
+                        }
+                    })
                     .map_err(|_| Error::from(ErrorKind::Validation("Invalid bounding box".into())));
 
                 match result {

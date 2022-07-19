@@ -1,6 +1,6 @@
-use std::{fmt, str::FromStr};
-
 use pwhash::bcrypt;
+use std::{fmt, str::FromStr};
+use thiserror::Error;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Password(String);
@@ -33,9 +33,11 @@ impl AsRef<str> for Password {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Error)]
 pub enum ParseError {
+    #[error("Insufficient password length")]
     InsufficientLength,
+    #[error("Invalid password")]
     Invalid,
 }
 

@@ -1,59 +1,73 @@
-use fast_chemail::is_valid_email;
-
-use super::super::{
-    entities::*,
-    error::ParameterError,
-    util::geo::{MapBbox, MapPoint},
+use ofdb_entities::{
+    address::Address,
+    contact::Contact,
+    event::Event,
+    geo::{MapBbox, MapPoint},
+    location::Location,
+    place::Place,
 };
+use thiserror::Error;
+
+pub use fast_chemail::is_valid_email;
 
 pub trait Validate {
-    fn validate(&self) -> Result<(), ParameterError>;
+    type Error;
+    fn validate(&self) -> Result<(), Self::Error>;
 }
 
 pub trait AutoCorrect {
     fn auto_correct(self) -> Self;
 }
 
-pub fn email(email: &str) -> Result<(), ParameterError> {
-    if !is_valid_email(email) {
-        return Err(ParameterError::Email);
-    }
-    Ok(())
+const fn is_valid_license(s: &str) -> bool {
+    // NOTE:
+    // The actual license has to be checked
+    // in the corresponding use case.
+    !s.is_empty()
 }
 
-fn license(s: &str) -> Result<(), ParameterError> {
-    if s.is_empty() {
-        // NOTE:
-        // The actual license has to be checked
-        // in the corresponding use case.
-        Err(ParameterError::License)
-    } else {
-        Ok(())
-    }
+pub fn is_valid_bbox(bbox: &MapBbox) -> bool {
+    bbox.is_valid() && !bbox.is_empty()
 }
 
-pub fn bbox(bbox: &MapBbox) -> Result<(), ParameterError> {
-    if !bbox.is_valid() || bbox.is_empty() {
-        return Err(ParameterError::Bbox);
-    }
-    Ok(())
+#[derive(Debug, Error)]
+pub enum PlaceInvalidation {
+    #[error("Invalid licence")]
+    License,
+    #[error(transparent)]
+    Contact(ContactInvalidation),
 }
 
 impl Validate for Place {
-    fn validate(&self) -> Result<(), ParameterError> {
-        license(&self.license)?;
-
+    type Error = PlaceInvalidation;
+    fn validate(&self) -> Result<(), Self::Error> {
+        if !is_valid_license(&self.license) {
+            return Err(Self::Error::License);
+        }
         //TODO: check title
-        self.contact.as_ref().map(|c| c.validate()).transpose()?;
+        self.contact
+            .as_ref()
+            .map(|c| c.validate())
+            .transpose()
+            .map_err(Self::Error::Contact)?;
 
         Ok(())
     }
 }
 
+#[derive(Debug, Error)]
+pub enum ContactInvalidation {
+    #[error("Invalid email")]
+    Email,
+}
+
 impl Validate for Contact {
-    fn validate(&self) -> Result<(), ParameterError> {
+    type Error = ContactInvalidation;
+    fn validate(&self) -> Result<(), Self::Error> {
         if let Some(ref e) = self.email {
-            email(e.as_ref())?;
+            if !is_valid_email(e) {
+                return Err(Self::Error::Email);
+            }
         }
         //TODO: check phone
         Ok(())
@@ -84,17 +98,28 @@ impl AutoCorrect for Event {
     }
 }
 
+#[derive(Debug, Error)]
+pub enum EventInvalidation {
+    #[error("Invalid title")]
+    Title,
+    #[error("The end date is before the start date")]
+    EndDateBeforeStart,
+    #[error(transparent)]
+    Contact(ContactInvalidation),
+}
+
 impl Validate for Event {
-    fn validate(&self) -> Result<(), ParameterError> {
+    type Error = EventInvalidation;
+    fn validate(&self) -> Result<(), Self::Error> {
         if self.title.is_empty() {
-            return Err(ParameterError::Title);
+            return Err(Self::Error::Title);
         }
         if let Some(ref c) = self.contact {
-            c.validate()?;
+            c.validate().map_err(Self::Error::Contact)?;
         }
         if let Some(end) = self.end {
             if end < self.start {
-                return Err(ParameterError::EndDateBeforeStart);
+                return Err(Self::Error::EndDateBeforeStart);
             }
         }
         Ok(())
@@ -132,21 +157,22 @@ impl AutoCorrect for Address {
 
 #[cfg(test)]
 mod tests {
+    use ofdb_entities::time::Timestamp;
     use time::Duration;
 
     use super::*;
 
     #[test]
     fn license_test() {
-        assert!(license("").is_err());
-        assert!(license("non-empty-string").is_ok());
+        assert!(!is_valid_license(""));
+        assert!(is_valid_license("non-empty-string"));
     }
 
     #[test]
     fn email_test() {
-        assert!(email("foo").is_err());
-        assert!(email("foo@bar").is_err());
-        assert!(email("foo@bar.tld").is_ok());
+        assert!(!is_valid_email("foo"));
+        assert!(!is_valid_email("foo@bar"));
+        assert!(is_valid_email("foo@bar.tld"));
     }
 
     #[test]
@@ -333,8 +359,8 @@ mod tests {
         let valid_bbox = MapBbox::new(p1, p3);
         let empty_bbox = MapBbox::new(p3, p3);
         let invalid_bbox = MapBbox::new(p2, p3);
-        assert!(bbox(&valid_bbox).is_ok());
-        assert!(bbox(&empty_bbox).is_err());
-        assert!(bbox(&invalid_bbox).is_err());
+        assert!(is_valid_bbox(&valid_bbox));
+        assert!(!is_valid_bbox(&empty_bbox));
+        assert!(!is_valid_bbox(&invalid_bbox));
     }
 }

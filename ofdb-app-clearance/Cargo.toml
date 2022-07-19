@@ -7,14 +7,14 @@ publish = false
 
 [patch.crates-io]
 ofdb-boundary = { path = "../ofdb-boundary" }
-ofdb-core = { path = "../ofdb-core" }
+ofdb-core = { path = "../ofdb-core" }  # TODO: remove
 ofdb-entities = { path = "../ofdb-entities" }
 ofdb-seed = { git = "https://github.com/kartevonmorgen/ofdb-seed.git", branch = "master" }
 
 [dependencies]
 ofdb-boundary = { version = "0.10.1", features = ["extra-derive"] }
 ofdb-entities = "0.10.1"
-ofdb-core = "0.0.0"
+ofdb-core = "0.0.0" # TODO: remove
 ofdb-seed = "0.3.0"
 seed = "0.9.2"
 difference = "2.0.0"
