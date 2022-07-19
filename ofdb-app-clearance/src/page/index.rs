@@ -464,17 +464,17 @@ fn links_cs(lastrev: Option<&PlaceRevision>, currrev: &PlaceRevision) -> Changes
             homepage = l
                 .clone()
                 .and_then(|l| l.homepage)
-                .map(|h| h.into_string())
+                .map(Into::<String>::into)
                 .unwrap_or_default(),
             image = l
                 .clone()
                 .and_then(|l| l.image)
-                .map(|h| h.into_string())
+                .map(Into::<String>::into)
                 .unwrap_or_default(),
             imagehref = l
                 .clone()
                 .and_then(|l| l.image_href)
-                .map(|h| h.into_string())
+                .map(Into::<String>::into)
                 .unwrap_or_default(),
         )
     })
