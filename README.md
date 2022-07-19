@@ -3,9 +3,8 @@
 The backend for [Karte von morgen](https://github.com/kartevonmorgen/kartevonmorgen/)
 written in [Rust](http://rustlang.org/).
 
-[![GitHub CI](https://github.com/kartevonmorgen/openfairdb/workflows/Continuous%20integration/badge.svg?branch=main)](https://github.com/kartevonmorgen/openfairdb/actions?query=workflow%3A%22Continuous+integration%22)
-[![Coverage Status](https://coveralls.io/repos/github/kartevonmorgen/openfairdb/badge.svg?branch=main)](https://coveralls.io/github/kartevonmorgen/openfairdb?branch=main)
-[![dependency status](https://deps.rs/repo/github/kartevonmorgen/openfairdb/status.svg)](https://deps.rs/repo/github/kartevonmorgen/openfairdb)
+[![GitHub CI](https://github.com/kartevonmorgen/openfairdb/actions/workflows/continuous-integration.yaml/badge.svg?branch=main)](https://github.com/kartevonmorgen/openfairdb/actions/workflows/continuous-integration.yaml)
+[![Security audit](https://github.com/kartevonmorgen/openfairdb/actions/workflows/security-audit.yaml/badge.svg?branch=main)](https://github.com/kartevonmorgen/openfairdb/actions/workflows/security-audit.yaml)
 [![License](https://img.shields.io/badge/license-AGPLv3-blue.svg?style=flat)](https://github.com/kartevonmorgen/openfairdb/blob/main/LICENSE)
 
 ## Schnittstelle: REST API
