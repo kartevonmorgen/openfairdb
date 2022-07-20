@@ -14,6 +14,7 @@ use super::guards::*;
 use crate::{
     adapters::{self, json},
     core::{
+        error::Error,
         prelude::*,
         usecases::{self, DuplicateType},
         util::{self, geo},
@@ -25,6 +26,8 @@ use crate::{
     },
     ports::web::{jwt, notify::*},
 };
+use ofdb_core::repositories::Error as RepoError;
+use ofdb_core::usecases::Error as ParameterError;
 
 pub mod captcha;
 mod count;
@@ -37,7 +40,7 @@ mod search;
 #[cfg(test)]
 pub mod tests;
 mod users;
-use error::Error as ApiError;
+use self::error::Error as ApiError;
 
 type Result<T> = result::Result<Json<T>, ApiError>;
 type JsonResult<'a, T> = result::Result<Json<T>, JsonError<'a>>;
@@ -128,8 +131,8 @@ pub fn get_place_history_revision(
 
         // The history contains e-mail addresses of registered users
         // is only permitted for scouts and admins or organizations!
-        if auth.user_with_min_role(&*db, Role::Scout).is_err() {
-            auth.organization(&*db)?;
+        if auth.user_with_min_role(&db, Role::Scout).is_err() {
+            auth.organization(&db)?;
         }
 
         db.get_place_history(&id, Some(revision.into()))?
@@ -148,8 +151,8 @@ pub fn get_place_history(
 
         // The history contains e-mail addresses of registered users
         // is only permitted for scouts and admins or for organizations!
-        if auth.user_with_min_role(&*db, Role::Scout).is_err() {
-            auth.organization(&*db)?;
+        if auth.user_with_min_role(&db, Role::Scout).is_err() {
+            auth.organization(&db)?;
         }
 
         db.get_place_history(&id, None)?
@@ -196,13 +199,13 @@ fn post_login(
     login: JsonResult<json::Credentials>,
     jwt_state: &State<jwt::JwtState>,
 ) -> Result<Option<ofdb_boundary::JwtToken>> {
-    let login = usecases::Login::from(login?.into_inner());
+    let login = json::from_json::credentials(login?.into_inner());
     {
         let credentials = usecases::Credentials {
             email: &login.email,
             password: &login.password,
         };
-        usecases::login_with_email(&*db.shared()?, &credentials).map_err(|err| {
+        usecases::login_with_email(&db.shared()?, &credentials).map_err(|err| {
             log::debug!("Login with email '{}' failed: {}", login.email, err);
             err
         })?;
@@ -249,7 +252,7 @@ fn confirm_email_address(
     token: JsonResult<ConfirmationToken>,
 ) -> Result<()> {
     let token = token?.into_inner().token;
-    usecases::confirm_email_address(&*db.exclusive()?, &token)?;
+    usecases::confirm_email_address(&db.exclusive()?, &token)?;
     Ok(Json(()))
 }
 
@@ -273,14 +276,14 @@ fn subscribe_to_bbox(
         return Err(Error::Parameter(ParameterError::Bbox).into());
     }
     let bbox = geo::MapBbox::new(sw_ne[0], sw_ne[1]);
-    usecases::subscribe_to_bbox(&*db.exclusive()?, email.to_string(), bbox)?;
+    usecases::subscribe_to_bbox(&db.exclusive()?, email.to_string(), bbox)?;
     Ok(Json(()))
 }
 
 #[delete("/unsubscribe-all-bboxes")]
 fn unsubscribe_all_bboxes(db: sqlite::Connections, auth: Auth) -> Result<()> {
     let email = auth.account_email()?;
-    usecases::unsubscribe_all_bboxes(&*db.exclusive()?, email)?;
+    usecases::unsubscribe_all_bboxes(&db.exclusive()?, email)?;
     Ok(Json(()))
 }
 
@@ -290,7 +293,7 @@ fn get_bbox_subscriptions(
     account: Account,
 ) -> Result<Vec<json::BboxSubscription>> {
     let email = account.email();
-    let user_subscriptions = usecases::get_bbox_subscriptions(&*db.shared()?, email)?
+    let user_subscriptions = usecases::get_bbox_subscriptions(&db.shared()?, email)?
         .into_iter()
         .map(|s| json::BboxSubscription {
             id: s.id.into(),
@@ -347,12 +350,12 @@ fn entries_csv_export(
 ) -> result::Result<(ContentType, String), AppError> {
     let db = connections.shared()?;
 
-    let moderated_tags = match auth.organization(&*db) {
+    let moderated_tags = match auth.organization(&db) {
         Ok(org) => org.moderated_tags,
         _ => vec![],
     };
 
-    let user = auth.user_with_min_role(&*db, Role::Scout)?;
+    let user = auth.user_with_min_role(&db, Role::Scout)?;
 
     let (req, limit) = search::parse_search_query(&query)?;
     let limit = if let Some(limit) = limit {
@@ -365,7 +368,7 @@ fn entries_csv_export(
 
     let entries_categories_and_ratings = {
         let all_categories: Vec<_> = db.all_categories()?;
-        usecases::search(&*db, &search_engine, req, limit)?
+        usecases::search(&db, &search_engine, req, limit)?
             .0
             .into_iter()
             .filter_map(|indexed_entry| {
@@ -418,8 +421,8 @@ fn entries_csv_export(
 
 impl<'r, 'o: 'r> Responder<'r, 'o> for AppError {
     fn respond_to(self, req: &'r Request<'_>) -> response::Result<'o> {
-        if let AppError::Business(ref err) = self {
-            match *err {
+        if let AppError::Business(err) = &self {
+            match err {
                 Error::Parameter(ref err) => {
                     return match *err {
                         ParameterError::Credentials | ParameterError::Unauthorized => {

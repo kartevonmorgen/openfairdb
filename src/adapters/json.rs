@@ -2,82 +2,34 @@ pub use ofdb_boundary::*;
 
 use crate::core::{db::IndexedPlace, entities as e, usecases};
 
-impl From<Credentials> for usecases::Login {
-    fn from(from: Credentials) -> Self {
+pub mod from_json {
+    //! JSON -> Entity
+
+    use super::*;
+
+    // NOTE:
+    // We cannot impl From<T> here, because the JSON structs
+    // and the entities both are outside this crate.
+
+    pub fn credentials(from: Credentials) -> usecases::Login {
         let Credentials { email, password } = from;
-        Self { email, password }
+        usecases::Login { email, password }
     }
-}
 
-impl From<IndexedPlace> for PlaceSearchResult {
-    fn from(from: IndexedPlace) -> Self {
-        let IndexedPlace {
-            id,
-            status,
-            title,
-            description,
-            tags,
-            pos,
-            ratings,
-            ..
-        } = from;
-        // The status should never be undefined! It is optional only
-        // for technical reasons.
-        debug_assert!(status.is_some());
-        let status = status.map(Into::into);
-        let (tags, categories) = e::Category::split_from_tags(tags);
-        let categories = categories.into_iter().map(|c| c.id.to_string()).collect();
-        let lat = pos.lat().to_deg();
-        let lng = pos.lng().to_deg();
-        let e::AvgRatings {
-            diversity,
-            fairness,
-            humanity,
-            renewable,
-            solidarity,
-            transparency,
-        } = ratings;
-        let total = ratings.total().into();
-        let ratings = EntrySearchRatings {
-            total,
-            diversity: diversity.into(),
-            fairness: fairness.into(),
-            humanity: humanity.into(),
-            renewable: renewable.into(),
-            solidarity: solidarity.into(),
-            transparency: transparency.into(),
-        };
-        Self {
-            id,
-            status,
-            lat,
-            lng,
-            title,
-            description,
-            categories,
-            tags,
-            ratings,
-        }
-    }
-}
-
-impl From<CustomLink> for usecases::CustomLinkParam {
-    fn from(from: CustomLink) -> Self {
+    pub fn custom_link(from: CustomLink) -> usecases::CustomLinkParam {
         let CustomLink {
             url,
             title,
             description,
         } = from;
-        Self {
+        usecases::CustomLinkParam {
             url,
             title,
             description,
         }
     }
-}
 
-impl From<NewPlace> for usecases::NewPlace {
-    fn from(p: NewPlace) -> Self {
+    pub fn new_place(p: NewPlace) -> usecases::NewPlace {
         let NewPlace {
             title,
             description,
@@ -122,13 +74,11 @@ impl From<NewPlace> for usecases::NewPlace {
             license,
             image_url,
             image_link_url,
-            custom_links: links.into_iter().map(Into::into).collect(),
+            custom_links: links.into_iter().map(custom_link).collect(),
         }
     }
-}
 
-impl From<UpdatePlace> for usecases::UpdatePlace {
-    fn from(p: UpdatePlace) -> Self {
+    pub fn update_place(p: UpdatePlace) -> usecases::UpdatePlace {
         let UpdatePlace {
             version,
             title,
@@ -173,12 +123,60 @@ impl From<UpdatePlace> for usecases::UpdatePlace {
             tags,
             image_url,
             image_link_url,
-            custom_links: links.into_iter().map(Into::into).collect(),
+            custom_links: links.into_iter().map(custom_link).collect(),
         }
     }
 }
 
-// Entity -> JSON
+pub fn place_serach_result_from_indexed_place(from: IndexedPlace) -> PlaceSearchResult {
+    let IndexedPlace {
+        id,
+        status,
+        title,
+        description,
+        tags,
+        pos,
+        ratings,
+        ..
+    } = from;
+    // The status should never be undefined! It is optional only
+    // for technical reasons.
+    debug_assert!(status.is_some());
+    let status = status.map(Into::into);
+    let (tags, categories) = e::Category::split_from_tags(tags);
+    let categories = categories.into_iter().map(|c| c.id.to_string()).collect();
+    let lat = pos.lat().to_deg();
+    let lng = pos.lng().to_deg();
+    let e::AvgRatings {
+        diversity,
+        fairness,
+        humanity,
+        renewable,
+        solidarity,
+        transparency,
+    } = ratings;
+    let total = ratings.total().into();
+    let ratings = EntrySearchRatings {
+        total,
+        diversity: diversity.into(),
+        fairness: fairness.into(),
+        humanity: humanity.into(),
+        renewable: renewable.into(),
+        solidarity: solidarity.into(),
+        transparency: transparency.into(),
+    };
+    PlaceSearchResult {
+        id,
+        status,
+        lat,
+        lng,
+        title,
+        description,
+        categories,
+        tags,
+        ratings,
+    }
+}
 
 pub fn entry_from_place_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -> Entry {
     let e::Place {

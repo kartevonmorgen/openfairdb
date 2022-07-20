@@ -85,7 +85,7 @@ fn should_find_places_by_tags() -> flows::Result<()> {
     .unwrap();
 
     let search_foo_ids: Vec<Id> = usecases::search(
-        &*fixture.db_connections.shared()?,
+        &fixture.db_connections.shared()?,
         &*fixture.search_engine.borrow(),
         usecases::SearchRequest {
             hash_tags: vec!["foo"],
@@ -105,7 +105,7 @@ fn should_find_places_by_tags() -> flows::Result<()> {
     assert!(!search_foo_ids.contains(&place_foo_hyphen_bar.id));
 
     let search_bar_ids: Vec<Id> = usecases::search(
-        &*fixture.db_connections.shared()?,
+        &fixture.db_connections.shared()?,
         &*fixture.search_engine.borrow(),
         usecases::SearchRequest {
             hash_tags: vec!["bar"],
@@ -125,7 +125,7 @@ fn should_find_places_by_tags() -> flows::Result<()> {
     assert!(!search_bar_ids.contains(&place_foo_hyphen_bar.id));
 
     let search_foo_and_bar_ids: Vec<Id> = usecases::search(
-        &*fixture.db_connections.shared()?,
+        &fixture.db_connections.shared()?,
         &*fixture.search_engine.borrow(),
         usecases::SearchRequest {
             hash_tags: vec!["foo", "bar"],

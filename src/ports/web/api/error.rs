@@ -8,10 +8,8 @@ use rocket::{
 use thiserror::Error;
 
 use super::json_error_response;
-use crate::{
-    core::error::{Error as BError, RepoError},
-    infrastructure::error::AppError,
-};
+use crate::{core::error::Error as BError, infrastructure::error::AppError};
+pub use ofdb_core::repositories::Error as RepoError;
 
 #[derive(Debug, Error)]
 #[allow(clippy::large_enum_variant)]
@@ -66,5 +64,11 @@ impl From<ofdb_entities::password::ParseError> for Error {
 impl From<ofdb_entities::nonce::EmailNonceDecodingError> for Error {
     fn from(err: ofdb_entities::nonce::EmailNonceDecodingError) -> Self {
         AppError::from(err).into()
+    }
+}
+
+impl From<ofdb_core::usecases::Error> for Error {
+    fn from(err: ofdb_core::usecases::Error) -> Self {
+        Self::App(err.into())
     }
 }

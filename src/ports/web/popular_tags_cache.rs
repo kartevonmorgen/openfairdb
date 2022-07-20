@@ -39,7 +39,7 @@ impl PopularTagsCache {
                 return Ok(data);
             }
         }
-        self.query_and_update(&*db.shared()?, params, pagination)
+        self.query_and_update(&db.shared()?, params, pagination)
     }
 
     fn query_and_update<R: PlaceRepo>(

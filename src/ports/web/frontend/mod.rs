@@ -16,15 +16,14 @@ use rocket::{
 };
 use rust_embed::RustEmbed;
 
+use crate::ports::web::api::events::EventQuery;
 use crate::{
-    core::{
-        error::{Error, ParameterError},
-        prelude::*,
-        usecases,
-    },
+    core::{error::Error, prelude::*, usecases},
     infrastructure::{db::sqlite, error::*, flows::prelude::*},
     ports::web::{guards::*, tantivy::SearchEngine},
 };
+use ofdb_core::repositories::Error as RepoError;
+use ofdb_core::usecases::Error as ParameterError;
 
 mod login;
 mod password;
@@ -84,7 +83,7 @@ pub fn get_search(search_engine: SearchEngine, q: &str, limit: Option<usize>) ->
 pub fn get_search_users(pool: sqlite::Connections, email: &str, auth: Auth) -> Result<Markup> {
     {
         let db = pool.shared()?;
-        let admin = auth.user_with_min_role(&*db, Role::Admin)?;
+        let admin = auth.user_with_min_role(&db, Role::Admin)?;
         let users: Vec<_> = db.try_get_user_by_email(email)?.into_iter().collect();
         Ok(view::user_search_result(&admin.email, &users))
     }
@@ -137,7 +136,7 @@ pub fn get_place_history(db: sqlite::Connections, id: &str, account: Account) ->
     let place_history = {
         // The history contains e-mail addresses of registered users
         // and is only permitted for scouts and admins!
-        usecases::authorize_user_by_email(&*db, account.email(), Role::Scout)?;
+        usecases::authorize_user_by_email(&db, account.email(), Role::Scout)?;
 
         db.get_place_history(id, None)?
     };
@@ -149,7 +148,7 @@ pub fn get_place_review(db: sqlite::Connections, id: &str, account: Account) -> 
     let db = db.shared()?;
     // Only scouts and admins are entitled to review places
     let reviewer_email =
-        usecases::authorize_user_by_email(&*db, account.email(), Role::Scout)?.email;
+        usecases::authorize_user_by_email(&db, account.email(), Role::Scout)?.email;
     let (place, review_status) = db.get_place(id)?;
     Ok(view::place_review(&reviewer_email, &place, review_status))
 }
@@ -196,7 +195,7 @@ fn review_place(
 ) -> Result<()> {
     let reviewer_email = {
         let db = db.shared()?;
-        usecases::authorize_user_by_email(&*db, email, Role::Scout)?.email
+        usecases::authorize_user_by_email(&db, email, Role::Scout)?.email
     };
     let status = ReviewStatus::try_from(status)
         .ok_or_else(|| Error::Parameter(ParameterError::RatingContext(status.to_string())))?;
@@ -240,7 +239,7 @@ pub fn get_entry(pool: sqlite::Connections, id: &str, account: Option<Account>) 
 pub fn get_event(pool: sqlite::Connections, id: &str, account: Option<Account>) -> Result<Markup> {
     let (user, mut ev): (Option<User>, _) = {
         let db = pool.shared()?;
-        let ev = usecases::get_event(&*db, id)?;
+        let ev = usecases::get_event(&db, id)?;
         let user = if let Some(a) = account {
             db.try_get_user_by_email(a.email())?
         } else {
@@ -267,7 +266,7 @@ pub fn post_archive_event(
         .shared()
         .and_then(|db| {
             // Only scouts and admins are entitled to review events
-            let user = usecases::authorize_user_by_email(&*db, account.email(), Role::Scout)?;
+            let user = usecases::authorize_user_by_email(&db, account.email(), Role::Scout)?;
             Ok(user.email)
         })
         .map_err(|_| {
@@ -295,9 +294,10 @@ pub fn post_archive_event(
 pub fn get_events_chronologically(
     db: sqlite::Connections,
     search_engine: SearchEngine,
-    mut query: usecases::EventQuery,
+    query: EventQuery,
     account: Option<Account>,
 ) -> Result<Markup> {
+    let mut query = query.into_inner();
     if query.created_by.is_some() {
         return Err(Error::Parameter(ParameterError::Unauthorized).into());
     }
@@ -309,7 +309,7 @@ pub fn get_events_chronologically(
         query.start_min = Some(start_min);
     }
 
-    let events = usecases::query_events(&*db.shared()?, &search_engine, query)?;
+    let events = usecases::query_events(&db.shared()?, &search_engine, query)?;
     let email = account.as_ref().map(Account::email);
     Ok(view::events(email, &events))
 }

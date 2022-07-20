@@ -18,10 +18,10 @@ pub mod prelude {
     };
 }
 
-pub type Result<T> = std::result::Result<T, error::AppError>;
+pub type Result<T> = std::result::Result<T, super::error::AppError>;
 
-pub(crate) use super::{db::sqlite, error};
-pub(crate) use crate::core::{prelude::*, usecases};
+pub(crate) use super::db::sqlite::{self, from_diesel_err};
+pub(crate) use ofdb_core::{db::*, entities::*, repositories::*, usecases};
 
 #[cfg(test)]
 pub(crate) mod tests;

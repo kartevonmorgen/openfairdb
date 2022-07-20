@@ -13,6 +13,7 @@ use crate::{
     infrastructure::error::AppError,
     ports::web::jwt,
 };
+use ofdb_core::usecases::Error as ParameterError;
 
 pub const COOKIE_EMAIL_KEY: &str = "ofdb-user-email";
 pub const COOKIE_CAPTCHA_KEY: &str = "ofdb-captcha";
@@ -44,9 +45,7 @@ impl Auth {
     pub fn account_email(&self) -> Result<&str> {
         self.account_email
             .as_deref()
-            .ok_or(AppError::Business(Error::Parameter(
-                ParameterError::Unauthorized,
-            )))
+            .ok_or_else(|| ParameterError::Unauthorized.into())
     }
 
     pub fn bearer_tokens(&self) -> &Vec<String> {
@@ -57,9 +56,7 @@ impl Auth {
         if self.has_captcha {
             Ok(())
         } else {
-            Err(AppError::Business(Error::Parameter(
-                ParameterError::Unauthorized,
-            )))
+            Err(ParameterError::Unauthorized.into())
         }
     }
 

@@ -1,4 +1,3 @@
-use diesel::connection::Connection;
 use ofdb_core::gateways::notify::NotificationGateway;
 
 use super::*;
@@ -20,9 +19,9 @@ pub fn update_place(
         let connection = connections.exclusive()?;
         let mut prepare_err = None;
         connection
-            .transaction::<_, diesel::result::Error, _>(|| {
+            .transaction::<_, _>(|| {
                 match usecases::prepare_updated_place(
-                    &*connection,
+                    &connection.inner(),
                     id,
                     update_place,
                     created_by_email,
@@ -31,7 +30,7 @@ pub fn update_place(
                 ) {
                     Ok(storable) => {
                         let (place, ratings) =
-                            usecases::store_updated_place(&*connection, storable).map_err(
+                            usecases::store_updated_place(&connection.inner(), storable).map_err(
                                 |err| {
                                     warn!("Failed to store updated place: {}", err);
                                     diesel::result::Error::RollbackTransaction
@@ -49,7 +48,7 @@ pub fn update_place(
                 if let Some(err) = prepare_err {
                     err
                 } else {
-                    RepoError::from(err).into()
+                    from_diesel_err(err).into()
                 }
             })
     }?;
@@ -82,8 +81,8 @@ fn notify_place_updated(
     let (email_addresses, all_categories) = {
         let connection = connections.shared()?;
         let email_addresses =
-            usecases::email_addresses_by_coordinate(&*connection, place.location.pos)?;
-        let all_categories = connection.all_categories()?;
+            usecases::email_addresses_by_coordinate(&connection.inner(), place.location.pos)?;
+        let all_categories = connection.inner().all_categories()?;
         (email_addresses, all_categories)
     };
     notify.place_updated(&email_addresses, place, all_categories);

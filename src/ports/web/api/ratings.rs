@@ -20,7 +20,7 @@ pub fn load_rating(db: sqlite::Connections, ids: String) -> Result<Vec<json::Rat
     if ids.is_empty() {
         return Ok(Json(vec![]));
     }
-    let ratings_with_comments = usecases::load_ratings_with_comments(&*db.shared()?, &ids)?;
+    let ratings_with_comments = usecases::load_ratings_with_comments(&db.shared()?, &ids)?;
     let result = ratings_with_comments
         .into_iter()
         .map(|(r, cs)| {

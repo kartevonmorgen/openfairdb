@@ -1,10 +1,11 @@
 use super::*;
+use crate::core::error::Error;
 
 #[get("/places/clearance/count")]
 pub fn count_pending_clearances(db: sqlite::Connections, auth: Auth) -> Result<json::ResultCount> {
     let db = db.shared()?;
     let count =
-        usecases::clearance::place::count_pending_clearances(&*db, &auth.organization(&*db)?)?;
+        usecases::clearance::place::count_pending_clearances(&db, &auth.organization(&db)?)?;
     Ok(Json(json::ResultCount { count }))
 }
 
@@ -18,8 +19,8 @@ pub fn list_pending_clearances(
     let pagination = Pagination { offset, limit };
     let db = db.shared()?;
     let pending_clearances = usecases::clearance::place::list_pending_clearances(
-        &*db,
-        &auth.organization(&*db)?,
+        &db,
+        &auth.organization(&db)?,
         &pagination,
     )?;
     Ok(Json(
@@ -38,12 +39,9 @@ pub fn update_pending_clearances(
         .into_iter()
         .map(Into::into)
         .collect();
-    let org = auth.organization(&*db.shared()?)?;
-    let count = usecases::clearance::place::update_pending_clearances(
-        &*db.exclusive()?,
-        &org,
-        &clearances,
-    )?;
+    let org = auth.organization(&db.shared()?)?;
+    let count =
+        usecases::clearance::place::update_pending_clearances(&db.exclusive()?, &org, &clearances)?;
     Ok(Json(json::ResultCount {
         count: count as u64,
     }))
@@ -65,7 +63,7 @@ pub fn post_review(
     let reviewer_email = {
         let db = db.shared()?;
         // Only scouts and admins are entitled to review places
-        auth.user_with_min_role(&*db, Role::Scout)
+        auth.user_with_min_role(&db, Role::Scout)
             .map_err(|err| {
                 log::debug!("Unauthorized user: {}", err);
                 err

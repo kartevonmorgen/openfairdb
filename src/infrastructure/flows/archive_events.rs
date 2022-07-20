@@ -1,5 +1,3 @@
-use diesel::connection::Connection;
-
 use super::*;
 
 fn exec_archive_events(
@@ -10,8 +8,8 @@ fn exec_archive_events(
     let mut repo_err = None;
     let connection = connections.exclusive()?;
     Ok(connection
-        .transaction::<_, diesel::result::Error, _>(|| {
-            usecases::archive_events(&*connection, ids).map_err(|err| {
+        .transaction::<_, _>(|| {
+            usecases::archive_events(&connection.inner(), ids).map_err(|err| {
                 warn!("Failed to archive {} events: {}", ids.len(), err);
                 repo_err = Some(err);
                 diesel::result::Error::RollbackTransaction
@@ -21,7 +19,7 @@ fn exec_archive_events(
             if let Some(repo_err) = repo_err {
                 repo_err
             } else {
-                RepoError::from(err).into()
+                from_diesel_err(err).into()
             }
         })?)
 }

@@ -80,7 +80,7 @@ pub fn run() {
     let connections = sqlite::Connections::init(&cfg.db_url, cfg.db_connection_pool_size).unwrap();
 
     info!("Running embedded database migrations");
-    embedded_migrations::run(&*connections.exclusive().unwrap()).unwrap();
+    embedded_migrations::run(connections.exclusive().unwrap().sqlite_conn()).unwrap();
 
     let idx_dir = matches
         .value_of("idx-dir")
@@ -95,7 +95,7 @@ pub fn run() {
         _ => {
             if matches.is_present("fix-event-address-location") {
                 info!("Updating all event locations...");
-                update_event_locations(&mut *connections.exclusive().unwrap()).unwrap();
+                update_event_locations(&mut connections.exclusive().unwrap()).unwrap();
             }
             web::run(
                 connections,

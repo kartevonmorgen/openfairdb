@@ -1,5 +1,3 @@
-use diesel::connection::Connection;
-
 use super::*;
 
 pub fn archive_comments(
@@ -10,8 +8,8 @@ pub fn archive_comments(
     let mut repo_err = None;
     let connection = connections.exclusive()?;
     Ok(connection
-        .transaction::<_, diesel::result::Error, _>(|| {
-            usecases::archive_comments(&*connection, account_email, ids).map_err(|err| {
+        .transaction(|| {
+            usecases::archive_comments(&connection.inner(), account_email, ids).map_err(|err| {
                 warn!("Failed to archive {} comments: {}", ids.len(), err);
                 repo_err = Some(err);
                 diesel::result::Error::RollbackTransaction
@@ -21,7 +19,7 @@ pub fn archive_comments(
             if let Some(repo_err) = repo_err {
                 repo_err
             } else {
-                RepoError::from(err).into()
+                from_diesel_err(err).into()
             }
         })?)
 }

@@ -11,10 +11,9 @@ use rocket::{
 };
 
 use super::{super::guards::*, view};
-use crate::{
-    core::{prelude::*, usecases},
-    ports::web::sqlite::Connections,
-};
+
+use crate::{core::usecases, ports::web::sqlite::Connections};
+use ofdb_core::usecases::Error as ParameterError;
 
 #[derive(FromForm)]
 pub struct LoginCredentials<'r> {
@@ -52,13 +51,13 @@ pub fn post_login(
             Redirect::to(uri!(get_login)),
             "We are so sorry! An internal server error has occurred. Please try again later.",
         )),
-        Ok(db) => match usecases::login_with_email(&*db, &credentials.as_login()) {
+        Ok(db) => match usecases::login_with_email(&db, &credentials.as_login()) {
             Err(err) => {
                 let msg = match err {
-                    Error::Parameter(ParameterError::EmailNotConfirmed) => {
+                    ParameterError::EmailNotConfirmed => {
                         "You have to confirm your email address first."
                     }
-                    Error::Parameter(ParameterError::Credentials) => "Invalid email or password.",
+                    ParameterError::Credentials => "Invalid email or password.",
                     _ => panic!(),
                 };
                 Err(Flash::error(Redirect::to(uri!(get_login)), msg))

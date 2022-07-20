@@ -33,7 +33,7 @@ pub fn setup_with_cfg(
 ) -> (Client, sqlite::Connections, tantivy::SearchEngine) {
     let rocket_cfg = RocketCfg::debug_default();
     let connections = sqlite::Connections::init(":memory:", 1).unwrap();
-    embedded_migrations::run(&*connections.exclusive().unwrap()).unwrap();
+    embedded_migrations::run(connections.exclusive().unwrap().sqlite_conn()).unwrap();
     let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
     let rocket = super::rocket_instance(
         connections.clone(),
@@ -49,7 +49,7 @@ pub fn setup_with_cfg(
 pub fn register_user(pool: &sqlite::Connections, email: &str, pw: &str, confirmed: bool) {
     let db = pool.exclusive().unwrap();
     usecases::create_new_user(
-        &*db,
+        &db,
         usecases::NewUser {
             email: email.to_string(),
             password: pw.to_string(),
@@ -62,7 +62,7 @@ pub fn register_user(pool: &sqlite::Connections, email: &str, pw: &str, confirme
     };
     let token = email_nonce.encode_to_string();
     if confirmed {
-        usecases::confirm_email_address(&*db, &token).unwrap();
+        usecases::confirm_email_address(&db, &token).unwrap();
     }
 }
 

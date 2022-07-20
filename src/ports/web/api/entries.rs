@@ -5,7 +5,7 @@ use rocket::{self, get, post, put, FromForm, State};
 
 use super::{super::guards::*, JsonResult, Result};
 use crate::{
-    adapters::json,
+    adapters::json::{self, from_json},
     core::{prelude::*, usecases, util},
     infrastructure::{
         cfg::Cfg,
@@ -35,7 +35,7 @@ pub fn get_entry(
     let GetEntryQuery { ref org_tag } = query;
     let results = {
         let db = db.shared()?;
-        let places = usecases::load_places(&*db, &ids, *org_tag)?;
+        let places = usecases::load_places(&db, &ids, *org_tag)?;
         let mut results = Vec::with_capacity(places.len());
         for (place, _) in places.into_iter() {
             let r = db.load_ratings_of_place(place.id.as_ref())?;
@@ -173,11 +173,11 @@ pub fn post_entry(
     body: JsonResult<json::NewPlace>,
     cfg: &State<Cfg>,
 ) -> Result<String> {
-    let org = auth.organization(&*connections.shared()?).ok();
+    let org = auth.organization(&connections.shared()?).ok();
     if org.is_none() && auth.account_email().is_err() && cfg.protect_with_captcha {
         auth.has_captcha()?;
     }
-    let new_place = body?.into_inner().into();
+    let new_place = from_json::new_place(body?.into_inner());
     Ok(Json(
         flows::create_place(
             &connections,
@@ -203,7 +203,7 @@ pub fn put_entry(
     data: JsonResult<json::UpdatePlace>,
     cfg: &State<Cfg>,
 ) -> Result<String> {
-    let org = auth.organization(&*connections.shared()?).ok();
+    let org = auth.organization(&connections.shared()?).ok();
     if org.is_none() && auth.account_email().is_err() && cfg.protect_with_captcha {
         auth.has_captcha()?;
     }
@@ -213,7 +213,7 @@ pub fn put_entry(
             &mut search_engine,
             &*notify,
             id.into(),
-            data?.into_inner().into(),
+            from_json::update_place(data?.into_inner()),
             auth.account_email().ok(),
             org.as_ref(),
             cfg,

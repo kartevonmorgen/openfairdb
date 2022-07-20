@@ -1,10 +1,11 @@
 use std::io;
 
-use diesel::{r2d2, result::Error as DieselError};
+use diesel::r2d2;
 use diesel_migrations::RunMigrationsError;
 use thiserror::Error;
 
-use crate::core::error::{Error as BError, RepoError};
+use crate::core::error::Error as BError;
+use ofdb_core::repositories::Error as RepoError;
 
 impl From<RepoError> for AppError {
     fn from(err: RepoError) -> AppError {
@@ -12,12 +13,9 @@ impl From<RepoError> for AppError {
     }
 }
 
-impl From<DieselError> for RepoError {
-    fn from(err: DieselError) -> RepoError {
-        match err {
-            DieselError::NotFound => RepoError::NotFound,
-            _ => RepoError::Other(err.into()),
-        }
+impl From<ofdb_core::usecases::Error> for AppError {
+    fn from(err: ofdb_core::usecases::Error) -> AppError {
+        AppError::Business(err.into())
     }
 }
 
@@ -43,7 +41,7 @@ pub enum AppError {
     #[error(transparent)]
     R2d2(#[from] r2d2::PoolError),
     #[error(transparent)]
-    CsvIntoInner(#[from] ::csv::IntoInnerError<::csv::Writer<::std::vec::Vec<u8>>>),
+    CsvIntoInner(#[from] ::csv::IntoInnerError<::csv::Writer<Vec<u8>>>),
     #[error(transparent)]
     String(#[from] ::std::string::FromUtf8Error),
     #[error(transparent)]

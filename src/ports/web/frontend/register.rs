@@ -13,6 +13,7 @@ use crate::{
     core::{prelude::*, usecases},
     ports::web::{notify::*, sqlite::Connections},
 };
+use ofdb_core::usecases::Error as ParameterError;
 
 #[get("/register")]
 pub fn get_register(flash: Option<FlashMessage>) -> Markup {
@@ -33,15 +34,13 @@ pub fn post_register(
         //TODO: move into flow layer
         Ok(mut db) => {
             let credentials = credentials.into_inner();
-            match usecases::register_with_email(&mut *db, &credentials.as_login()) {
+            match usecases::register_with_email(&mut db, &credentials.as_login()) {
                 Err(err) => {
                     let msg = match err {
-                        Error::Parameter(ParameterError::UserExists) => {
+                        ParameterError::UserExists => {
                             "A user with your email address already exists."
                         }
-                        Error::Parameter(ParameterError::Credentials) => {
-                            "Invalid email or password."
-                        }
+                        ParameterError::Credentials => "Invalid email or password.",
                         _ => "We are so sorry, something went wrong :(",
                     };
                     Err(Flash::error(Redirect::to(uri!(get_register)), msg))
@@ -77,7 +76,7 @@ pub fn get_email_confirmation(
             Redirect::to(uri!(get_email_confirmation(token))),
             "We are so sorry! An internal server error has occurred. Please try again later.",
         )),
-        Ok(db) => match usecases::confirm_email_address(&*db, token) {
+        Ok(db) => match usecases::confirm_email_address(&db, token) {
             Ok(_) => Ok(Flash::success(
                 Redirect::to(uri!(super::login::get_login())),
                 "Your email address is now confirmed :)",

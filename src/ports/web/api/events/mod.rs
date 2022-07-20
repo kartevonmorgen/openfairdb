@@ -8,6 +8,7 @@ use rocket::{
 };
 
 use super::*;
+use crate::core::error::Error;
 use crate::{
     adapters,
     core::{
@@ -66,7 +67,7 @@ pub fn post_event_with_token(
     auth: Auth,
     e: JsonResult<usecases::NewEvent>,
 ) -> Result<String> {
-    let org = auth.organization(&*connections.shared()?)?;
+    let org = auth.organization(&connections.shared()?)?;
     let mut e = e?.into_inner();
     check_and_set_address_location(&mut e);
     let event = flows::create_event(
@@ -98,7 +99,7 @@ pub fn post_event(mut _db: sqlite::Connections, _e: JsonResult<usecases::NewEven
 
 #[get("/events/<id>")]
 pub fn get_event(db: sqlite::Connections, id: String) -> Result<json::Event> {
-    let mut ev = usecases::get_event(&*db.shared()?, &id)?;
+    let mut ev = usecases::get_event(&db.shared()?, &id)?;
     ev.created_by = None; // don't show creators email to unregistered users
     Ok(Json(ev.into()))
 }
@@ -123,7 +124,7 @@ pub fn put_event_with_token(
     id: &str,
     e: JsonResult<usecases::NewEvent>,
 ) -> Result<()> {
-    let org = auth.organization(&*connections.shared()?)?;
+    let org = auth.organization(&connections.shared()?)?;
     let mut e = e?.into_inner();
     check_and_set_address_location(&mut e);
     flows::update_event(
@@ -142,8 +143,16 @@ pub struct EventQueryContext<'r> {
     errors: form::Errors<'r>,
 }
 
+pub struct EventQuery(usecases::EventQuery);
+
+impl EventQuery {
+    pub fn into_inner(self) -> usecases::EventQuery {
+        self.0
+    }
+}
+
 #[rocket::async_trait]
-impl<'r> FromForm<'r> for usecases::EventQuery {
+impl<'r> FromForm<'r> for EventQuery {
     type Context = EventQueryContext<'r>;
 
     // TODO: use Options
@@ -280,7 +289,7 @@ impl<'r> FromForm<'r> for usecases::EventQuery {
 
     fn finalize(this: Self::Context) -> form::Result<'r, Self> {
         if this.errors.is_empty() {
-            Ok(this.query)
+            Ok(EventQuery(this.query))
         } else {
             Err(this.errors)
         }
@@ -310,10 +319,10 @@ pub fn get_events_with_token(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     auth: Auth,
-    query: usecases::EventQuery,
+    query: EventQuery,
 ) -> Result<Vec<json::Event>> {
     let db = connections.shared()?;
-    let org = match auth.organization(&*db) {
+    let org = match auth.organization(&db) {
         Ok(org) => org,
         Err(AppError::Business(Error::Parameter(ParameterError::Unauthorized))) => {
             drop(db);
@@ -321,7 +330,7 @@ pub fn get_events_with_token(
         }
         Err(e) => return Err(e.into()),
     };
-    let events = usecases::query_events(&*db, &search_engine, query)?;
+    let events = usecases::query_events(&db, &search_engine, query.into_inner())?;
     // Release the database connection asap
     drop(db);
 
@@ -346,14 +355,15 @@ pub fn get_events_with_token(
 pub fn get_events_chronologically(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
-    query: usecases::EventQuery,
+    query: EventQuery,
 ) -> Result<Vec<json::Event>> {
+    let query = query.into_inner();
     if query.created_by.is_some() {
         return Err(Error::Parameter(ParameterError::Unauthorized).into());
     }
 
     let db = connections.shared()?;
-    let events = usecases::query_events(&*db, &search_engine, query)?;
+    let events = usecases::query_events(&db, &search_engine, query)?;
     // Release the database connection asap
     drop(db);
 
@@ -372,17 +382,18 @@ pub fn csv_export(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     auth: Auth,
-    query: usecases::EventQuery,
+    query: EventQuery,
 ) -> result::Result<(ContentType, String), AppError> {
+    let query = query.into_inner();
     let db = connections.shared()?;
 
-    let moderated_tags = if let Ok(org) = auth.organization(&*db) {
+    let moderated_tags = if let Ok(org) = auth.organization(&db) {
         org.moderated_tags
     } else {
         vec![]
     };
 
-    let user = auth.user_with_min_role(&*db, Role::Scout)?;
+    let user = auth.user_with_min_role(&db, Role::Scout)?;
 
     let limit = if let Some(limit) = query.limit {
         // Limited
@@ -395,7 +406,7 @@ pub fn csv_export(
         limit: Some(limit),
         ..query
     };
-    let events = usecases::query_events(&*db, &search_engine, query)?;
+    let events = usecases::query_events(&db, &search_engine, query)?;
     // Release the database connection asap
     drop(db);
 
@@ -437,7 +448,7 @@ pub fn post_events_archive(
     let archived_by_email = {
         let db = db.shared()?;
         // Only scouts and admins are entitled to review events
-        auth.user_with_min_role(&*db, Role::Scout)?.email
+        auth.user_with_min_role(&db, Role::Scout)?.email
     };
     let update_count = flows::archive_events(&db, &mut search_engine, &ids, &archived_by_email)?;
     if update_count < ids.len() {
@@ -458,8 +469,8 @@ pub fn delete_event(mut _db: sqlite::Connections, _id: &str) -> HttpStatus {
 
 #[delete("/events/<id>")]
 pub fn delete_event_with_token(db: sqlite::Connections, auth: Auth, id: &str) -> StatusResult {
-    let org = auth.organization(&*db.shared()?)?;
-    usecases::delete_event(&mut *db.exclusive()?, &org.api_token, id)?;
+    let org = auth.organization(&db.shared()?)?;
+    usecases::delete_event(&mut db.exclusive()?, &org.api_token, id)?;
     // TODO: Replace with HttpStatus::NoContent
     Ok(HttpStatus::Ok)
 }

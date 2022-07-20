@@ -1,4 +1,3 @@
-use diesel::connection::Connection;
 use ofdb_core::gateways::notify::NotificationGateway;
 
 use super::*;
@@ -8,13 +7,15 @@ fn refresh_user_token(connections: &sqlite::Connections, user: &User) -> Result<
     let mut rollback_err: Option<Error> = None;
     let connection = connections.exclusive()?;
     Ok(connection
-        .transaction::<_, diesel::result::Error, _>(|| {
-            usecases::refresh_user_token(&*connection, user.email.to_owned()).map_err(|err| {
-                rollback_err = Some(err);
-                diesel::result::Error::RollbackTransaction
-            })
+        .transaction::<_, _>(|| {
+            usecases::refresh_user_token(&connection.inner(), user.email.to_owned()).map_err(
+                |err| {
+                    rollback_err = Some(Error::Parameter(err));
+                    diesel::result::Error::RollbackTransaction
+                },
+            )
         })
-        .map_err(|err| rollback_err.unwrap_or_else(|| Error::from(RepoError::from(err))))?)
+        .map_err(|err| rollback_err.unwrap_or_else(|| Error::Repo(from_diesel_err(err))))?)
 }
 
 pub fn reset_password_request(
@@ -25,7 +26,7 @@ pub fn reset_password_request(
     // The user is loaded before the following transaction that
     // requires exclusive access to the database connection for
     // writing.
-    let user = connections.shared()?.get_user_by_email(email)?;
+    let user = connections.shared()?.inner().get_user_by_email(email)?;
     let email_nonce = refresh_user_token(connections, &user)?;
     notify.user_reset_password_requested(&email_nonce);
     Ok(email_nonce)
@@ -42,17 +43,17 @@ pub fn reset_password_with_email_nonce(
     // following transaction for updating the user fails!
     let mut rollback_err: Option<Error> = None;
     let token = connection
-        .transaction::<_, diesel::result::Error, _>(|| {
-            usecases::consume_user_token(&*connection, &email_nonce).map_err(|err| {
+        .transaction::<_, _>(|| {
+            usecases::consume_user_token(&connection.inner(), &email_nonce).map_err(|err| {
                 warn!(
                     "Missing or invalid token to reset password for user '{}': {}",
                     email_nonce.email, err
                 );
-                rollback_err = Some(err);
+                rollback_err = Some(Error::Parameter(err));
                 diesel::result::Error::RollbackTransaction
             })
         })
-        .map_err(|err| rollback_err.unwrap_or_else(|| Error::from(RepoError::from(err))))?;
+        .map_err(|err| rollback_err.unwrap_or_else(|| Error::from(from_diesel_err(err))))?;
 
     // The consumed nonce must match the request parameters
     debug_assert!(token.email_nonce == email_nonce);
@@ -60,9 +61,9 @@ pub fn reset_password_with_email_nonce(
     // Verify and update the user entity
     let mut rollback_err: Option<Error> = None;
     connection
-        .transaction::<_, diesel::result::Error, _>(|| {
+        .transaction::<_, _>(|| {
             usecases::confirm_email_and_reset_password(
-                &*connection,
+                &connection.inner(),
                 &token.email_nonce.email,
                 new_password,
             )
@@ -71,11 +72,11 @@ pub fn reset_password_with_email_nonce(
                     "Failed to verify e-mail ({}) and reset password: {}",
                     token.email_nonce.email, err
                 );
-                rollback_err = Some(err);
+                rollback_err = Some(Error::Parameter(err));
                 diesel::result::Error::RollbackTransaction
             })
         })
-        .map_err(|err| rollback_err.unwrap_or_else(|| Error::from(RepoError::from(err))))?;
+        .map_err(|err| rollback_err.unwrap_or_else(|| Error::from(from_diesel_err(err))))?;
     Ok(())
 }
 
@@ -129,12 +130,12 @@ mod tests {
 
         // Verify that password is invalid for both users
         debug_assert!(usecases::login_with_email(
-            &*fixture.db_connections.shared().unwrap(),
+            &fixture.db_connections.shared().unwrap(),
             &credentials1
         )
         .is_err());
         debug_assert!(usecases::login_with_email(
-            &*fixture.db_connections.shared().unwrap(),
+            &fixture.db_connections.shared().unwrap(),
             &credentials2
         )
         .is_err());
@@ -164,12 +165,12 @@ mod tests {
 
         // Check that user 1 is able to login with the new password
         debug_assert!(usecases::login_with_email(
-            &*fixture.db_connections.shared().unwrap(),
+            &fixture.db_connections.shared().unwrap(),
             &credentials1
         )
         .is_ok());
         debug_assert!(usecases::login_with_email(
-            &*fixture.db_connections.shared().unwrap(),
+            &fixture.db_connections.shared().unwrap(),
             &credentials2
         )
         .is_err());
@@ -190,12 +191,12 @@ mod tests {
 
         // Check that both users are able to login with their new passwords
         debug_assert!(usecases::login_with_email(
-            &*fixture.db_connections.shared().unwrap(),
+            &fixture.db_connections.shared().unwrap(),
             &credentials1
         )
         .is_ok());
         debug_assert!(usecases::login_with_email(
-            &*fixture.db_connections.shared().unwrap(),
+            &fixture.db_connections.shared().unwrap(),
             &credentials2
         )
         .is_ok());

@@ -1,16 +1,16 @@
-mod connection;
 mod models;
+mod repo_impl;
+mod repo_wrapper;
 mod schema;
 mod util;
-
-use std::{
-    ops::{Deref, DerefMut},
-    sync::Arc,
-};
 
 use anyhow::Result as Fallible;
 use diesel::{r2d2, sqlite::SqliteConnection};
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::{ops::Deref, sync::Arc};
+
+pub use repo_impl::from_diesel_err;
+pub use repo_wrapper::*;
 
 pub type Connection = SqliteConnection;
 
@@ -36,6 +36,9 @@ impl<'a> DbReadOnly<'a> {
             _locked_pool: locked_pool,
             conn,
         })
+    }
+    pub fn inner(&self) -> repo_impl::Connection<'_> {
+        repo_impl::Connection::new(&self.conn)
     }
 }
 
@@ -64,19 +67,18 @@ impl<'a> DbReadWrite<'a> {
             conn,
         })
     }
-}
-
-impl<'a> Deref for DbReadWrite<'a> {
-    type Target = Connection;
-
-    fn deref(&self) -> &Self::Target {
-        &self.conn
+    pub fn transaction<T, F>(&self, f: F) -> std::result::Result<T, diesel::result::Error>
+    where
+        F: FnOnce() -> std::result::Result<T, diesel::result::Error>,
+    {
+        use diesel::Connection;
+        (&*self.conn).transaction(f)
     }
-}
-
-impl<'a> DerefMut for DbReadWrite<'a> {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut *self.conn
+    pub fn inner(&self) -> repo_impl::Connection<'_> {
+        repo_impl::Connection::new(&self.conn)
+    }
+    pub fn sqlite_conn(&self) -> &Connection {
+        &self.conn
     }
 }
 

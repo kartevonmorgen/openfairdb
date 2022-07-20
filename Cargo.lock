@@ -1584,11 +1584,16 @@ dependencies = [
 name = "ofdb-core"
 version = "0.0.0"
 dependencies = [
+ "anyhow",
  "criterion",
  "fast_chemail",
  "lazy_static",
+ "log",
+ "ofdb-boundary",
  "ofdb-entities",
+ "passwords",
  "regex",
+ "serde",
  "thiserror",
  "time",
  "url",

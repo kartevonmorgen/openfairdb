@@ -3,13 +3,14 @@ use time::{format_description::FormatItem, macros::format_description, Date};
 use super::models::*;
 use crate::core::{
     entities as e,
-    prelude::{ParameterError, Result},
     util::{
         geo::{MapBbox, MapPoint},
         nonce::Nonce,
         time::Timestamp,
     },
 };
+use ofdb_core::repositories as repo;
+use ofdb_core::usecases::Error as ParameterError;
 
 pub(crate) fn load_url(url: String) -> Option<e::Url> {
     match url.parse() {
@@ -52,9 +53,7 @@ pub(crate) fn registration_type_into_i16(x: e::RegistrationType) -> i16 {
 
 const DATE_FORMAT: &[FormatItem] = format_description!("[year]-[month]-[day]");
 
-pub(crate) fn parse_date(
-    date_string: String,
-) -> std::result::Result<time::Date, crate::core::error::RepoError> {
+pub(crate) fn parse_date(date_string: String) -> std::result::Result<time::Date, repo::Error> {
     let date = Date::parse(&date_string, &DATE_FORMAT).map_err(anyhow::Error::from)?;
     Ok(date)
 }
@@ -327,7 +326,7 @@ pub(crate) fn rating_context_to_string(context: e::RatingContext) -> String {
     .into()
 }
 
-fn rating_context_from_str(context: &str) -> Result<e::RatingContext> {
+fn rating_context_from_str(context: &str) -> Result<e::RatingContext, ParameterError> {
     Ok(match context {
         "diversity" => e::RatingContext::Diversity,
         "renewable" => e::RatingContext::Renewable,
@@ -336,7 +335,7 @@ fn rating_context_from_str(context: &str) -> Result<e::RatingContext> {
         "transparency" => e::RatingContext::Transparency,
         "solidarity" => e::RatingContext::Solidarity,
         _ => {
-            return Err(ParameterError::RatingContext(context.into()).into());
+            return Err(ParameterError::RatingContext(context.into()));
         }
     })
 }

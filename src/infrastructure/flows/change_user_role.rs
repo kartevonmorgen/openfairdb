@@ -1,5 +1,3 @@
-use diesel::connection::Connection;
-
 use super::*;
 
 pub fn change_user_role(
@@ -11,20 +9,19 @@ pub fn change_user_role(
     let mut repo_err = None;
     let connection = connections.exclusive()?;
     Ok(connection
-        .transaction::<_, diesel::result::Error, _>(|| {
-            usecases::change_user_role(&*connection, account_email, user_email, role).map_err(
-                |err| {
+        .transaction::<_, _>(|| {
+            usecases::change_user_role(&connection.inner(), account_email, user_email, role)
+                .map_err(|err| {
                     warn!("Failed to change role for email {}: {}", user_email, err);
                     repo_err = Some(err);
                     diesel::result::Error::RollbackTransaction
-                },
-            )
+                })
         })
         .map_err(|err| {
             if let Some(repo_err) = repo_err {
                 repo_err
             } else {
-                RepoError::from(err).into()
+                from_diesel_err(err).into()
             }
         })?)
 }

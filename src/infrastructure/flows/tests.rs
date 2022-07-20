@@ -1,5 +1,7 @@
 pub mod prelude {
-    pub use crate::core::{prelude::*, usecases};
+    pub use crate::core::prelude::*;
+    pub use ofdb_core::repositories::Error as RepoError;
+    pub use ofdb_core::usecases;
 
     pub mod sqlite {
         pub use super::super::super::sqlite::*;
@@ -28,7 +30,7 @@ pub mod prelude {
     impl BackendFixture {
         pub fn new() -> Self {
             let db_connections = sqlite::Connections::init(":memory:", 1).unwrap();
-            embedded_migrations::run(&*db_connections.exclusive().unwrap()).unwrap();
+            embedded_migrations::run(db_connections.exclusive().unwrap().sqlite_conn()).unwrap();
             let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
             Self {
                 db_connections,
@@ -56,7 +58,7 @@ pub mod prelude {
             let email = {
                 let db = self.db_connections.exclusive().unwrap();
                 let email = new_user.email.clone();
-                usecases::create_new_user(&*db, new_user).unwrap();
+                usecases::create_new_user(&db, new_user).unwrap();
                 email
             };
             if let Some(role) = role {

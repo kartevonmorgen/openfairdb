@@ -5,8 +5,9 @@ use rocket::{self, get, post, FromForm};
 
 use super::{JsonResult, Result};
 use crate::{
-    adapters::json,
+    adapters::json::{self, from_json},
     core::{
+        error::Error,
         prelude::*,
         usecases,
         util::{self, geo},
@@ -16,6 +17,7 @@ use crate::{
         error::AppError,
     },
 };
+use ofdb_core::usecases::Error as ParameterError;
 
 #[derive(FromForm, Clone)]
 pub struct SearchQuery {
@@ -130,11 +132,17 @@ pub fn get_search(
     };
 
     let (visible, invisible) =
-        usecases::search(&*connections.shared()?, &search_engine, req, limit)?;
+        usecases::search(&connections.shared()?, &search_engine, req, limit)?;
 
-    let visible: Vec<json::PlaceSearchResult> = visible.into_iter().map(Into::into).collect();
+    let visible: Vec<json::PlaceSearchResult> = visible
+        .into_iter()
+        .map(json::place_serach_result_from_indexed_place)
+        .collect();
 
-    let invisible: Vec<json::PlaceSearchResult> = invisible.into_iter().map(Into::into).collect();
+    let invisible: Vec<json::PlaceSearchResult> = invisible
+        .into_iter()
+        .map(json::place_serach_result_from_indexed_place)
+        .collect();
 
     Ok(Json(json::SearchResponse { visible, invisible }))
 }
@@ -144,7 +152,12 @@ pub fn post_search_duplicates(
     search_engine: tantivy::SearchEngine,
     body: JsonResult<ofdb_boundary::NewPlace>,
 ) -> Result<Vec<json::PlaceSearchResult>> {
-    let new_place = usecases::NewPlace::from(body?.into_inner());
+    let new_place = from_json::new_place(body?.into_inner());
     let duplicate_places = usecases::search_duplicates(&search_engine, &new_place)?;
-    Ok(Json(duplicate_places.into_iter().map(Into::into).collect()))
+    Ok(Json(
+        duplicate_places
+            .into_iter()
+            .map(json::place_serach_result_from_indexed_place)
+            .collect(),
+    ))
 }

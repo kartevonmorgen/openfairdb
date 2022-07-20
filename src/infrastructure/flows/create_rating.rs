@@ -1,5 +1,3 @@
-use diesel::connection::Connection;
-
 use super::*;
 
 pub fn create_rating(
@@ -12,16 +10,18 @@ pub fn create_rating(
         let connection = connections.exclusive()?;
         let mut prepare_err = None;
         connection
-            .transaction::<_, diesel::result::Error, _>(|| {
-                match usecases::prepare_new_rating(&*connection, rate_entry) {
+            .transaction::<_, _>(|| {
+                match usecases::prepare_new_rating(&connection.inner(), rate_entry) {
                     Ok(storable) => {
                         let rating_id = storable.rating_id().to_owned();
                         let comment_id = storable.comment_id().to_owned();
                         let (place, status, ratings) =
-                            usecases::store_new_rating(&*connection, storable).map_err(|err| {
-                                warn!("Failed to store new rating for entry: {}", err);
-                                diesel::result::Error::RollbackTransaction
-                            })?;
+                            usecases::store_new_rating(&connection.inner(), storable).map_err(
+                                |err| {
+                                    warn!("Failed to store new rating for entry: {}", err);
+                                    diesel::result::Error::RollbackTransaction
+                                },
+                            )?;
                         Ok((rating_id, comment_id, place, status, ratings))
                     }
                     Err(err) => {
@@ -34,7 +34,7 @@ pub fn create_rating(
                 if let Some(err) = prepare_err {
                     err
                 } else {
-                    RepoError::from(err).into()
+                    from_diesel_err(err).into()
                 }
             })
     }?;

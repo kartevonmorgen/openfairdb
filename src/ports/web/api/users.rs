@@ -9,7 +9,7 @@ pub fn post_user(
     let new_user = u?.into_inner();
     let user = {
         let db = db.exclusive()?;
-        usecases::create_new_user(&*db, new_user.clone())?;
+        usecases::create_new_user(&db, new_user.clone())?;
         db.get_user_by_email(&new_user.email)?
     };
     n.user_registered_kvm(&user);
@@ -48,19 +48,19 @@ pub fn post_reset_password(
 
 #[delete("/users/<email>")]
 pub fn delete_user(db: sqlite::Connections, account: Account, email: String) -> Result<()> {
-    usecases::delete_user(&*db.exclusive()?, account.email(), &email)?;
+    usecases::delete_user(&db.exclusive()?, account.email(), &email)?;
     Ok(Json(()))
 }
 
 #[get("/users/current", format = "application/json")]
 pub fn get_current_user(db: sqlite::Connections, account: Account) -> Result<json::User> {
-    let user = usecases::get_user(&*db.shared()?, account.email(), account.email())?;
+    let user = usecases::get_user(&db.shared()?, account.email(), account.email())?;
     Ok(Json(user.into()))
 }
 
 #[get("/users/<email>", format = "application/json", rank = 2)]
 pub fn get_user(db: sqlite::Connections, account: Account, email: String) -> Result<json::User> {
-    let user = usecases::get_user(&*db.shared()?, account.email(), &email)?;
+    let user = usecases::get_user(&db.shared()?, account.email(), &email)?;
     Ok(Json(user.into()))
 }
 

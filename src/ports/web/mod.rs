@@ -77,17 +77,17 @@ pub(crate) fn rocket_instance(
     cfg: Cfg,
 ) -> Rocket<rocket::Build> {
     info!("Indexing all places...");
-    index_all_places(&*connections.exclusive().unwrap(), &mut search_engine).unwrap();
+    index_all_places(&connections.exclusive().unwrap(), &mut search_engine).unwrap();
 
     info!("Indexing all events...");
-    index_all_events_chronologically(&*connections.exclusive().unwrap(), &mut search_engine)
+    index_all_events_chronologically(&connections.exclusive().unwrap(), &mut search_engine)
         .unwrap();
 
     info!("Deleting expired user e-mail tokens...");
-    usecases::delete_expired_user_tokens(&*connections.exclusive().unwrap()).unwrap();
+    usecases::delete_expired_user_tokens(&connections.exclusive().unwrap()).unwrap();
 
     info!("Caching most popular tags...");
-    let tags_cache = PopularTagsCache::new_from_db(&*connections.shared().unwrap()).unwrap();
+    let tags_cache = PopularTagsCache::new_from_db(&connections.shared().unwrap()).unwrap();
 
     let captcha_cache = api::captcha::CaptchaCache::new();
     let jwt_state = jwt::JwtState::new();

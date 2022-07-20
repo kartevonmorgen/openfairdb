@@ -1,5 +1,3 @@
-use diesel::connection::Connection;
-
 use super::*;
 
 fn exec_review_places(
@@ -10,8 +8,8 @@ fn exec_review_places(
     let mut repo_err = None;
     let connection = connections.exclusive()?;
     Ok(connection
-        .transaction::<_, diesel::result::Error, _>(|| {
-            usecases::review_places(&*connection, ids, review).map_err(|err| {
+        .transaction::<_, _>(|| {
+            usecases::review_places(&connection.inner(), ids, review).map_err(|err| {
                 warn!("Failed to review {} places: {}", ids.len(), err);
                 repo_err = Some(err);
                 diesel::result::Error::RollbackTransaction
@@ -21,7 +19,7 @@ fn exec_review_places(
             if let Some(repo_err) = repo_err {
                 repo_err
             } else {
-                RepoError::from(err).into()
+                from_diesel_err(err).into()
             }
         })?)
 }
@@ -32,9 +30,9 @@ fn post_review_places(
     ids: &[&str],
 ) -> Result<()> {
     let db = connections.shared()?;
-    let places_with_status = db.get_places(ids)?;
+    let places_with_status = db.inner().get_places(ids)?;
     for (place, status) in places_with_status {
-        let ratings = match db.load_ratings_of_place(place.id.as_str()) {
+        let ratings = match db.inner().load_ratings_of_place(place.id.as_str()) {
             Ok(ratings) => ratings,
             Err(err) => {
                 log::error!(

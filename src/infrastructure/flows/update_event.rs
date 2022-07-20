@@ -1,8 +1,6 @@
-use diesel::Connection;
 use ofdb_core::gateways::notify::NotificationGateway;
 
 use super::*;
-use crate::core::error::RepoError;
 
 pub fn update_event(
     connections: &sqlite::Connections,
@@ -17,20 +15,19 @@ pub fn update_event(
         let connection = connections.exclusive()?;
         let mut prepare_err = None;
         connection
-            .transaction::<_, diesel::result::Error, _>(|| {
+            .transaction::<_, _>(|| {
                 match usecases::import_new_event(
-                    &*connection,
+                    &connection.inner(),
                     token,
                     new_event,
                     usecases::NewEventMode::Update(id.as_str()),
                 ) {
                     Ok(storable) => {
-                        let event = usecases::store_updated_event(&*connection, storable).map_err(
-                            |err| {
+                        let event = usecases::store_updated_event(&connection.inner(), storable)
+                            .map_err(|err| {
                                 warn!("Failed to store updated event: {}", err);
                                 diesel::result::Error::RollbackTransaction
-                            },
-                        )?;
+                            })?;
                         Ok(event)
                     }
                     Err(err) => {
@@ -43,7 +40,7 @@ pub fn update_event(
                 if let Some(err) = prepare_err {
                     err
                 } else {
-                    RepoError::from(err).into()
+                    from_diesel_err(err).into()
                 }
             })
     }?;
@@ -74,7 +71,7 @@ fn notify_event_updated(
     if let Some(ref location) = event.location {
         let email_addresses = {
             let conn = connections.shared()?;
-            usecases::email_addresses_by_coordinate(&*conn, location.pos)?
+            usecases::email_addresses_by_coordinate(&conn.inner(), location.pos)?
         };
         notify.event_updated(&email_addresses, event);
     }
