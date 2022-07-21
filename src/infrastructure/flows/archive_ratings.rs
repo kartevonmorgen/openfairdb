@@ -10,7 +10,7 @@ pub fn exec_archive_ratings(
     let connection = connections.exclusive()?;
     Ok(connection
         .transaction::<_, _>(|| {
-            usecases::archive_ratings(&connection.inner(), account_email, ids).map_err(|err| {
+            usecases::archive_ratings(&connection, account_email, ids).map_err(|err| {
                 warn!("Failed to archive {} ratings: {}", ids.len(), err);
                 repo_err = Some(err);
                 diesel::result::Error::RollbackTransaction
@@ -31,9 +31,9 @@ pub fn post_archive_ratings(
     ids: &[&str],
 ) -> Result<()> {
     let connection = connections.shared()?;
-    let place_ids = connection.inner().load_place_ids_of_ratings(ids)?;
+    let place_ids = connection.load_place_ids_of_ratings(ids)?;
     for place_id in place_ids {
-        let (place, status) = match connection.inner().get_place(&place_id) {
+        let (place, status) = match connection.get_place(&place_id) {
             Ok(place) => place,
             Err(err) => {
                 error!(
@@ -44,7 +44,7 @@ pub fn post_archive_ratings(
                 continue;
             }
         };
-        let ratings = match connection.inner().load_ratings_of_place(place.id.as_ref()) {
+        let ratings = match connection.load_ratings_of_place(place.id.as_ref()) {
             Ok(ratings) => ratings,
             Err(err) => {
                 error!(

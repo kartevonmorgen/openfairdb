@@ -19,20 +19,18 @@ pub fn create_place(
         connection
             .transaction::<_, _>(|| {
                 match usecases::prepare_new_place(
-                    &connection.inner(),
+                    &connection,
                     new_place,
                     created_by_email,
                     created_by_org,
                     &cfg.accepted_licenses,
                 ) {
                     Ok(storable) => {
-                        let (place, ratings) =
-                            usecases::store_new_place(&connection.inner(), storable).map_err(
-                                |err| {
-                                    warn!("Failed to store newly created place: {}", err);
-                                    diesel::result::Error::RollbackTransaction
-                                },
-                            )?;
+                        let (place, ratings) = usecases::store_new_place(&connection, storable)
+                            .map_err(|err| {
+                                warn!("Failed to store newly created place: {}", err);
+                                diesel::result::Error::RollbackTransaction
+                            })?;
                         Ok((place, ratings))
                     }
                     Err(err) => {
@@ -79,8 +77,8 @@ fn notify_place_added(
     let (email_addresses, all_categories) = {
         let connection = connections.shared()?;
         let email_addresses =
-            usecases::email_addresses_by_coordinate(&connection.inner(), place.location.pos)?;
-        let all_categories = connection.inner().all_categories()?;
+            usecases::email_addresses_by_coordinate(&connection, place.location.pos)?;
+        let all_categories = connection.all_categories()?;
         (email_addresses, all_categories)
     };
     notify.place_added(&email_addresses, place, all_categories);

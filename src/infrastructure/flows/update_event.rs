@@ -17,17 +17,18 @@ pub fn update_event(
         connection
             .transaction::<_, _>(|| {
                 match usecases::import_new_event(
-                    &connection.inner(),
+                    &connection,
                     token,
                     new_event,
                     usecases::NewEventMode::Update(id.as_str()),
                 ) {
                     Ok(storable) => {
-                        let event = usecases::store_updated_event(&connection.inner(), storable)
-                            .map_err(|err| {
+                        let event = usecases::store_updated_event(&connection, storable).map_err(
+                            |err| {
                                 warn!("Failed to store updated event: {}", err);
                                 diesel::result::Error::RollbackTransaction
-                            })?;
+                            },
+                        )?;
                         Ok(event)
                     }
                     Err(err) => {
@@ -71,7 +72,7 @@ fn notify_event_updated(
     if let Some(ref location) = event.location {
         let email_addresses = {
             let conn = connections.shared()?;
-            usecases::email_addresses_by_coordinate(&conn.inner(), location.pos)?
+            usecases::email_addresses_by_coordinate(&conn, location.pos)?
         };
         notify.event_updated(&email_addresses, event);
     }

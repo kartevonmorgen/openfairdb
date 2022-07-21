@@ -8,12 +8,10 @@ fn refresh_user_token(connections: &sqlite::Connections, user: &User) -> Result<
     let connection = connections.exclusive()?;
     Ok(connection
         .transaction::<_, _>(|| {
-            usecases::refresh_user_token(&connection.inner(), user.email.to_owned()).map_err(
-                |err| {
-                    rollback_err = Some(Error::Parameter(err));
-                    diesel::result::Error::RollbackTransaction
-                },
-            )
+            usecases::refresh_user_token(&connection, user.email.to_owned()).map_err(|err| {
+                rollback_err = Some(Error::Parameter(err));
+                diesel::result::Error::RollbackTransaction
+            })
         })
         .map_err(|err| rollback_err.unwrap_or_else(|| Error::Repo(from_diesel_err(err))))?)
 }
@@ -26,7 +24,7 @@ pub fn reset_password_request(
     // The user is loaded before the following transaction that
     // requires exclusive access to the database connection for
     // writing.
-    let user = connections.shared()?.inner().get_user_by_email(email)?;
+    let user = connections.shared()?.get_user_by_email(email)?;
     let email_nonce = refresh_user_token(connections, &user)?;
     notify.user_reset_password_requested(&email_nonce);
     Ok(email_nonce)
@@ -44,7 +42,7 @@ pub fn reset_password_with_email_nonce(
     let mut rollback_err: Option<Error> = None;
     let token = connection
         .transaction::<_, _>(|| {
-            usecases::consume_user_token(&connection.inner(), &email_nonce).map_err(|err| {
+            usecases::consume_user_token(&connection, &email_nonce).map_err(|err| {
                 warn!(
                     "Missing or invalid token to reset password for user '{}': {}",
                     email_nonce.email, err
@@ -63,7 +61,7 @@ pub fn reset_password_with_email_nonce(
     connection
         .transaction::<_, _>(|| {
             usecases::confirm_email_and_reset_password(
-                &connection.inner(),
+                &connection,
                 &token.email_nonce.email,
                 new_password,
             )

@@ -16,17 +16,18 @@ pub fn create_event(
         connection
             .transaction::<_, _>(|| {
                 match usecases::import_new_event(
-                    &connection.inner(),
+                    &connection,
                     token,
                     new_event,
                     usecases::NewEventMode::Create,
                 ) {
                     Ok(storable) => {
-                        let event = usecases::store_created_event(&connection.inner(), storable)
-                            .map_err(|err| {
+                        let event = usecases::store_created_event(&connection, storable).map_err(
+                            |err| {
                                 warn!("Failed to store newly created event: {}", err);
                                 diesel::result::Error::RollbackTransaction
-                            })?;
+                            },
+                        )?;
                         Ok(event)
                     }
                     Err(err) => {
@@ -70,7 +71,7 @@ fn notify_event_created(
     if let Some(ref location) = event.location {
         let email_addresses = {
             let conn = connections.shared()?;
-            usecases::email_addresses_by_coordinate(&conn.inner(), location.pos)?
+            usecases::email_addresses_by_coordinate(&conn, location.pos)?
         };
         notify.event_created(&email_addresses, event);
     }

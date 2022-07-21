@@ -37,7 +37,7 @@ impl<'a> DbReadOnly<'a> {
             conn,
         })
     }
-    pub fn inner(&self) -> repo_impl::Connection<'_> {
+    fn inner(&self) -> repo_impl::Connection<'_> {
         repo_impl::Connection::new(&self.conn)
     }
 }
