@@ -49,24 +49,16 @@ setup:
 
 # Upgrade (and update) dependencies
 upgrade:
-    cargo update
     cargo upgrade --workspace \
-        --exclude ofdb-boundary \
-        --exclude ofdb-core \
-        --exclude ofdb-entities \
-        --exclude ofdb-gateways \
-        --exclude libsqlite3-sys \
-        --exclude time
+        --exclude libsqlite3-sys
+    cargo update
+    cargo upgrade --workspace --to-lockfile \
+        --exclude libsqlite3-sys
     cargo update
     cd ofdb-app-clearance \
-        && cargo update \
         && cargo upgrade \
-            --exclude ofdb-boundary \
-            --exclude ofdb-core \
-            --exclude ofdb-entities \
-            --exclude time \
-        && cargo update
-    #cargo minimal-versions check --workspace
+        && cargo update \
+        && cargo upgrade --to-lockfile
 
 # Run pre-commit hooks
 pre-commit:
