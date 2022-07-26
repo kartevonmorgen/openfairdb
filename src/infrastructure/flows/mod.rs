@@ -21,7 +21,7 @@ pub mod prelude {
 pub type Result<T> = std::result::Result<T, super::error::AppError>;
 
 pub(crate) use ofdb_core::{db::*, entities::*, repositories::*, usecases};
-pub(crate) use ofdb_db_sqlite::from_diesel_err;
+pub(crate) use ofdb_db_sqlite::TransactionError;
 
 #[cfg(test)]
 pub(crate) mod tests;

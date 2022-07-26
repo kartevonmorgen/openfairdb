@@ -6,24 +6,15 @@ pub fn change_user_role(
     user_email: &str,
     role: Role,
 ) -> Result<()> {
-    let mut repo_err = None;
     let connection = connections.exclusive()?;
-    Ok(connection
-        .transaction::<_, _>(|| {
-            usecases::change_user_role(&connection.inner(), account_email, user_email, role)
-                .map_err(|err| {
-                    warn!("Failed to change role for email {}: {}", user_email, err);
-                    repo_err = Some(err);
-                    diesel::result::Error::RollbackTransaction
-                })
-        })
-        .map_err(|err| {
-            if let Some(repo_err) = repo_err {
-                repo_err
-            } else {
-                from_diesel_err(err).into()
-            }
-        })?)
+    Ok(connection.transaction(|| {
+        usecases::change_user_role(&connection.inner(), account_email, user_email, role).map_err(
+            |err| {
+                log::warn!("Failed to change role for email {}: {}", user_email, err);
+                err
+            },
+        )
+    })?)
 }
 
 #[cfg(test)]

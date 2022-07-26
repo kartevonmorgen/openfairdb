@@ -12,3 +12,4 @@ diesel = { version = "1.4.8", features = ["sqlite", "r2d2"] }
 ofdb-core = { version = "0.0.0", path = "../ofdb-core" }
 parking_lot = "0.12.1"
 time = { version = "0.3.11", features = ["macros", "formatting", "parsing"] }
+thiserror = "1.0.31"

@@ -15,38 +15,28 @@ pub fn create_place(
     // Create and add new entry
     let (place, ratings) = {
         let connection = connections.exclusive()?;
-        let mut prepare_err = None;
-        connection
-            .transaction::<_, _>(|| {
-                match usecases::prepare_new_place(
-                    &connection,
-                    new_place,
-                    created_by_email,
-                    created_by_org,
-                    &cfg.accepted_licenses,
-                ) {
-                    Ok(storable) => {
-                        let (place, ratings) = usecases::store_new_place(&connection, storable)
-                            .map_err(|err| {
-                                warn!("Failed to store newly created place: {}", err);
-                                diesel::result::Error::RollbackTransaction
-                            })?;
-                        Ok((place, ratings))
-                    }
-                    Err(err) => {
-                        log::info!("Failed to prepare new place revision: {}", err);
-                        prepare_err = Some(err);
-                        Err(diesel::result::Error::RollbackTransaction)
-                    }
+        connection.transaction(|| {
+            match usecases::prepare_new_place(
+                &connection,
+                new_place,
+                created_by_email,
+                created_by_org,
+                &cfg.accepted_licenses,
+            ) {
+                Ok(storable) => {
+                    let (place, ratings) = usecases::store_new_place(&connection, storable)
+                        .map_err(|err| {
+                            warn!("Failed to store newly created place: {}", err);
+                            TransactionError::RollbackTransaction
+                        })?;
+                    Ok((place, ratings))
                 }
-            })
-            .map_err(|err| {
-                if let Some(err) = prepare_err {
-                    err
-                } else {
-                    from_diesel_err(err).into()
+                Err(err) => {
+                    log::info!("Failed to prepare new place revision: {}", err);
+                    Err(TransactionError::Usecase(err))
                 }
-            })
+            }
+        })
     }?;
 
     // Index newly added place

@@ -13,37 +13,24 @@ pub fn update_event(
     // Create and add new event
     let event = {
         let connection = connections.exclusive()?;
-        let mut prepare_err = None;
-        connection
-            .transaction::<_, _>(|| {
-                match usecases::import_new_event(
-                    &connection,
-                    token,
-                    new_event,
-                    usecases::NewEventMode::Update(id.as_str()),
-                ) {
-                    Ok(storable) => {
-                        let event = usecases::store_updated_event(&connection, storable).map_err(
-                            |err| {
-                                warn!("Failed to store updated event: {}", err);
-                                diesel::result::Error::RollbackTransaction
-                            },
-                        )?;
-                        Ok(event)
-                    }
-                    Err(err) => {
-                        prepare_err = Some(err);
-                        Err(diesel::result::Error::RollbackTransaction)
-                    }
+        connection.transaction(|| {
+            match usecases::import_new_event(
+                &connection,
+                token,
+                new_event,
+                usecases::NewEventMode::Update(id.as_str()),
+            ) {
+                Ok(storable) => {
+                    let event =
+                        usecases::store_updated_event(&connection, storable).map_err(|err| {
+                            warn!("Failed to store updated event: {}", err);
+                            TransactionError::RollbackTransaction
+                        })?;
+                    Ok(event)
                 }
-            })
-            .map_err(|err| {
-                if let Some(err) = prepare_err {
-                    err
-                } else {
-                    from_diesel_err(err).into()
-                }
-            })
+                Err(err) => Err(TransactionError::Usecase(err)),
+            }
+        })
     }?;
 
     // Index newly added event

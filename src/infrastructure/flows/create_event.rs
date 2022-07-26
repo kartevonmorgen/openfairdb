@@ -1,49 +1,19 @@
+use std::result;
+
 use ofdb_core::gateways::notify::NotificationGateway;
+use ofdb_db_sqlite::{DbReadWrite, TransactionError};
 
 use super::*;
+use usecases::{Error, NewEvent, NewEventMode};
 
 pub fn create_event(
     connections: &sqlite::Connections,
     indexer: &mut dyn EventIndexer,
     notify: &dyn NotificationGateway,
     token: Option<&str>,
-    new_event: usecases::NewEvent,
+    new_event: NewEvent,
 ) -> Result<Event> {
-    // Create and add new event
-    let event = {
-        let connection = connections.exclusive()?;
-        let mut prepare_err = None;
-        connection
-            .transaction::<_, _>(|| {
-                match usecases::import_new_event(
-                    &connection,
-                    token,
-                    new_event,
-                    usecases::NewEventMode::Create,
-                ) {
-                    Ok(storable) => {
-                        let event = usecases::store_created_event(&connection, storable).map_err(
-                            |err| {
-                                warn!("Failed to store newly created event: {}", err);
-                                diesel::result::Error::RollbackTransaction
-                            },
-                        )?;
-                        Ok(event)
-                    }
-                    Err(err) => {
-                        prepare_err = Some(err);
-                        Err(diesel::result::Error::RollbackTransaction)
-                    }
-                }
-            })
-            .map_err(|err| {
-                if let Some(err) = prepare_err {
-                    err
-                } else {
-                    from_diesel_err(err).into()
-                }
-            })
-    }?;
+    let event = create_and_add_new_event(connections.exclusive()?, token, new_event)?;
 
     // Index newly added event
     // TODO: Move to a separate task/thread that doesn't delay this request
@@ -61,6 +31,29 @@ pub fn create_event(
     }
 
     Ok(event)
+}
+
+fn create_and_add_new_event(
+    connection: DbReadWrite<'_>,
+    token: Option<&str>,
+    new_event: NewEvent,
+) -> result::Result<Event, Error> {
+    let transaction = || {
+        let result =
+            usecases::import_new_event(&connection, token, new_event, NewEventMode::Create);
+        match result {
+            Ok(storable) => {
+                let event =
+                    usecases::store_created_event(&connection, storable).map_err(|err| {
+                        warn!("Failed to store newly created event: {}", err);
+                        TransactionError::RollbackTransaction
+                    })?;
+                Ok(event)
+            }
+            Err(err) => Err(TransactionError::Usecase(err)),
+        }
+    };
+    connection.transaction(transaction)
 }
 
 fn notify_event_created(

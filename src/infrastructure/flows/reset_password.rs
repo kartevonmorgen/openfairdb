@@ -1,19 +1,11 @@
 use ofdb_core::gateways::notify::NotificationGateway;
 
 use super::*;
-use crate::core::error::Error;
 
 fn refresh_user_token(connections: &sqlite::Connections, user: &User) -> Result<EmailNonce> {
-    let mut rollback_err: Option<Error> = None;
     let connection = connections.exclusive()?;
     Ok(connection
-        .transaction::<_, _>(|| {
-            usecases::refresh_user_token(&connection, user.email.to_owned()).map_err(|err| {
-                rollback_err = Some(Error::Parameter(err));
-                diesel::result::Error::RollbackTransaction
-            })
-        })
-        .map_err(|err| rollback_err.unwrap_or_else(|| Error::Repo(from_diesel_err(err))))?)
+        .transaction(|| usecases::refresh_user_token(&connection, user.email.to_owned()))?)
 }
 
 pub fn reset_password_request(
@@ -39,42 +31,35 @@ pub fn reset_password_with_email_nonce(
 
     // The token should be consumed only once, even if the
     // following transaction for updating the user fails!
-    let mut rollback_err: Option<Error> = None;
-    let token = connection
-        .transaction::<_, _>(|| {
-            usecases::consume_user_token(&connection, &email_nonce).map_err(|err| {
-                warn!(
-                    "Missing or invalid token to reset password for user '{}': {}",
-                    email_nonce.email, err
-                );
-                rollback_err = Some(Error::Parameter(err));
-                diesel::result::Error::RollbackTransaction
-            })
+    let token = connection.transaction(|| {
+        usecases::consume_user_token(&connection, &email_nonce).map_err(|err| {
+            log::warn!(
+                "Missing or invalid token to reset password for user '{}': {}",
+                email_nonce.email,
+                err
+            );
+            err
         })
-        .map_err(|err| rollback_err.unwrap_or_else(|| Error::from(from_diesel_err(err))))?;
+    })?;
 
     // The consumed nonce must match the request parameters
     debug_assert!(token.email_nonce == email_nonce);
 
     // Verify and update the user entity
-    let mut rollback_err: Option<Error> = None;
-    connection
-        .transaction::<_, _>(|| {
-            usecases::confirm_email_and_reset_password(
-                &connection,
-                &token.email_nonce.email,
-                new_password,
-            )
-            .map_err(|err| {
-                warn!(
-                    "Failed to verify e-mail ({}) and reset password: {}",
-                    token.email_nonce.email, err
-                );
-                rollback_err = Some(Error::Parameter(err));
-                diesel::result::Error::RollbackTransaction
-            })
+    connection.transaction(|| {
+        usecases::confirm_email_and_reset_password(
+            &connection,
+            &token.email_nonce.email,
+            new_password,
+        )
+        .map_err(|err| {
+            warn!(
+                "Failed to verify e-mail ({}) and reset password: {}",
+                token.email_nonce.email, err
+            );
+            err
         })
-        .map_err(|err| rollback_err.unwrap_or_else(|| Error::from(from_diesel_err(err))))?;
+    })?;
     Ok(())
 }
 
