@@ -49,6 +49,8 @@ RUN USER=root cargo new --lib ofdb-boundary \
     && \
     USER=root cargo new --lib ofdb-core \
     && \
+    USER=root cargo new --lib ofdb-db-sqlite \
+    && \
     USER=root cargo new --lib ofdb-entities \
     && \
     USER=root cargo new --lib ofdb-gateways
@@ -64,6 +66,9 @@ COPY [ \
     "ofdb-core/Cargo.toml", \
     "ofdb-core/benches", \
     "./ofdb-core/" ]
+COPY [ \
+    "ofdb-db-sqlite/Cargo.toml", \
+    "./ofdb-db-sqlite/" ]
 COPY [ \
     "ofdb-entities/Cargo.toml", \
     "./ofdb-entities/" ]
@@ -82,6 +87,8 @@ RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
     && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_core-* \
     && \
+    rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_db_sqlite-* \
+    && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_entities-* \
     && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_gateways-* \
@@ -91,6 +98,8 @@ RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-boundary-* \
     && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-core-* \
+    && \
+    rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-db-sqlite-* \
     && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-entities-* \
     && \
@@ -116,6 +125,9 @@ COPY [ \
     "ofdb-core/src", \
     "./ofdb-core/src/" ]
 COPY [ \
+    "ofdb-db-sqlite/src", \
+    "./ofdb-db-sqlite/src/" ]
+COPY [ \
     "ofdb-entities/src", \
     "./ofdb-entities/src/" ]
 COPY [ \
@@ -129,6 +141,8 @@ COPY [ \
 RUN cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-boundary \
     && \
     cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-core \
+    && \
+    cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-db-sqlite \
     && \
     cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-entities \
     && \
