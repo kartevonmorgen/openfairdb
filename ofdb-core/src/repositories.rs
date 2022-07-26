@@ -198,3 +198,16 @@ pub trait UserRepo {
     fn get_user_by_email(&self, email: &str) -> Result<User>;
     fn try_get_user_by_email(&self, email: &str) -> Result<Option<User>>;
 }
+
+pub trait SubscriptionRepo {
+    fn create_bbox_subscription(&self, _: &BboxSubscription) -> Result<()>;
+    fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>>;
+    fn all_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<Vec<BboxSubscription>>;
+    fn delete_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<()>;
+}
+
+pub trait TagRepo {
+    fn create_tag_if_it_does_not_exist(&self, _: &Tag) -> Result<()>;
+    fn all_tags(&self) -> Result<Vec<Tag>>;
+    fn count_tags(&self) -> Result<usize>;
+}

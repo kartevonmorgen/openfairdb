@@ -1018,7 +1018,7 @@ impl UserRepo for Connection<'_> {
     }
 }
 
-impl Db for Connection<'_> {
+impl TagRepo for Connection<'_> {
     fn create_tag_if_it_does_not_exist(&self, t: &Tag) -> Result<()> {
         let res = diesel::insert_into(schema::tags::table)
             .values(&models::Tag::from(t.clone()))
@@ -1035,7 +1035,25 @@ impl Db for Connection<'_> {
         }
         Ok(())
     }
+    fn all_tags(&self) -> Result<Vec<Tag>> {
+        use schema::tags::dsl::*;
+        Ok(tags
+            .load::<models::Tag>(self.deref())
+            .map_err(from_diesel_err)?
+            .into_iter()
+            .map(Tag::from)
+            .collect())
+    }
+    fn count_tags(&self) -> Result<usize> {
+        use schema::tags::dsl::*;
+        Ok(tags
+            .select(diesel::dsl::count(id))
+            .first::<i64>(self.deref())
+            .map_err(from_diesel_err)? as usize)
+    }
+}
 
+impl SubscriptionRepo for Connection<'_> {
     fn create_bbox_subscription(&self, new: &BboxSubscription) -> Result<()> {
         let user_id = resolve_user_created_by_email(self, &new.user_email)?;
         let (south_west_lat, south_west_lng) = new.bbox.southwest().to_lat_lng_deg();
@@ -1106,20 +1124,6 @@ impl Db for Connection<'_> {
             .map_err(from_diesel_err)?;
         Ok(())
     }
-    fn all_tags(&self) -> Result<Vec<Tag>> {
-        use schema::tags::dsl::*;
-        Ok(tags
-            .load::<models::Tag>(self.deref())
-            .map_err(from_diesel_err)?
-            .into_iter()
-            .map(Tag::from)
-            .collect())
-    }
-    fn count_tags(&self) -> Result<usize> {
-        use schema::tags::dsl::*;
-        Ok(tags
-            .select(diesel::dsl::count(id))
-            .first::<i64>(self.deref())
-            .map_err(from_diesel_err)? as usize)
-    }
 }
+
+impl Db for Connection<'_> {}

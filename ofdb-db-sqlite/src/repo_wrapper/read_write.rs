@@ -249,17 +249,7 @@ impl<'a> UserRepo for DbReadWrite<'a> {
     }
 }
 
-impl<'a> Db for DbReadWrite<'a> {
-    fn create_tag_if_it_does_not_exist(&self, tag: &Tag) -> Result<()> {
-        self.inner().create_tag_if_it_does_not_exist(tag)
-    }
-    fn all_tags(&self) -> Result<Vec<Tag>> {
-        self.inner().all_tags()
-    }
-    fn count_tags(&self) -> Result<usize> {
-        self.inner().count_tags()
-    }
-
+impl<'a> SubscriptionRepo for DbReadWrite<'a> {
     fn create_bbox_subscription(&self, sub: &BboxSubscription) -> Result<()> {
         self.inner().create_bbox_subscription(sub)
     }
@@ -273,3 +263,17 @@ impl<'a> Db for DbReadWrite<'a> {
         self.inner().delete_bbox_subscriptions_by_email(user_email)
     }
 }
+
+impl<'a> TagRepo for DbReadWrite<'a> {
+    fn create_tag_if_it_does_not_exist(&self, tag: &Tag) -> Result<()> {
+        self.inner().create_tag_if_it_does_not_exist(tag)
+    }
+    fn all_tags(&self) -> Result<Vec<Tag>> {
+        self.inner().all_tags()
+    }
+    fn count_tags(&self) -> Result<usize> {
+        self.inner().count_tags()
+    }
+}
+
+impl<'a> Db for DbReadWrite<'a> {}

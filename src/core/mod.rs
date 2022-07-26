@@ -313,7 +313,7 @@ pub mod usecases {
             }
         }
 
-        impl EventGateway for MockDb {
+        impl EventRepo for MockDb {
             fn create_event(&self, e: Event) -> RepoResult<()> {
                 create(&mut self.events.borrow_mut(), e)
             }
@@ -378,7 +378,7 @@ pub mod usecases {
             }
         }
 
-        impl UserGateway for MockDb {
+        impl UserRepo for MockDb {
             fn create_user(&self, u: &User) -> RepoResult<()> {
                 create(&mut self.users.borrow_mut(), u.clone())
             }
@@ -606,7 +606,7 @@ pub mod usecases {
             }
         }
 
-        impl Db for MockDb {
+        impl TagRepo for MockDb {
             fn create_tag_if_it_does_not_exist(&self, e: &Tag) -> RepoResult<()> {
                 if let Err(err) = create(&mut self.tags.borrow_mut(), e.clone()) {
                     match err {
@@ -618,22 +618,21 @@ pub mod usecases {
                 }
                 Ok(())
             }
-
-            fn create_bbox_subscription(&self, s: &BboxSubscription) -> RepoResult<()> {
-                create(&mut self.bbox_subscriptions.borrow_mut(), s.clone())
-            }
-
             fn all_tags(&self) -> RepoResult<Vec<Tag>> {
                 Ok(self.tags.borrow().clone())
             }
             fn count_tags(&self) -> RepoResult<usize> {
                 self.all_tags().map(|v| v.len())
             }
+        }
 
+        impl SubscriptionRepo for MockDb {
+            fn create_bbox_subscription(&self, s: &BboxSubscription) -> RepoResult<()> {
+                create(&mut self.bbox_subscriptions.borrow_mut(), s.clone())
+            }
             fn all_bbox_subscriptions(&self) -> RepoResult<Vec<BboxSubscription>> {
                 Ok(self.bbox_subscriptions.borrow().clone())
             }
-
             fn all_bbox_subscriptions_by_email(
                 &self,
                 user_email: &str,
@@ -646,7 +645,6 @@ pub mod usecases {
                     .cloned()
                     .collect())
             }
-
             fn delete_bbox_subscriptions_by_email(&self, user_email: &str) -> RepoResult<()> {
                 self.bbox_subscriptions
                     .borrow_mut()
@@ -654,6 +652,8 @@ pub mod usecases {
                 Ok(())
             }
         }
+
+        impl Db for MockDb {}
     }
 }
 

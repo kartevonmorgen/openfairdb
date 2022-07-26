@@ -580,7 +580,7 @@ impl PlaceClearanceRepo for MockDb {
     }
 }
 
-impl Db for MockDb {
+impl TagRepo for MockDb {
     fn create_tag_if_it_does_not_exist(&self, e: &Tag) -> RepoResult<()> {
         if let Err(err) = create(&mut self.tags.borrow_mut(), e.clone()) {
             match err {
@@ -592,22 +592,21 @@ impl Db for MockDb {
         }
         Ok(())
     }
-
-    fn create_bbox_subscription(&self, s: &BboxSubscription) -> RepoResult<()> {
-        create(&mut self.bbox_subscriptions.borrow_mut(), s.clone())
-    }
-
     fn all_tags(&self) -> RepoResult<Vec<Tag>> {
         Ok(self.tags.borrow().clone())
     }
     fn count_tags(&self) -> RepoResult<usize> {
         self.all_tags().map(|v| v.len())
     }
+}
 
+impl SubscriptionRepo for MockDb {
+    fn create_bbox_subscription(&self, s: &BboxSubscription) -> RepoResult<()> {
+        create(&mut self.bbox_subscriptions.borrow_mut(), s.clone())
+    }
     fn all_bbox_subscriptions(&self) -> RepoResult<Vec<BboxSubscription>> {
         Ok(self.bbox_subscriptions.borrow().clone())
     }
-
     fn all_bbox_subscriptions_by_email(
         &self,
         user_email: &str,
@@ -620,7 +619,6 @@ impl Db for MockDb {
             .cloned()
             .collect())
     }
-
     fn delete_bbox_subscriptions_by_email(&self, user_email: &str) -> RepoResult<()> {
         self.bbox_subscriptions
             .borrow_mut()
@@ -628,6 +626,8 @@ impl Db for MockDb {
         Ok(())
     }
 }
+
+impl Db for MockDb {}
 
 #[test]
 fn receive_different_user() {

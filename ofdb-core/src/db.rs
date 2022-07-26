@@ -3,10 +3,6 @@ use anyhow::Result as Fallible;
 
 type Result<T> = std::result::Result<T, Error>;
 
-//TODO:
-//  - TagGeatway
-//  - SubscriptionGateway
-
 pub trait Db:
     PlaceRepo
     + UserRepo
@@ -16,9 +12,9 @@ pub trait Db:
     + RatingRepository
     + UserTokenRepo
     + PlaceClearanceRepo
+    + SubscriptionRepo
+    + TagRepo
 {
-    fn create_tag_if_it_does_not_exist(&self, _: &Tag) -> Result<()>;
-
     fn all_categories(&self) -> Result<Vec<Category>> {
         Ok(vec![
             Category::new_non_profit(),
@@ -26,13 +22,6 @@ pub trait Db:
             Category::new_event(),
         ])
     }
-    fn all_tags(&self) -> Result<Vec<Tag>>;
-    fn count_tags(&self) -> Result<usize>;
-
-    fn create_bbox_subscription(&self, _: &BboxSubscription) -> Result<()>;
-    fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>>;
-    fn all_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<Vec<BboxSubscription>>;
-    fn delete_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<()>;
 }
 
 #[derive(Copy, Clone, Debug)]
