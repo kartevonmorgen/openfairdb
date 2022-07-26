@@ -6,7 +6,7 @@ use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use time::OffsetDateTime;
 
 use crate::{
-    core::db::PlaceRepo,
+    core::repositories::PlaceRepo,
     ports::web::{sqlite, MostPopularTagsParams, Pagination},
 };
 

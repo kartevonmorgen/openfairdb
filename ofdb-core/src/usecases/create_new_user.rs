@@ -9,7 +9,7 @@ pub struct NewUser {
     pub password: String,
 }
 
-pub fn create_new_user<D: UserGateway>(db: &D, u: NewUser) -> Result<()> {
+pub fn create_new_user<D: UserRepo>(db: &D, u: NewUser) -> Result<()> {
     let password = u.password.parse::<Password>()?;
     if !validate::is_valid_email(&u.email) {
         return Err(Error::Email);

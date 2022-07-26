@@ -620,7 +620,7 @@ fn resolve_event_id(conn: &SqliteConnection, uid: &str) -> Result<i64> {
         .map_err(from_diesel_err)
 }
 
-impl EventGateway for Connection<'_> {
+impl EventRepo for Connection<'_> {
     fn create_event(&self, e: Event) -> Result<()> {
         let (new_event, tags) = into_new_event_with_tags(self, e)?;
         self.transaction::<_, diesel::result::Error, _>(|| {
@@ -952,7 +952,7 @@ fn resolve_user_created_by_email(conn: &SqliteConnection, email: &str) -> Result
         .map_err(from_diesel_err)
 }
 
-impl UserGateway for Connection<'_> {
+impl UserRepo for Connection<'_> {
     fn create_user(&self, u: &User) -> Result<()> {
         let new_user = models::NewUser::from(u);
         diesel::insert_into(schema::users::table)

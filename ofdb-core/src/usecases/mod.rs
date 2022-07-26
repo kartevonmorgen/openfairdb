@@ -54,7 +54,7 @@ pub use self::{
 mod prelude {
     pub use super::error::Error;
     pub type Result<T> = std::result::Result<T, Error>;
-    pub use crate::{db::*, entities::*};
+    pub use crate::{db::*, entities::*, repositories::*};
 }
 
 //TODO: move usecases into separate files

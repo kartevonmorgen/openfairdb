@@ -51,7 +51,7 @@ fn index_all_places<D: PlaceRepo + RatingRepository>(
     Ok(Json(()))
 }
 
-fn index_all_events_chronologically<D: EventGateway>(
+fn index_all_events_chronologically<D: EventRepo>(
     db: &D,
     indexer: &mut dyn EventIndexer,
 ) -> Result<()> {

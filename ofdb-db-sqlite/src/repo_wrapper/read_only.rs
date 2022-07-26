@@ -188,7 +188,7 @@ impl<'a> UserTokenRepo for DbReadOnly<'a> {
     }
 }
 
-impl<'a> EventGateway for DbReadOnly<'a> {
+impl<'a> EventRepo for DbReadOnly<'a> {
     fn create_event(&self, ev: Event) -> Result<()> {
         self.inner().create_event(ev)
     }
@@ -223,7 +223,7 @@ impl<'a> EventGateway for DbReadOnly<'a> {
     }
 }
 
-impl<'a> UserGateway for DbReadOnly<'a> {
+impl<'a> UserRepo for DbReadOnly<'a> {
     fn create_user(&self, user: &User) -> Result<()> {
         self.inner().create_user(user)
     }

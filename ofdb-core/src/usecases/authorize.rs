@@ -1,5 +1,5 @@
 use super::prelude::*;
-use crate::{db::OrganizationRepo, repositories::Error as RepoError};
+use crate::repositories::Error as RepoError;
 
 pub fn authorize_organization_by_possible_api_tokens<D: OrganizationRepo>(
     db: &D,

@@ -9,7 +9,7 @@ use rocket::{
 };
 
 use crate::{
-    core::{db::OrganizationRepo, prelude::*, usecases},
+    core::{prelude::*, repositories::OrganizationRepo, usecases},
     infrastructure::error::AppError,
     ports::web::jwt,
 };

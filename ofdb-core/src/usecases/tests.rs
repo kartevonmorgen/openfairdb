@@ -295,7 +295,7 @@ impl PlaceRepo for MockDb {
     }
 }
 
-impl EventGateway for MockDb {
+impl EventRepo for MockDb {
     fn create_event(&self, e: Event) -> RepoResult<()> {
         create(&mut self.events.borrow_mut(), e)
     }
@@ -356,7 +356,7 @@ impl EventGateway for MockDb {
     }
 }
 
-impl UserGateway for MockDb {
+impl UserRepo for MockDb {
     fn create_user(&self, u: &User) -> RepoResult<()> {
         create(&mut self.users.borrow_mut(), u.clone())
     }
