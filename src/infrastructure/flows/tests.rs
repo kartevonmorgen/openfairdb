@@ -19,8 +19,6 @@ pub mod prelude {
         ports::web::api,
     };
 
-    embed_migrations!();
-
     pub struct BackendFixture {
         pub db_connections: sqlite::Connections,
         pub search_engine: RefCell<tantivy::SearchEngine>,
@@ -30,7 +28,7 @@ pub mod prelude {
     impl BackendFixture {
         pub fn new() -> Self {
             let db_connections = sqlite::Connections::init(":memory:", 1).unwrap();
-            embedded_migrations::run(db_connections.exclusive().unwrap().sqlite_conn()).unwrap();
+            ofdb_db_sqlite::run_embedded_database_migrations(db_connections.exclusive().unwrap());
             let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
             Self {
                 db_connections,

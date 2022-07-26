@@ -11,8 +11,6 @@ use crate::{
 };
 use ofdb_db_sqlite::Connections;
 
-embed_migrations!();
-
 fn update_event_locations<D: Db>(db: &mut D) -> Result<()> {
     let events = db.all_events_chronologically()?;
     for mut e in events {
@@ -76,8 +74,7 @@ pub fn run() {
     );
     let connections = Connections::init(&cfg.db_url, cfg.db_connection_pool_size).unwrap();
 
-    info!("Running embedded database migrations");
-    embedded_migrations::run(connections.exclusive().unwrap().sqlite_conn()).unwrap();
+    ofdb_db_sqlite::run_embedded_database_migrations(connections.exclusive().unwrap());
 
     let idx_dir = matches
         .value_of("idx-dir")

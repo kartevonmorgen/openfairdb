@@ -4,8 +4,8 @@ use std::{
 };
 
 #[cfg(not(test))]
-use diesel::r2d2::PoolError;
-use diesel::r2d2::{ManageConnection, Pool, PooledConnection};
+use r2d2::Error;
+use r2d2::{ManageConnection, Pool, PooledConnection};
 use rocket::{
     http::Status,
     outcome::try_outcome,
@@ -40,7 +40,7 @@ pub type ConnectionPool = Pool<ConnectionManager>;
 pub struct Connections(pub PooledConnection<ConnectionManager>);
 
 #[cfg(not(test))]
-pub fn init_connections(_: &str) -> Result<ConnectionPool, PoolError> {
+pub fn init_connections(_: &str) -> Result<ConnectionPool, Pool> {
     let manager = MockDbConnectionManager {};
     Pool::builder().max_size(1).build(manager)
 }

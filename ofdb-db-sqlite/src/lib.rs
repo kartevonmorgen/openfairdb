@@ -1,5 +1,7 @@
 #[macro_use]
 extern crate diesel;
+#[macro_use]
+extern crate diesel_migrations;
 
 use anyhow::Result as Fallible;
 use diesel::{r2d2, sqlite::SqliteConnection};
@@ -16,6 +18,8 @@ mod util;
 
 pub use repo_impl::from_diesel_err;
 pub use repo_wrapper::*;
+
+embed_migrations!("../migrations");
 
 pub type Connection = SqliteConnection;
 
@@ -152,4 +156,9 @@ impl Connections {
     pub fn exclusive(&self) -> Fallible<DbReadWrite> {
         DbReadWrite::try_new(&self.pool)
     }
+}
+
+pub fn run_embedded_database_migrations(conn: DbReadWrite<'_>) {
+    log::info!("Running embedded database migrations");
+    embedded_migrations::run(conn.sqlite_conn()).unwrap();
 }

@@ -1,7 +1,5 @@
 use std::io;
 
-use diesel::r2d2;
-use diesel_migrations::RunMigrationsError;
 use thiserror::Error;
 
 use crate::core::error::Error as BError;
@@ -19,12 +17,6 @@ impl From<ofdb_core::usecases::Error> for AppError {
     }
 }
 
-impl From<RunMigrationsError> for AppError {
-    fn from(err: RunMigrationsError) -> AppError {
-        AppError::Other(err.into())
-    }
-}
-
 #[derive(Debug, Error)]
 #[allow(clippy::large_enum_variant)]
 pub enum AppError {
@@ -34,12 +26,10 @@ pub enum AppError {
     Serialize(#[from] serde_json::Error),
     #[error(transparent)]
     Other(#[from] anyhow::Error),
-    //    from(err: io::Error) -> (err.into())
-    //}
     #[error(transparent)]
     Io(#[from] io::Error),
     #[error(transparent)]
-    R2d2(#[from] r2d2::PoolError),
+    R2d2(#[from] r2d2::Error),
     #[error(transparent)]
     CsvIntoInner(#[from] ::csv::IntoInnerError<::csv::Writer<Vec<u8>>>),
     #[error(transparent)]

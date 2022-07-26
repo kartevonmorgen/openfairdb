@@ -17,8 +17,6 @@ pub mod prelude {
     pub use crate::core::db::*;
 }
 
-embed_migrations!();
-
 pub fn setup(
     mounts: Vec<(&'static str, Vec<Route>)>,
 ) -> (Client, sqlite::Connections, tantivy::SearchEngine) {
@@ -31,7 +29,7 @@ pub fn setup_with_cfg(
 ) -> (Client, sqlite::Connections, tantivy::SearchEngine) {
     let rocket_cfg = RocketCfg::debug_default();
     let connections = ofdb_db_sqlite::Connections::init(":memory:", 1).unwrap();
-    embedded_migrations::run(connections.exclusive().unwrap().sqlite_conn()).unwrap();
+    ofdb_db_sqlite::run_embedded_database_migrations(connections.exclusive().unwrap());
     let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
     let connections = sqlite::Connections::from(connections);
     let rocket = super::rocket_instance(
