@@ -75,6 +75,12 @@ jobs:
           command: check
           args: --locked --all-targets --all-features --manifest-path  ofdb-core/Cargo.toml
 
+      - name: Check ofdb-db-sqlite crate
+        uses: actions-rs/cargo@v1
+        with:
+          command: check
+          args: --locked --all-targets --all-features --manifest-path  ofdb-db-sqlite/Cargo.toml
+
       - name: Check ofdb-boundary crate
         uses: actions-rs/cargo@v1
         with:
