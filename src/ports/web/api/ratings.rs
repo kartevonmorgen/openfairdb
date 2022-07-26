@@ -1,13 +1,15 @@
 use super::*;
-use crate::{core::util, infrastructure::flows::prelude as flows};
+use crate::{adapters::json::from_json, core::util, infrastructure::flows::prelude as flows};
+use ofdb_boundary::NewPlaceRating;
 
 #[post("/ratings", format = "application/json", data = "<data>")]
 pub fn post_rating(
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
-    data: JsonResult<usecases::NewPlaceRating>,
+    data: JsonResult<NewPlaceRating>,
 ) -> Result<()> {
-    let _ = flows::create_rating(&connections, &mut search_engine, data?.into_inner())?;
+    let rating = from_json::new_place_rating(data?.into_inner());
+    let _ = flows::create_rating(&connections, &mut search_engine, rating)?;
     Ok(Json(()))
 }
 

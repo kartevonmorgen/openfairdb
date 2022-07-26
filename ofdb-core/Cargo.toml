@@ -23,11 +23,6 @@ version = "0.10.1"
 path = "../ofdb-boundary"
 features = ["extra-derive"]
 
-# TODO: remove
-[dependencies.serde]
-version = "1.0.139"
-features = ["derive"]
-
 [dev-dependencies]
 ofdb-entities = { version = "*", features = ["builders"] }
 criterion = "0.3.6"

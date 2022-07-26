@@ -1,12 +1,10 @@
 use super::*;
+use crate::adapters::json::from_json;
+use ofdb_boundary::NewUser;
 
 #[post("/users", format = "application/json", data = "<u>")]
-pub fn post_user(
-    db: sqlite::Connections,
-    n: Notify,
-    u: JsonResult<usecases::NewUser>,
-) -> Result<()> {
-    let new_user = u?.into_inner();
+pub fn post_user(db: sqlite::Connections, n: Notify, u: JsonResult<NewUser>) -> Result<()> {
+    let new_user = from_json::new_user(u?.into_inner());
     let user = {
         let db = db.exclusive()?;
         usecases::create_new_user(&db, new_user.clone())?;

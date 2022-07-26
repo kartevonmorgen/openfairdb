@@ -1,12 +1,4 @@
 use super::prelude::*;
-use serde::Deserialize;
-
-//TODO: remove and use Credentials instead
-#[derive(Deserialize, Debug, Clone)]
-pub struct Login {
-    pub email: String,
-    pub password: String,
-}
 
 pub struct Credentials<'a> {
     pub email: &'a str,

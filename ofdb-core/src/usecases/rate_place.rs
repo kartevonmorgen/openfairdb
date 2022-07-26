@@ -1,8 +1,7 @@
 use super::prelude::*;
-use serde::Deserialize;
 
 #[rustfmt::skip]
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct NewPlaceRating {
     pub entry   : String,
     pub title   : String,

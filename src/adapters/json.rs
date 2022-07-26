@@ -11,11 +11,6 @@ pub mod from_json {
     // We cannot impl From<T> here, because the JSON structs
     // and the entities both are outside this crate.
 
-    pub fn credentials(from: Credentials) -> usecases::Login {
-        let Credentials { email, password } = from;
-        usecases::Login { email, password }
-    }
-
     pub fn custom_link(from: CustomLink) -> usecases::CustomLinkParam {
         let CustomLink {
             url,
@@ -124,6 +119,97 @@ pub mod from_json {
             image_url,
             image_link_url,
             custom_links: links.into_iter().map(custom_link).collect(),
+        }
+    }
+
+    pub fn new_place_rating(rating: NewPlaceRating) -> usecases::NewPlaceRating {
+        let NewPlaceRating {
+            entry,
+            title,
+            value,
+            context,
+            comment,
+            source,
+            user,
+        } = rating;
+        usecases::NewPlaceRating {
+            entry,
+            title,
+            value,
+            context,
+            comment,
+            source,
+            user,
+        }
+    }
+
+    pub fn new_event(ev: NewEvent) -> usecases::NewEvent {
+        let NewEvent {
+            title,
+            description,
+            start,
+            end,
+            lat,
+            lng,
+            street,
+            zip,
+            city,
+            country,
+            state,
+            email,
+            telephone,
+            homepage,
+            tags,
+            created_by,
+            registration,
+            organizer,
+            image_url,
+            image_link_url,
+        } = ev;
+        usecases::NewEvent {
+            title,
+            description,
+            start,
+            end,
+            lat,
+            lng,
+            street,
+            zip,
+            city,
+            country,
+            state,
+            email,
+            telephone,
+            homepage,
+            tags,
+            created_by,
+            registration,
+            organizer,
+            image_url,
+            image_link_url,
+        }
+    }
+
+    pub fn new_user(new_user: NewUser) -> usecases::NewUser {
+        let NewUser { email, password } = new_user;
+        usecases::NewUser { email, password }
+    }
+}
+
+pub mod to_json {
+    //! Entity -> JSON
+
+    use super::*;
+
+    // NOTE:
+    // We cannot impl From<T> here, because the JSON structs
+    // and the entities both are outside this crate.
+
+    pub fn duplicate_type(t: usecases::DuplicateType) -> DuplicateType {
+        use usecases::DuplicateType as U;
+        match t {
+            U::SimilarChars => DuplicateType::SimilarChars,
+            U::SimilarWords => DuplicateType::SimilarWords,
         }
     }
 }

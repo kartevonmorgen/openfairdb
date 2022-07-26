@@ -12,11 +12,14 @@ use rocket::{
 
 use super::guards::*;
 use crate::{
-    adapters::{self, json},
+    adapters::{
+        self,
+        json::{self, to_json},
+    },
     core::{
         error::Error,
         prelude::*,
-        usecases::{self, DuplicateType},
+        usecases,
         util::{self, geo},
     },
     infrastructure::{db::tantivy, error::AppError, flows::prelude as flows},
@@ -161,7 +164,7 @@ pub fn get_duplicates(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     ids: String,
-) -> Result<Vec<(String, String, DuplicateType)>> {
+) -> Result<Vec<(String, String, json::DuplicateType)>> {
     let ids = util::split_ids(&ids);
     if ids.is_empty() {
         return Ok(Json(vec![]));
@@ -171,7 +174,13 @@ pub fn get_duplicates(
     Ok(Json(
         results
             .into_iter()
-            .map(|(id1, id2, dup)| (id1.to_string(), id2.to_string(), dup))
+            .map(|(id1, id2, dup)| {
+                (
+                    id1.to_string(),
+                    id2.to_string(),
+                    to_json::duplicate_type(dup),
+                )
+            })
             .collect(),
     ))
 }
@@ -195,7 +204,7 @@ fn post_login(
     login: JsonResult<json::Credentials>,
     jwt_state: &State<jwt::JwtState>,
 ) -> Result<Option<ofdb_boundary::JwtToken>> {
-    let login = json::from_json::credentials(login?.into_inner());
+    let login = login?.into_inner();
     {
         let credentials = usecases::Credentials {
             email: &login.email,

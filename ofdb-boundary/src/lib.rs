@@ -138,6 +138,31 @@ pub struct UpdatePlace {
 
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+pub struct NewEvent {
+    pub title: String,
+    pub description: Option<String>,
+    pub start: i64,
+    pub end: Option<i64>,
+    pub lat: Option<f64>,
+    pub lng: Option<f64>,
+    pub street: Option<String>,
+    pub zip: Option<String>,
+    pub city: Option<String>,
+    pub country: Option<String>,
+    pub state: Option<String>,
+    pub email: Option<String>,
+    pub telephone: Option<String>,
+    pub homepage: Option<String>,
+    pub tags: Option<Vec<String>>,
+    pub created_by: Option<String>,
+    pub registration: Option<String>,
+    pub organizer: Option<String>,
+    pub image_url: Option<String>,
+    pub image_link_url: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
 pub struct Event {
     pub id: String,
     pub title: String,
@@ -182,6 +207,13 @@ pub struct Event {
 pub struct Coordinate {
     pub lat: f64,
     pub lng: f64,
+}
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+pub struct NewUser {
+    pub email: String,
+    pub password: String,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -372,6 +404,18 @@ pub struct Rating {
     pub context: RatingContext,
     pub comments: Vec<Comment>,
     pub source: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+pub struct NewPlaceRating {
+    pub entry: String,
+    pub title: String,
+    pub value: RatingValue,
+    pub context: RatingContext,
+    pub comment: String,
+    pub source: Option<String>,
+    pub user: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -652,4 +696,11 @@ pub struct Error {
     pub http_status: u16,
     /// Error message
     pub message: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq))]
+pub enum DuplicateType {
+    SimilarChars,
+    SimilarWords,
 }

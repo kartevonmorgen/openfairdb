@@ -1,3 +1,4 @@
+use ofdb_boundary::NewEvent;
 use ofdb_core::gateways::geocode::GeoCodingGateway;
 use rocket::{
     delete,
@@ -10,7 +11,7 @@ use rocket::{
 use super::*;
 use crate::core::error::Error;
 use crate::{
-    adapters,
+    adapters::{self, json::from_json},
     core::{
         prelude::Result as CoreResult,
         util::{geo::MapBbox, validate},
@@ -59,23 +60,23 @@ fn check_and_set_address_location(e: &mut usecases::NewEvent) -> Option<MapPoint
         })
 }
 
-#[post("/events", format = "application/json", data = "<e>")]
+#[post("/events", format = "application/json", data = "<ev>")]
 pub fn post_event_with_token(
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
     notify: Notify,
     auth: Auth,
-    e: JsonResult<usecases::NewEvent>,
+    ev: JsonResult<NewEvent>,
 ) -> Result<String> {
     let org = auth.organization(&connections.shared()?)?;
-    let mut e = e?.into_inner();
-    check_and_set_address_location(&mut e);
+    let mut new_event = from_json::new_event(ev?.into_inner());
+    check_and_set_address_location(&mut new_event);
     let event = flows::create_event(
         &connections,
         &mut search_engine,
         &*notify,
         Some(&org.api_token),
-        e,
+        new_event,
     )?;
     Ok(Json(event.id.to_string()))
 }
@@ -84,7 +85,7 @@ pub fn post_event_with_token(
 // NOTE:
 // At the moment we don't want to allow anonymous event creation.
 // So for now we assure that it's blocked:
-pub fn post_event(mut _db: sqlite::Connections, _e: JsonResult<usecases::NewEvent>) -> HttpStatus {
+pub fn post_event(mut _db: sqlite::Connections, _e: JsonResult<NewEvent>) -> HttpStatus {
     HttpStatus::Unauthorized
 }
 // But in the future we might allow anonymous event creation:
@@ -107,33 +108,29 @@ pub fn get_event(db: sqlite::Connections, id: String) -> Result<json::Event> {
 #[put("/events/<_id>", format = "application/json", data = "<_e>", rank = 2)]
 // At the moment we don't want to allow anonymous event creation.
 // So for now we assure that it's blocked:
-pub fn put_event(
-    mut _db: sqlite::Connections,
-    _id: &str,
-    _e: JsonResult<usecases::NewEvent>,
-) -> HttpStatus {
+pub fn put_event(mut _db: sqlite::Connections, _id: &str, _e: JsonResult<NewEvent>) -> HttpStatus {
     HttpStatus::Unauthorized
 }
 
-#[put("/events/<id>", format = "application/json", data = "<e>")]
+#[put("/events/<id>", format = "application/json", data = "<ev>")]
 pub fn put_event_with_token(
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
     notify: Notify,
     auth: Auth,
     id: &str,
-    e: JsonResult<usecases::NewEvent>,
+    ev: JsonResult<NewEvent>,
 ) -> Result<()> {
     let org = auth.organization(&connections.shared()?)?;
-    let mut e = e?.into_inner();
-    check_and_set_address_location(&mut e);
+    let mut new_event = from_json::new_event(ev?.into_inner());
+    check_and_set_address_location(&mut new_event);
     flows::update_event(
         &connections,
         &mut search_engine,
         &*notify,
         Some(&org.api_token),
         id.to_string().into(),
-        e,
+        new_event,
     )?;
     Ok(Json(()))
 }

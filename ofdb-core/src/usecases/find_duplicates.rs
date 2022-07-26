@@ -3,10 +3,9 @@ use crate::{
     repositories::Error as RepoError,
     usecases::{create_new_place::NewPlace, prelude::*},
 };
-use serde::Serialize;
 use std::{cmp::min, collections::HashSet};
 
-#[derive(Debug, PartialEq, Serialize)]
+#[derive(Debug, PartialEq)]
 pub enum DuplicateType {
     SimilarChars,
     SimilarWords,

@@ -2,9 +2,8 @@ use passwords::PasswordGenerator;
 
 use super::prelude::*;
 use crate::util::validate;
-use serde::Deserialize;
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct NewUser {
     pub email: String,
     pub password: String,

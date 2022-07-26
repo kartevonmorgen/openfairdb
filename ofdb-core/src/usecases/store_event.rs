@@ -9,11 +9,10 @@ use crate::{
         validate::{AutoCorrect, Validate},
     },
 };
-use serde::Deserialize;
 use std::str::FromStr;
 
 #[rustfmt::skip]
-#[derive(Deserialize, Default, Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct NewEvent {
     pub title        : String,
     pub description  : Option<String>,
