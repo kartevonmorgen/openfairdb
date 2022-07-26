@@ -2,11 +2,50 @@ use crate::{
     bbox,
     repositories::Error as RepoError,
     tag,
-    usecases::{prelude::*, EventQuery},
+    usecases::prelude::*,
     util::{extract_hash_tags, remove_hash_tags},
 };
 
 const DEFAULT_RESULT_LIMIT: usize = 100;
+
+#[derive(Clone, Debug, Default)]
+pub struct EventQuery {
+    pub bbox: Option<MapBbox>,
+    pub created_by: Option<Email>,
+    pub start_min: Option<Timestamp>,
+    pub start_max: Option<Timestamp>,
+    pub end_min: Option<Timestamp>,
+    pub end_max: Option<Timestamp>,
+    pub tags: Option<Vec<String>>,
+    pub text: Option<String>,
+
+    pub limit: Option<usize>,
+}
+
+impl EventQuery {
+    pub fn is_empty(&self) -> bool {
+        let Self {
+            bbox,
+            created_by,
+            start_min,
+            start_max,
+            end_min,
+            end_max,
+            tags,
+            text,
+            limit,
+        } = self;
+        bbox.is_none()
+            && created_by.is_none()
+            && start_min.is_none()
+            && start_max.is_none()
+            && end_min.is_none()
+            && end_max.is_none()
+            && tags.is_none()
+            && text.is_none()
+            && limit.is_none()
+    }
+}
 
 #[allow(clippy::absurd_extreme_comparisons)]
 pub fn query_events<R>(repo: &R, index: &dyn IdIndex, query: EventQuery) -> Result<Vec<Event>>
