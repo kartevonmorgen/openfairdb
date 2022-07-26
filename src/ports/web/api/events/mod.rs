@@ -467,7 +467,7 @@ pub fn delete_event(mut _db: sqlite::Connections, _id: &str) -> HttpStatus {
 #[delete("/events/<id>")]
 pub fn delete_event_with_token(db: sqlite::Connections, auth: Auth, id: &str) -> StatusResult {
     let org = auth.organization(&db.shared()?)?;
-    usecases::delete_event(&mut db.exclusive()?, &org.api_token, id)?;
+    usecases::delete_event(&db.exclusive()?, &org.api_token, id)?;
     // TODO: Replace with HttpStatus::NoContent
     Ok(HttpStatus::Ok)
 }

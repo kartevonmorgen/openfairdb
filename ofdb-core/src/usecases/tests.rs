@@ -627,8 +627,6 @@ impl SubscriptionRepo for MockDb {
     }
 }
 
-impl Db for MockDb {}
-
 #[test]
 fn receive_different_user() {
     let db = MockDb::default();

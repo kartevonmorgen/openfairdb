@@ -211,3 +211,13 @@ pub trait TagRepo {
     fn all_tags(&self) -> Result<Vec<Tag>>;
     fn count_tags(&self) -> Result<usize>;
 }
+
+pub trait CategoryRepo {
+    fn all_categories(&self) -> Result<Vec<Category>> {
+        Ok(vec![
+            Category::new_non_profit(),
+            Category::new_commercial(),
+            Category::new_event(),
+        ])
+    }
+}

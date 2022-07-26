@@ -101,14 +101,17 @@ pub struct Storable {
     last_cleared_revision: Revision,
 }
 
-pub fn prepare_updated_place<D: Db>(
-    db: &D,
+pub fn prepare_updated_place<R>(
+    repo: &R,
     place_id: Id,
     e: UpdatePlace,
     created_by_email: Option<&str>,
     created_by_org: Option<&Organization>,
     accepted_licenses: &HashSet<String>,
-) -> Result<Storable> {
+) -> Result<Storable>
+where
+    R: PlaceRepo + OrganizationRepo,
+{
     let UpdatePlace {
         version,
         title,
@@ -148,7 +151,7 @@ pub fn prepare_updated_place<D: Db>(
     };
 
     let (revision, last_cleared_revision, old_tags, license) = {
-        let (old_place, _review_status) = db.get_place(place_id.as_str())?;
+        let (old_place, _review_status) = repo.get_place(place_id.as_str())?;
         // Check for revision conflict (optimistic locking)
         let revision = Revision::from(version);
         if old_place.revision.next() != revision {
@@ -169,7 +172,7 @@ pub fn prepare_updated_place<D: Db>(
             .map(String::as_str),
     );
     let clearance_org_ids =
-        authorize_editing_of_tagged_entry(db, &old_tags, &new_tags, created_by_org)?;
+        authorize_editing_of_tagged_entry(repo, &old_tags, &new_tags, created_by_org)?;
 
     let homepage = homepage
         .and_then(|ref url| parse_url_param(url).transpose())
@@ -228,7 +231,10 @@ pub fn prepare_updated_place<D: Db>(
     })
 }
 
-pub fn store_updated_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>)> {
+pub fn store_updated_place<R>(repo: &R, s: Storable) -> Result<(Place, Vec<Rating>)>
+where
+    R: TagRepo + PlaceRepo + PlaceClearanceRepo + RatingRepository,
+{
     let Storable {
         place,
         clearance_org_ids,
@@ -236,18 +242,22 @@ pub fn store_updated_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rat
     } = s;
     log::debug!("Storing updated place revision: {:?}", place);
     for t in &place.tags {
-        db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
+        repo.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
-    db.create_or_update_place(place.clone())?;
+    repo.create_or_update_place(place.clone())?;
     if !clearance_org_ids.is_empty() {
         let pending_clearance = PendingClearanceForPlace {
             place_id: place.id.clone(),
             created_at: place.created.at,
             last_cleared_revision: Some(last_cleared_revision),
         };
-        super::clearance::place::add_pending_clearance(db, &clearance_org_ids, &pending_clearance)?;
+        super::clearance::place::add_pending_clearance(
+            repo,
+            &clearance_org_ids,
+            &pending_clearance,
+        )?;
     }
-    let ratings = db.load_ratings_of_place(place.id.as_ref())?;
+    let ratings = repo.load_ratings_of_place(place.id.as_ref())?;
     Ok((place, ratings))
 }
 

@@ -1,15 +1,18 @@
 use super::prelude::*;
 
-pub fn confirm_email_address(db: &dyn Db, token: &str) -> Result<()> {
+pub fn confirm_email_address<R>(repo: &R, token: &str) -> Result<()>
+where
+    R: UserRepo,
+{
     let email_nonce = EmailNonce::decode_from_str(token).map_err(|_| Error::TokenInvalid)?;
-    let mut user = db.get_user_by_email(&email_nonce.email)?;
+    let mut user = repo.get_user_by_email(&email_nonce.email)?;
     if !user.email_confirmed {
         user.email_confirmed = true;
         debug_assert_eq!(Role::Guest, user.role);
         if user.role == Role::Guest {
             user.role = Role::User;
         }
-        db.update_user(&user)?;
+        repo.update_user(&user)?;
     }
     Ok(())
 }

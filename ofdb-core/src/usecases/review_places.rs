@@ -8,7 +8,10 @@ pub struct Review {
     pub comment: Option<String>,
 }
 
-pub fn review_places<D: Db>(db: &D, ids: &[&str], review: Review) -> Result<usize> {
+pub fn review_places<R>(repo: &R, ids: &[&str], review: Review) -> Result<usize>
+where
+    R: PlaceRepo,
+{
     let Review {
         context,
         reviewer_email,
@@ -27,7 +30,7 @@ pub fn review_places<D: Db>(db: &D, ids: &[&str], review: Review) -> Result<usiz
         context,
         comment,
     };
-    let place_count = db.review_places(ids, status, &activity_log)?;
+    let place_count = repo.review_places(ids, status, &activity_log)?;
     log::info!(
         "Changed review status of {} places to {}",
         place_count,

@@ -15,14 +15,17 @@ pub struct SearchRequest<'a> {
     pub status     : Vec<ReviewStatus>,
 }
 
-pub fn clear_search_results<D: Db>(
-    db: &D,
+pub fn clear_search_results<R>(
+    repo: &R,
     org_id: &Id,
     org_tag: &str,
     results: Vec<IndexedPlace>,
-) -> Result<Vec<IndexedPlace>> {
+) -> Result<Vec<IndexedPlace>>
+where
+    R: PlaceRepo + PlaceClearanceRepo,
+{
     let place_ids: Vec<_> = results.iter().map(|p| p.id.as_str()).collect();
-    let pending_clearances = db.load_pending_clearances_for_places(org_id, &place_ids)?;
+    let pending_clearances = repo.load_pending_clearances_for_places(org_id, &place_ids)?;
     if pending_clearances.is_empty() {
         // No filtering required
         return Ok(results);
@@ -42,7 +45,7 @@ pub fn clear_search_results<D: Db>(
         if let Some(pending_clearance) = pending_clearance {
             if let Some(last_cleared_revision) = &pending_clearance.last_cleared_revision {
                 let (last_cleared_place, current_status) =
-                    db.load_place_revision(&place.id, *last_cleared_revision)?;
+                    repo.load_place_revision(&place.id, *last_cleared_revision)?;
                 debug_assert_eq!(*last_cleared_revision, last_cleared_place.revision);
                 let Place {
                     description,
@@ -78,12 +81,15 @@ pub fn clear_search_results<D: Db>(
     Ok(cleared_results)
 }
 
-pub fn search<D: Db>(
-    db: &D,
+pub fn search<R>(
+    repo: &R,
     index: &dyn PlaceIndex,
     req: SearchRequest,
     limit: usize,
-) -> Result<(Vec<IndexedPlace>, Vec<IndexedPlace>)> {
+) -> Result<(Vec<IndexedPlace>, Vec<IndexedPlace>)>
+where
+    R: PlaceRepo + PlaceClearanceRepo + OrganizationRepo,
+{
     let SearchRequest {
         bbox: visible_bbox,
         ids,
@@ -138,8 +144,8 @@ pub fn search<D: Db>(
         .iter()
         .all(|e| visible_bbox.contains_point(e.pos)));
     if let Some(org_tag) = org_tag {
-        if let Some(org_id) = db.map_tag_to_clearance_org_id(org_tag)? {
-            visible_places = clear_search_results(db, &org_id, org_tag, visible_places)?;
+        if let Some(org_id) = repo.map_tag_to_clearance_org_id(org_tag)? {
+            visible_places = clear_search_results(repo, &org_id, org_tag, visible_places)?;
         }
     }
 
@@ -160,8 +166,8 @@ pub fn search<D: Db>(
         .iter()
         .any(|e| visible_bbox.contains_point(e.pos)));
     if let Some(org_tag) = org_tag {
-        if let Some(org_id) = db.map_tag_to_clearance_org_id(org_tag)? {
-            invisible_places = clear_search_results(db, &org_id, org_tag, invisible_places)?;
+        if let Some(org_id) = repo.map_tag_to_clearance_org_id(org_tag)? {
+            invisible_places = clear_search_results(repo, &org_id, org_tag, invisible_places)?;
         }
     }
 

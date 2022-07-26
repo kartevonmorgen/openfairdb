@@ -25,7 +25,10 @@ impl Storable {
     }
 }
 
-pub fn prepare_new_rating<D: Db>(db: &D, r: NewPlaceRating) -> Result<Storable> {
+pub fn prepare_new_rating<R>(repo: &R, r: NewPlaceRating) -> Result<Storable>
+where
+    R: PlaceRepo,
+{
     if r.comment.is_empty() {
         return Err(Error::EmptyComment);
     }
@@ -36,7 +39,7 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: NewPlaceRating) -> Result<Storable> 
     let now = Timestamp::now();
     let rating_id = Id::new();
     let comment_id = Id::new();
-    let (place, status) = db.get_place(&r.entry)?;
+    let (place, status) = repo.get_place(&r.entry)?;
     debug_assert_eq!(place.id, r.entry.as_str().into());
     let rating = Rating {
         id: rating_id.clone(),
@@ -58,13 +61,16 @@ pub fn prepare_new_rating<D: Db>(db: &D, r: NewPlaceRating) -> Result<Storable> 
     Ok(Storable(place, status, rating, comment))
 }
 
-pub fn store_new_rating<D: Db>(db: &D, s: Storable) -> Result<(Place, ReviewStatus, Vec<Rating>)> {
+pub fn store_new_rating<R>(repo: &R, s: Storable) -> Result<(Place, ReviewStatus, Vec<Rating>)>
+where
+    R: RatingRepository + CommentRepository,
+{
     let Storable(place, status, rating, comment) = s;
     debug_assert_eq!(place.id, rating.place_id);
     debug_assert_eq!(rating.id, comment.rating_id);
-    db.create_rating(rating)?;
-    db.create_comment(comment)?;
-    let ratings = db.load_ratings_of_place(place.id.as_ref())?;
+    repo.create_rating(rating)?;
+    repo.create_comment(comment)?;
+    let ratings = repo.load_ratings_of_place(place.id.as_ref())?;
     Ok((place, status, ratings))
 }
 

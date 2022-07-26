@@ -38,10 +38,6 @@ pub struct Auth {
 }
 
 impl Auth {
-    // pub fn unauthorized() -> AppError {
-    //     AppError::Business(Error::Parameter(ParameterError::Unauthorized))
-    // }
-
     pub fn account_email(&self) -> Result<&str> {
         self.account_email
             .as_deref()
@@ -60,16 +56,22 @@ impl Auth {
         }
     }
 
-    pub fn organization<R: OrganizationRepo>(&self, db: &R) -> Result<Organization> {
+    pub fn organization<R>(&self, repo: &R) -> Result<Organization>
+    where
+        R: OrganizationRepo + UserRepo,
+    {
         Ok(usecases::authorize_organization_by_possible_api_tokens(
-            db,
+            repo,
             &self.bearer_tokens,
         )?)
     }
 
-    pub fn user_with_min_role<D: Db>(&self, db: &D, min_required_role: Role) -> Result<User> {
+    pub fn user_with_min_role<R>(&self, repo: &R, min_required_role: Role) -> Result<User>
+    where
+        R: UserRepo,
+    {
         Ok(usecases::authorize_user_by_email(
-            db,
+            repo,
             self.account_email()?,
             min_required_role,
         )?)

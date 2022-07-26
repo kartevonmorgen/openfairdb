@@ -44,12 +44,15 @@ pub enum NewEventMode<'a> {
 #[derive(Debug, Clone)]
 pub struct Storable(Event);
 
-pub fn import_new_event<D: Db>(
-    db: &D,
+pub fn import_new_event<R>(
+    repo: &R,
     token: Option<&str>,
     e: NewEvent,
     mode: NewEventMode,
-) -> Result<Storable> {
+) -> Result<Storable>
+where
+    R: OrganizationRepo + UserRepo + EventRepo,
+{
     let NewEvent {
         title,
         description,
@@ -75,7 +78,7 @@ pub fn import_new_event<D: Db>(
     } = e;
     let org = token
         .map(|t| {
-            db.get_org_by_api_token(t).map_err(|e| {
+            repo.get_org_by_api_token(t).map_err(|e| {
                 log::warn!("Unknown or invalid API token: {}", t);
                 match e {
                     RepoError::NotFound => Error::Unauthorized,
@@ -112,10 +115,10 @@ pub fn import_new_event<D: Db>(
                 }
                 new_tags.sort_unstable();
                 new_tags.dedup();
-                authorize_editing_of_tagged_entry(db, &[], &new_tags, Some(&org))?
+                authorize_editing_of_tagged_entry(repo, &[], &new_tags, Some(&org))?
             }
             NewEventMode::Update(id) => {
-                let old_event = db.get_event(id)?;
+                let old_event = repo.get_event(id)?;
                 // Reject update if the organization does not own the event
                 let mut owned_tag_count = 0;
                 for org_tag in &org.moderated_tags {
@@ -123,7 +126,7 @@ pub fn import_new_event<D: Db>(
                         owned_tag_count += 1;
                     }
                 }
-                if owned_tag_count == 0 && db.is_event_owned_by_any_organization(id)? {
+                if owned_tag_count == 0 && repo.is_event_owned_by_any_organization(id)? {
                     // Prevent editing of events that are owned by another organization
                     return Err(Error::ModeratedTag);
                 }
@@ -151,11 +154,11 @@ pub fn import_new_event<D: Db>(
                 }
                 // Verify that the org is entitled to update this event according to the owned
                 // tags
-                authorize_editing_of_tagged_entry(db, &old_tags, &new_tags, Some(&org))?
+                authorize_editing_of_tagged_entry(repo, &old_tags, &new_tags, Some(&org))?
             }
         }
     } else {
-        authorize_editing_of_tagged_entry(db, &[], &new_tags, None)?
+        authorize_editing_of_tagged_entry(repo, &[], &new_tags, None)?
     };
     // TODO: Record pending clearance for events
     debug_assert!(_clearance_org_ids.is_empty());
@@ -215,7 +218,7 @@ pub fn import_new_event<D: Db>(
     };
 
     let created_by = if let Some(ref email) = created_by {
-        Some(create_user_from_email(db, email)?.email)
+        Some(create_user_from_email(repo, email)?.email)
     } else {
         None
     };
@@ -294,23 +297,29 @@ pub fn import_new_event<D: Db>(
     Ok(Storable(event))
 }
 
-pub fn store_created_event<D: Db>(db: &D, storable: Storable) -> Result<Event> {
+pub fn store_created_event<R>(repo: &R, storable: Storable) -> Result<Event>
+where
+    R: TagRepo + EventRepo,
+{
     let Storable(event) = storable;
     log::debug!("Storing newly created event: {:?}", event);
     for t in &event.tags {
-        db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
+        repo.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
-    db.create_event(event.clone())?;
+    repo.create_event(event.clone())?;
     Ok(event)
 }
 
-pub fn store_updated_event<D: Db>(db: &D, storable: Storable) -> Result<Event> {
+pub fn store_updated_event<R>(repo: &R, storable: Storable) -> Result<Event>
+where
+    R: TagRepo + EventRepo,
+{
     let Storable(event) = storable;
     log::debug!("Storing updated event: {:?}", event);
     for t in &event.tags {
-        db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
+        repo.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
-    db.update_event(&event)?;
+    repo.update_event(&event)?;
     Ok(event)
 }
 
@@ -319,9 +328,12 @@ mod tests {
 
     use super::{super::tests::MockDb, *};
 
-    fn create_new_event<D: Db>(db: &D, token: Option<&str>, e: NewEvent) -> Result<Event> {
-        let s = import_new_event(db, token, e, NewEventMode::Create)?;
-        store_created_event(db, s)
+    fn create_new_event<R>(repo: &R, token: Option<&str>, e: NewEvent) -> Result<Event>
+    where
+        R: OrganizationRepo + UserRepo + EventRepo + TagRepo,
+    {
+        let s = import_new_event(repo, token, e, NewEventMode::Create)?;
+        store_created_event(repo, s)
     }
 
     #[test]

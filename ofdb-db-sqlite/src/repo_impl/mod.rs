@@ -14,7 +14,6 @@ use diesel::{
 };
 
 use ofdb_core::{
-    db::*,
     entities::*,
     repositories::{self as repo, *},
     util::{geo::MapPoint, time::Timestamp},
@@ -1125,5 +1124,3 @@ impl SubscriptionRepo for Connection<'_> {
         Ok(())
     }
 }
-
-impl Db for Connection<'_> {}

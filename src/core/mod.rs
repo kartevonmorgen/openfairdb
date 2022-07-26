@@ -652,8 +652,6 @@ pub mod usecases {
                 Ok(())
             }
         }
-
-        impl Db for MockDb {}
     }
 }
 

@@ -1,5 +1,4 @@
 use crate::{
-    db::Db,
     entities::*,
     util::{
         geo::{MapBbox, MapPoint},
@@ -56,27 +55,34 @@ mod prelude {
     pub type Result<T> = std::result::Result<T, Error>;
     pub use crate::{db::*, entities::*, repositories::*};
 }
+use self::prelude::*;
 
 //TODO: move usecases into separate files
 
-pub fn load_ratings_with_comments<D: Db>(
-    db: &D,
+pub fn load_ratings_with_comments<R>(
+    repo: &R,
     rating_ids: &[&str],
-) -> Result<Vec<(Rating, Vec<Comment>)>> {
-    let ratings = db.load_ratings(rating_ids)?;
-    let results = db.zip_ratings_with_comments(ratings)?;
+) -> Result<Vec<(Rating, Vec<Comment>)>>
+where
+    R: RatingRepository + CommentRepository,
+{
+    let ratings = repo.load_ratings(rating_ids)?;
+    let results = repo.zip_ratings_with_comments(ratings)?;
     Ok(results)
 }
 
-pub fn get_user<D: Db>(db: &D, logged_in_email: &str, requested_email: &str) -> Result<User> {
+pub fn get_user<R>(repo: &R, logged_in_email: &str, requested_email: &str) -> Result<User>
+where
+    R: UserRepo,
+{
     if logged_in_email != requested_email {
         return Err(Error::Forbidden);
     }
-    Ok(db.get_user_by_email(requested_email)?)
+    Ok(repo.get_user_by_email(requested_email)?)
 }
 
-pub fn get_event<D: Db>(db: &D, id: &str) -> Result<Event> {
-    Ok(db.get_event(id)?)
+pub fn get_event<R: EventRepo>(repo: &R, id: &str) -> Result<Event> {
+    Ok(repo.get_event(id)?)
 }
 
 #[derive(Clone, Debug, Default)]
@@ -118,14 +124,20 @@ impl EventQuery {
     }
 }
 
-pub fn delete_user(db: &dyn Db, login_email: &str, email: &str) -> Result<()> {
+pub fn delete_user<R>(repo: &R, login_email: &str, email: &str) -> Result<()>
+where
+    R: UserRepo,
+{
     if login_email != email {
         return Err(Error::Forbidden);
     }
-    Ok(db.delete_user_by_email(email)?)
+    Ok(repo.delete_user_by_email(email)?)
 }
 
-pub fn subscribe_to_bbox(db: &dyn Db, user_email: String, bbox: MapBbox) -> Result<()> {
+pub fn subscribe_to_bbox<R>(repo: &R, user_email: String, bbox: MapBbox) -> Result<()>
+where
+    R: SubscriptionRepo + UserRepo,
+{
     if !validate::is_valid_bbox(&bbox) {
         return Err(Error::Bbox);
     }
@@ -133,10 +145,10 @@ pub fn subscribe_to_bbox(db: &dyn Db, user_email: String, bbox: MapBbox) -> Resu
     // TODO: support multiple subscriptions in KVM (frontend)
     // In the meanwhile we just replace existing subscriptions
     // with a new one.
-    unsubscribe_all_bboxes(db, &user_email)?;
+    unsubscribe_all_bboxes(repo, &user_email)?;
 
     let id = Id::new();
-    db.create_bbox_subscription(&BboxSubscription {
+    repo.create_bbox_subscription(&BboxSubscription {
         id,
         user_email,
         bbox,
@@ -144,31 +156,40 @@ pub fn subscribe_to_bbox(db: &dyn Db, user_email: String, bbox: MapBbox) -> Resu
     Ok(())
 }
 
-pub fn unsubscribe_all_bboxes(db: &dyn Db, user_email: &str) -> Result<()> {
-    Ok(db.delete_bbox_subscriptions_by_email(user_email)?)
+pub fn unsubscribe_all_bboxes<R>(repo: &R, user_email: &str) -> Result<()>
+where
+    R: SubscriptionRepo,
+{
+    Ok(repo.delete_bbox_subscriptions_by_email(user_email)?)
 }
 
-pub fn get_bbox_subscriptions(db: &dyn Db, user_email: &str) -> Result<Vec<BboxSubscription>> {
-    Ok(db
+pub fn get_bbox_subscriptions<R>(repo: &R, user_email: &str) -> Result<Vec<BboxSubscription>>
+where
+    R: SubscriptionRepo,
+{
+    Ok(repo
         .all_bbox_subscriptions()?
         .into_iter()
         .filter(|s| s.user_email == user_email)
         .collect())
 }
 
-pub fn bbox_subscriptions_by_coordinate(
-    db: &dyn Db,
-    pos: MapPoint,
-) -> Result<Vec<BboxSubscription>> {
-    Ok(db
+pub fn bbox_subscriptions_by_coordinate<R>(repo: &R, pos: MapPoint) -> Result<Vec<BboxSubscription>>
+where
+    R: SubscriptionRepo,
+{
+    Ok(repo
         .all_bbox_subscriptions()?
         .into_iter()
         .filter(|s| s.bbox.contains_point(pos))
         .collect())
 }
 
-pub fn email_addresses_by_coordinate(db: &dyn Db, pos: MapPoint) -> Result<Vec<String>> {
-    Ok(bbox_subscriptions_by_coordinate(db, pos)?
+pub fn email_addresses_by_coordinate<R>(repo: &R, pos: MapPoint) -> Result<Vec<String>>
+where
+    R: SubscriptionRepo,
+{
+    Ok(bbox_subscriptions_by_coordinate(repo, pos)?
         .into_iter()
         .map(|s| s.user_email)
         .collect())

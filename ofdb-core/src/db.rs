@@ -1,28 +1,5 @@
-use crate::{entities::*, repositories::*};
+use crate::entities::*;
 use anyhow::Result as Fallible;
-
-type Result<T> = std::result::Result<T, Error>;
-
-pub trait Db:
-    PlaceRepo
-    + UserRepo
-    + EventRepo
-    + OrganizationRepo
-    + CommentRepository
-    + RatingRepository
-    + UserTokenRepo
-    + PlaceClearanceRepo
-    + SubscriptionRepo
-    + TagRepo
-{
-    fn all_categories(&self) -> Result<Vec<Category>> {
-        Ok(vec![
-            Category::new_non_profit(),
-            Category::new_commercial(),
-            Category::new_event(),
-        ])
-    }
-}
 
 #[derive(Copy, Clone, Debug)]
 pub enum IndexQueryMode {

@@ -40,13 +40,16 @@ pub struct Storable {
     clearance_org_ids: Vec<Id>,
 }
 
-pub fn prepare_new_place<D: Db>(
-    db: &D,
+pub fn prepare_new_place<R>(
+    repo: &R,
     e: NewPlace,
     created_by_email: Option<&str>,
     created_by_org: Option<&Organization>,
     accepted_licenses: &HashSet<String>,
-) -> Result<Storable> {
+) -> Result<Storable>
+where
+    R: OrganizationRepo,
+{
     let NewPlace {
         title,
         description,
@@ -80,7 +83,7 @@ pub fn prepare_new_place<D: Db>(
             .map(String::as_str),
     );
     let clearance_org_ids =
-        authorize::authorize_editing_of_tagged_entry(db, &old_tags, &new_tags, created_by_org)?;
+        authorize::authorize_editing_of_tagged_entry(repo, &old_tags, &new_tags, created_by_org)?;
 
     let address = Address {
         street,
@@ -159,23 +162,30 @@ pub fn prepare_new_place<D: Db>(
     })
 }
 
-pub fn store_new_place<D: Db>(db: &D, s: Storable) -> Result<(Place, Vec<Rating>)> {
+pub fn store_new_place<R>(repo: &R, s: Storable) -> Result<(Place, Vec<Rating>)>
+where
+    R: TagRepo + PlaceRepo + PlaceClearanceRepo,
+{
     let Storable {
         place,
         clearance_org_ids,
     } = s;
     log::debug!("Storing new place revision: {:?}", place);
     for t in &place.tags {
-        db.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
+        repo.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
     }
-    db.create_or_update_place(place.clone())?;
+    repo.create_or_update_place(place.clone())?;
     if !clearance_org_ids.is_empty() {
         let pending_clearance = PendingClearanceForPlace {
             place_id: place.id.clone(),
             created_at: place.created.at,
             last_cleared_revision: None,
         };
-        super::clearance::place::add_pending_clearance(db, &clearance_org_ids, &pending_clearance)?;
+        super::clearance::place::add_pending_clearance(
+            repo,
+            &clearance_org_ids,
+            &pending_clearance,
+        )?;
     }
     // No initial ratings so far
     let ratings = vec![];

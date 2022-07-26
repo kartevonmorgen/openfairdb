@@ -1,12 +1,15 @@
 use super::prelude::*;
 use crate::repositories::Error as RepoError;
 
-pub fn authorize_organization_by_possible_api_tokens<D: OrganizationRepo>(
-    db: &D,
+pub fn authorize_organization_by_possible_api_tokens<R>(
+    repo: &R,
     tokens: &[String],
-) -> Result<Organization> {
+) -> Result<Organization>
+where
+    R: UserRepo + OrganizationRepo,
+{
     for token in tokens {
-        match db.get_org_by_api_token(token) {
+        match repo.get_org_by_api_token(token) {
             Ok(org) => return Ok(org),
             Err(RepoError::NotFound) => (),
             Err(e) => return Err(Error::Repo(e)),
@@ -15,8 +18,11 @@ pub fn authorize_organization_by_possible_api_tokens<D: OrganizationRepo>(
     Err(Error::Unauthorized)
 }
 
-pub fn authorize_user_by_email(db: &dyn Db, email: &str, min_required_role: Role) -> Result<User> {
-    if let Some(user) = db.try_get_user_by_email(email)? {
+pub fn authorize_user_by_email<R>(repo: &R, email: &str, min_required_role: Role) -> Result<User>
+where
+    R: UserRepo,
+{
+    if let Some(user) = repo.try_get_user_by_email(email)? {
         return crate::user::authorize_role(&user, min_required_role)
             .map(|()| user)
             .map_err(|_| Error::Unauthorized);

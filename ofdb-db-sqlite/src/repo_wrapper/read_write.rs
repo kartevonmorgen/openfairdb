@@ -275,5 +275,3 @@ impl<'a> TagRepo for DbReadWrite<'a> {
         self.inner().count_tags()
     }
 }
-
-impl<'a> Db for DbReadWrite<'a> {}

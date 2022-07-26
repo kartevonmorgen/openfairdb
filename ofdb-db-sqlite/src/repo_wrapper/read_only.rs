@@ -276,4 +276,4 @@ impl<'a> TagRepo for DbReadOnly<'a> {
     }
 }
 
-impl<'a> Db for DbReadOnly<'a> {}
+impl<'a> CategoryRepo for DbReadOnly<'a> {}

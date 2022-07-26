@@ -5,8 +5,11 @@ pub struct Credentials<'a> {
     pub password: &'a str,
 }
 
-pub fn login_with_email<D: Db>(db: &D, login: &Credentials) -> Result<Role> {
-    db.try_get_user_by_email(login.email)
+pub fn login_with_email<R>(repo: &R, login: &Credentials) -> Result<Role>
+where
+    R: UserRepo,
+{
+    repo.try_get_user_by_email(login.email)
         .map_err(Error::Repo)
         .and_then(|user| {
             if let Some(u) = user {

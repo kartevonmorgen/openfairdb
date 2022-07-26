@@ -11,15 +11,18 @@ use crate::{
 };
 use ofdb_db_sqlite::Connections;
 
-fn update_event_locations<D: Db>(db: &mut D) -> Result<()> {
-    let events = db.all_events_chronologically()?;
+fn update_event_locations<R>(repo: &R) -> Result<()>
+where
+    R: EventRepo,
+{
+    let events = repo.all_events_chronologically()?;
     for mut e in events {
         if let Some(ref mut loc) = e.location {
             if let Some(ref addr) = loc.address {
                 if let Some((lat, lng)) = GEO_CODING_GW.resolve_address_lat_lng(addr) {
                     if let Ok(pos) = MapPoint::try_from_lat_lng_deg(lat, lng) {
                         if pos.is_valid() {
-                            if let Err(err) = db.update_event(&e) {
+                            if let Err(err) = repo.update_event(&e) {
                                 warn!("Failed to update location of event {}: {}", e.id, err);
                             } else {
                                 info!("Updated location of event {}", e.id);
@@ -89,7 +92,7 @@ pub fn run() {
         _ => {
             if matches.is_present("fix-event-address-location") {
                 info!("Updating all event locations...");
-                update_event_locations(&mut connections.exclusive().unwrap()).unwrap();
+                update_event_locations(&connections.exclusive().unwrap()).unwrap();
             }
             web::run(
                 connections.into(),

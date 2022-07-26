@@ -9,12 +9,12 @@ pub struct NewUser {
     pub password: String,
 }
 
-pub fn create_new_user<D: UserRepo>(db: &D, u: NewUser) -> Result<()> {
+pub fn create_new_user<R: UserRepo>(repo: &R, u: NewUser) -> Result<()> {
     let password = u.password.parse::<Password>()?;
     if !validate::is_valid_email(&u.email) {
         return Err(Error::Email);
     }
-    if db.try_get_user_by_email(&u.email)?.is_some() {
+    if repo.try_get_user_by_email(&u.email)?.is_some() {
         return Err(Error::UserExists);
     }
     let new_user = User {
@@ -24,7 +24,7 @@ pub fn create_new_user<D: UserRepo>(db: &D, u: NewUser) -> Result<()> {
         role: Role::Guest,
     };
     log::debug!("Creating new user: email = {}", new_user.email);
-    db.create_user(&new_user)?;
+    repo.create_user(&new_user)?;
     Ok(())
 }
 
@@ -39,8 +39,11 @@ const PW_GEN: PasswordGenerator = PasswordGenerator {
     spaces: false,
 };
 
-pub fn create_user_from_email<D: Db>(db: &D, email: &str) -> Result<User> {
-    if let Some(user) = db.try_get_user_by_email(email)? {
+pub fn create_user_from_email<R>(repo: &R, email: &str) -> Result<User>
+where
+    R: UserRepo,
+{
+    if let Some(user) = repo.try_get_user_by_email(email)? {
         return Ok(user);
     }
     // Create a new user with a generated password
@@ -51,8 +54,8 @@ pub fn create_user_from_email<D: Db>(db: &D, email: &str) -> Result<User> {
         email: email.into(),
         password,
     };
-    create_new_user(db, u)?;
-    Ok(db.get_user_by_email(email)?)
+    create_new_user(repo, u)?;
+    Ok(repo.get_user_by_email(email)?)
 }
 
 #[cfg(test)]

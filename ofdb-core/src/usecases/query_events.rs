@@ -9,10 +9,13 @@ use crate::{
 const DEFAULT_RESULT_LIMIT: usize = 100;
 
 #[allow(clippy::absurd_extreme_comparisons)]
-pub fn query_events<D: Db>(db: &D, index: &dyn IdIndex, query: EventQuery) -> Result<Vec<Event>> {
+pub fn query_events<R>(repo: &R, index: &dyn IdIndex, query: EventQuery) -> Result<Vec<Event>>
+where
+    R: EventRepo + UserRepo,
+{
     if query.is_empty() {
         // Special case for backwards compatibility
-        return Ok(db.all_events_chronologically()?);
+        return Ok(repo.all_events_chronologically()?);
     }
     let EventQuery {
         bbox: visible_bbox,
@@ -103,10 +106,10 @@ pub fn query_events<D: Db>(db: &D, index: &dyn IdIndex, query: EventQuery) -> Re
         .chain(invisible_event_ids.iter())
         .map(Id::as_str)
         .collect();
-    let mut events = db.get_events_chronologically(&event_ids)?;
+    let mut events = repo.get_events_chronologically(&event_ids)?;
 
     if let Some(ref email) = created_by {
-        if let Some(user) = db.try_get_user_by_email(email)? {
+        if let Some(user) = repo.try_get_user_by_email(email)? {
             events = events
                 .into_iter()
                 .filter(|e| e.created_by.as_ref() == Some(&user.email))
