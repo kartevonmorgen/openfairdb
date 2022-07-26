@@ -17,12 +17,6 @@ thiserror = "1.0.31"
 time = "0.3.11"
 url = "2.2.2"
 
-# TODO: remove
-[dependencies.ofdb-boundary]
-version = "0.10.1"
-path = "../ofdb-boundary"
-features = ["extra-derive"]
-
 [dev-dependencies]
 ofdb-entities = { version = "*", features = ["builders"] }
 criterion = "0.3.6"

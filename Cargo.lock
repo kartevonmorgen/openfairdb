@@ -1589,7 +1589,6 @@ dependencies = [
  "fast_chemail",
  "lazy_static",
  "log",
- "ofdb-boundary",
  "ofdb-entities",
  "passwords",
  "regex",

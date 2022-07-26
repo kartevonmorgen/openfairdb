@@ -321,7 +321,7 @@ mod entry {
         let r = usecases::NewPlaceRating {
             title: "A rating".into(),
             comment: "Foo".into(),
-            context: ofdb_boundary::RatingContext::Diversity,
+            context: RatingContext::Diversity,
             source: None,
             user: None,
             value: 1.into(),

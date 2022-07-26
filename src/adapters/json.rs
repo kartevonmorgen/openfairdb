@@ -132,6 +132,8 @@ pub mod from_json {
             source,
             user,
         } = rating;
+        let value = value.into();
+        let context = context.into();
         usecases::NewPlaceRating {
             entry,
             title,

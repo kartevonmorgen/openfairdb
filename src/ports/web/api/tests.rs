@@ -182,8 +182,8 @@ fn get_one_entry() {
         &connections,
         &mut search_engine,
         usecases::NewPlaceRating {
-            context: ofdb_boundary::RatingContext::Humanity,
-            value: ofdb_boundary::RatingValue::from(2),
+            context: RatingContext::Humanity,
+            value: RatingValue::from(2),
             title: "title".into(),
             user: None,
             entry: "get_one_entry_test".into(),
@@ -1263,8 +1263,8 @@ fn get_one_rating() {
         &connections,
         &mut search_engine,
         usecases::NewPlaceRating {
-            context: ofdb_boundary::RatingContext::Humanity,
-            value: ofdb_boundary::RatingValue::from(2),
+            context: RatingContext::Humanity,
+            value: RatingValue::from(2),
             user: None,
             title: "title".into(),
             entry: "foo".into(),
@@ -1310,8 +1310,8 @@ fn ratings_with_and_without_source() {
         &connections,
         &mut search_engine,
         usecases::NewPlaceRating {
-            context: ofdb_boundary::RatingContext::Humanity,
-            value: ofdb_boundary::RatingValue::from(2),
+            context: RatingContext::Humanity,
+            value: RatingValue::from(2),
             user: None,
             title: "title".into(),
             entry: "foo".into(),
@@ -1324,8 +1324,8 @@ fn ratings_with_and_without_source() {
         &connections,
         &mut search_engine,
         usecases::NewPlaceRating {
-            context: ofdb_boundary::RatingContext::Humanity,
-            value: ofdb_boundary::RatingValue::from(2),
+            context: RatingContext::Humanity,
+            value: RatingValue::from(2),
             user: None,
             title: "title".into(),
             entry: "bar".into(),
