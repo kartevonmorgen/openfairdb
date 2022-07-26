@@ -1,16 +1,15 @@
 use time::{format_description::FormatItem, macros::format_description, Date};
 
 use super::models::*;
-use crate::core::{
-    entities as e,
+use ofdb_core::{
+    entities as e, repositories as repo,
+    usecases::Error as ParameterError,
     util::{
         geo::{MapBbox, MapPoint},
         nonce::Nonce,
         time::Timestamp,
     },
 };
-use ofdb_core::repositories as repo;
-use ofdb_core::usecases::Error as ParameterError;
 
 pub(crate) fn load_url(url: String) -> Option<e::Url> {
     match url.parse() {
@@ -24,13 +23,13 @@ pub(crate) fn load_url(url: String) -> Option<e::Url> {
 }
 
 pub(crate) fn registration_type_from_i16(i: i16) -> e::RegistrationType {
-    use crate::core::entities::RegistrationType::*;
+    use ofdb_core::entities::RegistrationType::*;
     match i {
         1 => Email,
         2 => Phone,
         3 => Homepage,
         _ => {
-            error!(
+            log::error!(
                 "Conversion Error:
                        Invalid registration type:
                        {} should be one of 1,2,3;
@@ -43,7 +42,7 @@ pub(crate) fn registration_type_from_i16(i: i16) -> e::RegistrationType {
 }
 
 pub(crate) fn registration_type_into_i16(x: e::RegistrationType) -> i16 {
-    use crate::core::entities::RegistrationType::*;
+    use ofdb_core::entities::RegistrationType::*;
     match x {
         Email => 1,
         Phone => 2,
@@ -67,7 +66,7 @@ mod tests {
 
     #[test]
     fn registration_type_from_i16() {
-        use crate::core::entities::RegistrationType::*;
+        use ofdb_core::entities::RegistrationType::*;
         assert_eq!(super::registration_type_from_i16(1), Email);
         assert_eq!(super::registration_type_from_i16(2), Phone);
         assert_eq!(super::registration_type_from_i16(3), Homepage);
@@ -76,7 +75,7 @@ mod tests {
 
     #[test]
     fn registration_type_into_i16() {
-        use crate::core::entities::RegistrationType::*;
+        use ofdb_core::entities::RegistrationType::*;
         let e: i16 = super::registration_type_into_i16(Email);
         let p: i16 = super::registration_type_into_i16(Phone);
         let u: i16 = super::registration_type_into_i16(Homepage);
@@ -199,7 +198,7 @@ impl<'a> From<&'a e::User> for NewUser<'a> {
             email_confirmed: u.email_confirmed,
             password: u.password.to_string(),
             role: u.role.to_i16().unwrap_or_else(|| {
-                warn!("Could not convert role {:?} to i16. Use 0 instead.", u.role);
+                log::warn!("Could not convert role {:?} to i16. Use 0 instead.", u.role);
                 0
             }),
         }
@@ -221,7 +220,7 @@ impl From<UserEntity> for e::User {
             email_confirmed,
             password: password.into(),
             role: e::Role::from_i16(role).unwrap_or_else(|| {
-                warn!(
+                log::warn!(
                     "Could not cast role from i16 (value: {}). Use {:?} instead.",
                     role,
                     e::Role::default()

@@ -1,13 +1,16 @@
-mod models;
-mod repo_impl;
-mod repo_wrapper;
-mod schema;
-mod util;
+#[macro_use]
+extern crate diesel;
 
 use anyhow::Result as Fallible;
 use diesel::{r2d2, sqlite::SqliteConnection};
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::{ops::Deref, sync::Arc};
+
+mod models;
+mod repo_impl;
+mod repo_wrapper;
+mod schema;
+mod util;
 
 pub use repo_impl::from_diesel_err;
 pub use repo_wrapper::*;
@@ -29,7 +32,7 @@ impl<'a> DbReadOnly<'a> {
     fn try_new(pool: &'a SharedConnectionPool) -> Fallible<Self> {
         let locked_pool = pool.read();
         let conn = locked_pool.get().map_err(|err| {
-            error!("Failed to obtain pooled database connection for read-only access");
+            log::error!("Failed to obtain pooled database connection for read-only access");
             err
         })?;
         Ok(Self {
@@ -59,7 +62,7 @@ impl<'a> DbReadWrite<'a> {
     fn try_new(pool: &'a SharedConnectionPool) -> Fallible<Self> {
         let locked_pool = pool.write();
         let conn = locked_pool.get().map_err(|err| {
-            error!("Failed to obtain pooled database connection for read/write access");
+            log::error!("Failed to obtain pooled database connection for read/write access");
             err
         })?;
         Ok(Self {

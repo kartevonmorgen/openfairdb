@@ -1,10 +1,10 @@
 use super::*;
 use crate::{
-    infrastructure::{
-        cfg::Cfg,
-        db::{sqlite::Connections, tantivy},
+    infrastructure::{cfg::Cfg, db::tantivy},
+    ports::web::{
+        sqlite::Connections,
+        tests::{prelude::*, register_user},
     },
-    ports::web::tests::{prelude::*, register_user},
 };
 
 fn setup() -> (

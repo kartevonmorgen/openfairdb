@@ -19,12 +19,8 @@ use crate::{
         usecases::{self, DuplicateType},
         util::{self, geo},
     },
-    infrastructure::{
-        db::{sqlite, tantivy},
-        error::AppError,
-        flows::prelude as flows,
-    },
-    ports::web::{jwt, notify::*},
+    infrastructure::{db::tantivy, error::AppError, flows::prelude as flows},
+    ports::web::{jwt, notify::*, sqlite},
 };
 use ofdb_core::repositories::Error as RepoError;
 use ofdb_core::usecases::Error as ParameterError;

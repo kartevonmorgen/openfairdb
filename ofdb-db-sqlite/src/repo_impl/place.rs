@@ -187,10 +187,10 @@ impl<'c> PlaceRepo for Connection<'c> {
             ))
             .into_boxed();
         if place_ids.is_empty() {
-            warn!("Loading all entries at once");
+            log::warn!("Loading all entries at once");
         } else {
             // TODO: Split loading into chunks of fixed size
-            info!("Loading multiple ({}) entries at once", place_ids.len());
+            log::info!("Loading multiple ({}) entries at once", place_ids.len());
             query = query.filter(dsl::id.eq_any(place_ids));
         }
 

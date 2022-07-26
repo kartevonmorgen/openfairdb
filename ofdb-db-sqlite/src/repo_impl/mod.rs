@@ -13,9 +13,14 @@ use diesel::{
     result::{DatabaseErrorKind, Error as DieselError},
 };
 
+use ofdb_core::{
+    db::*,
+    entities::*,
+    repositories::{self as repo, *},
+    util::{geo::MapPoint, time::Timestamp},
+};
+
 use super::{util::load_url, *};
-use crate::core::prelude::*;
-use ofdb_core::repositories as repo;
 
 mod comment;
 mod org;
@@ -624,9 +629,10 @@ impl EventGateway for Connection<'_> {
                 .values(&new_event)
                 .execute(self.deref())?;
             let id = resolve_event_id(self, new_event.uid.as_ref()).map_err(|err| {
-                warn!(
+                log::warn!(
                     "Failed to resolve id of newly created event {}: {}",
-                    new_event.uid, err,
+                    new_event.uid,
+                    err,
                 );
                 diesel::result::Error::RollbackTransaction
             })?;

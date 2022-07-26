@@ -7,8 +7,7 @@ use time::OffsetDateTime;
 
 use crate::{
     core::db::PlaceRepo,
-    infrastructure::db::sqlite,
-    ports::web::{MostPopularTagsParams, Pagination},
+    ports::web::{sqlite, MostPopularTagsParams, Pagination},
 };
 
 type Request = (MostPopularTagsParams, Pagination);

@@ -19,8 +19,8 @@ use rust_embed::RustEmbed;
 use crate::ports::web::api::events::EventQuery;
 use crate::{
     core::{error::Error, prelude::*, usecases},
-    infrastructure::{db::sqlite, error::*, flows::prelude::*},
-    ports::web::{guards::*, tantivy::SearchEngine},
+    infrastructure::{error::*, flows::prelude::*},
+    ports::web::{guards::*, sqlite, tantivy::SearchEngine},
 };
 use ofdb_core::repositories::Error as RepoError;
 use ofdb_core::usecases::Error as ParameterError;

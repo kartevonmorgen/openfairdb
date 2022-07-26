@@ -7,12 +7,8 @@ use super::{super::guards::*, JsonResult, Result};
 use crate::{
     adapters::json::{self, from_json},
     core::{prelude::*, usecases, util},
-    infrastructure::{
-        cfg::Cfg,
-        db::{sqlite, tantivy},
-        flows::prelude as flows,
-    },
-    ports::web::{notify::*, popular_tags_cache::PopularTagsCache},
+    infrastructure::{cfg::Cfg, db::tantivy, flows::prelude as flows},
+    ports::web::{notify::*, popular_tags_cache::PopularTagsCache, sqlite},
 };
 
 #[derive(FromForm, Clone)]

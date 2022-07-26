@@ -31,7 +31,7 @@ impl CommentRepository for Connection<'_> {
     fn load_comments(&self, ids: &[&str]) -> Result<Vec<Comment>> {
         use schema::{place_rating::dsl as rating_dsl, place_rating_comment::dsl as comment_dsl};
         // TODO: Split loading into chunks of fixed size
-        info!("Loading multiple ({}) comments at once", ids.len());
+        log::info!("Loading multiple ({}) comments at once", ids.len());
         Ok(schema::place_rating_comment::table
             .inner_join(schema::place_rating::table)
             .select((

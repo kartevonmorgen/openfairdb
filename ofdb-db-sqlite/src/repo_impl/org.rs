@@ -10,9 +10,10 @@ impl OrganizationRepo for Connection<'_> {
                 .values(&new_org)
                 .execute(self.0)?;
             let org_rowid = resolve_organization_rowid(self, &org_id).map_err(|err| {
-                warn!(
+                log::warn!(
                     "Failed to resolve id of newly created organization '{}': {}",
-                    org_id, err
+                    org_id,
+                    err
                 );
                 diesel::result::Error::RollbackTransaction
             })?;

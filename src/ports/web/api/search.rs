@@ -12,10 +12,8 @@ use crate::{
         usecases,
         util::{self, geo},
     },
-    infrastructure::{
-        db::{sqlite, tantivy},
-        error::AppError,
-    },
+    infrastructure::{db::tantivy, error::AppError},
+    ports::web::sqlite,
 };
 use ofdb_core::usecases::Error as ParameterError;
 

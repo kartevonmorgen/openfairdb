@@ -1600,6 +1600,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ofdb-db-sqlite"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "diesel",
+ "log",
+ "num-traits",
+ "ofdb-core",
+ "parking_lot",
+ "time",
+]
+
+[[package]]
 name = "ofdb-entities"
 version = "0.10.1"
 dependencies = [
@@ -1679,6 +1692,7 @@ dependencies = [
  "num-traits",
  "ofdb-boundary",
  "ofdb-core",
+ "ofdb-db-sqlite",
  "ofdb-entities",
  "ofdb-gateways",
  "parking_lot",

@@ -2,10 +2,8 @@ use rocket::{config::Config as RocketCfg, local::blocking::Client, Route};
 
 use crate::{
     core::{prelude::*, usecases},
-    infrastructure::{
-        cfg::Cfg,
-        db::{sqlite, tantivy},
-    },
+    infrastructure::{cfg::Cfg, db::tantivy},
+    ports::web::sqlite,
 };
 
 pub mod prelude {
@@ -32,9 +30,10 @@ pub fn setup_with_cfg(
     cfg: Cfg,
 ) -> (Client, sqlite::Connections, tantivy::SearchEngine) {
     let rocket_cfg = RocketCfg::debug_default();
-    let connections = sqlite::Connections::init(":memory:", 1).unwrap();
+    let connections = ofdb_db_sqlite::Connections::init(":memory:", 1).unwrap();
     embedded_migrations::run(connections.exclusive().unwrap().sqlite_conn()).unwrap();
     let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
+    let connections = sqlite::Connections::from(connections);
     let rocket = super::rocket_instance(
         connections.clone(),
         search_engine.clone(),

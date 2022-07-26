@@ -6,13 +6,10 @@ use ofdb_core::gateways::geocode::GeoCodingGateway;
 
 use crate::{
     core::prelude::*,
-    infrastructure::{
-        cfg::Cfg,
-        db::{sqlite, tantivy},
-        GEO_CODING_GW,
-    },
+    infrastructure::{cfg::Cfg, db::tantivy, GEO_CODING_GW},
     ports::web,
 };
+use ofdb_db_sqlite::Connections;
 
 embed_migrations!();
 
@@ -77,7 +74,7 @@ pub fn run() {
         "Connecting to SQLite database '{}' (pool size = {})",
         cfg.db_url, cfg.db_connection_pool_size
     );
-    let connections = sqlite::Connections::init(&cfg.db_url, cfg.db_connection_pool_size).unwrap();
+    let connections = Connections::init(&cfg.db_url, cfg.db_connection_pool_size).unwrap();
 
     info!("Running embedded database migrations");
     embedded_migrations::run(connections.exclusive().unwrap().sqlite_conn()).unwrap();
@@ -98,7 +95,7 @@ pub fn run() {
                 update_event_locations(&mut connections.exclusive().unwrap()).unwrap();
             }
             web::run(
-                connections,
+                connections.into(),
                 search_engine,
                 matches.is_present("enable-cors"),
                 cfg,

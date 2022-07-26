@@ -17,8 +17,8 @@ pub mod prelude {
         },
     };
     use crate::{
-        infrastructure::db::{sqlite, tantivy},
-        ports::web::{self, api},
+        infrastructure::db::tantivy,
+        ports::web::{self, api, sqlite},
     };
 
     pub fn setup() -> (Client, sqlite::Connections) {
