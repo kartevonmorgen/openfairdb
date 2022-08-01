@@ -11,10 +11,10 @@ use rocket::{
 use super::*;
 use crate::core::error::Error;
 use crate::{
-    adapters::{self, json::from_json},
+    adapters::json::from_json,
     core::{
         prelude::Result as CoreResult,
-        util::{geo::MapBbox, validate},
+        util::{self, geo::MapBbox, validate},
     },
     infrastructure::{flows::prelude as flows, GEO_CODING_GW},
 };
@@ -372,63 +372,6 @@ pub fn get_events_chronologically(
         .collect();
 
     Ok(Json(events))
-}
-
-#[get("/export/events.csv?<query..>")]
-pub fn csv_export(
-    connections: sqlite::Connections,
-    search_engine: tantivy::SearchEngine,
-    auth: Auth,
-    query: EventQuery,
-) -> result::Result<(ContentType, String), AppError> {
-    let query = query.into_inner();
-    let db = connections.shared()?;
-
-    let moderated_tags = if let Ok(org) = auth.organization(&db) {
-        org.moderated_tags
-    } else {
-        vec![]
-    };
-
-    let user = auth.user_with_min_role(&db, Role::Scout)?;
-
-    let limit = if let Some(limit) = query.limit {
-        // Limited
-        limit
-    } else {
-        // Unlimited
-        db.count_events()? + 100
-    };
-    let query = usecases::EventQuery {
-        limit: Some(limit),
-        ..query
-    };
-    let events = usecases::query_events(&db, &search_engine, query)?;
-    // Release the database connection asap
-    drop(db);
-
-    let events = events.into_iter().map(|e| {
-        usecases::export_event(
-            e,
-            user.role,
-            moderated_tags
-                .iter()
-                .map(|moderated_tag| moderated_tag.label.as_str()),
-        )
-    });
-
-    let records: Vec<_> = events.map(adapters::csv::EventRecord::from).collect();
-
-    let buff: Vec<u8> = vec![];
-    let mut wtr = csv::Writer::from_writer(buff);
-
-    for r in records {
-        wtr.serialize(r)?;
-    }
-    wtr.flush()?;
-    let data = String::from_utf8(wtr.into_inner()?)?;
-
-    Ok((ContentType::CSV, data))
 }
 
 #[post("/events/<ids>/archive")]

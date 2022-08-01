@@ -2,6 +2,55 @@ use super::*;
 use crate::adapters::json::from_json;
 use ofdb_boundary::NewUser;
 
+#[post("/login", format = "application/json", data = "<login>")]
+pub fn post_login(
+    db: sqlite::Connections,
+    cookies: &CookieJar<'_>,
+    login: JsonResult<json::Credentials>,
+    jwt_state: &State<jwt::JwtState>,
+) -> Result<Option<ofdb_boundary::JwtToken>> {
+    let login = login?.into_inner();
+    {
+        let credentials = usecases::Credentials {
+            email: &login.email,
+            password: &login.password,
+        };
+        usecases::login_with_email(&db.shared()?, &credentials).map_err(|err| {
+            log::debug!("Login with email '{}' failed: {}", login.email, err);
+            err
+        })?;
+    }
+
+    let mut response = None;
+    if cfg!(feature = "jwt") {
+        let token = jwt_state.generate_token(&login.email)?;
+        response = Some(ofdb_boundary::JwtToken { token });
+    }
+    if cfg!(feature = "cookies") {
+        cookies.add_private(
+            Cookie::build(COOKIE_EMAIL_KEY, login.email)
+                .same_site(rocket::http::SameSite::None)
+                .finish(),
+        );
+    }
+    Ok(Json(response))
+}
+
+#[post("/logout", format = "application/json")]
+pub fn post_logout(
+    auth: Auth,
+    cookies: &CookieJar<'_>,
+    jwt_state: &State<jwt::JwtState>,
+) -> Json<()> {
+    cookies.remove_private(Cookie::named(COOKIE_EMAIL_KEY));
+    if cfg!(feature = "jwt") {
+        for bearer in auth.bearer_tokens() {
+            jwt_state.blacklist_token(bearer.to_owned());
+        }
+    }
+    Json(())
+}
+
 #[post("/users", format = "application/json", data = "<u>")]
 pub fn post_user(db: sqlite::Connections, n: Notify, u: JsonResult<NewUser>) -> Result<()> {
     let new_user = from_json::new_user(u?.into_inner());
@@ -60,6 +109,25 @@ pub fn get_current_user(db: sqlite::Connections, account: Account) -> Result<jso
 pub fn get_user(db: sqlite::Connections, account: Account, email: String) -> Result<json::User> {
     let user = usecases::get_user(&db.shared()?, account.email(), &email)?;
     Ok(Json(user.into()))
+}
+
+#[derive(Deserialize, Debug, Clone)]
+pub struct ConfirmationToken {
+    token: String,
+}
+
+#[post(
+    "/confirm-email-address",
+    format = "application/json",
+    data = "<token>"
+)]
+pub fn confirm_email_address(
+    db: sqlite::Connections,
+    token: JsonResult<ConfirmationToken>,
+) -> Result<()> {
+    let token = token?.into_inner().token;
+    usecases::confirm_email_address(&db.exclusive()?, &token)?;
+    Ok(Json(()))
 }
 
 #[cfg(test)]
