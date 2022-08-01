@@ -1,6 +1,64 @@
 use super::*;
 use crate::core::error::Error;
 
+#[get("/places/<id>")]
+pub fn get_place(
+    db: sqlite::Connections,
+    id: String,
+) -> Result<(json::PlaceRoot, json::PlaceRevision, json::ReviewStatus)> {
+    let (place, status) = {
+        let db = db.shared()?;
+        db.get_place(&id)?
+    };
+    let (place_root, place_revision) = place.into();
+    Ok(Json((
+        place_root.into(),
+        place_revision.into(),
+        status.into(),
+    )))
+}
+
+#[get("/places/<id>/history/<revision>")]
+pub fn get_place_history_revision(
+    db: sqlite::Connections,
+    auth: Auth,
+    id: String,
+    revision: RevisionValue,
+) -> Result<json::PlaceHistory> {
+    let place_history = {
+        let db = db.shared()?;
+
+        // The history contains e-mail addresses of registered users
+        // is only permitted for scouts and admins or organizations!
+        if auth.user_with_min_role(&db, Role::Scout).is_err() {
+            auth.organization(&db)?;
+        }
+
+        db.get_place_history(&id, Some(revision.into()))?
+    };
+    Ok(Json(place_history.into()))
+}
+
+#[get("/places/<id>/history", rank = 2)]
+pub fn get_place_history(
+    db: sqlite::Connections,
+    auth: Auth,
+    id: String,
+) -> Result<json::PlaceHistory> {
+    let place_history = {
+        let db = db.shared()?;
+
+        // The history contains e-mail addresses of registered users
+        // is only permitted for scouts and admins or for organizations!
+        if auth.user_with_min_role(&db, Role::Scout).is_err() {
+            auth.organization(&db)?;
+        }
+
+        db.get_place_history(&id, None)?
+    };
+    Ok(Json(place_history.into()))
+}
+
 #[get("/places/clearance/count")]
 pub fn count_pending_clearances(db: sqlite::Connections, auth: Auth) -> Result<json::ResultCount> {
     let db = db.shared()?;
@@ -55,7 +113,7 @@ pub fn post_review(
     ids: String,
     review: JsonResult<json::Review>,
 ) -> Result<()> {
-    let ids = util::split_ids(&ids);
+    let ids = crate::core::util::split_ids(&ids);
     if ids.is_empty() {
         log::debug!("No places to review");
         return Err(Error::Parameter(ParameterError::EmptyIdList).into());
