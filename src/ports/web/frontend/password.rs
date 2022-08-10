@@ -11,9 +11,9 @@ use rocket::{
 use super::view;
 use crate::{
     core::prelude::*,
-    infrastructure::flows::prelude::*,
     ports::web::{notify::*, sqlite::Connections},
 };
+use ofdb_application::prelude::*;
 
 #[get("/reset-password?<token>&<success>")]
 pub fn get_reset_password(

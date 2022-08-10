@@ -10,9 +10,9 @@ use rocket::{
 
 use crate::{
     core::{prelude::*, repositories::OrganizationRepo, usecases},
-    infrastructure::error::AppError,
     ports::web::jwt,
 };
+use ofdb_application::error::AppError;
 use ofdb_core::usecases::Error as ParameterError;
 
 pub const COOKIE_EMAIL_KEY: &str = "ofdb-user-email";

@@ -1,10 +1,8 @@
 use super::*;
-use crate::{
-    infrastructure::{cfg::Cfg, db::tantivy},
-    ports::web::{
-        sqlite::Connections,
-        tests::{prelude::*, register_user},
-    },
+use crate::ports::web::{
+    sqlite::Connections,
+    tantivy,
+    tests::{prelude::*, register_user},
 };
 
 fn setup() -> (
@@ -45,7 +43,7 @@ fn login_user(client: &Client, name: &str) {
 mod events {
 
     use super::*;
-    use crate::infrastructure::flows::prelude as flows;
+    use ofdb_application::prelude as flows;
     use time::Duration;
 
     #[test]
@@ -95,7 +93,7 @@ mod events {
         let event_ids = {
             let mut event_ids = Vec::with_capacity(new_events.len());
             for e in new_events {
-                let e = flows::create_event(&db, &mut search_engine, &gw, None, e).unwrap();
+                let e = flows::create_event(&db, &mut *search_engine, &gw, None, e).unwrap();
                 event_ids.push(e.id);
             }
             event_ids
@@ -207,7 +205,7 @@ mod events {
         let event_ids = {
             let mut event_ids = Vec::with_capacity(new_events.len());
             for e in new_events {
-                let e = flows::create_event(&db, &mut search_engine, &gw, None, e).unwrap();
+                let e = flows::create_event(&db, &mut *search_engine, &gw, None, e).unwrap();
                 event_ids.push(e.id);
             }
             event_ids
@@ -285,11 +283,13 @@ mod index {
 
 mod entry {
     use super::*;
-    use crate::{core::usecases, infrastructure::flows};
+    use crate::core::usecases;
+    use ofdb_application::prelude as flows;
+    use std::collections::HashSet;
 
     fn create_place_with_rating(
         db: &sqlite::Connections,
-        search: &mut tantivy::SearchEngine,
+        search: &mut dyn ofdb_core::db::PlaceIndexer,
     ) -> (String, String, String) {
         let e = usecases::NewPlace {
             title: "entry".into(),
@@ -315,7 +315,10 @@ mod entry {
             custom_links: vec![],
         };
         let gw = DummyNotifyGW;
-        let e_id = flows::prelude::create_place(db, search, &gw, e, None, None, &Cfg::default())
+        let mut accepted_licenses = HashSet::new();
+        accepted_licenses.insert("CC0-1.0".into());
+        accepted_licenses.insert("ODbL-1.0".into());
+        let e_id = flows::create_place(db, search, &gw, e, None, None, &accepted_licenses)
             .unwrap()
             .id;
         let r = usecases::NewPlaceRating {
@@ -327,14 +330,14 @@ mod entry {
             value: 1.into(),
             entry: e_id.clone().into(),
         };
-        let (r_id, c_id) = flows::prelude::create_rating(db, search, r).unwrap();
+        let (r_id, c_id) = flows::create_rating(db, search, r).unwrap();
         (e_id.into(), r_id, c_id)
     }
 
     #[test]
     fn get_entry_details() {
         let (client, db, mut search) = setup();
-        let (id, _, _) = create_place_with_rating(&db, &mut search);
+        let (id, _, _) = create_place_with_rating(&db, &mut *search);
         let res = client.get(format!("/entries/{}", id)).dispatch();
         assert_eq!(res.status(), Status::Ok);
         let body_str = res.into_string().unwrap();
@@ -345,7 +348,7 @@ mod entry {
     #[test]
     fn get_entry_details_as_admin() {
         let (client, db, mut search) = setup();
-        let (id, _, _) = create_place_with_rating(&db, &mut search);
+        let (id, _, _) = create_place_with_rating(&db, &mut *search);
         create_user(&db, "foo", Role::Admin);
         login_user(&client, "foo");
         let res = client.get(format!("/entries/{}", id)).dispatch();
@@ -358,7 +361,7 @@ mod entry {
     #[test]
     fn get_entry_details_as_scout() {
         let (client, db, mut search) = setup();
-        let (id, _, _) = create_place_with_rating(&db, &mut search);
+        let (id, _, _) = create_place_with_rating(&db, &mut *search);
         create_user(&db, "foo", Role::Scout);
         login_user(&client, "foo");
         let res = client.get(format!("/entries/{}", id)).dispatch();
@@ -373,7 +376,7 @@ mod entry {
         let (client, db, mut search) = setup();
         create_user(&db, "foo", Role::Admin);
         login_user(&client, "foo");
-        let (e_id, _, c_id) = create_place_with_rating(&db, &mut search);
+        let (e_id, _, c_id) = create_place_with_rating(&db, &mut *search);
         let comment = db.shared().unwrap().load_comment(&c_id).unwrap();
         assert!(comment.archived_at.is_none());
         let res = client
@@ -395,7 +398,7 @@ mod entry {
         let (client, db, mut search) = setup();
         create_user(&db, "foo", Role::Scout);
         login_user(&client, "foo");
-        let (e_id, _, c_id) = create_place_with_rating(&db, &mut search);
+        let (e_id, _, c_id) = create_place_with_rating(&db, &mut *search);
         let comment = db.shared().unwrap().load_comment(&c_id).unwrap();
         assert!(comment.archived_at.is_none());
         let res = client
@@ -415,7 +418,7 @@ mod entry {
     #[test]
     fn archive_comment_as_guest() {
         let (client, db, mut search) = setup();
-        let (e_id, _, c_id) = create_place_with_rating(&db, &mut search);
+        let (e_id, _, c_id) = create_place_with_rating(&db, &mut *search);
         let res = client
             .post("/comments/actions/archive")
             .header(ContentType::Form)
@@ -429,7 +432,7 @@ mod entry {
     #[test]
     fn archive_rating_as_guest() {
         let (client, db, mut search) = setup();
-        let (e_id, r_id, _) = create_place_with_rating(&db, &mut search);
+        let (e_id, r_id, _) = create_place_with_rating(&db, &mut *search);
         let res = client
             .post("/ratings/actions/archive")
             .header(ContentType::Form)

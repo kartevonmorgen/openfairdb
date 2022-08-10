@@ -1,5 +1,4 @@
 use super::*;
-use crate::core::error::Error;
 
 #[post(
     "/subscribe-to-bbox",

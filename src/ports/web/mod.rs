@@ -1,32 +1,33 @@
 use std::result;
 
-use ofdb_core::rating::Rated;
-use popular_tags_cache::PopularTagsCache;
-use rocket::serde::json::Json;
-use rocket::{config::Config as RocketCfg, Rocket, Route};
-
 use crate::{
     core::{
         db::{EventIndexer, PlaceIndexer},
         prelude::*,
         usecases,
     },
-    infrastructure::{cfg::Cfg, error::AppError},
+    infrastructure::cfg::Cfg,
 };
+use ofdb_application::error::AppError;
+use ofdb_core::rating::Rated;
+use rocket::{config::Config as RocketCfg, serde::json::Json, Rocket, Route};
 
 pub mod api;
 #[cfg(feature = "frontend")]
 mod frontend;
 mod guards;
 pub mod jwt;
-#[cfg(test)]
-mod mockdb;
 pub mod notify;
 mod popular_tags_cache;
 mod sqlite;
-mod tantivy;
+pub mod tantivy;
+
+#[cfg(test)]
+mod mockdb;
 #[cfg(test)]
 pub mod tests;
+
+use popular_tags_cache::PopularTagsCache;
 
 type Result<T> = result::Result<Json<T>, AppError>;
 
@@ -77,10 +78,10 @@ pub(crate) fn rocket_instance(
     cfg: Cfg,
 ) -> Rocket<rocket::Build> {
     info!("Indexing all places...");
-    index_all_places(&connections.exclusive().unwrap(), &mut search_engine).unwrap();
+    index_all_places(&connections.exclusive().unwrap(), &mut *search_engine).unwrap();
 
     info!("Indexing all events...");
-    index_all_events_chronologically(&connections.exclusive().unwrap(), &mut search_engine)
+    index_all_events_chronologically(&connections.exclusive().unwrap(), &mut *search_engine)
         .unwrap();
 
     info!("Deleting expired user e-mail tokens...");

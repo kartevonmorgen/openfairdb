@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate log;
+
 use std::{ops::Bound, path::Path, sync::Arc};
 
 use anyhow::{bail, Result as Fallible};
@@ -14,7 +17,7 @@ use tantivy::{
     SegmentReader,
 };
 
-use crate::core::{
+use ofdb_core::{
     db::{
         EventAndPlaceIndexer, EventIndexer, IdIndex, IdIndexer, IndexQuery, IndexQueryMode,
         IndexedPlace, Indexer, PlaceIndex, PlaceIndexer,

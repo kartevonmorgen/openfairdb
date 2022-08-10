@@ -13,9 +13,12 @@ fmt:
 
 # Check all crates individually (takes a long time)
 check:
+    cargo check --locked --all-features --all-targets -p ofdb-application
     cargo check --locked --all-features --all-targets -p ofdb-boundary
     cargo check --locked --all-features --all-targets -p ofdb-core
     cargo check --locked --all-features --all-targets -p ofdb-entities
+    cargo check --locked --all-features --all-targets -p ofdb-db-sqlite
+    cargo check --locked --all-features --all-targets -p ofdb-db-tantivy
     cargo check --locked --all-features --all-targets -p ofdb-gateways
 
 # Run clippy on the workspace (both dev and release profile)

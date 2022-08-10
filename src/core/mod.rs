@@ -1,5 +1,3 @@
-pub mod error;
-
 pub use ofdb_core::{db, repositories, util};
 
 pub mod entities {
@@ -661,10 +659,11 @@ pub mod prelude {
 
     pub use ofdb_entities::password::Password;
 
+    pub use ofdb_application::error::*;
+
     pub use super::{
         db::*,
         entities::*,
-        error::*,
         repositories::*,
         util::{
             geo::{Distance, LatCoord, LngCoord, MapPoint},
@@ -673,5 +672,5 @@ pub mod prelude {
         },
     };
 
-    pub type Result<T> = result::Result<T, super::error::Error>;
+    pub type Result<T> = result::Result<T, ofdb_application::error::AppError>;
 }

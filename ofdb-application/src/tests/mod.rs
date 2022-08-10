@@ -1,23 +1,87 @@
+mod clearance;
+mod search;
+
 pub mod prelude {
-    pub use crate::core::prelude::*;
-    pub use ofdb_core::repositories::Error as RepoError;
-    pub use ofdb_core::usecases;
+
+    pub fn accepted_licenses() -> HashSet<String> {
+        let mut licenses = HashSet::new();
+        licenses.insert("CC0-1.0".into());
+        licenses.insert("ODbL-1.0".into());
+        licenses
+    }
+
+    pub fn default_new_place() -> usecases::NewPlace {
+        usecases::NewPlace {
+            title: Default::default(),
+            description: Default::default(),
+            categories: Default::default(),
+            contact_name: None,
+            email: None,
+            telephone: None,
+            lat: Default::default(),
+            lng: Default::default(),
+            street: None,
+            zip: None,
+            city: None,
+            country: None,
+            state: None,
+            tags: vec![],
+            homepage: None,
+            opening_hours: None,
+            founded_on: None,
+            license: "CC0-1.0".into(),
+            image_url: None,
+            image_link_url: None,
+            custom_links: vec![],
+        }
+    }
+
+    pub fn default_search_request<'a>() -> usecases::SearchRequest<'a> {
+        usecases::SearchRequest {
+            bbox: MapBbox::new(
+                MapPoint::from_lat_lng_deg(-90, -180),
+                MapPoint::from_lat_lng_deg(90, 180),
+            ),
+            org_tag: None,
+            categories: vec![],
+            hash_tags: vec![],
+            ids: vec![],
+            status: vec![],
+            text: None,
+        }
+    }
+
+    use std::{cell::RefCell, collections::HashSet};
+
+    pub use ofdb_core::{
+        db::*,
+        entities::*,
+        repositories::{Error as RepoError, *},
+        usecases,
+    };
 
     pub mod sqlite {
         pub use super::super::super::sqlite::*;
     }
 
     pub mod tantivy {
-        pub use crate::infrastructure::db::tantivy::SearchEngine;
+        pub use ofdb_db_tantivy::SearchEngine;
     }
 
-    use std::cell::RefCell;
+    pub use crate::{error::AppError, prelude as flows};
 
-    use crate::ports::web::tests::DummyNotifyGW;
-    pub use crate::{
-        infrastructure::{cfg::Cfg, error::AppError, flows::prelude as flows},
-        ports::web::api,
-    };
+    pub struct DummyNotifyGW;
+
+    impl ofdb_core::gateways::notify::NotificationGateway for DummyNotifyGW {
+        fn place_added(&self, _: &[String], _: &Place, _: Vec<Category>) {}
+        fn place_updated(&self, _: &[String], _: &Place, _: Vec<Category>) {}
+        fn event_created(&self, _: &[String], _: &Event) {}
+        fn event_updated(&self, _: &[String], _: &Event) {}
+        fn user_registered_kvm(&self, _: &User) {}
+        fn user_registered_ofdb(&self, _: &User) {}
+        fn user_registered(&self, _: &User, _: &str) {}
+        fn user_reset_password_requested(&self, _: &EmailNonce) {}
+    }
 
     pub struct BackendFixture {
         pub db_connections: sqlite::Connections,
@@ -38,6 +102,9 @@ pub mod prelude {
         }
 
         pub fn create_place(&self, new_place: NewPlace, account_email: Option<&str>) -> String {
+            let mut accepted_licenses = HashSet::new();
+            accepted_licenses.insert("CC0-1.0".into());
+            accepted_licenses.insert("ODbL-1.0".into());
             flows::create_place(
                 &self.db_connections,
                 &mut *self.search_engine.borrow_mut(),
@@ -45,7 +112,7 @@ pub mod prelude {
                 new_place.into(),
                 account_email,
                 None,
-                &Cfg::default(),
+                &accepted_licenses,
             )
             .unwrap()
             .id

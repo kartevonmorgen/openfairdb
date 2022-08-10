@@ -7,14 +7,13 @@ use super::{JsonResult, Result};
 use crate::{
     adapters::json::{self, from_json},
     core::{
-        error::Error,
         prelude::*,
         usecases,
         util::{self, geo},
     },
-    infrastructure::{db::tantivy, error::AppError},
-    ports::web::sqlite,
+    ports::web::{sqlite, tantivy},
 };
+use ofdb_application::error::BError as Error;
 use ofdb_core::usecases::Error as ParameterError;
 
 #[derive(FromForm, Clone)]
@@ -130,7 +129,7 @@ pub fn get_search(
     };
 
     let (visible, invisible) =
-        usecases::search(&connections.shared()?, &search_engine, req, limit)?;
+        usecases::search(&connections.shared()?, &*search_engine, req, limit)?;
 
     let visible: Vec<json::PlaceSearchResult> = visible
         .into_iter()
@@ -151,7 +150,7 @@ pub fn post_search_duplicates(
     body: JsonResult<ofdb_boundary::NewPlace>,
 ) -> Result<Vec<json::PlaceSearchResult>> {
     let new_place = from_json::new_place(body?.into_inner());
-    let duplicate_places = usecases::search_duplicates(&search_engine, &new_place)?;
+    let duplicate_places = usecases::search_duplicates(&*search_engine, &new_place)?;
     Ok(Json(
         duplicate_places
             .into_iter()

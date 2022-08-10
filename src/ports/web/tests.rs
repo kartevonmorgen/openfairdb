@@ -2,8 +2,8 @@ use rocket::{config::Config as RocketCfg, local::blocking::Client, Route};
 
 use crate::{
     core::{prelude::*, usecases},
-    infrastructure::{cfg::Cfg, db::tantivy},
-    ports::web::sqlite,
+    infrastructure::cfg::Cfg,
+    ports::web::{sqlite, tantivy},
 };
 
 pub mod prelude {

@@ -52,7 +52,7 @@ fn with_api_token() {
         start: OffsetDateTime::now_utc().unix_timestamp(),
         ..Default::default()
     };
-    let id = flows::create_event(&db, &mut search_engine, &notify, Some("foo"), e)
+    let id = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e)
         .unwrap()
         .id;
     assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
@@ -88,7 +88,7 @@ fn with_api_token_for_organization_without_any_moderated_tags() {
         start: OffsetDateTime::now_utc().unix_timestamp(),
         ..Default::default()
     };
-    let id = flows::create_event(&db, &mut search_engine, &notify, Some("foo"), e)
+    let id = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e)
         .unwrap()
         .id;
     assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
@@ -135,7 +135,7 @@ fn with_api_token_but_mismatching_tag() {
         start: OffsetDateTime::now_utc().unix_timestamp(),
         ..Default::default()
     };
-    let id = flows::create_event(&db, &mut search_engine, &notify, Some("bar"), e)
+    let id = flows::create_event(&db, &mut *search_engine, &notify, Some("bar"), e)
         .unwrap()
         .id;
     assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
@@ -167,7 +167,7 @@ fn with_api_token_keep_org_tag() {
         start: OffsetDateTime::now_utc().unix_timestamp(),
         ..Default::default()
     };
-    let id = flows::create_event(&db, &mut search_engine, &notify, Some("foo"), e)
+    let id = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e)
         .unwrap()
         .id;
     assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
@@ -209,7 +209,7 @@ fn with_api_token_and_removing_tag() {
         start: OffsetDateTime::now_utc().unix_timestamp(),
         ..Default::default()
     };
-    let id = flows::create_event(&db, &mut search_engine, &notify, Some("foo"), e)
+    let id = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e)
         .unwrap()
         .id;
     assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
@@ -249,7 +249,7 @@ fn with_api_token_created_by() {
         start,
         ..Default::default()
     };
-    let id = flows::create_event(&db, &mut search_engine, &notify, Some("foo"), e)
+    let id = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e)
         .unwrap()
         .id;
     assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
@@ -312,7 +312,7 @@ fn with_api_token_from_different_org_unauthorized() {
         start: now(),
         ..Default::default()
     };
-    let id = flows::create_event(&db, &mut search_engine, &notify, Some("creator"), e)
+    let id = flows::create_event(&db, &mut *search_engine, &notify, Some("creator"), e)
         .unwrap()
         .id;
     assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());
@@ -350,7 +350,7 @@ fn update_geo_location() {
         lng: Some(2.0),
         ..Default::default()
     };
-    let id = flows::create_event(&db, &mut search_engine, &notify, Some("foo"), e)
+    let id = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e)
         .unwrap()
         .id;
     let created = db.shared().unwrap().get_event(id.as_ref()).unwrap();

@@ -2,14 +2,16 @@ use std::{env, path::Path};
 
 use clap::{crate_authors, Arg, Command};
 use dotenv::dotenv;
+
 use ofdb_core::gateways::geocode::GeoCodingGateway;
+use ofdb_db_sqlite::Connections;
+use ofdb_db_tantivy as tantivy;
 
 use crate::{
     core::prelude::*,
-    infrastructure::{cfg::Cfg, db::tantivy, GEO_CODING_GW},
+    infrastructure::{cfg::Cfg, GEO_CODING_GW},
     ports::web,
 };
-use ofdb_db_sqlite::Connections;
 
 fn update_event_locations<R>(repo: &R) -> Result<()>
 where
@@ -85,7 +87,8 @@ pub fn run() {
         .or_else(|| env::var("INDEX_DIR").map(Option::Some).unwrap_or(None));
     let idx_path = idx_dir.as_ref().map(Path::new);
     info!("Initializing Tantivy full-text search engine");
-    let search_engine = tantivy::SearchEngine::init_with_path(idx_path).unwrap();
+    let search_engine =
+        web::tantivy::SearchEngine(tantivy::SearchEngine::init_with_path(idx_path).unwrap());
 
     #[allow(clippy::match_single_binding)]
     match matches.subcommand() {

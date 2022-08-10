@@ -1,5 +1,4 @@
 use super::*;
-use crate::core::error::Error;
 
 #[get("/places/<id>")]
 pub fn get_place(
@@ -143,7 +142,7 @@ pub fn post_review(
         comment,
     };
     let update_count =
-        flows::review_places(&db, &mut search_engine, &ids, review).map_err(|err| {
+        flows::review_places(&db, &mut *search_engine, &ids, review).map_err(|err| {
             log::debug!("Unable to review places: {}", err);
             err
         })?;

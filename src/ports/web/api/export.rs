@@ -6,7 +6,7 @@ pub fn csv_export(
     search_engine: tantivy::SearchEngine,
     auth: Auth,
     query: EventQuery,
-) -> result::Result<(ContentType, String), AppError> {
+) -> result::Result<(ContentType, String), ApiError> {
     let query = query.into_inner();
     let db = connections.shared()?;
 
@@ -29,7 +29,7 @@ pub fn csv_export(
         limit: Some(limit),
         ..query
     };
-    let events = usecases::query_events(&db, &search_engine, query)?;
+    let events = usecases::query_events(&db, &*search_engine, query)?;
     // Release the database connection asap
     drop(db);
 
@@ -63,7 +63,7 @@ pub fn entries_csv_export(
     search_engine: tantivy::SearchEngine,
     auth: Auth,
     query: search::SearchQuery,
-) -> result::Result<(ContentType, String), AppError> {
+) -> result::Result<(ContentType, String), ApiError> {
     let db = connections.shared()?;
 
     let moderated_tags = match auth.organization(&db) {
@@ -84,7 +84,7 @@ pub fn entries_csv_export(
 
     let entries_categories_and_ratings = {
         let all_categories: Vec<_> = db.all_categories()?;
-        usecases::search(&db, &search_engine, req, limit)?
+        usecases::search(&db, &*search_engine, req, limit)?
             .0
             .into_iter()
             .filter_map(|indexed_entry| {
