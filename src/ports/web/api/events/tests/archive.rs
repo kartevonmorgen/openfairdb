@@ -88,7 +88,7 @@ fn archive_events() {
         created_by: Some("foo@bar.com".into()),
         ..Default::default()
     };
-    let id1 = flows::create_event(&db, &mut search_engine, &notify, Some("foo"), e1)
+    let id1 = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e1)
         .unwrap()
         .id;
     let e2 = usecases::NewEvent {
@@ -98,7 +98,7 @@ fn archive_events() {
         created_by: Some("foo@bar.com".into()),
         ..Default::default()
     };
-    let id2 = flows::create_event(&db, &mut search_engine, &notify, Some("foo"), e2)
+    let id2 = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e2)
         .unwrap()
         .id;
 

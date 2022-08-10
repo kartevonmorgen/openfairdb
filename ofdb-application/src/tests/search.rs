@@ -1,8 +1,9 @@
-use super::*;
+use super::prelude::*;
+use crate::Result;
 
 #[test]
-fn should_find_places_by_tags() -> flows::Result<()> {
-    let fixture = flows::BackendFixture::new();
+fn should_find_places_by_tags() -> Result<()> {
+    let fixture = BackendFixture::new();
 
     let place_without_tags = flows::create_place(
         &fixture.db_connections,
@@ -15,7 +16,7 @@ fn should_find_places_by_tags() -> flows::Result<()> {
         },
         None,
         None,
-        &Cfg::default(),
+        &accepted_licenses(),
     )
     .unwrap();
     assert!(place_without_tags.tags.is_empty());
@@ -32,7 +33,7 @@ fn should_find_places_by_tags() -> flows::Result<()> {
         },
         None,
         None,
-        &Cfg::default(),
+        &accepted_licenses(),
     )
     .unwrap();
 
@@ -48,7 +49,7 @@ fn should_find_places_by_tags() -> flows::Result<()> {
         },
         None,
         None,
-        &Cfg::default(),
+        &accepted_licenses(),
     )
     .unwrap();
 
@@ -64,7 +65,7 @@ fn should_find_places_by_tags() -> flows::Result<()> {
         },
         None,
         None,
-        &Cfg::default(),
+        &accepted_licenses(),
     )
     .unwrap();
 
@@ -80,7 +81,7 @@ fn should_find_places_by_tags() -> flows::Result<()> {
         },
         None,
         None,
-        &Cfg::default(),
+        &accepted_licenses(),
     )
     .unwrap();
 

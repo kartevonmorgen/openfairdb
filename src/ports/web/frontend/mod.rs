@@ -16,21 +16,25 @@ use rocket::{
 };
 use rust_embed::RustEmbed;
 
-use crate::ports::web::api::events::EventQuery;
 use crate::{
-    core::{error::Error, prelude::*, usecases},
-    infrastructure::{error::*, flows::prelude::*},
-    ports::web::{guards::*, sqlite, tantivy::SearchEngine},
+    core::{prelude::*, usecases},
+    ports::web::{
+        api::{events::EventQuery, ApiError},
+        guards::*,
+        sqlite,
+        tantivy::SearchEngine,
+    },
 };
-use ofdb_core::repositories::Error as RepoError;
-use ofdb_core::usecases::Error as ParameterError;
+use ofdb_application::prelude::*;
+use ofdb_core::{repositories::Error as RepoError, usecases::Error as ParameterError};
 
 mod login;
 mod password;
 mod register;
+mod view;
+
 #[cfg(test)]
 mod tests;
-mod view;
 
 const MAP_JS: &str = include_str!("map.js");
 const MAIN_CSS: &str = include_str!("main.css");
@@ -39,7 +43,7 @@ const MAIN_CSS: &str = include_str!("main.css");
 #[folder = "ofdb-app-clearance/dist/"]
 struct ClearanceAsset;
 
-type Result<T> = std::result::Result<T, AppError>;
+type Result<T> = std::result::Result<T, ApiError>;
 
 #[get("/")]
 pub fn get_index_user(auth: Auth) -> Markup {
@@ -75,7 +79,7 @@ pub fn get_clearance(file: PathBuf) -> Option<(ContentType, Cow<'static, [u8]>)>
 
 #[get("/search?<q>&<limit>")]
 pub fn get_search(search_engine: SearchEngine, q: &str, limit: Option<usize>) -> Result<Markup> {
-    let entries = usecases::global_search(&search_engine, q, limit.unwrap_or(10))?;
+    let entries = usecases::global_search(&*search_engine, q, limit.unwrap_or(10))?;
     Ok(view::search_results(None, q, &entries))
 }
 
@@ -132,7 +136,7 @@ pub fn get_place_history(db: sqlite::Connections, id: &str, account: Account) ->
     let db = db.shared()?;
     let user = db
         .try_get_user_by_email(account.email())?
-        .ok_or(Error::Parameter(ParameterError::Unauthorized))?;
+        .ok_or(ParameterError::Unauthorized)?;
     let place_history = {
         // The history contains e-mail addresses of registered users
         // and is only permitted for scouts and admins!
@@ -198,7 +202,7 @@ fn review_place(
         usecases::authorize_user_by_email(&db, email, Role::Scout)?.email
     };
     let status = ReviewStatus::try_from(status)
-        .ok_or_else(|| Error::Parameter(ParameterError::RatingContext(status.to_string())))?;
+        .ok_or_else(|| ParameterError::RatingContext(status.to_string()))?;
     // TODO: Record context information
     let context = None;
     let review = usecases::Review {
@@ -207,9 +211,9 @@ fn review_place(
         status,
         comment: Some(comment),
     };
-    let update_count = review_places(db, &mut search_engine, &[id], review)?;
+    let update_count = review_places(db, &mut *search_engine, &[id], review)?;
     if update_count == 0 {
-        return Err(Error::Repo(RepoError::NotFound).into());
+        return Err(RepoError::NotFound.into());
     }
     Ok(())
 }
@@ -275,7 +279,7 @@ pub fn post_archive_event(
                 "Failed to archive the event.",
             )
         })?;
-    archive_events(&pool, &mut search_engine, &[id], &archived_by_email)
+    archive_events(&pool, &mut *search_engine, &[id], &archived_by_email)
         .map_err(|_| {
             Flash::error(
                 Redirect::to(uri!(get_event(id))),
@@ -299,7 +303,7 @@ pub fn get_events_chronologically(
 ) -> Result<Markup> {
     let mut query = query.into_inner();
     if query.created_by.is_some() {
-        return Err(Error::Parameter(ParameterError::Unauthorized).into());
+        return Err(ParameterError::Unauthorized.into());
     }
 
     if query.start_min.is_none() && query.start_max.is_none() {
@@ -309,7 +313,7 @@ pub fn get_events_chronologically(
         query.start_min = Some(start_min);
     }
 
-    let events = usecases::query_events(&db.shared()?, &search_engine, query)?;
+    let events = usecases::query_events(&db.shared()?, &*search_engine, query)?;
     let email = account.as_ref().map(Account::email);
     Ok(view::events(email, &events))
 }
@@ -323,7 +327,7 @@ pub fn get_dashboard(db: sqlite::Connections, account: Account) -> Result<Markup
     let event_count = db.count_events()?;
     let user = db
         .try_get_user_by_email(account.email())?
-        .ok_or(Error::Parameter(ParameterError::Unauthorized))?;
+        .ok_or(ParameterError::Unauthorized)?;
     if user.role == Role::Admin {
         return Ok(view::dashboard(view::DashBoardPresenter {
             user,
@@ -333,7 +337,7 @@ pub fn get_dashboard(db: sqlite::Connections, account: Account) -> Result<Markup
             user_count,
         }));
     }
-    Err(Error::Parameter(ParameterError::Unauthorized).into())
+    Err(ParameterError::Unauthorized.into())
 }
 
 #[derive(FromForm)]
@@ -369,7 +373,7 @@ pub fn post_ratings_archive(
 ) -> std::result::Result<Redirect, Flash<Redirect>> {
     let d = data.into_inner();
     let ids: Vec<_> = d.ids.split(',').filter(|id| !id.is_empty()).collect();
-    match archive_ratings(&db, &mut search_engine, account.email(), &ids) {
+    match archive_ratings(&db, &mut *search_engine, account.email(), &ids) {
         Err(_) => Err(Flash::error(
             Redirect::to(uri!(get_entry(d.place_id))),
             "Failed to archive the rating.",

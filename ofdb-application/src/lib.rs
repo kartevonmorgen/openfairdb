@@ -1,3 +1,6 @@
+#[macro_use]
+extern crate log;
+
 mod archive_comments;
 mod archive_events;
 mod archive_ratings;
@@ -18,7 +21,9 @@ pub mod prelude {
     };
 }
 
-pub type Result<T> = std::result::Result<T, super::error::AppError>;
+pub mod error;
+
+pub type Result<T> = std::result::Result<T, error::AppError>;
 
 pub(crate) use ofdb_core::{db::*, entities::*, repositories::*, usecases};
 pub(crate) use ofdb_db_sqlite::TransactionError;

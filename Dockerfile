@@ -45,11 +45,15 @@ RUN USER=root \
     cargo new --bin ${PROJECT_NAME}
 WORKDIR ${WORKDIR_ROOT}/${PROJECT_NAME}
 
-RUN USER=root cargo new --lib ofdb-boundary \
+RUN USER=root cargo new --lib ofdb-application \
+    && \
+    USER=root cargo new --lib ofdb-boundary \
     && \
     USER=root cargo new --lib ofdb-core \
     && \
     USER=root cargo new --lib ofdb-db-sqlite \
+    && \
+    USER=root cargo new --lib ofdb-db-tantivy \
     && \
     USER=root cargo new --lib ofdb-entities \
     && \
@@ -60,6 +64,9 @@ COPY [ \
     "Cargo.lock", \
     "./" ]
 COPY [ \
+    "ofdb-application/Cargo.toml", \
+    "./ofdb-application/" ]
+COPY [ \
     "ofdb-boundary/Cargo.toml", \
     "./ofdb-boundary/" ]
 COPY [ \
@@ -69,6 +76,9 @@ COPY [ \
 COPY [ \
     "ofdb-db-sqlite/Cargo.toml", \
     "./ofdb-db-sqlite/" ]
+COPY [ \
+    "ofdb-db-tantivy/Cargo.toml", \
+    "./ofdb-db-tantivy/" ]
 COPY [ \
     "ofdb-entities/Cargo.toml", \
     "./ofdb-entities/" ]
@@ -83,11 +93,15 @@ RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
     && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/${PROJECT_NAME}-* \
     && \
+    rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_application-* \
+    && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_boundary-* \
     && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_core-* \
     && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_db_sqlite-* \
+    && \
+    rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_db_tantivy-* \
     && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_entities-* \
     && \
@@ -95,11 +109,15 @@ RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
     && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/${PROJECT_NAME}-* \
     && \
+    rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-application-* \
+    && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-boundary-* \
     && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-core-* \
     && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-db-sqlite-* \
+    && \
+    rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-db-tantivy-* \
     && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-entities-* \
     && \
@@ -119,6 +137,9 @@ COPY [ \
     "ofdb-app-clearance", \
     "./ofdb-app-clearance/" ]
 COPY [ \
+    "ofdb-application/src", \
+    "./ofdb-application/src/" ]
+COPY [ \
     "ofdb-boundary/src", \
     "./ofdb-boundary/src/" ]
 COPY [ \
@@ -127,6 +148,9 @@ COPY [ \
 COPY [ \
     "ofdb-db-sqlite/src", \
     "./ofdb-db-sqlite/src/" ]
+COPY [ \
+    "ofdb-db-tantivy/src", \
+    "./ofdb-db-tantivy/src/" ]
 COPY [ \
     "ofdb-entities/src", \
     "./ofdb-entities/src/" ]
@@ -138,11 +162,15 @@ COPY [ \
     "./src/" ]
 
 # Test and build the actual project
-RUN cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-boundary \
+RUN cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-application \
+    && \
+    cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-boundary \
     && \
     cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-core \
     && \
     cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-db-sqlite \
+    && \
+    cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-db-tantivy \
     && \
     cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-entities \
     && \

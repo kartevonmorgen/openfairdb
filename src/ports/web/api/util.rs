@@ -23,7 +23,7 @@ pub fn get_duplicates(
         return Ok(Json(vec![]));
     }
     let places = connections.shared()?.get_places(&ids)?;
-    let results = usecases::find_duplicates(&search_engine, &places)?;
+    let results = usecases::find_duplicates(&*search_engine, &places)?;
     Ok(Json(
         results
             .into_iter()

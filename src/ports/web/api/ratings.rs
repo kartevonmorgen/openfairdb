@@ -1,5 +1,5 @@
 use super::*;
-use crate::{adapters::json::from_json, core::util, infrastructure::flows::prelude as flows};
+use crate::{adapters::json::from_json, core::util};
 use ofdb_boundary::NewPlaceRating;
 
 #[post("/ratings", format = "application/json", data = "<data>")]
@@ -9,7 +9,7 @@ pub fn post_rating(
     data: JsonResult<NewPlaceRating>,
 ) -> Result<()> {
     let rating = from_json::new_place_rating(data?.into_inner());
-    let _ = flows::create_rating(&connections, &mut search_engine, rating)?;
+    let _ = flows::create_rating(&connections, &mut *search_engine, rating)?;
     Ok(Json(()))
 }
 

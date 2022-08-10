@@ -1,7 +1,4 @@
 pub mod cfg;
-pub mod db;
-pub mod error;
-pub mod flows;
 
 use std::env;
 
@@ -56,6 +53,3 @@ lazy_static! {
         }
     };
 }
-
-#[cfg(test)]
-mod tests;

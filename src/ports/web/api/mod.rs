@@ -7,7 +7,7 @@ use rocket::{
     http::{ContentType, Cookie, CookieJar, Status},
     post,
     response::{self, Responder},
-    routes, Request, Route, State,
+    routes, Route, State,
 };
 
 use super::guards::*;
@@ -17,15 +17,13 @@ use crate::{
         json::{self, to_json},
     },
     core::{
-        error::Error,
         prelude::*,
         usecases,
         util::{geo, split_ids},
     },
-    infrastructure::{db::tantivy, error::AppError, flows::prelude as flows},
-    ports::web::{jwt, notify::*, sqlite},
+    ports::web::{jwt, notify::*, sqlite, tantivy},
 };
-use ofdb_core::repositories::Error as RepoError;
+use ofdb_application::{error::AppError, error::BError as Error, prelude as flows};
 use ofdb_core::usecases::Error as ParameterError;
 
 pub mod captcha;
@@ -38,11 +36,13 @@ mod places;
 mod ratings;
 mod search;
 mod subscriptions;
-#[cfg(test)]
-pub mod tests;
 mod users;
 mod util;
-use self::error::Error as ApiError;
+
+pub use self::error::Error as ApiError;
+
+#[cfg(test)]
+pub mod tests;
 
 type Result<T> = result::Result<Json<T>, ApiError>;
 type JsonResult<'a, T> = result::Result<Json<T>, JsonError<'a>>;
@@ -112,34 +112,6 @@ pub fn routes() -> Vec<Route> {
         captcha::get_captcha,
         captcha::post_captcha_verify,
     ]
-}
-
-impl<'r, 'o: 'r> Responder<'r, 'o> for AppError {
-    fn respond_to(self, req: &'r Request<'_>) -> response::Result<'o> {
-        if let AppError::Business(err) = &self {
-            match err {
-                Error::Parameter(ref err) => {
-                    return match *err {
-                        ParameterError::Credentials | ParameterError::Unauthorized => {
-                            json_error_response(req, err, Status::Unauthorized)
-                        }
-                        ParameterError::Forbidden
-                        | ParameterError::ModeratedTag
-                        | ParameterError::EmailNotConfirmed => {
-                            json_error_response(req, err, Status::Forbidden)
-                        }
-                        _ => json_error_response(req, err, Status::BadRequest),
-                    };
-                }
-                Error::Repo(RepoError::NotFound) => {
-                    return json_error_response(req, err, Status::NotFound);
-                }
-                _ => {}
-            }
-        }
-        error!("Error: {}", self);
-        Err(Status::InternalServerError)
-    }
 }
 
 fn json_error_response<'r, 'o: 'r, E: Display>(

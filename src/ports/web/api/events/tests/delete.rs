@@ -49,7 +49,7 @@ fn with_api_token() {
         created_by: Some("foo@bar.com".into()),
         ..Default::default()
     };
-    let id1 = flows::create_event(&db, &mut search_engine, &notify, Some("foo"), e1)
+    let id1 = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e1)
         .unwrap()
         .id;
     let e2 = usecases::NewEvent {
@@ -59,7 +59,7 @@ fn with_api_token() {
         created_by: Some("foo@bar.com".into()),
         ..Default::default()
     };
-    let id2 = flows::create_event(&db, &mut search_engine, &notify, Some("foo"), e2)
+    let id2 = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e2)
         .unwrap()
         .id;
     // Manually delete the implicitly added org tag from the 2nd event!
@@ -105,7 +105,7 @@ fn with_api_token_by_organization_without_any_moderated_tags() {
         created_by: Some("foo@bar.com".into()),
         ..Default::default()
     };
-    let id = flows::create_event(&db, &mut search_engine, &notify, Some("foo"), e)
+    let id = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e)
         .unwrap()
         .id;
     assert_eq!(db.shared().unwrap().count_events().unwrap(), 1);
@@ -146,7 +146,7 @@ fn with_api_token_from_different_org_unauthorized() {
         start: now(),
         ..Default::default()
     };
-    let id = flows::create_event(&db, &mut search_engine, &notify, Some("creator"), e)
+    let id = flows::create_event(&db, &mut *search_engine, &notify, Some("creator"), e)
         .unwrap()
         .id;
     assert!(db.shared().unwrap().get_event(id.as_ref()).is_ok());

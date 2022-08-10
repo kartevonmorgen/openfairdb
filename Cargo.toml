@@ -10,25 +10,31 @@ edition = "2021"
 
 [workspace]
 members = [
+  "ofdb-application",
   "ofdb-boundary",
   "ofdb-core",
   "ofdb-db-sqlite",
+  "ofdb-db-tantivy",
   "ofdb-entities",
   "ofdb-gateways",
 ]
 exclude = [ "ofdb-app-clearance" ]
 
 [patch.crates-io]
-ofdb-boundary  = { path = "./ofdb-boundary"  }
-ofdb-core      = { path = "./ofdb-core"      }
-ofdb-db-sqlite = { path = "./ofdb-db-sqlite" }
-ofdb-entities  = { path = "./ofdb-entities"  }
-ofdb-gateways  = { path = "./ofdb-gateways"  }
+ofdb-application = { path = "./ofdb-application" }
+ofdb-boundary    = { path = "./ofdb-boundary"    }
+ofdb-core        = { path = "./ofdb-core"        }
+ofdb-db-sqlite   = { path = "./ofdb-db-sqlite"   }
+ofdb-db-tantivy  = { path = "./ofdb-db-tantivy"  }
+ofdb-entities    = { path = "./ofdb-entities"    }
+ofdb-gateways    = { path = "./ofdb-gateways"    }
 
 [dependencies]
+ofdb-application = { version = "=0.0.0" }
 ofdb-boundary = { version = "=0.10.1", features = ["extra-derive"] }
 ofdb-core = "=0.0.0"
 ofdb-db-sqlite = "=0.0.0"
+ofdb-db-tantivy = "=0.0.0"
 ofdb-entities = { version = "=0.10.1", features = ["url"] }
 ofdb-gateways = "=0.0.0"
 

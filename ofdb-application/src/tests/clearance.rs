@@ -1,7 +1,8 @@
-use super::*;
+use super::prelude::*;
+use crate::Result;
 
 pub struct PlaceClearanceFixture {
-    backend: flows::BackendFixture,
+    backend: BackendFixture,
 
     user_email: Email,
 
@@ -29,7 +30,7 @@ pub struct PlaceClearanceFixture {
 
 impl PlaceClearanceFixture {
     pub fn new() -> Self {
-        let backend = flows::BackendFixture::new();
+        let backend = BackendFixture::new();
 
         let user_email = Email::from("user@example.com".to_string());
         usecases::register_with_email(
@@ -53,7 +54,7 @@ impl PlaceClearanceFixture {
             },
             None,
             None,
-            &Cfg::default(),
+            &accepted_licenses(),
         )
         .unwrap();
 
@@ -68,7 +69,7 @@ impl PlaceClearanceFixture {
             },
             None,
             None,
-            &Cfg::default(),
+            &accepted_licenses(),
         )
         .unwrap();
         flows::review_places(
@@ -95,7 +96,7 @@ impl PlaceClearanceFixture {
             },
             None,
             None,
-            &Cfg::default(),
+            &accepted_licenses(),
         )
         .unwrap();
         flows::review_places(
@@ -181,7 +182,7 @@ impl PlaceClearanceFixture {
             },
             None,
             None,
-            &Cfg::default(),
+            &accepted_licenses(),
         )
         .unwrap();
         flows::review_places(
@@ -236,7 +237,7 @@ impl PlaceClearanceFixture {
 }
 
 #[test]
-fn should_create_pending_clearance_when_creating_place_with_moderated_tags() -> flows::Result<()> {
+fn should_create_pending_clearance_when_creating_place_with_moderated_tags() -> Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
     let org = fixture.organization_with_add_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
@@ -254,7 +255,7 @@ fn should_create_pending_clearance_when_creating_place_with_moderated_tags() -> 
         new_place,
         None,
         None,
-        &Cfg::default(),
+        &accepted_licenses(),
     )?;
 
     assert!(created_place.revision.is_initial());
@@ -275,7 +276,7 @@ fn should_create_pending_clearance_when_creating_place_with_moderated_tags() -> 
 }
 
 #[test]
-fn should_deny_creation_of_place_with_moderated_tags_if_not_allowed() -> flows::Result<()> {
+fn should_deny_creation_of_place_with_moderated_tags_if_not_allowed() -> Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
     let org = &fixture.organization_with_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
@@ -293,7 +294,7 @@ fn should_deny_creation_of_place_with_moderated_tags_if_not_allowed() -> flows::
         new_place,
         None,
         None,
-        &Cfg::default()
+        &accepted_licenses()
     )
     .is_err());
     // No pending clearances created
@@ -312,8 +313,7 @@ fn should_deny_creation_of_place_with_moderated_tags_if_not_allowed() -> flows::
 }
 
 #[test]
-fn should_create_pending_clearance_once_when_updating_place_with_moderated_tags(
-) -> flows::Result<()> {
+fn should_create_pending_clearance_once_when_updating_place_with_moderated_tags() -> Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
     let org = fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
@@ -333,7 +333,7 @@ fn should_create_pending_clearance_once_when_updating_place_with_moderated_tags(
         update_place,
         None,
         None,
-        &Cfg::default(),
+        &accepted_licenses(),
     )?;
 
     assert_eq!(new_revision, new_place.revision);
@@ -361,7 +361,7 @@ fn should_create_pending_clearance_once_when_updating_place_with_moderated_tags(
         update_place,
         None,
         None,
-        &Cfg::default(),
+        &accepted_licenses(),
     )?;
     assert_eq!(new_revision, new_place.revision);
     assert!(new_place.tags.is_empty());
@@ -381,7 +381,7 @@ fn should_create_pending_clearance_once_when_updating_place_with_moderated_tags(
 }
 
 #[test]
-fn should_deny_adding_of_moderated_tag_to_place_if_not_allowed() -> flows::Result<()> {
+fn should_deny_adding_of_moderated_tag_to_place_if_not_allowed() -> Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
     let org = &fixture.organization_with_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
@@ -400,7 +400,7 @@ fn should_deny_adding_of_moderated_tag_to_place_if_not_allowed() -> flows::Resul
         update_place,
         None,
         None,
-        &Cfg::default(),
+        &accepted_licenses(),
     )
     .is_err());
     // No pending clearances created
@@ -419,7 +419,7 @@ fn should_deny_adding_of_moderated_tag_to_place_if_not_allowed() -> flows::Resul
 }
 
 #[test]
-fn should_deny_removing_of_moderated_tag_from_place_if_not_allowed() -> flows::Result<()> {
+fn should_deny_removing_of_moderated_tag_from_place_if_not_allowed() -> Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
     let org = &fixture.organization_with_add_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
@@ -444,7 +444,7 @@ fn should_deny_removing_of_moderated_tag_from_place_if_not_allowed() -> flows::R
         update_place,
         None,
         None,
-        &Cfg::default(),
+        &accepted_licenses(),
     )
     .is_err());
     // No pending clearances created
@@ -464,7 +464,7 @@ fn should_deny_removing_of_moderated_tag_from_place_if_not_allowed() -> flows::R
 
 #[test]
 fn should_create_pending_clearance_when_updating_an_archived_place_with_moderated_tags(
-) -> flows::Result<()> {
+) -> Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
     let org = fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
@@ -484,7 +484,7 @@ fn should_create_pending_clearance_when_updating_an_archived_place_with_moderate
         update_place,
         None,
         None,
-        &Cfg::default(),
+        &accepted_licenses(),
     )?;
 
     assert_eq!(new_revision, new_place.revision);
@@ -504,8 +504,8 @@ fn should_create_pending_clearance_when_updating_an_archived_place_with_moderate
 }
 
 #[test]
-fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_places(
-) -> flows::Result<()> {
+fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_places() -> Result<()>
+{
     let mut fixture = PlaceClearanceFixture::new();
     let org = fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
@@ -536,7 +536,7 @@ fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_pla
         update_place,
         None,
         None,
-        &Cfg::default(),
+        &accepted_licenses(),
     )?;
 
     assert_eq!(new_revision, new_place.revision);
@@ -719,8 +719,8 @@ fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_pla
 }
 
 #[test]
-fn should_hide_untagged_cleared_revision_when_loading_or_searching_for_cleared_places(
-) -> flows::Result<()> {
+fn should_hide_untagged_cleared_revision_when_loading_or_searching_for_cleared_places() -> Result<()>
+{
     let mut fixture = PlaceClearanceFixture::new();
     let org = fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
@@ -746,7 +746,7 @@ fn should_hide_untagged_cleared_revision_when_loading_or_searching_for_cleared_p
         update_place,
         None,
         None,
-        &Cfg::default(),
+        &accepted_licenses(),
     )?;
 
     assert_eq!(new_revision, new_place.revision);
@@ -810,7 +810,7 @@ fn should_hide_untagged_cleared_revision_when_loading_or_searching_for_cleared_p
 }
 
 #[test]
-fn should_fail_when_trying_to_clear_future_revisions_of_places() -> flows::Result<()> {
+fn should_fail_when_trying_to_clear_future_revisions_of_places() -> Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
     let org = fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
@@ -836,7 +836,7 @@ fn should_fail_when_trying_to_clear_future_revisions_of_places() -> flows::Resul
         update_place,
         None,
         None,
-        &Cfg::default(),
+        &accepted_licenses(),
     )?;
 
     assert_eq!(new_revision, new_place.revision);
@@ -888,7 +888,7 @@ fn should_fail_when_trying_to_clear_future_revisions_of_places() -> flows::Resul
 }
 
 #[test]
-fn should_do_nothing_when_clearing_places_without_pending_clearances() -> flows::Result<()> {
+fn should_do_nothing_when_clearing_places_without_pending_clearances() -> Result<()> {
     let fixture = PlaceClearanceFixture::new();
     let org = fixture.organization_with_add_remove_clearance_tag;
 

@@ -1,57 +1,57 @@
-use ofdb_core::gateways::notify::NotificationGateway;
-
 use super::*;
-use crate::infrastructure::cfg::Cfg;
 
-pub fn create_place(
+use ofdb_core::gateways::notify::NotificationGateway;
+use std::collections::HashSet;
+
+#[allow(clippy::too_many_arguments)]
+pub fn update_place(
     connections: &sqlite::Connections,
     indexer: &mut dyn PlaceIndexer,
     notify: &dyn NotificationGateway,
-    new_place: usecases::NewPlace,
+    id: Id,
+    update_place: usecases::UpdatePlace,
     created_by_email: Option<&str>,
     created_by_org: Option<&Organization>,
-    cfg: &Cfg,
+    accepted_licenses: &HashSet<String>,
 ) -> Result<Place> {
-    // Create and add new entry
+    // Update existing entry
     let (place, ratings) = {
         let connection = connections.exclusive()?;
         connection.transaction(|| {
-            match usecases::prepare_new_place(
+            match usecases::prepare_updated_place(
                 &connection,
-                new_place,
+                id,
+                update_place,
                 created_by_email,
                 created_by_org,
-                &cfg.accepted_licenses,
+                accepted_licenses,
             ) {
                 Ok(storable) => {
-                    let (place, ratings) = usecases::store_new_place(&connection, storable)
+                    let (place, ratings) = usecases::store_updated_place(&connection, storable)
                         .map_err(|err| {
-                            warn!("Failed to store newly created place: {}", err);
+                            warn!("Failed to store updated place: {}", err);
                             TransactionError::RollbackTransaction
                         })?;
                     Ok((place, ratings))
                 }
-                Err(err) => {
-                    log::info!("Failed to prepare new place revision: {}", err);
-                    Err(TransactionError::Usecase(err))
-                }
+                Err(err) => Err(TransactionError::Usecase(err)),
             }
         })
     }?;
 
-    // Index newly added place
+    // Reindex updated place
     // TODO: Move to a separate task/thread that doesn't delay this request
     if let Err(err) = usecases::reindex_place(indexer, &place, ReviewStatus::Created, &ratings)
         .and_then(|_| indexer.flush_index())
     {
-        error!("Failed to index newly added place {}: {}", place.id, err);
+        error!("Failed to reindex updated place {}: {}", place.id, err);
     }
 
     // Send subscription e-mails
     // TODO: Move to a separate task/thread that doesn't delay this request
-    if let Err(err) = notify_place_added(connections, notify, &place) {
+    if let Err(err) = notify_place_updated(connections, notify, &place) {
         error!(
-            "Failed to send notifications for newly added place {}: {}",
+            "Failed to send notifications for updated place {}: {}",
             place.id, err
         );
     }
@@ -59,7 +59,7 @@ pub fn create_place(
     Ok(place)
 }
 
-fn notify_place_added(
+fn notify_place_updated(
     connections: &sqlite::Connections,
     notify: &dyn NotificationGateway,
     place: &Place,
@@ -71,6 +71,6 @@ fn notify_place_added(
         let all_categories = connection.all_categories()?;
         (email_addresses, all_categories)
     };
-    notify.place_added(&email_addresses, place, all_categories);
+    notify.place_updated(&email_addresses, place, all_categories);
     Ok(())
 }

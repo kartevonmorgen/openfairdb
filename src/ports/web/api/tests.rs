@@ -8,17 +8,16 @@ use crate::{adapters::json, core::usecases};
 pub mod prelude {
     use ofdb_core::gateways::notify::NotificationGateway;
 
+    pub use ofdb_application::prelude as flows;
+
+    use crate::ports::web::{self, api, sqlite, tantivy};
     pub use crate::{
         core::db::*,
-        infrastructure::{cfg::Cfg, flows::prelude as flows},
+        infrastructure::cfg::Cfg,
         ports::web::{
             api::captcha::tests::get_valid_captcha_cookie as get_captcha_cookie,
             tests::prelude::{LocalResponse as Response, *},
         },
-    };
-    use crate::{
-        infrastructure::db::tantivy,
-        ports::web::{self, api, sqlite},
     };
 
     pub fn setup() -> (Client, sqlite::Connections) {
@@ -180,7 +179,7 @@ fn get_one_entry() {
         .unwrap();
     flows::create_rating(
         &connections,
-        &mut search_engine,
+        &mut *search_engine,
         usecases::NewPlaceRating {
             context: RatingContext::Humanity,
             value: RatingValue::from(2),
@@ -297,12 +296,12 @@ fn search_with_categories_and_bbox() {
         .map(|e| {
             flows::create_place(
                 &connections,
-                &mut search_engine,
+                &mut *search_engine,
                 &notify,
                 e,
                 None,
                 None,
-                &Cfg::default(),
+                &Cfg::default().accepted_licenses,
             )
             .unwrap()
             .id
@@ -393,12 +392,12 @@ fn search_with_text() {
         .map(|e| {
             flows::create_place(
                 &connections,
-                &mut search_engine,
+                &mut *search_engine,
                 &notify,
                 e,
                 None,
                 None,
-                &Cfg::default(),
+                &Cfg::default().accepted_licenses,
             )
             .unwrap()
             .id
@@ -478,12 +477,12 @@ fn search_partial_text() {
         .map(|e| {
             flows::create_place(
                 &connections,
-                &mut search_engine,
+                &mut *search_engine,
                 &notify,
                 e,
                 None,
                 None,
-                &Cfg::default(),
+                &Cfg::default().accepted_licenses,
             )
             .unwrap()
             .id
@@ -525,12 +524,12 @@ fn search_with_text_terms_inclusive_exclusive() {
         .map(|e| {
             flows::create_place(
                 &connections,
-                &mut search_engine,
+                &mut *search_engine,
                 &notify,
                 e,
                 None,
                 None,
-                &Cfg::default(),
+                &Cfg::default().accepted_licenses,
             )
             .unwrap()
             .id
@@ -633,12 +632,12 @@ fn search_with_city() {
         .map(|e| {
             flows::create_place(
                 &connections,
-                &mut search_engine,
+                &mut *search_engine,
                 &notify,
                 e,
                 None,
                 None,
-                &Cfg::default(),
+                &Cfg::default().accepted_licenses,
             )
             .unwrap()
             .id
@@ -705,12 +704,12 @@ fn search_with_tags() {
         .map(|e| {
             flows::create_place(
                 &connections,
-                &mut search_engine,
+                &mut *search_engine,
                 &notify,
                 e,
                 None,
                 None,
-                &Cfg::default(),
+                &Cfg::default().accepted_licenses,
             )
             .unwrap()
             .id
@@ -775,12 +774,12 @@ fn search_with_uppercase_tags() {
         .map(|e| {
             flows::create_place(
                 &connections,
-                &mut search_engine,
+                &mut *search_engine,
                 &notify,
                 e,
                 None,
                 None,
-                &Cfg::default(),
+                &Cfg::default().accepted_licenses,
             )
             .unwrap()
             .id
@@ -832,12 +831,12 @@ fn search_with_hashtag() {
         .map(|e| {
             flows::create_place(
                 &connections,
-                &mut search_engine,
+                &mut *search_engine,
                 &notify,
                 e,
                 None,
                 None,
-                &Cfg::default(),
+                &Cfg::default().accepted_licenses,
             )
             .unwrap()
             .id
@@ -889,12 +888,12 @@ fn search_with_two_hashtags() {
         .map(|e| {
             flows::create_place(
                 &connections,
-                &mut search_engine,
+                &mut *search_engine,
                 &notify,
                 e,
                 None,
                 None,
-                &Cfg::default(),
+                &Cfg::default().accepted_licenses,
             )
             .unwrap()
             .id
@@ -951,12 +950,12 @@ fn search_with_commata() {
         .map(|e| {
             flows::create_place(
                 &connections,
-                &mut search_engine,
+                &mut *search_engine,
                 &notify,
                 e,
                 None,
                 None,
-                &Cfg::default(),
+                &Cfg::default().accepted_licenses,
             )
             .unwrap()
             .id
@@ -1039,12 +1038,12 @@ fn search_without_specifying_hashtag_symbol() {
         .map(|e| {
             flows::create_place(
                 &connections,
-                &mut search_engine,
+                &mut *search_engine,
                 &notify,
                 e,
                 None,
                 None,
-                &Cfg::default(),
+                &Cfg::default().accepted_licenses,
             )
             .unwrap()
             .id
@@ -1134,12 +1133,12 @@ fn search_with_status() {
             let status = p.title.clone();
             let id = flows::create_place(
                 &connections,
-                &mut search_engine,
+                &mut *search_engine,
                 &notify,
                 p,
                 None,
                 None,
-                &Cfg::default(),
+                &Cfg::default().accepted_licenses,
             )
             .unwrap()
             .id
@@ -1261,7 +1260,7 @@ fn get_one_rating() {
         .unwrap();
     flows::create_rating(
         &connections,
-        &mut search_engine,
+        &mut *search_engine,
         usecases::NewPlaceRating {
             context: RatingContext::Humanity,
             value: RatingValue::from(2),
@@ -1308,7 +1307,7 @@ fn ratings_with_and_without_source() {
         .unwrap();
     flows::create_rating(
         &connections,
-        &mut search_engine,
+        &mut *search_engine,
         usecases::NewPlaceRating {
             context: RatingContext::Humanity,
             value: RatingValue::from(2),
@@ -1322,7 +1321,7 @@ fn ratings_with_and_without_source() {
     .unwrap();
     flows::create_rating(
         &connections,
-        &mut search_engine,
+        &mut *search_engine,
         usecases::NewPlaceRating {
             context: RatingContext::Humanity,
             value: RatingValue::from(2),

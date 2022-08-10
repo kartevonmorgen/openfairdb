@@ -59,7 +59,7 @@ fn export_csv() {
         state: Some("state".into()),
         ..Default::default()
     };
-    let id1 = flows::create_event(&db, &mut search_engine, &notify, Some("foo"), e1)
+    let id1 = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e1)
         .unwrap()
         .id;
     let start2 = now();
@@ -72,7 +72,7 @@ fn export_csv() {
         telephone: Some("phone2".into()),
         ..Default::default()
     };
-    let id2 = flows::create_event(&db, &mut search_engine, &notify, Some("bar"), e2)
+    let id2 = flows::create_event(&db, &mut *search_engine, &notify, Some("bar"), e2)
         .unwrap()
         .id;
 

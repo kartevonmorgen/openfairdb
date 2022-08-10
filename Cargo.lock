@@ -1572,6 +1572,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "ofdb-application"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "csv",
+ "log",
+ "ofdb-core",
+ "ofdb-db-sqlite",
+ "ofdb-db-tantivy",
+ "ofdb-entities",
+ "pwhash",
+ "r2d2",
+ "serde_json",
+ "thiserror",
+]
+
+[[package]]
 name = "ofdb-boundary"
 version = "0.10.1"
 dependencies = [
@@ -1610,6 +1627,19 @@ dependencies = [
  "parking_lot",
  "thiserror",
  "time",
+]
+
+[[package]]
+name = "ofdb-db-tantivy"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "log",
+ "num-traits",
+ "ofdb-core",
+ "parking_lot",
+ "strum",
+ "tantivy",
 ]
 
 [[package]]
@@ -1688,9 +1718,11 @@ dependencies = [
  "log",
  "maud",
  "num-traits",
+ "ofdb-application",
  "ofdb-boundary",
  "ofdb-core",
  "ofdb-db-sqlite",
+ "ofdb-db-tantivy",
  "ofdb-entities",
  "ofdb-gateways",
  "parking_lot",

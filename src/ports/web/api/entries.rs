@@ -1,14 +1,13 @@
 use std::time::Duration;
 
-use rocket::serde::json::Json;
-use rocket::{self, get, post, put, FromForm, State};
+use rocket::{self, get, post, put, serde::json::Json, FromForm, State};
 
-use super::{super::guards::*, JsonResult, Result};
+use super::{JsonResult, Result, *};
 use crate::{
     adapters::json::{self, from_json},
-    core::{prelude::*, usecases, util},
-    infrastructure::{cfg::Cfg, db::tantivy, flows::prelude as flows},
-    ports::web::{notify::*, popular_tags_cache::PopularTagsCache, sqlite},
+    core::{usecases, util},
+    infrastructure::cfg::Cfg,
+    ports::web::{popular_tags_cache::PopularTagsCache, sqlite, tantivy},
 };
 
 #[derive(FromForm, Clone)]
@@ -177,12 +176,12 @@ pub fn post_entry(
     Ok(Json(
         flows::create_place(
             &connections,
-            &mut search_engine,
+            &mut *search_engine,
             &*notify,
             new_place,
             auth.account_email().ok(),
             org.as_ref(),
-            cfg,
+            &cfg.accepted_licenses,
         )?
         .id
         .to_string(),
@@ -206,13 +205,13 @@ pub fn put_entry(
     Ok(Json(
         flows::update_place(
             &connections,
-            &mut search_engine,
+            &mut *search_engine,
             &*notify,
             id.into(),
             from_json::update_place(data?.into_inner()),
             auth.account_email().ok(),
             org.as_ref(),
-            cfg,
+            &cfg.accepted_licenses,
         )?
         .id
         .into(),

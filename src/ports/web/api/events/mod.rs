@@ -1,3 +1,13 @@
+use super::*;
+use crate::{
+    adapters::json::from_json,
+    core::{
+        prelude::Result as CoreResult,
+        util::{self, geo::MapBbox, validate},
+    },
+    infrastructure::GEO_CODING_GW,
+};
+use ofdb_application::error::BError as Error;
 use ofdb_boundary::NewEvent;
 use ofdb_core::gateways::geocode::GeoCodingGateway;
 use rocket::{
@@ -6,17 +16,6 @@ use rocket::{
     get,
     http::Status as HttpStatus,
     post, put,
-};
-
-use super::*;
-use crate::core::error::Error;
-use crate::{
-    adapters::json::from_json,
-    core::{
-        prelude::Result as CoreResult,
-        util::{self, geo::MapBbox, validate},
-    },
-    infrastructure::{flows::prelude as flows, GEO_CODING_GW},
 };
 
 #[cfg(test)]
@@ -73,7 +72,7 @@ pub fn post_event_with_token(
     check_and_set_address_location(&mut new_event);
     let event = flows::create_event(
         &connections,
-        &mut search_engine,
+        &mut *search_engine,
         &*notify,
         Some(&org.api_token),
         new_event,
@@ -126,7 +125,7 @@ pub fn put_event_with_token(
     check_and_set_address_location(&mut new_event);
     flows::update_event(
         &connections,
-        &mut search_engine,
+        &mut *search_engine,
         &*notify,
         Some(&org.api_token),
         id.to_string().into(),
@@ -305,7 +304,7 @@ fn validate_and_adjust_query_limit(limit: usize) -> CoreResult<usize> {
         Ok(MAX_RESULT_LIMIT)
     } else if limit <= 0 {
         warn!("Invalid search limit: {}", limit);
-        Err(Error::Parameter(ParameterError::InvalidLimit))
+        Err(Error::Parameter(ParameterError::InvalidLimit).into())
     } else {
         Ok(limit)
     }
@@ -327,7 +326,7 @@ pub fn get_events_with_token(
         }
         Err(e) => return Err(e.into()),
     };
-    let events = usecases::query_events(&db, &search_engine, query.into_inner())?;
+    let events = usecases::query_events(&db, &*search_engine, query.into_inner())?;
     // Release the database connection asap
     drop(db);
 
@@ -360,7 +359,7 @@ pub fn get_events_chronologically(
     }
 
     let db = connections.shared()?;
-    let events = usecases::query_events(&db, &search_engine, query)?;
+    let events = usecases::query_events(&db, &*search_engine, query)?;
     // Release the database connection asap
     drop(db);
 
@@ -390,7 +389,7 @@ pub fn post_events_archive(
         // Only scouts and admins are entitled to review events
         auth.user_with_min_role(&db, Role::Scout)?.email
     };
-    let update_count = flows::archive_events(&db, &mut search_engine, &ids, &archived_by_email)?;
+    let update_count = flows::archive_events(&db, &mut *search_engine, &ids, &archived_by_email)?;
     if update_count < ids.len() {
         log::info!(
             "Archived only {} of {} event(s): {:?}",

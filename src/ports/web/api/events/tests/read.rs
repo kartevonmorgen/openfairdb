@@ -13,7 +13,7 @@ fn by_id() {
         created_by: Some("test@example.com".into()),
         ..Default::default()
     };
-    let e = flows::create_event(&db, &mut search_engine, &notify, None, e).unwrap();
+    let e = flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
     let req = client
         .get(format!("/events/{}", e.id))
         .header(ContentType::JSON);
@@ -73,7 +73,7 @@ fn sorted_by_start() {
             created_by: Some("test@example.com".into()),
             ..Default::default()
         };
-        flows::create_event(&db, &mut search_engine, &notify, None, e).unwrap();
+        flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
     }
     let res = client.get("/events").header(ContentType::JSON).dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
@@ -99,7 +99,7 @@ fn filtered_by_tags() {
             created_by: Some("test@example.com".into()),
             ..Default::default()
         };
-        flows::create_event(&db, &mut search_engine, &notify, None, e).unwrap();
+        flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
     }
 
     let req = client.get("/events?tag=a").header(ContentType::JSON);
@@ -172,7 +172,7 @@ fn filtered_by_creator_with_valid_api_token() {
                 start: now(),
                 ..Default::default()
             };
-            flows::create_event(&db, &mut search_engine, &notify, Some("foo"), new_event)
+            flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), new_event)
                 .unwrap()
                 .id
         })
@@ -223,7 +223,7 @@ fn filtered_by_start_min() {
             created_by: Some("test@example.com".into()),
             ..Default::default()
         };
-        flows::create_event(&db, &mut search_engine, &notify, None, e).unwrap();
+        flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
     }
     let res = client
         .get(format!("/events?start_min={}", now + 150))
@@ -254,7 +254,7 @@ fn filtered_by_end_min() {
             created_by: Some("test@example.com".into()),
             ..Default::default()
         };
-        flows::create_event(&db, &mut search_engine, &notify, None, e).unwrap();
+        flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
     }
     let res = client
         .get(format!("/events?end_min={}", now + 150))
@@ -282,7 +282,7 @@ fn filtered_by_start_max() {
             created_by: Some("test@example.com".into()),
             ..Default::default()
         };
-        flows::create_event(&db, &mut search_engine, &notify, None, e).unwrap();
+        flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
     }
     let res = client
         .get(format!("/events?start_max={}", now + 250))
@@ -315,7 +315,7 @@ fn filtered_by_end_max() {
             created_by: Some("test@example.com".into()),
             ..Default::default()
         };
-        flows::create_event(&db, &mut search_engine, &notify, None, e).unwrap();
+        flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
     }
     let res = client
         .get(format!("/events?end_max={}", now + 250))
@@ -345,7 +345,7 @@ fn filtered_by_bounding_box() {
             created_by: Some("test@example.com".into()),
             ..Default::default()
         };
-        flows::create_event(&db, &mut search_engine, &notify, None, e).unwrap();
+        flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
     }
     let res = client
         .get("/events?bbox=-8,-5,10,7.9")
