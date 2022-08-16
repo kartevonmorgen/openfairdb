@@ -21,7 +21,7 @@ use crate::{
         usecases,
         util::{geo, split_ids},
     },
-    ports::web::{jwt, notify::*, sqlite, tantivy},
+    web::{jwt, sqlite, tantivy},
 };
 use ofdb_application::{error::AppError, error::BError as Error, prelude as flows};
 use ofdb_core::usecases::Error as ParameterError;

@@ -6,8 +6,7 @@ use super::{JsonResult, Result, *};
 use crate::{
     adapters::json::{self, from_json},
     core::{usecases, util},
-    infrastructure::cfg::Cfg,
-    ports::web::{popular_tags_cache::PopularTagsCache, sqlite, tantivy},
+    web::{popular_tags_cache::PopularTagsCache, sqlite, tantivy, Cfg},
 };
 
 #[derive(FromForm, Clone)]
@@ -163,7 +162,7 @@ pub fn get_entries_most_popular_tags(
 pub fn post_entry(
     auth: Auth,
     connections: sqlite::Connections,
-    notify: Notify,
+    notify: &State<Notify>,
     mut search_engine: tantivy::SearchEngine,
     body: JsonResult<json::NewPlace>,
     cfg: &State<Cfg>,
@@ -177,7 +176,7 @@ pub fn post_entry(
         flows::create_place(
             &connections,
             &mut *search_engine,
-            &*notify,
+            &*notify.0,
             new_place,
             auth.account_email().ok(),
             org.as_ref(),
@@ -193,7 +192,7 @@ pub fn put_entry(
     auth: Auth,
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
-    notify: Notify,
+    notify: &State<Notify>,
     id: String,
     data: JsonResult<json::UpdatePlace>,
     cfg: &State<Cfg>,
@@ -206,7 +205,7 @@ pub fn put_entry(
         flows::update_place(
             &connections,
             &mut *search_engine,
-            &*notify,
+            &*notify.0,
             id.into(),
             from_json::update_place(data?.into_inner()),
             auth.account_email().ok(),

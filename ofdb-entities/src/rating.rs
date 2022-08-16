@@ -222,7 +222,7 @@ impl std::ops::AddAssign<(RatingContext, RatingValue)> for AvgRatingsBuilder {
 }
 
 #[rustfmt::skip]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Rating {
     pub id          : Id,
     pub place_id    : Id,

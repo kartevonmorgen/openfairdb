@@ -84,13 +84,13 @@ fn entry_detail(e: EntryPresenter) -> Markup {
                     @if let Some(ref m) = c.email {
                         tr {
                             td { "eMail" }
-                            td { a href=(format!("mailto:{}",m)) { (m.as_str()) } }
+                            td { a href=(format!("mailto:{m}")) { (m.as_str()) } }
                         }
                     }
                     @if let Some(ref t) = c.phone {
                         tr {
                             td { "Phone" }
-                            td { a href=(format!("tel:{}",t)) { (t) } }
+                            td { a href=(format!("tel:{t}")) { (t) } }
                         }
                     }
                 }
@@ -107,7 +107,7 @@ fn entry_detail(e: EntryPresenter) -> Markup {
         p {
             ul {
                 @for t in &e.place.tags{
-                    li{ (format!("#{}", t)) }
+                    li{ (format!("#{t}")) }
                 }
             }
         }
@@ -133,13 +133,13 @@ fn rating(place_id: &str, archive: bool, r: &Rating, comments: &[Comment]) -> Ma
       h5 { (r.title) " " span { (format!("({})",i8::from(r.value))) } }
       @if archive {
         form action = "/ratings/actions/archive" method = "POST" {
-            input type="hidden" name="ids" value=(r.id.to_string());
+            input type="hidden" name="ids" value=(r.id.as_str());
             input type="hidden" name="place_id" value=(place_id);
             input type="submit" value="archive rating";
         }
       }
       @if let Some(ref src) = r.source {
-          p { (format!("source: {}",src)) }
+          p { (format!("source: {src}")) }
       }
       ul {
           @for c in comments {
@@ -147,7 +147,7 @@ fn rating(place_id: &str, archive: bool, r: &Rating, comments: &[Comment]) -> Ma
                   p { (c.text) }
                   @if archive {
                     form action = "/comments/actions/archive" method = "POST" {
-                        input type="hidden" name="ids" value=(c.id.to_string());
+                        input type="hidden" name="ids" value=(c.id.as_str());
                         input type="hidden" name="place_id" value=(place_id);
                         input type="submit" value="archive comment";
                     }

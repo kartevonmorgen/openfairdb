@@ -6,22 +6,26 @@ use super::*;
 use crate::{adapters::json, core::usecases};
 
 pub mod prelude {
+
+    use crate::web::{self, api, sqlite, tantivy};
     use ofdb_core::gateways::notify::NotificationGateway;
+    use std::collections::HashSet;
 
-    pub use ofdb_application::prelude as flows;
-
-    use crate::ports::web::{self, api, sqlite, tantivy};
     pub use crate::{
         core::db::*,
-        infrastructure::cfg::Cfg,
-        ports::web::{
+        web::{
             api::captcha::tests::get_valid_captcha_cookie as get_captcha_cookie,
             tests::prelude::{LocalResponse as Response, *},
+            Cfg,
         },
     };
+    pub use ofdb_application::prelude as flows;
 
     pub fn setup() -> (Client, sqlite::Connections) {
-        setup_with_cfg(Cfg::default())
+        setup_with_cfg(Cfg {
+            accepted_licenses: default_accepted_licenses(),
+            protect_with_captcha: false,
+        })
     }
 
     pub fn setup_with_cfg(cfg: Cfg) -> (Client, sqlite::Connections) {
@@ -47,6 +51,13 @@ pub mod prelude {
     }
 
     pub use super::cookie_from_response;
+
+    pub fn default_accepted_licenses() -> std::collections::HashSet<String> {
+        let mut accepted_licenses = HashSet::new();
+        accepted_licenses.insert("CC0-1.0".into());
+        accepted_licenses.insert("ODbL-1.0".into());
+        accepted_licenses
+    }
 }
 
 use self::prelude::*;
@@ -301,7 +312,7 @@ fn search_with_categories_and_bbox() {
                 e,
                 None,
                 None,
-                &Cfg::default().accepted_licenses,
+                &default_accepted_licenses(),
             )
             .unwrap()
             .id
@@ -397,7 +408,7 @@ fn search_with_text() {
                 e,
                 None,
                 None,
-                &Cfg::default().accepted_licenses,
+                &default_accepted_licenses(),
             )
             .unwrap()
             .id
@@ -482,7 +493,7 @@ fn search_partial_text() {
                 e,
                 None,
                 None,
-                &Cfg::default().accepted_licenses,
+                &default_accepted_licenses(),
             )
             .unwrap()
             .id
@@ -529,7 +540,7 @@ fn search_with_text_terms_inclusive_exclusive() {
                 e,
                 None,
                 None,
-                &Cfg::default().accepted_licenses,
+                &default_accepted_licenses(),
             )
             .unwrap()
             .id
@@ -637,7 +648,7 @@ fn search_with_city() {
                 e,
                 None,
                 None,
-                &Cfg::default().accepted_licenses,
+                &default_accepted_licenses(),
             )
             .unwrap()
             .id
@@ -709,7 +720,7 @@ fn search_with_tags() {
                 e,
                 None,
                 None,
-                &Cfg::default().accepted_licenses,
+                &default_accepted_licenses(),
             )
             .unwrap()
             .id
@@ -779,7 +790,7 @@ fn search_with_uppercase_tags() {
                 e,
                 None,
                 None,
-                &Cfg::default().accepted_licenses,
+                &default_accepted_licenses(),
             )
             .unwrap()
             .id
@@ -836,7 +847,7 @@ fn search_with_hashtag() {
                 e,
                 None,
                 None,
-                &Cfg::default().accepted_licenses,
+                &default_accepted_licenses(),
             )
             .unwrap()
             .id
@@ -893,7 +904,7 @@ fn search_with_two_hashtags() {
                 e,
                 None,
                 None,
-                &Cfg::default().accepted_licenses,
+                &default_accepted_licenses(),
             )
             .unwrap()
             .id
@@ -955,7 +966,7 @@ fn search_with_commata() {
                 e,
                 None,
                 None,
-                &Cfg::default().accepted_licenses,
+                &default_accepted_licenses(),
             )
             .unwrap()
             .id
@@ -1043,7 +1054,7 @@ fn search_without_specifying_hashtag_symbol() {
                 e,
                 None,
                 None,
-                &Cfg::default().accepted_licenses,
+                &default_accepted_licenses(),
             )
             .unwrap()
             .id
@@ -1138,7 +1149,7 @@ fn search_with_status() {
                 p,
                 None,
                 None,
-                &Cfg::default().accepted_licenses,
+                &default_accepted_licenses(),
             )
             .unwrap()
             .id
@@ -2011,7 +2022,7 @@ mod with_captcha_protection_enabled {
     fn captcha_setup() -> (Client, sqlite::Connections) {
         let cfg = Cfg {
             protect_with_captcha: true,
-            ..Default::default()
+            accepted_licenses: default_accepted_licenses(),
         };
         setup_with_cfg(cfg)
     }

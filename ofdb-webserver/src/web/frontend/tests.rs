@@ -1,5 +1,5 @@
 use super::*;
-use crate::ports::web::{
+use crate::web::{
     sqlite::Connections,
     tantivy,
     tests::{prelude::*, register_user},
@@ -10,7 +10,7 @@ fn setup() -> (
     sqlite::Connections,
     tantivy::SearchEngine,
 ) {
-    crate::ports::web::tests::setup(vec![("/", super::routes())])
+    crate::web::tests::setup(vec![("/", super::routes())])
 }
 
 fn create_user(pool: &Connections, name: &str, role: Role) {

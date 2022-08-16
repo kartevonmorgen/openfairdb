@@ -18,7 +18,7 @@ use rust_embed::RustEmbed;
 
 use crate::{
     core::{prelude::*, usecases},
-    ports::web::{
+    web::{
         api::{events::EventQuery, ApiError},
         guards::*,
         sqlite,
@@ -40,7 +40,7 @@ const MAP_JS: &str = include_str!("map.js");
 const MAIN_CSS: &str = include_str!("main.css");
 
 #[derive(RustEmbed)]
-#[folder = "ofdb-app-clearance/dist/"]
+#[folder = "../ofdb-app-clearance/dist/"]
 struct ClearanceAsset;
 
 type Result<T> = std::result::Result<T, ApiError>;

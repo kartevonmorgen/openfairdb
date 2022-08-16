@@ -25,7 +25,7 @@ impl FromStr for RegistrationType {
 }
 
 #[rustfmt::skip]
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Event {
     pub id           : Id,
     pub title        : String,

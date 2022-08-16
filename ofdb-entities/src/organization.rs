@@ -1,6 +1,6 @@
 use crate::id::Id;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ModeratedTag {
     pub label: String,
     pub allow_add: bool,
@@ -21,7 +21,7 @@ impl From<&str> for ModeratedTag {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Organization {
     pub id: Id,
     pub name: String,

@@ -17,6 +17,7 @@ members = [
   "ofdb-db-tantivy",
   "ofdb-entities",
   "ofdb-gateways",
+  "ofdb-webserver",
 ]
 exclude = [ "ofdb-app-clearance" ]
 
@@ -28,46 +29,20 @@ ofdb-db-sqlite   = { path = "./ofdb-db-sqlite"   }
 ofdb-db-tantivy  = { path = "./ofdb-db-tantivy"  }
 ofdb-entities    = { path = "./ofdb-entities"    }
 ofdb-gateways    = { path = "./ofdb-gateways"    }
+ofdb-webserver   = { path = "./ofdb-webserver"   }
 
 [dependencies]
-ofdb-application = { version = "=0.0.0" }
-ofdb-boundary = { version = "=0.10.1", features = ["extra-derive"] }
-ofdb-core = "=0.0.0"
-ofdb-db-sqlite = "=0.0.0"
-ofdb-db-tantivy = "=0.0.0"
-ofdb-entities = { version = "=0.10.1", features = ["url"] }
-ofdb-gateways = "=0.0.0"
+ofdb-db-sqlite = { version = "0.0.0", path = "ofdb-db-sqlite" }
+ofdb-core = { version = "0.0.0", path = "ofdb-core" }
+ofdb-gateways = { version = "0.0.0", path = "ofdb-gateways" }
+ofdb-db-tantivy = { version = "0.0.0", path = "ofdb-db-tantivy" }
+ofdb-webserver = { version = "=0.0.0" }
 
-anyhow = "1.0.58"
-base64 = { version = "0.13.0", optional = true }
-captcha = "0.0.9"
-clap =  { version = "3.2.12", features = ["cargo"] }
-csv = "1.1.6"
-dotenv = "0.15.0"
 env_logger = "0.9.0"
-fast_chemail = "0.9.6"
-jsonwebtoken = { version = "8.1.1", optional = true }
-lazy_static = "1.4.0"
+clap =  { version = "3.2.12", features = ["cargo"] }
+dotenv = "0.15.0"
 log = "0.4.17"
-num-traits = "0.2.15"
-maud = { version = "0.23.0", optional = true, features = ["rocket"] }
-parking_lot = "0.12.1"
-passwords = "3.1.9"
-pwhash = "1.0.0"
-rand = { version = "0.8.5", optional = true }
-r2d2 = ">=0.8.10,<0.9"
-regex = "1.6.0"
-rust-embed = "6.4.0"
-rocket = { version = "0.5.0-rc.2", features = ["secrets", "json"] }
-rocket_cors = "0.6.0-alpha1"
-serde = { version = "1.0.139", features = ["derive"] }
-serde_json = "1.0.82"
-strum = "0.24.1"
-tantivy = "0.18.0"
-time = { version = "0.3.11", features = ["macros", "formatting"] }
 tokio = "1.20.0"
-thiserror = "1.0.31"
-uuid = { version = "1.1.2", features = ["v4"] }
 
 [patch.crates-io.maud]
 # TODO: use v0.24.0 as soon as it's published
@@ -90,15 +65,6 @@ ofdb-entities = { version = "*", features = ["builders"] }
 
 [build-dependencies]
 walkdir = "2.3.2"
-
-[features]
-default = ["frontend", "email", "clearance", "cookies", "jwt"]
-
-clearance = []
-cookies = []
-email = []
-frontend = ["maud"]
-jwt = ["jsonwebtoken", "base64", "rand"]
 
 [profile.release]
 lto = true

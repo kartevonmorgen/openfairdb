@@ -1,15 +1,17 @@
-use std::result;
+use std::{collections::HashSet, result};
 
-use crate::{
-    core::{
-        db::{EventIndexer, PlaceIndexer},
-        prelude::*,
-        usecases,
-    },
-    infrastructure::cfg::Cfg,
+use crate::core::{
+    db::{EventIndexer, PlaceIndexer},
+    prelude::*,
+    usecases,
 };
+
 use ofdb_application::error::AppError;
-use ofdb_core::rating::Rated;
+use ofdb_core::{
+    gateways::{geocode::GeoCodingGateway, notify::NotificationGateway},
+    rating::Rated,
+};
+
 use rocket::{config::Config as RocketCfg, serde::json::Json, Rocket, Route};
 
 pub mod api;
@@ -17,7 +19,6 @@ pub mod api;
 mod frontend;
 mod guards;
 pub mod jwt;
-pub mod notify;
 mod popular_tags_cache;
 mod sqlite;
 pub mod tantivy;
@@ -26,6 +27,12 @@ pub mod tantivy;
 mod mockdb;
 #[cfg(test)]
 pub mod tests;
+
+#[derive(Debug, Clone)]
+pub struct Cfg {
+    pub accepted_licenses: HashSet<String>,
+    pub protect_with_captcha: bool,
+}
 
 use popular_tags_cache::PopularTagsCache;
 
@@ -76,6 +83,8 @@ pub(crate) fn rocket_instance(
     mounts: Vec<(&str, Vec<Route>)>,
     rocket_cfg: Option<RocketCfg>,
     cfg: Cfg,
+    geo_gw: Box<dyn GeoCodingGateway + Send + Sync>,
+    notify_gw: Box<dyn NotificationGateway + Send + Sync>,
 ) -> Rocket<rocket::Build> {
     info!("Indexing all places...");
     index_all_places(&connections.exclusive().unwrap(), &mut *search_engine).unwrap();
@@ -100,12 +109,17 @@ pub(crate) fn rocket_instance(
         None => rocket::build(),
     };
 
+    let geo_gw = guards::GeoCoding(geo_gw);
+    let notify_gw = guards::Notify(notify_gw);
+
     let mut instance = r
         .manage(connections)
         .manage(search_engine)
         .manage(captcha_cache)
         .manage(tags_cache)
         .manage(jwt_state)
+        .manage(geo_gw)
+        .manage(notify_gw)
         .manage(cfg);
 
     for (m, r) in mounts {
@@ -124,12 +138,13 @@ fn mounts() -> Vec<(&'static str, Vec<Route>)> {
     vec![("/api", api::routes()), ("/", frontend::routes())]
 }
 
-#[tokio::main]
 pub async fn run(
     connections: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     enable_cors: bool,
     cfg: Cfg,
+    geo_gw: Box<dyn GeoCodingGateway + Send + Sync>,
+    notify_gw: Box<dyn NotificationGateway + Send + Sync>,
 ) {
     let server_task = if enable_cors {
         let cors = rocket_cors::CorsOptions {
@@ -137,11 +152,28 @@ pub async fn run(
         }
         .to_cors()
         .unwrap();
-        rocket_instance(connections, search_engine, mounts(), None, cfg)
-            .attach(cors)
-            .launch()
+        rocket_instance(
+            connections,
+            search_engine,
+            mounts(),
+            None,
+            cfg,
+            geo_gw,
+            notify_gw,
+        )
+        .attach(cors)
+        .launch()
     } else {
-        rocket_instance(connections, search_engine, mounts(), None, cfg).launch()
+        rocket_instance(
+            connections,
+            search_engine,
+            mounts(),
+            None,
+            cfg,
+            geo_gw,
+            notify_gw,
+        )
+        .launch()
     };
     if let Err(err) = server_task.await {
         log::error!("Unable to run web server: {err}");
