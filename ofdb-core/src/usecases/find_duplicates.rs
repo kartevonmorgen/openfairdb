@@ -5,7 +5,7 @@ use crate::{
 };
 use std::{cmp::min, collections::HashSet};
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Eq)]
 pub enum DuplicateType {
     SimilarChars,
     SimilarWords,

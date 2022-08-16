@@ -57,7 +57,9 @@ RUN USER=root cargo new --lib ofdb-application \
     && \
     USER=root cargo new --lib ofdb-entities \
     && \
-    USER=root cargo new --lib ofdb-gateways
+    USER=root cargo new --lib ofdb-gateways \
+    && \
+    USER=root cargo new --lib ofdb-webserver
 
 COPY [ \
     "Cargo.toml", \
@@ -85,6 +87,9 @@ COPY [ \
 COPY [ \
     "ofdb-gateways/Cargo.toml", \
     "./ofdb-gateways/" ]
+COPY [ \
+    "ofdb-webserver/Cargo.toml", \
+    "./ofdb-webserver/" ]
 
 # Build the dummy project(s), then delete all build artefacts that must(!) not be cached
 RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
@@ -107,6 +112,8 @@ RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
     && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_gateways-* \
     && \
+    rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_webserver-* \
+    && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/${PROJECT_NAME}-* \
     && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-application-* \
@@ -121,7 +128,9 @@ RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
     && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-entities-* \
     && \
-    rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-gateways-*
+    rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-gateways-* \
+    && \
+    rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-webserver-*
 
 # Copy all project (re-)sources that are required for building (ordered alphabetically)
 COPY [ \
@@ -158,6 +167,9 @@ COPY [ \
     "ofdb-gateways/src", \
     "./ofdb-gateways/src/" ]
 COPY [ \
+    "ofdb-webserver/src", \
+    "./ofdb-webserver/src/" ]
+COPY [ \
     "src", \
     "./src/" ]
 
@@ -175,6 +187,8 @@ RUN cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-applicat
     cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-entities \
     && \
     cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-gateways \
+    && \
+    cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-webserver \
     && \
     cargo test --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
     && \

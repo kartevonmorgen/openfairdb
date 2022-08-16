@@ -5,13 +5,13 @@ use rocket::{
     get, post,
     request::FlashMessage,
     response::{Flash, Redirect},
-    uri,
+    uri, State,
 };
 
 use super::{login::LoginCredentials, view};
 use crate::{
     core::{prelude::*, usecases},
-    ports::web::{notify::*, sqlite::Connections},
+    web::{guards::*, sqlite::Connections},
 };
 use ofdb_core::usecases::Error as ParameterError;
 
@@ -23,7 +23,7 @@ pub fn get_register(flash: Option<FlashMessage>) -> Markup {
 #[post("/register", data = "<credentials>")]
 pub fn post_register(
     db: Connections,
-    notify: Notify,
+    notify: &State<Notify>,
     credentials: Form<LoginCredentials>,
 ) -> std::result::Result<Flash<Redirect>, Flash<Redirect>> {
     match db.exclusive() {

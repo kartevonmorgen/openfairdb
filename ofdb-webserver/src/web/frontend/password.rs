@@ -5,13 +5,13 @@ use rocket::{
     get, post,
     request::FlashMessage,
     response::{Flash, Redirect},
-    uri, FromForm,
+    uri, FromForm, State,
 };
 
 use super::view;
 use crate::{
     core::prelude::*,
-    ports::web::{notify::*, sqlite::Connections},
+    web::{guards::*, sqlite::Connections},
 };
 use ofdb_application::prelude::*;
 
@@ -44,11 +44,11 @@ pub struct ResetPasswordRequest<'r> {
 #[post("/users/actions/reset-password-request", data = "<data>")]
 pub fn post_reset_password_request(
     db: Connections,
-    notify: Notify,
+    notify: &State<Notify>,
     data: Form<ResetPasswordRequest>,
 ) -> std::result::Result<Redirect, Flash<Redirect>> {
     let ResetPasswordRequest { email } = data.into_inner();
-    match reset_password_request(&db, &*notify, email) {
+    match reset_password_request(&db, &*notify.0, email) {
         Err(_) => Err(Flash::error(
             Redirect::to(uri!(get_reset_password(_, _))),
             "Failed to request a password reset.",

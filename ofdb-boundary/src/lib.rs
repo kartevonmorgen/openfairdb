@@ -690,7 +690,7 @@ pub struct JwtToken {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
 pub struct Error {
     /// HTTP status code
     pub http_status: u16,
@@ -699,7 +699,7 @@ pub struct Error {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
 pub enum DuplicateType {
     SimilarChars,
     SimilarWords,

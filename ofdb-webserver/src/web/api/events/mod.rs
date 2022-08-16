@@ -5,7 +5,6 @@ use crate::{
         prelude::Result as CoreResult,
         util::{self, geo::MapBbox, validate},
     },
-    infrastructure::GEO_CODING_GW,
 };
 use ofdb_application::error::BError as Error;
 use ofdb_boundary::NewEvent;
@@ -21,7 +20,10 @@ use rocket::{
 #[cfg(test)]
 mod tests;
 
-fn check_and_set_address_location(e: &mut usecases::NewEvent) -> Option<MapPoint> {
+fn check_and_set_address_location<G>(e: &mut usecases::NewEvent, geo_gw: &G) -> Option<MapPoint>
+where
+    G: GeoCodingGateway + ?Sized,
+{
     let pos = if let (Some(lat), Some(lng)) = (e.lat, e.lng) {
         MapPoint::try_from_lat_lng_deg(lat, lng)
             .map(Some)
@@ -42,7 +44,7 @@ fn check_and_set_address_location(e: &mut usecases::NewEvent) -> Option<MapPoint
         state: e.state.clone(),
     };
 
-    GEO_CODING_GW
+    geo_gw
         .resolve_address_lat_lng(&addr)
         .and_then(|(lat, lng)| {
             if let Ok(pos) = MapPoint::try_from_lat_lng_deg(lat, lng) {
@@ -63,17 +65,18 @@ fn check_and_set_address_location(e: &mut usecases::NewEvent) -> Option<MapPoint
 pub fn post_event_with_token(
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
-    notify: Notify,
+    notify: &State<Notify>,
     auth: Auth,
     ev: JsonResult<NewEvent>,
+    geo_gw: &State<GeoCoding>,
 ) -> Result<String> {
     let org = auth.organization(&connections.shared()?)?;
     let mut new_event = from_json::new_event(ev?.into_inner());
-    check_and_set_address_location(&mut new_event);
+    check_and_set_address_location(&mut new_event, &*geo_gw.0);
     let event = flows::create_event(
         &connections,
         &mut *search_engine,
-        &*notify,
+        &*notify.0,
         Some(&org.api_token),
         new_event,
     )?;
@@ -115,18 +118,19 @@ pub fn put_event(mut _db: sqlite::Connections, _id: &str, _e: JsonResult<NewEven
 pub fn put_event_with_token(
     connections: sqlite::Connections,
     mut search_engine: tantivy::SearchEngine,
-    notify: Notify,
+    notify: &State<Notify>,
     auth: Auth,
     id: &str,
     ev: JsonResult<NewEvent>,
+    geo_gw: &State<GeoCoding>,
 ) -> Result<()> {
     let org = auth.organization(&connections.shared()?)?;
     let mut new_event = from_json::new_event(ev?.into_inner());
-    check_and_set_address_location(&mut new_event);
+    check_and_set_address_location(&mut new_event, &*geo_gw.0);
     flows::update_event(
         &connections,
         &mut *search_engine,
-        &*notify,
+        &*notify.0,
         Some(&org.api_token),
         id.to_string().into(),
         new_event,

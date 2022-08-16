@@ -2,8 +2,7 @@ use rocket::{config::Config as RocketCfg, local::blocking::Client, Route};
 
 use crate::{
     core::{prelude::*, usecases},
-    infrastructure::cfg::Cfg,
-    ports::web::{sqlite, tantivy},
+    web::{sqlite, tantivy, Cfg},
 };
 
 pub mod prelude {
@@ -20,7 +19,13 @@ pub mod prelude {
 pub fn setup(
     mounts: Vec<(&'static str, Vec<Route>)>,
 ) -> (Client, sqlite::Connections, tantivy::SearchEngine) {
-    setup_with_cfg(mounts, Cfg::default())
+    setup_with_cfg(
+        mounts,
+        Cfg {
+            accepted_licenses: crate::web::api::tests::prelude::default_accepted_licenses(),
+            protect_with_captcha: false,
+        },
+    )
 }
 
 pub fn setup_with_cfg(
@@ -32,12 +37,16 @@ pub fn setup_with_cfg(
     ofdb_db_sqlite::run_embedded_database_migrations(connections.exclusive().unwrap());
     let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
     let connections = sqlite::Connections::from(connections);
+    let notify_gw = DummyNotifyGW;
+    let geo_gw = DummyGeoGW;
     let rocket = super::rocket_instance(
         connections.clone(),
         search_engine.clone(),
         mounts,
         Some(rocket_cfg),
         cfg,
+        Box::new(geo_gw),
+        Box::new(notify_gw),
     );
     let client = Client::tracked(rocket).unwrap();
     (client, connections, search_engine)
@@ -74,4 +83,12 @@ impl ofdb_core::gateways::notify::NotificationGateway for DummyNotifyGW {
     fn user_registered_ofdb(&self, _: &User) {}
     fn user_registered(&self, _: &User, _: &str) {}
     fn user_reset_password_requested(&self, _: &EmailNonce) {}
+}
+
+pub struct DummyGeoGW;
+
+impl ofdb_core::gateways::geocode::GeoCodingGateway for DummyGeoGW {
+    fn resolve_address_lat_lng(&self, _: &ofdb_core::entities::Address) -> Option<(f64, f64)> {
+        None
+    }
 }

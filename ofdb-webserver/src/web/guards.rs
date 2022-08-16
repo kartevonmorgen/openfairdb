@@ -1,4 +1,4 @@
-use time::{Duration, OffsetDateTime};
+use core::ops::Deref;
 
 use rocket::{
     self,
@@ -7,12 +7,15 @@ use rocket::{
     request::{FromRequest, Outcome, Request},
     State,
 };
+use time::{Duration, OffsetDateTime};
 
 use crate::{
     core::{prelude::*, repositories::OrganizationRepo, usecases},
-    ports::web::jwt,
+    web::jwt,
 };
 use ofdb_application::error::AppError;
+use ofdb_core::gateways::geocode::GeoCodingGateway;
+use ofdb_core::gateways::notify::NotificationGateway;
 use ofdb_core::usecases::Error as ParameterError;
 
 pub const COOKIE_EMAIL_KEY: &str = "ofdb-user-email";
@@ -164,5 +167,16 @@ impl<'r> FromRequest<'r> for Account {
             Ok(email) => Outcome::Success(Account(email.to_owned())),
             _ => Outcome::Failure((Status::Unauthorized, ())),
         }
+    }
+}
+
+pub struct GeoCoding(pub Box<dyn GeoCodingGateway + Send + Sync>);
+
+pub struct Notify(pub Box<dyn NotificationGateway + Send + Sync>);
+
+impl Deref for Notify {
+    type Target = dyn NotificationGateway;
+    fn deref(&self) -> &Self::Target {
+        &*self.0
     }
 }

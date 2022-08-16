@@ -49,7 +49,7 @@ impl From<OpeningHours> for String {
 }
 
 // Mutable part of a place.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlaceRevision {
     pub revision: Revision,
     pub created: Activity,
@@ -65,7 +65,7 @@ pub struct PlaceRevision {
 
 // Convenience type that merges the tuple (PlaceRoot, PlaceRevision)
 // into a single, flat struct.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Place {
     pub id: Id,
     pub license: String,
@@ -172,7 +172,7 @@ impl From<Place> for (PlaceRoot, PlaceRevision) {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct PlaceHistory {
     pub place: PlaceRoot,
     pub revisions: Vec<(PlaceRevision, Vec<ReviewStatusLog>)>,

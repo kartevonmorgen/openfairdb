@@ -11,6 +11,7 @@ pub struct Cfg {
     pub db_url: String,
     pub db_connection_pool_size: u32,
     pub protect_with_captcha: bool,
+    pub opencage_api_key: Option<String>,
 }
 
 impl Cfg {
@@ -25,6 +26,14 @@ impl Cfg {
         if let Ok(p) = env::var("PROTECT_WITH_CAPTCHA").map(|s| s.to_lowercase()) {
             cfg.protect_with_captcha = p == "true" || p == "1" || p == "yes";
         }
+        match env::var("OPENCAGE_API_KEY") {
+            Ok(key) => {
+                cfg.opencage_api_key = Some(key);
+            }
+            Err(_) => {
+                log::warn!("No OpenCage API key found");
+            }
+        };
         cfg
     }
 }
@@ -38,11 +47,13 @@ impl Default for Cfg {
         let db_url = DEFAULT_DB_URL.to_string();
         let db_connection_pool_size = DB_CONNECTION_POOL_SIZE;
         let protect_with_captcha = DEFAULT_PROTECT_WITH_CAPTCHA;
+        let opencage_api_key = None;
         Self {
             accepted_licenses,
             db_url,
             db_connection_pool_size,
             protect_with_captcha,
+            opencage_api_key,
         }
     }
 }

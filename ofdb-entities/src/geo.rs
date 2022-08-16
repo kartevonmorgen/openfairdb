@@ -495,7 +495,7 @@ impl MapPoint {
     }
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub struct MapBbox {
     sw: MapPoint,
     ne: MapPoint,

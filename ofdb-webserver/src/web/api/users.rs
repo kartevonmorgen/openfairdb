@@ -52,7 +52,7 @@ pub fn post_logout(
 }
 
 #[post("/users", format = "application/json", data = "<u>")]
-pub fn post_user(db: sqlite::Connections, n: Notify, u: JsonResult<NewUser>) -> Result<()> {
+pub fn post_user(db: sqlite::Connections, n: &State<Notify>, u: JsonResult<NewUser>) -> Result<()> {
     let new_user = from_json::new_user(u?.into_inner());
     let user = {
         let db = db.exclusive()?;
@@ -70,11 +70,11 @@ pub fn post_user(db: sqlite::Connections, n: Notify, u: JsonResult<NewUser>) -> 
 )]
 pub fn post_request_password_reset(
     connections: sqlite::Connections,
-    notify: Notify,
+    notify: &State<Notify>,
     data: JsonResult<json::RequestPasswordReset>,
 ) -> Result<()> {
     let req = data?.into_inner();
-    flows::reset_password_request(&connections, &*notify, &req.email)?;
+    flows::reset_password_request(&connections, &*notify.0, &req.email)?;
 
     Ok(Json(()))
 }
@@ -133,7 +133,7 @@ pub fn confirm_email_address(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ports::web::{api::tests::prelude::*, tests::register_user};
+    use crate::web::{api::tests::prelude::*, tests::register_user};
 
     #[test]
     fn reset_password() {

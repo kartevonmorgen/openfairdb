@@ -12,7 +12,7 @@ use rocket::{
 
 use super::{super::guards::*, view};
 
-use crate::{core::usecases, ports::web::sqlite::Connections};
+use crate::{core::usecases, web::sqlite::Connections};
 use ofdb_core::usecases::Error as ParameterError;
 
 #[derive(FromForm)]
@@ -81,7 +81,7 @@ pub fn post_logout(cookies: &CookieJar<'_>) -> Flash<Redirect> {
     cookies.remove_private(Cookie::named(COOKIE_EMAIL_KEY));
     Flash::success(
         Redirect::to(uri!(super::get_index)),
-        "Sie haben sich erfolgreich abgemeldet.",
+        "You have successfully logged out.",
     )
 }
 
@@ -90,7 +90,7 @@ pub mod tests {
     use rocket::http::Status as HttpStatus;
 
     use super::*;
-    use crate::ports::web::{
+    use crate::web::{
         self,
         tests::{prelude::*, register_user},
     };
