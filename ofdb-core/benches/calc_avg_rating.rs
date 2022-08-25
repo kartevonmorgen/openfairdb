@@ -1,12 +1,17 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion};
+use brunch::{Bench, Benches};
 use ofdb_core::rating::Rated;
 use ofdb_entities::{builders::*, id::*, place::*, rating::*, time::*};
 
-fn calc_avg_of_1000_ratings_for_an_entry(c: &mut Criterion) {
-    let (entry, ratings) = create_place_with_multiple_ratings(black_box(1000));
-    c.bench_function("avg_ratings 1000", |b| {
-        b.iter(|| entry.avg_ratings(&ratings[..]))
-    });
+fn main() {
+    let mut benches = Benches::default();
+
+    let (entry, ratings) = create_place_with_multiple_ratings(1000);
+
+    benches.push(
+        Bench::new("Calculate avg. of 1000 ratings for an entry")
+            .run(|| entry.avg_ratings(&ratings[..])),
+    );
+    benches.finish();
 }
 
 fn create_place_with_multiple_ratings(n: usize) -> (Place, Vec<Rating>) {
@@ -29,6 +34,3 @@ fn create_ratings_of_entry(place_id: &str, n: usize) -> Vec<Rating> {
         })
         .collect()
 }
-
-criterion_group!(benches, calc_avg_of_1000_ratings_for_an_entry);
-criterion_main!(benches);
