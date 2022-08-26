@@ -17,6 +17,7 @@ members = [
   "ofdb-db-tantivy",
   "ofdb-entities",
   "ofdb-gateways",
+  "ofdb-seed",
   "ofdb-webserver",
 ]
 exclude = [ "ofdb-app-clearance" ]
@@ -29,6 +30,7 @@ ofdb-db-sqlite   = { path = "./ofdb-db-sqlite"   }
 ofdb-db-tantivy  = { path = "./ofdb-db-tantivy"  }
 ofdb-entities    = { path = "./ofdb-entities"    }
 ofdb-gateways    = { path = "./ofdb-gateways"    }
+ofdb-seed        = { path = "./ofdb-seed"        }
 ofdb-webserver   = { path = "./ofdb-webserver"   }
 
 [dependencies]
