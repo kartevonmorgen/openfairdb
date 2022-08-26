@@ -7,7 +7,7 @@ publish = false
 
 [dependencies]
 ofdb-core = "=0.0.0"
-ofdb-entities = "=0.10.1"
+ofdb-entities = "0.11.0"
 
 fast_chemail = "0.9.6"
 itertools = "0.10.3"

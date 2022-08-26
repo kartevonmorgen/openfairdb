@@ -6,11 +6,11 @@ publish = false
 
 [dependencies]
 ofdb-application = { version = "=0.0.0" }
-ofdb-boundary = { version = "=0.10.1", features = ["extra-derive"] }
+ofdb-boundary = { version = "0.11.0", features = ["extra-derive"] }
 ofdb-core = "=0.0.0"
 ofdb-db-sqlite = "=0.0.0" # TODO: remove
 ofdb-db-tantivy = "=0.0.0" # TODO: remove
-ofdb-entities = { version = "=0.10.1", features = ["url"] }
+ofdb-entities = { version = "0.11.0", features = ["url"] }
 
 anyhow = "1.0.62"
 base64 = { version = "0.13.0", optional = true }
@@ -35,7 +35,7 @@ uuid = { version = "1.1.2", features = ["v4"] }
 r2d2 = "0.8.10"
 
 [dev-dependencies]
-ofdb-entities = { version = "=0.10.1", features = ["url", "builders"] }
+ofdb-entities = { version = "0.11.0", features = ["url", "builders"] }
 
 [build-dependencies]
 walkdir = "2.3.2"

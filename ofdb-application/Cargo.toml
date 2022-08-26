@@ -7,7 +7,7 @@ publish = false
 [dependencies]
 ofdb-core = "=0.0.0"
 ofdb-db-sqlite = "=0.0.0" # TODO: remove
-ofdb-entities = { version = "=0.10.1", features = ["url"] }
+ofdb-entities = { version = "0.11.0", features = ["url"] }
 
 anyhow = "1.0.62"
 csv = "1.1.6"
