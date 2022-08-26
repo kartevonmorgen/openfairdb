@@ -47,9 +47,10 @@ setup:
     rustup self update || true
     # cargo-edit is needed for `cargo upgrade`
     cargo install cargo-edit
+    cargo install diesel_cli --no-default-features --features sqlite
     pip install -U pre-commit
     pre-commit autoupdate
-    #pre-commit install --hook-type commit-msg --hook-type pre-commit
+    # pre-commit install --hook-type commit-msg --hook-type pre-commit
 
 # Upgrade (and update) dependencies
 upgrade:
