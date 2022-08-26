@@ -8,8 +8,7 @@ permissions:
 on:
   pull_request:
   push:
-    branches:
-      - '*'
+    branches: [main]
   workflow_dispatch:
 
 env:
