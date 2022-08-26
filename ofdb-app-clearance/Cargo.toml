@@ -8,7 +8,7 @@ publish = false
 [patch.crates-io]
 ofdb-boundary = { path = "../ofdb-boundary" }
 ofdb-entities = { path = "../ofdb-entities" }
-ofdb-seed = { git = "https://github.com/kartevonmorgen/ofdb-seed.git", branch = "master" }
+ofdb-seed     = { path = "../ofdb-seed"     }
 
 [dependencies]
 ofdb-boundary = { version = "0.10.1", features = ["extra-derive"] }
@@ -16,7 +16,7 @@ ofdb-entities = "0.10.1"
 ofdb-seed = "0.3.0"
 seed = "0.9.2"
 difference = "2.0.0"
-web-sys = { version = "0.3.58", features = ["HtmlFormElement"] }
+web-sys = { version = "0.3.59", features = ["HtmlFormElement"] }
 
 [profile.release]
 lto = true
