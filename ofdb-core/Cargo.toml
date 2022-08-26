@@ -24,4 +24,5 @@ brunch = "0.3.2"
 
 [[bench]]
 name = "calc_avg_rating"
+path = "benches/calc_avg_rating.rs"
 harness = false
