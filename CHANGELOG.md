@@ -1,8 +1,9 @@
 # Changelog
 
-## unreleased
+## v0.11.0 (2022-08-29)
 
 - chore: Compile on stable Rust with rocket v0.5.0-rc.2
+- chore: Internal refactoring
 
 ## v0.10.5 (2021-08-11)
 
