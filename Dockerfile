@@ -134,9 +134,6 @@ RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
 
 # Copy all project (re-)sources that are required for building (ordered alphabetically)
 COPY [ \
-    "build.rs", \
-    "./" ]
-COPY [ \
     "openapi.yaml", \
     "./" ]
 COPY [ \
@@ -166,6 +163,9 @@ COPY [ \
 COPY [ \
     "ofdb-gateways/src", \
     "./ofdb-gateways/src/" ]
+COPY [ \
+    "ofdb-webserver/build.rs", \
+    "./ofdb-webserver/build.rs" ]
 COPY [ \
     "ofdb-webserver/src", \
     "./ofdb-webserver/src/" ]

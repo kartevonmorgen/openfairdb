@@ -1,7 +1,7 @@
 use std::{env, process::Command};
 
-const CLEARANCE_APP_DIR: &str = "ofdb-app-clearance";
-const CLEARANCE_APP_SRC: &str = "ofdb-app-clearance/src";
+const CLEARANCE_APP_DIR: &str = "../ofdb-app-clearance";
+const CLEARANCE_APP_SRC: &str = "../ofdb-app-clearance/src";
 const CLEARANCE_FEATURE_NAME: &str = "clearance";
 
 fn main() {

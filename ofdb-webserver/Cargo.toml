@@ -37,6 +37,9 @@ r2d2 = "0.8.10"
 [dev-dependencies]
 ofdb-entities = { version = "=0.10.1", features = ["url", "builders"] }
 
+[build-dependencies]
+walkdir = "2.3.2"
+
 [features]
 default = ["frontend", "email", "clearance", "cookies", "jwt"]
 

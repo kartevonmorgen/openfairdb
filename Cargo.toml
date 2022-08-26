@@ -63,9 +63,6 @@ branch = "remove-chrono"
 rand = "0.8.5"
 ofdb-entities = { version = "*", features = ["builders"] }
 
-[build-dependencies]
-walkdir = "2.3.2"
-
 [profile.release]
 lto = true
 opt-level = 3
