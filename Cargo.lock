@@ -1678,6 +1678,7 @@ dependencies = [
  "thiserror",
  "time",
  "uuid",
+ "walkdir",
 ]
 
 [[package]]
@@ -1717,7 +1718,6 @@ dependencies = [
  "ofdb-webserver",
  "rand",
  "tokio",
- "walkdir",
 ]
 
 [[package]]

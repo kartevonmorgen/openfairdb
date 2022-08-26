@@ -63,12 +63,6 @@ jobs:
         run: |
           cargo install --locked trunk
 
-      - name: Build ofdb-app-clearance
-        run: |
-          cd ofdb-app-clearance/
-          trunk -V
-          trunk build
-
       - name: Check ofdb-application crate
         uses: actions-rs/cargo@v1
         with:
