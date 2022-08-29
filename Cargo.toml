@@ -57,9 +57,9 @@ git = "https://github.com/lawliet89/rocket_cors.git"
 branch = "master"
 
 [patch.crates-io.geocoding]
-# TODO: use upstream as soon as https://github.com/georust/geocoding/pull/57 is merged.
+# TODO: use upstream as soon as https://github.com/georust/geocoding/pull/58 is merged.
 git = "https://github.com/slowtec/geocoding"
-branch = "remove-chrono"
+branch = "remove-reqwest-default-tls-feature"
 
 [dev-dependencies]
 rand = "0.8.5"
