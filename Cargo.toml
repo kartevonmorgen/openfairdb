@@ -1,6 +1,6 @@
 [package]
 name = "openfairdb"
-version = "0.11.0"
+version = "0.11.1"
 authors = ["slowtec GmbH <post@slowtec.de>"]
 keywords = ["geo", "fair", "sustainability"]
 homepage = "https://github.com/kartevonmorgen/openfairdb"
