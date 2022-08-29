@@ -37,7 +37,7 @@ jobs:
       - name: Install musl-tools on Linux
         if: matrix.target == 'x86_64-unknown-linux-musl'
         run: |
-          sudo apt -y install musl-tools
+          sudo apt -y install musl-tools libssl-dev
 
       # Copied from rusqlite
       - name: Add LLVM path on Windows
