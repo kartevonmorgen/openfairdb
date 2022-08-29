@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.11.1 (2022-08-29)
+
+- chore: Remove `native-tls` dependency
+
 ## v0.11.0 (2022-08-29)
 
 - chore: Compile on stable Rust with rocket v0.5.0-rc.2
