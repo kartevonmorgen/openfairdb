@@ -2,6 +2,7 @@
 
 - [API usage](api_usage.md)
 - [Development](development.md)
+  - [Quick start](development/quick_start.md)
   - [Setup](development/setup.md)
   - [Build & Run](development/build_and_run.md)
   - [Test](development/test.md)
