@@ -8,6 +8,20 @@ Copy the final executable (`./target/release/openfairdb`)
 to the target directory of your server and make sure it gets
 exectuted as a service on startup.
 
+## Secret Key
+
+The server uses a secret key to encrypt e.g. private cookies.
+In release mode it is required to define this secret key.
+This can be done by setting the environment key `ROCKET_SECRET_KEY`.
+
+You can generate a key e.g. with OpenSSL:
+
+```sh
+openssl rand -base64 32
+```
+
+Further details can be found in the [Rocket documentation](https://rocket.rs/v0.5-rc/guide/configuration/#secret-key).
+
 ## Docker
 
 ### Build the image
@@ -39,10 +53,13 @@ Example:
 docker run --rm \
     -p 6767:8080 \
     -e RUST_LOG="info" \
+    -e ROCKET_SECRET_KEY="hPRYyVRiMyxpw5sBB1XeCMN1kFsDCqKvBi2QJxBVHQk=" \
     -e DATABASE_URL="/volume/openfairdb.sqlite" \
     -v "/var/openfairdb":/volume:Z \
     openfairdb:latest
 ```
+
+NOTE: Don't (!) use this secret key! Generate your own!
 
 ### Extract the static executable
 
