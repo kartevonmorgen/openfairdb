@@ -17,12 +17,12 @@ pub fn create_rating(
                         usecases::store_new_rating(&connection.inner(), storable).map_err(
                             |err| {
                                 warn!("Failed to store new rating for entry: {}", err);
-                                TransactionError::RollbackTransaction
+                                err
                             },
                         )?;
                     Ok((rating_id, comment_id, place, status, ratings))
                 }
-                Err(err) => Err(TransactionError::Usecase(err)),
+                Err(err) => Err(err),
             }
         })
     }?;

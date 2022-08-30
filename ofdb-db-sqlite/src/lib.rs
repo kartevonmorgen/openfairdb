@@ -8,7 +8,6 @@ use diesel::{r2d2, sqlite::SqliteConnection};
 use ofdb_core::{repositories as repo, usecases as uc};
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::{ops::Deref, sync::Arc};
-use thiserror::Error;
 
 mod models;
 mod repo_impl;
@@ -64,14 +63,6 @@ pub struct DbReadWrite<'a> {
     conn: PooledConnection,
 }
 
-#[derive(Debug, Error)]
-pub enum TransactionError {
-    #[error(transparent)]
-    Usecase(#[from] uc::Error),
-    #[error("Rollback transaction")]
-    RollbackTransaction,
-}
-
 impl<'a> DbReadWrite<'a> {
     fn try_new(pool: &'a SharedConnectionPool) -> Fallible<Self> {
         let locked_pool = pool.write();
@@ -87,30 +78,26 @@ impl<'a> DbReadWrite<'a> {
     pub fn transaction<T, F, E>(&self, f: F) -> Result<T, uc::Error>
     where
         F: FnOnce() -> Result<T, E>,
-        E: Into<TransactionError>,
+        E: Into<uc::Error>,
     {
         let mut usecase_error = None;
         use diesel::Connection;
         (&*self.conn)
             .transaction(|| {
-                f().map_err(Into::into).map_err(|err| match err {
-                    TransactionError::Usecase(err) => {
-                        usecase_error = Some(err);
-                        diesel::result::Error::RollbackTransaction
-                    }
-                    TransactionError::RollbackTransaction => {
-                        diesel::result::Error::RollbackTransaction
-                    }
+                f().map_err(Into::into).map_err(|err| {
+                    usecase_error = Some(err);
+                    diesel::result::Error::RollbackTransaction
                 })
             })
             .map_err(|err| {
-                if let Some(uc_err) = usecase_error {
-                    uc_err
+                if let Some(err) = usecase_error {
+                    err
                 } else {
-                    uc::Error::Repo(match err {
+                    let err = match err {
                         diesel::result::Error::NotFound => repo::Error::NotFound,
                         _ => repo::Error::Other(err.into()),
-                    })
+                    };
+                    uc::Error::Repo(err)
                 }
             })
     }

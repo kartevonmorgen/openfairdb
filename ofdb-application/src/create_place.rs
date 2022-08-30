@@ -27,13 +27,13 @@ pub fn create_place(
                     let (place, ratings) = usecases::store_new_place(&connection, storable)
                         .map_err(|err| {
                             warn!("Failed to store newly created place: {}", err);
-                            TransactionError::RollbackTransaction
+                            err
                         })?;
                     Ok((place, ratings))
                 }
                 Err(err) => {
                     log::info!("Failed to prepare new place revision: {}", err);
-                    Err(TransactionError::Usecase(err))
+                    Err(err)
                 }
             }
         })

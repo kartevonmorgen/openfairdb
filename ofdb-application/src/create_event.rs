@@ -1,7 +1,7 @@
 use std::result;
 
 use ofdb_core::gateways::notify::NotificationGateway;
-use ofdb_db_sqlite::{DbReadWrite, TransactionError};
+use ofdb_db_sqlite::DbReadWrite;
 
 use super::*;
 use usecases::{Error, NewEvent, NewEventMode};
@@ -46,11 +46,11 @@ fn create_and_add_new_event(
                 let event =
                     usecases::store_created_event(&connection, storable).map_err(|err| {
                         warn!("Failed to store newly created event: {}", err);
-                        TransactionError::RollbackTransaction
+                        err
                     })?;
                 Ok(event)
             }
-            Err(err) => Err(TransactionError::Usecase(err)),
+            Err(err) => Err(err),
         }
     };
     connection.transaction(transaction)
