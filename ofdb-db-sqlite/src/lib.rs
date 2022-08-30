@@ -123,6 +123,15 @@ pub struct Connections {
 
 impl Connections {
     pub fn init(url: &str, pool_size: u32) -> Fallible<Self> {
+        // Establish a test connection before creating the connection pool to fail early.
+        // If the given file is inaccessible r2d2 (Diesel 1.4.8) seems to do multiple retries
+        // and logs errors instead of simply failing and returning and error immediately.
+        // Malformed example file name for testing: ":/tmp/ofdb.sqlite"
+        use diesel::Connection as _;
+        let _ = diesel::SqliteConnection::establish(url)?;
+        // The test connection is dropped immediately without using it
+        // and missing files should have been created after reaching
+        // this point.
         let manager = ConnectionManager::new(url);
         let pool = ConnectionPool::builder()
             .max_size(pool_size)
