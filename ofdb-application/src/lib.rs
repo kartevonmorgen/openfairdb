@@ -26,7 +26,6 @@ pub mod error;
 pub type Result<T> = std::result::Result<T, error::AppError>;
 
 pub(crate) use ofdb_core::{db::*, entities::*, repositories::*, usecases};
-pub(crate) use ofdb_db_sqlite::TransactionError;
 
 #[cfg(test)]
 pub(crate) mod tests;

@@ -24,11 +24,11 @@ pub fn update_event(
                     let event =
                         usecases::store_updated_event(&connection, storable).map_err(|err| {
                             warn!("Failed to store updated event: {}", err);
-                            TransactionError::RollbackTransaction
+                            err
                         })?;
                     Ok(event)
                 }
-                Err(err) => Err(TransactionError::Usecase(err)),
+                Err(err) => Err(err),
             }
         })
     }?;

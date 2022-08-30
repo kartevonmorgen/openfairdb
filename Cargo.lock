@@ -1637,7 +1637,6 @@ dependencies = [
  "num-traits",
  "ofdb-core",
  "parking_lot",
- "thiserror",
  "time",
 ]
 

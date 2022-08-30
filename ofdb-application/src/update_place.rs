@@ -30,11 +30,11 @@ pub fn update_place(
                     let (place, ratings) = usecases::store_updated_place(&connection, storable)
                         .map_err(|err| {
                             warn!("Failed to store updated place: {}", err);
-                            TransactionError::RollbackTransaction
+                            err
                         })?;
                     Ok((place, ratings))
                 }
-                Err(err) => Err(TransactionError::Usecase(err)),
+                Err(err) => Err(err),
             }
         })
     }?;
