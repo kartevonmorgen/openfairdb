@@ -18,7 +18,7 @@ mod util;
 pub use repo_impl::from_diesel_err;
 pub use repo_wrapper::*;
 
-embed_migrations!("../migrations");
+embed_migrations!("migrations");
 
 pub type Connection = SqliteConnection;
 
