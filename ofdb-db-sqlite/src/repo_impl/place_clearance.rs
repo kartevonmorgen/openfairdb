@@ -71,12 +71,19 @@ impl PlaceClearanceRepo for Connection<'_> {
             .into_boxed();
 
         // Pagination
-        let offset = pagination.offset.unwrap_or(0);
-        if offset > 0 {
-            query = query.offset(offset as i64);
-        }
+        let offset = pagination.offset.unwrap_or(0) as i64;
+        // SQLite does not support an OFFSET without a LIMIT
+        // <https://www.sqlite.org/lang_select.html>
         if let Some(limit) = pagination.limit {
             query = query.limit(limit as i64);
+            // Optional OFFSET
+            if offset > 0 {
+                query = query.offset(offset);
+            }
+        } else if offset > 0 {
+            // Mandatory LIMIT
+            query = query.limit(i64::MAX);
+            query = query.offset(offset);
         }
 
         Ok(query
