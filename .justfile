@@ -39,8 +39,8 @@ fix:
 
 # Run tests
 test:
-    RUST_BACKTRACE=1 cargo test --locked --workspace --all-features -- --nocapture
-    RUST_BACKTRACE=1 cd ofdb-app-clearance && cargo test --locked --all-features -- --nocapture
+    RUST_BACKTRACE=1 RUST_LOG=debug cargo test --locked --workspace --all-features -- --nocapture
+    RUST_BACKTRACE=1 RUST_LOG=debug cd ofdb-app-clearance && cargo test --locked --all-features -- --nocapture
 
 # Set up (and update) tooling
 setup:

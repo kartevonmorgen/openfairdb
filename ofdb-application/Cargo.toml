@@ -19,3 +19,5 @@ thiserror = "1.0.32"
 
 [dev-dependencies]
 ofdb-db-tantivy = "=0.0.0" # TODO: remove
+
+env_logger = "0.9"
