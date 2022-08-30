@@ -48,19 +48,21 @@ setup:
     rustup self update || true
     # cargo-edit is needed for `cargo upgrade`
     cargo install cargo-edit
-    cargo install diesel_cli --no-default-features --features sqlite
     pip install -U pre-commit
-    pre-commit autoupdate
     # pre-commit install --hook-type commit-msg --hook-type pre-commit
 
 # Upgrade (and update) dependencies
-upgrade:
+upgrade: setup
+    pre-commit autoupdate
     cargo upgrade --workspace \
-        --exclude libsqlite3-sys
+        --exclude libsqlite3-sys \
+        --exclude diesel \
+        --exclude diesel_migrations
     cargo update
     cargo upgrade --workspace --to-lockfile \
-        --exclude libsqlite3-sys
-    cargo update
+        --exclude libsqlite3-sys \
+        --exclude diesel \
+        --exclude diesel_migrations
     cd ofdb-app-clearance \
         && cargo upgrade \
         && cargo update \

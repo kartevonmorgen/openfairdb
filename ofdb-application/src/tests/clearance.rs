@@ -112,7 +112,7 @@ impl PlaceClearanceFixture {
         )
         .unwrap();
 
-        // Prepate organizations
+        // Prepare organizations
         let organization_without_moderated_tags = Organization {
             id: Id::new(),
             name: "organization_without_moderated_tags".into(),
