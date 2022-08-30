@@ -6,7 +6,7 @@ cargo build --release
 
 Copy the final executable (`./target/release/openfairdb`)
 to the target directory of your server and make sure it gets
-exectuted as a service on startup.
+executed as a service on startup.
 
 ## Secret Key
 
