@@ -57,11 +57,10 @@ impl<'a> PlaceRepo for DbReadOnly<'a> {
 impl<'a> PlaceClearanceRepo for DbReadOnly<'a> {
     fn add_pending_clearance_for_places(
         &self,
-        org_ids: &[Id],
-        pending_clearance: &PendingClearanceForPlace,
+        _org_ids: &[Id],
+        _pending_clearance: &PendingClearanceForPlace,
     ) -> Result<usize> {
-        self.inner()
-            .add_pending_clearance_for_places(org_ids, pending_clearance)
+        unreachable!();
     }
     fn count_pending_clearances_for_places(&self, org_id: &Id) -> Result<u64> {
         self.inner().count_pending_clearances_for_places(org_id)
@@ -84,20 +83,19 @@ impl<'a> PlaceClearanceRepo for DbReadOnly<'a> {
     }
     fn update_pending_clearances_for_places(
         &self,
-        org_id: &Id,
-        clearances: &[ClearanceForPlace],
+        _org_id: &Id,
+        _clearances: &[ClearanceForPlace],
     ) -> Result<usize> {
-        self.inner()
-            .update_pending_clearances_for_places(org_id, clearances)
+        unreachable!();
     }
-    fn cleanup_pending_clearances_for_places(&self, org_id: &Id) -> Result<u64> {
-        self.inner().cleanup_pending_clearances_for_places(org_id)
+    fn cleanup_pending_clearances_for_places(&self, _org_id: &Id) -> Result<u64> {
+        unreachable!();
     }
 }
 
 impl<'a> OrganizationRepo for DbReadOnly<'a> {
-    fn create_org(&mut self, org: Organization) -> Result<()> {
-        self.inner().create_org(org)
+    fn create_org(&mut self, _org: Organization) -> Result<()> {
+        unreachable!();
     }
     fn get_org_by_api_token(&self, token: &str) -> Result<Organization> {
         self.inner().get_org_by_api_token(token)
@@ -114,8 +112,8 @@ impl<'a> OrganizationRepo for DbReadOnly<'a> {
 }
 
 impl<'a> CommentRepository for DbReadOnly<'a> {
-    fn create_comment(&self, comment: Comment) -> Result<()> {
-        self.inner().create_comment(comment)
+    fn create_comment(&self, _comment: Comment) -> Result<()> {
+        unreachable!();
     }
     fn load_comment(&self, id: &str) -> Result<Comment> {
         self.inner().load_comment(id)
@@ -127,25 +125,28 @@ impl<'a> CommentRepository for DbReadOnly<'a> {
         self.inner().load_comments_of_rating(rating_id)
     }
 
-    fn archive_comments(&self, ids: &[&str], activity: &Activity) -> Result<usize> {
-        self.inner().archive_comments(ids, activity)
+    fn archive_comments(&self, _ids: &[&str], _activity: &Activity) -> Result<usize> {
+        unreachable!();
     }
     fn archive_comments_of_ratings(
         &self,
-        rating_ids: &[&str],
-        activity: &Activity,
+        _rating_ids: &[&str],
+        _activity: &Activity,
     ) -> Result<usize> {
-        self.inner()
-            .archive_comments_of_ratings(rating_ids, activity)
+        unreachable!();
     }
-    fn archive_comments_of_places(&self, place_ids: &[&str], activity: &Activity) -> Result<usize> {
-        self.inner().archive_comments_of_places(place_ids, activity)
+    fn archive_comments_of_places(
+        &self,
+        _place_ids: &[&str],
+        _activity: &Activity,
+    ) -> Result<usize> {
+        unreachable!();
     }
 }
 
 impl<'a> RatingRepository for DbReadOnly<'a> {
-    fn create_rating(&self, rating: Rating) -> Result<()> {
-        self.inner().create_rating(rating)
+    fn create_rating(&self, _rating: Rating) -> Result<()> {
+        unreachable!();
     }
 
     fn load_rating(&self, id: &str) -> Result<Rating> {
@@ -158,11 +159,15 @@ impl<'a> RatingRepository for DbReadOnly<'a> {
         self.inner().load_ratings_of_place(place_id)
     }
 
-    fn archive_ratings(&self, ids: &[&str], activity: &Activity) -> Result<usize> {
-        self.inner().archive_ratings(ids, activity)
+    fn archive_ratings(&self, _ids: &[&str], _activity: &Activity) -> Result<usize> {
+        unreachable!();
     }
-    fn archive_ratings_of_places(&self, place_ids: &[&str], activity: &Activity) -> Result<usize> {
-        self.inner().archive_ratings_of_places(place_ids, activity)
+    fn archive_ratings_of_places(
+        &self,
+        _place_ids: &[&str],
+        _activity: &Activity,
+    ) -> Result<usize> {
+        unreachable!();
     }
 
     fn load_place_ids_of_ratings(&self, ids: &[&str]) -> Result<Vec<String>> {
@@ -171,16 +176,16 @@ impl<'a> RatingRepository for DbReadOnly<'a> {
 }
 
 impl<'a> UserTokenRepo for DbReadOnly<'a> {
-    fn replace_user_token(&self, user_token: UserToken) -> Result<EmailNonce> {
-        self.inner().replace_user_token(user_token)
+    fn replace_user_token(&self, _user_token: UserToken) -> Result<EmailNonce> {
+        unreachable!();
     }
 
-    fn consume_user_token(&self, email_nonce: &EmailNonce) -> Result<UserToken> {
-        self.inner().consume_user_token(email_nonce)
+    fn consume_user_token(&self, _email_nonce: &EmailNonce) -> Result<UserToken> {
+        unreachable!();
     }
 
-    fn delete_expired_user_tokens(&self, expired_before: Timestamp) -> Result<usize> {
-        self.inner().delete_expired_user_tokens(expired_before)
+    fn delete_expired_user_tokens(&self, _expired_before: Timestamp) -> Result<usize> {
+        unreachable!();
     }
 
     fn get_user_token_by_email(&self, email: &str) -> Result<UserToken> {
@@ -189,14 +194,14 @@ impl<'a> UserTokenRepo for DbReadOnly<'a> {
 }
 
 impl<'a> EventRepo for DbReadOnly<'a> {
-    fn create_event(&self, ev: Event) -> Result<()> {
-        self.inner().create_event(ev)
+    fn create_event(&self, _ev: Event) -> Result<()> {
+        unreachable!();
     }
-    fn update_event(&self, ev: &Event) -> Result<()> {
-        self.inner().update_event(ev)
+    fn update_event(&self, _ev: &Event) -> Result<()> {
+        unreachable!();
     }
-    fn archive_events(&self, ids: &[&str], archived: Timestamp) -> Result<usize> {
-        self.inner().archive_events(ids, archived)
+    fn archive_events(&self, _ids: &[&str], _archived: Timestamp) -> Result<usize> {
+        unreachable!();
     }
 
     fn get_event(&self, id: &str) -> Result<Event> {
@@ -214,8 +219,8 @@ impl<'a> EventRepo for DbReadOnly<'a> {
         self.inner().count_events()
     }
 
-    fn delete_event_with_matching_tags(&self, id: &str, tags: &[&str]) -> Result<bool> {
-        self.inner().delete_event_with_matching_tags(id, tags)
+    fn delete_event_with_matching_tags(&self, _id: &str, _tags: &[&str]) -> Result<bool> {
+        unreachable!();
     }
 
     fn is_event_owned_by_any_organization(&self, id: &str) -> Result<bool> {
@@ -224,14 +229,14 @@ impl<'a> EventRepo for DbReadOnly<'a> {
 }
 
 impl<'a> UserRepo for DbReadOnly<'a> {
-    fn create_user(&self, user: &User) -> Result<()> {
-        self.inner().create_user(user)
+    fn create_user(&self, _user: &User) -> Result<()> {
+        unreachable!();
     }
-    fn update_user(&self, user: &User) -> Result<()> {
-        self.inner().update_user(user)
+    fn update_user(&self, _user: &User) -> Result<()> {
+        unreachable!();
     }
-    fn delete_user_by_email(&self, email: &str) -> Result<()> {
-        self.inner().delete_user_by_email(email)
+    fn delete_user_by_email(&self, _email: &str) -> Result<()> {
+        unreachable!();
     }
 
     fn all_users(&self) -> Result<Vec<User>> {
@@ -250,8 +255,8 @@ impl<'a> UserRepo for DbReadOnly<'a> {
 }
 
 impl<'a> SubscriptionRepo for DbReadOnly<'a> {
-    fn create_bbox_subscription(&self, sub: &BboxSubscription) -> Result<()> {
-        self.inner().create_bbox_subscription(sub)
+    fn create_bbox_subscription(&self, _sub: &BboxSubscription) -> Result<()> {
+        unreachable!();
     }
     fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>> {
         self.inner().all_bbox_subscriptions()
@@ -259,14 +264,14 @@ impl<'a> SubscriptionRepo for DbReadOnly<'a> {
     fn all_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<Vec<BboxSubscription>> {
         self.inner().all_bbox_subscriptions_by_email(user_email)
     }
-    fn delete_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<()> {
-        self.inner().delete_bbox_subscriptions_by_email(user_email)
+    fn delete_bbox_subscriptions_by_email(&self, _user_email: &str) -> Result<()> {
+        unreachable!();
     }
 }
 
 impl<'a> TagRepo for DbReadOnly<'a> {
-    fn create_tag_if_it_does_not_exist(&self, tag: &Tag) -> Result<()> {
-        self.inner().create_tag_if_it_does_not_exist(tag)
+    fn create_tag_if_it_does_not_exist(&self, _tag: &Tag) -> Result<()> {
+        unreachable!();
     }
     fn all_tags(&self) -> Result<Vec<Tag>> {
         self.inner().all_tags()
