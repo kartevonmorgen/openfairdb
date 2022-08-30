@@ -1588,6 +1588,7 @@ version = "0.0.0"
 dependencies = [
  "anyhow",
  "csv",
+ "env_logger",
  "log",
  "ofdb-core",
  "ofdb-db-sqlite",

@@ -91,6 +91,7 @@ pub mod prelude {
 
     impl BackendFixture {
         pub fn new() -> Self {
+            let _ = env_logger::builder().is_test(true).try_init();
             let db_connections = sqlite::Connections::init(":memory:", 1).unwrap();
             ofdb_db_sqlite::run_embedded_database_migrations(db_connections.exclusive().unwrap());
             let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
