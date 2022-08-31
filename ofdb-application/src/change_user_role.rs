@@ -6,14 +6,11 @@ pub fn change_user_role(
     user_email: &str,
     role: Role,
 ) -> Result<()> {
-    let connection = connections.exclusive()?;
-    Ok(connection.transaction(|| {
-        usecases::change_user_role(&connection.inner(), account_email, user_email, role).map_err(
-            |err| {
-                log::warn!("Failed to change role for email {}: {}", user_email, err);
-                err
-            },
-        )
+    Ok(connections.exclusive()?.transaction(|conn| {
+        usecases::change_user_role(&conn, account_email, user_email, role).map_err(|err| {
+            log::warn!("Failed to change role for email {}: {}", user_email, err);
+            err
+        })
     })?)
 }
 

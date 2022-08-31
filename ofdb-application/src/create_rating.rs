@@ -7,19 +7,16 @@ pub fn create_rating(
 ) -> Result<(String, String)> {
     // Add new rating to existing entry
     let (rating_id, comment_id, place, status, ratings) = {
-        let connection = connections.exclusive()?;
-        connection.transaction(|| {
-            match usecases::prepare_new_rating(&connection.inner(), rate_entry) {
+        connections.exclusive()?.transaction(|conn| {
+            match usecases::prepare_new_rating(&conn, rate_entry) {
                 Ok(storable) => {
                     let rating_id = storable.rating_id().to_owned();
                     let comment_id = storable.comment_id().to_owned();
-                    let (place, status, ratings) =
-                        usecases::store_new_rating(&connection.inner(), storable).map_err(
-                            |err| {
-                                warn!("Failed to store new rating for entry: {}", err);
-                                err
-                            },
-                        )?;
+                    let (place, status, ratings) = usecases::store_new_rating(&conn, storable)
+                        .map_err(|err| {
+                            warn!("Failed to store new rating for entry: {}", err);
+                            err
+                        })?;
                     Ok((rating_id, comment_id, place, status, ratings))
                 }
                 Err(err) => Err(err),
