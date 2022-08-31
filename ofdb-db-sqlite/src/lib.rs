@@ -75,16 +75,24 @@ impl<'a> DbReadWrite<'a> {
             conn,
         })
     }
+
     pub fn transaction<T, F, E>(&self, f: F) -> Result<T, uc::Error>
     where
-        F: FnOnce() -> Result<T, E>,
+        F: FnOnce(repo_impl::Connection<'_>) -> Result<T, E>,
         E: Into<uc::Error>,
     {
         let mut usecase_error = None;
         use diesel::Connection;
+        // transaction closure. Otherwise it would be inaccessible, because
+        // it cannot be borrowed twice. Consequently it has to be passed
+        // along into the FnOnce() closure.
         (&*self.conn)
-            .transaction(|| {
-                f().map_err(Into::into).map_err(|err| {
+            .transaction(|/*conn*/| {
+                // TODO: Diesel v2.0 requires a mutable borrow of the connection
+                // and will pass this mutable borrow into the transaction as
+                // an additional parameter.
+                let conn = &self.conn;
+                f(repo_impl::Connection::new(conn)).map_err(Into::into).map_err(|err| {
                     usecase_error = Some(err);
                     diesel::result::Error::RollbackTransaction
                 })
@@ -106,6 +114,7 @@ impl<'a> DbReadWrite<'a> {
     pub fn inner(&self) -> repo_impl::Connection<'_> {
         repo_impl::Connection::new(&self.conn)
     }
+
     pub fn sqlite_conn(&self) -> &Connection {
         &self.conn
     }

@@ -14,18 +14,17 @@ pub fn create_place(
 ) -> Result<Place> {
     // Create and add new entry
     let (place, ratings) = {
-        let connection = connections.exclusive()?;
-        connection.transaction(|| {
+        connections.exclusive()?.transaction(|conn| {
             match usecases::prepare_new_place(
-                &connection,
+                &conn,
                 new_place,
                 created_by_email,
                 created_by_org,
                 accepted_licenses,
             ) {
                 Ok(storable) => {
-                    let (place, ratings) = usecases::store_new_place(&connection, storable)
-                        .map_err(|err| {
+                    let (place, ratings) =
+                        usecases::store_new_place(&conn, storable).map_err(|err| {
                             warn!("Failed to store newly created place: {}", err);
                             err
                         })?;

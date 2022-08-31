@@ -5,9 +5,8 @@ pub fn archive_comments(
     account_email: &str,
     ids: &[&str],
 ) -> Result<usize> {
-    let connection = connections.exclusive()?;
-    Ok(connection.transaction(|| {
-        usecases::archive_comments(&connection.inner(), account_email, ids).map_err(|err| {
+    Ok(connections.exclusive()?.transaction(|conn| {
+        usecases::archive_comments(&conn, account_email, ids).map_err(|err| {
             warn!("Failed to archive {} comments: {}", ids.len(), err);
             err
         })

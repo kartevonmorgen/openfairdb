@@ -12,20 +12,18 @@ pub fn update_event(
 ) -> Result<Event> {
     // Create and add new event
     let event = {
-        let connection = connections.exclusive()?;
-        connection.transaction(|| {
+        connections.exclusive()?.transaction(|conn| {
             match usecases::import_new_event(
-                &connection,
+                &conn,
                 token,
                 new_event,
                 usecases::NewEventMode::Update(id.as_str()),
             ) {
                 Ok(storable) => {
-                    let event =
-                        usecases::store_updated_event(&connection, storable).map_err(|err| {
-                            warn!("Failed to store updated event: {}", err);
-                            err
-                        })?;
+                    let event = usecases::store_updated_event(&conn, storable).map_err(|err| {
+                        warn!("Failed to store updated event: {}", err);
+                        err
+                    })?;
                     Ok(event)
                 }
                 Err(err) => Err(err),

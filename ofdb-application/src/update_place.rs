@@ -16,10 +16,9 @@ pub fn update_place(
 ) -> Result<Place> {
     // Update existing entry
     let (place, ratings) = {
-        let connection = connections.exclusive()?;
-        connection.transaction(|| {
+        connections.exclusive()?.transaction(|conn| {
             match usecases::prepare_updated_place(
-                &connection,
+                &conn,
                 id,
                 update_place,
                 created_by_email,
@@ -27,8 +26,8 @@ pub fn update_place(
                 accepted_licenses,
             ) {
                 Ok(storable) => {
-                    let (place, ratings) = usecases::store_updated_place(&connection, storable)
-                        .map_err(|err| {
+                    let (place, ratings) =
+                        usecases::store_updated_place(&conn, storable).map_err(|err| {
                             warn!("Failed to store updated place: {}", err);
                             err
                         })?;

@@ -5,9 +5,8 @@ fn exec_review_places(
     ids: &[&str],
     review: usecases::Review,
 ) -> Result<usize> {
-    let connection = connections.exclusive()?;
-    Ok(connection.transaction(|| {
-        usecases::review_places(&connection, ids, review).map_err(|err| {
+    Ok(connections.exclusive()?.transaction(|conn| {
+        usecases::review_places(&conn, ids, review).map_err(|err| {
             warn!("Failed to review {} places: {}", ids.len(), err);
             err
         })
