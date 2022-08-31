@@ -90,8 +90,9 @@ impl<'a> DbReadWrite<'a> {
                 })
             })
             .map_err(|err| {
-                if let Some(err) = usecase_error {
-                    err
+                if let Some(usecase_error) = usecase_error {
+                    debug_assert!(matches!(err, diesel::result::Error::RollbackTransaction));
+                    usecase_error
                 } else {
                     let err = match err {
                         diesel::result::Error::NotFound => repo::Error::NotFound,

@@ -32,6 +32,8 @@ impl PlaceClearanceFixture {
     pub fn new() -> Self {
         let backend = BackendFixture::new();
 
+        log::info!("Populating database for clearance tests");
+
         let user_email = Email::from("user@example.com".to_string());
         usecases::register_with_email(
             &mut backend.db_connections.exclusive().unwrap(),
@@ -223,6 +225,9 @@ impl PlaceClearanceFixture {
             .unwrap()
             .create_org(organization_with_add_remove_clearance_tag.clone())
             .unwrap();
+
+        log::info!("Finished populating database for clearance tests");
+
         Self {
             backend,
             user_email,
