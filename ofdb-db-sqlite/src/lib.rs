@@ -15,18 +15,17 @@ mod repo_wrapper;
 mod schema;
 mod util;
 
-pub use repo_impl::from_diesel_err;
 pub use repo_wrapper::*;
 
 embed_migrations!("migrations");
 
-pub type Connection = SqliteConnection;
+type Connection = SqliteConnection;
 
-pub type ConnectionManager = r2d2::ConnectionManager<Connection>;
-pub type ConnectionPool = r2d2::Pool<ConnectionManager>;
-pub type PooledConnection = r2d2::PooledConnection<ConnectionManager>;
+type ConnectionManager = r2d2::ConnectionManager<Connection>;
+type ConnectionPool = r2d2::Pool<ConnectionManager>;
+type PooledConnection = r2d2::PooledConnection<ConnectionManager>;
 
-pub type SharedConnectionPool = Arc<RwLock<ConnectionPool>>;
+type SharedConnectionPool = Arc<RwLock<ConnectionPool>>;
 
 pub struct DbReadOnly<'a> {
     _locked_pool: RwLockReadGuard<'a, ConnectionPool>,
@@ -111,11 +110,11 @@ impl<'a> DbReadWrite<'a> {
             })
     }
 
-    pub fn inner(&self) -> repo_impl::Connection<'_> {
+    fn inner(&self) -> repo_impl::Connection<'_> {
         repo_impl::Connection::new(&self.conn)
     }
 
-    pub fn sqlite_conn(&self) -> &Connection {
+    fn sqlite_conn(&self) -> &Connection {
         &self.conn
     }
 }
@@ -149,7 +148,7 @@ impl Connections {
         Ok(Self::new(pool))
     }
 
-    pub fn new(pool: ConnectionPool) -> Self {
+    fn new(pool: ConnectionPool) -> Self {
         Self {
             pool: Arc::new(RwLock::new(pool)),
         }
