@@ -180,3 +180,5 @@ impl Deref for Notify {
         &*self.0
     }
 }
+
+pub struct Version(pub &'static str);

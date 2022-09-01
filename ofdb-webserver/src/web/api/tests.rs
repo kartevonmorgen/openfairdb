@@ -2016,6 +2016,16 @@ fn search_duplicates() {
     assert_eq!(place.id.to_string(), duplicate_places.first().unwrap().id);
 }
 
+#[test]
+fn get_version() {
+    let (client, _) = setup();
+    let req = client.get("/server/version");
+    let response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+    let body_str = response.into_string().unwrap();
+    assert_eq!(body_str, DUMMY_VERSION);
+}
+
 mod with_captcha_protection_enabled {
     use super::*;
 

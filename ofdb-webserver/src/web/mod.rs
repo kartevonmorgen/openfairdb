@@ -85,6 +85,7 @@ pub(crate) fn rocket_instance(
     cfg: Cfg,
     geo_gw: Box<dyn GeoCodingGateway + Send + Sync>,
     notify_gw: Box<dyn NotificationGateway + Send + Sync>,
+    version: &'static str,
 ) -> Rocket<rocket::Build> {
     info!("Indexing all places...");
     index_all_places(&connections.exclusive().unwrap(), &mut *search_engine).unwrap();
@@ -111,6 +112,7 @@ pub(crate) fn rocket_instance(
 
     let geo_gw = guards::GeoCoding(geo_gw);
     let notify_gw = guards::Notify(notify_gw);
+    let version = guards::Version(version);
 
     let mut instance = r
         .manage(connections)
@@ -120,7 +122,8 @@ pub(crate) fn rocket_instance(
         .manage(jwt_state)
         .manage(geo_gw)
         .manage(notify_gw)
-        .manage(cfg);
+        .manage(cfg)
+        .manage(version);
 
     for (m, r) in mounts {
         instance = instance.mount(m, r);
@@ -145,35 +148,23 @@ pub async fn run(
     cfg: Cfg,
     geo_gw: Box<dyn GeoCodingGateway + Send + Sync>,
     notify_gw: Box<dyn NotificationGateway + Send + Sync>,
+    version: &'static str,
 ) {
+    let instance = rocket_instance(
+        connections,
+        search_engine,
+        mounts(),
+        None,
+        cfg,
+        geo_gw,
+        notify_gw,
+        version,
+    );
     let server_task = if enable_cors {
-        let cors = rocket_cors::CorsOptions {
-            ..Default::default()
-        }
-        .to_cors()
-        .unwrap();
-        rocket_instance(
-            connections,
-            search_engine,
-            mounts(),
-            None,
-            cfg,
-            geo_gw,
-            notify_gw,
-        )
-        .attach(cors)
-        .launch()
+        let cors = rocket_cors::CorsOptions::default().to_cors().unwrap();
+        instance.attach(cors).launch()
     } else {
-        rocket_instance(
-            connections,
-            search_engine,
-            mounts(),
-            None,
-            cfg,
-            geo_gw,
-            notify_gw,
-        )
-        .launch()
+        instance.launch()
     };
     if let Err(err) = server_task.await {
         log::error!("Unable to run web server: {err}");
