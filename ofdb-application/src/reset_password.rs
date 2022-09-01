@@ -5,7 +5,7 @@ use super::*;
 fn refresh_user_token(connections: &sqlite::Connections, user: &User) -> Result<EmailNonce> {
     Ok(connections
         .exclusive()?
-        .transaction(|conn| usecases::refresh_user_token(&conn, user.email.to_owned()))?)
+        .transaction(|conn| usecases::refresh_user_token(conn, user.email.to_owned()))?)
 }
 
 pub fn reset_password_request(
@@ -30,7 +30,7 @@ pub fn reset_password_with_email_nonce(
     // The token should be consumed only once, even if the
     // following transaction for updating the user fails!
     let token = connections.exclusive()?.transaction(|conn| {
-        usecases::consume_user_token(&conn, &email_nonce).map_err(|err| {
+        usecases::consume_user_token(conn, &email_nonce).map_err(|err| {
             log::warn!(
                 "Missing or invalid token to reset password for user '{}': {}",
                 email_nonce.email,
@@ -45,7 +45,7 @@ pub fn reset_password_with_email_nonce(
 
     // Verify and update the user entity
     connections.exclusive()?.transaction(|conn| {
-        usecases::confirm_email_and_reset_password(&conn, &token.email_nonce.email, new_password)
+        usecases::confirm_email_and_reset_password(conn, &token.email_nonce.email, new_password)
             .map_err(|err| {
                 warn!(
                     "Failed to verify e-mail ({}) and reset password: {}",

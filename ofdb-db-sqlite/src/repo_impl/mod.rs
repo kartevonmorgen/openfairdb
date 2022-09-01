@@ -41,7 +41,7 @@ pub fn from_diesel_err(err: DieselError) -> repo::Error {
     }
 }
 
-fn load_email_by_user_id(conn: &SqliteConnection, user_id: i64) -> Result<Option<String>> {
+fn load_email_by_user_id(conn: &mut SqliteConnection, user_id: i64) -> Result<Option<String>> {
     use schema::users::dsl;
     let email = schema::users::table
         .select(dsl::email)
@@ -65,7 +65,7 @@ fn load_review_status(status: ReviewStatusPrimitive) -> Result<ReviewStatus> {
 }
 
 fn load_place_revision_tags(
-    conn: &SqliteConnection,
+    conn: &mut SqliteConnection,
     place_revision_rowid: i64,
 ) -> Result<Vec<String>> {
     use schema::place_revision_tag::dsl;
@@ -84,7 +84,7 @@ fn load_place_revision_tags(
 }
 
 fn load_place_revision_custom_links(
-    conn: &SqliteConnection,
+    conn: &mut SqliteConnection,
     place_revision_rowid: i64,
 ) -> Result<Vec<CustomLink>> {
     use schema::place_revision_custom_link::dsl;
@@ -118,7 +118,7 @@ fn load_place_revision_custom_links(
 }
 
 fn load_place(
-    conn: &SqliteConnection,
+    conn: &mut SqliteConnection,
     place: models::JoinedPlaceRevision,
 ) -> Result<(Place, ReviewStatus)> {
     let models::JoinedPlaceRevision {
@@ -202,7 +202,7 @@ fn load_place(
 }
 
 fn load_place_with_status_review(
-    conn: &SqliteConnection,
+    conn: &mut SqliteConnection,
     place_with_status_review: models::JoinedPlaceRevisionWithStatusReview,
 ) -> Result<(Place, ReviewStatus, ActivityLog)> {
     let models::JoinedPlaceRevisionWithStatusReview {
@@ -319,14 +319,14 @@ fn load_place_with_status_review(
 
 #[derive(QueryableByName)]
 struct TagCountRow {
-    #[sql_type = "diesel::sql_types::Text"]
+    #[diesel(sql_type = diesel::sql_types::Text)]
     tag: String,
 
-    #[sql_type = "diesel::sql_types::BigInt"]
+    #[diesel(sql_type = diesel::sql_types::BigInt)]
     count: i64,
 }
 
-fn resolve_organization_rowid(conn: &SqliteConnection, id: &Id) -> Result<i64> {
+fn resolve_organization_rowid(conn: &mut SqliteConnection, id: &Id) -> Result<i64> {
     use schema::organization::dsl;
     schema::organization::table
         .select(dsl::rowid)
@@ -339,7 +339,7 @@ fn resolve_organization_rowid(conn: &SqliteConnection, id: &Id) -> Result<i64> {
         .map_err(from_diesel_err)
 }
 
-fn resolve_place_rowid(conn: &SqliteConnection, id: &Id) -> Result<i64> {
+fn resolve_place_rowid(conn: &mut SqliteConnection, id: &Id) -> Result<i64> {
     use schema::place::dsl;
     schema::place::table
         .select(dsl::rowid)
@@ -353,7 +353,7 @@ fn resolve_place_rowid(conn: &SqliteConnection, id: &Id) -> Result<i64> {
 }
 
 fn resolve_place_rowid_verify_revision(
-    conn: &SqliteConnection,
+    conn: &mut SqliteConnection,
     id: &Id,
     revision: Revision,
 ) -> Result<i64> {
@@ -378,7 +378,7 @@ fn resolve_place_rowid_verify_revision(
 }
 
 fn resolve_place_rowid_with_current_revision(
-    conn: &SqliteConnection,
+    conn: &mut SqliteConnection,
     id: &Id,
 ) -> Result<(i64, Revision)> {
     use schema::place::dsl;
@@ -394,7 +394,7 @@ fn resolve_place_rowid_with_current_revision(
         .map(|(id, rev)| (id, Revision::from(rev as u64)))
 }
 
-fn resolve_rating_rowid(conn: &SqliteConnection, id: &str) -> Result<i64> {
+fn resolve_rating_rowid(conn: &mut SqliteConnection, id: &str) -> Result<i64> {
     use schema::place_rating::dsl;
     schema::place_rating::table
         .select(dsl::rowid)
@@ -408,7 +408,7 @@ fn resolve_rating_rowid(conn: &SqliteConnection, id: &str) -> Result<i64> {
 }
 
 fn into_new_place_revision(
-    conn: &SqliteConnection,
+    conn: &mut SqliteConnection,
     place: Place,
 ) -> Result<(Id, models::NewPlaceRevision, Vec<String>, Vec<CustomLink>)> {
     let Place {
@@ -510,23 +510,8 @@ fn into_new_place_revision(
     Ok((place_id, new_place, tags, custom_links))
 }
 
-pub struct Connection<'c>(&'c SqliteConnection);
-
-impl<'c> Connection<'c> {
-    pub const fn new(conn: &'c SqliteConnection) -> Self {
-        Self(conn)
-    }
-}
-
-impl<'c> Deref for Connection<'c> {
-    type Target = SqliteConnection;
-    fn deref(&self) -> &'c Self::Target {
-        self.0
-    }
-}
-
 fn into_new_event_with_tags(
-    conn: &SqliteConnection,
+    conn: &mut SqliteConnection,
     event: Event,
 ) -> Result<(models::NewEvent, Vec<String>)> {
     let Event {
@@ -614,16 +599,7 @@ fn into_new_event_with_tags(
     ))
 }
 
-fn resolve_event_id(conn: &SqliteConnection, uid: &str) -> Result<i64> {
-    use schema::events::dsl;
-    dsl::events
-        .select(dsl::id)
-        .filter(dsl::uid.eq(uid))
-        .first(conn)
-        .map_err(from_diesel_err)
-}
-
-fn resolve_user_created_by_email(conn: &SqliteConnection, email: &str) -> Result<i64> {
+fn resolve_user_created_by_email(conn: &mut SqliteConnection, email: &str) -> Result<i64> {
     use schema::users::dsl;
     dsl::users
         .select(dsl::id)
@@ -635,3 +611,5 @@ fn resolve_user_created_by_email(conn: &SqliteConnection, email: &str) -> Result
         })
         .map_err(from_diesel_err)
 }
+
+impl<'a> CategoryRepo for DbReadOnly<'a> {}
