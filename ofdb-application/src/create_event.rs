@@ -34,15 +34,15 @@ pub fn create_event(
 }
 
 fn create_and_add_new_event(
-    connection: DbReadWrite<'_>,
+    mut connection: DbReadWrite<'_>,
     token: Option<&str>,
     new_event: NewEvent,
 ) -> result::Result<Event, Error> {
     connection.transaction(|conn| {
-        let result = usecases::import_new_event(&conn, token, new_event, NewEventMode::Create);
+        let result = usecases::import_new_event(conn, token, new_event, NewEventMode::Create);
         match result {
             Ok(storable) => {
-                let event = usecases::store_created_event(&conn, storable).map_err(|err| {
+                let event = usecases::store_created_event(conn, storable).map_err(|err| {
                     warn!("Failed to store newly created event: {}", err);
                     err
                 })?;

@@ -7,7 +7,7 @@ pub fn exec_archive_ratings(
 ) -> Result<usize> {
     //TODO: check if user is allowed to archive the ratings
     Ok(connections.exclusive()?.transaction(|conn| {
-        usecases::archive_ratings(&conn, account_email, ids).map_err(|err| {
+        usecases::archive_ratings(conn, account_email, ids).map_err(|err| {
             warn!("Failed to archive {} ratings: {}", ids.len(), err);
             err
         })

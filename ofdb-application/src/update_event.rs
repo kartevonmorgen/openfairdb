@@ -14,13 +14,13 @@ pub fn update_event(
     let event = {
         connections.exclusive()?.transaction(|conn| {
             match usecases::import_new_event(
-                &conn,
+                conn,
                 token,
                 new_event,
                 usecases::NewEventMode::Update(id.as_str()),
             ) {
                 Ok(storable) => {
-                    let event = usecases::store_updated_event(&conn, storable).map_err(|err| {
+                    let event = usecases::store_updated_event(conn, storable).map_err(|err| {
                         warn!("Failed to store updated event: {}", err);
                         err
                     })?;

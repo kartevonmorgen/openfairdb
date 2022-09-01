@@ -7,7 +7,7 @@ pub fn change_user_role(
     role: Role,
 ) -> Result<()> {
     Ok(connections.exclusive()?.transaction(|conn| {
-        usecases::change_user_role(&conn, account_email, user_email, role).map_err(|err| {
+        usecases::change_user_role(conn, account_email, user_email, role).map_err(|err| {
             log::warn!("Failed to change role for email {}: {}", user_email, err);
             err
         })

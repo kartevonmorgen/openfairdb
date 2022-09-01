@@ -6,7 +6,7 @@ fn exec_archive_events(
     _archived_by_email: &str,
 ) -> Result<usize> {
     Ok(connections.exclusive()?.transaction(|conn| {
-        usecases::archive_events(&conn, ids).map_err(|err| {
+        usecases::archive_events(conn, ids).map_err(|err| {
             warn!("Failed to archive {} events: {}", ids.len(), err);
             err
         })

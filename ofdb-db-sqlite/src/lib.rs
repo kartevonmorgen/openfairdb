@@ -1,23 +1,22 @@
 #[macro_use]
 extern crate diesel;
-#[macro_use]
-extern crate diesel_migrations;
 
 use anyhow::Result as Fallible;
 use diesel::{r2d2, sqlite::SqliteConnection};
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 use ofdb_core::{repositories as repo, usecases as uc};
 use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
-use std::{ops::Deref, sync::Arc};
+use std::{
+    cell::{RefCell, RefMut},
+    sync::Arc,
+};
 
 mod models;
 mod repo_impl;
-mod repo_wrapper;
 mod schema;
 mod util;
 
-pub use repo_wrapper::*;
-
-embed_migrations!("migrations");
+const MIGRATIONS: EmbeddedMigrations = embed_migrations!("./migrations");
 
 type Connection = SqliteConnection;
 
@@ -29,7 +28,7 @@ type SharedConnectionPool = Arc<RwLock<ConnectionPool>>;
 
 pub struct DbReadOnly<'a> {
     _locked_pool: RwLockReadGuard<'a, ConnectionPool>,
-    conn: PooledConnection,
+    conn: RefCell<PooledConnection>,
 }
 
 impl<'a> DbReadOnly<'a> {
@@ -41,25 +40,26 @@ impl<'a> DbReadOnly<'a> {
         })?;
         Ok(Self {
             _locked_pool: locked_pool,
-            conn,
+            conn: RefCell::new(conn),
         })
-    }
-    fn inner(&self) -> repo_impl::Connection<'_> {
-        repo_impl::Connection::new(&self.conn)
-    }
-}
-
-impl<'a> Deref for DbReadOnly<'a> {
-    type Target = Connection;
-
-    fn deref(&self) -> &Self::Target {
-        &self.conn
     }
 }
 
 pub struct DbReadWrite<'a> {
     _locked_pool: RwLockWriteGuard<'a, ConnectionPool>,
-    conn: PooledConnection,
+    conn: RefCell<PooledConnection>,
+}
+
+pub struct DbConnection<'a> {
+    conn: RefCell<&'a mut SqliteConnection>,
+}
+
+impl<'a> DbConnection<'a> {
+    fn new(conn: &'a mut SqliteConnection) -> Self {
+        Self {
+            conn: RefCell::new(conn),
+        }
+    }
 }
 
 impl<'a> DbReadWrite<'a> {
@@ -71,13 +71,13 @@ impl<'a> DbReadWrite<'a> {
         })?;
         Ok(Self {
             _locked_pool: locked_pool,
-            conn,
+            conn: RefCell::new(conn),
         })
     }
 
-    pub fn transaction<T, F, E>(&self, f: F) -> Result<T, uc::Error>
+    pub fn transaction<T, F, E>(&mut self, f: F) -> Result<T, uc::Error>
     where
-        F: FnOnce(repo_impl::Connection<'_>) -> Result<T, E>,
+        F: FnOnce(&DbConnection) -> Result<T, E>,
         E: Into<uc::Error>,
     {
         let mut usecase_error = None;
@@ -85,16 +85,18 @@ impl<'a> DbReadWrite<'a> {
         // transaction closure. Otherwise it would be inaccessible, because
         // it cannot be borrowed twice. Consequently it has to be passed
         // along into the FnOnce() closure.
-        (&*self.conn)
-            .transaction(|/*conn*/| {
+        self.conn
+            .borrow_mut()
+            .transaction(|conn| {
                 // TODO: Diesel v2.0 requires a mutable borrow of the connection
                 // and will pass this mutable borrow into the transaction as
                 // an additional parameter.
-                let conn = &self.conn;
-                f(repo_impl::Connection::new(conn)).map_err(Into::into).map_err(|err| {
-                    usecase_error = Some(err);
-                    diesel::result::Error::RollbackTransaction
-                })
+                f(&DbConnection::new(conn))
+                    .map_err(Into::into)
+                    .map_err(|err| {
+                        usecase_error = Some(err);
+                        diesel::result::Error::RollbackTransaction
+                    })
             })
             .map_err(|err| {
                 if let Some(usecase_error) = usecase_error {
@@ -110,12 +112,8 @@ impl<'a> DbReadWrite<'a> {
             })
     }
 
-    fn inner(&self) -> repo_impl::Connection<'_> {
-        repo_impl::Connection::new(&self.conn)
-    }
-
-    fn sqlite_conn(&self) -> &Connection {
-        &self.conn
+    fn sqlite_conn(&self) -> RefMut<PooledConnection> {
+        self.conn.borrow_mut()
     }
 }
 
@@ -165,5 +163,7 @@ impl Connections {
 
 pub fn run_embedded_database_migrations(conn: DbReadWrite<'_>) {
     log::info!("Running embedded database migrations");
-    embedded_migrations::run(conn.sqlite_conn()).unwrap();
+    conn.sqlite_conn()
+        .run_pending_migrations(MIGRATIONS)
+        .unwrap();
 }

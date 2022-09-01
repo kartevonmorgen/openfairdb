@@ -9,7 +9,7 @@
 use super::schema::*;
 
 #[derive(Insertable)]
-#[table_name = "place"]
+#[diesel(table_name = place)]
 pub struct NewPlace<'a, 'b> {
     pub id: &'a str,
     pub license: &'b str,
@@ -25,7 +25,7 @@ pub struct Place {
 }
 
 #[derive(Insertable)]
-#[table_name = "place_revision"]
+#[diesel(table_name = place_revision)]
 pub struct NewPlaceRevision {
     pub parent_rowid: i64,
     pub rev: i64,
@@ -115,7 +115,7 @@ pub struct JoinedPlaceRevisionWithStatusReview {
 }
 
 #[derive(Insertable)]
-#[table_name = "place_revision_review"]
+#[diesel(table_name = place_revision_review)]
 pub struct NewPlaceReviewedRevision<'a, 'b> {
     pub parent_rowid: i64,
     pub rev: i64,
@@ -144,7 +144,7 @@ pub struct PlaceRevisionTag {
 }
 
 #[derive(Insertable)]
-#[table_name = "place_revision_tag"]
+#[diesel(table_name = place_revision_tag)]
 pub struct NewPlaceRevisionTag<'a> {
     pub parent_rowid: i64,
     pub tag: &'a str,
@@ -159,7 +159,7 @@ pub struct PlaceRevisionCustomLink {
 }
 
 #[derive(Insertable)]
-#[table_name = "place_revision_custom_link"]
+#[diesel(table_name = place_revision_custom_link)]
 pub struct NewPlaceRevisionCustomLink<'a> {
     pub parent_rowid: i64,
     pub url: &'a str,
@@ -168,7 +168,7 @@ pub struct NewPlaceRevisionCustomLink<'a> {
 }
 
 #[derive(Insertable)]
-#[table_name = "place_rating"]
+#[diesel(table_name = place_rating)]
 pub struct NewPlaceRating {
     pub parent_rowid: i64,
     pub created_at: i64,
@@ -199,7 +199,7 @@ pub struct PlaceRating {
 }
 
 #[derive(Insertable)]
-#[table_name = "place_rating_comment"]
+#[diesel(table_name = place_rating_comment)]
 pub struct NewPlaceRatingComment {
     pub parent_rowid: i64,
     pub created_at: i64,
@@ -224,7 +224,7 @@ pub struct PlaceRatingComment {
 }
 
 #[derive(Insertable, AsChangeset)]
-#[table_name = "events"]
+#[diesel(table_name = events)]
 pub struct NewEvent {
     pub uid: String,
     pub title: String,
@@ -278,7 +278,7 @@ pub struct EventEntity {
 }
 
 #[derive(Insertable)]
-#[table_name = "organization"]
+#[diesel(table_name = organization)]
 pub struct NewOrganization {
     pub id: String,
     pub name: String,
@@ -300,7 +300,7 @@ pub struct EventTag {
 }
 
 #[derive(Insertable)]
-#[table_name = "event_tags"]
+#[diesel(table_name = event_tags)]
 pub struct NewEventTag<'a> {
     pub event_id: i64,
     pub tag: &'a str,
@@ -325,7 +325,7 @@ pub struct OrganizationTagWithId {
 }
 
 #[derive(Insertable)]
-#[table_name = "organization_tag"]
+#[diesel(table_name = organization_tag)]
 pub struct NewOrganizationTag<'a> {
     pub org_rowid: i64,
     pub tag_label: &'a str,
@@ -335,13 +335,13 @@ pub struct NewOrganizationTag<'a> {
 }
 
 #[derive(Queryable, Insertable)]
-#[table_name = "tags"]
+#[diesel(table_name = tags)]
 pub struct Tag {
     pub id: String,
 }
 
 #[derive(Insertable, AsChangeset)]
-#[table_name = "users"]
+#[diesel(table_name = users)]
 pub struct NewUser<'a> {
     pub email: &'a str,
     pub email_confirmed: bool,
@@ -359,7 +359,7 @@ pub struct UserEntity {
 }
 
 #[derive(Insertable)]
-#[table_name = "bbox_subscriptions"]
+#[diesel(table_name = bbox_subscriptions)]
 pub struct NewBboxSubscription<'a> {
     pub uid: &'a str,
     pub user_id: i64,
@@ -383,7 +383,7 @@ pub struct BboxSubscriptionEntity {
 }
 
 #[derive(Insertable, AsChangeset)]
-#[table_name = "user_tokens"]
+#[diesel(table_name = user_tokens)]
 pub struct NewUserToken {
     pub user_id: i64,
     pub nonce: String,
@@ -400,8 +400,8 @@ pub struct UserTokenEntity {
 }
 
 #[derive(Insertable, AsChangeset)]
-#[table_name = "organization_place_clearance"]
-#[changeset_options(treat_none_as_null = "true")]
+#[diesel(table_name = organization_place_clearance)]
+#[diesel(treat_none_as_null = true)]
 pub struct NewPendingClearanceForPlace {
     pub org_rowid: i64,
     pub place_rowid: i64,
