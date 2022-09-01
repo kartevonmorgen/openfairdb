@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.11.2 (2022-09-02)
+
+- fix(db): Fix foreign key constraint.
+- fix(api): Show correct version again.
+- chore(db): Update diesel: 1.4 -> 2.0
+- chore(db): Bundle SQLite dependency by default.
+- chore(db): Explicitly initialize SQLite with the desired settings.
+- chore(db): Replace literal SQL with Diesel DSL.
+
 ## v0.11.1 (2022-08-29)
 
 - chore: Remove `native-tls` dependency
