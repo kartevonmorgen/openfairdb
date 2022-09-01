@@ -173,6 +173,7 @@ pub async fn main() {
                 cfg,
                 Box::new(geo_gw),
                 Box::new(notify_gw),
+                env!("CARGO_PKG_VERSION"),
             )
             .await;
         }

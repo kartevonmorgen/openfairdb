@@ -6,6 +6,9 @@ use crate::{
 };
 
 pub mod prelude {
+
+    pub const DUMMY_VERSION: &str = "3.2.1";
+
     pub use rocket::{
         http::{ContentType, Cookie, Status},
         local::blocking::{Client, LocalResponse},
@@ -47,6 +50,7 @@ pub fn setup_with_cfg(
         cfg,
         Box::new(geo_gw),
         Box::new(notify_gw),
+        prelude::DUMMY_VERSION,
     );
     let client = Client::tracked(rocket).unwrap();
     (client, connections, search_engine)

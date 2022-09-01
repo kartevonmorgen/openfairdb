@@ -23,6 +23,7 @@ pub async fn run(
     cfg: Cfg,
     geo_gw: Box<dyn GeoCodingGateway + Send + Sync>,
     notify_gw: Box<dyn NotificationGateway + Send + Sync>,
+    version: &'static str,
 ) {
     let search_engine = web::tantivy::SearchEngine(search_engine);
 
@@ -33,6 +34,7 @@ pub async fn run(
         cfg,
         geo_gw,
         notify_gw,
+        version,
     )
     .await;
 }
