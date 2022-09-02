@@ -77,28 +77,51 @@ fn index_all_events_chronologically<D: EventRepo>(
     Ok(Json(()))
 }
 
-pub(crate) fn rocket_instance(
-    connections: sqlite::Connections,
-    mut search_engine: tantivy::SearchEngine,
-    mounts: Vec<(&str, Vec<Route>)>,
+pub(crate) struct InstanceOptions {
+    mounts: Vec<(&'static str, Vec<Route>)>,
     rocket_cfg: Option<RocketCfg>,
     cfg: Cfg,
-    geo_gw: Box<dyn GeoCodingGateway + Send + Sync>,
-    notify_gw: Box<dyn NotificationGateway + Send + Sync>,
     version: &'static str,
+}
+
+pub(crate) struct Gateways {
+    geocoding: Box<dyn GeoCodingGateway + Send + Sync>,
+    notify: Box<dyn NotificationGateway + Send + Sync>,
+}
+
+pub(crate) struct Connections {
+    db: sqlite::Connections,
+    search_engine: tantivy::SearchEngine,
+}
+
+pub(crate) fn rocket_instance(
+    options: InstanceOptions,
+    connections: Connections,
+    gateways: Gateways,
 ) -> Rocket<rocket::Build> {
+    let InstanceOptions {
+        mounts,
+        rocket_cfg,
+        cfg,
+        version,
+    } = options;
+    let Connections {
+        db,
+        mut search_engine,
+    } = connections;
+    let Gateways { geocoding, notify } = gateways;
+
     info!("Indexing all places...");
-    index_all_places(&connections.exclusive().unwrap(), &mut *search_engine).unwrap();
+    index_all_places(&db.exclusive().unwrap(), &mut *search_engine).unwrap();
 
     info!("Indexing all events...");
-    index_all_events_chronologically(&connections.exclusive().unwrap(), &mut *search_engine)
-        .unwrap();
+    index_all_events_chronologically(&db.exclusive().unwrap(), &mut *search_engine).unwrap();
 
     info!("Deleting expired user e-mail tokens...");
-    usecases::delete_expired_user_tokens(&connections.exclusive().unwrap()).unwrap();
+    usecases::delete_expired_user_tokens(&db.exclusive().unwrap()).unwrap();
 
     info!("Caching most popular tags...");
-    let tags_cache = PopularTagsCache::new_from_db(&connections.shared().unwrap()).unwrap();
+    let tags_cache = PopularTagsCache::new_from_db(&db.shared().unwrap()).unwrap();
 
     let captcha_cache = api::captcha::CaptchaCache::new();
     let jwt_state = jwt::JwtState::new();
@@ -110,12 +133,12 @@ pub(crate) fn rocket_instance(
         None => rocket::build(),
     };
 
-    let geo_gw = guards::GeoCoding(geo_gw);
-    let notify_gw = guards::Notify(notify_gw);
+    let geo_gw = guards::GeoCoding(geocoding);
+    let notify_gw = guards::Notify(notify);
     let version = guards::Version(version);
 
     let mut instance = r
-        .manage(connections)
+        .manage(db)
         .manage(search_engine)
         .manage(captcha_cache)
         .manage(tags_cache)
@@ -142,24 +165,25 @@ fn mounts() -> Vec<(&'static str, Vec<Route>)> {
 }
 
 pub async fn run(
-    connections: sqlite::Connections,
+    db: sqlite::Connections,
     search_engine: tantivy::SearchEngine,
     enable_cors: bool,
     cfg: Cfg,
-    geo_gw: Box<dyn GeoCodingGateway + Send + Sync>,
-    notify_gw: Box<dyn NotificationGateway + Send + Sync>,
+    geocoding: Box<dyn GeoCodingGateway + Send + Sync>,
+    notify: Box<dyn NotificationGateway + Send + Sync>,
     version: &'static str,
 ) {
-    let instance = rocket_instance(
-        connections,
-        search_engine,
-        mounts(),
-        None,
+    let mounts = mounts();
+    let options = InstanceOptions {
+        mounts,
+        rocket_cfg: None,
         cfg,
-        geo_gw,
-        notify_gw,
         version,
-    );
+    };
+    let connections = Connections { db, search_engine };
+    let gateways = Gateways { geocoding, notify };
+
+    let instance = rocket_instance(options, connections, gateways);
     let server_task = if enable_cors {
         let cors = rocket_cors::CorsOptions::default().to_cors().unwrap();
         instance.attach(cors).launch()

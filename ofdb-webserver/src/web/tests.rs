@@ -39,21 +39,27 @@ pub fn setup_with_cfg(
     let connections = ofdb_db_sqlite::Connections::init(":memory:", 1).unwrap();
     ofdb_db_sqlite::run_embedded_database_migrations(connections.exclusive().unwrap());
     let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
-    let connections = sqlite::Connections::from(connections);
+    let db = sqlite::Connections::from(connections);
     let notify_gw = DummyNotifyGW;
     let geo_gw = DummyGeoGW;
-    let rocket = super::rocket_instance(
-        connections.clone(),
-        search_engine.clone(),
+    let connections = super::Connections {
+        db: db.clone(),
+        search_engine: search_engine.clone(),
+    };
+    let options = super::InstanceOptions {
         mounts,
-        Some(rocket_cfg),
+        rocket_cfg: Some(rocket_cfg),
         cfg,
-        Box::new(geo_gw),
-        Box::new(notify_gw),
-        prelude::DUMMY_VERSION,
-    );
+        version: prelude::DUMMY_VERSION,
+    };
+
+    let gateways = super::Gateways {
+        geocoding: Box::new(geo_gw),
+        notify: Box::new(notify_gw),
+    };
+    let rocket = super::rocket_instance(options, connections, gateways);
     let client = Client::tracked(rocket).unwrap();
-    (client, connections, search_engine)
+    (client, db, search_engine)
 }
 
 pub fn register_user(pool: &sqlite::Connections, email: &str, pw: &str, confirmed: bool) {
