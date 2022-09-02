@@ -50,7 +50,7 @@ repos:
         args: [--ignore-words=.codespellignore]
         exclude: ^search_results\.json|src/ports/web/frontend/login\.rs|ofdb-gateways/src/user_communication\.rs|doc/c4-plantuml/.*\.puml$
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.18.1
+    rev: 0.18.2
     hooks:
       - id: check-github-actions
       - id: check-github-workflows
