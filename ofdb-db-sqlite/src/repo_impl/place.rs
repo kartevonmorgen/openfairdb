@@ -1,3 +1,5 @@
+use crate::schema::{place, place_revision, place_revision_tag};
+
 use super::*;
 
 impl<'a> PlaceRepo for DbReadWrite<'a> {
@@ -469,41 +471,59 @@ fn most_popular_place_revision_tags(
     params: &MostPopularTagsParams,
     pagination: &Pagination,
 ) -> Result<Vec<TagFrequency>> {
-    // TODO: Diesel 1.4.x does not support the HAVING clause
-    // that is required to filter the aggregated column.
-    let mut sql = "SELECT tag, COUNT(*) as count \
-                     FROM place_revision_tag \
-                     WHERE parent_rowid IN \
-                     (SELECT rowid FROM place_revision WHERE (parent_rowid, rev) IN (SELECT rowid, current_rev FROM place) AND current_status > 0) \
-                     GROUP BY tag"
-          .to_string();
+    // TODO: Replace JOIN with nested sub-SELECTs once eq_any() supports tuples,
+    // because sub-SELECTs are usually more efficient.
+    // let place_subquery = place::table.select((place::rowid, place::current_rev));
+    // let place_rev_subquery = place_revision::table
+    //     .select(place_revision::rowid)
+    //     .filter((place_revision::parent_rowid, place_revision::rev).eq_any(place_subquery))
+    //     .filter(place_revision::current_status.gt(0));
+    let place_rev_subquery = place_revision::table
+        .inner_join(
+            place::table.on(place_revision::parent_rowid
+                .eq(place::rowid)
+                .and(place_revision::rev.eq(place::current_rev))),
+        )
+        .select(place_revision::rowid)
+        .filter(place_revision::current_status.gt(0));
+    let mut query = place_revision_tag::table
+        .group_by(place_revision_tag::tag)
+        .select((place_revision_tag::tag, diesel::dsl::count_star()))
+        .filter(place_revision_tag::parent_rowid.eq_any(place_rev_subquery))
+        .order_by(diesel::dsl::count_star().desc())
+        .order_by(place_revision_tag::tag)
+        .into_boxed();
     if params.min_count.is_some() || params.max_count.is_some() {
         if let Some(min_count) = params.min_count {
-            write!(&mut sql, " HAVING count>={min_count}").unwrap();
             if let Some(max_count) = params.max_count {
-                write!(&mut sql, " AND count<={max_count}").unwrap();
+                query = query.having(
+                    diesel::dsl::count_star()
+                        .ge(min_count as i64)
+                        .and(diesel::dsl::count_star().le(max_count as i64)),
+                );
+            } else {
+                query = query.having(diesel::dsl::count_star().ge(min_count as i64));
             }
         } else if let Some(max_count) = params.max_count {
-            write!(&mut sql, " HAVING count<={max_count}").unwrap();
+            query = query.having(diesel::dsl::count_star().le(max_count as i64));
         }
     }
-    sql.push_str(" ORDER BY count DESC, tag");
     if let Some(limit) = pagination.limit {
-        write!(&mut sql, " LIMIT {limit}").unwrap();
+        query = query.limit(limit as i64);
         // LIMIT must precede OFFSET, i.e. OFFSET without LIMIT
         // is not supported!
         let offset = pagination.offset.unwrap_or(0);
         if offset > 0 {
-            write!(&mut sql, " OFFSET {offset}").unwrap();
+            query = query.offset(offset as i64);
         }
     }
-    let rows = diesel::dsl::sql_query(sql)
-        .load::<TagCountRow>(conn)
-        .map_err(from_diesel_err)?;
-    Ok(rows
+    let tag_freqs = query
+        .load::<(String, i64)>(conn)
+        .map_err(from_diesel_err)?
         .into_iter()
-        .map(|row| TagFrequency(row.tag, row.count as TagCount))
-        .collect())
+        .map(|(tag, count)| TagFrequency(tag, count as TagCount))
+        .collect();
+    Ok(tag_freqs)
 }
 
 fn count_places(conn: &mut SqliteConnection) -> Result<usize> {
