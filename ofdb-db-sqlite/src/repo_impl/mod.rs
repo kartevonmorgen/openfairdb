@@ -4,8 +4,6 @@
 //
 // TODO: Create a new type for milliseconds and seconds.
 
-use std::{fmt::Write as _, result};
-
 use anyhow::anyhow;
 use diesel::{
     self,
@@ -32,7 +30,7 @@ mod tag;
 mod user;
 mod user_token;
 
-type Result<T> = result::Result<T, repo::Error>;
+type Result<T> = std::result::Result<T, repo::Error>;
 
 pub fn from_diesel_err(err: DieselError) -> repo::Error {
     match err {
@@ -315,15 +313,6 @@ fn load_place_with_status_review(
     };
 
     Ok((place, load_review_status(review_status)?, activity_log))
-}
-
-#[derive(QueryableByName)]
-struct TagCountRow {
-    #[diesel(sql_type = diesel::sql_types::Text)]
-    tag: String,
-
-    #[diesel(sql_type = diesel::sql_types::BigInt)]
-    count: i64,
 }
 
 fn resolve_organization_rowid(conn: &mut SqliteConnection, id: &Id) -> Result<i64> {
