@@ -149,10 +149,7 @@ where
 
     if let Some(ref email) = created_by {
         if let Some(user) = repo.try_get_user_by_email(email)? {
-            events = events
-                .into_iter()
-                .filter(|e| e.created_by.as_ref() == Some(&user.email))
-                .collect();
+            events.retain(|e| e.created_by.as_ref() == Some(&user.email));
         } else {
             events = vec![];
         }

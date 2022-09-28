@@ -1,12 +1,17 @@
 [package]
 name = "openfairdb"
+version.workspace = true
+edition.workspace = true
+
+[workspace.package]
 version = "0.11.2"
-authors = ["slowtec GmbH <post@slowtec.de>"]
-keywords = ["geo", "fair", "sustainability"]
-homepage = "https://github.com/kartevonmorgen/openfairdb"
 repository = "https://github.com/kartevonmorgen/openfairdb"
+homepage = "https://github.com/kartevonmorgen/openfairdb"
+keywords = ["geo", "fair", "sustainability"]
+authors = ["slowtec GmbH <post@slowtec.de>"]
 license = "AGPL-3.0-or-later"
 edition = "2021"
+rust-version = "1.64.0"
 
 [workspace]
 members = [
@@ -34,20 +39,20 @@ ofdb-seed        = { path = "./ofdb-seed"        }
 ofdb-webserver   = { path = "./ofdb-webserver"   }
 
 [dependencies]
-ofdb-db-sqlite = { version = "0.0.0", path = "ofdb-db-sqlite" }
-ofdb-core = { version = "0.0.0", path = "ofdb-core" }
-ofdb-gateways = { version = "0.0.0", path = "ofdb-gateways" }
-ofdb-db-tantivy = { version = "0.0.0", path = "ofdb-db-tantivy" }
-ofdb-webserver = { version = "=0.0.0" }
+ofdb-db-sqlite  = { version = "0.0.0", path = "ofdb-db-sqlite"   }
+ofdb-core       = { version = "0.0.0", path = "ofdb-core"        }
+ofdb-gateways   = { version = "0.0.0", path = "ofdb-gateways"    }
+ofdb-db-tantivy = { version = "0.0.0", path = "ofdb-db-tantivy"  }
+ofdb-webserver  = { version = "0.0.0", path = "./ofdb-webserver" }
 
-env_logger = "0.9.0"
-clap =  { version = "3.2.20", features = ["cargo"] }
+env_logger = "0.9.1"
+clap =  { version = "3.2.22", features = ["cargo"] }
 dotenv = "0.15.0"
 log = "0.4.17"
-tokio = "1.21.0"
+tokio = "1.21.2"
 
 [patch.crates-io.maud]
-# TODO: use v0.24.0 as soon as it's published
+# TODO: use v0.25.0 as soon as it's published
 git = "https://github.com/slowtec/maud"
 branch = "rocket-0.5.0-rc.2"
 
@@ -60,6 +65,11 @@ branch = "master"
 # TODO: use upstream as soon as https://github.com/georust/geocoding/pull/58 is merged.
 git = "https://github.com/slowtec/geocoding"
 branch = "remove-reqwest-default-tls-feature"
+
+[patch.crates-io.rocket]
+# TODO: use upstream as soon as v0.5 is published
+git = "https://github.com/slowtec/Rocket"
+branch = "fixes"
 
 [dev-dependencies]
 rand = "0.8.5"

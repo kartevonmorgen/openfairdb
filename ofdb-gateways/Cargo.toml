@@ -10,7 +10,7 @@ ofdb-core = "=0.0.0"
 ofdb-entities = "0.11.0"
 
 fast_chemail = "0.9.6"
-itertools = "0.10.3"
+itertools = "0.10.5"
 log = "0.4.17"
 quoted_printable = "0.4.5"
 time = { version = "0.3.14", features = ["macros", "formatting", "local-offset"] }
@@ -21,6 +21,6 @@ default-features = false
 features = ["rustls-tls"]
 
 [dependencies.reqwest]
-version = "0.11.11"
+version = "0.11.12"
 default-features = false
 features = ["blocking", "rustls-tls", "json"]
