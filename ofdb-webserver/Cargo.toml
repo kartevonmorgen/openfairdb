@@ -12,25 +12,25 @@ ofdb-db-sqlite = "=0.0.0" # TODO: remove
 ofdb-db-tantivy = "=0.0.0" # TODO: remove
 ofdb-entities = { version = "0.11.0", features = ["url"] }
 
-anyhow = "1.0.63"
+anyhow = "1.0.65"
 base64 = { version = "0.13.0", optional = true }
 captcha = "0.0.9"
 csv = "1.1.6"
-env_logger = "0.9.0"
+env_logger = "0.9.1"
 jsonwebtoken = { version = "8.1.1", optional = true }
 lazy_static = "1.4.0"
 log = "0.4.17"
 num-traits = "0.2.15"
-maud = { version = "0.23.0", optional = true, features = ["rocket"] }
+maud = { version = "0.24.0", optional = true, features = ["rocket"] }
 parking_lot = "0.12.1"
 rand = { version = "0.8.5", optional = true }
-rust-embed = "6.4.0"
+rust-embed = "6.4.1"
 rocket = { version = "0.5.0-rc.2", features = ["secrets", "json"] }
 rocket_cors = "0.6.0-alpha1"
-serde = { version = "1.0.144", features = ["derive"] }
+serde = { version = "1.0.145", features = ["derive"] }
 serde_json = "1.0.85"
 time = { version = "0.3.14", features = ["macros", "formatting"] }
-thiserror = "1.0.33"
+thiserror = "1.0.37"
 uuid = { version = "1.1.2", features = ["v4"] }
 r2d2 = "0.8.10"
 

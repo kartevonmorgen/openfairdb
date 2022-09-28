@@ -1,18 +1,23 @@
 [package]
 name = "ofdb-seed"
 description = "A seed library for building OpenFairDB based web applications"
-version = "0.11.0"
-authors = ["slowtec GmbH <post@slowtec.de>"]
 license = "MIT/Apache-2.0"
-homepage = "https://github.com/kartevonmorgen/openfairdb"
-repository = "https://github.com/kartevonmorgen/openfairdb"
-edition = "2021"
+
+version.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
 
 [dependencies]
-ofdb-boundary = { version = "0.11.0", default-features = false }
-percent-encoding = "2.1.0"
+percent-encoding = "2.2.0"
 seed = "0.9.2"
-web-sys = "0.3.59"
+web-sys = "0.3.60"
+
+[dependencies.ofdb-boundary]
+version = "0.11.0"
+path = "../ofdb-boundary"
+default-features = false
 
 [badges]
 maintenance = { status = "actively-developed" }

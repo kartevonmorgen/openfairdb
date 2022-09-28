@@ -1,23 +1,23 @@
 [package]
 name = "ofdb-entities"
 description = "Reusable, agnostic domain entities for OpenFairDB."
-version = "0.11.0"
-authors = ["slowtec GmbH <post@slowtec.de>"]
-license = "MIT/Apache-2.0"
-homepage = "https://github.com/kartevonmorgen/openfairdb"
-repository = "https://github.com/kartevonmorgen/openfairdb"
-edition = "2021"
+
+version.workspace = true
+authors.workspace = true
+homepage.workspace = true
+repository.workspace = true
+edition.workspace = true
 
 [dependencies]
 bs58 = "0.4.0"
-itertools = "0.10.3"
+itertools = "0.10.5"
 num-derive = "0.3.3"
 num-traits = "0.2.15"
 pwhash = "1.0.0"
 uuid = { version = "1.1.2", features = ["v4"] }
-url = { version = "2.2.2", optional = true }
+url = { version = "2.3.1", optional = true }
 strum = { version = "0.24.1", features = ["derive"] }
-thiserror = "1.0.33"
+thiserror = "1.0.37"
 time = { version = "0.3.14", features = ["formatting", "macros"] }
 
 [features]
