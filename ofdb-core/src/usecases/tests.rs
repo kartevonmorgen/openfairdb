@@ -262,6 +262,12 @@ impl PlaceRepo for MockDb {
     ) -> RepoResult<Vec<(Place, ReviewStatus, ActivityLog)>> {
         unimplemented!();
     }
+    fn find_places_not_updated_since(
+        &self,
+        _not_updated_since: Timestamp,
+    ) -> RepoResult<Vec<(Place, ReviewStatus, ActivityLog)>> {
+        unimplemented!();
+    }
     fn most_popular_place_revision_tags(
         &self,
         _params: &MostPopularTagsParams,

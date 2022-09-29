@@ -1,6 +1,5 @@
-use crate::schema::{place, place_revision, place_revision_tag};
-
 use super::*;
+use crate::schema::{place, place_revision, place_revision_tag};
 
 impl<'a> PlaceRepo for DbReadWrite<'a> {
     fn get_place(&self, id: &str) -> Result<(Place, ReviewStatus)> {
@@ -23,6 +22,13 @@ impl<'a> PlaceRepo for DbReadWrite<'a> {
         pagination: &Pagination,
     ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>> {
         recently_changed_places(&mut self.conn.borrow_mut(), params, pagination)
+    }
+
+    fn find_places_not_updated_since(
+        &self,
+        _not_updated_since: Timestamp,
+    ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>> {
+        todo!()
     }
 
     fn most_popular_place_revision_tags(
@@ -78,6 +84,13 @@ impl<'a> PlaceRepo for DbConnection<'a> {
         recently_changed_places(&mut self.conn.borrow_mut(), params, pagination)
     }
 
+    fn find_places_not_updated_since(
+        &self,
+        _not_updated_since: Timestamp,
+    ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>> {
+        todo!()
+    }
+
     fn most_popular_place_revision_tags(
         &self,
         params: &MostPopularTagsParams,
@@ -129,6 +142,13 @@ impl<'a> PlaceRepo for DbReadOnly<'a> {
         pagination: &Pagination,
     ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>> {
         recently_changed_places(&mut self.conn.borrow_mut(), params, pagination)
+    }
+
+    fn find_places_not_updated_since(
+        &self,
+        _not_updated_since: Timestamp,
+    ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>> {
+        todo!()
     }
 
     fn most_popular_place_revision_tags(

@@ -100,14 +100,18 @@ pub struct MostPopularTagsParams {
 pub trait PlaceRepo {
     fn get_place(&self, id: &str) -> Result<(Place, ReviewStatus)>;
     fn get_places(&self, ids: &[&str]) -> Result<Vec<(Place, ReviewStatus)>>;
-
-    fn all_places(&self) -> Result<Vec<(Place, ReviewStatus)>>;
+    fn all_places(&self) -> Result<Vec<(Place, ReviewStatus)>>; // TODO: remove
     fn count_places(&self) -> Result<usize>;
 
     fn recently_changed_places(
         &self,
         params: &RecentlyChangedEntriesParams,
         pagination: &Pagination,
+    ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>>;
+
+    fn find_places_not_updated_since(
+        &self,
+        not_updated_since: Timestamp,
     ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>>;
 
     fn most_popular_place_revision_tags(
@@ -204,6 +208,16 @@ pub trait SubscriptionRepo {
     fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>>;
     fn all_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<Vec<BboxSubscription>>;
     fn delete_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<()>;
+}
+
+pub trait ReminderRepo {
+    fn find_last_sent_reminder(&self, place_id: &Id, email: &Email) -> Result<Option<Timestamp>>;
+    fn save_sent_reminders(
+        &self,
+        place_id: &Id,
+        recipients: &[Email],
+        sent_at: Timestamp,
+    ) -> Result<()>;
 }
 
 pub trait TagRepo {

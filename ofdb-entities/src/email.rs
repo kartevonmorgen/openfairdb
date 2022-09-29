@@ -1,5 +1,6 @@
 use std::{borrow::Borrow, fmt, ops::Deref, str::FromStr};
 
+// TODO: rename to EmailAddress
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Email(String);
 

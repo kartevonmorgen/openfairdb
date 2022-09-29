@@ -25,6 +25,7 @@ mod org;
 mod place;
 mod place_clearance;
 mod rating;
+mod reminder;
 mod subscription;
 mod tag;
 mod user;

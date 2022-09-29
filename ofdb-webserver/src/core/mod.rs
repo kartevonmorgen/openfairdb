@@ -274,6 +274,12 @@ pub mod usecases {
             ) -> RepoResult<Vec<(Place, ReviewStatus, ActivityLog)>> {
                 unimplemented!();
             }
+            fn find_places_not_updated_since(
+                &self,
+                _: ofdb_core::entities::Timestamp,
+            ) -> RepoResult<Vec<(Place, ReviewStatus, ActivityLog)>> {
+                unimplemented!();
+            }
             fn most_popular_place_revision_tags(
                 &self,
                 _params: &MostPopularTagsParams,

@@ -1,7 +1,9 @@
 use std::str::FromStr;
 use time::Date;
 
-use crate::{activity::*, contact::*, id::*, links::*, location::*, review::*, revision::*};
+use crate::{
+    activity::*, contact::*, email::Email, id::*, links::*, location::*, review::*, revision::*,
+};
 
 // Immutable part of a place.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -94,6 +96,10 @@ impl Place {
             contact: None,
             ..self
         }
+    }
+
+    pub fn contact_email(&self) -> Option<&Email> {
+        self.contact.as_ref().and_then(|c| c.email.as_ref())
     }
 
     pub fn is_owned<'a>(&self, moderated_tags: impl IntoIterator<Item = &'a str>) -> bool {
