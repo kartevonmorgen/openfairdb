@@ -32,6 +32,7 @@ mod rate_place;
 mod register;
 mod review_places;
 mod search;
+mod send_update_reminders;
 mod store_event;
 mod subscribe_to_bbox;
 mod unsubscribe_all_bboxes;
@@ -51,8 +52,8 @@ pub use self::{
     export_place::*, filter_event::*, filter_place::*, find_duplicates::*,
     get_bbox_subscriptions::*, get_event::*, get_user::*, indexing::*, load_places::*,
     load_ratings_with_comments::*, login::*, query_events::*, rate_place::*, register::*,
-    review_places::*, search::*, store_event::*, subscribe_to_bbox::*, unsubscribe_all_bboxes::*,
-    update_place::*, user_tokens::*,
+    review_places::*, search::*, send_update_reminders::*, store_event::*, subscribe_to_bbox::*,
+    unsubscribe_all_bboxes::*, update_place::*, user_tokens::*,
 };
 
 mod prelude {
