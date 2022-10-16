@@ -249,6 +249,21 @@ table! {
 joinable!(bbox_subscriptions -> users (user_id));
 
 ///////////////////////////////////////////////////////////////////////
+// Reminders
+///////////////////////////////////////////////////////////////////////
+
+diesel::table! {
+    sent_reminders (rowid) {
+        rowid -> BigInt,
+        place_rowid -> BigInt,
+        sent_at -> BigInt,
+        sent_to_email -> Text,
+    }
+}
+
+joinable!(sent_reminders -> place (place_rowid));
+
+///////////////////////////////////////////////////////////////////////
 
 allow_tables_to_appear_in_same_query!(
     bbox_subscriptions,
@@ -267,4 +282,5 @@ allow_tables_to_appear_in_same_query!(
     tags,
     users,
     user_tokens,
+    sent_reminders
 );

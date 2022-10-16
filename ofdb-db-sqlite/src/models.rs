@@ -415,3 +415,18 @@ pub struct PendingClearanceForPlace {
     pub created_at: i64,
     pub last_cleared_revision: Option<i64>,
 }
+
+#[derive(Insertable)]
+#[diesel(table_name = sent_reminders)]
+pub struct NewSentReminder<'a> {
+    pub place_rowid: i64,
+    pub sent_at: i64,
+    pub sent_to_email: &'a str,
+}
+
+#[derive(Queryable)]
+pub struct SentReminder {
+    pub place_id: String,
+    pub sent_at: i64,
+    pub sent_to_email: String,
+}
