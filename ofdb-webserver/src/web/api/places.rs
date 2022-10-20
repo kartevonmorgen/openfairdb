@@ -156,3 +156,22 @@ pub fn post_review(
     }
     Ok(Json(()))
 }
+
+#[get("/places/not-updated?<since>")]
+pub fn get_not_updated(
+    db: sqlite::Connections,
+    since: i64, // in seconds
+) -> Result<Vec<(json::PlaceRoot, json::PlaceRevision, json::ReviewStatus)>> {
+    let entries = {
+        let db = db.shared()?;
+        db.find_places_not_updated_since(Timestamp::from_secs(since))?
+    };
+    let entries = entries
+        .into_iter()
+        .map(|(place, status)| {
+            let (place_root, place_revision) = place.into();
+            (place_root.into(), place_revision.into(), status.into())
+        })
+        .collect::<Vec<_>>();
+    Ok(Json(entries))
+}

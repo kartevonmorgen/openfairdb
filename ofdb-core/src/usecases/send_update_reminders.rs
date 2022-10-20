@@ -52,7 +52,7 @@ where
     let places = place_repo
         .find_places_not_updated_since(unchanged_since)?
         .into_iter()
-        .map(|(place, _, _)| place)
+        .map(|(place, _)| place)
         .collect();
     Ok(places)
 }

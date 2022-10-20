@@ -2066,3 +2066,66 @@ mod with_captcha_protection_enabled {
         assert_eq!(body_str, format!("\"{}\"", eid));
     }
 }
+
+#[test]
+fn not_updated_since() {
+    let (client, db) = setup();
+
+    // Create admin user and login
+    let user = User {
+        email: "foo@bar".into(),
+        email_confirmed: true,
+        password: "secret".parse::<Password>().unwrap(),
+        role: Role::Admin,
+    };
+    db.exclusive().unwrap().create_user(&user).unwrap();
+    let response = client
+        .post("/login")
+        .header(ContentType::JSON)
+        .body(r#"{"email": "foo@bar", "password": "secret"}"#)
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // Create some places with reviews
+    let old_entries = vec![
+        Place::build().id("old").finish(),
+        Place::build().id("archived").finish(),
+        Place::build().id("rejected").finish(),
+    ];
+    for e in old_entries {
+        db.exclusive().unwrap().create_or_update_place(e).unwrap();
+    }
+    for (id, status) in &[("archived", "archived"), ("rejected", "rejected")] {
+        let req = client
+            .post(format!("/places/{}/review", id))
+            .header(ContentType::JSON)
+            .body(&format!(
+                "{{\"status\":\"{}\",\"comment\":\"{}\"}}",
+                status, id
+            ));
+        let response = req.dispatch();
+        assert_eq!(response.status(), Status::Ok);
+    }
+
+    // Resolution of time stamps in the query is 1 sec
+    // TODO: Don't waste time by sleeping
+    std::thread::sleep(std::time::Duration::from_millis(1001));
+    let update_time = Timestamp::now();
+    let recent_entries = vec![Place::build().id("recent").finish()];
+    for e in recent_entries {
+        db.exclusive().unwrap().create_or_update_place(e).unwrap();
+    }
+
+    let response_since = client
+        .get(format!(
+            "/places/not-updated?since={}",
+            update_time.as_secs()
+        ))
+        .dispatch();
+    assert_eq!(response_since.status(), Status::Ok);
+    let body_since_str = response_since.into_string().unwrap();
+    assert!(!body_since_str.contains("\"id\":\"recent\""));
+    assert!(body_since_str.contains("\"id\":\"old\""));
+    assert!(!body_since_str.contains("\"id\":\"archived\""));
+    assert!(!body_since_str.contains("\"id\":\"rejected\""));
+}

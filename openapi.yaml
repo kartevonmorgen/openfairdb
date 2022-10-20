@@ -359,7 +359,37 @@ paths:
           $ref: '#/components/responses/ParameterError'
         '401':
           $ref: '#/components/responses/UnauthorizedError'
-
+  '/places/not-updated':
+    get:
+      tags:
+        - Entries/Places
+      summary: Get outdated entries
+      description: |
+        Returns a list of places that have not been changed since the given timestamp.
+        Archived and rejected places are ignored.
+      parameters:
+        - name: since
+          in: query
+          required: false
+          description: The point in time from which the places are to be considered up-to-date.
+          schema:
+            $ref: '#/components/schemas/UnixTime'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: array
+                  minLength: 3
+                  maxLength: 3
+                  items:
+                    oneOf:
+                      - $ref: '#/components/schemas/PlaceRoot'
+                      - $ref: '#/components/schemas/PlaceRevision'
+                      - $ref: '#/components/schemas/ReviewStatus'
   '/ratings/{ids}':
     get:
       summary: Get multiple ratings
