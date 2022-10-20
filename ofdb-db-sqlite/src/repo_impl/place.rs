@@ -26,9 +26,9 @@ impl<'a> PlaceRepo for DbReadWrite<'a> {
 
     fn find_places_not_updated_since(
         &self,
-        _not_updated_since: Timestamp,
-    ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>> {
-        todo!()
+        not_updated_since: Timestamp,
+    ) -> Result<Vec<(Place, ReviewStatus)>> {
+        find_places_not_updated_since(&mut self.conn.borrow_mut(), not_updated_since)
     }
 
     fn most_popular_place_revision_tags(
@@ -87,7 +87,7 @@ impl<'a> PlaceRepo for DbConnection<'a> {
     fn find_places_not_updated_since(
         &self,
         _not_updated_since: Timestamp,
-    ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>> {
+    ) -> Result<Vec<(Place, ReviewStatus)>> {
         todo!()
     }
 
@@ -146,9 +146,9 @@ impl<'a> PlaceRepo for DbReadOnly<'a> {
 
     fn find_places_not_updated_since(
         &self,
-        _not_updated_since: Timestamp,
-    ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>> {
-        todo!()
+        not_updated_since: Timestamp,
+    ) -> Result<Vec<(Place, ReviewStatus)>> {
+        find_places_not_updated_since(&mut self.conn.borrow_mut(), not_updated_since)
     }
 
     fn most_popular_place_revision_tags(
@@ -703,4 +703,62 @@ fn load_place_revision(
         .first::<models::JoinedPlaceRevision>(conn)
         .map_err(from_diesel_err)?;
     load_place(conn, row)
+}
+
+const EXCLUDE_STATUS: &[ReviewStatus] = &[ReviewStatus::Archived, ReviewStatus::Rejected];
+
+fn find_places_not_updated_since(
+    conn: &mut SqliteConnection,
+    not_updated_since: Timestamp,
+) -> Result<Vec<(Place, ReviewStatus)>> {
+    use schema::{place::dsl, place_revision::dsl as rev_dsl};
+
+    let mut query = schema::place_revision::table
+        .inner_join(
+            schema::place::table.on(rev_dsl::parent_rowid
+                .eq(dsl::rowid)
+                .and(rev_dsl::rev.eq(dsl::current_rev))),
+        )
+        .select((
+            rev_dsl::rowid,
+            rev_dsl::rev,
+            rev_dsl::created_at,
+            rev_dsl::created_by,
+            rev_dsl::current_status,
+            rev_dsl::title,
+            rev_dsl::description,
+            rev_dsl::lat,
+            rev_dsl::lon,
+            rev_dsl::street,
+            rev_dsl::zip,
+            rev_dsl::city,
+            rev_dsl::country,
+            rev_dsl::state,
+            rev_dsl::contact_name,
+            rev_dsl::email,
+            rev_dsl::phone,
+            rev_dsl::homepage,
+            rev_dsl::opening_hours,
+            rev_dsl::founded_on,
+            rev_dsl::image_url,
+            rev_dsl::image_link_url,
+            dsl::id,
+            dsl::license,
+        ))
+        .order_by(rev_dsl::created_at.desc())
+        .filter(rev_dsl::created_at.lt(not_updated_since.as_millis()))
+        .into_boxed();
+
+    for status in EXCLUDE_STATUS {
+        query = query.filter(rev_dsl::current_status.ne(ReviewStatusPrimitive::from(*status)));
+    }
+
+    let rows = query
+        .load::<models::JoinedPlaceRevision>(conn)
+        .map_err(from_diesel_err)?;
+    let mut results = Vec::with_capacity(rows.len());
+    for row in rows {
+        results.push(load_place(conn, row)?);
+    }
+    Ok(results)
 }

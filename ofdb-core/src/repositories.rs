@@ -112,7 +112,7 @@ pub trait PlaceRepo {
     fn find_places_not_updated_since(
         &self,
         not_updated_since: Timestamp,
-    ) -> Result<Vec<(Place, ReviewStatus, ActivityLog)>>;
+    ) -> Result<Vec<(Place, ReviewStatus)>>;
 
     fn most_popular_place_revision_tags(
         &self,
