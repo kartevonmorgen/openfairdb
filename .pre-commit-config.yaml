@@ -30,7 +30,7 @@ repos:
       - id: mixed-line-ending
       - id: trailing-whitespace
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
-    rev: v9.0.0
+    rev: v9.1.0
     hooks:
       - id: commitlint
         stages:
@@ -44,13 +44,13 @@ repos:
     hooks:
       - id: shellcheck
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.1
+    rev: v2.2.2
     hooks:
       - id: codespell
         args: [--ignore-words=.codespellignore]
         exclude: ^search_results\.json|src/ports/web/frontend/login\.rs|ofdb-gateways/src/user_communication\.rs|doc/c4-plantuml/.*\.puml|Cargo.lock$
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.18.2
+    rev: 0.18.4
     hooks:
       - id: check-github-actions
       - id: check-github-workflows
