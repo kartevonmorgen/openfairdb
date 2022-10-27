@@ -1576,7 +1576,7 @@ dependencies = [
 
 [[package]]
 name = "ofdb-boundary"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "ofdb-entities",
  "serde",
@@ -1630,7 +1630,7 @@ dependencies = [
 
 [[package]]
 name = "ofdb-entities"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "bs58",
  "itertools",
@@ -1662,7 +1662,7 @@ dependencies = [
 
 [[package]]
 name = "ofdb-seed"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "ofdb-boundary",
  "percent-encoding",
@@ -1727,7 +1727,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "openfairdb"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "clap",
  "dotenv",

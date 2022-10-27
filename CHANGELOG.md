@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.11.3 (2022-10-27)
+
+- chore: Update dependencies
+
 ## v0.11.2 (2022-09-02)
 
 - fix(db): Fix foreign key constraint.
