@@ -3,7 +3,7 @@
 
 use std::{env, path::Path};
 
-use clap::{crate_authors, Arg, Command};
+use clap::{crate_authors, Arg, ArgAction, Command};
 use dotenv::dotenv;
 
 use ofdb_core::{
@@ -18,6 +18,14 @@ use ofdb_db_tantivy as tantivy;
 use ofdb_gateways::{mailgun::Mailgun, notify::Notify, opencage::OpenCage, sendmail::Sendmail};
 
 mod cfg;
+
+const DATABASE_URL_ARG: &str = "db-url";
+
+const INDEX_DIR_ARG: &str = "idx-dir";
+
+const FIX_EVENT_ADDRESS_LOCATION_ARG: &str = "fix-event-address-location";
+
+const ENABLE_CORS_ARG: &str = "enable-cors";
 
 fn update_event_locations<R, G>(repo: &R, geo: &G) -> Result<(), RepoError>
 where
@@ -107,33 +115,35 @@ pub async fn main() {
         .version(env!("CARGO_PKG_VERSION"))
         .author(crate_authors!("\n"))
         .arg(
-            Arg::with_name("db-url")
-                .long("db-url")
+            Arg::new(DATABASE_URL_ARG)
+                .long(DATABASE_URL_ARG)
                 .value_name("DATABASE_URL")
                 .help("URL to the database"),
         )
         .arg(
-            Arg::with_name("idx-dir")
-                .long("idx-dir")
+            Arg::new(INDEX_DIR_ARG)
+                .long(INDEX_DIR_ARG)
                 .value_name("INDEX_DIR")
                 .help("File system directory for the full-text search index"),
         )
         .arg(
-            Arg::with_name("enable-cors")
-                .long("enable-cors")
+            Arg::new(ENABLE_CORS_ARG)
+                .long(ENABLE_CORS_ARG)
+                .action(ArgAction::SetTrue)
                 .help("Allow requests from any origin"),
         )
         .arg(
-            Arg::with_name("fix-event-address-location")
-                .long("fix-event-address-location")
+            Arg::new(FIX_EVENT_ADDRESS_LOCATION_ARG)
+                .long(FIX_EVENT_ADDRESS_LOCATION_ARG)
+                .action(ArgAction::SetTrue)
                 .help("Update the location of ALL events by resolving their address"),
         )
         .get_matches();
 
     let mut cfg = cfg::Cfg::from_env_or_default();
 
-    if let Some(db_url) = matches.value_of("db-url").map(ToString::to_string) {
-        cfg.db_url = db_url
+    if let Some(db_url) = matches.get_one::<String>(DATABASE_URL_ARG).cloned() {
+        cfg.db_url = db_url;
     }
     log::info!(
         "Connecting to SQLite database '{}' (pool size = {})",
@@ -145,8 +155,8 @@ pub async fn main() {
     ofdb_db_sqlite::run_embedded_database_migrations(connections.exclusive().unwrap());
 
     let idx_dir = matches
-        .value_of("idx-dir")
-        .map(ToString::to_string)
+        .get_one::<String>(INDEX_DIR_ARG)
+        .cloned()
         .or_else(|| env::var("INDEX_DIR").map(Option::Some).unwrap_or(None));
     let idx_path = idx_dir.as_ref().map(Path::new);
     log::info!("Initializing Tantivy full-text search engine");
@@ -158,7 +168,7 @@ pub async fn main() {
     #[allow(clippy::match_single_binding)]
     match matches.subcommand() {
         _ => {
-            if matches.is_present("fix-event-address-location") {
+            if matches.get_flag(FIX_EVENT_ADDRESS_LOCATION_ARG) {
                 log::info!("Updating all event locations...");
                 update_event_locations(&connections.exclusive().unwrap(), &geo_gw).unwrap();
             }
@@ -169,7 +179,7 @@ pub async fn main() {
             ofdb_webserver::run(
                 connections,
                 search_engine,
-                matches.is_present("enable-cors"),
+                matches.get_flag(ENABLE_CORS_ARG),
                 cfg,
                 Box::new(geo_gw),
                 Box::new(notify_gw),
