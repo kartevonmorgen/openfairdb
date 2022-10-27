@@ -51,22 +51,17 @@ setup:
     pip install -U pre-commit
     # pre-commit install --hook-type commit-msg --hook-type pre-commit
 
-# Upgrade (and update) dependencies
+# Upgrade (and update) dependencies and tools
 upgrade: setup
     pre-commit autoupdate
-    cargo upgrade --workspace \
-        --exclude libsqlite3-sys \
-        --exclude diesel \
-        --exclude diesel_migrations
+    cargo upgrade
     cargo update
-    cargo upgrade --workspace --to-lockfile \
-        --exclude libsqlite3-sys \
-        --exclude diesel \
-        --exclude diesel_migrations
+    cargo upgrade \
+        --exclude libsqlite3-sys
+    cargo update
     cd ofdb-app-clearance \
         && cargo upgrade \
-        && cargo update \
-        && cargo upgrade --to-lockfile
+        && cargo update
 
 # Run pre-commit hooks
 pre-commit:

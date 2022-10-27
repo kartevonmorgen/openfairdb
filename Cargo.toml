@@ -46,7 +46,7 @@ ofdb-db-tantivy = { version = "0.0.0", path = "ofdb-db-tantivy"  }
 ofdb-webserver  = { version = "0.0.0", path = "./ofdb-webserver" }
 
 env_logger = "0.9.1"
-clap =  { version = "3.2.22", features = ["cargo"] }
+clap =  { version = "3.2.23", features = ["cargo"] }
 dotenv = "0.15.0"
 log = "0.4.17"
 tokio = "1.21.2"
