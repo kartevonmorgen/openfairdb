@@ -86,9 +86,9 @@ impl<'a> PlaceRepo for DbConnection<'a> {
 
     fn find_places_not_updated_since(
         &self,
-        _not_updated_since: Timestamp,
+        not_updated_since: Timestamp,
     ) -> Result<Vec<(Place, ReviewStatus)>> {
-        todo!()
+        find_places_not_updated_since(&mut self.conn.borrow_mut(), not_updated_since)
     }
 
     fn most_popular_place_revision_tags(

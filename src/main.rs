@@ -7,17 +7,15 @@ use clap::{crate_authors, Arg, ArgAction, Command};
 use dotenv::dotenv;
 
 use ofdb_core::{
-    entities::{Email, MapPoint},
-    gateways::{email::EmailGateway, geocode::GeoCodingGateway},
-    repositories::EventRepo,
-    RepoError,
+    entities::MapPoint, gateways::geocode::GeoCodingGateway, repositories::EventRepo, RepoError,
 };
 
 use ofdb_db_sqlite::Connections;
 use ofdb_db_tantivy as tantivy;
-use ofdb_gateways::{mailgun::Mailgun, notify::Notify, opencage::OpenCage, sendmail::Sendmail};
 
 mod cfg;
+mod gateways;
+mod recurring_reminder;
 
 const DATABASE_URL_ARG: &str = "db-url";
 
@@ -51,59 +49,6 @@ where
         }
     }
     Ok(())
-}
-
-fn mailgun_gw() -> Option<Mailgun> {
-    // TODO: move this to crate::cfg
-    let api_key = env::var("MAILGUN_API_KEY");
-    let domain = env::var("MAILGUN_DOMAIN");
-    let from = env::var("MAIL_GATEWAY_SENDER_ADDRESS");
-
-    if let (Ok(api_key), Ok(mail), Ok(domain)) = (api_key, from, domain) {
-        // TODO: move this to crate::cfg
-        let api_url = env::var("MAILGUN_API_URL")
-            .unwrap_or_else(|_| format!("https://api.eu.mailgun.net/v3/{}/messages", domain));
-        // TODO: validate values
-        Some(Mailgun {
-            from_email: Email::from(mail),
-            domain,
-            api_key,
-            api_url,
-        })
-    } else {
-        None
-    }
-}
-
-fn sendmail_gw() -> Option<Sendmail> {
-    let from = env::var("MAIL_GATEWAY_SENDER_ADDRESS");
-    if let Ok(mail) = from {
-        // TODO: validate values
-        Some(Sendmail::new(Email::from(mail)))
-    } else {
-        None
-    }
-}
-
-struct DummyMailGw;
-
-impl EmailGateway for DummyMailGw {
-    fn compose_and_send(&self, _recipients: &[Email], _subject: &str, _body: &str) {
-        log::debug!("Cannot send emails because no e-mail gateway was configured");
-    }
-}
-
-fn notification_gateway() -> Notify {
-    if let Some(gw) = mailgun_gw() {
-        log::info!("Use Mailgun gateway");
-        Notify::new(gw)
-    } else if let Some(gw) = sendmail_gw() {
-        log::warn!("Mailgun gateway was not configured: use sendmail as fallback");
-        Notify::new(gw)
-    } else {
-        log::warn!("No eMail gateway was not configured");
-        Notify::new(DummyMailGw)
-    }
 }
 
 #[allow(deprecated)]
@@ -162,8 +107,14 @@ pub async fn main() {
     log::info!("Initializing Tantivy full-text search engine");
     let search_engine = tantivy::SearchEngine::init_with_path(idx_path).unwrap();
 
-    let geo_gw = OpenCage::new(cfg.opencage_api_key);
-    let notify_gw = notification_gateway();
+    let geo_gw = gateways::geocoding_gateway(&cfg);
+    let notify_gw = gateways::notification_gateway();
+
+    let db_connections = connections.clone();
+
+    tokio::spawn(async move {
+        recurring_reminder::run(&db_connections).await;
+    });
 
     #[allow(clippy::match_single_binding)]
     match matches.subcommand() {

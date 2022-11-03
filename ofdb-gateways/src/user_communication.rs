@@ -1,3 +1,4 @@
+use ofdb_core::usecases::{EmailReminderFormatter, Reminder};
 use ofdb_entities::{address::*, contact::*, event::*, place::*, url::*};
 use time::{format_description::FormatItem, macros::format_description};
 
@@ -204,6 +205,30 @@ das Karte von morgen-Team\n
         homepage = event.homepage.as_ref().map(Url::as_str).unwrap_or(""),
         tags = event.tags.join(", ")
     )
+}
+
+#[derive(Default)]
+pub struct ReminderFormatter; // TODO: support different languages
+
+impl EmailReminderFormatter for ReminderFormatter {
+    fn subject(&self, r: &Reminder) -> String {
+        format!("Kvm - Veralteter Eintrag?: {}", r.place.title)
+    }
+    fn body(&self, r: &Reminder) -> String {
+        let title = &r.place.title;
+        let description = &r.place.description;
+        let id = r.place.id.as_str();
+
+        format!(
+            "
+folgender Eintrag auf der Karte von morgen wurde schon länger nicht mehr aktualisiert:\n
+{title}
+{description}\n
+Eintrag anschauen oder bearbeiten: https://kartevonmorgen.org/#/?entry={id}\n
+euphorische Grüße,
+das Karte von morgen-Team\n"
+        )
+    }
 }
 
 #[cfg(test)]

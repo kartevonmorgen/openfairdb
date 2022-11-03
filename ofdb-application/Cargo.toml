@@ -16,6 +16,7 @@ pwhash = "1.0.0"
 r2d2 = ">=0.8.10,<0.9" # TODO: remove
 serde_json = "1.0.87"
 thiserror = "1.0.37"
+time = "0.3.16"
 
 [dev-dependencies]
 ofdb-db-tantivy = "=0.0.0" # TODO: remove
