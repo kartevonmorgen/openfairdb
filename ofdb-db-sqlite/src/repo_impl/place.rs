@@ -376,14 +376,12 @@ fn get_places(
         query = query.filter(dsl::id.eq_any(place_ids));
     }
 
-    let rows = query
+    query
         .load::<models::JoinedPlaceRevision>(conn)
-        .map_err(from_diesel_err)?;
-    let mut results = Vec::with_capacity(rows.len());
-    for row in rows {
-        results.push(load_place(conn, row)?);
-    }
-    Ok(results)
+        .map_err(from_diesel_err)?
+        .into_iter()
+        .map(|row| load_place(conn, row))
+        .collect()
 }
 
 fn get_place(conn: &mut SqliteConnection, place_id: &str) -> Result<(Place, ReviewStatus)> {
@@ -476,14 +474,12 @@ fn recently_changed_places(
         query = query.offset(offset);
     }
 
-    let rows = query
+    query
         .load::<models::JoinedPlaceRevisionWithStatusReview>(conn)
-        .map_err(from_diesel_err)?;
-    let mut results = Vec::with_capacity(rows.len());
-    for row in rows {
-        results.push(load_place_with_status_review(conn, row)?);
-    }
-    Ok(results)
+        .map_err(from_diesel_err)?
+        .into_iter()
+        .map(|row| load_place_with_status_review(conn, row))
+        .collect()
 }
 
 fn most_popular_place_revision_tags(
@@ -753,12 +749,10 @@ fn find_places_not_updated_since(
         query = query.filter(rev_dsl::current_status.ne(ReviewStatusPrimitive::from(*status)));
     }
 
-    let rows = query
+    query
         .load::<models::JoinedPlaceRevision>(conn)
-        .map_err(from_diesel_err)?;
-    let mut results = Vec::with_capacity(rows.len());
-    for row in rows {
-        results.push(load_place(conn, row)?);
-    }
-    Ok(results)
+        .map_err(from_diesel_err)?
+        .into_iter()
+        .map(|row| load_place(conn, row))
+        .collect()
 }
