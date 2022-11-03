@@ -1,0 +1,2 @@
+Weitere Hinweise und Tipps zur Nutzung, z.B. wie du interaktive Karten per <iframe> auf deiner Webseite einbettest oder Papierkarten erstellst,
+findest du hier: https://blog.vonmorgen.org

@@ -1,0 +1,11 @@
+Na du Weltverbesserer*,
+wir freuen uns, dass du bei der Karte von morgen mit dabei bist!
+
+Bitte bestätige deine Email-Adresse hier:
+
+{{ url }}
+
+euphorische Grüße,
+das Karte von morgen-Team
+
+{% include "outro_hints_DE.txt" %}

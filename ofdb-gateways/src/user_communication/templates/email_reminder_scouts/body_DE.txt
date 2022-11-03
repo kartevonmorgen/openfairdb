@@ -1,0 +1,9 @@
+Seit über einem Jahr wurde der folgende Eintrag auf der Karte von morgen nicht mehr aktualisiert:
+
+  {{ title }}
+  {{ description }}
+
+Eintrag anschauen oder bearbeiten: https://kartevonmorgen.org/#/?entry={{ id }}
+
+euphorische Grüße,
+das Karte von morgen-Team
