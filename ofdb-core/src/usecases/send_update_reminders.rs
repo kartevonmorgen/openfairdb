@@ -7,15 +7,17 @@ pub fn send_update_reminders<R, G, F>(
     email_gateway: &G,
     formatter: &F,
     target_contact: TargetContact,
+    unchanged_since: Timestamp,
+    reminder_interval: Duration,
 ) -> Result<()>
 where
     R: PlaceRepo + SubscriptionRepo + ReminderRepo + UserRepo,
     G: EmailGateway,
     F: EmailReminderFormatter,
 {
-    let unchanged_since = unchanged_since(target_contact);
     let outdated_places = find_places_not_updated_since(repo, unchanged_since)?;
-    let unsent_reminders = find_unsent_reminders(repo, outdated_places, target_contact)?;
+    let unsent_reminders =
+        find_unsent_reminders(repo, outdated_places, target_contact, reminder_interval)?;
     let unsent_emails = create_emails(formatter, unsent_reminders);
     send_emails(repo, email_gateway, unsent_emails);
     Ok(())
@@ -26,21 +28,6 @@ pub enum TargetContact {
     Owner,
     Scout,
 }
-
-// TODO: make this configurable
-fn unchanged_since(target_contact: TargetContact) -> Timestamp {
-    Timestamp::now() - reminder_interval(target_contact)
-}
-
-const fn reminder_interval(target_contact: TargetContact) -> Duration {
-    match target_contact {
-        TargetContact::Owner => ONE_YEAR,
-        TargetContact::Scout => FOURHUNDERED_DAYS,
-    }
-}
-
-const ONE_YEAR: Duration = Duration::days(365);
-const FOURHUNDERED_DAYS: Duration = Duration::days(400);
 
 fn find_places_not_updated_since<R>(
     place_repo: &R,
@@ -61,12 +48,12 @@ fn find_unsent_reminders<R>(
     repo: &R,
     outdated_places: Vec<Place>,
     target_contact: TargetContact,
+    reminder_interval: Duration,
 ) -> Result<Vec<Reminder>>
 where
     R: SubscriptionRepo + ReminderRepo + UserRepo,
 {
     let mut reminders = vec![];
-    let reminder_interval = reminder_interval(target_contact);
     match target_contact {
         TargetContact::Owner => {
             for p in outdated_places {

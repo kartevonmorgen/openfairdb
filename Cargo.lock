@@ -1572,6 +1572,7 @@ dependencies = [
  "r2d2",
  "serde_json",
  "thiserror",
+ "time",
 ]
 
 [[package]]
@@ -1733,6 +1734,7 @@ dependencies = [
  "dotenv",
  "env_logger",
  "log",
+ "ofdb-application",
  "ofdb-core",
  "ofdb-db-sqlite",
  "ofdb-db-tantivy",
@@ -1740,6 +1742,7 @@ dependencies = [
  "ofdb-gateways",
  "ofdb-webserver",
  "rand",
+ "time",
  "tokio",
 ]
 
