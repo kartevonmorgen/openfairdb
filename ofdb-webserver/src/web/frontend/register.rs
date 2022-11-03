@@ -20,6 +20,7 @@ pub fn get_register(flash: Option<FlashMessage>) -> Markup {
     view::register(flash)
 }
 
+#[allow(clippy::result_large_err)]
 #[post("/register", data = "<credentials>")]
 pub fn post_register(
     db: Connections,
@@ -66,6 +67,7 @@ pub fn post_register(
     }
 }
 
+#[allow(clippy::result_large_err)]
 #[get("/register/confirm/<token>")]
 pub fn get_email_confirmation(
     db: Connections,

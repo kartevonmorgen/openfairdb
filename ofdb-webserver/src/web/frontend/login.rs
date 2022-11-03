@@ -28,6 +28,7 @@ impl LoginCredentials<'_> {
     }
 }
 
+#[allow(clippy::result_large_err)]
 #[get("/login")]
 pub fn get_login(
     account: Option<Account>,
@@ -40,6 +41,7 @@ pub fn get_login(
     }
 }
 
+#[allow(clippy::result_large_err)]
 #[post("/login", data = "<credentials>")]
 pub fn post_login(
     db: Connections,

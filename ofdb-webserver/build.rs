@@ -13,7 +13,7 @@ fn main() {
     {
         assert_trunk_is_installed();
         Command::new("trunk")
-            .args(&["build", "--release"])
+            .args(["build", "--release"])
             .current_dir(CLEARANCE_APP_DIR)
             .status()
             .expect("Unable to successfully execute trunk");
@@ -29,13 +29,13 @@ fn main() {
 
 fn assert_trunk_is_installed() {
     let output = Command::new("cargo")
-        .args(&["install", "--list"])
+        .args(["install", "--list"])
         .output()
         .expect("Unable to check trunk installation");
     let output_string = String::from_utf8(output.stdout).unwrap();
     if !output_string.contains("trunk") {
         Command::new("cargo")
-            .args(&["install", "trunk"])
+            .args(["install", "trunk"])
             .status()
             .expect("Unable install trunk");
     }

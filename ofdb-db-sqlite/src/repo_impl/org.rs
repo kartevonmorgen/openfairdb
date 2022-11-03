@@ -80,9 +80,9 @@ fn create_org(conn: &mut SqliteConnection, mut o: Organization) -> Result<()> {
             let org_tag = models::NewOrganizationTag {
                 org_rowid,
                 tag_label: label,
-                tag_allow_add: if *allow_add { 1 } else { 0 },
-                tag_allow_remove: if *allow_remove { 1 } else { 0 },
-                require_clearance: if *require_clearance { 1 } else { 0 },
+                tag_allow_add: i16::from(*allow_add),
+                tag_allow_remove: i16::from(*allow_remove),
+                require_clearance: i16::from(*require_clearance),
             };
             diesel::insert_into(schema::organization_tag::table)
                 .values(&org_tag)
