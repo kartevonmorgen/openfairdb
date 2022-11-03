@@ -48,7 +48,7 @@ repos:
     hooks:
       - id: codespell
         args: [--ignore-words=.codespellignore]
-        exclude: ^search_results\.json|src/ports/web/frontend/login\.rs|ofdb-gateways/src/user_communication\.rs|doc/c4-plantuml/.*\.puml|Cargo.lock$
+        exclude: ^search_results\.json|src/ports/web/frontend/login\.rs|ofdb-gateways/src/user_communication/mod\.rs|doc/c4-plantuml/.*\.puml|Cargo.lock|ofdb-gateways/src/user_communication/templates/.*\.txt$
   - repo: https://github.com/sirosen/check-jsonschema
     rev: 0.18.4
     hooks:

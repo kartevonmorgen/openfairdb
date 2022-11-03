@@ -1,0 +1,10 @@
+Na du Weltverbesserer*,
+
+hast du uns kürzlich gebeten dein Passwort zurücksetzen?
+
+Bitte folge zur Eingabe eines neuen Passworts diesem Link:
+
+{{ url }}
+
+euphorische Grüße,
+das Karte von morgen-Team

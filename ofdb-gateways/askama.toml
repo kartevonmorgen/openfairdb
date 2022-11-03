@@ -1,0 +1,2 @@
+[general]
+dirs = ["src/user_communication/templates"]

@@ -1,6 +1,9 @@
-use ofdb_core::usecases::{EmailReminderFormatter, Reminder};
+use askama::Template;
 use ofdb_entities::{address::*, contact::*, event::*, place::*, url::*};
 use time::{format_description::FormatItem, macros::format_description};
+
+mod email_reminder_formatter;
+pub use email_reminder_formatter::*;
 
 pub struct EmailContent {
     pub subject: String,
@@ -14,9 +17,7 @@ const INTRO_ENTRY_CREATED: &str = "ein neuer Eintrag auf der Karte von morgen wu
 
 const INTRO_ENTRY_UPDATED: &str = "folgender Eintrag auf der Karte von morgen wurde verändert";
 
-const OUTRO_HINT: &str = "Weitere Hinweise und Tipps zur Nutzung, z.B. wie du interaktive Karten
-per <iframe> auf deiner Webseite einbettest oder Papierkarten erstellst,
-findest du hier: https://blog.vonmorgen.org";
+const OUTRO_HINT: &str = include_str!("templates/outro_hints_DE.txt");
 
 fn subject_entry_created(entry_title: &str) -> String {
     format!("Kvm - neuer Eintrag: {}", entry_title)
@@ -47,33 +48,35 @@ fn address_line(address: Option<&Address>) -> String {
     }
 }
 
+#[derive(Template)]
+#[template(path = "email_user_registration/subject_DE.txt")]
+struct EmailUserRegistrationSubjectTemplate;
+
+#[derive(Template)]
+#[template(path = "email_user_registration/body_DE.txt")]
+struct EmailUserRegistrationBodyTemplate<'a> {
+    url: &'a str,
+}
+
 pub fn user_registration_email(url: &str) -> EmailContent {
-    let subject = "Karte von morgen: Bitte bestätige deine Email-Adresse".into();
-    let body = format!(
-        "Na du Weltverbesserer*,\n
-wir freuen uns, dass du bei der Karte von morgen mit dabei bist!\n\n
-Bitte bestätige deine Email-Adresse hier:\n
-{url}\n\n
-euphorische Grüße,\n
-das Karte von morgen-Team\n
-{outro_text}",
-        url = url,
-        outro_text = OUTRO_HINT,
-    );
+    let subject = EmailUserRegistrationSubjectTemplate.render().unwrap();
+    let body = EmailUserRegistrationBodyTemplate { url }.render().unwrap();
     EmailContent { subject, body }
 }
 
+#[derive(Template)]
+#[template(path = "email_reset_password/subject_DE.txt")]
+struct EmailUserResetPasswordSubjectTemplate;
+
+#[derive(Template)]
+#[template(path = "email_reset_password/body_DE.txt")]
+struct EmailUserResetPasswordBodyTemplate<'a> {
+    url: &'a str,
+}
+
 pub fn user_reset_password_email(url: &str) -> EmailContent {
-    let subject = "Karte von morgen: Passwort zurücksetzen".into();
-    let body = format!(
-        "Na du Weltverbesserer*,\n
-hast du uns kürzlich gebeten dein Passwort zurücksetzen?\n\n
-Bitte folge zur Eingabe eines neuen Passworts diesem Link:\n
-{url}\n\n
-euphorische Grüße,\n
-das Karte von morgen-Team",
-        url = url,
-    );
+    let subject = EmailUserResetPasswordSubjectTemplate.render().unwrap();
+    let body = EmailUserResetPasswordBodyTemplate { url }.render().unwrap();
     EmailContent { subject, body }
 }
 
@@ -207,30 +210,6 @@ das Karte von morgen-Team\n
     )
 }
 
-#[derive(Default)]
-pub struct ReminderFormatter; // TODO: support different languages
-
-impl EmailReminderFormatter for ReminderFormatter {
-    fn subject(&self, r: &Reminder) -> String {
-        format!("Kvm - Veralteter Eintrag?: {}", r.place.title)
-    }
-    fn body(&self, r: &Reminder) -> String {
-        let title = &r.place.title;
-        let description = &r.place.description;
-        let id = r.place.id.as_str();
-
-        format!(
-            "
-folgender Eintrag auf der Karte von morgen wurde schon länger nicht mehr aktualisiert:\n
-{title}
-{description}\n
-Eintrag anschauen oder bearbeiten: https://kartevonmorgen.org/#/?entry={id}\n
-euphorische Grüße,
-das Karte von morgen-Team\n"
-        )
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use ofdb_entities::{activity::*, geo::*, links::*, location::*, revision::*, time::*};
@@ -331,7 +310,7 @@ mod tests {
     fn print_user_registration_email() {
         let url = "https://kartevonmorgen.org/confirm-email/";
         let email = user_registration_email(url);
-        assert!(email.body.contains(OUTRO_HINT));
+        assert!(email.body.contains(OUTRO_HINT.trim()));
         assert!(email.body.contains(url));
         print_email(&email);
     }
