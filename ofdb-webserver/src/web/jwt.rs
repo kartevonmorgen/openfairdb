@@ -84,7 +84,7 @@ mod jwt_service {
     /// generate a Rocket-compatible secret (Rocket expects a
     /// 256-bit base64 encoded string)
     fn generate_rocket_secret() -> String {
-        base64::encode(&rand::random::<[u8; 32]>())
+        base64::encode(rand::random::<[u8; 32]>())
     }
 
     pub struct Key {

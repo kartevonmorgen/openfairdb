@@ -41,6 +41,7 @@ pub struct ResetPasswordRequest<'r> {
     email: &'r str,
 }
 
+#[allow(clippy::result_large_err)]
 #[post("/users/actions/reset-password-request", data = "<data>")]
 pub fn post_reset_password_request(
     db: Connections,
@@ -67,6 +68,7 @@ pub struct ResetPassword<'r> {
     new_password_repeated: &'r str,
 }
 
+#[allow(clippy::result_large_err)]
 #[post("/users/actions/reset-password", data = "<data>")]
 pub fn post_reset_password(
     db: Connections,

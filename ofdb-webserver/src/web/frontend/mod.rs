@@ -99,6 +99,7 @@ pub struct ChangeUserRoleAction<'r> {
     role: u8,
 }
 
+#[allow(clippy::result_large_err)]
 #[post("/change-user-role", data = "<data>")]
 pub fn post_change_user_role(
     db: sqlite::Connections,
@@ -163,6 +164,7 @@ pub struct Review<'r> {
     pub status: i16,
 }
 
+#[allow(clippy::result_large_err)]
 #[post("/places/<id>/review", data = "<review>")]
 pub fn post_place_review(
     db: sqlite::Connections,
@@ -259,6 +261,7 @@ pub fn get_event(pool: sqlite::Connections, id: &str, account: Option<Account>) 
     Ok(view::event(user, ev))
 }
 
+#[allow(clippy::result_large_err)]
 #[post("/events/<id>/archive")]
 pub fn post_archive_event(
     account: Account,
@@ -346,6 +349,7 @@ pub struct ArchiveAction<'r> {
     place_id: &'r str,
 }
 
+#[allow(clippy::result_large_err)]
 #[post("/comments/actions/archive", data = "<data>")]
 pub fn post_comments_archive(
     account: Account,
@@ -364,6 +368,7 @@ pub fn post_comments_archive(
     }
 }
 
+#[allow(clippy::result_large_err)]
 #[post("/ratings/actions/archive", data = "<data>")]
 pub fn post_ratings_archive(
     account: Account,
