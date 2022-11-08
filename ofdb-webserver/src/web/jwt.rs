@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 
+use crate::core::entities::EmailAddress;
 use anyhow::{anyhow, Result};
 use jwt_service::JwtService;
 use parking_lot::{Mutex, MutexGuard};
@@ -39,13 +40,13 @@ impl JwtState {
         Ok(token)
     }
 
-    pub fn validate_token_and_get_email(&self, token: &str) -> Result<String> {
+    pub fn validate_token_and_get_email(&self, token: &str) -> Result<EmailAddress> {
         if self.is_on_blacklist(token) {
             return Err(anyhow!("Token is no longer valid"));
         }
         let claims = self.jwt_service.decode(token)?;
-        let sub = claims.sub;
-        Ok(sub)
+        let email = claims.sub.parse()?;
+        Ok(email)
     }
 
     pub fn blacklist_token(&self, token: String) {
@@ -163,7 +164,7 @@ mod tests {
         let jwt_state = JwtState::new();
         let token = jwt_state.generate_token("foo@bar.org").unwrap();
         let email = jwt_state.validate_token_and_get_email(&token).unwrap();
-        assert_eq!(email, "foo@bar.org");
+        assert_eq!(email, "foo@bar.org".parse().unwrap());
         jwt_state.blacklist_token(token.clone());
         assert!(jwt_state.validate_token_and_get_email(&token).is_err())
     }

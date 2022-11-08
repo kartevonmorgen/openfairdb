@@ -1,6 +1,6 @@
 use super::prelude::*;
 
-pub fn unsubscribe_all_bboxes<R>(repo: &R, user_email: &str) -> Result<()>
+pub fn unsubscribe_all_bboxes<R>(repo: &R, user_email: &EmailAddress) -> Result<()>
 where
     R: SubscriptionRepo,
 {

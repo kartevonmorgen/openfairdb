@@ -6,19 +6,19 @@ fn only_scouts_and_admins_can_archive_events() {
 
     let users = vec![
         User {
-            email: "admin@example.com".into(),
+            email: "admin@example.com".parse().unwrap(),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::Admin,
         },
         User {
-            email: "scout@example.com".into(),
+            email: "scout@example.com".parse().unwrap(),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::Scout,
         },
         User {
-            email: "user@example.com".into(),
+            email: "user@example.com".parse().unwrap(),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::User,
@@ -64,7 +64,7 @@ fn archive_events() {
     let (client, db, mut search_engine, notify) = setup2();
 
     let admin = User {
-        email: "admin@example.com".into(),
+        email: "admin@example.com".parse().unwrap(),
         email_confirmed: true,
         password: "secret".parse::<Password>().unwrap(),
         role: Role::Admin,
@@ -85,7 +85,7 @@ fn archive_events() {
         title: "x".into(),
         start: now(),
         tags: Some(vec!["bla".into()]), // org tag will be added implicitly!
-        created_by: Some("foo@bar.com".into()),
+        created_by: Some("foo@bar.com".parse().unwrap()),
         ..Default::default()
     };
     let id1 = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e1)
@@ -95,7 +95,7 @@ fn archive_events() {
         title: "x".into(),
         start: now(),
         tags: Some(vec!["bla".into()]), // org tag will be added implicitly!
-        created_by: Some("foo@bar.com".into()),
+        created_by: Some("foo@bar.com".parse().unwrap()),
         ..Default::default()
     };
     let id2 = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e2)

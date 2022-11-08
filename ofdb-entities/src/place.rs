@@ -2,7 +2,8 @@ use std::str::FromStr;
 use time::Date;
 
 use crate::{
-    activity::*, contact::*, email::Email, id::*, links::*, location::*, review::*, revision::*,
+    activity::*, contact::*, email::EmailAddress, id::*, links::*, location::*, review::*,
+    revision::*,
 };
 
 // Immutable part of a place.
@@ -98,7 +99,7 @@ impl Place {
         }
     }
 
-    pub fn contact_email(&self) -> Option<&Email> {
+    pub fn contact_email(&self) -> Option<&EmailAddress> {
         self.contact.as_ref().and_then(|c| c.email.as_ref())
     }
 

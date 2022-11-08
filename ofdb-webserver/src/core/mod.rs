@@ -57,7 +57,7 @@ pub mod usecases {
 
         impl Key for User {
             fn key(&self) -> &str {
-                &self.email
+                self.email.as_str()
             }
         }
 
@@ -136,7 +136,7 @@ pub mod usecases {
                 Ok(len_before - len_after)
             }
 
-            fn get_user_token_by_email(&self, _email: &str) -> RepoResult<UserToken> {
+            fn get_user_token_by_email(&self, _email: &EmailAddress) -> RepoResult<UserToken> {
                 unimplemented!()
             }
         }
@@ -387,16 +387,16 @@ pub mod usecases {
                 create(&mut self.users.borrow_mut(), u.clone())
             }
 
-            fn try_get_user_by_email(&self, email: &str) -> RepoResult<Option<User>> {
+            fn try_get_user_by_email(&self, email: &EmailAddress) -> RepoResult<Option<User>> {
                 Ok(self
                     .users
                     .borrow()
                     .iter()
-                    .find(|u| u.email == email)
+                    .find(|u| u.email == *email)
                     .cloned())
             }
 
-            fn get_user_by_email(&self, email: &str) -> RepoResult<User> {
+            fn get_user_by_email(&self, email: &EmailAddress) -> RepoResult<User> {
                 self.try_get_user_by_email(email)?
                     .ok_or(RepoError::NotFound)
             }
@@ -409,8 +409,8 @@ pub mod usecases {
                 self.all_users().map(|v| v.len())
             }
 
-            fn delete_user_by_email(&self, email: &str) -> RepoResult<()> {
-                self.users.borrow_mut().retain(|u| u.email != email);
+            fn delete_user_by_email(&self, email: &EmailAddress) -> RepoResult<()> {
+                self.users.borrow_mut().retain(|u| u.email != *email);
                 Ok(())
             }
 
@@ -639,20 +639,23 @@ pub mod usecases {
             }
             fn all_bbox_subscriptions_by_email(
                 &self,
-                user_email: &str,
+                user_email: &EmailAddress,
             ) -> RepoResult<Vec<BboxSubscription>> {
                 Ok(self
                     .bbox_subscriptions
                     .borrow()
                     .iter()
-                    .filter(|s| s.user_email == user_email)
+                    .filter(|s| s.user_email == *user_email)
                     .cloned()
                     .collect())
             }
-            fn delete_bbox_subscriptions_by_email(&self, user_email: &str) -> RepoResult<()> {
+            fn delete_bbox_subscriptions_by_email(
+                &self,
+                user_email: &EmailAddress,
+            ) -> RepoResult<()> {
                 self.bbox_subscriptions
                     .borrow_mut()
-                    .retain(|s| s.user_email != user_email);
+                    .retain(|s| s.user_email != *user_email);
                 Ok(())
             }
         }

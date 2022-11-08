@@ -76,7 +76,7 @@ pub trait UserTokenRepo {
 
     fn delete_expired_user_tokens(&self, expired_before: Timestamp) -> Result<usize>;
 
-    fn get_user_token_by_email(&self, email: &str) -> Result<UserToken>;
+    fn get_user_token_by_email(&self, email: &EmailAddress) -> Result<UserToken>;
 }
 
 #[derive(Clone, Debug, Copy, Default, PartialEq, Eq, Hash)]
@@ -194,28 +194,35 @@ pub trait EventRepo {
 pub trait UserRepo {
     fn create_user(&self, user: &User) -> Result<()>;
     fn update_user(&self, user: &User) -> Result<()>;
-    fn delete_user_by_email(&self, email: &str) -> Result<()>;
+    fn delete_user_by_email(&self, email: &EmailAddress) -> Result<()>;
 
     fn all_users(&self) -> Result<Vec<User>>;
     fn count_users(&self) -> Result<usize>;
 
-    fn get_user_by_email(&self, email: &str) -> Result<User>;
-    fn try_get_user_by_email(&self, email: &str) -> Result<Option<User>>;
+    fn get_user_by_email(&self, email: &EmailAddress) -> Result<User>;
+    fn try_get_user_by_email(&self, email: &EmailAddress) -> Result<Option<User>>;
 }
 
 pub trait SubscriptionRepo {
     fn create_bbox_subscription(&self, _: &BboxSubscription) -> Result<()>;
     fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>>;
-    fn all_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<Vec<BboxSubscription>>;
-    fn delete_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<()>;
+    fn all_bbox_subscriptions_by_email(
+        &self,
+        user_email: &EmailAddress,
+    ) -> Result<Vec<BboxSubscription>>;
+    fn delete_bbox_subscriptions_by_email(&self, user_email: &EmailAddress) -> Result<()>;
 }
 
 pub trait ReminderRepo {
-    fn find_last_sent_reminder(&self, place_id: &Id, email: &Email) -> Result<Option<Timestamp>>;
+    fn find_last_sent_reminder(
+        &self,
+        place_id: &Id,
+        email: &EmailAddress,
+    ) -> Result<Option<Timestamp>>;
     fn save_sent_reminders(
         &self,
         place_id: &Id,
-        recipients: &[Email],
+        recipients: &[EmailAddress],
         sent_at: Timestamp,
     ) -> Result<()>;
 }

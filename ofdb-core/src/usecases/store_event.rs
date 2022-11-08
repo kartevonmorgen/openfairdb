@@ -25,11 +25,11 @@ pub struct NewEvent {
     pub city         : Option<String>,
     pub country      : Option<String>,
     pub state        : Option<String>,
-    pub email        : Option<String>,
+    pub email        : Option<EmailAddress>,
     pub telephone    : Option<String>,
     pub homepage     : Option<String>,
     pub tags         : Option<Vec<String>>,
-    pub created_by   : Option<String>,
+    pub created_by   : Option<EmailAddress>,
     pub registration : Option<String>,
     pub organizer    : Option<String>,
     pub image_url     : Option<String>,
@@ -217,7 +217,7 @@ where
         NewEventMode::Update(id) => Id::from(id),
     };
 
-    let created_by = if let Some(ref email) = created_by {
+    let created_by = if let Some(email) = created_by {
         Some(create_user_from_email(repo, email)?.email)
     } else {
         None
@@ -237,7 +237,7 @@ where
                         }
                         Some(ref c) => {
                             if c.email.is_none() {
-                                return Err(Error::Email);
+                                return Err(Error::EmailAddress);
                             }
                         }
                     },
@@ -356,7 +356,7 @@ mod tests {
             telephone    : None,
             homepage     : None,
             tags         : Some(vec!["foo".into(),"bar".into()]),
-            created_by   : Some("foo@bar.com".into()),
+            created_by   : Some("foo@bar.com".parse().unwrap()),
             registration : None,
             organizer    : None,
             image_url     : Some("http://somewhere.com/image_url.jpg".to_string()),
@@ -399,7 +399,7 @@ mod tests {
             city         : None,
             country      : None,
             state        : None,
-            email        : Some("fooo-not-ok".into()),
+            email        : Some(EmailAddress::new_unchecked("fooo-not-ok".into())),
             telephone    : None,
             homepage     : None,
             tags         : None,
@@ -432,7 +432,7 @@ mod tests {
             telephone    : None,
             homepage     : None,
             tags         : None,
-            created_by   : Some("fooo@bar.tld".into()),
+            created_by   : Some("fooo@bar.tld".parse().unwrap()),
             registration : None,
             organizer    : None,
             image_url     : None,
@@ -442,7 +442,10 @@ mod tests {
         assert!(create_new_event(&mock_db, None, x).is_ok());
         let users = mock_db.all_users().unwrap();
         assert_eq!(users.len(), 1);
-        assert_eq!(&users[0].email, "fooo@bar.tld");
+        assert_eq!(
+            users[0].email,
+            "fooo@bar.tld".parse::<EmailAddress>().unwrap()
+        );
     }
 
     #[test]
@@ -450,7 +453,7 @@ mod tests {
         let mock_db: MockDb = MockDb::default();
         mock_db
             .create_user(&User {
-                email: "fooo@bar.tld".into(),
+                email: "fooo@bar.tld".parse().unwrap(),
                 email_confirmed: true,
                 password: "secret".parse::<Password>().unwrap(),
                 role: Role::User,
@@ -475,7 +478,7 @@ mod tests {
             telephone    : None,
             homepage     : None,
             tags         : None,
-            created_by   : Some("fooo@bar.tld".into()),
+            created_by   : Some("fooo@bar.tld".parse().unwrap()),
             registration : None,
             organizer    : None,
             image_url     : None,

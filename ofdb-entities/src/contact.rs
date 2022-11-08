@@ -1,4 +1,4 @@
-use crate::email::Email;
+use crate::email::EmailAddress;
 
 #[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub struct Contact {
@@ -6,7 +6,7 @@ pub struct Contact {
     pub name: Option<String>,
 
     /// An e-mail address to get in contact
-    pub email: Option<Email>,
+    pub email: Option<EmailAddress>,
 
     /// A phone number to get in contact
     pub phone: Option<String>,
@@ -26,7 +26,7 @@ pub mod tests {
     fn empty_contact() {
         assert!(Contact::default().is_empty());
         let c = Contact {
-            email: Some("foo@bar".into()),
+            email: Some("foo@bar".parse().unwrap()),
             ..Default::default()
         };
         assert!(!c.is_empty());

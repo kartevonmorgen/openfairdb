@@ -8,7 +8,7 @@ use super::*;
 pub fn event(user: Option<User>, ev: Event) -> Markup {
     page(
         &ev.title,
-        user.as_ref().map(|u| &*u.email),
+        user.as_ref().map(|u| &u.email),
         None,
         Some(html! {
             link
@@ -112,7 +112,7 @@ pub fn event(user: Option<User>, ev: Event) -> Markup {
     )
 }
 
-pub fn events(email: Option<&str>, events: &[Event]) -> Markup {
+pub fn events(email: Option<&EmailAddress>, events: &[Event]) -> Markup {
     let locations: Vec<_> = events
         .iter()
         .filter_map(|e| e.location.as_ref())

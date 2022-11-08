@@ -3,11 +3,11 @@ use crate::{email::*, time::*};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Activity {
     pub at: Timestamp,
-    pub by: Option<Email>,
+    pub by: Option<EmailAddress>,
 }
 
 impl Activity {
-    pub fn now(by: Option<Email>) -> Self {
+    pub fn now(by: Option<EmailAddress>) -> Self {
         Self {
             at: Timestamp::now(),
             by,

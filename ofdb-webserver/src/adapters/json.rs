@@ -1,6 +1,7 @@
 pub use ofdb_boundary::*;
 
 use crate::core::{db::IndexedPlace, entities as e, usecases};
+use std::ops::Not;
 
 pub mod from_json {
     //! JSON -> Entity
@@ -24,7 +25,7 @@ pub mod from_json {
         }
     }
 
-    pub fn new_place(p: NewPlace) -> usecases::NewPlace {
+    pub fn try_new_place(p: NewPlace) -> anyhow::Result<usecases::NewPlace> {
         let NewPlace {
             title,
             description,
@@ -48,7 +49,13 @@ pub mod from_json {
             image_link_url,
             links,
         } = p;
-        usecases::NewPlace {
+
+        let email = email
+            .and_then(|email| email.is_empty().not().then_some(email))
+            .map(|email| email.parse::<e::EmailAddress>())
+            .transpose()?;
+
+        Ok(usecases::NewPlace {
             title,
             description,
             lat,
@@ -70,10 +77,10 @@ pub mod from_json {
             image_url,
             image_link_url,
             custom_links: links.into_iter().map(custom_link).collect(),
-        }
+        })
     }
 
-    pub fn update_place(p: UpdatePlace) -> usecases::UpdatePlace {
+    pub fn try_update_place(p: UpdatePlace) -> anyhow::Result<usecases::UpdatePlace> {
         let UpdatePlace {
             version,
             title,
@@ -97,7 +104,14 @@ pub mod from_json {
             image_link_url,
             links,
         } = p;
-        usecases::UpdatePlace {
+
+        let email = email
+            .and_then(|email| email.is_empty().not().then_some(email))
+            .map(|email| email.parse::<e::EmailAddress>())
+            .transpose()?;
+
+        let custom_links = links.into_iter().map(custom_link).collect();
+        Ok(usecases::UpdatePlace {
             version,
             title,
             description,
@@ -118,8 +132,8 @@ pub mod from_json {
             tags,
             image_url,
             image_link_url,
-            custom_links: links.into_iter().map(custom_link).collect(),
-        }
+            custom_links,
+        })
     }
 
     pub fn new_place_rating(rating: NewPlaceRating) -> usecases::NewPlaceRating {
@@ -145,7 +159,7 @@ pub mod from_json {
         }
     }
 
-    pub fn new_event(ev: NewEvent) -> usecases::NewEvent {
+    pub fn try_new_event(ev: NewEvent) -> anyhow::Result<usecases::NewEvent> {
         let NewEvent {
             title,
             description,
@@ -168,7 +182,16 @@ pub mod from_json {
             image_url,
             image_link_url,
         } = ev;
-        usecases::NewEvent {
+
+        let email = email
+            .and_then(|email| email.is_empty().not().then_some(email))
+            .map(|email| email.parse::<e::EmailAddress>())
+            .transpose()?;
+        let created_by = created_by
+            .map(|email| email.parse::<e::EmailAddress>())
+            .transpose()?;
+
+        Ok(usecases::NewEvent {
             title,
             description,
             start,
@@ -189,12 +212,13 @@ pub mod from_json {
             organizer,
             image_url,
             image_link_url,
-        }
+        })
     }
 
-    pub fn new_user(new_user: NewUser) -> usecases::NewUser {
+    pub fn try_new_user(new_user: NewUser) -> anyhow::Result<usecases::NewUser> {
         let NewUser { email, password } = new_user;
-        usecases::NewUser { email, password }
+        let email = email.parse::<e::EmailAddress>()?;
+        Ok(usecases::NewUser { email, password })
     }
 }
 
@@ -326,7 +350,7 @@ pub fn entry_from_place_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -
         country,
         state,
         contact_name,
-        email: email.map(Into::into),
+        email: email.map(e::EmailAddress::into_string),
         telephone,
         homepage: homepage_url.map(Into::into),
         opening_hours: opening_hours.map(Into::into),

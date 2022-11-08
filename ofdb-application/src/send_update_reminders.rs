@@ -40,12 +40,12 @@ mod tests {
 
     #[derive(Default)]
     struct MockEmailGw {
-        sent_mails: RefCell<Vec<(Vec<Email>, String, String)>>,
+        sent_mails: RefCell<Vec<(Vec<EmailAddress>, EmailContent)>>,
     }
 
     impl EmailGateway for MockEmailGw {
-        fn compose_and_send(&self, recipients: &[Email], subject: &str, body: &str) {
-            let data = (recipients.to_vec(), subject.to_string(), body.to_string());
+        fn compose_and_send(&self, recipients: &[EmailAddress], email: &EmailContent) {
+            let data = (recipients.to_vec(), email.clone());
             self.sent_mails.borrow_mut().push(data);
         }
     }
@@ -54,17 +54,17 @@ mod tests {
     struct MockEmailFormatter;
 
     impl EmailReminderFormatter for MockEmailFormatter {
-        fn subject(&self, r: &Reminder) -> String {
-            format!("{}", r.place.id)
-        }
-        fn body(&self, r: &Reminder) -> String {
-            format!("{r:?}")
+        fn format_email(&self, r: &Reminder) -> EmailContent {
+            EmailContent {
+                subject: format!("{}", r.place.id),
+                body: format!("{r:?}"),
+            }
         }
     }
 
-    fn create_user(fixture: &BackendFixture, role: Role, email: Email) {
+    fn create_user(fixture: &BackendFixture, role: Role, email: EmailAddress) {
         let user = User {
-            email: email.to_string(),
+            email,
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role,
@@ -80,7 +80,7 @@ mod tests {
     fn create_place(
         fixture: &BackendFixture,
         name: &str,
-        reviewer_email: Email,
+        reviewer_email: EmailAddress,
         review_status: Option<ReviewStatus>,
     ) -> Place {
         // create place
@@ -92,7 +92,7 @@ mod tests {
                 title: name.into(),
                 description: format!("place_{name}"),
                 tags: vec![name.to_string()],
-                email: Some("owner@example.org".to_string()),
+                email: Some("owner@example.org".parse().unwrap()),
                 ..default_new_place()
             },
             None,
@@ -125,7 +125,7 @@ mod tests {
     fn send_update_reminders_to_owners() {
         let fixture = BackendFixture::new();
 
-        let admin_email = Email::try_from("admin@example.org").unwrap();
+        let admin_email = "admin@example.org".parse::<EmailAddress>().unwrap();
         create_user(&fixture, Role::Admin, admin_email.clone());
 
         let old = create_place(
@@ -169,19 +169,19 @@ mod tests {
         )
         .unwrap();
 
-        let owner_email = Email::try_from("owner@example.org").unwrap();
+        let owner_email = "owner@example.org".parse::<EmailAddress>().unwrap();
         assert_eq!(email_gw.sent_mails.borrow().len(), 1);
         assert_eq!(email_gw.sent_mails.borrow()[0].0, vec![owner_email]);
-        assert_eq!(email_gw.sent_mails.borrow()[0].1, old.id.as_str());
+        assert_eq!(email_gw.sent_mails.borrow()[0].1.subject, old.id.as_str());
     }
 
     #[test]
     fn send_update_reminders_to_scouts() {
         let fixture = BackendFixture::new();
 
-        let admin = Email::try_from("admin@example.org").unwrap();
-        let subscribed_scout = Email::try_from("scout-a@example.org").unwrap();
-        let passive_scout = Email::try_from("scout-b@example.org").unwrap();
+        let admin = "admin@example.org".parse::<EmailAddress>().unwrap();
+        let subscribed_scout = "scout-a@example.org".parse::<EmailAddress>().unwrap();
+        let passive_scout = "scout-b@example.org".parse::<EmailAddress>().unwrap();
         create_user(&fixture, Role::Admin, admin.clone());
         create_user(&fixture, Role::Scout, subscribed_scout.clone());
         create_user(&fixture, Role::Scout, passive_scout);
@@ -210,7 +210,7 @@ mod tests {
 
         usecases::subscribe_to_bbox(
             &fixture.db_connections.exclusive().unwrap(),
-            subscribed_scout.as_str().to_string(),
+            subscribed_scout.clone(),
             subscription_bbox,
         )
         .unwrap();
@@ -239,6 +239,6 @@ mod tests {
 
         assert_eq!(email_gw.sent_mails.borrow().len(), 1);
         assert_eq!(email_gw.sent_mails.borrow()[0].0, vec![subscribed_scout]);
-        assert_eq!(email_gw.sent_mails.borrow()[0].1, old.id.as_str());
+        assert_eq!(email_gw.sent_mails.borrow()[0].1.subject, old.id.as_str());
     }
 }

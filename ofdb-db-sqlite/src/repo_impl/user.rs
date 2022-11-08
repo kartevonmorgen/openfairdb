@@ -7,7 +7,7 @@ impl<'a> UserRepo for DbReadOnly<'a> {
     fn update_user(&self, _user: &User) -> Result<()> {
         unreachable!();
     }
-    fn delete_user_by_email(&self, _email: &str) -> Result<()> {
+    fn delete_user_by_email(&self, _email: &EmailAddress) -> Result<()> {
         unreachable!();
     }
 
@@ -18,10 +18,10 @@ impl<'a> UserRepo for DbReadOnly<'a> {
         count_users(&mut self.conn.borrow_mut())
     }
 
-    fn get_user_by_email(&self, email: &str) -> Result<User> {
+    fn get_user_by_email(&self, email: &EmailAddress) -> Result<User> {
         get_user_by_email(&mut self.conn.borrow_mut(), email)
     }
-    fn try_get_user_by_email(&self, email: &str) -> Result<Option<User>> {
+    fn try_get_user_by_email(&self, email: &EmailAddress) -> Result<Option<User>> {
         try_get_user_by_email(&mut self.conn.borrow_mut(), email)
     }
 }
@@ -33,7 +33,7 @@ impl<'a> UserRepo for DbReadWrite<'a> {
     fn update_user(&self, user: &User) -> Result<()> {
         update_user(&mut self.conn.borrow_mut(), user)
     }
-    fn delete_user_by_email(&self, email: &str) -> Result<()> {
+    fn delete_user_by_email(&self, email: &EmailAddress) -> Result<()> {
         delete_user_by_email(&mut self.conn.borrow_mut(), email)
     }
 
@@ -44,10 +44,10 @@ impl<'a> UserRepo for DbReadWrite<'a> {
         count_users(&mut self.conn.borrow_mut())
     }
 
-    fn get_user_by_email(&self, email: &str) -> Result<User> {
+    fn get_user_by_email(&self, email: &EmailAddress) -> Result<User> {
         get_user_by_email(&mut self.conn.borrow_mut(), email)
     }
-    fn try_get_user_by_email(&self, email: &str) -> Result<Option<User>> {
+    fn try_get_user_by_email(&self, email: &EmailAddress) -> Result<Option<User>> {
         try_get_user_by_email(&mut self.conn.borrow_mut(), email)
     }
 }
@@ -59,7 +59,7 @@ impl<'a> UserRepo for DbConnection<'a> {
     fn update_user(&self, user: &User) -> Result<()> {
         update_user(&mut self.conn.borrow_mut(), user)
     }
-    fn delete_user_by_email(&self, email: &str) -> Result<()> {
+    fn delete_user_by_email(&self, email: &EmailAddress) -> Result<()> {
         delete_user_by_email(&mut self.conn.borrow_mut(), email)
     }
 
@@ -70,10 +70,10 @@ impl<'a> UserRepo for DbConnection<'a> {
         count_users(&mut self.conn.borrow_mut())
     }
 
-    fn get_user_by_email(&self, email: &str) -> Result<User> {
+    fn get_user_by_email(&self, email: &EmailAddress) -> Result<User> {
         get_user_by_email(&mut self.conn.borrow_mut(), email)
     }
-    fn try_get_user_by_email(&self, email: &str) -> Result<Option<User>> {
+    fn try_get_user_by_email(&self, email: &EmailAddress) -> Result<Option<User>> {
         try_get_user_by_email(&mut self.conn.borrow_mut(), email)
     }
 }
@@ -97,27 +97,30 @@ fn update_user(conn: &mut SqliteConnection, u: &User) -> Result<()> {
     Ok(())
 }
 
-fn delete_user_by_email(conn: &mut SqliteConnection, email: &str) -> Result<()> {
+fn delete_user_by_email(conn: &mut SqliteConnection, email: &EmailAddress) -> Result<()> {
     use schema::users::dsl;
-    diesel::delete(dsl::users.filter(dsl::email.eq(email)))
+    diesel::delete(dsl::users.filter(dsl::email.eq(email.as_str())))
         .execute(conn)
         .map_err(from_diesel_err)?;
     Ok(())
 }
 
-fn get_user_by_email(conn: &mut SqliteConnection, email: &str) -> Result<User> {
+fn get_user_by_email(conn: &mut SqliteConnection, email: &EmailAddress) -> Result<User> {
     use schema::users::dsl;
     Ok(dsl::users
-        .filter(dsl::email.eq(email))
+        .filter(dsl::email.eq(email.as_str()))
         .first::<models::UserEntity>(conn)
         .map_err(from_diesel_err)?
         .into())
 }
 
-fn try_get_user_by_email(conn: &mut SqliteConnection, email: &str) -> Result<Option<User>> {
+fn try_get_user_by_email(
+    conn: &mut SqliteConnection,
+    email: &EmailAddress,
+) -> Result<Option<User>> {
     use schema::users::dsl;
     Ok(dsl::users
-        .filter(dsl::email.eq(email))
+        .filter(dsl::email.eq(email.as_str()))
         .first::<models::UserEntity>(conn)
         .optional()
         .map_err(from_diesel_err)?

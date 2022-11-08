@@ -4,7 +4,7 @@ use crate::Result;
 pub struct PlaceClearanceFixture {
     backend: BackendFixture,
 
-    user_email: Email,
+    user_email: EmailAddress,
 
     // A place without any tags that has been newly created, i.e. initial revision
     created_place: Place,
@@ -34,7 +34,7 @@ impl PlaceClearanceFixture {
 
         log::info!("Populating database for clearance tests");
 
-        let user_email = Email::from("user@example.com".to_string());
+        let user_email = "user@example.com".parse::<EmailAddress>().unwrap();
         usecases::register_with_email(
             &mut backend.db_connections.exclusive().unwrap(),
             &usecases::Credentials {

@@ -178,7 +178,7 @@ fn archive_comments(
     use schema::place_rating_comment::dsl;
     let archived_at = Some(activity.at.as_millis());
     let archived_by = if let Some(ref email) = activity.by {
-        Some(resolve_user_created_by_email(conn, email.as_ref())?)
+        Some(resolve_user_created_by_email(conn, email)?)
     } else {
         None
     };
@@ -205,7 +205,7 @@ fn archive_comments_of_ratings(
     use schema::{place_rating::dsl as rating_dsl, place_rating_comment::dsl as comment_dsl};
     let archived_at = Some(activity.at.as_millis());
     let archived_by = if let Some(ref email) = activity.by {
-        Some(resolve_user_created_by_email(conn, email.as_ref())?)
+        Some(resolve_user_created_by_email(conn, email)?)
     } else {
         None
     };
@@ -238,7 +238,7 @@ fn archive_comments_of_places(
     };
     let archived_at = Some(activity.at.as_millis());
     let archived_by = if let Some(ref email) = activity.by {
-        Some(resolve_user_created_by_email(conn, email.as_ref())?)
+        Some(resolve_user_created_by_email(conn, email)?)
     } else {
         None
     };

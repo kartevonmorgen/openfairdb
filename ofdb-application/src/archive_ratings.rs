@@ -2,7 +2,7 @@ use super::*;
 
 pub fn exec_archive_ratings(
     connections: &sqlite::Connections,
-    account_email: &str,
+    account_email: EmailAddress,
     ids: &[&str],
 ) -> Result<usize> {
     //TODO: check if user is allowed to archive the ratings
@@ -63,7 +63,7 @@ pub fn post_archive_ratings(
 pub fn archive_ratings(
     connections: &sqlite::Connections,
     indexer: &mut dyn PlaceIndexer,
-    account_email: &str,
+    account_email: EmailAddress,
     ids: &[&str],
 ) -> Result<usize> {
     let count = exec_archive_ratings(connections, account_email, ids)?;
@@ -74,12 +74,13 @@ pub fn archive_ratings(
 #[cfg(test)]
 mod tests {
     use super::super::tests::prelude::*;
+    use std::str::FromStr;
 
     fn archive_ratings(fixture: &BackendFixture, ids: &[&str]) -> super::Result<usize> {
         super::archive_ratings(
             &fixture.db_connections,
             &mut *fixture.search_engine.borrow_mut(),
-            "scout@foo.tld",
+            EmailAddress::from_str("scout@foo.tld").unwrap(),
             ids,
         )
     }
@@ -90,7 +91,7 @@ mod tests {
 
         fixture.create_user(
             usecases::NewUser {
-                email: "scout@foo.tld".into(),
+                email: "scout@foo.tld".parse().unwrap(),
                 password: "123456".into(),
             },
             Some(Role::Scout),

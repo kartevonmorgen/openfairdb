@@ -151,7 +151,7 @@ pub(crate) fn event_from_event_entity_and_tags(e: EventEntity, tag_rels: &[Event
     let contact = if email.is_some() || telephone.is_some() {
         Some(e::Contact {
             name: organizer,
-            email: email.map(Into::into),
+            email: email.map(e::EmailAddress::new_unchecked),
             phone: telephone,
         })
     } else {
@@ -159,6 +159,7 @@ pub(crate) fn event_from_event_entity_and_tags(e: EventEntity, tag_rels: &[Event
     };
 
     let registration = registration.map(registration_type_from_i16);
+    let created_by = created_by_email.map(e::EmailAddress::new_unchecked);
 
     e::Event {
         id: uid.into(),
@@ -170,7 +171,7 @@ pub(crate) fn event_from_event_entity_and_tags(e: EventEntity, tag_rels: &[Event
         contact,
         homepage: homepage.and_then(load_url),
         tags,
-        created_by: created_by_email,
+        created_by,
         registration,
         archived: archived.map(Timestamp::from_secs),
         image_url: image_url.and_then(load_url),
@@ -194,7 +195,7 @@ impl<'a> From<&'a e::User> for NewUser<'a> {
     fn from(u: &'a e::User) -> NewUser<'a> {
         use num_traits::ToPrimitive;
         Self {
-            email: &u.email,
+            email: u.email.as_str(),
             email_confirmed: u.email_confirmed,
             password: u.password.to_string(),
             role: u.role.to_i16().unwrap_or_else(|| {
@@ -216,7 +217,7 @@ impl From<UserEntity> for e::User {
             ..
         } = u;
         Self {
-            email,
+            email: e::EmailAddress::new_unchecked(email),
             email_confirmed,
             password: password.into(),
             role: e::Role::from_i16(role).unwrap_or_else(|| {
@@ -293,6 +294,7 @@ impl From<BboxSubscriptionEntity> for e::BboxSubscription {
         let north_east =
             MapPoint::try_from_lat_lng_deg(north_east_lat, north_east_lng).unwrap_or_default();
         let bbox = MapBbox::new(south_west, north_east);
+        let user_email = e::EmailAddress::new_unchecked(user_email);
         Self {
             id: uid.into(),
             user_email,
@@ -305,7 +307,7 @@ impl From<UserTokenEntity> for e::UserToken {
     fn from(from: UserTokenEntity) -> Self {
         Self {
             email_nonce: e::EmailNonce {
-                email: from.user_email,
+                email: e::EmailAddress::new_unchecked(from.user_email),
                 nonce: from.nonce.parse::<Nonce>().unwrap_or_default(),
             },
             expires_at: Timestamp::from_millis(from.expires_at),

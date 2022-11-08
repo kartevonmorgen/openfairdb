@@ -1,4 +1,4 @@
-use super::prelude::{Email as EmailAddress, *};
+use super::prelude::*;
 use crate::gateways::email::EmailGateway;
 use time::Duration;
 
@@ -75,7 +75,7 @@ where
                 let scouts = get_scouts_subscribed_to_place(&p, &users, &subscriptions);
                 let mut recipients = vec![];
                 for s in scouts {
-                    let email = EmailAddress::from(s.email.clone());
+                    let email = s.email.clone();
                     if send_new_reminder(repo, &p.id, &email, resend_period) {
                         recipients.push(email);
                     }
@@ -102,12 +102,16 @@ fn send_new_reminder<R>(
 where
     R: ReminderRepo,
 {
-    match repo.find_last_sent_reminder(place_id, email).unwrap() {
-        Some(last_sent) => {
+    match repo.find_last_sent_reminder(place_id, email) {
+        Ok(Some(last_sent)) => {
             let now = Timestamp::now();
             last_sent + resend_period > now
         }
-        None => true,
+        Ok(None) => true,
+        Err(err) => {
+            log::warn!("Unable to find last sent reminder for {place_id} and {email}: {err}");
+            false
+        }
     }
 }
 
@@ -134,32 +138,24 @@ pub struct Reminder {
     pub last_change: Timestamp,
 }
 
-#[derive(Debug)]
-pub struct Email {
-    pub subject: String,
-    pub body: String,
-}
-
 pub trait EmailReminderFormatter {
-    fn subject(&self, reminder: &Reminder) -> String;
-    fn body(&self, reminder: &Reminder) -> String;
+    fn format_email(&self, reminder: &Reminder) -> EmailContent;
 }
 
-fn create_emails<F>(formatter: &F, unsent_reminders: Vec<Reminder>) -> Vec<(Reminder, Email)>
+fn create_emails<F>(formatter: &F, unsent_reminders: Vec<Reminder>) -> Vec<(Reminder, EmailContent)>
 where
     F: EmailReminderFormatter,
 {
     unsent_reminders
         .into_iter()
         .map(|r| {
-            let subject = formatter.subject(&r);
-            let body = formatter.body(&r);
-            (r, Email { subject, body })
+            let email = formatter.format_email(&r);
+            (r, email)
         })
         .collect()
 }
 
-fn send_emails<R, G>(repo: &R, email_gateway: &G, emails: Vec<(Reminder, Email)>)
+fn send_emails<R, G>(repo: &R, email_gateway: &G, emails: Vec<(Reminder, EmailContent)>)
 where
     R: ReminderRepo,
     G: EmailGateway,
@@ -167,7 +163,7 @@ where
     for (r, email) in emails {
         let sent_at = Timestamp::now();
 
-        email_gateway.compose_and_send(&r.recipients, &email.subject, &email.body);
+        email_gateway.compose_and_send(&r.recipients, &email);
         repo.save_sent_reminders(&r.place.id, &r.recipients, sent_at)
             .unwrap();
     }
@@ -196,31 +192,31 @@ mod tests {
         let password = Password::from("foo".to_string());
 
         let user = User {
-            email: "normal@user.tld".into(),
+            email: "normal@user.tld".parse().unwrap(),
             password: password.clone(),
             email_confirmed: true,
             role: Role::User,
         };
         let admin = User {
-            email: "admin@user.tld".into(),
+            email: "admin@user.tld".parse().unwrap(),
             password: password.clone(),
             email_confirmed: true,
             role: Role::Admin,
         };
         let valid_scout_with_affected_sub = User {
-            email: "valid-scout-affected@user.tld".into(),
+            email: "valid-scout-affected@user.tld".parse().unwrap(),
             password: password.clone(),
             email_confirmed: true,
             role: Role::Scout,
         };
         let valid_scout_with_unaffected_sub = User {
-            email: "valid-scout-unaffected@user.tld".into(),
+            email: "valid-scout-unaffected@user.tld".parse().unwrap(),
             password: password.clone(),
             email_confirmed: true,
             role: Role::Scout,
         };
         let invalid_scout_with_affected_sub = User {
-            email: "invalid-scout@user.tld".into(),
+            email: "invalid-scout@user.tld".parse().unwrap(),
             password,
             email_confirmed: false,
             role: Role::Scout,

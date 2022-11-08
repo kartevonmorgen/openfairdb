@@ -2,6 +2,7 @@
 use std::io::{Error, ErrorKind};
 use std::{io::Result, thread};
 
+use itertools::Itertools;
 use ofdb_core::gateways::email::EmailGateway;
 use ofdb_entities::email::*;
 
@@ -11,7 +12,7 @@ pub struct Mailgun {
     pub api_key: String,
     pub api_url: String,
     pub domain: String,
-    pub from_email: Email,
+    pub from_email: EmailAddress,
 }
 
 impl Mailgun {
@@ -59,24 +60,19 @@ fn send_raw(_: &str, _: &str, params: Vec<(&'static str, String)>) -> Result<()>
 }
 
 impl EmailGateway for Mailgun {
-    fn compose_and_send(&self, recipients: &[Email], subject: &str, body: &str) {
+    fn compose_and_send(&self, recipients: &[EmailAddress], email: &EmailContent) {
         if recipients.is_empty() {
             warn!("No valid email addresses specified");
             return;
         }
         debug!("Sending e-mails to: {:?}", recipients);
-        let recipients: String = recipients
-            .iter()
-            .map(std::ops::Deref::deref)
-            .map(String::as_str)
-            .collect::<Vec<_>>()
-            .join(",");
+        let recipients: String = recipients.iter().map(EmailAddress::as_str).join(",");
 
         let params = vec![
-            ("from", (*self.from_email).clone()),
+            ("from", self.from_email.as_str().to_owned()),
             ("bcc", recipients),
-            ("subject", subject.to_owned()),
-            ("text", body.to_owned()),
+            ("subject", email.subject.to_owned()),
+            ("text", email.body.to_owned()),
         ];
         self.send(params);
     }

@@ -149,7 +149,7 @@ pub fn post_search_duplicates(
     search_engine: tantivy::SearchEngine,
     body: JsonResult<ofdb_boundary::NewPlace>,
 ) -> Result<Vec<json::PlaceSearchResult>> {
-    let new_place = from_json::new_place(body?.into_inner());
+    let new_place = from_json::try_new_place(body?.into_inner())?;
     let duplicate_places = usecases::search_duplicates(&*search_engine, &new_place)?;
     Ok(Json(
         duplicate_places

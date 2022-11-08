@@ -137,7 +137,7 @@ pub fn post_review(
     let context = None;
     let review = usecases::Review {
         context,
-        reviewer_email: reviewer_email.into(),
+        reviewer_email,
         status: status.into(),
         comment,
     };

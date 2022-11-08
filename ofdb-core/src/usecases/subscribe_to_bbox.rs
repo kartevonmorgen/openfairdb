@@ -1,11 +1,7 @@
 use super::prelude::*;
 use crate::{usecases::unsubscribe_all_bboxes, util::validate};
 
-pub fn subscribe_to_bbox<R>(
-    repo: &R,
-    user_email: String, /*TODO: use Email struct*/
-    bbox: MapBbox,
-) -> Result<()>
+pub fn subscribe_to_bbox<R>(repo: &R, user_email: EmailAddress, bbox: MapBbox) -> Result<()>
 where
     R: SubscriptionRepo + UserRepo,
 {

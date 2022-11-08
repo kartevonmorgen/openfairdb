@@ -50,7 +50,7 @@ impl Key for Tag {
 
 impl Key for User {
     fn key(&self) -> &str {
-        &self.email
+        self.email.as_str()
     }
 }
 
@@ -128,7 +128,7 @@ impl UserTokenRepo for MockDb {
         Ok(len_before - len_after)
     }
 
-    fn get_user_token_by_email(&self, _email: &str) -> RepoResult<UserToken> {
+    fn get_user_token_by_email(&self, _email: &EmailAddress) -> RepoResult<UserToken> {
         unimplemented!()
     }
 }
@@ -367,16 +367,16 @@ impl UserRepo for MockDb {
         create(&mut self.users.borrow_mut(), u.clone())
     }
 
-    fn try_get_user_by_email(&self, email: &str) -> RepoResult<Option<User>> {
+    fn try_get_user_by_email(&self, email: &EmailAddress) -> RepoResult<Option<User>> {
         Ok(self
             .users
             .borrow()
             .iter()
-            .find(|u| u.email == email)
+            .find(|u| u.email == *email)
             .cloned())
     }
 
-    fn get_user_by_email(&self, email: &str) -> RepoResult<User> {
+    fn get_user_by_email(&self, email: &EmailAddress) -> RepoResult<User> {
         self.try_get_user_by_email(email)?
             .ok_or(RepoError::NotFound)
     }
@@ -389,8 +389,8 @@ impl UserRepo for MockDb {
         self.all_users().map(|v| v.len())
     }
 
-    fn delete_user_by_email(&self, email: &str) -> RepoResult<()> {
-        self.users.borrow_mut().retain(|u| u.email != email);
+    fn delete_user_by_email(&self, email: &EmailAddress) -> RepoResult<()> {
+        self.users.borrow_mut().retain(|u| u.email != *email);
         Ok(())
     }
 
@@ -615,20 +615,20 @@ impl SubscriptionRepo for MockDb {
     }
     fn all_bbox_subscriptions_by_email(
         &self,
-        user_email: &str,
+        user_email: &EmailAddress,
     ) -> RepoResult<Vec<BboxSubscription>> {
         Ok(self
             .bbox_subscriptions
             .borrow()
             .iter()
-            .filter(|s| s.user_email == user_email)
+            .filter(|s| s.user_email == *user_email)
             .cloned()
             .collect())
     }
-    fn delete_bbox_subscriptions_by_email(&self, user_email: &str) -> RepoResult<()> {
+    fn delete_bbox_subscriptions_by_email(&self, user_email: &EmailAddress) -> RepoResult<()> {
         self.bbox_subscriptions
             .borrow_mut()
-            .retain(|s| s.user_email != user_email);
+            .retain(|s| s.user_email != *user_email);
         Ok(())
     }
 }
@@ -637,19 +637,21 @@ impl SubscriptionRepo for MockDb {
 fn receive_different_user() {
     let db = MockDb::default();
     db.users.borrow_mut().push(User {
-        email: "a@foo.bar".into(),
+        email: "a@foo.bar".parse().unwrap(),
         email_confirmed: true,
         password: "secret".parse::<Password>().unwrap(),
         role: Role::Guest,
     });
     db.users.borrow_mut().push(User {
-        email: "b@foo.bar".into(),
+        email: "b@foo.bar".parse().unwrap(),
         email_confirmed: true,
         password: "secret".parse::<Password>().unwrap(),
         role: Role::Guest,
     });
-    assert!(get_user(&db, "a@foo.bar", "b@foo.bar").is_err());
-    assert!(get_user(&db, "a@foo.bar", "a@foo.bar").is_ok());
+    let email_a = EmailAddress::new_unchecked("a@foo.bar".to_string());
+    let email_b = EmailAddress::new_unchecked("b@foo.bar".to_string());
+    assert!(get_user(&db, &email_a, &email_b).is_err());
+    assert!(get_user(&db, &email_a, &email_a).is_ok());
 }
 
 #[test]
@@ -662,13 +664,13 @@ fn create_bbox_subscription() {
 
     assert!(db
         .create_user(&User {
-            email: "abc@abc.de".into(),
+            email: "abc@abc.de".parse().unwrap(),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::Guest,
         })
         .is_ok());
-    assert!(usecases::subscribe_to_bbox(&db, "abc@abc.de".into(), bbox_new).is_ok());
+    assert!(usecases::subscribe_to_bbox(&db, "abc@abc.de".parse().unwrap(), bbox_new).is_ok());
 
     let bbox_subscription = db.all_bbox_subscriptions().unwrap()[0].clone();
     assert_eq!(
@@ -693,7 +695,7 @@ fn modify_bbox_subscription() {
 
     assert!(db
         .create_user(&User {
-            email: "abc@abc.de".into(),
+            email: "abc@abc.de".parse().unwrap(),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::Guest,
@@ -702,18 +704,18 @@ fn modify_bbox_subscription() {
 
     let bbox_subscription = BboxSubscription {
         id: "123".into(),
-        user_email: "abc@abc.de".into(),
+        user_email: "abc@abc.de".parse().unwrap(),
         bbox: bbox_old,
     };
     db.create_bbox_subscription(&bbox_subscription).unwrap();
 
-    usecases::subscribe_to_bbox(&db, "abc@abc.de".into(), bbox_new).unwrap();
+    usecases::subscribe_to_bbox(&db, "abc@abc.de".parse().unwrap(), bbox_new).unwrap();
 
     let bbox_subscriptions: Vec<_> = db
         .all_bbox_subscriptions()
         .unwrap()
         .into_iter()
-        .filter(|s| &*s.user_email == "abc@abc.de")
+        .filter(|s| s.user_email.as_str() == "abc@abc.de")
         .collect();
 
     assert_eq!(bbox_subscriptions.len(), 1);
@@ -739,7 +741,7 @@ fn get_bbox_subscriptions() {
 
     assert!(db
         .create_user(&User {
-            email: "a@abc.de".into(),
+            email: "a@abc.de".parse().unwrap(),
             email_confirmed: true,
             password: "secret1".parse::<Password>().unwrap(),
             role: Role::Guest,
@@ -747,14 +749,14 @@ fn get_bbox_subscriptions() {
         .is_ok());
     let bbox_subscription = BboxSubscription {
         id: "1".into(),
-        user_email: "a@abc.de".into(),
+        user_email: "a@abc.de".parse().unwrap(),
         bbox: bbox1,
     };
     assert!(db.create_bbox_subscription(&bbox_subscription).is_ok());
 
     assert!(db
         .create_user(&User {
-            email: "b@abc.de".into(),
+            email: "b@abc.de".parse().unwrap(),
             email_confirmed: true,
             password: "secret2".parse::<Password>().unwrap(),
             role: Role::Guest,
@@ -762,11 +764,12 @@ fn get_bbox_subscriptions() {
         .is_ok());
     let bbox_subscription2 = BboxSubscription {
         id: "2".into(),
-        user_email: "b@abc.de".into(),
+        user_email: EmailAddress::new_unchecked("b@abc.de".to_string()),
         bbox: bbox2,
     };
     assert!(db.create_bbox_subscription(&bbox_subscription2).is_ok());
-    let bbox_subscriptions = usecases::get_bbox_subscriptions(&db, "b@abc.de");
+    let bbox_subscriptions =
+        usecases::get_bbox_subscriptions(&db, &EmailAddress::new_unchecked("b@abc.de".to_string()));
     assert!(bbox_subscriptions.is_ok());
     assert_eq!(bbox_subscriptions.unwrap()[0].id, "2".into());
 }
@@ -780,19 +783,22 @@ fn email_addresses_by_coordinate() {
     );
 
     db.create_user(&User {
-        email: "abc@abc.de".into(),
+        email: "abc@abc.de".parse().unwrap(),
         email_confirmed: true,
         password: "secret".parse::<Password>().unwrap(),
         role: Role::Guest,
     })
     .unwrap();
 
-    usecases::subscribe_to_bbox(&db, "abc@abc.de".into(), bbox_new).unwrap();
+    usecases::subscribe_to_bbox(&db, "abc@abc.de".parse().unwrap(), bbox_new).unwrap();
 
     let email_addresses =
         usecases::email_addresses_by_coordinate(&db, MapPoint::from_lat_lng_deg(5.0, 5.0)).unwrap();
     assert_eq!(email_addresses.len(), 1);
-    assert_eq!(email_addresses[0], "abc@abc.de");
+    assert_eq!(
+        email_addresses[0],
+        EmailAddress::new_unchecked("abc@abc.de".to_string())
+    );
 
     let no_email_addresses =
         usecases::email_addresses_by_coordinate(&db, MapPoint::from_lat_lng_deg(20.0, 20.0))
@@ -805,7 +811,7 @@ fn delete_user() {
     let db = MockDb::default();
     assert!(db
         .create_user(&User {
-            email: "abc@abc.de".into(),
+            email: EmailAddress::new_unchecked("abc@abc.de".to_string()),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::Guest,
@@ -813,7 +819,7 @@ fn delete_user() {
         .is_ok());
     assert!(db
         .create_user(&User {
-            email: "abcd@abcd.de".into(),
+            email: EmailAddress::new_unchecked("abcd@abcd.de".to_string()),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::Guest,
@@ -821,7 +827,12 @@ fn delete_user() {
         .is_ok());
     assert_eq!(db.count_users().unwrap(), 2);
 
-    assert!(usecases::delete_user(&db, "abc@abc.de", "abc@abc.de").is_ok());
+    assert!(usecases::delete_user(
+        &db,
+        &EmailAddress::new_unchecked("abc@abc.de".to_string()),
+        &EmailAddress::new_unchecked("abc@abc.de".to_string())
+    )
+    .is_ok());
     assert_eq!(db.count_users().unwrap(), 1);
 }
 
@@ -829,7 +840,7 @@ fn delete_user() {
 fn receive_event_with_creators_email() {
     let db = MockDb::default();
     db.create_user(&User {
-        email: "abc@abc.de".into(),
+        email: EmailAddress::new_unchecked("abc@abc.de".to_string()),
         email_confirmed: true,
         password: "secret".parse::<Password>().unwrap(),
         role: Role::Guest,
@@ -845,7 +856,7 @@ fn receive_event_with_creators_email() {
         location: None,
         homepage: None,
         tags: vec![],
-        created_by: Some("abc@abc.de".into()),
+        created_by: Some(EmailAddress::new_unchecked("abc@abc.de".to_string())),
         registration: None,
         archived: None,
         image_url: None,
@@ -853,7 +864,7 @@ fn receive_event_with_creators_email() {
     })
     .unwrap();
     let e = usecases::get_event(&db, "x").unwrap();
-    assert_eq!(e.created_by.unwrap(), "abc@abc.de");
+    assert_eq!(e.created_by.unwrap().as_str(), "abc@abc.de");
 }
 
 #[test]

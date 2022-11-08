@@ -58,15 +58,18 @@ impl Validate for Place {
 #[derive(Debug, Error)]
 pub enum ContactInvalidation {
     #[error("Invalid email")]
-    Email,
+    EmailAddress,
 }
 
 impl Validate for Contact {
     type Error = ContactInvalidation;
     fn validate(&self) -> Result<(), Self::Error> {
+        // NOTE:
+        // self.email should be always valid because
+        // the validation is done in the constructor.
         if let Some(ref e) = self.email {
-            if !is_valid_email(e) {
-                return Err(Self::Error::Email);
+            if !is_valid_email(e.as_str()) {
+                return Err(Self::Error::EmailAddress);
             }
         }
         //TODO: check phone
@@ -93,7 +96,7 @@ impl AutoCorrect for Event {
                 Some(c)
             }
         });
-        self.created_by = self.created_by.filter(|x| !x.is_empty());
+        self.created_by = self.created_by.filter(|x| !x.as_str().is_empty());
         self
     }
 }
@@ -128,7 +131,7 @@ impl Validate for Event {
 
 impl AutoCorrect for Contact {
     fn auto_correct(mut self) -> Self {
-        self.email = self.email.filter(|x| !x.is_empty());
+        self.email = self.email.filter(|x| !x.as_str().is_empty());
         self.phone = self.phone.filter(|x| !x.is_empty());
         self
     }
@@ -157,7 +160,7 @@ impl AutoCorrect for Address {
 
 #[cfg(test)]
 mod tests {
-    use ofdb_entities::time::Timestamp;
+    use ofdb_entities::{email::EmailAddress, time::Timestamp};
     use time::Duration;
 
     use super::*;
@@ -179,14 +182,14 @@ mod tests {
     fn contact_email_test() {
         assert!(Contact {
             name: None,
-            email: Some("foo".into()),
+            email: Some(EmailAddress::new_unchecked("foo".to_string())),
             phone: None
         }
         .validate()
         .is_err());
         assert!(Contact {
             name: None,
-            email: Some("foo@bar.tld".into()),
+            email: Some(EmailAddress::new_unchecked("foo@bar.tld".to_string())),
             phone: None
         }
         .validate()
@@ -219,7 +222,7 @@ mod tests {
         let mut x = e.clone();
         x.contact = Some(Contact {
             name: None,
-            email: Some("".into()),
+            email: Some(EmailAddress::new_unchecked("".to_string())),
             phone: None,
         });
         assert!(x.auto_correct().contact.is_none());
@@ -233,7 +236,7 @@ mod tests {
         assert!(x.auto_correct().contact.is_none());
 
         let mut x = e.clone();
-        x.created_by = Some("".to_string());
+        x.created_by = Some(EmailAddress::new_unchecked("".to_string()));
         assert!(x.auto_correct().created_by.is_none());
 
         let mut x = e;

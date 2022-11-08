@@ -1,62 +1,65 @@
-use std::{borrow::Borrow, fmt, ops::Deref, str::FromStr};
+use std::{fmt, str::FromStr};
+use thiserror::Error;
 
-// TODO: rename to EmailAddress
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
-pub struct Email(String);
+pub struct EmailAddress {
+    address: String,
+    display_name: Option<String>,
+}
 
-impl AsRef<String> for Email {
-    fn as_ref(&self) -> &String {
-        &self.0
+impl EmailAddress {
+    pub const fn new_unchecked(address: String) -> Self {
+        Self {
+            address,
+            display_name: None,
+        }
+    }
+    pub fn into_string(self) -> String {
+        self.address
+    }
+    pub fn as_str(&self) -> &str {
+        self.address.as_str()
     }
 }
 
-impl AsRef<str> for Email {
-    fn as_ref(&self) -> &str {
-        self.0.as_str()
+#[derive(Debug, Error)]
+#[error("Invalid E-Mail address")]
+pub struct EmailAddressParseError;
+
+impl FromStr for EmailAddress {
+    type Err = EmailAddressParseError;
+    fn from_str(s: &str) -> Result<EmailAddress, Self::Err> {
+        let info = mailparse::addrparse(s)
+            .ok()
+            .and_then(|list| list.extract_single_info())
+            .ok_or(EmailAddressParseError)?;
+        Ok(Self {
+            address: info.addr,
+            display_name: info.display_name,
+        })
     }
 }
 
-impl From<Email> for String {
-    fn from(from: Email) -> Self {
-        from.0
+impl fmt::Display for EmailAddress {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let EmailAddress {
+            address,
+            display_name,
+        } = self;
+        if let Some(display_name) = &display_name {
+            write!(
+                f,
+                r#""{display_name}" <{address}>"#,
+                display_name = display_name.replace('"', r#"\""#)
+            )
+        } else {
+            write!(f, "{address}")
+        }
     }
 }
 
-impl From<String> for Email {
-    fn from(from: String) -> Self {
-        Self(from)
-    }
-}
-
-impl From<&str> for Email {
-    fn from(from: &str) -> Self {
-        from.to_owned().into()
-    }
-}
-
-impl FromStr for Email {
-    type Err = ();
-    fn from_str(s: &str) -> Result<Email, Self::Err> {
-        Ok(s.into())
-    }
-}
-
-impl Borrow<str> for Email {
-    fn borrow(&self) -> &str {
-        self.as_ref()
-    }
-}
-
-impl Deref for Email {
-    type Target = String;
-
-    fn deref(&self) -> &String {
-        self.as_ref()
-    }
-}
-
-impl fmt::Display for Email {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        f.write_str(self.as_ref())
-    }
+#[derive(Debug, Clone)]
+pub struct EmailContent {
+    pub subject: String,
+    pub body: String,
 }

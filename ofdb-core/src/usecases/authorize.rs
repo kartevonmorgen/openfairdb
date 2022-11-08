@@ -18,7 +18,11 @@ where
     Err(Error::Unauthorized)
 }
 
-pub fn authorize_user_by_email<R>(repo: &R, email: &str, min_required_role: Role) -> Result<User>
+pub fn authorize_user_by_email<R>(
+    repo: &R,
+    email: &EmailAddress,
+    min_required_role: Role,
+) -> Result<User>
 where
     R: UserRepo,
 {

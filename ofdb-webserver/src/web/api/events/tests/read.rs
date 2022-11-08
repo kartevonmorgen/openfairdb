@@ -9,8 +9,8 @@ fn by_id() {
         start: now,
         tags: Some(vec!["bla".into()]),
         registration: Some("email".into()),
-        email: Some("test@example.com".into()),
-        created_by: Some("test@example.com".into()),
+        email: Some("test@example.com".parse().unwrap()),
+        created_by: Some("test@example.com".parse().unwrap()),
         ..Default::default()
     };
     let e = flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
@@ -70,7 +70,7 @@ fn sorted_by_start() {
         let e = usecases::NewEvent {
             title: start_offset.to_string(),
             start,
-            created_by: Some("test@example.com".into()),
+            created_by: Some("test@example.com".parse().unwrap()),
             ..Default::default()
         };
         flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
@@ -96,7 +96,7 @@ fn filtered_by_tags() {
             title: format!("{:?}", tags),
             start: now(),
             tags: Some(tags.into_iter().map(str::to_string).collect()),
-            created_by: Some("test@example.com".into()),
+            created_by: Some("test@example.com".parse().unwrap()),
             ..Default::default()
         };
         flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
@@ -168,7 +168,7 @@ fn filtered_by_creator_with_valid_api_token() {
             let m = *m;
             let new_event = usecases::NewEvent {
                 title: m.to_string(),
-                created_by: Some(m.to_string()),
+                created_by: Some(m.parse::<EmailAddress>().unwrap()),
                 start: now(),
                 ..Default::default()
             };
@@ -220,7 +220,7 @@ fn filtered_by_start_min() {
         let e = usecases::NewEvent {
             title: start_offset.to_string(),
             start,
-            created_by: Some("test@example.com".into()),
+            created_by: Some("test@example.com".parse().unwrap()),
             ..Default::default()
         };
         flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
@@ -251,7 +251,7 @@ fn filtered_by_end_min() {
             title: start.to_string(),
             start,
             end,
-            created_by: Some("test@example.com".into()),
+            created_by: Some("test@example.com".parse().unwrap()),
             ..Default::default()
         };
         flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
@@ -279,7 +279,7 @@ fn filtered_by_start_max() {
         let e = usecases::NewEvent {
             title: start.to_string(),
             start,
-            created_by: Some("test@example.com".into()),
+            created_by: Some("test@example.com".parse().unwrap()),
             ..Default::default()
         };
         flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
@@ -312,7 +312,7 @@ fn filtered_by_end_max() {
             title: start.to_string(),
             start,
             end,
-            created_by: Some("test@example.com".into()),
+            created_by: Some("test@example.com".parse().unwrap()),
             ..Default::default()
         };
         flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
@@ -342,7 +342,7 @@ fn filtered_by_bounding_box() {
             start: now(),
             lat: Some(lat),
             lng: Some(lng),
-            created_by: Some("test@example.com".into()),
+            created_by: Some("test@example.com".parse().unwrap()),
             ..Default::default()
         };
         flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();

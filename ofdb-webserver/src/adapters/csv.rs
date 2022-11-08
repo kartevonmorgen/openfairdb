@@ -87,7 +87,7 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
         CsvRecord {
             id: id.into(),
             created_at: created_at.as_secs(),
-            created_by: created_by.map(Into::into),
+            created_by: created_by.map(EmailAddress::into_string),
             version: revision.into(),
             title,
             description,
@@ -101,7 +101,7 @@ impl From<(Place, Vec<Category>, AvgRatingValue)> for CsvRecord {
             homepage: homepage_url.map(Into::into),
             contact_name,
             contact_phone,
-            contact_email: contact_email.map(Into::into),
+            contact_email: contact_email.map(EmailAddress::into_string),
             opening_hours: opening_hours.map(Into::into),
             founded_on: founded_on.as_ref().map(ToString::to_string),
             license,
@@ -186,7 +186,7 @@ impl From<Event> for EventRecord {
 
         Self {
             id: id.into(),
-            created_by,
+            created_by: created_by.map(EmailAddress::into_string),
             title,
             description,
             start: start.as_secs(),
@@ -199,7 +199,7 @@ impl From<Event> for EventRecord {
             country,
             state,
             organizer,
-            email: email.map(Into::into),
+            email: email.map(EmailAddress::into_string),
             phone,
             homepage: homepage.map(Into::into),
             image_url: image_url.map(Into::into),

@@ -14,15 +14,19 @@ fn setup() -> (
 }
 
 fn create_user(pool: &Connections, name: &str, role: Role) {
-    let email = format!("{}@example.com", name);
-    register_user(pool, &email, "secret", true);
+    let email = format!("{}@example.com", name)
+        .parse::<EmailAddress>()
+        .unwrap();
+    register_user(pool, email.as_str(), "secret", true);
     let mut user = get_user(pool, name);
     user.role = role;
     pool.exclusive().unwrap().update_user(&user).unwrap();
 }
 
 fn get_user(pool: &Connections, name: &str) -> User {
-    let email = format!("{}@example.com", name);
+    let email = format!("{}@example.com", name)
+        .parse::<EmailAddress>()
+        .unwrap();
     pool.shared()
         .unwrap()
         .try_get_user_by_email(&email)
@@ -55,8 +59,8 @@ mod events {
                 start: (Timestamp::now() - Duration::days(2)).as_secs(),
                 tags: Some(vec!["foo".into()]),
                 registration: Some("email".into()),
-                email: Some("test@example.com".into()),
-                created_by: Some("test@example.com".into()),
+                email: Some("test@example.com".parse().unwrap()),
+                created_by: Some("test@example.com".parse().unwrap()),
                 ..Default::default()
             },
             usecases::NewEvent {
@@ -67,16 +71,16 @@ mod events {
                     .as_secs(),
                 tags: Some(vec!["bla".into()]),
                 registration: Some("email".into()),
-                email: Some("test@example.com".into()),
-                created_by: Some("test@example.com".into()),
+                email: Some("test@example.com".parse().unwrap()),
+                created_by: Some("test@example.com".parse().unwrap()),
                 ..Default::default()
             },
             usecases::NewEvent {
                 title: "foo".into(),
                 start: (Timestamp::now() + Duration::days(1)).as_secs(),
                 registration: Some("email".into()),
-                email: Some("test@example.com".into()),
-                created_by: Some("test@example.com".into()),
+                email: Some("test@example.com".parse().unwrap()),
+                created_by: Some("test@example.com".parse().unwrap()),
                 ..Default::default()
             },
             usecases::NewEvent {
@@ -84,8 +88,8 @@ mod events {
                 start: (Timestamp::now() + Duration::days(2)).as_secs(),
                 tags: Some(vec!["foo".into()]),
                 registration: Some("email".into()),
-                email: Some("test@example.com".into()),
-                created_by: Some("test@example.com".into()),
+                email: Some("test@example.com".parse().unwrap()),
+                created_by: Some("test@example.com".parse().unwrap()),
                 ..Default::default()
             },
         ];
@@ -175,8 +179,8 @@ mod events {
                     .as_secs(),
                 tags: Some(vec!["bla".into(), "blub".into()]),
                 registration: Some("email".into()),
-                email: Some("test@example.com".into()),
-                created_by: Some("test@example.com".into()),
+                email: Some("test@example.com".parse().unwrap()),
+                created_by: Some("test@example.com".parse().unwrap()),
                 ..Default::default()
             },
             usecases::NewEvent {
@@ -184,8 +188,8 @@ mod events {
                 start: (Timestamp::now() + Duration::days(2)).as_secs(),
                 tags: Some(vec!["bli".into(), "blub".into()]),
                 registration: Some("email".into()),
-                email: Some("test@example.com".into()),
-                created_by: Some("test@example.com".into()),
+                email: Some("test@example.com".parse().unwrap()),
+                created_by: Some("test@example.com".parse().unwrap()),
                 ..Default::default()
             },
             usecases::NewEvent {
@@ -196,8 +200,8 @@ mod events {
                     .as_secs(),
                 tags: Some(vec!["blub".into()]),
                 registration: Some("email".into()),
-                email: Some("test@example.com".into()),
-                created_by: Some("test@example.com".into()),
+                email: Some("test@example.com".parse().unwrap()),
+                created_by: Some("test@example.com".parse().unwrap()),
                 ..Default::default()
             },
         ];
@@ -532,7 +536,7 @@ mod pw_reset {
         let token = db
             .shared()
             .unwrap()
-            .get_user_token_by_email("user@example.com")
+            .get_user_token_by_email(&"user@example.com".parse::<EmailAddress>().unwrap())
             .unwrap()
             .email_nonce
             .encode_to_string();

@@ -11,7 +11,7 @@ const DEFAULT_RESULT_LIMIT: usize = 100;
 #[derive(Clone, Debug, Default)]
 pub struct EventQuery {
     pub bbox: Option<MapBbox>,
-    pub created_by: Option<Email>,
+    pub created_by: Option<EmailAddress>,
     pub start_min: Option<Timestamp>,
     pub start_max: Option<Timestamp>,
     pub end_min: Option<Timestamp>,

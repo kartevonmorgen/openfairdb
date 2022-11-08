@@ -1,7 +1,7 @@
 use super::prelude::*;
 use time::Duration;
 
-pub fn refresh_user_token<R: UserTokenRepo>(repo: &R, email: String) -> Result<EmailNonce> {
+pub fn refresh_user_token<R: UserTokenRepo>(repo: &R, email: EmailAddress) -> Result<EmailNonce> {
     let email_nonce = EmailNonce {
         email,
         nonce: Nonce::new(),
