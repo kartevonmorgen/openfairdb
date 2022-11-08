@@ -19,7 +19,7 @@ pub async fn run(connections: &Connections) {
 
         let target_contact = TargetContact::Owner;
         let unchanged_since = unchanged_since(target_contact);
-        let reminder_interval = reminder_interval(target_contact);
+        let resend_period = resend_period(target_contact);
 
         if let Err(err) = send_update_reminders(
             connections,
@@ -27,14 +27,14 @@ pub async fn run(connections: &Connections) {
             &formatter,
             target_contact,
             unchanged_since,
-            reminder_interval,
+            resend_period,
         ) {
             log::warn!("Update reminders could not be sent: {err}");
         }
     }
 }
 
-const fn reminder_interval(target_contact: TargetContact) -> Duration {
+const fn resend_period(target_contact: TargetContact) -> Duration {
     match target_contact {
         TargetContact::Owner => ONE_YEAR,
         TargetContact::Scout => FOURHUNDERED_DAYS,
@@ -43,5 +43,5 @@ const fn reminder_interval(target_contact: TargetContact) -> Duration {
 
 // TODO: make this configurable
 fn unchanged_since(target_contact: TargetContact) -> Timestamp {
-    Timestamp::now() - reminder_interval(target_contact)
+    Timestamp::now() - resend_period(target_contact)
 }

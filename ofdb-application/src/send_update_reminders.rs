@@ -8,7 +8,7 @@ pub fn send_update_reminders<G, F>(
     formatter: &F,
     target_contact: usecases::TargetContact,
     unchanged_since: Timestamp,
-    reminder_interval: Duration,
+    resend_period: Duration,
 ) -> Result<()>
 where
     G: EmailGateway,
@@ -21,7 +21,7 @@ where
             formatter,
             target_contact,
             unchanged_since,
-            reminder_interval,
+            resend_period,
         )
         .map_err(|err| {
             warn!("Failed to send update reminders: {}", err);
@@ -157,7 +157,7 @@ mod tests {
         let email_fmt = MockEmailFormatter::default();
 
         let unchanged_since = last_update_time;
-        let reminder_interval = Duration::milliseconds(90);
+        let resend_period = Duration::milliseconds(90);
 
         send_update_reminders(
             &fixture.db_connections,
@@ -165,7 +165,7 @@ mod tests {
             &email_fmt,
             usecases::TargetContact::Owner,
             unchanged_since,
-            reminder_interval,
+            resend_period,
         )
         .unwrap();
 
@@ -225,7 +225,7 @@ mod tests {
         let email_fmt = MockEmailFormatter::default();
 
         let unchanged_since = last_update_time;
-        let reminder_interval = Duration::milliseconds(90);
+        let resend_period = Duration::milliseconds(90);
 
         send_update_reminders(
             &fixture.db_connections,
@@ -233,7 +233,7 @@ mod tests {
             &email_fmt,
             usecases::TargetContact::Scout,
             unchanged_since,
-            reminder_interval,
+            resend_period,
         )
         .unwrap();
 
