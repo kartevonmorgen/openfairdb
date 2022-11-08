@@ -8,7 +8,7 @@ pub fn send_update_reminders<R, G, F>(
     formatter: &F,
     target_contact: TargetContact,
     unchanged_since: Timestamp,
-    reminder_interval: Duration,
+    resend_period: Duration,
 ) -> Result<()>
 where
     R: PlaceRepo + SubscriptionRepo + ReminderRepo + UserRepo,
@@ -17,7 +17,7 @@ where
 {
     let outdated_places = find_places_not_updated_since(repo, unchanged_since)?;
     let unsent_reminders =
-        find_unsent_reminders(repo, outdated_places, target_contact, reminder_interval)?;
+        find_unsent_reminders(repo, outdated_places, target_contact, resend_period)?;
     let unsent_emails = create_emails(formatter, unsent_reminders);
     send_emails(repo, email_gateway, unsent_emails);
     Ok(())
@@ -48,7 +48,7 @@ fn find_unsent_reminders<R>(
     repo: &R,
     outdated_places: Vec<Place>,
     target_contact: TargetContact,
-    reminder_interval: Duration,
+    resend_period: Duration,
 ) -> Result<Vec<Reminder>>
 where
     R: SubscriptionRepo + ReminderRepo + UserRepo,
@@ -58,7 +58,7 @@ where
         TargetContact::Owner => {
             for p in outdated_places {
                 if let Some(email) = p.contact_email() {
-                    if send_new_reminder(repo, &p.id, email, reminder_interval) {
+                    if send_new_reminder(repo, &p.id, email, resend_period) {
                         reminders.push(Reminder {
                             recipients: vec![email.clone()],
                             last_change: p.created.at,
@@ -76,7 +76,7 @@ where
                 let mut recipients = vec![];
                 for s in scouts {
                     let email = EmailAddress::from(s.email.clone());
-                    if send_new_reminder(repo, &p.id, &email, reminder_interval) {
+                    if send_new_reminder(repo, &p.id, &email, resend_period) {
                         recipients.push(email);
                     }
                 }
@@ -97,7 +97,7 @@ fn send_new_reminder<R>(
     repo: &R,
     place_id: &Id,
     email: &EmailAddress,
-    reminder_interval: Duration,
+    resend_period: Duration,
 ) -> bool
 where
     R: ReminderRepo,
@@ -105,7 +105,7 @@ where
     match repo.find_last_sent_reminder(place_id, email).unwrap() {
         Some(last_sent) => {
             let now = Timestamp::now();
-            last_sent + reminder_interval > now
+            last_sent + resend_period > now
         }
         None => true,
     }
