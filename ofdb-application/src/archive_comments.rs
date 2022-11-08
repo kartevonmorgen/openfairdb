@@ -2,7 +2,7 @@ use super::*;
 
 pub fn archive_comments(
     connections: &sqlite::Connections,
-    account_email: &str,
+    account_email: EmailAddress,
     ids: &[&str],
 ) -> Result<usize> {
     Ok(connections.exclusive()?.transaction(|conn| {
@@ -16,10 +16,11 @@ pub fn archive_comments(
 #[cfg(test)]
 mod tests {
     use super::super::tests::prelude::*;
+    use std::str::FromStr;
 
     fn archive_comments(
         fixture: &BackendFixture,
-        account_email: &str,
+        account_email: EmailAddress,
         ids: &[&str],
     ) -> super::Result<usize> {
         super::archive_comments(&fixture.db_connections, account_email, ids)
@@ -31,7 +32,7 @@ mod tests {
 
         fixture.create_user(
             usecases::NewUser {
-                email: "scout@foo.tld".into(),
+                email: "scout@foo.tld".parse().unwrap(),
                 password: "123456".into(),
             },
             Some(Role::Scout),
@@ -85,7 +86,7 @@ mod tests {
             2,
             archive_comments(
                 &fixture,
-                "scout@foo.tld",
+                EmailAddress::from_str("scout@foo.tld").unwrap(),
                 &[&*rating_comment_ids[1].1, &*rating_comment_ids[2].1]
             )
             .unwrap()
@@ -110,7 +111,7 @@ mod tests {
             1,
             archive_comments(
                 &fixture,
-                "scout@foo.tld",
+                EmailAddress::from_str("scout@foo.tld").unwrap(),
                 &[&*rating_comment_ids[0].1, &*rating_comment_ids[1].1],
             )
             .unwrap()
@@ -121,7 +122,7 @@ mod tests {
             1,
             archive_comments(
                 &fixture,
-                "scout@foo.tld",
+                EmailAddress::from_str("scout@foo.tld").unwrap(),
                 &rating_comment_ids
                     .iter()
                     .map(|(_r, c)| c.as_str())

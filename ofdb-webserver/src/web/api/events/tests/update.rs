@@ -48,7 +48,7 @@ fn with_api_token() {
     let e = usecases::NewEvent {
         title: "x".into(),
         tags: Some(vec!["bla".into(), "org-tag".into()]),
-        created_by: Some("foo@bar.com".into()),
+        created_by: Some("foo@bar.com".parse().unwrap()),
         start: OffsetDateTime::now_utc().unix_timestamp(),
         ..Default::default()
     };
@@ -66,7 +66,7 @@ fn with_api_token() {
     let new = db.shared().unwrap().get_event(id.as_ref()).unwrap();
     assert_eq!(new.title, "new");
     assert_eq!(new.start.as_secs(), 4_132_508_400);
-    assert_eq!(new.created_by.unwrap(), "changed@bar.com");
+    assert_eq!(new.created_by.unwrap().as_str(), "changed@bar.com");
 }
 
 #[test]
@@ -84,7 +84,7 @@ fn with_api_token_for_organization_without_any_moderated_tags() {
     let e = usecases::NewEvent {
         title: "x".into(),
         tags: Some(vec!["bla".into()]),
-        created_by: Some("foo@bar.com".into()),
+        created_by: Some("foo@bar.com".parse().unwrap()),
         start: OffsetDateTime::now_utc().unix_timestamp(),
         ..Default::default()
     };
@@ -102,7 +102,7 @@ fn with_api_token_for_organization_without_any_moderated_tags() {
     let new = db.shared().unwrap().get_event(id.as_ref()).unwrap();
     assert_eq!(new.title, "new");
     assert_eq!(new.start.as_secs(), 4_132_508_400);
-    assert_eq!(new.created_by.unwrap(), "changed@bar.com");
+    assert_eq!(new.created_by.unwrap().as_str(), "changed@bar.com");
 }
 
 #[test]
@@ -131,7 +131,7 @@ fn with_api_token_but_mismatching_tag() {
     let e = usecases::NewEvent {
         title: "x".into(),
         tags: Some(vec!["bla".into()]),
-        created_by: Some("foo@bar.com".into()),
+        created_by: Some("foo@bar.com".parse().unwrap()),
         start: OffsetDateTime::now_utc().unix_timestamp(),
         ..Default::default()
     };
@@ -163,7 +163,7 @@ fn with_api_token_keep_org_tag() {
     let e = usecases::NewEvent {
         title: "x".into(),
         tags: Some(vec!["bla".into(), "org-tag".into()]),
-        created_by: Some("foo@bar.com".into()),
+        created_by: Some("foo@bar.com".parse().unwrap()),
         start: OffsetDateTime::now_utc().unix_timestamp(),
         ..Default::default()
     };
@@ -205,7 +205,7 @@ fn with_api_token_and_removing_tag() {
             "bla".into(),
             "blub".into(),
         ]),
-        created_by: Some("foo@bar.com".into()),
+        created_by: Some("foo@bar.com".parse().unwrap()),
         start: OffsetDateTime::now_utc().unix_timestamp(),
         ..Default::default()
     };
@@ -240,7 +240,7 @@ fn with_api_token_created_by() {
             api_token: "foo".into(),
         })
         .unwrap();
-    let created_by = Some("foo@bar.com".into());
+    let created_by = Some("foo@bar.com".parse().unwrap());
     let start = OffsetDateTime::now_utc().unix_timestamp();
     let e = usecases::NewEvent {
         title: "x".into(),
@@ -281,7 +281,7 @@ fn with_api_token_created_by() {
     let new = db.shared().unwrap().get_event(id.as_ref()).unwrap();
     assert_eq!(new.title, "Changed again");
     // created_by has been updated
-    assert_eq!(new.created_by, Some("changed@bar.com".into()));
+    assert_eq!(new.created_by, Some("changed@bar.com".parse().unwrap()));
 }
 
 #[test]
@@ -308,7 +308,7 @@ fn with_api_token_from_different_org_unauthorized() {
     let e = usecases::NewEvent {
         title: "x".into(),
         tags: Some(vec!["bla".into(), "creator".into()]),
-        created_by: Some("creator@example.com".into()),
+        created_by: Some("creator@example.com".parse().unwrap()),
         start: now(),
         ..Default::default()
     };
@@ -344,7 +344,7 @@ fn update_geo_location() {
     let e = usecases::NewEvent {
         title: "x".into(),
         tags: Some(vec!["bla".into(), "org-tag".into()]),
-        created_by: Some("foo@bar.com".into()),
+        created_by: Some("foo@bar.com".parse().unwrap()),
         start: OffsetDateTime::now_utc().unix_timestamp(),
         lat: Some(1.0),
         lng: Some(2.0),

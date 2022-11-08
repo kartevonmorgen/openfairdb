@@ -20,7 +20,7 @@ pub fn subscribe_to_bbox(
         return Err(Error::Parameter(ParameterError::Bbox).into());
     }
     let bbox = geo::MapBbox::new(sw_ne[0], sw_ne[1]);
-    usecases::subscribe_to_bbox(&db.exclusive()?, email.to_string(), bbox)?;
+    usecases::subscribe_to_bbox(&db.exclusive()?, email.clone(), bbox)?;
     Ok(Json(()))
 }
 

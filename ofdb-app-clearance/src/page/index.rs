@@ -2,7 +2,10 @@ use std::collections::{HashMap, HashSet};
 
 use difference::{Changeset, Difference};
 use ofdb_boundary::{ClearanceForPlace, PendingClearanceForPlace, ResultCount};
-use ofdb_entities::place::{PlaceHistory, PlaceRevision};
+use ofdb_entities::{
+    email::EmailAddress,
+    place::{PlaceHistory, PlaceRevision},
+};
 use ofdb_seed::Api;
 use seed::{prelude::*, *};
 
@@ -427,7 +430,7 @@ fn contact_cs(lastrev: Option<&PlaceRevision>, currrev: &PlaceRevision) -> Chang
         "#,
             email = c
                 .clone()
-                .and_then(|c| c.email.map(String::from))
+                .and_then(|c| c.email.map(EmailAddress::into_string))
                 .unwrap_or_default(),
             phone = c
                 .clone()
@@ -540,8 +543,8 @@ async fn get_pending_clearances(api_token: String) -> Option<Msg> {
             if let FetchError::StatusError(Status { code, .. }) = err {
                 if code == 401 {
                     let url = Url::new()
-                        .set_path(&[crate::PAGE_URL])
-                        .set_hash_path(&[crate::HASH_PATH_LOGIN, crate::HASH_PATH_INVALID]);
+                        .set_path([crate::PAGE_URL])
+                        .set_hash_path([crate::HASH_PATH_LOGIN, crate::HASH_PATH_INVALID]);
                     url.go_and_load();
                 }
             }
@@ -554,7 +557,7 @@ async fn get_place_history(api_token: String, id: String) -> Option<Msg> {
     let api = Api::new(api::API_ROOT.into());
     match api.get_place_history_with_api_token(&api_token, &id).await {
         Ok(ph) => {
-            let ph = PlaceHistory::from(ph);
+            let ph = PlaceHistory::try_from(ph).ok()?;
             Some(Msg::GotPlaceHistory(ph))
         }
         Err(err) => {

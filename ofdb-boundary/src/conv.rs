@@ -1,6 +1,6 @@
-use ofdb_entities as e;
-
 use super::*;
+use ofdb_entities as e;
+use thiserror::Error;
 
 impl From<e::time::Timestamp> for UnixTimeMillis {
     fn from(from: e::time::Timestamp) -> Self {
@@ -100,7 +100,7 @@ impl From<e::user::User> for User {
             password: _password,
         } = from;
         Self {
-            email,
+            email: email.to_string(),
             email_confirmed,
             role: role.into(),
         }
@@ -262,7 +262,7 @@ impl From<e::event::Event> for Event {
             city,
             country,
             state,
-            email: email.map(Into::into),
+            email: email.map(e::email::EmailAddress::into_string),
             telephone,
             homepage: homepage.map(Into::into),
             tags,
@@ -398,7 +398,7 @@ impl From<e::contact::Contact> for Contact {
         let e::contact::Contact { name, email, phone } = from;
         Self {
             name,
-            email: email.map(Into::into),
+            email: email.map(e::email::EmailAddress::into_string),
             phone,
         }
     }
@@ -438,14 +438,18 @@ impl From<Links> for e::links::Links {
     }
 }
 
-impl From<Contact> for e::contact::Contact {
-    fn from(from: Contact) -> Self {
+#[derive(Debug, Error)]
+pub enum ContactConversionError {
+    #[error(transparent)]
+    Email(#[from] e::email::EmailAddressParseError),
+}
+
+impl TryFrom<Contact> for e::contact::Contact {
+    type Error = ContactConversionError;
+    fn try_from(from: Contact) -> Result<Self, Self::Error> {
         let Contact { name, email, phone } = from;
-        Self {
-            name,
-            email: email.map(Into::into),
-            phone,
-        }
+        let email = email.map(|email| email.parse()).transpose()?;
+        Ok(Self { name, email, phone })
     }
 }
 
@@ -454,18 +458,23 @@ impl From<e::activity::Activity> for Activity {
         let e::activity::Activity { at, by } = from;
         Self {
             at: at.into(),
-            by: by.map(Into::into),
+            by: by.map(e::email::EmailAddress::into_string),
         }
     }
 }
 
-impl From<Activity> for e::activity::Activity {
-    fn from(from: Activity) -> Self {
+#[derive(Debug, Error)]
+pub enum ActivityConversionError {
+    #[error(transparent)]
+    Email(#[from] e::email::EmailAddressParseError),
+}
+
+impl TryFrom<Activity> for e::activity::Activity {
+    type Error = ActivityConversionError;
+    fn try_from(from: Activity) -> Result<Self, Self::Error> {
         let Activity { at, by } = from;
-        Self {
-            at: at.into(),
-            by: by.map(Into::into),
-        }
+        let by = by.map(|email| email.parse()).transpose()?;
+        Ok(Self { at: at.into(), by })
     }
 }
 
@@ -518,8 +527,19 @@ impl From<e::place::PlaceRevision> for PlaceRevision {
     }
 }
 
-impl From<PlaceRevision> for e::place::PlaceRevision {
-    fn from(from: PlaceRevision) -> Self {
+#[derive(Debug, Error)]
+pub enum PlaceRevisionConversionError {
+    #[error(transparent)]
+    Contact(#[from] ContactConversionError),
+    #[error(transparent)]
+    Activity(#[from] ActivityConversionError),
+    #[error(transparent)]
+    Email(#[from] e::email::EmailAddressParseError),
+}
+
+impl TryFrom<PlaceRevision> for e::place::PlaceRevision {
+    type Error = PlaceRevisionConversionError;
+    fn try_from(from: PlaceRevision) -> Result<Self, Self::Error> {
         let PlaceRevision {
             revision,
             created,
@@ -532,18 +552,19 @@ impl From<PlaceRevision> for e::place::PlaceRevision {
             links,
             tags,
         } = from;
-        Self {
+
+        Ok(Self {
             revision: revision.into(),
-            created: created.into(),
+            created: created.try_into()?,
             title,
             description,
             location: location.into(),
-            contact: Some(contact.into()),
+            contact: Some(contact.try_into()?),
             opening_hours: opening_hours.map(Into::into),
             founded_on: founded_on.map(Into::into),
             links: Some(links.into()),
             tags,
-        }
+        })
     }
 }
 
@@ -565,21 +586,36 @@ impl From<e::place::PlaceHistory> for PlaceHistory {
     }
 }
 
-impl From<PlaceHistory> for e::place::PlaceHistory {
-    fn from(from: PlaceHistory) -> Self {
+#[derive(Debug, Error)]
+pub enum PlaceHistoryConversionError {
+    #[error(transparent)]
+    PlaceRevision(#[from] PlaceRevisionConversionError),
+    #[error(transparent)]
+    ReviewStatusLog(#[from] ReviewStatusLogConversionError),
+}
+
+impl TryFrom<PlaceHistory> for e::place::PlaceHistory {
+    type Error = PlaceHistoryConversionError;
+    fn try_from(from: PlaceHistory) -> Result<Self, Self::Error> {
         let PlaceHistory { place, revisions } = from;
-        Self {
-            place: place.into(),
-            revisions: revisions
-                .into_iter()
-                .map(|(place_revision, reviews)| {
-                    (
-                        place_revision.into(),
-                        reviews.into_iter().map(Into::into).collect(),
-                    )
-                })
-                .collect(),
-        }
+        let place = place.into();
+        let revisions = revisions
+            .into_iter()
+            .map(|(place_revision, reviews)| {
+                place_revision
+                    .try_into()
+                    .map_err(Self::Error::PlaceRevision)
+                    .and_then(|place_revision| {
+                        reviews
+                            .into_iter()
+                            .map(TryInto::try_into)
+                            .collect::<Result<_, _>>()
+                            .map_err(Self::Error::ReviewStatusLog)
+                            .map(|reviews| (place_revision, reviews))
+                    })
+            })
+            .collect::<Result<_, _>>()?;
+        Ok(Self { place, revisions })
     }
 }
 
@@ -592,30 +628,34 @@ impl From<e::activity::ActivityLog> for ActivityLog {
         } = from;
         Self {
             at: at.into(),
-            by: by.map(Into::into),
+            by: by.map(e::email::EmailAddress::into_string),
             ctx,
             comment,
         }
     }
 }
 
-impl From<ActivityLog> for e::activity::ActivityLog {
-    fn from(from: ActivityLog) -> Self {
+#[derive(Debug, Error)]
+pub enum ActivityLogConversionError {
+    #[error(transparent)]
+    Activity(#[from] ActivityConversionError),
+}
+
+impl TryFrom<ActivityLog> for e::activity::ActivityLog {
+    type Error = ActivityLogConversionError;
+    fn try_from(from: ActivityLog) -> Result<Self, Self::Error> {
         let ActivityLog {
             at,
             by,
             ctx: context,
             comment,
         } = from;
-        let activity = e::activity::Activity {
-            at: at.into(),
-            by: by.map(Into::into),
-        };
-        Self {
+        let activity = Activity { at, by }.try_into()?;
+        Ok(Self {
             activity,
             context,
             comment,
-        }
+        })
     }
 }
 
@@ -634,13 +674,20 @@ impl From<e::review::ReviewStatusLog> for ReviewStatusLog {
     }
 }
 
-impl From<ReviewStatusLog> for e::review::ReviewStatusLog {
-    fn from(from: ReviewStatusLog) -> Self {
+#[derive(Debug, Error)]
+pub enum ReviewStatusLogConversionError {
+    #[error(transparent)]
+    ActivityLog(#[from] ActivityLogConversionError),
+}
+
+impl TryFrom<ReviewStatusLog> for e::review::ReviewStatusLog {
+    type Error = ReviewStatusLogConversionError;
+    fn try_from(from: ReviewStatusLog) -> Result<Self, Self::Error> {
         let ReviewStatusLog { rev, act, status } = from;
-        Self {
+        Ok(Self {
             revision: rev.into(),
-            activity: act.into(),
+            activity: act.try_into()?,
             status: status.into(),
-        }
+        })
     }
 }

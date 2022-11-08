@@ -85,10 +85,11 @@ pub fn get_search(search_engine: SearchEngine, q: &str, limit: Option<usize>) ->
 
 #[get("/search-users?<email>")]
 pub fn get_search_users(pool: sqlite::Connections, email: &str, auth: Auth) -> Result<Markup> {
+    let email = email.parse()?;
     {
         let db = pool.shared()?;
         let admin = auth.user_with_min_role(&db, Role::Admin)?;
-        let users: Vec<_> = db.try_get_user_by_email(email)?.into_iter().collect();
+        let users: Vec<_> = db.try_get_user_by_email(&email)?.into_iter().collect();
         Ok(view::user_search_result(&admin.email, &users))
     }
 }
@@ -107,18 +108,27 @@ pub fn post_change_user_role(
     data: Form<ChangeUserRoleAction>,
 ) -> std::result::Result<Redirect, Flash<Redirect>> {
     let d = data.into_inner();
-    match Role::from_u8(d.role) {
-        None => Err(Flash::error(
+
+    let Ok(email) = d.email.parse::<EmailAddress>() else {
+        return Err(Flash::error(
             Redirect::to(uri!(get_search_users(d.email))),
-            "Failed to change user role: invalid role.",
+            "Invalid email address",
+        ));
+    };
+
+    let Some(role) = Role::from_u8(d.role) else {
+       return Err(Flash::error(
+           Redirect::to(uri!(get_search_users(email.as_str()))),
+           "Failed to change user role: invalid role.",
+       ));
+    };
+
+    match change_user_role(&db, account.email(), &email, role) {
+        Err(_) => Err(Flash::error(
+            Redirect::to(uri!(get_search_users(email.as_str()))),
+            "Failed to change user role.",
         )),
-        Some(role) => match change_user_role(&db, account.email(), d.email, role) {
-            Err(_) => Err(Flash::error(
-                Redirect::to(uri!(get_search_users(d.email))),
-                "Failed to change user role.",
-            )),
-            Ok(_) => Ok(Redirect::to(uri!(get_search_users(d.email)))),
-        },
+        Ok(_) => Ok(Redirect::to(uri!(get_search_users(email.as_str())))),
     }
 }
 
@@ -193,7 +203,7 @@ pub fn post_place_review(
 
 fn review_place(
     db: &sqlite::Connections,
-    email: &str,
+    email: &EmailAddress,
     status: i16,
     comment: String,
     id: &str,
@@ -209,7 +219,7 @@ fn review_place(
     let context = None;
     let review = usecases::Review {
         context,
-        reviewer_email: reviewer_email.into(),
+        reviewer_email,
         status,
         comment: Some(comment),
     };
@@ -359,7 +369,7 @@ pub fn post_comments_archive(
     //TODO: dry out
     let d = data.into_inner();
     let ids: Vec<_> = d.ids.split(',').filter(|id| !id.is_empty()).collect();
-    match archive_comments(&db, account.email(), &ids) {
+    match archive_comments(&db, account.email().clone(), &ids) {
         Err(_) => Err(Flash::error(
             Redirect::to(uri!(get_entry(d.place_id))),
             "Failed to archive the comment.",
@@ -378,7 +388,7 @@ pub fn post_ratings_archive(
 ) -> std::result::Result<Redirect, Flash<Redirect>> {
     let d = data.into_inner();
     let ids: Vec<_> = d.ids.split(',').filter(|id| !id.is_empty()).collect();
-    match archive_ratings(&db, &mut *search_engine, account.email(), &ids) {
+    match archive_ratings(&db, &mut *search_engine, account.email().clone(), &ids) {
         Err(_) => Err(Flash::error(
             Redirect::to(uri!(get_entry(d.place_id))),
             "Failed to archive the rating.",

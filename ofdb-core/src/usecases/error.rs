@@ -13,7 +13,7 @@ pub enum Error {
     #[error("Unsupported license")]
     License,
     #[error("Invalid email address")]
-    Email,
+    EmailAddress,
     #[error("Invalid phone nr")]
     Phone,
     #[error("Invalid URL")]
@@ -112,7 +112,7 @@ impl From<EventInvalidation> for Error {
 impl From<ContactInvalidation> for Error {
     fn from(err: ContactInvalidation) -> Self {
         match err {
-            ContactInvalidation::Email => Self::Email,
+            ContactInvalidation::EmailAddress => Self::EmailAddress,
         }
     }
 }

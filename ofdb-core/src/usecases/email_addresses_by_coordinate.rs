@@ -1,7 +1,7 @@
 use super::prelude::*;
 use crate::usecases::bbox_subscriptions_by_coordinate;
 
-pub fn email_addresses_by_coordinate<R>(repo: &R, pos: MapPoint) -> Result<Vec<String>>
+pub fn email_addresses_by_coordinate<R>(repo: &R, pos: MapPoint) -> Result<Vec<EmailAddress>>
 where
     R: SubscriptionRepo,
 {

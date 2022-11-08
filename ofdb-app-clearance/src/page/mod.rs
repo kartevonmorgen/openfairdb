@@ -19,8 +19,8 @@ impl Page {
                 Some(mdl) => Self::Home(mdl),
                 None => {
                     let url = Url::new()
-                        .set_path(&[crate::PAGE_URL])
-                        .set_hash_path(&[crate::HASH_PATH_LOGIN]);
+                        .set_path([crate::PAGE_URL])
+                        .set_hash_path([crate::HASH_PATH_LOGIN]);
                     orders.request_url(url);
                     Self::NotFound
                 }

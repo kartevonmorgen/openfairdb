@@ -176,14 +176,14 @@ fn load_place(
         revision: Revision::from(rev as u64),
         created: Activity {
             at: Timestamp::from_millis(created_at),
-            by: created_by.map(Into::into),
+            by: created_by.map(EmailAddress::new_unchecked),
         },
         title,
         description,
         location,
         contact: Some(Contact {
             name: contact_name,
-            email: email.map(Into::into),
+            email: email.map(EmailAddress::new_unchecked),
             phone,
         }),
         links: Some(Links {
@@ -265,7 +265,7 @@ fn load_place_with_status_review(
 
     let contact = Contact {
         name: contact_name,
-        email: email.map(Into::into),
+        email: email.map(EmailAddress::new_unchecked),
         phone,
     };
 
@@ -292,7 +292,7 @@ fn load_place_with_status_review(
         revision: Revision::from(rev as u64),
         created: Activity {
             at: Timestamp::from_millis(created_at),
-            by: created_by.map(Into::into),
+            by: created_by.map(EmailAddress::new_unchecked),
         },
         title,
         description,
@@ -307,7 +307,7 @@ fn load_place_with_status_review(
     let activity_log = ActivityLog {
         activity: Activity {
             at: Timestamp::from_millis(review_created_at),
-            by: review_created_by.map(Into::into),
+            by: review_created_by.map(EmailAddress::new_unchecked),
         },
         context: review_context,
         comment: review_comment,
@@ -450,7 +450,7 @@ fn into_new_place_revision(
         rowid
     };
     let created_by = if let Some(ref email) = created.by {
-        Some(resolve_user_created_by_email(conn, email.as_ref())?)
+        Some(resolve_user_created_by_email(conn, email)?)
     } else {
         None
     };
@@ -489,7 +489,7 @@ fn into_new_place_revision(
         country,
         state,
         contact_name,
-        email: email.map(Into::into),
+        email: email.map(EmailAddress::into_string),
         phone,
         homepage: homepage.map(Into::into),
         opening_hours: opening_hours.map(Into::into),
@@ -576,7 +576,7 @@ fn into_new_event_with_tags(
             country,
             state,
             telephone,
-            email: email.map(Into::into),
+            email: email.map(EmailAddress::into_string),
             homepage: homepage.map(Into::into),
             created_by,
             registration,
@@ -589,11 +589,11 @@ fn into_new_event_with_tags(
     ))
 }
 
-fn resolve_user_created_by_email(conn: &mut SqliteConnection, email: &str) -> Result<i64> {
+fn resolve_user_created_by_email(conn: &mut SqliteConnection, email: &EmailAddress) -> Result<i64> {
     use schema::users::dsl;
     dsl::users
         .select(dsl::id)
-        .filter(dsl::email.eq(email))
+        .filter(dsl::email.eq(email.as_str()))
         .first(conn)
         .map_err(|e| {
             log::warn!("Failed to resolve user by e-mail '{}': {}", email, e);

@@ -87,7 +87,7 @@ mod with_api_token {
         let body_str = res.into_string().unwrap();
         let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
         let eid = ev.id.clone();
-        assert_eq!(ev.created_by.unwrap(), "foo@bar.com");
+        assert_eq!(ev.created_by.unwrap().as_str(), "foo@bar.com");
         assert_eq!(body_str, format!("\"{}\"", eid));
     }
 
@@ -114,7 +114,7 @@ mod with_api_token {
         let body_str = res.into_string().unwrap();
         let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
         let eid = ev.id.clone();
-        assert_eq!(ev.created_by.unwrap(), "foo@bar.com");
+        assert_eq!(ev.created_by.unwrap().as_str(), "foo@bar.com");
         assert_eq!(body_str, format!("\"{}\"", eid));
     }
 
@@ -139,7 +139,7 @@ mod with_api_token {
         assert_eq!(res.status(), HttpStatus::Ok);
         let u = db.shared().unwrap().all_users().unwrap()[0].clone();
         assert_eq!(
-            u.email,
+            u.email.as_str(),
             "a-very-super-long-email-address@a-super-long-domain.com"
         );
     }

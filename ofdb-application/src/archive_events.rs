@@ -3,7 +3,7 @@ use super::*;
 fn exec_archive_events(
     connections: &sqlite::Connections,
     ids: &[&str],
-    _archived_by_email: &str,
+    _archived_by_email: &EmailAddress,
 ) -> Result<usize> {
     Ok(connections.exclusive()?.transaction(|conn| {
         usecases::archive_events(conn, ids).map_err(|err| {
@@ -35,7 +35,7 @@ pub fn archive_events(
     connections: &sqlite::Connections,
     indexer: &mut dyn EventIndexer,
     ids: &[&str],
-    archived_by_email: &str,
+    archived_by_email: &EmailAddress,
 ) -> Result<usize> {
     let count = exec_archive_events(connections, ids, archived_by_email)?;
     // TODO: Move post processing to a separate task/thread that doesn't delay this

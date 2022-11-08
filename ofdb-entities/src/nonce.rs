@@ -2,7 +2,7 @@ use std::{fmt, ops::Deref, str::FromStr};
 
 use uuid::Uuid;
 
-use crate::time::*;
+use crate::{email::*, time::*};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Nonce(Uuid);
@@ -69,7 +69,7 @@ impl fmt::Display for Nonce {
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct EmailNonce {
-    pub email: String,
+    pub email: EmailAddress,
     pub nonce: Nonce,
 }
 
@@ -82,14 +82,15 @@ pub enum EmailNonceDecodingError {
     Utf8(std::string::FromUtf8Error),
     TooShort(ActualTokenLen),
     Parse(NonceString, NonceParseError),
+    EmailAddress,
 }
 
 impl EmailNonce {
     pub fn encode_to_string(&self) -> String {
         let nonce = self.nonce.to_string();
         debug_assert_eq!(Nonce::STR_LEN, nonce.len());
-        let mut concat = String::with_capacity(self.email.len() + nonce.len());
-        concat += &self.email;
+        let mut concat = String::with_capacity(self.email.as_str().len() + nonce.len());
+        concat += self.email.as_str();
         concat += &nonce;
         bs58::encode(concat).into_string()
     }
@@ -108,7 +109,9 @@ impl EmailNonce {
             .parse::<Nonce>()
             .map_err(|err| EmailNonceDecodingError::Parse(nonce_slice.into(), err))?;
         concat.truncate(email_len);
-        let email = concat;
+        let email = concat
+            .parse()
+            .map_err(|_| EmailNonceDecodingError::EmailAddress)?;
         Ok(Self { email, nonce })
     }
 }
@@ -127,18 +130,7 @@ mod tests {
     #[test]
     fn encode_decode_email_nonce() {
         let example = EmailNonce {
-            email: "test@example.com".into(),
-            nonce: Nonce::new(),
-        };
-        let encoded = example.encode_to_string();
-        let decoded = EmailNonce::decode_from_str(&encoded).unwrap();
-        assert_eq!(example, decoded);
-    }
-
-    #[test]
-    fn encode_decode_email_nonce_with_empty_email() {
-        let example = EmailNonce {
-            email: "".into(),
+            email: "test@example.com".parse().unwrap(),
             nonce: Nonce::new(),
         };
         let encoded = example.encode_to_string();

@@ -1,11 +1,11 @@
 use num_derive::{FromPrimitive, ToPrimitive};
 
-use crate::password::Password;
+use crate::{email::EmailAddress, password::Password};
 
 #[rustfmt::skip]
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct User {
-    pub email           : String,
+    pub email           : EmailAddress,
     pub email_confirmed : bool,
     pub password        : Password,
     pub role            : Role,

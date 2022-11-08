@@ -193,7 +193,7 @@ fn archive_ratings(
     use schema::place_rating::dsl;
     let archived_at = Some(activity.at.as_millis());
     let archived_by = if let Some(ref email) = activity.by {
-        Some(resolve_user_created_by_email(conn, email.as_ref())?)
+        Some(resolve_user_created_by_email(conn, email)?)
     } else {
         None
     };
@@ -220,7 +220,7 @@ fn archive_ratings_of_places(
     use schema::{place::dsl, place_rating::dsl as rating_dsl};
     let archived_at = Some(activity.at.as_millis());
     let archived_by = if let Some(ref email) = activity.by {
-        Some(resolve_user_created_by_email(conn, email.as_ref())?)
+        Some(resolve_user_created_by_email(conn, email)?)
     } else {
         None
     };

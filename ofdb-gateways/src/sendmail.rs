@@ -15,11 +15,11 @@ use time::format_description::well_known::Rfc2822;
 
 #[derive(Debug, Clone)]
 pub struct Sendmail {
-    from: Email,
+    from: EmailAddress,
 }
 
 impl Sendmail {
-    pub fn new(from: Email) -> Self {
+    pub fn new(from: EmailAddress) -> Self {
         Self { from }
     }
     fn send(&self, mail: String) {
@@ -55,10 +55,10 @@ fn send_raw(email: &str) -> Result<()> {
 }
 
 impl EmailGateway for Sendmail {
-    fn compose_and_send(&self, recipients: &[Email], subject: &str, body: &str) {
+    fn compose_and_send(&self, recipients: &[EmailAddress], content: &EmailContent) {
         debug!("Sending e-mails to: {:?}", recipients);
         for to in recipients {
-            match compose(&self.from, &[to], subject, body) {
+            match compose(&self.from, &[to], content) {
                 Ok(email) => {
                     self.send(email);
                 }
@@ -136,8 +136,16 @@ fn encode_header_field(name: &str, input: &str) -> String {
     encoded_output
 }
 
-pub fn compose(from: &str, to: &[&str], subject: &str, body: &str) -> Result<String> {
-    let to: Vec<_> = to.iter().filter(|m| is_valid_email(m)).cloned().collect();
+pub fn compose(
+    from: &EmailAddress,
+    to: &[&EmailAddress],
+    email_content: &EmailContent,
+) -> Result<String> {
+    let to: Vec<_> = to
+        .iter()
+        .filter(|m| is_valid_email(m.as_str()))
+        .map(|m| m.as_str())
+        .collect();
 
     if to.is_empty() {
         return Err(Error::new(
@@ -146,11 +154,16 @@ pub fn compose(from: &str, to: &[&str], subject: &str, body: &str) -> Result<Str
         ));
     }
 
+    let EmailContent { subject, body } = email_content;
+
     let date = time::OffsetDateTime::now_local()
         .ok()
         .and_then(|now| now.format(&Rfc2822).ok())
         .map(|date| format!("Date:{date}\r\n"))
         .unwrap_or_default();
+
+    let to = to.join(",");
+    let subject_header = encode_header_field("Subject", subject);
 
     let email = format!(
         "{date}
@@ -160,10 +173,6 @@ pub fn compose(from: &str, to: &[&str], subject: &str, body: &str) -> Result<Str
          MIME-Version:1.0\r\n\
          Content-Type:text/plain;charset=utf-8\r\n\r\n\
          {body}",
-        from = from,
-        to = to.join(","),
-        subject_header = encode_header_field("Subject", subject),
-        body = body
     );
 
     debug!("composed email: {}", &email);
@@ -177,12 +186,16 @@ mod tests {
 
     #[test]
     fn create_simple_mail() {
+        let content = EmailContent {
+          subject: "My veeeeerrrrryyyyy looooonnnnnggggg Subject with äöüÄÖÜß Umlaute and even more characters that are distributed onto multiple lines".to_string(),
+          body: "Hello Mail".to_string(),
+        };
         let mail = compose(
-            "\"OFDB\" <from@ofdb.io>",
-            &["mail@test.org"],
-            "My veeeeerrrrryyyyy looooonnnnnggggg Subject with äöüÄÖÜß Umlaute and even more characters that are distributed onto multiple lines",
-            "Hello Mail",
-        ).unwrap();
+            &"\"OFDB\" <from@ofdb.io>".parse::<EmailAddress>().unwrap(),
+            &[&"mail@test.org".parse::<EmailAddress>().unwrap()],
+            &content,
+        )
+        .unwrap();
         let expected = "From:\"OFDB\" <from@ofdb.io>\r\n\
              To:mail@test.org\r\n\
              Subject:=?UTF-8?Q?My veeeeerrrrryyyyy looooonnnnnggggg Subject with =C3=A4?=\r\n \
@@ -196,7 +209,21 @@ mod tests {
 
     #[test]
     fn check_addresses() {
-        assert!(compose("from@mail.org", &[], "foo", "bar").is_err());
-        assert!(compose("from", &["not-valid"], "foo", "bar").is_err());
+        let content = EmailContent {
+            subject: "foo".to_string(),
+            body: "bar".to_string(),
+        };
+        assert!(compose(
+            &"from@mail.org".parse::<EmailAddress>().unwrap(),
+            &[],
+            &content
+        )
+        .is_err());
+        assert!(compose(
+            &EmailAddress::new_unchecked("from".to_string()),
+            &[&EmailAddress::new_unchecked("not-valid".to_string())],
+            &content
+        )
+        .is_err());
     }
 }

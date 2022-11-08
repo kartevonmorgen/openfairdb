@@ -1,5 +1,8 @@
 use crate::cfg::Cfg;
-use ofdb_core::{entities::Email, gateways::email::EmailGateway};
+use ofdb_core::{
+    entities::{EmailAddress, EmailContent},
+    gateways::email::EmailGateway,
+};
 use ofdb_gateways::{mailgun::Mailgun, notify::Notify, opencage::OpenCage, sendmail::Sendmail};
 use std::env;
 
@@ -36,36 +39,43 @@ fn mailgun_gw() -> Option<Mailgun> {
     let domain = env::var("MAILGUN_DOMAIN");
     let from = env::var("MAIL_GATEWAY_SENDER_ADDRESS");
 
-    if let (Ok(api_key), Ok(mail), Ok(domain)) = (api_key, from, domain) {
-        // TODO: move this to crate::cfg
-        let api_url = env::var("MAILGUN_API_URL")
-            .unwrap_or_else(|_| format!("https://api.eu.mailgun.net/v3/{}/messages", domain));
-        // TODO: validate values
-        Some(Mailgun {
-            from_email: Email::from(mail),
-            domain,
-            api_key,
-            api_url,
-        })
-    } else {
-        None
-    }
+    let (Ok(api_key), Ok(mail), Ok(domain)) = (api_key, from, domain) else {
+        return None;
+    };
+
+    // TODO: move this to crate::cfg
+    let api_url = env::var("MAILGUN_API_URL")
+        .unwrap_or_else(|_| format!("https://api.eu.mailgun.net/v3/{}/messages", domain));
+    // TODO: validate values
+    let Ok(from_email) = mail.parse() else {
+        log::warn!("Invalid email set for 'MAIL_GATEWAY_SENDER_ADDRESS'");
+        return None;
+    };
+    Some(Mailgun {
+        from_email,
+        domain,
+        api_key,
+        api_url,
+    })
 }
 
 fn sendmail_gw() -> Option<Sendmail> {
-    let from = env::var("MAIL_GATEWAY_SENDER_ADDRESS");
-    if let Ok(mail) = from {
-        // TODO: validate values
-        Some(Sendmail::new(Email::from(mail)))
-    } else {
-        None
-    }
+    env::var("MAIL_GATEWAY_SENDER_ADDRESS")
+        .ok()
+        .and_then(|mail| {
+            mail.parse()
+                .map_err(|_| {
+                    log::warn!("Invalid email set for 'MAIL_GATEWAY_SENDER_ADDRESS'");
+                })
+                .ok()
+        })
+        .map(Sendmail::new)
 }
 
 struct DummyMailGw;
 
 impl EmailGateway for DummyMailGw {
-    fn compose_and_send(&self, _recipients: &[Email], _subject: &str, _body: &str) {
+    fn compose_and_send(&self, _recipients: &[EmailAddress], _email: &EmailContent) {
         log::debug!("Cannot send emails because no e-mail gateway was configured");
     }
 }
@@ -82,7 +92,7 @@ impl EmailGw {
 }
 
 impl EmailGateway for EmailGw {
-    fn compose_and_send(&self, recipients: &[Email], subject: &str, body: &str) {
-        self.0.compose_and_send(recipients, subject, body);
+    fn compose_and_send(&self, recipients: &[EmailAddress], email: &EmailContent) {
+        self.0.compose_and_send(recipients, email);
     }
 }

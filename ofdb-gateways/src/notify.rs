@@ -21,7 +21,7 @@ impl Notify {
 impl NotificationGateway for Notify {
     fn place_added(
         &self,
-        email_addresses: &[String],
+        email_addresses: &[EmailAddress],
         place: &Place,
         all_categories: Vec<Category>,
     ) {
@@ -41,17 +41,12 @@ impl NotificationGateway for Notify {
                 email_addresses.len(),
                 place.id,
             );
-            compose_and_send_emails(
-                &*self.email_gw,
-                email_addresses,
-                &content.subject,
-                &content.body,
-            );
+            compose_and_send_emails(&*self.email_gw, email_addresses, &content);
         }
     }
     fn place_updated(
         &self,
-        email_addresses: &[String],
+        email_addresses: &[EmailAddress],
         place: &Place,
         all_categories: Vec<Category>,
     ) {
@@ -71,15 +66,10 @@ impl NotificationGateway for Notify {
                 email_addresses.len(),
                 place.id
             );
-            compose_and_send_emails(
-                &*self.email_gw,
-                email_addresses,
-                &content.subject,
-                &content.body,
-            );
+            compose_and_send_emails(&*self.email_gw, email_addresses, &content);
         }
     }
-    fn event_created(&self, email_addresses: &[String], event: &Event) {
+    fn event_created(&self, email_addresses: &[EmailAddress], event: &Event) {
         let content = user_communication::event_created_email(event);
 
         {
@@ -88,15 +78,10 @@ impl NotificationGateway for Notify {
                 email_addresses.len(),
                 event.id,
             );
-            compose_and_send_emails(
-                &*self.email_gw,
-                email_addresses,
-                &content.subject,
-                &content.body,
-            );
+            compose_and_send_emails(&*self.email_gw, email_addresses, &content);
         }
     }
-    fn event_updated(&self, email_addresses: &[String], event: &Event) {
+    fn event_updated(&self, email_addresses: &[EmailAddress], event: &Event) {
         let content = user_communication::event_updated_email(event);
 
         {
@@ -105,12 +90,7 @@ impl NotificationGateway for Notify {
                 email_addresses.len(),
                 event.id
             );
-            compose_and_send_emails(
-                &*self.email_gw,
-                email_addresses,
-                &content.subject,
-                &content.body,
-            );
+            compose_and_send_emails(&*self.email_gw, email_addresses, &content);
         }
     }
     fn user_registered_kvm(&self, user: &User) {
@@ -136,12 +116,7 @@ impl NotificationGateway for Notify {
 
         {
             info!("Sending confirmation e-mail to user {}", user.email);
-            compose_and_send_emails(
-                &*self.email_gw,
-                &[user.email.clone()],
-                &content.subject,
-                &content.body,
-            );
+            compose_and_send_emails(&*self.email_gw, &[user.email.clone()], &content);
         }
     }
     fn user_reset_password_requested(&self, email_nonce: &EmailNonce) {
@@ -150,29 +125,20 @@ impl NotificationGateway for Notify {
             email_nonce.encode_to_string()
         );
         let content = user_communication::user_reset_password_email(&url);
-
         {
             info!(
                 "Sending e-mail to {} after password reset requested",
                 email_nonce.email
             );
-            compose_and_send_emails(
-                &*self.email_gw,
-                &[email_nonce.email.to_owned()],
-                &content.subject,
-                &content.body,
-            );
+            compose_and_send_emails(&*self.email_gw, &[email_nonce.email.to_owned()], &content);
         }
     }
 }
 
 fn compose_and_send_emails(
     gw: &dyn EmailGateway,
-    recipients: &[String],
-    subject: &str,
-    body: &str,
+    recipients: &[EmailAddress],
+    email_content: &EmailContent,
 ) {
-    // TODO: take &[Email] as argument
-    let rec: Vec<_> = recipients.iter().cloned().map(Email::from).collect();
-    gw.compose_and_send(&rec, subject, body);
+    gw.compose_and_send(recipients, email_content);
 }

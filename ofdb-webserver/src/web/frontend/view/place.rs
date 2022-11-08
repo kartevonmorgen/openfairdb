@@ -134,7 +134,7 @@ fn review_status_log(place_rev: Revision, l: &ReviewStatusLog) -> Markup {
     }
 }
 
-pub fn place_review(email: &str, place: &Place, status: ReviewStatus) -> Markup {
+pub fn place_review(email: &EmailAddress, place: &Place, status: ReviewStatus) -> Markup {
     use ReviewStatus as S;
     let options = [
         (S::Rejected, "reject"),

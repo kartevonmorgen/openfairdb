@@ -1,6 +1,6 @@
 use super::prelude::*;
 
-pub fn delete_user<R>(repo: &R, login_email: &str, email: &str) -> Result<()>
+pub fn delete_user<R>(repo: &R, login_email: &EmailAddress, email: &EmailAddress) -> Result<()>
 where
     R: UserRepo,
 {

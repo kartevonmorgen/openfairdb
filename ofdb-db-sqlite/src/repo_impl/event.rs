@@ -275,7 +275,7 @@ fn get_events_chronologically(conn: &mut SqliteConnection, ids: &[&str]) -> Resu
         let contact = if organizer.is_some() || email.is_some() || telephone.is_some() {
             Some(Contact {
                 name: organizer,
-                email: email.map(Into::into),
+                email: email.map(EmailAddress::new_unchecked),
                 phone: telephone,
             })
         } else {
@@ -283,6 +283,7 @@ fn get_events_chronologically(conn: &mut SqliteConnection, ids: &[&str]) -> Resu
         };
 
         let registration = registration.map(util::registration_type_from_i16);
+        let created_by = created_by_email.map(EmailAddress::new_unchecked);
 
         let event = Event {
             id: uid.into(),
@@ -294,7 +295,7 @@ fn get_events_chronologically(conn: &mut SqliteConnection, ids: &[&str]) -> Resu
             contact,
             homepage: homepage.and_then(load_url),
             tags,
-            created_by: created_by_email,
+            created_by,
             registration,
             archived: archived.map(Timestamp::from_secs),
             image_url: image_url.and_then(load_url),

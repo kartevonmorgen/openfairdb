@@ -3,7 +3,7 @@ use super::prelude::*;
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Review {
     pub context: Option<String>,
-    pub reviewer_email: Email,
+    pub reviewer_email: EmailAddress,
     pub status: ReviewStatus,
     pub comment: Option<String>,
 }

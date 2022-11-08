@@ -10,7 +10,7 @@ pub fn update_place(
     notify: &dyn NotificationGateway,
     id: Id,
     update_place: usecases::UpdatePlace,
-    created_by_email: Option<&str>,
+    created_by_email: Option<&EmailAddress>,
     created_by_org: Option<&Organization>,
     accepted_licenses: &HashSet<String>,
 ) -> Result<Place> {

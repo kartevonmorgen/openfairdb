@@ -1159,7 +1159,7 @@ fn search_with_status() {
         .collect();
 
     let user = User {
-        email: "foo@bar".into(),
+        email: "foo@bar".parse().unwrap(),
         email_confirmed: true,
         password: "secret".parse::<Password>().unwrap(),
         role: Role::Admin,
@@ -1225,9 +1225,9 @@ fn create_new_user() {
     let u = db
         .exclusive()
         .unwrap()
-        .get_user_by_email("foo@bar.com")
+        .get_user_by_email(&"foo@bar.com".parse().unwrap())
         .unwrap();
-    assert_eq!(u.email, "foo@bar.com");
+    assert_eq!(u.email.as_str(), "foo@bar.com");
     assert!(u.password.verify("foo bar"));
     test_json(&response);
 }
@@ -1407,14 +1407,14 @@ fn login_with_invalid_credentials() {
         .headers()
         .iter()
         .any(|h| h.name.as_str() == "Set-Cookie"));
-    assert_eq!(response.status(), Status::Unauthorized);
+    assert_eq!(response.status(), Status::BadRequest);
 }
 
 #[test]
 fn login_with_valid_credentials() {
     let (client, db) = setup();
     let users = vec![User {
-        email: "foo@bar".into(),
+        email: "foo@bar".parse().unwrap(),
         email_confirmed: true,
         password: "secret".parse::<Password>().unwrap(),
         role: Role::Guest,
@@ -1436,7 +1436,7 @@ fn login_with_valid_credentials() {
 fn login_logout_succeeds() {
     let (client, db) = setup();
     let users = vec![User {
-        email: "foo@bar".into(),
+        email: "foo@bar".parse().unwrap(),
         email_confirmed: true,
         password: "secret".parse::<Password>().unwrap(),
         role: Role::Guest,
@@ -1469,7 +1469,7 @@ fn login_logout_succeeds() {
 fn login_logout_succeeds_jwt() {
     let (client, db) = setup();
     let users = vec![User {
-        email: "foo@bar".into(),
+        email: "foo@bar".parse().unwrap(),
         email_confirmed: true,
         password: "secret".parse::<Password>().unwrap(),
         role: Role::Guest,
@@ -1512,7 +1512,7 @@ fn login_logout_succeeds_jwt() {
 fn confirm_email_address() {
     let (client, db) = setup();
     let users = vec![User {
-        email: "a@bar.de".into(),
+        email: "a@bar.de".parse().unwrap(),
         email_confirmed: false,
         password: "secret".parse::<Password>().unwrap(),
         role: Role::Guest,
@@ -1531,7 +1531,7 @@ fn confirm_email_address() {
     assert!(!db.exclusive().unwrap().all_users().unwrap()[0].email_confirmed);
 
     let token = EmailNonce {
-        email: "a@bar.de".into(),
+        email: "a@bar.de".parse().unwrap(),
         nonce: Nonce::new(),
     }
     .encode_to_string();
@@ -1560,7 +1560,7 @@ fn confirm_email_address() {
 fn send_confirmation_email() {
     let (client, db) = setup();
     let users = vec![User {
-        email: "a@bar.de".into(),
+        email: "a@bar.de".parse().unwrap(),
         email_confirmed: false,
         password: "secret".parse::<Password>().unwrap(),
         role: Role::Guest,
@@ -1581,7 +1581,7 @@ fn send_confirmation_email() {
 fn subscribe_to_bbox() {
     let (client, db) = setup();
     let users = vec![User {
-        email: "foo@bar".into(),
+        email: "foo@bar".parse().unwrap(),
         email_confirmed: true,
         password: "secret".parse::<Password>().unwrap(),
         role: Role::Guest,
@@ -1780,19 +1780,19 @@ fn entries_export_csv() {
 
     let users = vec![
         User {
-            email: "admin@example.com".into(),
+            email: "admin@example.com".parse().unwrap(),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::Admin,
         },
         User {
-            email: "scout@example.com".into(),
+            email: "scout@example.com".parse().unwrap(),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::Scout,
         },
         User {
-            email: "user@example.com".into(),
+            email: "user@example.com".parse().unwrap(),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::User,
@@ -1828,7 +1828,7 @@ fn entries_export_csv() {
     ];
     entries[0].location.address = Some(Address::build().street("street1").finish());
     entries[0].created.at = Timestamp::from_secs(1111);
-    entries[0].created.by = Some("user@example.com".into());
+    entries[0].created.by = Some("user@example.com".parse().unwrap());
     entries[0].contact = Some(Contact {
         name: Some("John Smith".to_string()),
         email: Some("john.smith@example.com".parse().unwrap()),
@@ -2073,7 +2073,7 @@ fn not_updated_since() {
 
     // Create admin user and login
     let user = User {
-        email: "foo@bar".into(),
+        email: "foo@bar".parse().unwrap(),
         email_confirmed: true,
         password: "secret".parse::<Password>().unwrap(),
         role: Role::Admin,

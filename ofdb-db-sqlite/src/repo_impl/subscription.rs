@@ -7,10 +7,13 @@ impl<'a> SubscriptionRepo for DbReadWrite<'a> {
     fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>> {
         all_bbox_subscriptions(&mut self.conn.borrow_mut())
     }
-    fn all_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<Vec<BboxSubscription>> {
+    fn all_bbox_subscriptions_by_email(
+        &self,
+        user_email: &EmailAddress,
+    ) -> Result<Vec<BboxSubscription>> {
         all_bbox_subscriptions_by_email(&mut self.conn.borrow_mut(), user_email)
     }
-    fn delete_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<()> {
+    fn delete_bbox_subscriptions_by_email(&self, user_email: &EmailAddress) -> Result<()> {
         delete_bbox_subscriptions_by_email(&mut self.conn.borrow_mut(), user_email)
     }
 }
@@ -22,10 +25,13 @@ impl<'a> SubscriptionRepo for DbConnection<'a> {
     fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>> {
         all_bbox_subscriptions(&mut self.conn.borrow_mut())
     }
-    fn all_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<Vec<BboxSubscription>> {
+    fn all_bbox_subscriptions_by_email(
+        &self,
+        user_email: &EmailAddress,
+    ) -> Result<Vec<BboxSubscription>> {
         all_bbox_subscriptions_by_email(&mut self.conn.borrow_mut(), user_email)
     }
-    fn delete_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<()> {
+    fn delete_bbox_subscriptions_by_email(&self, user_email: &EmailAddress) -> Result<()> {
         delete_bbox_subscriptions_by_email(&mut self.conn.borrow_mut(), user_email)
     }
 }
@@ -37,10 +43,13 @@ impl<'a> SubscriptionRepo for DbReadOnly<'a> {
     fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>> {
         all_bbox_subscriptions(&mut self.conn.borrow_mut())
     }
-    fn all_bbox_subscriptions_by_email(&self, user_email: &str) -> Result<Vec<BboxSubscription>> {
+    fn all_bbox_subscriptions_by_email(
+        &self,
+        user_email: &EmailAddress,
+    ) -> Result<Vec<BboxSubscription>> {
         all_bbox_subscriptions_by_email(&mut self.conn.borrow_mut(), user_email)
     }
-    fn delete_bbox_subscriptions_by_email(&self, _user_email: &str) -> Result<()> {
+    fn delete_bbox_subscriptions_by_email(&self, _user_email: &EmailAddress) -> Result<()> {
         unreachable!();
     }
 }
@@ -84,14 +93,15 @@ fn all_bbox_subscriptions(conn: &mut SqliteConnection) -> Result<Vec<BboxSubscri
         .map(BboxSubscription::from)
         .collect())
 }
+
 fn all_bbox_subscriptions_by_email(
     conn: &mut SqliteConnection,
-    email: &str,
+    email: &EmailAddress,
 ) -> Result<Vec<BboxSubscription>> {
     use schema::{bbox_subscriptions::dsl as s_dsl, users::dsl as u_dsl};
     Ok(s_dsl::bbox_subscriptions
         .inner_join(u_dsl::users)
-        .filter(u_dsl::email.eq(email))
+        .filter(u_dsl::email.eq(email.as_str()))
         .select((
             s_dsl::id,
             s_dsl::uid,
@@ -108,11 +118,15 @@ fn all_bbox_subscriptions_by_email(
         .map(BboxSubscription::from)
         .collect())
 }
-fn delete_bbox_subscriptions_by_email(conn: &mut SqliteConnection, email: &str) -> Result<()> {
+
+fn delete_bbox_subscriptions_by_email(
+    conn: &mut SqliteConnection,
+    email: &EmailAddress,
+) -> Result<()> {
     use schema::{bbox_subscriptions::dsl as s_dsl, users::dsl as u_dsl};
     let users_id = u_dsl::users
         .select(u_dsl::id)
-        .filter(u_dsl::email.eq(email));
+        .filter(u_dsl::email.eq(email.as_str()));
     diesel::delete(s_dsl::bbox_subscriptions.filter(s_dsl::user_id.eq_any(users_id)))
         .execute(conn)
         .map_err(from_diesel_err)?;

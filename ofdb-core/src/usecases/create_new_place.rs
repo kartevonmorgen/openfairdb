@@ -21,7 +21,7 @@ pub struct NewPlace {
     pub country        : Option<String>,
     pub state          : Option<String>,
     pub contact_name   : Option<String>,
-    pub email          : Option<String>,
+    pub email          : Option<EmailAddress>,
     pub telephone      : Option<String>,
     pub homepage       : Option<String>,
     pub opening_hours  : Option<String>,
@@ -43,7 +43,7 @@ pub struct Storable {
 pub fn prepare_new_place<R>(
     repo: &R,
     e: NewPlace,
-    created_by_email: Option<&str>,
+    created_by_email: Option<&EmailAddress>,
     created_by_org: Option<&Organization>,
     accepted_licenses: &HashSet<String>,
 ) -> Result<Storable>
@@ -100,11 +100,13 @@ where
     let location = Location { pos, address };
 
     let contact = if email.is_some() || telephone.is_some() {
-        Some(Contact {
+        let contact = Contact {
             name: contact_name,
             email: email.map(Into::into),
             phone: telephone,
-        })
+        };
+        contact.validate()?;
+        Some(contact)
     } else {
         None
     };
@@ -140,7 +142,7 @@ where
         id: Id::new(),
         license,
         revision: Revision::initial(),
-        created: Activity::now(created_by_email.map(Into::into)),
+        created: Activity::now(created_by_email.cloned()),
         title,
         description,
         location,
@@ -228,7 +230,7 @@ mod tests {
         let storable = prepare_new_place(
             &mock_db,
             x,
-            Some("test@example.com"),
+            Some(&"test@example.com".parse::<EmailAddress>().unwrap()),
             None,
             &accepted_licenses(),
         )
@@ -240,7 +242,7 @@ mod tests {
         assert_eq!(x.title, "foo");
         assert_eq!(x.description, "bar");
         assert!(x.created.at >= now);
-        assert_eq!(x.created.by, Some("test@example.com".into()));
+        assert_eq!(x.created.by, Some("test@example.com".parse().unwrap()));
         assert_eq!(x.revision, Revision::initial());
     }
 
@@ -258,7 +260,7 @@ mod tests {
             country     : None,
             state       : None,
             contact_name: None,
-            email       : Some("fooo-not-ok".into()),
+            email       : Some(EmailAddress::new_unchecked("fooo-not-ok".into())),
             telephone   : None,
             homepage    : None,
             opening_hours: None,

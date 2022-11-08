@@ -1,11 +1,12 @@
 use maud::{html, Markup, DOCTYPE};
+use ofdb_core::entities::EmailAddress;
 use rocket::request::FlashMessage;
 
 const MAIN_CSS_URL: &str = "/main.css";
 
 pub fn page(
     title: &str,
-    email: Option<&str>,
+    email: Option<&EmailAddress>,
     flash: Option<FlashMessage>,
     h: Option<Markup>,
     content: Markup,
@@ -39,11 +40,11 @@ fn flash_msg(flash: Option<FlashMessage>) -> Markup {
     }
 }
 
-fn header(email: Option<&str>) -> Markup {
+fn header(email: Option<&EmailAddress>) -> Markup {
     html! {
     header {
         @if let Some(email) = email {
-            div class="msg" { "Your are logged in as " span class="email" { (email) } }
+            div class="msg" { "Your are logged in as " span class="email" { (email.as_str()) } }
         }
         nav {
             a href="/" { "places" }

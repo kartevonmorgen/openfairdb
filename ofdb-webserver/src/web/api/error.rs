@@ -120,3 +120,9 @@ impl From<ofdb_core::usecases::Error> for Error {
         Self::App(err.into())
     }
 }
+
+impl From<ofdb_entities::email::EmailAddressParseError> for Error {
+    fn from(err: ofdb_entities::email::EmailAddressParseError) -> Self {
+        Self::OtherWithStatus(err.into(), Status::BadRequest)
+    }
+}
