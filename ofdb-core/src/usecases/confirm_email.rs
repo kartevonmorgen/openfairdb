@@ -24,15 +24,15 @@ mod tests {
     #[test]
     fn confirm_email_of_existing_user() {
         let db = MockDb::default();
-        let email = "a@foo.bar";
+        let email = "a@foo.bar".parse::<EmailAddress>().unwrap();
         db.users.borrow_mut().push(User {
-            email: email.into(),
+            email: email.clone(),
             email_confirmed: false,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::Guest,
         });
         let email_nonce = EmailNonce {
-            email: email.into(),
+            email,
             nonce: Nonce::new(),
         };
         assert!(confirm_email_address(&db, &email_nonce.encode_to_string()).is_ok());

@@ -35,7 +35,16 @@ pub fn post_register(
         //TODO: move into flow layer
         Ok(mut db) => {
             let credentials = credentials.into_inner();
-            match usecases::register_with_email(&mut db, &credentials.as_login()) {
+
+            let Ok(email) = credentials.email.parse::<EmailAddress>() else {
+                   let msg = "Invalid email address.";
+                   return Err(Flash::error(Redirect::to(uri!(get_register)), msg));
+            };
+            let login = usecases::Credentials {
+                email: &email,
+                password: credentials.password,
+            };
+            match usecases::register_with_email(&mut db, &login) {
                 Err(err) => {
                     let msg = match err {
                         ParameterError::UserExists => {
@@ -47,8 +56,8 @@ pub fn post_register(
                     Err(Flash::error(Redirect::to(uri!(get_register)), msg))
                 }
                 Ok(()) => {
-                    if let Ok(user) = db.get_user_by_email(credentials.email) {
-                        debug_assert_eq!(user.email, credentials.email);
+                    if let Ok(user) = db.get_user_by_email(login.email) {
+                        debug_assert_eq!(user.email, *login.email);
                         notify.user_registered_ofdb(&user);
 
                         let msg = "Registered successfully. Please confirm your email address.";

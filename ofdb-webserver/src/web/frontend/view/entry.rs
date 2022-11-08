@@ -41,7 +41,7 @@ impl From<(Place, Vec<(Rating, Vec<Comment>)>)> for EntryPresenter {
     }
 }
 
-pub fn entry(email: Option<&str>, e: EntryPresenter) -> Markup {
+pub fn entry(email: Option<&EmailAddress>, e: EntryPresenter) -> Markup {
     page(
         &format!("{} | OpenFairDB", e.place.title),
         email,

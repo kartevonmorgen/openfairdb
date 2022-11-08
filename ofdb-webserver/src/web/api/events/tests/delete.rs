@@ -46,7 +46,7 @@ fn with_api_token() {
         title: "x".into(),
         start: now(),
         tags: Some(vec!["bla".into()]), // org tag will be added implicitly!
-        created_by: Some("foo@bar.com".into()),
+        created_by: Some("foo@bar.com".parse().unwrap()),
         ..Default::default()
     };
     let id1 = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e1)
@@ -56,7 +56,7 @@ fn with_api_token() {
         title: "x".into(),
         start: now(),
         tags: Some(vec!["bla".into()]), // org tag will be added implicitly!
-        created_by: Some("foo@bar.com".into()),
+        created_by: Some("foo@bar.com".parse().unwrap()),
         ..Default::default()
     };
     let id2 = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e2)
@@ -102,7 +102,7 @@ fn with_api_token_by_organization_without_any_moderated_tags() {
         title: "x".into(),
         start: now(),
         tags: Some(vec!["bla".into()]),
-        created_by: Some("foo@bar.com".into()),
+        created_by: Some("foo@bar.com".parse().unwrap()),
         ..Default::default()
     };
     let id = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e)
@@ -142,7 +142,7 @@ fn with_api_token_from_different_org_unauthorized() {
     let e = usecases::NewEvent {
         title: "x".into(),
         tags: Some(vec!["bla".into(), "creator".into()]),
-        created_by: Some("creator@example.com".into()),
+        created_by: Some("creator@example.com".parse().unwrap()),
         start: now(),
         ..Default::default()
     };

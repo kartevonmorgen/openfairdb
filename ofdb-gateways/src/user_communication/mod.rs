@@ -1,14 +1,9 @@
 use askama::Template;
-use ofdb_entities::{address::*, contact::*, event::*, place::*, url::*};
+use ofdb_entities::{address::*, contact::*, email::*, event::*, place::*, url::*};
 use time::{format_description::FormatItem, macros::format_description};
 
 mod email_reminder_formatter;
 pub use email_reminder_formatter::*;
-
-pub struct EmailContent {
-    pub subject: String,
-    pub body: String,
-}
 
 const DATE_TIME_FORMAT: &[FormatItem] =
     format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
@@ -243,7 +238,7 @@ mod tests {
             revision: Revision::initial(),
             created: Activity {
                 at: Timestamp::now(),
-                by: Some("created_by@example.com".into()),
+                by: Some("created_by@example.com".parse().unwrap()),
             },
             title: "<title>".into(),
             description: "<description>".into(),
@@ -259,7 +254,7 @@ mod tests {
             },
             contact: Some(Contact {
                 name: Some("<name>".into()),
-                email: Some("<email>".into()),
+                email: Some(EmailAddress::new_unchecked("<email>".into())),
                 phone: Some("<phone>".into()),
             }),
             opening_hours: Some("24/7".parse().unwrap()),
@@ -277,7 +272,7 @@ mod tests {
     fn new_event() -> Event {
         Event {
             id: "<id>".into(),
-            created_by: Some("created_by@example.com".into()),
+            created_by: Some("created_by@example.com".parse().unwrap()),
             archived: None,
             start: Timestamp::now(),
             end: None,
@@ -296,7 +291,7 @@ mod tests {
             }),
             contact: Some(Contact {
                 name: Some("<organizer>".into()),
-                email: Some("<email>".into()),
+                email: Some(EmailAddress::new_unchecked("<email>".into())),
                 phone: Some("<phone>".into()),
             }),
             homepage: Some("https://kartevonmorgen.org".parse().unwrap()),

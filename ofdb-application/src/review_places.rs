@@ -81,7 +81,7 @@ mod tests {
     fn archived_by(reviewer_email: &str) -> usecases::Review {
         usecases::Review {
             context: None,
-            reviewer_email: reviewer_email.into(),
+            reviewer_email: reviewer_email.parse().unwrap(),
             status: ReviewStatus::Archived,
             comment: Some("Archived".into()),
         }
@@ -93,7 +93,7 @@ mod tests {
 
         fixture.create_user(
             usecases::NewUser {
-                email: "test@example.com".into(),
+                email: "test@example.com".parse().unwrap(),
                 password: "test123".into(),
             },
             None,
@@ -217,7 +217,7 @@ mod tests {
 
         fixture.create_user(
             usecases::NewUser {
-                email: "test@example.com".into(),
+                email: "test@example.com".parse().unwrap(),
                 password: "test123".into(),
             },
             None,

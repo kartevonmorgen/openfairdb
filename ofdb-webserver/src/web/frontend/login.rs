@@ -13,19 +13,12 @@ use rocket::{
 use super::{super::guards::*, view};
 
 use crate::{core::usecases, web::sqlite::Connections};
-use ofdb_core::usecases::Error as ParameterError;
+use ofdb_core::{entities::EmailAddress, usecases::Error as ParameterError};
 
 #[derive(FromForm)]
 pub struct LoginCredentials<'r> {
-    pub email: &'r str,
-    password: &'r str,
-}
-
-impl LoginCredentials<'_> {
-    pub fn as_login(&self) -> usecases::Credentials<'_> {
-        let LoginCredentials { email, password } = self;
-        usecases::Credentials { email, password }
-    }
+    pub(crate) email: &'r str,
+    pub(crate) password: &'r str,
 }
 
 #[allow(clippy::result_large_err)]
@@ -48,33 +41,43 @@ pub fn post_login(
     credentials: Form<LoginCredentials>,
     cookies: &CookieJar<'_>,
 ) -> std::result::Result<Redirect, Flash<Redirect>> {
-    match db.shared() {
-        Err(_) => Err(Flash::error(
+    let Ok(db) = db.shared() else {
+        return Err(Flash::error(
             Redirect::to(uri!(get_login)),
             "We are so sorry! An internal server error has occurred. Please try again later.",
-        )),
-        Ok(db) => match usecases::login_with_email(&db, &credentials.as_login()) {
-            Err(err) => {
-                let msg = match err {
-                    ParameterError::EmailNotConfirmed => {
-                        "You have to confirm your email address first."
-                    }
-                    ParameterError::Credentials => "Invalid email or password.",
-                    _ => panic!(),
-                };
-                Err(Flash::error(Redirect::to(uri!(get_login)), msg))
-            }
-            Ok(_) => {
-                let email = credentials.email.to_string();
-                cookies.add_private(
-                    Cookie::build(COOKIE_EMAIL_KEY, email)
-                        .http_only(true)
-                        .same_site(SameSite::Lax)
-                        .finish(),
-                );
-                Ok(Redirect::to(uri!(super::get_index)))
-            }
-        },
+        ));
+    };
+    let Ok(email) = credentials.email.parse::<EmailAddress>() else {
+        return Err(Flash::error(
+            Redirect::to(uri!(get_login)),
+            "Invalid email or password.",
+        ));
+    };
+    let login = usecases::Credentials {
+        email: &email,
+        password: credentials.password,
+    };
+    match usecases::login_with_email(&db, &login) {
+        Err(err) => {
+            let msg = match err {
+                ParameterError::EmailNotConfirmed => {
+                    "You have to confirm your email address first."
+                }
+                ParameterError::Credentials => "Invalid email or password.",
+                _ => panic!(),
+            };
+            Err(Flash::error(Redirect::to(uri!(get_login)), msg))
+        }
+        Ok(_) => {
+            let email = login.email.to_string();
+            cookies.add_private(
+                Cookie::build(COOKIE_EMAIL_KEY, email)
+                    .http_only(true)
+                    .same_site(SameSite::Lax)
+                    .finish(),
+            );
+            Ok(Redirect::to(uri!(super::get_index)))
+        }
     }
 }
 

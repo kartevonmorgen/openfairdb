@@ -27,7 +27,7 @@ pub use password::*;
 pub use place::*;
 pub use register::*;
 
-pub fn index(email: Option<&str>) -> Markup {
+pub fn index(email: Option<&EmailAddress>) -> Markup {
     page(
         "OpenFairDB Search",
         email,
@@ -62,15 +62,19 @@ pub fn global_search_form(search_term: Option<&str>) -> Markup {
 
 fn leaflet_css_link() -> Markup {
     html! {
-            link
-                rel="stylesheet"
-                href=(LEAFLET_CSS_URL)
-                integrity=(LEAFLET_CSS_SHA512)
-                crossorigin="anonymous";
+        link
+            rel="stylesheet"
+            href=(LEAFLET_CSS_URL)
+            integrity=(LEAFLET_CSS_SHA512)
+            crossorigin="anonymous";
     }
 }
 
-pub fn search_results(email: Option<&str>, search_term: &str, entries: &[IndexedPlace]) -> Markup {
+pub fn search_results(
+    email: Option<&EmailAddress>,
+    search_term: &str,
+    entries: &[IndexedPlace],
+) -> Markup {
     page(
         "OpenFairDB Search Results",
         email,
@@ -201,7 +205,7 @@ fn map_scripts(pins: &[MapPin]) -> Markup {
     }
 }
 
-pub fn user_search_result(admin_email: &str, users: &[User]) -> Markup {
+pub fn user_search_result(admin_email: &EmailAddress, users: &[User]) -> Markup {
     page(
         "Users",
         Some(admin_email),
@@ -227,11 +231,11 @@ pub fn user_search_result(admin_email: &str, users: &[User]) -> Markup {
                         tbody {
                             @for u in users {
                                 tr {
-                                    td { (u.email) }
-                                    td { (if u.email_confirmed{"yes"}else{"no"}) }
+                                    td { (u.email.as_str()) }
+                                    td { (if u.email_confirmed { "yes" } else { "no" }) }
                                     td { (format!("{:?}",u.role)) }
                                     td {
-                                        @if u.email != admin_email {
+                                        @if u.email != *admin_email {
                                             form action="change-user-role" method="POST" {
                                                 select name = "role" required? {
                                                     option value="-1" {"-- please select --"}
@@ -239,7 +243,7 @@ pub fn user_search_result(admin_email: &str, users: &[User]) -> Markup {
                                                     option value=(Role::User.to_u8().unwrap())  { "User" }
                                                     option value=(Role::Scout.to_u8().unwrap()) { "Scout" }
                                                 }
-                                                input type="hidden" name="email" value=(u.email);
+                                                input type="hidden" name="email" value=(u.email.as_str());
                                                 input type="submit" value="change";
                                             }
                                         }

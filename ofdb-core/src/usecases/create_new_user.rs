@@ -5,14 +5,15 @@ use crate::util::validate;
 
 #[derive(Debug, Clone)]
 pub struct NewUser {
-    pub email: String,
+    pub email: EmailAddress,
     pub password: String,
 }
 
 pub fn create_new_user<R: UserRepo>(repo: &R, u: NewUser) -> Result<()> {
+    // TODO: parse this outside of this fn
     let password = u.password.parse::<Password>()?;
-    if !validate::is_valid_email(&u.email) {
-        return Err(Error::Email);
+    if !validate::is_valid_email(u.email.as_str()) {
+        return Err(Error::EmailAddress);
     }
     if repo.try_get_user_by_email(&u.email)?.is_some() {
         return Err(Error::UserExists);
@@ -39,23 +40,23 @@ const PW_GEN: PasswordGenerator = PasswordGenerator {
     spaces: false,
 };
 
-pub fn create_user_from_email<R>(repo: &R, email: &str) -> Result<User>
+pub fn create_user_from_email<R>(repo: &R, email: EmailAddress) -> Result<User>
 where
     R: UserRepo,
 {
-    if let Some(user) = repo.try_get_user_by_email(email)? {
+    if let Some(user) = repo.try_get_user_by_email(&email)? {
         return Ok(user);
     }
     // Create a new user with a generated password
     let password = PW_GEN
         .generate_one()
         .expect("Could not generate a new password");
-    let u = NewUser {
-        email: email.into(),
+    let new_user = NewUser {
+        email: email.clone(),
         password,
     };
-    create_new_user(repo, u)?;
-    Ok(repo.get_user_by_email(email)?)
+    create_new_user(repo, new_user)?;
+    Ok(repo.get_user_by_email(&email)?)
 }
 
 #[cfg(test)]
@@ -70,32 +71,41 @@ mod tests {
     fn create_two_users() {
         let db = MockDb::default();
         let u = NewUser {
-            email: "foo@bar.de".into(),
+            email: "foo@bar.de".parse().unwrap(),
             password: "secret1".into(),
         };
         assert!(create_new_user(&db, u).is_ok());
-        assert!(db.get_user_by_email("foo@bar.de").is_ok());
-        assert!(db.try_get_user_by_email("baz@bar.de").unwrap().is_none());
+        assert!(db
+            .get_user_by_email(&EmailAddress::new_unchecked("foo@bar.de".to_string()))
+            .is_ok());
+        assert!(db
+            .try_get_user_by_email(&EmailAddress::new_unchecked("baz@bar.de".to_string()))
+            .unwrap()
+            .is_none());
 
         let u = NewUser {
-            email: "baz@bar.de".into(),
+            email: "baz@bar.de".parse().unwrap(),
             password: "secret2".into(),
         };
         assert!(create_new_user(&db, u).is_ok());
-        assert!(db.get_user_by_email("foo@bar.de").is_ok());
-        assert!(db.get_user_by_email("baz@bar.de").is_ok());
+        assert!(db
+            .get_user_by_email(&EmailAddress::new_unchecked("foo@bar.de".to_string()))
+            .is_ok());
+        assert!(db
+            .get_user_by_email(&EmailAddress::new_unchecked("baz@bar.de".to_string()))
+            .is_ok());
     }
 
     #[test]
     fn create_user_with_invalid_password() {
         let db = MockDb::default();
         let u = NewUser {
-            email: "foo@baz.io".into(),
+            email: "foo@baz.io".parse().unwrap(),
             password: "hello".into(),
         };
         assert!(create_new_user(&db, u).is_err());
         let u = NewUser {
-            email: "foo@baz.io".into(),
+            email: "foo@baz.io".parse().unwrap(),
             password: "valid pass".into(),
         };
         assert!(create_new_user(&db, u).is_ok());
@@ -105,17 +115,17 @@ mod tests {
     fn create_user_with_invalid_email() {
         let db = MockDb::default();
         let u = NewUser {
-            email: "".into(),
+            email: EmailAddress::new_unchecked("".into()),
             password: "secret".into(),
         };
         assert!(create_new_user(&db, u).is_err());
         let u = NewUser {
-            email: "fooo@".into(),
+            email: EmailAddress::new_unchecked("fooo@".into()),
             password: "secret".into(),
         };
         assert!(create_new_user(&db, u).is_err());
         let u = NewUser {
-            email: "fooo@bar.io".into(),
+            email: EmailAddress::new_unchecked("fooo@bar.io".into()),
             password: "secret".into(),
         };
         assert!(create_new_user(&db, u).is_ok());
@@ -125,13 +135,13 @@ mod tests {
     fn create_user_with_existing_email() {
         let db = MockDb::default();
         db.users.borrow_mut().push(User {
-            email: "baz@foo.bar".into(),
+            email: EmailAddress::new_unchecked("baz@foo.bar".to_string()),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::Guest,
         });
         let u = NewUser {
-            email: "baz@foo.bar".into(),
+            email: EmailAddress::new_unchecked("baz@foo.bar".to_string()),
             password: "secret".into(),
         };
         match create_new_user(&db, u).err().unwrap() {
@@ -146,7 +156,7 @@ mod tests {
     fn email_unconfirmed_on_default() {
         let db = MockDb::default();
         let u = NewUser {
-            email: "foo@bar.io".into(),
+            email: EmailAddress::new_unchecked("foo@bar.io".to_string()),
             password: "secret".into(),
         };
         assert!(create_new_user(&db, u).is_ok());
@@ -157,7 +167,7 @@ mod tests {
     fn encrypt_user_password() {
         let db = MockDb::default();
         let u = NewUser {
-            email: "foo@bar.io".into(),
+            email: EmailAddress::new_unchecked("foo@bar.io".to_string()),
             password: "secret".into(),
         };
         assert!(create_new_user(&db, u).is_ok());
@@ -170,7 +180,10 @@ mod tests {
         let db = MockDb::default();
         assert_eq!(
             "mail@tld.com",
-            create_user_from_email(&db, "mail@tld.com").unwrap().email,
+            create_user_from_email(&db, EmailAddress::new_unchecked("mail@tld.com".to_string()))
+                .unwrap()
+                .email
+                .as_str(),
         );
     }
 }

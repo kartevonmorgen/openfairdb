@@ -73,10 +73,10 @@ pub mod prelude {
     pub struct DummyNotifyGW;
 
     impl ofdb_core::gateways::notify::NotificationGateway for DummyNotifyGW {
-        fn place_added(&self, _: &[String], _: &Place, _: Vec<Category>) {}
-        fn place_updated(&self, _: &[String], _: &Place, _: Vec<Category>) {}
-        fn event_created(&self, _: &[String], _: &Event) {}
-        fn event_updated(&self, _: &[String], _: &Event) {}
+        fn place_added(&self, _: &[EmailAddress], _: &Place, _: Vec<Category>) {}
+        fn place_updated(&self, _: &[EmailAddress], _: &Place, _: Vec<Category>) {}
+        fn event_created(&self, _: &[EmailAddress], _: &Event) {}
+        fn event_updated(&self, _: &[EmailAddress], _: &Event) {}
         fn user_registered_kvm(&self, _: &User) {}
         fn user_registered_ofdb(&self, _: &User) {}
         fn user_registered(&self, _: &User, _: &str) {}
@@ -102,7 +102,11 @@ pub mod prelude {
             }
         }
 
-        pub fn create_place(&self, new_place: NewPlace, account_email: Option<&str>) -> String {
+        pub fn create_place(
+            &self,
+            new_place: NewPlace,
+            account_email: Option<&EmailAddress>,
+        ) -> String {
             let mut accepted_licenses = HashSet::new();
             accepted_licenses.insert("CC0-1.0".into());
             accepted_licenses.insert("ODbL-1.0".into());
@@ -135,7 +139,7 @@ pub mod prelude {
             }
         }
 
-        pub fn try_get_user(&self, email: &str) -> Option<User> {
+        pub fn try_get_user(&self, email: &EmailAddress) -> Option<User> {
             self.db_connections
                 .shared()
                 .unwrap()

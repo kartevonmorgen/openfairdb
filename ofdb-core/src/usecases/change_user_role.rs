@@ -2,8 +2,8 @@ use super::prelude::*;
 
 pub fn change_user_role<R>(
     repo: &R,
-    account_email: &str,
-    user_email: &str,
+    account_email: &EmailAddress,
+    user_email: &EmailAddress,
     role: Role,
 ) -> Result<()>
 where

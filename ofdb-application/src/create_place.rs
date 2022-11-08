@@ -8,7 +8,7 @@ pub fn create_place(
     indexer: &mut dyn PlaceIndexer,
     notify: &dyn NotificationGateway,
     new_place: usecases::NewPlace,
-    created_by_email: Option<&str>,
+    created_by_email: Option<&EmailAddress>,
     created_by_org: Option<&Organization>,
     accepted_licenses: &HashSet<String>,
 ) -> Result<Place> {

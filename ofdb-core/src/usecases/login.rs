@@ -1,7 +1,7 @@
 use super::prelude::*;
 
 pub struct Credentials<'a> {
-    pub email: &'a str,
+    pub email: &'a EmailAddress,
     pub password: &'a str,
 }
 
@@ -26,9 +26,4 @@ where
                 Err(Error::Credentials)
             }
         })
-}
-
-#[cfg(test)]
-mod tests {
-    //TODO: write tests
 }

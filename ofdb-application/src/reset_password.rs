@@ -11,7 +11,7 @@ fn refresh_user_token(connections: &sqlite::Connections, user: &User) -> Result<
 pub fn reset_password_request(
     connections: &sqlite::Connections,
     notify: &dyn NotificationGateway,
-    email: &str,
+    email: &EmailAddress,
 ) -> Result<EmailNonce> {
     // The user is loaded before the following transaction that
     // requires exclusive access to the database connection for
@@ -60,8 +60,12 @@ pub fn reset_password_with_email_nonce(
 #[cfg(test)]
 mod tests {
     use super::super::tests::prelude::*;
+    use std::str::FromStr;
 
-    fn reset_password_request(fixture: &BackendFixture, email: &str) -> super::Result<EmailNonce> {
+    fn reset_password_request(
+        fixture: &BackendFixture,
+        email: &EmailAddress,
+    ) -> super::Result<EmailNonce> {
         super::reset_password_request(&fixture.db_connections, &fixture.notify, email)
     }
 
@@ -78,28 +82,28 @@ mod tests {
         let fixture = BackendFixture::new();
 
         // User 1
-        let email1 = "user1@some.org";
+        let email1 = EmailAddress::from_str("user1@some.org").unwrap();
         let credentials1 = usecases::Credentials {
-            email: email1,
+            email: &email1,
             password: "new pass1",
         };
         fixture.create_user(
             usecases::NewUser {
-                email: email1.to_string(),
+                email: email1.clone(),
                 password: "old pass1".to_string(),
             },
             None,
         );
 
         // User 2
-        let email2 = "user2@some.org";
+        let email2 = EmailAddress::from_str("user2@some.org").unwrap();
         let credentials2 = usecases::Credentials {
-            email: email2,
+            email: &email2,
             password: "new pass2",
         };
         fixture.create_user(
             usecases::NewUser {
-                email: email2.to_string(),
+                email: email2.clone(),
                 password: "old pass2".to_string(),
             },
             None,
@@ -118,11 +122,11 @@ mod tests {
         .is_err());
 
         // Request and reset password for user 1 (by email)
-        let email_nonce1 = reset_password_request(&fixture, email1).unwrap();
+        let email_nonce1 = reset_password_request(&fixture, &email1).unwrap();
         assert_eq!(email1, email_nonce1.email);
 
         // Request and reset password for user 2
-        let email_nonce2 = reset_password_request(&fixture, email2).unwrap();
+        let email_nonce2 = reset_password_request(&fixture, &email2).unwrap();
         assert_eq!(email2, email_nonce2.email);
 
         // Reset the password of user 1

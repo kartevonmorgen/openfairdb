@@ -1,6 +1,10 @@
 use super::prelude::*;
 
-pub fn get_user<R>(repo: &R, logged_in_email: &str, requested_email: &str) -> Result<User>
+pub fn get_user<R>(
+    repo: &R,
+    logged_in_email: &EmailAddress,
+    requested_email: &EmailAddress,
+) -> Result<User>
 where
     R: UserRepo,
 {

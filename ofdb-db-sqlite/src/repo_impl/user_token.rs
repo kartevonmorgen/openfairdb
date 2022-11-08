@@ -13,7 +13,7 @@ impl<'a> UserTokenRepo for DbReadWrite<'a> {
         delete_expired_user_tokens(&mut self.conn.borrow_mut(), expired_before)
     }
 
-    fn get_user_token_by_email(&self, email: &str) -> Result<UserToken> {
+    fn get_user_token_by_email(&self, email: &EmailAddress) -> Result<UserToken> {
         get_user_token_by_email(&mut self.conn.borrow_mut(), email)
     }
 }
@@ -31,7 +31,7 @@ impl<'a> UserTokenRepo for DbConnection<'a> {
         delete_expired_user_tokens(&mut self.conn.borrow_mut(), expired_before)
     }
 
-    fn get_user_token_by_email(&self, email: &str) -> Result<UserToken> {
+    fn get_user_token_by_email(&self, email: &EmailAddress) -> Result<UserToken> {
         get_user_token_by_email(&mut self.conn.borrow_mut(), email)
     }
 }
@@ -49,7 +49,7 @@ impl<'a> UserTokenRepo for DbReadOnly<'a> {
         unreachable!();
     }
 
-    fn get_user_token_by_email(&self, email: &str) -> Result<UserToken> {
+    fn get_user_token_by_email(&self, email: &EmailAddress) -> Result<UserToken> {
         get_user_token_by_email(&mut self.conn.borrow_mut(), email)
     }
 }
@@ -85,7 +85,7 @@ fn consume_user_token(conn: &mut SqliteConnection, email_nonce: &EmailNonce) -> 
     let token = get_user_token_by_email(conn, &email_nonce.email)?;
     let user_id_subselect = u_dsl::users
         .select(u_dsl::id)
-        .filter(u_dsl::email.eq(&email_nonce.email));
+        .filter(u_dsl::email.eq(email_nonce.email.as_str()));
     let target = t_dsl::user_tokens
         .filter(t_dsl::nonce.eq(email_nonce.nonce.to_string()))
         .filter(t_dsl::user_id.eq_any(user_id_subselect));
@@ -110,12 +110,12 @@ fn delete_expired_user_tokens(
         .map_err(from_diesel_err)
 }
 
-fn get_user_token_by_email(conn: &mut SqliteConnection, email: &str) -> Result<UserToken> {
+fn get_user_token_by_email(conn: &mut SqliteConnection, email: &EmailAddress) -> Result<UserToken> {
     use schema::{user_tokens::dsl as t_dsl, users::dsl as u_dsl};
     Ok(t_dsl::user_tokens
         .inner_join(u_dsl::users)
         .select((u_dsl::id, t_dsl::nonce, t_dsl::expires_at, u_dsl::email))
-        .filter(u_dsl::email.eq(email))
+        .filter(u_dsl::email.eq(email.as_str()))
         .first::<models::UserTokenEntity>(conn)
         .map_err(from_diesel_err)?
         .into())

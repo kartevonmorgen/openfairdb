@@ -49,7 +49,13 @@ pub fn post_reset_password_request(
     data: Form<ResetPasswordRequest>,
 ) -> std::result::Result<Redirect, Flash<Redirect>> {
     let ResetPasswordRequest { email } = data.into_inner();
-    match reset_password_request(&db, &*notify.0, email) {
+    let Ok(email) = email.parse::<EmailAddress>() else {
+        return Err(Flash::error(
+            Redirect::to(uri!(get_reset_password(_, _))),
+            "Invalid email address.",
+        ));
+    };
+    match reset_password_request(&db, &*notify.0, &email) {
         Err(_) => Err(Flash::error(
             Redirect::to(uri!(get_reset_password(_, _))),
             "Failed to request a password reset.",

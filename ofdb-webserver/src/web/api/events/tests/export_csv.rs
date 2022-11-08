@@ -8,19 +8,19 @@ fn export_csv() {
 
     let users = vec![
         User {
-            email: "admin@example.com".into(),
+            email: "admin@example.com".parse().unwrap(),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::Admin,
         },
         User {
-            email: "scout@example.com".into(),
+            email: "scout@example.com".parse().unwrap(),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::Scout,
         },
         User {
-            email: "user@example.com".into(),
+            email: "user@example.com".parse().unwrap(),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::User,
@@ -53,8 +53,8 @@ fn export_csv() {
         title: "title1".into(),
         start: start1,
         tags: Some(vec!["bla".into()]), // org tag will be added implicitly!
-        created_by: Some("createdby1@example.com".into()),
-        email: Some("email1@example.com".into()),
+        created_by: Some("createdby1@example.com".parse().unwrap()),
+        email: Some("email1@example.com".parse().unwrap()),
         telephone: Some("phone1".into()),
         state: Some("state".into()),
         ..Default::default()
@@ -67,8 +67,8 @@ fn export_csv() {
         title: "title2".into(),
         start: start2,
         tags: Some(vec!["bli".into()]), // org tag will be added implicitly!
-        created_by: Some("createdby2@example.com".into()),
-        email: Some("email2@example.com".into()),
+        created_by: Some("createdby2@example.com".parse().unwrap()),
+        email: Some("email2@example.com".parse().unwrap()),
         telephone: Some("phone2".into()),
         ..Default::default()
     };

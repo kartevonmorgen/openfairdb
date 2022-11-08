@@ -283,7 +283,7 @@ fn review_places(
     } = activity_log;
     let changed_at = activity.at.as_millis();
     let changed_by = if let Some(ref email) = activity.by {
-        Some(resolve_user_created_by_email(conn, email.as_ref())?)
+        Some(resolve_user_created_by_email(conn, email)?)
     } else {
         None
     };
@@ -637,7 +637,7 @@ fn get_place_history(
                 activity: ActivityLog {
                     activity: Activity {
                         at: Timestamp::from_millis(row.created_at),
-                        by: row.created_by_email.map(Into::into),
+                        by: row.created_by_email.map(EmailAddress::new_unchecked),
                     },
                     context: row.context,
                     comment: row.comment,

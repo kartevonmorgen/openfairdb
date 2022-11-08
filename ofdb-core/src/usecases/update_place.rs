@@ -25,7 +25,7 @@ pub struct UpdatePlace {
     pub country        : Option<String>,
     pub state          : Option<String>,
     pub contact_name   : Option<String>,
-    pub email          : Option<String>,
+    pub email          : Option<EmailAddress>,
     pub telephone      : Option<String>,
     pub homepage       : Option<String>,
     pub opening_hours  : Option<String>,
@@ -105,7 +105,7 @@ pub fn prepare_updated_place<R>(
     repo: &R,
     place_id: Id,
     e: UpdatePlace,
-    created_by_email: Option<&str>,
+    created_by_email: Option<&EmailAddress>,
     created_by_org: Option<&Organization>,
     accepted_licenses: &HashSet<String>,
 ) -> Result<Storable>
@@ -204,7 +204,7 @@ where
         id: place_id,
         license,
         revision,
-        created: Activity::now(created_by_email.map(Into::into)),
+        created: Activity::now(created_by_email.cloned()),
         title,
         description,
         location: Location { pos, address },
@@ -312,7 +312,7 @@ mod tests {
             &mock_db,
             id,
             new,
-            Some("test@example.com"),
+            Some(&"test@example.com".parse::<EmailAddress>().unwrap()),
             None,
             &accepted_licenses(),
         )
@@ -335,7 +335,7 @@ mod tests {
         assert!(x.created.at >= now);
         assert_eq!(
             Some("test@example.com"),
-            x.created.by.as_ref().map(Email::as_ref)
+            x.created.by.as_ref().map(EmailAddress::as_str)
         );
         assert_eq!(
             Some("https://www.img2/"),

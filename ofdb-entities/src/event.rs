@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::{contact::*, id::*, location::*, time::*, url::*};
+use crate::{contact::*, email::*, id::*, location::*, time::*, url::*};
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum RegistrationType {
@@ -37,7 +37,7 @@ pub struct Event {
     pub contact      : Option<Contact>,
     pub tags         : Vec<String>,
     pub homepage     : Option<Url>,
-    pub created_by   : Option<String>,
+    pub created_by   : Option<EmailAddress>,
     pub registration : Option<RegistrationType>,
     // TODO: Switch archived time stamp to millisecond precision?
     pub archived     : Option<Timestamp>,

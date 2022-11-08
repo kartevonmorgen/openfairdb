@@ -12,7 +12,7 @@ pub fn post_login(
     let login = login?.into_inner();
     {
         let credentials = usecases::Credentials {
-            email: &login.email,
+            email: &login.email.parse()?,
             password: &login.password,
         };
         usecases::login_with_email(&db.shared()?, &credentials).map_err(|err| {
@@ -53,7 +53,7 @@ pub fn post_logout(
 
 #[post("/users", format = "application/json", data = "<u>")]
 pub fn post_user(db: sqlite::Connections, n: &State<Notify>, u: JsonResult<NewUser>) -> Result<()> {
-    let new_user = from_json::new_user(u?.into_inner());
+    let new_user = from_json::try_new_user(u?.into_inner())?;
     let user = {
         let db = db.exclusive()?;
         usecases::create_new_user(&db, new_user.clone())?;
@@ -74,7 +74,7 @@ pub fn post_request_password_reset(
     data: JsonResult<json::RequestPasswordReset>,
 ) -> Result<()> {
     let req = data?.into_inner();
-    flows::reset_password_request(&connections, &*notify.0, &req.email)?;
+    flows::reset_password_request(&connections, &*notify.0, &req.email.parse()?)?;
 
     Ok(Json(()))
 }
@@ -95,7 +95,7 @@ pub fn post_reset_password(
 
 #[delete("/users/<email>")]
 pub fn delete_user(db: sqlite::Connections, account: Account, email: String) -> Result<()> {
-    usecases::delete_user(&db.exclusive()?, account.email(), &email)?;
+    usecases::delete_user(&db.exclusive()?, account.email(), &email.parse()?)?;
     Ok(Json(()))
 }
 
@@ -107,7 +107,7 @@ pub fn get_current_user(db: sqlite::Connections, account: Account) -> Result<jso
 
 #[get("/users/<email>", format = "application/json", rank = 2)]
 pub fn get_user(db: sqlite::Connections, account: Account, email: String) -> Result<json::User> {
-    let user = usecases::get_user(&db.shared()?, account.email(), &email)?;
+    let user = usecases::get_user(&db.shared()?, account.email(), &email.parse()?)?;
     Ok(Json(user.into()))
 }
 
@@ -152,13 +152,13 @@ mod tests {
         let token = db
             .shared()
             .unwrap()
-            .get_user_token_by_email("user@example.com")
+            .get_user_token_by_email(&"user@example.com".parse::<EmailAddress>().unwrap())
             .unwrap()
             .email_nonce
             .encode_to_string();
         assert_eq!(
             "user@example.com",
-            EmailNonce::decode_from_str(&token).unwrap().email
+            EmailNonce::decode_from_str(&token).unwrap().email.as_str()
         );
 
         // User send the new password to the server
@@ -193,7 +193,7 @@ mod tests {
     fn current_user() {
         let (client, db) = setup();
 
-        let email = Email::from("user@example.com");
+        let email = "user@example.com".parse::<EmailAddress>().unwrap();
         let email_confirmed = true;
 
         register_user(&db, email.as_str(), "secret", email_confirmed);
@@ -221,7 +221,7 @@ mod tests {
         assert_eq!(res.status(), Status::Ok);
         let body = res.into_string().unwrap();
         let current_user: json::User = serde_json::from_str(&body).unwrap();
-        assert_eq!(email, current_user.email.into());
+        assert_eq!(email.as_str(), current_user.email);
         assert_eq!(email_confirmed, current_user.email_confirmed);
         assert_eq!(Role::User, current_user.role.into());
     }

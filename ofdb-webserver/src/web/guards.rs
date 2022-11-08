@@ -14,9 +14,11 @@ use crate::{
     web::jwt,
 };
 use ofdb_application::error::AppError;
-use ofdb_core::gateways::geocode::GeoCodingGateway;
-use ofdb_core::gateways::notify::NotificationGateway;
-use ofdb_core::usecases::Error as ParameterError;
+use ofdb_core::{
+    entities::EmailAddress,
+    gateways::{geocode::GeoCodingGateway, notify::NotificationGateway},
+    usecases::Error as ParameterError,
+};
 
 pub const COOKIE_EMAIL_KEY: &str = "ofdb-user-email";
 pub const COOKIE_CAPTCHA_KEY: &str = "ofdb-captcha";
@@ -36,14 +38,14 @@ fn get_bearer_token(auth_header_val: &str) -> Option<&str> {
 #[derive(Debug)]
 pub struct Auth {
     bearer_tokens: Vec<String>,
-    account_email: Option<String>,
+    account_email: Option<EmailAddress>,
     has_captcha: bool,
 }
 
 impl Auth {
-    pub fn account_email(&self) -> Result<&str> {
+    pub fn account_email(&self) -> Result<&EmailAddress> {
         self.account_email
-            .as_deref()
+            .as_ref()
             .ok_or_else(|| ParameterError::Unauthorized.into())
     }
 
@@ -89,7 +91,7 @@ impl Auth {
             .collect()
     }
 
-    fn account_email_from_cookie(request: &Request) -> Option<String> {
+    fn account_email_from_cookie(request: &Request) -> Option<EmailAddress> {
         request
             .cookies()
             .get_private(COOKIE_EMAIL_KEY)
@@ -99,7 +101,7 @@ impl Auth {
     async fn account_email_from_jwt_in_header(
         request: &Request<'_>,
         bearer_tokens: &[String],
-    ) -> Option<String> {
+    ) -> Option<EmailAddress> {
         let jwt_state = request.guard::<&State<jwt::JwtState>>().await.succeeded()?;
         bearer_tokens
             .iter()
@@ -150,10 +152,10 @@ impl<'r> FromRequest<'r> for Auth {
 }
 
 #[derive(Debug)]
-pub struct Account(String);
+pub struct Account(EmailAddress);
 
 impl Account {
-    pub fn email(&self) -> &str {
+    pub fn email(&self) -> &EmailAddress {
         &self.0
     }
 }
@@ -164,7 +166,7 @@ impl<'r> FromRequest<'r> for Account {
     async fn from_request(request: &'r Request<'_>) -> Outcome<Self, Self::Error> {
         let auth = try_outcome!(Auth::from_request(request).await);
         match auth.account_email() {
-            Ok(email) => Outcome::Success(Account(email.to_owned())),
+            Ok(email) => Outcome::Success(Account(email.clone())),
             _ => Outcome::Failure((Status::Unauthorized, ())),
         }
     }

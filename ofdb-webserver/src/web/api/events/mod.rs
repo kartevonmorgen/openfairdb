@@ -71,7 +71,7 @@ pub fn post_event_with_token(
     geo_gw: &State<GeoCoding>,
 ) -> Result<String> {
     let org = auth.organization(&connections.shared()?)?;
-    let mut new_event = from_json::new_event(ev?.into_inner());
+    let mut new_event = from_json::try_new_event(ev?.into_inner())?;
     check_and_set_address_location(&mut new_event, &*geo_gw.0);
     let event = flows::create_event(
         &connections,
@@ -125,7 +125,7 @@ pub fn put_event_with_token(
     geo_gw: &State<GeoCoding>,
 ) -> Result<()> {
     let org = auth.organization(&connections.shared()?)?;
-    let mut new_event = from_json::new_event(ev?.into_inner());
+    let mut new_event = from_json::try_new_event(ev?.into_inner())?;
     check_and_set_address_location(&mut new_event, &*geo_gw.0);
     flows::update_event(
         &connections,
@@ -172,7 +172,7 @@ impl<'r> FromForm<'r> for EventQuery {
         match name.as_name().as_str() {
             "created_by" => {
                 match value
-                    .parse::<Email>()
+                    .parse::<EmailAddress>()
                     .map_err(|_| Error::from(ErrorKind::Validation("Invalid email address".into())))
                 {
                     Ok(email) => {

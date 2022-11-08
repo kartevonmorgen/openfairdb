@@ -171,7 +171,7 @@ pub fn post_entry(
     if org.is_none() && auth.account_email().is_err() && cfg.protect_with_captcha {
         auth.has_captcha()?;
     }
-    let new_place = from_json::new_place(body?.into_inner());
+    let new_place = from_json::try_new_place(body?.into_inner())?;
     Ok(Json(
         flows::create_place(
             &connections,
@@ -207,7 +207,7 @@ pub fn put_entry(
             &mut *search_engine,
             &*notify.0,
             id.into(),
-            from_json::update_place(data?.into_inner()),
+            from_json::try_update_place(data?.into_inner())?,
             auth.account_email().ok(),
             org.as_ref(),
             &cfg.accepted_licenses,
