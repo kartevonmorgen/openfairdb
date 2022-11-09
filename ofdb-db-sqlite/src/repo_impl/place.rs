@@ -701,7 +701,8 @@ fn load_place_revision(
     load_place(conn, row)
 }
 
-const EXCLUDE_STATUS: &[ReviewStatus] = &[ReviewStatus::Archived, ReviewStatus::Rejected];
+const EXCLUDE_STATUS_NOT_UPDATED: &[ReviewStatus] =
+    &[ReviewStatus::Archived, ReviewStatus::Rejected];
 
 fn find_places_not_updated_since(
     conn: &mut SqliteConnection,
@@ -745,7 +746,7 @@ fn find_places_not_updated_since(
         .filter(rev_dsl::created_at.lt(not_updated_since.as_millis()))
         .into_boxed();
 
-    for status in EXCLUDE_STATUS {
+    for status in EXCLUDE_STATUS_NOT_UPDATED {
         query = query.filter(rev_dsl::current_status.ne(ReviewStatusPrimitive::from(*status)));
     }
 

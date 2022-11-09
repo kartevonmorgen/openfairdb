@@ -13,6 +13,8 @@ use crate::{
 pub struct NewPlace {
     pub title          : String,
     pub description    : String,
+
+    // TODO: Use `Location`
     pub lat            : f64,
     pub lng            : f64,
     pub street         : Option<String>,
@@ -20,13 +22,22 @@ pub struct NewPlace {
     pub city           : Option<String>,
     pub country        : Option<String>,
     pub state          : Option<String>,
+
+    // TODO: Use `Contact`
     pub contact_name   : Option<String>,
     pub email          : Option<EmailAddress>,
     pub telephone      : Option<String>,
+
     pub homepage       : Option<String>,
+
+    // TODO: Use `OpenigHours`
     pub opening_hours  : Option<String>,
+
     pub founded_on     : Option<Date>,
+
+    // TODO: remove
     pub categories     : Vec<String>,
+
     pub tags           : Vec<String>,
     pub license        : String,
     pub image_url      : Option<String>,

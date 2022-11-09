@@ -85,12 +85,16 @@ fn find_last_sent_reminder(
 ) -> Result<Option<Timestamp>> {
     let place_rowid = resolve_place_rowid(conn, place_id)?;
     use schema::{place::dsl as place_dsl, sent_reminders::dsl};
+
+    // TODO: use GROUP BY + MAX
+    // It would be better to filter for MAX(sent_at) that results in only a single value.
+
     let query = schema::sent_reminders::table
         .inner_join(schema::place::table)
         .select((place_dsl::id, dsl::sent_at, dsl::sent_to_email))
         .filter(place_dsl::rowid.eq(place_rowid))
         .filter(dsl::sent_to_email.eq(email.as_str()))
-        .order_by(dsl::sent_at);
+        .order_by(dsl::sent_at.desc());
     let mut iter = query
         .load::<models::SentReminder>(conn)
         .map_err(from_diesel_err)?

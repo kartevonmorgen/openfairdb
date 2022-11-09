@@ -8,12 +8,6 @@ pub use email_reminder_formatter::*;
 const DATE_TIME_FORMAT: &[FormatItem] =
     format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
 
-const INTRO_ENTRY_CREATED: &str = "ein neuer Eintrag auf der Karte von morgen wurde erstellt";
-
-const INTRO_ENTRY_UPDATED: &str = "folgender Eintrag auf der Karte von morgen wurde verändert";
-
-const OUTRO_HINT: &str = include_str!("templates/outro_hints_DE.txt");
-
 fn subject_entry_created(entry_title: &str) -> String {
     format!("Kvm - neuer Eintrag: {}", entry_title)
 }
@@ -77,132 +71,142 @@ pub fn user_reset_password_email(url: &str) -> EmailContent {
 
 pub fn place_created_email(place: &Place, category_names: &[String]) -> EmailContent {
     let subject = subject_entry_created(&place.title);
-    let body = place_email(place, category_names, INTRO_ENTRY_CREATED);
+    let body = place_email(place, category_names, &EventType::Created);
     EmailContent { subject, body }
 }
 
 //TODO: calc diff
 pub fn place_updated_email(place: &Place, category_names: &[String]) -> EmailContent {
     let subject = subject_entry_updated(&place.title);
-    let body = place_email(place, category_names, INTRO_ENTRY_UPDATED);
+    let body = place_email(place, category_names, &EventType::Updated);
     EmailContent { subject, body }
 }
 
-fn place_email(place: &Place, category_names: &[String], intro_sentence: &str) -> String {
+fn place_email(place: &Place, category_names: &[String], event_type: &EventType) -> String {
     let category = if !category_names.is_empty() {
-        category_names[0].clone()
+        &category_names[0]
     } else {
-        "".to_string()
+        ""
     };
+    let Contact { email, phone, .. } = place.contact.clone().unwrap_or_default();
 
-    let Contact {
-        name: _,
+    let id = place.id.as_str();
+    let title = &place.title;
+    let description = &place.description;
+    let address_line = &address_line(place.location.address.as_ref());
+    let email = &email.map(|e| e.to_string()).unwrap_or_default();
+    let phone = &phone.unwrap_or_default();
+    let homepage = place
+        .links
+        .as_ref()
+        .and_then(|l| l.homepage.as_ref())
+        .map(Url::as_str)
+        .unwrap_or_else(|| "");
+    let tags = &place.tags.join(", ");
+
+    PlaceEmailTemplate {
+        event_type,
+        title,
+        category,
+        description,
+        tags,
+        address_line,
+        homepage,
         email,
         phone,
-    } = place.contact.clone().unwrap_or(Contact {
-        name: None,
-        email: None,
-        phone: None,
-    });
+        id,
+    }
+    .render()
+    .unwrap()
+}
 
-    format!(
-        "Hallo,\n
-{intro_sentence}:\n
-{title} ({category})
-{description}\n
-    Tags: {tags}
-    Adresse: {address_line}
-    Webseite: {homepage}
-    Email-Adresse: {email}
-    Telefon: {phone}\n
-Eintrag anschauen oder bearbeiten:
-https://kartevonmorgen.org/#/?entry={id}\n
-Du kannst dein Abonnement des Kartenbereichs abbestellen,
-indem du dich auf https://kartevonmorgen.org einloggst.\n
-euphorische Grüße,\n
-das Karte von morgen-Team\n
-{outro_text}",
-        intro_sentence = intro_sentence,
-        outro_text = OUTRO_HINT,
-        id = &place.id,
-        title = &place.title,
-        description = &place.description,
-        address_line = address_line(place.location.address.as_ref()),
-        email = email.map(|e| e.to_string()).unwrap_or_default(),
-        phone = phone.unwrap_or_default(),
-        homepage = place
-            .links
-            .as_ref()
-            .and_then(|l| l.homepage.as_ref())
-            .map(Url::as_str)
-            .unwrap_or_else(|| ""),
-        category = category,
-        tags = place.tags.join(", ")
-    )
+#[derive(Template)]
+#[template(path = "place_email_DE.txt")]
+struct PlaceEmailTemplate<'a> {
+    event_type: &'a EventType,
+    title: &'a str,
+    category: &'a str,
+    description: &'a str,
+    tags: &'a str,
+    address_line: &'a str,
+    homepage: &'a str,
+    email: &'a str,
+    phone: &'a str,
+    id: &'a str,
 }
 
 pub fn event_created_email(event: &Event) -> EmailContent {
     let subject = subject_entry_created(&event.title);
-    let body = event_email(event, INTRO_ENTRY_CREATED);
+    let body = event_email(event, &EventType::Created);
     EmailContent { subject, body }
 }
 
 //TODO: calc diff
 pub fn event_updated_email(event: &Event) -> EmailContent {
     let subject = subject_entry_updated(&event.title);
-    let body = event_email(event, INTRO_ENTRY_UPDATED);
+    let body = event_email(event, &EventType::Updated);
     EmailContent { subject, body }
 }
 
-fn event_email(event: &Event, intro_sentence: &str) -> String {
-    let Contact {
-        name: _,
+#[derive(Debug, Clone, PartialEq, Eq, Copy)]
+enum EventType {
+    Created,
+    Updated,
+}
+
+fn event_email(event: &Event, event_type: &EventType) -> String {
+    let Contact { email, phone, .. } = event.contact.clone().unwrap_or_default();
+    let category = "Event";
+    let id = &event.id.as_str();
+    let title = &event.title;
+    let start = &event.start.format(DATE_TIME_FORMAT);
+    let end = &event
+        .end
+        .map(|end| end.format(DATE_TIME_FORMAT))
+        .unwrap_or_default();
+    let description = event.description.as_deref().unwrap_or("");
+    let organizer = event.organizer().map(String::as_str).unwrap_or("");
+    let address_line = &address_line(event.location.as_ref().and_then(|l| l.address.as_ref()));
+    let email = &email.map(|e| e.to_string()).unwrap_or_default();
+    let phone = &phone.unwrap_or_default();
+    let homepage = event.homepage.as_ref().map(Url::as_str).unwrap_or("");
+    let tags = &event.tags.join(", ");
+
+    EventEmailTemplate {
+        event_type,
+        title,
+        category,
+        description,
+        start,
+        end,
+        tags,
+        organizer,
+        address_line,
+        homepage,
         email,
         phone,
-    } = event.contact.clone().unwrap_or(Contact {
-        name: None,
-        email: None,
-        phone: None,
-    });
+        id,
+    }
+    .render()
+    .unwrap()
+}
 
-    format!(
-        "Hallo,\n
-{intro_sentence}:\n
-{title} ({category})
-{description}\n
-    Beginn: {start}
-    Ende: {end}
-    Tags: {tags}
-    Veranstalter: {organizer}
-    Adresse: {address_line}
-    Webseite: {homepage}
-    Email-Adresse: {email}
-    Telefon: {phone}\n
-Eintrag anschauen oder bearbeiten:
-https://kartevonmorgen.org/#/?entry={id}\n
-Du kannst dein Abonnement des Kartenbereichs abbestellen,
-indem du dich auf https://kartevonmorgen.org einloggst.\n
-euphorische Grüße,\n
-das Karte von morgen-Team\n
-{outro_text}",
-        intro_sentence = intro_sentence,
-        outro_text = OUTRO_HINT,
-        category = "Event",
-        id = &event.id,
-        title = &event.title,
-        start = event.start.format(DATE_TIME_FORMAT),
-        end = event
-            .end
-            .map(|end| end.format(DATE_TIME_FORMAT))
-            .unwrap_or_default(),
-        description = event.description.as_deref().unwrap_or(""),
-        organizer = event.organizer().map(String::as_str).unwrap_or(""),
-        address_line = address_line(event.location.as_ref().and_then(|l| l.address.as_ref())),
-        email = email.map(|e| e.to_string()).unwrap_or_default(),
-        phone = phone.unwrap_or_default(),
-        homepage = event.homepage.as_ref().map(Url::as_str).unwrap_or(""),
-        tags = event.tags.join(", ")
-    )
+#[derive(Template)]
+#[template(path = "event_email_DE.txt")]
+struct EventEmailTemplate<'a> {
+    event_type: &'a EventType,
+    title: &'a str,
+    category: &'a str,
+    description: &'a str,
+    start: &'a str,
+    end: &'a str,
+    tags: &'a str,
+    organizer: &'a str,
+    address_line: &'a str,
+    homepage: &'a str,
+    email: &'a str,
+    phone: &'a str,
+    id: &'a str,
 }
 
 #[cfg(test)]
@@ -219,17 +223,18 @@ mod tests {
     // ```
 
     fn print_email(email: &EmailContent) {
+        let EmailContent { subject, body } = email;
         // 72 column ruler
-        println!(
-            "========================================================================
-{subject}
-------------------------------------------------------------------------
-{body}
-========================================================================",
-            subject = email.subject,
-            body = email.body,
-        );
+        println!("========================================================================");
+        println!("{subject}");
+        println!("------------------------------------------------------------------------");
+        println!("{body}");
+        println!("========================================================================");
     }
+
+    const OUTRO_HINT_DE: &str = include_str!("templates/outro_hints_DE.txt");
+    const INTRO_ENTRY_CREATED_DE: &str = include_str!("templates/intro_entry_created_DE.txt");
+    const INTRO_ENTRY_UPDATED_DE: &str = include_str!("templates/intro_entry_updated_DE.txt");
 
     fn new_place() -> Place {
         Place {
@@ -305,7 +310,7 @@ mod tests {
     fn print_user_registration_email() {
         let url = "https://kartevonmorgen.org/confirm-email/";
         let email = user_registration_email(url);
-        assert!(email.body.contains(OUTRO_HINT.trim()));
+        assert!(email.body.contains(OUTRO_HINT_DE));
         assert!(email.body.contains(url));
         print_email(&email);
     }
@@ -322,8 +327,8 @@ mod tests {
     fn print_place_created_email() {
         let place = new_place();
         let email = place_created_email(&place, &["<category>".into()]);
-        assert!(email.body.contains(INTRO_ENTRY_CREATED));
-        assert!(email.body.contains(OUTRO_HINT));
+        assert!(email.body.contains(INTRO_ENTRY_CREATED_DE));
+        assert!(email.body.contains(OUTRO_HINT_DE));
         assert!(email.body.contains(place.id.as_str()));
         assert!(email.body.contains(&place.title));
         print_email(&email);
@@ -333,8 +338,8 @@ mod tests {
     fn print_place_updated_email() {
         let place = new_place();
         let email = place_updated_email(&place, &["<category>".into()]);
-        assert!(email.body.contains(INTRO_ENTRY_UPDATED));
-        assert!(email.body.contains(OUTRO_HINT));
+        assert!(email.body.contains(INTRO_ENTRY_UPDATED_DE));
+        assert!(email.body.contains(OUTRO_HINT_DE));
         assert!(email.body.contains(place.id.as_str()));
         assert!(email.body.contains(&place.title));
         print_email(&email);
@@ -344,8 +349,8 @@ mod tests {
     fn print_event_created_email() {
         let event = new_event();
         let email = event_created_email(&event);
-        assert!(email.body.contains(INTRO_ENTRY_CREATED));
-        assert!(email.body.contains(OUTRO_HINT));
+        assert!(email.body.contains(INTRO_ENTRY_CREATED_DE));
+        assert!(email.body.contains(OUTRO_HINT_DE));
         assert!(email.body.contains(event.id.as_str()));
         assert!(email.body.contains(&event.title));
         print_email(&email);
@@ -355,8 +360,8 @@ mod tests {
     fn print_event_updated_email() {
         let event = new_event();
         let email = event_updated_email(&event);
-        assert!(email.body.contains(INTRO_ENTRY_UPDATED));
-        assert!(email.body.contains(OUTRO_HINT));
+        assert!(email.body.contains(INTRO_ENTRY_UPDATED_DE));
+        assert!(email.body.contains(OUTRO_HINT_DE));
         assert!(email.body.contains(event.id.as_str()));
         assert!(email.body.contains(&event.title));
         print_email(&email);

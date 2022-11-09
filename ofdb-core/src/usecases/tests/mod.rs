@@ -9,6 +9,9 @@ use crate::{
     util::geo,
 };
 
+pub mod builders;
+pub use self::builders::*;
+
 //TODO: move tests to corresponding usecase
 
 pub fn accepted_licenses() -> HashSet<String> {
@@ -89,6 +92,7 @@ pub struct MockDb {
     pub bbox_subscriptions: RefCell<Vec<BboxSubscription>>,
     pub orgs: Vec<Organization>,
     pub token: RefCell<Vec<UserToken>>,
+    pub sent_reminders: RefCell<Vec<(Id, Vec<EmailAddress>, Timestamp)>>,
 }
 
 impl UserTokenRepo for MockDb {
@@ -629,6 +633,37 @@ impl SubscriptionRepo for MockDb {
         self.bbox_subscriptions
             .borrow_mut()
             .retain(|s| s.user_email != *user_email);
+        Ok(())
+    }
+}
+
+impl ReminderRepo for MockDb {
+    fn find_last_sent_reminder(
+        &self,
+        place_id: &Id,
+        email: &EmailAddress,
+    ) -> RepoResult<Option<Timestamp>> {
+        let sent_reminders = self.sent_reminders.borrow();
+        let mut sent_reminders_dates = sent_reminders
+            .iter()
+            .filter(|(id, _, _)| id == place_id)
+            .filter(|(_, recipients, _)| recipients.iter().any(|r| r == email))
+            .map(|(_, _, ts)| ts)
+            .collect::<Vec<_>>();
+
+        sent_reminders_dates.sort();
+        Ok(sent_reminders_dates.get(0).cloned().copied())
+    }
+
+    fn save_sent_reminders(
+        &self,
+        place_id: &Id,
+        recipients: &[EmailAddress],
+        sent_at: Timestamp,
+    ) -> RepoResult<()> {
+        self.sent_reminders
+            .borrow_mut()
+            .push((place_id.clone(), recipients.to_vec(), sent_at));
         Ok(())
     }
 }
