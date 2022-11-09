@@ -1,5 +1,5 @@
 use ofdb_application::prelude::send_update_reminders;
-use ofdb_core::{entities::Timestamp, usecases::TargetContact};
+use ofdb_core::{entities::Timestamp, usecases::RecipientRole};
 use ofdb_db_sqlite::Connections;
 use ofdb_gateways::user_communication::ReminderFormatter;
 use std::time::Duration as StdDuration;
@@ -17,16 +17,16 @@ pub async fn run(connections: &Connections) {
     loop {
         interval.tick().await;
 
-        let target_contact = TargetContact::Owner;
-        let unchanged_since = unchanged_since(target_contact);
-        let resend_period = resend_period(target_contact);
+        let recipient_role = RecipientRole::Owner;
+        let not_updated_since = not_updated_since(recipient_role);
+        let resend_period = resend_period(recipient_role);
 
         if let Err(err) = send_update_reminders(
             connections,
             &email_gw,
             &formatter,
-            target_contact,
-            unchanged_since,
+            recipient_role,
+            not_updated_since,
             resend_period,
         ) {
             log::warn!("Update reminders could not be sent: {err}");
@@ -34,14 +34,14 @@ pub async fn run(connections: &Connections) {
     }
 }
 
-const fn resend_period(target_contact: TargetContact) -> Duration {
-    match target_contact {
-        TargetContact::Owner => ONE_YEAR,
-        TargetContact::Scout => FOURHUNDERED_DAYS,
+const fn resend_period(recipient_role: RecipientRole) -> Duration {
+    match recipient_role {
+        RecipientRole::Owner => ONE_YEAR,
+        RecipientRole::Scout => FOURHUNDERED_DAYS,
     }
 }
 
 // TODO: make this configurable
-fn unchanged_since(target_contact: TargetContact) -> Timestamp {
-    Timestamp::now() - resend_period(target_contact)
+fn not_updated_since(recipient_role: RecipientRole) -> Timestamp {
+    Timestamp::now() - resend_period(recipient_role)
 }

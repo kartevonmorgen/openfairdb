@@ -1,0 +1,26 @@
+Hallo,
+
+{% match event_type                         %}
+{%   when EventType::Created                %}
+{%     include "intro_entry_created_DE.txt" %}
+{%   when EventType::Updated                %}
+{%     include "intro_entry_updated_DE.txt" %}
+{% endmatch                                 %}
+
+{{ title }} ({{ category }})
+{{ description }}
+
+    Tags: {{ tags }}
+    Adresse: {{ address_line }}
+    Webseite: {{ homepage }}
+    Email-Adresse: {{ email }}
+    Telefon: {{ phone }}
+
+Eintrag anschauen oder bearbeiten: https://kartevonmorgen.org/#/?entry={{ id }}
+
+Du kannst dein Abonnement des Kartenbereichs abbestellen, indem du dich auf https://kartevonmorgen.org einloggst.
+
+euphorische Grüße,
+das Karte von morgen-Team
+
+{% include "outro_hints_DE.txt" %}

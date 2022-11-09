@@ -15,6 +15,8 @@ pub fn create_place(
     // Create and add new entry
     let (place, ratings) = {
         connections.exclusive()?.transaction(|conn| {
+            // TODO:
+            // combine `prepare_new_place` and `store_new_place` in ofdb-core
             match usecases::prepare_new_place(
                 conn,
                 new_place,

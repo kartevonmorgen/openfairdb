@@ -24,6 +24,7 @@ pub enum Error {
 
 type Result<T> = std::result::Result<T, Error>;
 
+// TODO: Rename to CommentRepo
 pub trait CommentRepository {
     fn create_comment(&self, _: Comment) -> Result<()>;
 
@@ -55,6 +56,7 @@ pub trait CommentRepository {
     fn archive_comments_of_places(&self, place_ids: &[&str], activity: &Activity) -> Result<usize>;
 }
 
+// TODO: Rename to RatingRepo
 pub trait RatingRepository {
     fn create_rating(&self, rating: Rating) -> Result<()>;
 
@@ -211,6 +213,8 @@ pub trait SubscriptionRepo {
         user_email: &EmailAddress,
     ) -> Result<Vec<BboxSubscription>>;
     fn delete_bbox_subscriptions_by_email(&self, user_email: &EmailAddress) -> Result<()>;
+    // TODO: add
+    // fn bbox_subscriptions_affected_by_place(&self, place: &Place) -> Result<()>;
 }
 
 pub trait ReminderRepo {

@@ -25,6 +25,7 @@ repos:
       - id: destroyed-symlinks
       - id: detect-private-key
       - id: end-of-file-fixer
+        exclude: ^ofdb-gateways/src/user_communication/templates/.*\.txt$
       - id: fix-byte-order-marker
       - id: forbid-new-submodules
       - id: mixed-line-ending

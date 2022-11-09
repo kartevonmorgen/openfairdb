@@ -1,33 +1,39 @@
 use super::*;
 use ofdb_core::{gateways::email::EmailGateway, usecases::EmailReminderFormatter};
+use std::time::Instant;
 use time::Duration;
 
 pub fn send_update_reminders<G, F>(
     connections: &sqlite::Connections,
     email_gateway: &G,
     formatter: &F,
-    target_contact: usecases::TargetContact,
-    unchanged_since: Timestamp,
+    recipient_role: usecases::RecipientRole,
+    not_updated_since: Timestamp,
     resend_period: Duration,
 ) -> Result<()>
 where
     G: EmailGateway,
     F: EmailReminderFormatter,
 {
-    Ok(connections.exclusive()?.transaction(|conn| {
+    let start_time = Instant::now();
+    log::debug!("Send update reminders");
+    connections.exclusive()?.transaction(|conn| {
         usecases::send_update_reminders(
             conn,
             email_gateway,
             formatter,
-            target_contact,
-            unchanged_since,
+            recipient_role,
+            not_updated_since,
             resend_period,
         )
         .map_err(|err| {
             warn!("Failed to send update reminders: {}", err);
             err
         })
-    })?)
+    })?;
+    let duration = start_time.elapsed().as_millis();
+    log::debug!("Sending update reminders took {duration} milliseconds");
+    Ok(())
 }
 
 #[cfg(test)]
@@ -163,7 +169,7 @@ mod tests {
             &fixture.db_connections,
             &email_gw,
             &email_fmt,
-            usecases::TargetContact::Owner,
+            usecases::RecipientRole::Owner,
             unchanged_since,
             resend_period,
         )
@@ -231,7 +237,7 @@ mod tests {
             &fixture.db_connections,
             &email_gw,
             &email_fmt,
-            usecases::TargetContact::Scout,
+            usecases::RecipientRole::Scout,
             unchanged_since,
             resend_period,
         )
