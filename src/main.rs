@@ -1,7 +1,7 @@
 // Copyright (c) 2015 - 2018 Markus Kohlhase <mail@markus-kohlhase.de>
 // Copyright (c) 2018 - 2022 slowtec GmbH <post@slowtec.de>
 
-use std::{env, path::Path};
+use std::{env, path::Path, time::Duration};
 
 use clap::{crate_authors, Arg, ArgAction, Command};
 use dotenv::dotenv;
@@ -113,7 +113,8 @@ pub async fn main() {
     let db_connections = connections.clone();
 
     tokio::spawn(async move {
-        recurring_reminder::run(&db_connections).await;
+        let task_interval = Duration::from_secs(60 * 60 * 24);
+        recurring_reminder::run(&db_connections, task_interval).await;
     });
 
     #[allow(clippy::match_single_binding)]

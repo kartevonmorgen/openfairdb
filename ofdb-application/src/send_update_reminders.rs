@@ -15,24 +15,50 @@ where
     G: EmailGateway,
     F: EmailReminderFormatter,
 {
+    log::info!("Send update reminders to {recipient_role:?}s for places that were not updated since {not_updated_since:?}");
+
+    // 1. First use read-only DB connection
     let start_time = Instant::now();
-    log::debug!("Send update reminders");
-    connections.exclusive()?.transaction(|conn| {
-        usecases::send_update_reminders(
-            conn,
-            email_gateway,
-            formatter,
+    let unsent_emails = {
+        let conn = connections.shared()?;
+        ofdb_core::usecases::find_unsent_reminder_emails(
+            &conn,
             recipient_role,
             not_updated_since,
             resend_period,
-        )
-        .map_err(|err| {
-            warn!("Failed to send update reminders: {}", err);
+            formatter,
+        )?
+    };
+    log::debug!(
+        "Finding unsent reminder emails for {recipient_role:?}s took {}ms",
+        start_time.elapsed().as_millis()
+    );
+    if unsent_emails.is_empty() {
+        log::debug!("There are no unsent reminders to be send");
+        return Ok(());
+    }
+
+    // 2. Send emails (fire and forget)
+    let start_time = Instant::now();
+    let sent_reminders = ofdb_core::usecases::send_reminder_emails(email_gateway, unsent_emails);
+    log::debug!(
+        "Sending update reminders for {recipient_role:?} stook {}ms",
+        start_time.elapsed().as_millis()
+    );
+
+    // 3. Remember what emails have been sent.
+    let start_time = Instant::now();
+    connections.exclusive()?.transaction(|conn| {
+        usecases::save_sent_reminders(conn, &sent_reminders).map_err(|err| {
+            log::warn!("Failed to save sent update reminders: {}", err);
             err
         })
     })?;
-    let duration = start_time.elapsed().as_millis();
-    log::debug!("Sending update reminders took {duration} milliseconds");
+    log::info!(
+        "Saving sent update reminders took {}ms",
+        start_time.elapsed().as_millis()
+    );
+
     Ok(())
 }
 

@@ -3,14 +3,21 @@ use ofdb_core::{
     entities::{EmailAddress, EmailContent},
     gateways::email::EmailGateway,
 };
-use ofdb_gateways::{mailgun::Mailgun, notify::Notify, opencage::OpenCage, sendmail::Sendmail};
+use ofdb_gateways::{
+    email::{mailgun::Mailgun, send_to_json_file::SendToJsonFile, sendmail::Sendmail},
+    notify::Notify,
+    opencage::OpenCage,
+};
 use std::env;
 
 pub fn notification_gateway() -> Notify {
-    if let Some(gw) = mailgun_gw() {
+    if let Some(gw) = json_file_email_gateway() {
+        log::info!("Use JSON file email gateway ({})", gw.path().display());
+        Notify::new(gw)
+    } else if let Some(gw) = mailgun_gateway() {
         log::info!("Use Mailgun gateway");
         Notify::new(gw)
-    } else if let Some(gw) = sendmail_gw() {
+    } else if let Some(gw) = sendmail_gateway() {
         log::warn!("Mailgun gateway was not configured: use sendmail as fallback");
         Notify::new(gw)
     } else {
@@ -20,9 +27,11 @@ pub fn notification_gateway() -> Notify {
 }
 
 pub fn email_gateway() -> EmailGw {
-    if let Some(gw) = mailgun_gw() {
+    if let Some(gw) = json_file_email_gateway() {
         EmailGw::new(gw)
-    } else if let Some(gw) = sendmail_gw() {
+    } else if let Some(gw) = mailgun_gateway() {
+        EmailGw::new(gw)
+    } else if let Some(gw) = sendmail_gateway() {
         EmailGw::new(gw)
     } else {
         EmailGw::new(DummyMailGw)
@@ -33,7 +42,7 @@ pub fn geocoding_gateway(cfg: &Cfg) -> OpenCage {
     OpenCage::new(cfg.opencage_api_key.clone())
 }
 
-fn mailgun_gw() -> Option<Mailgun> {
+fn mailgun_gateway() -> Option<Mailgun> {
     // TODO: move this to crate::cfg
     let api_key = env::var("MAILGUN_API_KEY");
     let domain = env::var("MAILGUN_DOMAIN");
@@ -59,7 +68,7 @@ fn mailgun_gw() -> Option<Mailgun> {
     })
 }
 
-fn sendmail_gw() -> Option<Sendmail> {
+fn sendmail_gateway() -> Option<Sendmail> {
     env::var("MAIL_GATEWAY_SENDER_ADDRESS")
         .ok()
         .and_then(|mail| {
@@ -70,6 +79,18 @@ fn sendmail_gw() -> Option<Sendmail> {
                 .ok()
         })
         .map(Sendmail::new)
+}
+
+fn json_file_email_gateway() -> Option<SendToJsonFile> {
+    env::var("JSON_FILE_MAIL_GATEWAY")
+        .ok()
+        .and_then(|file_name| {
+            SendToJsonFile::try_new(file_name)
+                .map_err(|err| {
+                    log::warn!("Could not create JSON file email gateway: {err}");
+                })
+                .ok()
+        })
 }
 
 struct DummyMailGw;

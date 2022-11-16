@@ -63,3 +63,9 @@ pub struct EmailContent {
     pub subject: String,
     pub body: String,
 }
+
+#[derive(Debug, Clone)]
+pub struct Email {
+    pub to: Vec<EmailAddress>,
+    pub content: EmailContent,
+}
