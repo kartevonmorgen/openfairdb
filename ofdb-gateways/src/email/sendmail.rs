@@ -23,9 +23,10 @@ impl Sendmail {
         Self { from }
     }
     fn send(&self, mail: String) {
+        // TODO: use tokio::task::spawn_blocking
         thread::spawn(move || {
             if let Err(err) = send_raw(&mail) {
-                warn!("Could not send e-mail: {}", err);
+                log::warn!("Could not send e-mail: {}", err);
             }
         });
     }
@@ -50,20 +51,20 @@ fn send_raw(mail: &str) -> Result<()> {
 /// if the `email` feature is disabled.
 #[cfg(test)]
 fn send_raw(email: &str) -> Result<()> {
-    debug!("Would send e-mail: {}", email);
+    log::debug!("Would send e-mail: {}", email);
     Ok(())
 }
 
 impl EmailGateway for Sendmail {
     fn compose_and_send(&self, recipients: &[EmailAddress], content: &EmailContent) {
-        debug!("Sending e-mails to: {:?}", recipients);
+        log::debug!("Sending e-mails to: {:?}", recipients);
         for to in recipients {
             match compose(&self.from, &[to], content) {
                 Ok(email) => {
                     self.send(email);
                 }
                 Err(err) => {
-                    warn!("Failed to compose e-mail: {}", err);
+                    log::warn!("Failed to compose e-mail: {}", err);
                 }
             }
         }
@@ -175,7 +176,7 @@ pub fn compose(
          {body}",
     );
 
-    debug!("composed email: {}", &email);
+    log::debug!("composed email: {}", &email);
 
     Ok(email)
 }

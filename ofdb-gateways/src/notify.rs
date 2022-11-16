@@ -36,7 +36,7 @@ impl NotificationGateway for Notify {
         let content = user_communication::place_created_email(&place, &category_names);
 
         {
-            info!(
+            log::info!(
                 "Sending e-mails to {} recipients after new place {} added",
                 email_addresses.len(),
                 place.id,
@@ -61,7 +61,7 @@ impl NotificationGateway for Notify {
         let content = user_communication::place_updated_email(&place, &category_names);
 
         {
-            info!(
+            log::info!(
                 "Sending e-mails to {} recipients after place {} updated",
                 email_addresses.len(),
                 place.id
@@ -73,7 +73,7 @@ impl NotificationGateway for Notify {
         let content = user_communication::event_created_email(event);
 
         {
-            info!(
+            log::info!(
                 "Sending e-mails to {} recipients after new event {} created",
                 email_addresses.len(),
                 event.id,
@@ -85,7 +85,7 @@ impl NotificationGateway for Notify {
         let content = user_communication::event_updated_email(event);
 
         {
-            info!(
+            log::info!(
                 "Sending e-mails to {} recipients after event {} updated",
                 email_addresses.len(),
                 event.id
@@ -115,7 +115,7 @@ impl NotificationGateway for Notify {
         let content = user_communication::user_registration_email(url);
 
         {
-            info!("Sending confirmation e-mail to user {}", user.email);
+            log::info!("Sending confirmation e-mail to user {}", user.email);
             compose_and_send_emails(&*self.email_gw, &[user.email.clone()], &content);
         }
     }
@@ -126,7 +126,7 @@ impl NotificationGateway for Notify {
         );
         let content = user_communication::user_reset_password_email(&url);
         {
-            info!(
+            log::info!(
                 "Sending e-mail to {} after password reset requested",
                 email_nonce.email
             );

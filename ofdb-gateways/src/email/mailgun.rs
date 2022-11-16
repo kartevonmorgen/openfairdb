@@ -19,9 +19,10 @@ impl Mailgun {
     fn send(&self, params: Vec<(&'static str, String)>) {
         let url = self.api_url.clone();
         let key = self.api_key.clone();
+        // TODO: use tokio::task::spawn_blocking
         thread::spawn(move || {
             if let Err(err) = send_raw(&url, &key, params) {
-                warn!("Could not send e-mail: {}", err);
+                log::warn!("Could not send e-mail: {}", err);
             }
         });
     }
@@ -38,7 +39,7 @@ fn send_raw(url: &str, api_key: &str, params: Vec<(&'static str, String)>) -> Re
     res.map_err(|err| Error::new(ErrorKind::Other, err))
         .and_then(|res| {
             if res.status().is_success() {
-                debug!("Mail provider response: {:#?}", res);
+                log::debug!("Mail provider response: {:#?}", res);
                 Ok(())
             } else {
                 // TODO: We should distinguish between a technical failure (Err, see above)
@@ -55,17 +56,17 @@ fn send_raw(url: &str, api_key: &str, params: Vec<(&'static str, String)>) -> Re
 /// if the `email` feature is disabled.
 #[cfg(test)]
 fn send_raw(_: &str, _: &str, params: Vec<(&'static str, String)>) -> Result<()> {
-    debug!("Would send e-mail: {:?}", params);
+    log::debug!("Would send e-mail: {:?}", params);
     Ok(())
 }
 
 impl EmailGateway for Mailgun {
     fn compose_and_send(&self, recipients: &[EmailAddress], email: &EmailContent) {
         if recipients.is_empty() {
-            warn!("No valid email addresses specified");
+            log::warn!("No valid email addresses specified");
             return;
         }
-        debug!("Sending e-mails to: {:?}", recipients);
+        log::debug!("Sending e-mails to: {:?}", recipients);
         let recipients: String = recipients.iter().map(EmailAddress::as_str).join(",");
 
         let params = vec![

@@ -1,27 +1,50 @@
 use super::prelude::*;
 use crate::gateways::email::EmailGateway;
-use std::ops::Not;
+use std::{ops::Not, time::Instant};
 use time::Duration;
 
-pub fn send_update_reminders<R, G, F>(
+pub fn find_unsent_reminder_emails<R, F>(
     repo: &R,
-    email_gateway: &G,
-    formatter: &F,
     recipient_role: RecipientRole,
     not_updated_since: Timestamp,
     resend_period: Duration,
-) -> Result<()>
+    formatter: &F,
+) -> Result<Vec<(Reminder, EmailContent)>>
 where
     R: PlaceRepo + SubscriptionRepo + ReminderRepo + UserRepo,
-    G: EmailGateway,
     F: EmailReminderFormatter,
 {
     let outdated_places = find_places_not_updated_since(repo, not_updated_since)?;
+    log::debug!("Found {} outdated places", outdated_places.len());
     let unsent_reminders =
         find_unsent_reminders(repo, outdated_places, recipient_role, resend_period)?;
-    let unsent_emails = create_emails(formatter, unsent_reminders);
-    let sent_reminders = send_reminder_emails(email_gateway, unsent_emails);
-    save_sent_reminders(repo, &sent_reminders);
+    Ok(create_emails(formatter, unsent_reminders))
+}
+
+pub fn send_reminder_emails<G>(
+    email_gateway: &G,
+    emails: Vec<(Reminder, EmailContent)>,
+) -> Vec<(Reminder, Timestamp)>
+where
+    G: EmailGateway,
+{
+    emails
+        .into_iter()
+        .map(|(r, email)| {
+            let sent_at = Timestamp::now();
+            email_gateway.compose_and_send(&r.recipients, &email);
+            (r, sent_at)
+        })
+        .collect()
+}
+
+pub fn save_sent_reminders<R>(repo: &R, sent_reminders: &[(Reminder, Timestamp)]) -> Result<()>
+where
+    R: ReminderRepo,
+{
+    for (reminder, sent_at) in sent_reminders {
+        repo.save_sent_reminders(&reminder.place.id, &reminder.recipients, *sent_at)?;
+    }
     Ok(())
 }
 
@@ -38,11 +61,16 @@ fn find_places_not_updated_since<R>(
 where
     R: PlaceRepo,
 {
+    let start_time = Instant::now();
     let places = place_repo
         .find_places_not_updated_since(not_updated_since)?
         .into_iter()
         .map(|(place, _)| place)
         .collect();
+    log::debug!(
+        "find places not updated since {not_updated_since:?} took {}ms",
+        start_time.elapsed().as_millis()
+    );
     Ok(places)
 }
 
@@ -59,6 +87,7 @@ where
     // Use SubscriptionRepo::bbox_subscriptions_affected_by_place and as soon as it is implemented
     // and combine it with UserRepo::get_user_by_email.
 
+    let start_time = Instant::now();
     let subscriptions = repo.all_bbox_subscriptions()?;
     let users = repo.all_users()?;
 
@@ -79,7 +108,10 @@ where
             place,
         })
         .collect();
-
+    log::debug!(
+        "find unsent reminders took {}ms",
+        start_time.elapsed().as_millis()
+    );
     Ok(reminders)
 }
 
@@ -195,37 +227,6 @@ where
             (r, email)
         })
         .collect()
-}
-
-fn send_reminder_emails<G>(
-    email_gateway: &G,
-    emails: Vec<(Reminder, EmailContent)>,
-) -> Vec<(Reminder, Timestamp)>
-where
-    G: EmailGateway,
-{
-    emails
-        .into_iter()
-        .map(|(r, email)| {
-            let sent_at = Timestamp::now();
-            email_gateway.compose_and_send(&r.recipients, &email);
-            (r, sent_at)
-        })
-        .collect()
-}
-
-fn save_sent_reminders<R>(repo: &R, sent_reminders: &[(Reminder, Timestamp)])
-where
-    R: ReminderRepo,
-{
-    for (reminder, sent_at) in sent_reminders {
-        if let Err(err) =
-            repo.save_sent_reminders(&reminder.place.id, &reminder.recipients, *sent_at)
-        {
-            let Place { id, title, .. } = &reminder.place;
-            log::warn!("Unable to save sent reminders for place {id} ({title}): {err}");
-        }
-    }
 }
 
 #[cfg(test)]

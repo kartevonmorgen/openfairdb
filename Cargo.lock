@@ -1279,6 +1279,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4217ad341ebadf8d8e724e264f13e593e0648f5b3e94b3896a5df283be015ecc"
 
 [[package]]
+name = "jfs"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7a4ef07e074b9fef9067ab17757ab4bf1158371d2a2ca119cae202cdb4fb618e"
+dependencies = [
+ "fs2",
+ "log",
+ "serde",
+ "serde_json",
+ "uuid",
+]
+
+[[package]]
 name = "js-sys"
 version = "0.3.60"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1763,11 +1776,13 @@ dependencies = [
  "fast_chemail",
  "geocoding",
  "itertools",
+ "jfs",
  "log",
  "ofdb-core",
  "ofdb-entities",
  "quoted_printable",
  "reqwest",
+ "serde",
  "time",
 ]
 

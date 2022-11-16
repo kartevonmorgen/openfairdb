@@ -25,12 +25,12 @@ fn oc_resolve_address_lat_lng(oc_api_key: String, addr: &Address) -> Option<(f64
         Ok(res) => {
             if !res.is_empty() {
                 let point = &res[0];
-                debug!("Resolved address location '{}': {:?}", addr_str, point);
+                log::debug!("Resolved address location '{}': {:?}", addr_str, point);
                 return Some((point.y(), point.x()));
             }
         }
         Err(err) => {
-            warn!("Failed to resolve address location '{}': {}", addr_str, err);
+            log::warn!("Failed to resolve address location '{}': {}", addr_str, err);
         }
     }
     None
