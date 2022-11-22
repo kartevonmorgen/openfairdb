@@ -14,16 +14,16 @@ anyhow = "1.0.66"
 fast_chemail = "0.9.6"
 lazy_static = "1.4.0"
 log = "0.4.17"
-passwords = "3.1.9"
-regex = "1.6.0"
+passwords = "3.1.12"
+regex = "1.7.0"
 thiserror = "1.0.37"
-time = "0.3.16"
+time = "0.3.17"
 url = "2.3.1"
 
 [dev-dependencies]
 brunch = "0.3.6"
 ofdb-entities = { version = "*", features = ["builders"] }
-time = "0.3.16"
+time = "0.3.17"
 
 [[bench]]
 name = "calc_avg_rating"

@@ -12,7 +12,7 @@ diesel = { version = "2.0.2", features = ["sqlite", "r2d2"] }
 diesel_migrations = { version = "2.0.0", features = ["sqlite"] }
 ofdb-core = { version = "0.0.0", path = "../ofdb-core" }
 parking_lot = "0.12.1"
-time = { version = "0.3.16", features = ["macros", "formatting", "parsing"] }
+time = { version = "0.3.17", features = ["macros", "formatting", "parsing"] }
 
 # Bundle SQLite code to prevent dynamic linking.
 # The pinned version must be compatible with diesel!

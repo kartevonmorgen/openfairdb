@@ -16,7 +16,7 @@ anyhow = "1.0.66"
 base64 = { version = "0.13.1", optional = true }
 captcha = "0.0.9"
 csv = "1.1.6"
-env_logger = "0.9.1"
+env_logger = "0.9.3"
 jsonwebtoken = { version = "8.1.1", optional = true }
 lazy_static = "1.4.0"
 log = "0.4.17"
@@ -28,10 +28,10 @@ rust-embed = "6.4.2"
 rocket = { version = "0.5.0-rc.2", features = ["secrets", "json"] }
 rocket_cors = "0.6.0-alpha1"
 serde = { version = "1.0.147", features = ["derive"] }
-serde_json = "1.0.87"
-time = { version = "0.3.16", features = ["macros", "formatting"] }
+serde_json = "1.0.89"
+time = { version = "0.3.17", features = ["macros", "formatting"] }
 thiserror = "1.0.37"
-uuid = { version = "1.2.1", features = ["v4"] }
+uuid = { version = "1.2.2", features = ["v4"] }
 r2d2 = "0.8.10"
 
 [dev-dependencies]

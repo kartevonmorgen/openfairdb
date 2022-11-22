@@ -46,12 +46,12 @@ ofdb-db-tantivy  = "=0.0.0"
 ofdb-gateways    = "=0.0.0"
 ofdb-webserver   = "=0.0.0"
 
-env_logger = "0.9.1"
-clap =  { version = "4.0.18", features = ["cargo"] }
+env_logger = "0.9.3"
+clap =  { version = "4.0.26", features = ["cargo"] }
 dotenv = "0.15.0"
 log = "0.4.17"
-time = "0.3.16"
-tokio = "1.21.2"
+time = "0.3.17"
+tokio = "1.22.0"
 
 [patch.crates-io.maud]
 # TODO: use v0.25.0 as soon as it's published

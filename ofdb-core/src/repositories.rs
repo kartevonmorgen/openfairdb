@@ -137,7 +137,7 @@ pub trait PlaceRepo {
 }
 
 pub trait OrganizationRepo {
-    fn create_org(&mut self, _: Organization) -> Result<()>;
+    fn create_org(&mut self, org: Organization) -> Result<()>;
     fn get_org_by_api_token(&self, token: &str) -> Result<Organization>;
     fn map_tag_to_clearance_org_id(&self, tag: &str) -> Result<Option<Id>>;
     fn get_moderated_tags_by_org(
@@ -172,8 +172,8 @@ pub trait PlaceClearanceRepo {
 }
 
 pub trait EventRepo {
-    fn create_event(&self, _: Event) -> Result<()>;
-    fn update_event(&self, _: &Event) -> Result<()>;
+    fn create_event(&self, event: Event) -> Result<()>;
+    fn update_event(&self, event: &Event) -> Result<()>;
     fn archive_events(&self, ids: &[&str], archived: Timestamp) -> Result<usize>;
 
     fn get_event(&self, id: &str) -> Result<Event>;
@@ -206,7 +206,7 @@ pub trait UserRepo {
 }
 
 pub trait SubscriptionRepo {
-    fn create_bbox_subscription(&self, _: &BboxSubscription) -> Result<()>;
+    fn create_bbox_subscription(&self, bbox: &BboxSubscription) -> Result<()>;
     fn all_bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>>;
     fn all_bbox_subscriptions_by_email(
         &self,
@@ -223,6 +223,13 @@ pub trait ReminderRepo {
         place_id: &Id,
         email: &EmailAddress,
     ) -> Result<Option<Timestamp>>;
+
+    // TODO: use this fn:
+    // fn find_last_sent_reminders(
+    //     &self,
+    //     place_ids: &[&Id],
+    // ) -> Result<HashMap<(Id, EmailAddress), Timestamp>>;
+
     fn save_sent_reminders(
         &self,
         place_id: &Id,
@@ -232,7 +239,7 @@ pub trait ReminderRepo {
 }
 
 pub trait TagRepo {
-    fn create_tag_if_it_does_not_exist(&self, _: &Tag) -> Result<()>;
+    fn create_tag_if_it_does_not_exist(&self, tag: &Tag) -> Result<()>;
     fn all_tags(&self) -> Result<Vec<Tag>>;
     fn count_tags(&self) -> Result<usize>;
 }
