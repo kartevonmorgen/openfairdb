@@ -3,6 +3,7 @@ use std::{borrow::Borrow, fmt, str::FromStr};
 use uuid::Uuid;
 
 /// Portable public identifier with a string representation.
+// TODO: use `Uuid` and derive `Hash`
 #[derive(Default, Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub struct Id(String);
 

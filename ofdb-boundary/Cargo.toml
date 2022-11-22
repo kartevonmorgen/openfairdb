@@ -11,7 +11,7 @@ edition.workspace = true
 
 [dependencies]
 serde = { version = "1.0.147", features = ["derive"] }
-time = { version = "0.3.16", features = ["serde"] }
+time = { version = "0.3.17", features = ["serde"] }
 
 [dependencies.ofdb-entities]
 version = "0.11.0"

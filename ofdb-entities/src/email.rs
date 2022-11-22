@@ -2,6 +2,7 @@ use std::{fmt, str::FromStr};
 use thiserror::Error;
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+// TODO: Implement `Hash`
 pub struct EmailAddress {
     address: String,
     display_name: Option<String>,

@@ -14,7 +14,7 @@ fast_chemail = "0.9.6"
 itertools = "0.10.5"
 log = "0.4.17"
 quoted_printable = "0.4.5"
-time = { version = "0.3.16", features = ["macros", "formatting", "local-offset"] }
+time = { version = "0.3.17", features = ["macros", "formatting", "local-offset"] }
 jfs = "0.8.0"
 serde = { version = "1.0.147", features = ["derive"] }
 
@@ -24,6 +24,6 @@ default-features = false
 features = ["rustls-tls"]
 
 [dependencies.reqwest]
-version = "0.11.12"
+version = "0.11.13"
 default-features = false
 features = ["blocking", "rustls-tls", "json"]
