@@ -367,6 +367,7 @@ paths:
       description: |
         Returns a list of places that have not been changed since the given timestamp.
         Archived and rejected places are ignored.
+        Only scouts and admins are entitled to invoke this function.
       parameters:
         - name: since
           in: query
@@ -374,6 +375,8 @@ paths:
           description: The point in time from which the places are to be considered up-to-date.
           schema:
             $ref: '#/components/schemas/UnixTime'
+        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: '#/components/parameters/PaginationOffset'
       responses:
         '200':
           description: Successful response
@@ -390,6 +393,8 @@ paths:
                       - $ref: '#/components/schemas/PlaceRoot'
                       - $ref: '#/components/schemas/PlaceRevision'
                       - $ref: '#/components/schemas/ReviewStatus'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   '/ratings/{ids}':
     get:
       summary: Get multiple ratings
