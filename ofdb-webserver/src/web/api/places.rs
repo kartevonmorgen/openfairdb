@@ -157,14 +157,20 @@ pub fn post_review(
     Ok(Json(()))
 }
 
-#[get("/places/not-updated?<since>")]
+// FIXME: Limit the total number of not updated places
+// to avoid cloning the whole database!!
+// FIXME: require login as Scout or Admin
+#[get("/places/not-updated?<since>&<offset>&<limit>")]
 pub fn get_not_updated(
     db: sqlite::Connections,
     since: i64, // in seconds
+    offset: Option<u64>,
+    limit: Option<u64>,
 ) -> Result<Vec<(json::PlaceRoot, json::PlaceRevision, json::ReviewStatus)>> {
+    let pagination = Pagination { offset, limit };
     let entries = {
         let db = db.shared()?;
-        db.find_places_not_updated_since(Timestamp::from_secs(since))?
+        db.find_places_not_updated_since(Timestamp::from_secs(since), &pagination)?
     };
     let entries = entries
         .into_iter()

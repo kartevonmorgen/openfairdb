@@ -27,8 +27,9 @@ impl<'a> PlaceRepo for DbReadWrite<'a> {
     fn find_places_not_updated_since(
         &self,
         not_updated_since: Timestamp,
+        pagination: &Pagination,
     ) -> Result<Vec<(Place, ReviewStatus)>> {
-        find_places_not_updated_since(&mut self.conn.borrow_mut(), not_updated_since)
+        find_places_not_updated_since(&mut self.conn.borrow_mut(), not_updated_since, pagination)
     }
 
     fn most_popular_place_revision_tags(
@@ -87,8 +88,9 @@ impl<'a> PlaceRepo for DbConnection<'a> {
     fn find_places_not_updated_since(
         &self,
         not_updated_since: Timestamp,
+        pagination: &Pagination,
     ) -> Result<Vec<(Place, ReviewStatus)>> {
-        find_places_not_updated_since(&mut self.conn.borrow_mut(), not_updated_since)
+        find_places_not_updated_since(&mut self.conn.borrow_mut(), not_updated_since, pagination)
     }
 
     fn most_popular_place_revision_tags(
@@ -147,8 +149,9 @@ impl<'a> PlaceRepo for DbReadOnly<'a> {
     fn find_places_not_updated_since(
         &self,
         not_updated_since: Timestamp,
+        pagination: &Pagination,
     ) -> Result<Vec<(Place, ReviewStatus)>> {
-        find_places_not_updated_since(&mut self.conn.borrow_mut(), not_updated_since)
+        find_places_not_updated_since(&mut self.conn.borrow_mut(), not_updated_since, pagination)
     }
 
     fn most_popular_place_revision_tags(
@@ -707,6 +710,7 @@ const EXCLUDE_STATUS_NOT_UPDATED: &[ReviewStatus] =
 fn find_places_not_updated_since(
     conn: &mut SqliteConnection,
     not_updated_since: Timestamp,
+    pagination: &Pagination,
 ) -> Result<Vec<(Place, ReviewStatus)>> {
     use schema::{place::dsl, place_revision::dsl as rev_dsl};
 
@@ -748,6 +752,16 @@ fn find_places_not_updated_since(
 
     for status in EXCLUDE_STATUS_NOT_UPDATED {
         query = query.filter(rev_dsl::current_status.ne(ReviewStatusPrimitive::from(*status)));
+    }
+
+    if let Some(limit) = pagination.limit {
+        query = query.limit(limit as i64);
+        // LIMIT must precede OFFSET, i.e. OFFSET without LIMIT
+        // is not supported!
+        let offset = pagination.offset.unwrap_or(0);
+        if offset > 0 {
+            query = query.offset(offset as i64);
+        }
     }
 
     query
