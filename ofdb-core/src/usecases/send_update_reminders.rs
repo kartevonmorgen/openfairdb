@@ -1,24 +1,56 @@
 use super::prelude::*;
-use crate::gateways::email::EmailGateway;
+use crate::{gateways::email::EmailGateway, repositories};
+use anyhow::anyhow;
 use std::{ops::Not, time::Instant};
 use time::Duration;
 
-pub fn find_unsent_reminder_emails<R, F>(
+const DEFAULT_STEP_WIDTH: u64 = 100;
+const DEFAULT_MAX_UNSENT_REMINDERS: u64 = 100;
+
+pub fn find_unsent_reminders<R>(
     repo: &R,
     recipient_role: RecipientRole,
     not_updated_since: Timestamp,
     resend_period: Duration,
-    formatter: &F,
-) -> Result<Vec<(Reminder, EmailContent)>>
+) -> Result<Vec<Reminder>>
 where
     R: PlaceRepo + SubscriptionRepo + ReminderRepo + UserRepo,
-    F: EmailReminderFormatter,
 {
-    let outdated_places = find_places_not_updated_since(repo, not_updated_since)?;
-    log::debug!("Found {} outdated places", outdated_places.len());
-    let unsent_reminders =
-        find_unsent_reminders(repo, outdated_places, recipient_role, resend_period)?;
-    Ok(create_emails(formatter, unsent_reminders))
+    let limit = Some(DEFAULT_MAX_UNSENT_REMINDERS);
+    let mut offset = None;
+    let mut unsent_reminders = vec![];
+
+    loop {
+        let pagination = Pagination { offset, limit };
+        let outdated_places = find_places_not_updated_since(repo, not_updated_since, &pagination)?;
+        log::debug!("Found {} outdated places", outdated_places.len());
+        debug_assert!(outdated_places.len() <= DEFAULT_MAX_UNSENT_REMINDERS.try_into().unwrap());
+        if outdated_places.is_empty() {
+            break; // Nothing to do, everything is up to date :)
+        }
+        let unsent = find_unsent_reminders_for_outdated_places(
+            repo,
+            outdated_places,
+            recipient_role,
+            resend_period,
+        )?;
+        if unsent.is_empty() {
+            // All reminders were sent for these outdated places,
+            // so look for more by increasing the offset
+            let new_offset = offset.unwrap_or(0).checked_add(DEFAULT_STEP_WIDTH).ok_or_else(||
+            // We should never reach u64::MAX
+            repositories::Error::Other(anyhow!("The offset to find outdated places exceeds maximum"))
+          )?;
+            offset = Some(new_offset);
+            continue;
+        } else {
+            unsent_reminders = unsent;
+            break;
+        }
+    }
+
+    log::debug!("Found {} unsent reminders", unsent_reminders.len());
+    Ok(unsent_reminders)
 }
 
 pub fn send_reminder_emails<G>(
@@ -57,13 +89,14 @@ pub enum RecipientRole {
 fn find_places_not_updated_since<R>(
     place_repo: &R,
     not_updated_since: Timestamp,
+    pagination: &Pagination,
 ) -> Result<Vec<Place>>
 where
     R: PlaceRepo,
 {
     let start_time = Instant::now();
     let places = place_repo
-        .find_places_not_updated_since(not_updated_since)?
+        .find_places_not_updated_since(not_updated_since, pagination)?
         .into_iter()
         .map(|(place, _)| place)
         .collect();
@@ -74,7 +107,7 @@ where
     Ok(places)
 }
 
-fn find_unsent_reminders<R>(
+fn find_unsent_reminders_for_outdated_places<R>(
     repo: &R,
     outdated_places: Vec<Place>,
     recipient_role: RecipientRole,
@@ -216,7 +249,10 @@ pub trait EmailReminderFormatter {
     fn format_email(&self, reminder: &Reminder) -> EmailContent;
 }
 
-fn create_emails<F>(formatter: &F, unsent_reminders: Vec<Reminder>) -> Vec<(Reminder, EmailContent)>
+pub fn create_emails<F>(
+    formatter: &F,
+    unsent_reminders: Vec<Reminder>,
+) -> Vec<(Reminder, EmailContent)>
 where
     F: EmailReminderFormatter,
 {

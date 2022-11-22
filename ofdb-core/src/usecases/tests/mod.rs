@@ -269,6 +269,7 @@ impl PlaceRepo for MockDb {
     fn find_places_not_updated_since(
         &self,
         _not_updated_since: Timestamp,
+        _pagination: &Pagination,
     ) -> RepoResult<Vec<(Place, ReviewStatus)>> {
         unimplemented!();
     }
