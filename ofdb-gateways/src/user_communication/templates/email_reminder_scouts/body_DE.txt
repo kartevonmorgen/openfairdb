@@ -1,4 +1,4 @@
-Seit über einem Jahr wurde der folgende Eintrag auf der Karte von morgen nicht mehr aktualisiert:
+Seit dem {{ last_change }} wurde der folgende Eintrag auf der Karte von morgen nicht mehr aktualisiert:
 
   {{ title }}
   {{ description }}
