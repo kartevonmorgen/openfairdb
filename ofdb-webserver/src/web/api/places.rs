@@ -159,14 +159,22 @@ pub fn post_review(
 
 // FIXME: Limit the total number of not updated places
 // to avoid cloning the whole database!!
-// FIXME: require login as Scout or Admin
 #[get("/places/not-updated?<since>&<offset>&<limit>")]
 pub fn get_not_updated(
+    auth: Auth,
     db: sqlite::Connections,
     since: i64, // in seconds
     offset: Option<u64>,
     limit: Option<u64>,
 ) -> Result<Vec<(json::PlaceRoot, json::PlaceRevision, json::ReviewStatus)>> {
+    {
+        let db = db.shared()?;
+        // Only scouts and admins are entitled to review places
+        auth.user_with_min_role(&db, Role::Scout).map_err(|err| {
+            log::debug!("Unauthorized user: {}", err);
+            err
+        })?;
+    }
     let pagination = Pagination { offset, limit };
     let entries = {
         let db = db.shared()?;
