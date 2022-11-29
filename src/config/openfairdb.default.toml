@@ -1,0 +1,20 @@
+[db]
+connection-sqlite = "openfair.db"
+connection-pool-size = 10
+
+[entries]
+accepted-licenses = ["CC0-1.0", "ODbL-1.0"]
+
+[webserver]
+cors = false
+captcha = false
+
+[reminders]
+task-interval-time = "2h"
+send-max = 100
+
+[reminders.scouts]
+not-updated-for = "400d"
+
+[reminders.owners]
+not-updated-for = "1y"

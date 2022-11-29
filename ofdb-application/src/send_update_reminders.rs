@@ -10,6 +10,7 @@ pub fn send_update_reminders<G, F>(
     recipient_role: usecases::RecipientRole,
     not_updated_since: Timestamp,
     resend_period: Duration,
+    send_max: u32,
 ) -> Result<()>
 where
     G: EmailGateway,
@@ -26,6 +27,7 @@ where
             recipient_role,
             not_updated_since,
             resend_period,
+            send_max,
         )?
     };
     log::debug!(
@@ -198,6 +200,7 @@ mod tests {
             usecases::RecipientRole::Owner,
             unchanged_since,
             resend_period,
+            10,
         )
         .unwrap();
 
@@ -266,6 +269,7 @@ mod tests {
             usecases::RecipientRole::Scout,
             unchanged_since,
             resend_period,
+            10,
         )
         .unwrap();
 
