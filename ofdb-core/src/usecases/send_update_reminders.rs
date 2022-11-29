@@ -5,18 +5,18 @@ use std::{ops::Not, time::Instant};
 use time::Duration;
 
 const DEFAULT_STEP_WIDTH: u64 = 100;
-const DEFAULT_MAX_UNSENT_REMINDERS: u64 = 100;
 
 pub fn find_unsent_reminders<R>(
     repo: &R,
     recipient_role: RecipientRole,
     not_updated_since: Timestamp,
     resend_period: Duration,
+    send_max: u32,
 ) -> Result<Vec<Reminder>>
 where
     R: PlaceRepo + SubscriptionRepo + ReminderRepo + UserRepo,
 {
-    let limit = Some(DEFAULT_MAX_UNSENT_REMINDERS);
+    let limit = Some(u64::from(send_max));
     let mut offset = None;
     let mut unsent_reminders = vec![];
 
@@ -24,7 +24,7 @@ where
         let pagination = Pagination { offset, limit };
         let outdated_places = find_places_not_updated_since(repo, not_updated_since, &pagination)?;
         log::debug!("Found {} outdated places", outdated_places.len());
-        debug_assert!(outdated_places.len() <= DEFAULT_MAX_UNSENT_REMINDERS.try_into().unwrap());
+        debug_assert!(outdated_places.len() <= send_max.try_into().unwrap());
         if outdated_places.is_empty() {
             break; // Nothing to do, everything is up to date :)
         }
