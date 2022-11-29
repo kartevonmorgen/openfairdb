@@ -1,0 +1,47 @@
+[db]
+connection-sqlite = "openfair.db"
+connection-pool-size = 10
+index-dir = "idx-dir"
+
+[entries]
+accepted-licenses = ["CC0-1.0", "ODbL-1.0"]
+
+[webserver]
+cors = false
+captcha = false
+
+[geocoding]
+gateway = "opencage"
+
+[email]
+gateway = "email-to-json-file"
+
+## Geocoding Gateways ##
+
+[gateway.opencage]
+api-key = "YOUR-API-KEY"
+
+## Email Gateways ##
+
+[gateway.mailgun]
+api-key = "YOUR-API-KEY"
+domain = "example.com"
+sender-address = "no-reply@example.org"
+
+[gateway.sendmail]
+sender-address = "no-reply@example.org"
+
+[gateway.email-to-json-file]
+dir = "/tmp/openfairdb-email-tests"
+
+## Reminder Emails ##
+
+[reminders]
+task-interval-time = "2h"
+send-max = 100
+
+[reminders.scouts]
+not-updated-for = "400d"
+
+[reminders.owners]
+not-updated-for = "1y"

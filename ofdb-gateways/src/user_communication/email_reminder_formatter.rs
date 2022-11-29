@@ -20,11 +20,13 @@ impl EmailReminderFormatter for ReminderFormatter {
         let subject = EmailReminderScoutsSubjectTemplate { title }
             .render()
             .unwrap();
+        // TODO: inject base URL
+        let entry_url = &format!("https://kartevonmorgen.org/#/?entry={id}");
         let body = EmailReminderScoutsBodyTemplate {
             last_change,
             title,
             description,
-            id: id.as_str(),
+            entry_url,
         }
         .render()
         .unwrap();
@@ -44,5 +46,5 @@ struct EmailReminderScoutsBodyTemplate<'a> {
     last_change: &'a str,
     title: &'a str,
     description: &'a str,
-    id: &'a str,
+    entry_url: &'a str,
 }

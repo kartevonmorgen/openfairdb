@@ -1,96 +1,87 @@
-use crate::cfg::Cfg;
+use crate::config;
 use ofdb_core::{
     entities::{EmailAddress, EmailContent},
     gateways::email::EmailGateway,
+    gateways::geocode::GeoCodingGateway,
 };
 use ofdb_gateways::{
     email::{mailgun::Mailgun, send_to_json_file::SendToJsonFile, sendmail::Sendmail},
     notify::Notify,
     opencage::OpenCage,
 };
-use std::env;
 
-pub fn notification_gateway() -> Notify {
-    if let Some(gw) = json_file_email_gateway() {
-        log::info!("Use JSON file email gateway ({})", gw.path().display());
-        Notify::new(gw)
-    } else if let Some(gw) = mailgun_gateway() {
-        log::info!("Use Mailgun gateway");
-        Notify::new(gw)
-    } else if let Some(gw) = sendmail_gateway() {
-        log::warn!("Mailgun gateway was not configured: use sendmail as fallback");
-        Notify::new(gw)
-    } else {
-        log::warn!("No eMail gateway was not configured");
-        Notify::new(DummyMailGw)
-    }
+pub fn notification_gateway(cfg: Option<config::EmailGateway>) -> Notify {
+    cfg.and_then(|gw| match gw {
+        config::EmailGateway::MailGun {
+            api_key,
+            domain,
+            sender_address,
+            api_url,
+        } => Some(Notify::new(Mailgun {
+            from_email: sender_address,
+            domain,
+            api_key,
+            api_url,
+        })),
+        config::EmailGateway::Sendmail { sender_address } => {
+            Some(Notify::new(Sendmail::new(sender_address)))
+        }
+        config::EmailGateway::EmailToJsonFile { dir } => SendToJsonFile::try_new(dir)
+            .map_err(|err| {
+                log::warn!("Could not create JSON file email gateway: {err}");
+            })
+            .ok()
+            .map(Notify::new),
+    })
+    .unwrap_or_else(|| Notify::new(DummyMailGw))
 }
 
-pub fn email_gateway() -> EmailGw {
-    if let Some(gw) = json_file_email_gateway() {
-        EmailGw::new(gw)
-    } else if let Some(gw) = mailgun_gateway() {
-        EmailGw::new(gw)
-    } else if let Some(gw) = sendmail_gateway() {
-        EmailGw::new(gw)
-    } else {
+pub fn email_gateway(cfg: Option<config::EmailGateway>) -> EmailGw {
+    cfg.and_then(|gw| match gw {
+        config::EmailGateway::MailGun {
+            api_key,
+            domain,
+            sender_address,
+            api_url,
+        } => Some(EmailGw::new(Mailgun {
+            from_email: sender_address,
+            domain,
+            api_key,
+            api_url,
+        })),
+        config::EmailGateway::Sendmail { sender_address } => {
+            Some(EmailGw::new(Sendmail::new(sender_address)))
+        }
+        config::EmailGateway::EmailToJsonFile { dir } => SendToJsonFile::try_new(dir)
+            .map_err(|err| {
+                log::warn!("Could not create JSON file email gateway: {err}");
+            })
+            .ok()
+            .map(EmailGw::new),
+    })
+    .unwrap_or_else(|| {
+        log::info!("No eMail gateway was configured");
         EmailGw::new(DummyMailGw)
-    }
-}
-
-pub fn geocoding_gateway(cfg: &Cfg) -> OpenCage {
-    OpenCage::new(cfg.opencage_api_key.clone())
-}
-
-fn mailgun_gateway() -> Option<Mailgun> {
-    // TODO: move this to crate::cfg
-    let api_key = env::var("MAILGUN_API_KEY");
-    let domain = env::var("MAILGUN_DOMAIN");
-    let from = env::var("MAIL_GATEWAY_SENDER_ADDRESS");
-
-    let (Ok(api_key), Ok(mail), Ok(domain)) = (api_key, from, domain) else {
-        return None;
-    };
-
-    // TODO: move this to crate::cfg
-    let api_url = env::var("MAILGUN_API_URL")
-        .unwrap_or_else(|_| format!("https://api.eu.mailgun.net/v3/{}/messages", domain));
-    // TODO: validate values
-    let Ok(from_email) = mail.parse() else {
-        log::warn!("Invalid email set for 'MAIL_GATEWAY_SENDER_ADDRESS'");
-        return None;
-    };
-    Some(Mailgun {
-        from_email,
-        domain,
-        api_key,
-        api_url,
     })
 }
 
-fn sendmail_gateway() -> Option<Sendmail> {
-    env::var("MAIL_GATEWAY_SENDER_ADDRESS")
-        .ok()
-        .and_then(|mail| {
-            mail.parse()
-                .map_err(|_| {
-                    log::warn!("Invalid email set for 'MAIL_GATEWAY_SENDER_ADDRESS'");
-                })
-                .ok()
-        })
-        .map(Sendmail::new)
+pub fn geocoding_gateway(
+    cfg: Option<config::GeocodingGateway>,
+) -> Box<dyn GeoCodingGateway + Send + Sync> {
+    match cfg {
+        Some(config::GeocodingGateway::OpenCage { api_key }) => {
+            Box::new(OpenCage::new(Some(api_key)))
+        }
+        _ => Box::new(NoGeoCodingGateway),
+    }
 }
 
-fn json_file_email_gateway() -> Option<SendToJsonFile> {
-    env::var("JSON_FILE_MAIL_GATEWAY")
-        .ok()
-        .and_then(|file_name| {
-            SendToJsonFile::try_new(file_name)
-                .map_err(|err| {
-                    log::warn!("Could not create JSON file email gateway: {err}");
-                })
-                .ok()
-        })
+struct NoGeoCodingGateway;
+
+impl GeoCodingGateway for NoGeoCodingGateway {
+    fn resolve_address_lat_lng(&self, _: &ofdb_core::entities::Address) -> Option<(f64, f64)> {
+        None
+    }
 }
 
 struct DummyMailGw;

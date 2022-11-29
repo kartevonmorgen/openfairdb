@@ -3,7 +3,7 @@ Seit dem {{ last_change }} wurde der folgende Eintrag auf der Karte von morgen n
   {{ title }}
   {{ description }}
 
-Eintrag anschauen oder bearbeiten: https://kartevonmorgen.org/#/?entry={{ id }}
+Eintrag anschauen oder bearbeiten: {{ entry_url }}
 
 euphorische Grüße,
 das Karte von morgen-Team
