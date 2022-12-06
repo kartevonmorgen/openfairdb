@@ -10,11 +10,11 @@ repository.workspace = true
 edition.workspace = true
 
 [dependencies]
-serde = { version = "1.0.147", features = ["derive"] }
+serde = { version = "1.0.149", features = ["derive"] }
 time = { version = "0.3.17", features = ["serde"] }
 
 [dependencies.ofdb-entities]
-version = "0.11.0"
+version = "0.12.0"
 path = "../ofdb-entities"
 optional = true
 
