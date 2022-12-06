@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use ofdb_entities::email::EmailAddress;
 use std::{
     collections::HashSet,
-    fs,
+    env, fs,
     io::ErrorKind,
     path::{Path, PathBuf},
     time::Duration,
@@ -11,6 +11,8 @@ use std::{
 mod raw;
 
 const DEFAULT_CONFIG_FILE_NAME: &str = "openfairdb.toml";
+
+const ENV_NAME_DB_URL: &str = "DATABASE_URL";
 
 pub struct Config {
     pub db: Db,
@@ -40,7 +42,11 @@ impl Config {
                 _ => Err(err),
             }?,
         };
-        Self::try_from(raw_config)
+        let mut cfg = Self::try_from(raw_config)?;
+        if let Ok(db_url) = env::var(ENV_NAME_DB_URL) {
+            cfg.db.conn_sqlite = db_url;
+        }
+        Ok(cfg)
     }
 }
 
