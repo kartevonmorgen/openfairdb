@@ -1,8 +1,8 @@
-Liebe Regional- bzw. Themenpilot\*in der Karte von morgen,
+Liebe Menschen hinter {{ title }}
 
-seit dem {{ last_change }} wurde der Eintrag "{{ title }}" auf der Karte von morgen nicht mehr aktualisiert und wir fragen uns, ob alles noch stimmt und dieser noch aktiv ist.
+Seit dem {{ last_change }} wurde der folgende Eintrag auf der Karte von morgen nicht mehr aktualisiert und wir fragen uns, ob alles noch stimmt und ihr noch aktiv seid.
 
-Hier die Infos, die wir derzeit anzeigen:
+Hier die Infos, die wir derzeit von euch haben:
 
     {{ title }}
 

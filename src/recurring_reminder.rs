@@ -13,12 +13,12 @@ pub async fn run(
 ) {
     let mut interval = tokio::time::interval(cfg.task_interval_time);
     let email_gw = gateways::email_gateway(email_gateway_cfg);
-    let formatter = ReminderFormatter::default();
 
     loop {
         interval.tick().await;
 
         for recipient_role in [RecipientRole::Owner, RecipientRole::Scout] {
+            let formatter = ReminderFormatter::new(recipient_role);
             let resend_period = resend_period(recipient_role, &cfg);
             let not_updated_since = Timestamp::now() - resend_period;
 
