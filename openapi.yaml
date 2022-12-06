@@ -848,6 +848,37 @@ paths:
                 type: string
         '401':
           $ref: '#/components/responses/UnauthorizedError'
+  /export/events.ical:
+    get:
+      summary: Export events as iCal.
+      description: |
+        The iCal export is only available for logged in users with the role _Admin_ or _Scout_.
+
+        This request supports the same parameters as the corresponding search request.
+
+        **Example**:
+
+        Export all events in Germany:
+        `/export/events.ical?bbox=47.49,0.79,54.63,18.30`
+      tags:
+        - Export
+      parameters:
+        - $ref: '#/components/parameters/BoundingBox'
+        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: '#/components/parameters/EventTagList'
+        - $ref: '#/components/parameters/EventStartMin'
+        - $ref: '#/components/parameters/EventStartMax'
+        - $ref: '#/components/parameters/EventFilterText'
+        - $ref: '#/components/parameters/EventCreatedBy'
+      responses:
+        '200':
+          description: Successful response
+          content:
+            text/calendar:
+              schema:
+                type: string
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
   /captcha:
     post:
       summary: Request a new captcha challenge

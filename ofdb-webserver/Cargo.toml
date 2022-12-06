@@ -3,6 +3,7 @@ name = "ofdb-webserver"
 version = "0.0.0"
 edition = "2021"
 publish = false
+rust-version = "1.65"
 
 [dependencies]
 ofdb-application = { version = "=0.0.0" }
@@ -15,14 +16,17 @@ ofdb-entities = { version = "0.11.0", features = ["url"] }
 anyhow = "1.0.66"
 base64 = { version = "0.13.1", optional = true }
 captcha = "0.0.9"
+chrono = "0.4.23"
 csv = "1.1.6"
 env_logger = "0.9.3"
+icalendar = "0.14.0"
 jsonwebtoken = { version = "8.1.1", optional = true }
 lazy_static = "1.4.0"
 log = "0.4.17"
-num-traits = "0.2.15"
 maud = { version = "0.24.0", optional = true, features = ["rocket"] }
+num-traits = "0.2.15"
 parking_lot = "0.12.1"
+r2d2 = "0.8.10"
 rand = { version = "0.8.5", optional = true }
 rust-embed = "6.4.2"
 rocket = { version = "0.5.0-rc.2", features = ["secrets", "json"] }
@@ -32,7 +36,6 @@ serde_json = "1.0.89"
 time = { version = "0.3.17", features = ["macros", "formatting"] }
 thiserror = "1.0.37"
 uuid = { version = "1.2.2", features = ["v4"] }
-r2d2 = "0.8.10"
 
 [dev-dependencies]
 ofdb-entities = { version = "0.11.0", features = ["url", "builders"] }

@@ -96,6 +96,7 @@ pub fn routes() -> Vec<Route> {
         // ---   export   --- //
         export::csv_export,
         export::entries_csv_export,
+        export::events_ical_export,
         // ---   ratings   --- //
         ratings::post_rating,
         ratings::load_rating,
