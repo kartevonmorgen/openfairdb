@@ -31,6 +31,8 @@ pub struct Event {
     pub title        : String,
     pub description  : Option<String>,
     // Both start/end time stamps are stored with second precision!
+    // TODO: use something like
+    // <https://docs.rs/icalendar/latest/icalendar/enum.DatePerhapsTime.html>
     pub start        : Timestamp,
     pub end          : Option<Timestamp>,
     pub location     : Option<Location>,

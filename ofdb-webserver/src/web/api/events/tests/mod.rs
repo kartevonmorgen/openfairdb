@@ -10,5 +10,6 @@ mod archive;
 mod create;
 mod delete;
 mod export_csv;
+mod export_ical;
 mod read;
 mod update;
