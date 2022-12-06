@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.12.0 (2022-12-06)
+
+- new(api): Add `/export/events.ical` endpoint for scouts and admins to export events as iCal.
+- new: Send recurring reminders to scouts and owners.
+- new: Use `openfairdb.toml` configuration file.
+- chore: Update dependencies
+
 ## v0.11.3 (2022-10-27)
 
 - chore: Update dependencies

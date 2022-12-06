@@ -7,20 +7,19 @@ rust-version = "1.65"
 
 [dependencies]
 ofdb-application = { version = "=0.0.0" }
-ofdb-boundary = { version = "0.11.0", features = ["extra-derive"] }
+ofdb-boundary = { version = "0.12.0", features = ["extra-derive"] }
 ofdb-core = "=0.0.0"
 ofdb-db-sqlite = "=0.0.0" # TODO: remove
 ofdb-db-tantivy = "=0.0.0" # TODO: remove
-ofdb-entities = { version = "0.11.0", features = ["url"] }
+ofdb-entities = { version = "0.12.0", features = ["url"] }
 
 anyhow = "1.0.66"
 base64 = { version = "0.13.1", optional = true }
 captcha = "0.0.9"
 chrono = "0.4.23"
 csv = "1.1.6"
-env_logger = "0.9.3"
 icalendar = "0.14.0"
-jsonwebtoken = { version = "8.1.1", optional = true }
+jsonwebtoken = { version = "8.2.0", optional = true }
 lazy_static = "1.4.0"
 log = "0.4.17"
 maud = { version = "0.24.0", optional = true, features = ["rocket"] }
@@ -31,14 +30,14 @@ rand = { version = "0.8.5", optional = true }
 rust-embed = "6.4.2"
 rocket = { version = "0.5.0-rc.2", features = ["secrets", "json"] }
 rocket_cors = "0.6.0-alpha1"
-serde = { version = "1.0.147", features = ["derive"] }
+serde = { version = "1.0.149", features = ["derive"] }
 serde_json = "1.0.89"
 time = { version = "0.3.17", features = ["macros", "formatting"] }
 thiserror = "1.0.37"
 uuid = { version = "1.2.2", features = ["v4"] }
 
 [dev-dependencies]
-ofdb-entities = { version = "0.11.0", features = ["url", "builders"] }
+ofdb-entities = { version = "0.12.0", features = ["url", "builders"] }
 
 [build-dependencies]
 walkdir = "2.3.2"

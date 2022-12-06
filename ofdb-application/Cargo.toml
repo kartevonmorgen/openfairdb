@@ -7,7 +7,7 @@ publish = false
 [dependencies]
 ofdb-core = "=0.0.0"
 ofdb-db-sqlite = "=0.0.0" # TODO: remove
-ofdb-entities = { version = "0.11.0", features = ["url"] }
+ofdb-entities = { version = "0.12.0", features = ["url"] }
 
 anyhow = "1.0.66"
 csv = "1.1.6"
@@ -20,5 +20,4 @@ time = "0.3.17"
 
 [dev-dependencies]
 ofdb-db-tantivy = "=0.0.0" # TODO: remove
-
-env_logger = "0.9"
+env_logger = "0.10"
