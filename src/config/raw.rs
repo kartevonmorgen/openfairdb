@@ -141,6 +141,7 @@ pub struct Reminders {
     #[serde(deserialize_with = "deserialize_option_duration")]
     pub task_interval_time: Option<Duration>,
     pub send_max: Option<u32>,
+    pub send_to: Option<Vec<RecipientRole>>,
     pub scouts: Option<ScoutReminders>,
     pub owners: Option<OwnerReminders>,
 }
@@ -156,6 +157,13 @@ impl Default for Reminders {
         debug_assert!(cfg.owners.is_some());
         cfg
     }
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum RecipientRole {
+    Scouts,
+    Owners,
 }
 
 #[derive(Clone, Deserialize)]

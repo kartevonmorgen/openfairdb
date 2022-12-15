@@ -11,22 +11,26 @@ pub async fn run(
     email_gateway_cfg: Option<config::EmailGateway>,
     cfg: config::Reminders,
 ) {
+    if cfg.send_to.is_empty() {
+        return;
+    }
+
     let mut interval = tokio::time::interval(cfg.task_interval_time);
     let email_gw = gateways::email_gateway(email_gateway_cfg);
 
     loop {
         interval.tick().await;
 
-        for recipient_role in [RecipientRole::Owner, RecipientRole::Scout] {
-            let formatter = ReminderFormatter::new(recipient_role);
-            let resend_period = resend_period(recipient_role, &cfg);
+        for recipient_role in &cfg.send_to {
+            let formatter = ReminderFormatter::new(*recipient_role);
+            let resend_period = resend_period(*recipient_role, &cfg);
             let not_updated_since = Timestamp::now() - resend_period;
 
             if let Err(err) = send_update_reminders(
                 connections,
                 &email_gw,
                 &formatter,
-                recipient_role,
+                *recipient_role,
                 not_updated_since,
                 resend_period,
                 cfg.send_max,

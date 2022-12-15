@@ -1,5 +1,9 @@
 # Changelog
 
+## Unpublished
+
+- new: Make recipient roles configurable for sending reminders.
+
 ## v0.12.0 (2022-12-06)
 
 - new(api): Add `/export/events.ical` endpoint for scouts and admins to export events as iCal.
