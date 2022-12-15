@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use ofdb_core::usecases::RecipientRole;
 use ofdb_entities::email::EmailAddress;
 use std::{
     collections::HashSet,
@@ -102,6 +103,7 @@ pub struct Reminders {
     pub send_max: u32,
     pub scouts: ScoutReminders,
     pub owners: OwnerReminders,
+    pub send_to: Vec<RecipientRole>,
 }
 
 pub struct ScoutReminders {
@@ -228,12 +230,18 @@ impl TryFrom<raw::Config> for Config {
         let raw::Reminders {
             task_interval_time,
             send_max,
+            send_to,
             scouts,
             owners,
         } = reminders.unwrap_or_default();
 
         let task_interval_time = task_interval_time.expect("Reminder task interval");
         let send_max = send_max.expect("Send max. reminders configuration");
+        let send_to = send_to
+            .unwrap_or_default()
+            .into_iter()
+            .map(RecipientRole::from)
+            .collect();
 
         let raw::ScoutReminders { not_updated_for } = scouts.unwrap_or_default();
         let scouts = ScoutReminders { not_updated_for };
@@ -244,6 +252,7 @@ impl TryFrom<raw::Config> for Config {
         let reminders = Reminders {
             task_interval_time,
             send_max,
+            send_to,
             scouts,
             owners,
         };
@@ -256,6 +265,15 @@ impl TryFrom<raw::Config> for Config {
             webserver,
             reminders,
         })
+    }
+}
+
+impl From<raw::RecipientRole> for RecipientRole {
+    fn from(from: raw::RecipientRole) -> Self {
+        match from {
+            raw::RecipientRole::Scouts => Self::Scout,
+            raw::RecipientRole::Owners => Self::Owner,
+        }
     }
 }
 
