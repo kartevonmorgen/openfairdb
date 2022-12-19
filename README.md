@@ -1,7 +1,6 @@
 # Open Fair DB
 
-The backend for [Karte von morgen](https://github.com/kartevonmorgen/kartevonmorgen/)
-written in [Rust](http://rustlang.org/).
+An open geografical database for informations about organisations (Initiatves, Companies) written in [Rust](http://rustlang.org/) and mainly used as the backend for [Karte von morgen](https://github.com/kartevonmorgen/kartevonmorgen/). You can use this code to setup your own Database, but if you want to use global Databa from https://openfairdb.org/ or contribute to this project together with Kartevonmorgen.org, please see our [RUST-API-Specifications]( https://app.swaggerhub.com/apis/Kartevonmorgen/openfairdb/)
 
 [![GitHub CI](https://github.com/kartevonmorgen/openfairdb/actions/workflows/continuous-integration.yaml/badge.svg?branch=main)](https://github.com/kartevonmorgen/openfairdb/actions/workflows/continuous-integration.yaml)
 [![License](https://img.shields.io/badge/license-AGPLv3-blue.svg?style=flat)](https://github.com/kartevonmorgen/openfairdb/blob/main/LICENSE)
