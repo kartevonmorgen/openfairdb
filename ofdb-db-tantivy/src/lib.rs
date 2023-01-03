@@ -267,7 +267,7 @@ fn f64_to_u64(val: f64, min: f64, max: f64) -> u64 {
     } else if (val - min).abs() <= std::f64::EPSILON {
         0u64
     } else {
-        let norm = (val.max(min).min(max) - min) / (max - min);
+        let norm = (val.clamp(min, max) - min) / (max - min);
         let mapped = u64::max_value() as f64 * norm;
         mapped.round() as u64
     }

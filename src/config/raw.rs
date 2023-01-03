@@ -120,7 +120,7 @@ pub struct MailGun {
     pub api_key: String,
     pub domain: String,
     pub sender_address: String,
-    pub api_url: Option<String>,
+    pub api_base_url: Option<String>,
 }
 
 #[derive(Clone, Deserialize)]
