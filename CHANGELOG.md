@@ -3,6 +3,7 @@
 ## Unpublished
 
 - new: Make recipient roles configurable for sending reminders.
+- fix: Make sending emails via mailgun.org work again.
 
 ## v0.12.0 (2022-12-06)
 

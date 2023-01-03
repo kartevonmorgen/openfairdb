@@ -36,7 +36,7 @@ impl RatingValue {
     }
 
     pub fn clamp(self) -> Self {
-        Self(self.0.max(Self::min().0).min(Self::max().0))
+        Self(self.0.clamp(Self::min().0, Self::max().0))
     }
 
     pub fn is_valid(self) -> bool {
@@ -103,7 +103,7 @@ impl AvgRatingValue {
     }
 
     pub fn clamp(self) -> Self {
-        Self(self.0.max(Self::min().0).min(Self::max().0))
+        Self(self.0.clamp(Self::min().0, Self::max().0))
     }
 
     pub fn is_valid(self) -> bool {

@@ -205,11 +205,7 @@ fn levenshtein_distance(s: &str, t: &str) -> usize {
 
     for j in 1..max_t {
         for i in 1..max_s {
-            let substitution_cost = if s.chars().nth(i) == t.chars().nth(j) {
-                0
-            } else {
-                1
-            };
+            let substitution_cost = usize::from(s.chars().nth(i) != t.chars().nth(j));
             d[i][j] = min3(
                 d[i - 1][j] + 1,                     // deletion
                 d[i][j - 1] + 1,                     // insertion

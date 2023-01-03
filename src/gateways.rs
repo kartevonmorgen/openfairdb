@@ -16,12 +16,12 @@ pub fn notification_gateway(cfg: Option<config::EmailGateway>) -> Notify {
             api_key,
             domain,
             sender_address,
-            api_url,
+            api_base_url,
         } => Some(Notify::new(Mailgun {
             from_email: sender_address,
             domain,
             api_key,
-            api_url,
+            api_base_url,
         })),
         config::EmailGateway::Sendmail { sender_address } => {
             Some(Notify::new(Sendmail::new(sender_address)))
@@ -42,12 +42,12 @@ pub fn email_gateway(cfg: Option<config::EmailGateway>) -> EmailGw {
             api_key,
             domain,
             sender_address,
-            api_url,
+            api_base_url,
         } => Some(EmailGw::new(Mailgun {
             from_email: sender_address,
             domain,
             api_key,
-            api_url,
+            api_base_url,
         })),
         config::EmailGateway::Sendmail { sender_address } => {
             Some(EmailGw::new(Sendmail::new(sender_address)))

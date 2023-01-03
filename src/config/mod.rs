@@ -83,7 +83,7 @@ pub struct Email {
 #[derive(Clone)]
 pub enum EmailGateway {
     MailGun {
-        api_url: String, // TODO: use url::Url
+        api_base_url: String, // TODO: use url::Url
         api_key: String,
         domain: String,
         sender_address: EmailAddress,
@@ -148,20 +148,19 @@ impl TryFrom<raw::Config> for Config {
                     raw::EmailGateway::Mailgun => {
                         let raw::MailGun {
                             api_key,
-                            api_url,
+                            api_base_url,
                             domain,
                             sender_address,
                         } = gateway.mailgun.ok_or_else(|| {
                             anyhow!("Missing '{toml_name}' gateway configuration")
                         })?;
                         let sender_address = sender_address.parse()?;
-                        let api_url = api_url.unwrap_or_else(|| {
-                            format!("https://api.eu.mailgun.net/v3/{}/messages", domain)
-                        });
+                        let api_base_url = api_base_url
+                            .unwrap_or_else(|| "https://api.eu.mailgun.net/v3".to_string());
                         log::info!("Use Mailgun gateway");
                         EmailGateway::MailGun {
                             api_key,
-                            api_url,
+                            api_base_url,
                             domain,
                             sender_address,
                         }
