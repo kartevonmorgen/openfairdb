@@ -37,11 +37,11 @@ repos:
         stages:
           - commit-msg
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.5.1
+    rev: v0.6.0
     hooks:
       - id: markdownlint-cli2
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.8.0.4
+    rev: v0.9.0.2
     hooks:
       - id: shellcheck
   - repo: https://github.com/codespell-project/codespell
@@ -51,7 +51,7 @@ repos:
         args: [--ignore-words=.codespellignore]
         exclude: ^search_results\.json|src/ports/web/frontend/login\.rs|ofdb-gateways/src/user_communication/mod\.rs|doc/c4-plantuml/.*\.puml|Cargo.lock|ofdb-gateways/src/user_communication/templates/.*\.txt$
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.19.2
+    rev: 0.20.0
     hooks:
       - id: check-github-actions
       - id: check-github-workflows
