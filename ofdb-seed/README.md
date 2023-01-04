@@ -13,4 +13,4 @@ ofdb-seed = "*"
 
 ## License
 
-Copyright (c) 2020 - 2022 [slowtec GmbH](https://slowtec.de)
+Copyright (c) 2020 - 2023 [slowtec GmbH](https://slowtec.de)
