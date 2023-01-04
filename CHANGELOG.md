@@ -1,6 +1,6 @@
 # Changelog
 
-## Unpublished
+## v0.12.1 (2023-01-04)
 
 - new: Make recipient roles configurable for sending reminders.
 - fix: Make sending emails via mailgun.org work again.

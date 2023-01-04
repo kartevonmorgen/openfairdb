@@ -1,5 +1,5 @@
+// Copyright (c) 2018 - 2023 slowtec GmbH <post@slowtec.de>
 // Copyright (c) 2015 - 2018 Markus Kohlhase <mail@markus-kohlhase.de>
-// Copyright (c) 2018 - 2022 slowtec GmbH <post@slowtec.de>
 
 use std::{env, path::PathBuf};
 
