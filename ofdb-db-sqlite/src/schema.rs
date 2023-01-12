@@ -264,6 +264,22 @@ diesel::table! {
 joinable!(sent_reminders -> place (place_rowid));
 
 ///////////////////////////////////////////////////////////////////////
+// Review tokens
+///////////////////////////////////////////////////////////////////////
+
+table! {
+    review_tokens (rowid) {
+        rowid -> BigInt,
+        place_rowid -> BigInt,
+        revision -> BigInt,
+        expires_at -> BigInt,
+        nonce -> Text,
+    }
+}
+
+joinable!(review_tokens -> place (place_rowid));
+
+///////////////////////////////////////////////////////////////////////
 
 allow_tables_to_appear_in_same_query!(
     bbox_subscriptions,
@@ -282,5 +298,6 @@ allow_tables_to_appear_in_same_query!(
     tags,
     users,
     user_tokens,
+    review_tokens,
     sent_reminders
 );

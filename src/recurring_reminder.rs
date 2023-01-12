@@ -1,6 +1,6 @@
 use crate::{config, gateways};
 
-use ofdb_application::prelude::send_update_reminders;
+use ofdb_application::prelude::{send_update_reminders, SendReminderParams};
 use ofdb_core::{entities::Timestamp, usecases::RecipientRole};
 use ofdb_db_sqlite::Connections;
 use ofdb_gateways::user_communication::ReminderFormatter;
@@ -22,19 +22,21 @@ pub async fn run(
         interval.tick().await;
 
         for recipient_role in &cfg.send_to {
-            let formatter = ReminderFormatter::new(*recipient_role);
-            let resend_period = resend_period(*recipient_role, &cfg);
-            let not_updated_since = Timestamp::now() - resend_period;
+            let recipient_role = *recipient_role;
+            let formatter = ReminderFormatter::new(recipient_role);
+            let resend_period = resend_period(recipient_role, &cfg);
+            let current_time = Timestamp::now();
+            let not_updated_since = current_time - resend_period;
 
-            if let Err(err) = send_update_reminders(
-                connections,
-                &email_gw,
-                &formatter,
-                *recipient_role,
+            let params = SendReminderParams {
+                recipient_role,
                 not_updated_since,
                 resend_period,
-                cfg.send_max,
-            ) {
+                send_max: cfg.send_max,
+                current_time,
+            };
+
+            if let Err(err) = send_update_reminders(connections, &email_gw, &formatter, params) {
                 log::warn!("Update reminders could not be sent: {err}");
             }
         }

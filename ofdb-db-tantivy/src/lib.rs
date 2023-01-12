@@ -137,7 +137,7 @@ impl IndexedFields {
                     place.status = fv
                         .value()
                         .as_i64()
-                        .and_then(|v| ReviewStatus::try_from(v as ReviewStatusPrimitive));
+                        .and_then(|v| ReviewStatus::try_from(v as ReviewStatusPrimitive).ok());
                 }
                 fv if fv.field() == self.lat => {
                     debug_assert!(lat.is_none());

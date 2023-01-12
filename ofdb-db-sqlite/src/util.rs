@@ -315,6 +315,24 @@ impl From<UserTokenEntity> for e::UserToken {
     }
 }
 
+impl From<ReviewTokenEntity> for e::ReviewToken {
+    fn from(from: ReviewTokenEntity) -> Self {
+        let place_revision = e::Revision::from(from.place_revision as u64);
+        let place_id = e::Id::from(from.place_id);
+        let nonce = from.nonce.parse::<Nonce>().unwrap_or_default();
+        let expires_at = Timestamp::from_millis(from.expires_at);
+        let review_nonce = e::ReviewNonce {
+            place_id,
+            place_revision,
+            nonce,
+        };
+        Self {
+            review_nonce,
+            expires_at,
+        }
+    }
+}
+
 pub(crate) fn rating_context_to_string(context: e::RatingContext) -> String {
     match context {
         e::RatingContext::Diversity => "diversity",

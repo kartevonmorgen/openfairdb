@@ -2,7 +2,7 @@ use std::{fmt, ops::Deref, str::FromStr};
 
 use uuid::Uuid;
 
-use crate::{email::*, time::*};
+use crate::{email::*, id::*, revision::*, time::*};
 
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Nonce(Uuid);
@@ -95,7 +95,7 @@ impl EmailNonce {
         bs58::encode(concat).into_string()
     }
 
-    pub fn decode_from_str(encoded: &str) -> Result<EmailNonce, EmailNonceDecodingError> {
+    pub fn decode_from_str(encoded: &str) -> Result<Self, EmailNonceDecodingError> {
         let decoded = bs58::decode(encoded)
             .into_vec()
             .map_err(EmailNonceDecodingError::Bs58)?;
@@ -117,8 +117,71 @@ impl EmailNonce {
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
+pub struct ReviewNonce {
+    pub place_id: Id,
+    pub place_revision: Revision,
+    pub nonce: Nonce,
+}
+
+#[derive(Debug)]
+pub enum ReviewNonceDecodingError {
+    Bs58(bs58::decode::Error),
+    Utf8(std::string::FromUtf8Error),
+    TooShort(ActualTokenLen),
+    Parse(NonceString, NonceParseError),
+    Revision,
+}
+
+const MIN_REVISION_STR_LEN: usize = 1;
+
+impl ReviewNonce {
+    pub fn encode_to_string(&self) -> String {
+        let nonce = self.nonce.to_string();
+        debug_assert_eq!(Nonce::STR_LEN, nonce.len());
+        let place_id = self.place_id.as_str();
+        let revision_value = RevisionValue::from(self.place_revision);
+        let revision_string = revision_value.to_string();
+        let concat = format!("{place_id}{nonce}{revision_string}");
+        bs58::encode(concat).into_string()
+    }
+
+    pub fn decode_from_str(encoded: &str) -> Result<Self, ReviewNonceDecodingError> {
+        let decoded = bs58::decode(encoded)
+            .into_vec()
+            .map_err(ReviewNonceDecodingError::Bs58)?;
+        let concat = String::from_utf8(decoded).map_err(ReviewNonceDecodingError::Utf8)?;
+        if concat.len() < Nonce::STR_LEN + Id::STR_LEN + MIN_REVISION_STR_LEN {
+            return Err(ReviewNonceDecodingError::TooShort(concat.len()));
+        }
+        let place_id_slice: &str = &concat[0..Id::STR_LEN];
+        let nonce_slice: &str = &concat[Id::STR_LEN..Id::STR_LEN + Nonce::STR_LEN];
+        let revision_slice: &str = &concat[Id::STR_LEN + Nonce::STR_LEN..];
+        let place_id = Id::from(place_id_slice);
+        let nonce = nonce_slice
+            .parse::<Nonce>()
+            .map_err(|err| ReviewNonceDecodingError::Parse(nonce_slice.into(), err))?;
+        let revision_primitive: u64 = revision_slice
+            .parse()
+            .map_err(|_| ReviewNonceDecodingError::Revision)?;
+        let place_revision = Revision::from(revision_primitive);
+        Ok(Self {
+            place_id,
+            nonce,
+            place_revision,
+        })
+    }
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct UserToken {
     pub email_nonce: EmailNonce,
+    // TODO: Convert time stamps from second to millisecond precision?
+    pub expires_at: Timestamp,
+}
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub struct ReviewToken {
+    pub review_nonce: ReviewNonce,
     // TODO: Convert time stamps from second to millisecond precision?
     pub expires_at: Timestamp,
 }
@@ -158,5 +221,17 @@ mod tests {
         let n2 = s1.parse::<Nonce>().unwrap();
         assert_eq!(n1, n2);
         assert_eq!(s1, n2.to_string());
+    }
+
+    #[test]
+    fn encode_reivew_nonce() {
+        let example = ReviewNonce {
+            place_id: Id::new(),
+            place_revision: Revision::from(2347),
+            nonce: Nonce::new(),
+        };
+        let encoded = example.encode_to_string();
+        let decoded = ReviewNonce::decode_from_str(&encoded).unwrap();
+        assert_eq!(example, decoded);
     }
 }

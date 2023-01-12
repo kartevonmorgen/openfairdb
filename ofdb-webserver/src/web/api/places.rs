@@ -157,6 +157,21 @@ pub fn post_review(
     Ok(Json(()))
 }
 
+// TODO: make this a POST request
+#[get("/places/review-with-token?<token>&<status>")]
+pub fn get_review_with_token(
+    connections: sqlite::Connections,
+    token: String,
+    status: String,
+) -> Result<()> {
+    let review_status: ReviewStatus = status.parse().map_err(|_| {
+        ApiError::OtherWithStatus(anyhow::anyhow!("Invalid review status"), Status::BadRequest)
+    })?;
+    let review_nonce = ReviewNonce::decode_from_str(&token)?;
+    flows::review_place_with_review_nonce(&connections, review_nonce, review_status)?;
+    Ok(Json(()))
+}
+
 // FIXME: Limit the total number of not updated places
 // to avoid cloning the whole database!!
 #[get("/places/not-updated?<since>&<offset>&<limit>")]

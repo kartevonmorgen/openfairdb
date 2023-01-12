@@ -58,12 +58,19 @@ pub mod prelude {
         accepted_licenses.insert("ODbL-1.0".into());
         accepted_licenses
     }
+
+    pub fn create_place(client: &Client) -> ofdb_entities::id::Id {
+        let body_string = client.post("/entries")
+                    .header(ContentType::JSON)
+                    .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"license":"CC0-1.0","tags":["foo"]}"#).dispatch().into_string().unwrap();
+        serde_json::from_str::<String>(&body_string).unwrap().into()
+    }
 }
 
 use self::prelude::*;
 
 #[test]
-fn create_place() {
+fn create_a_new_place() {
     let (client, db) = setup();
     let req = client.post("/entries")
                     .header(ContentType::JSON)
@@ -2128,4 +2135,92 @@ fn not_updated_since() {
     assert!(body_since_str.contains("\"id\":\"old\""));
     assert!(!body_since_str.contains("\"id\":\"archived\""));
     assert!(!body_since_str.contains("\"id\":\"rejected\""));
+}
+
+#[test]
+fn review_place_with_token() {
+    let (client, db) = setup();
+    let place_id = create_place(&client);
+    let place_revision = Revision::initial();
+    let nonce = Nonce::new();
+    let expires_at = Timestamp::now() + time::Duration::seconds(10);
+    let review_nonce = ReviewNonce {
+        place_id,
+        place_revision,
+        nonce,
+    };
+    let review_token = ReviewToken {
+        expires_at,
+        review_nonce,
+    };
+    db.exclusive()
+        .unwrap()
+        .add_review_token(&review_token)
+        .unwrap();
+    let token = review_token.review_nonce.encode_to_string();
+    let res = client
+        .get(format!(
+            "/places/review-with-token?token={token}&status=archived"
+        ))
+        .dispatch();
+    // TODO: should be Status::Created
+    assert_eq!(res.status(), Status::Ok);
+}
+
+#[test]
+fn review_place_with_token_and_invalid_status() {
+    let (client, db) = setup();
+    let place_id = create_place(&client);
+    let place_revision = Revision::initial();
+    let nonce = Nonce::new();
+    let expires_at = Timestamp::now() + time::Duration::seconds(10);
+    let review_nonce = ReviewNonce {
+        place_id,
+        place_revision,
+        nonce,
+    };
+    let review_token = ReviewToken {
+        expires_at,
+        review_nonce,
+    };
+    db.exclusive()
+        .unwrap()
+        .add_review_token(&review_token)
+        .unwrap();
+    let token = review_token.review_nonce.encode_to_string();
+    let res = client
+        .get(format!(
+            "/places/review-with-token?token={token}&status=doesnotexist"
+        ))
+        .dispatch();
+    assert_eq!(res.status(), Status::BadRequest);
+}
+
+#[test]
+fn review_place_with_token_and_invalid_revision() {
+    let (client, db) = setup();
+    let place_id = create_place(&client);
+    let place_revision = Revision::from(500);
+    let nonce = Nonce::new();
+    let expires_at = Timestamp::now() + time::Duration::seconds(10);
+    let review_nonce = ReviewNonce {
+        place_id,
+        place_revision,
+        nonce,
+    };
+    let review_token = ReviewToken {
+        expires_at,
+        review_nonce,
+    };
+    db.exclusive()
+        .unwrap()
+        .add_review_token(&review_token)
+        .unwrap();
+    let token = review_token.review_nonce.encode_to_string();
+    let res = client
+        .get(format!(
+            "/places/review-with-token?token={token}&status=confirmed"
+        ))
+        .dispatch();
+    assert_eq!(res.status(), Status::BadRequest);
 }

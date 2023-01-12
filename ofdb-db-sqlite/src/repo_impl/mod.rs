@@ -4,7 +4,6 @@
 //
 // TODO: Create a new type for milliseconds and seconds.
 
-use anyhow::anyhow;
 use diesel::{
     self,
     prelude::{Connection as DieselConnection, *},
@@ -26,6 +25,7 @@ mod place;
 mod place_clearance;
 mod rating;
 mod reminder;
+mod review_token;
 mod subscription;
 mod tag;
 mod user;
@@ -59,8 +59,7 @@ fn load_email_by_user_id(conn: &mut SqliteConnection, user_id: i64) -> Result<Op
 }
 
 fn load_review_status(status: ReviewStatusPrimitive) -> Result<ReviewStatus> {
-    ReviewStatus::try_from(status)
-        .ok_or_else(|| anyhow!("Invalid review status: {}", status).into())
+    ReviewStatus::try_from(status).map_err(|err| anyhow::Error::from(err).into())
 }
 
 fn load_place_revision_tags(

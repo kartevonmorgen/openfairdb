@@ -68,6 +68,7 @@ pub fn routes() -> Vec<Route> {
         places::get_place_history,
         places::get_place_history_revision,
         places::get_not_updated,
+        places::get_review_with_token,
         // ---   events   --- //
         events::post_event,
         events::post_event_with_token,

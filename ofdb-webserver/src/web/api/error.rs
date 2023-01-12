@@ -115,6 +115,12 @@ impl From<ofdb_entities::nonce::EmailNonceDecodingError> for Error {
     }
 }
 
+impl From<ofdb_entities::nonce::ReviewNonceDecodingError> for Error {
+    fn from(err: ofdb_entities::nonce::ReviewNonceDecodingError) -> Self {
+        AppError::from(err).into()
+    }
+}
+
 impl From<ofdb_core::usecases::Error> for Error {
     fn from(err: ofdb_core::usecases::Error) -> Self {
         Self::App(err.into())
@@ -123,6 +129,12 @@ impl From<ofdb_core::usecases::Error> for Error {
 
 impl From<ofdb_entities::email::EmailAddressParseError> for Error {
     fn from(err: ofdb_entities::email::EmailAddressParseError) -> Self {
+        Self::OtherWithStatus(err.into(), Status::BadRequest)
+    }
+}
+
+impl From<ofdb_entities::review::InvalidReviewStatusPrimitive> for Error {
+    fn from(err: ofdb_entities::review::InvalidReviewStatusPrimitive) -> Self {
         Self::OtherWithStatus(err.into(), Status::BadRequest)
     }
 }

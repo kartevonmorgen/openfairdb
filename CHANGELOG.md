@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- new: Add endpoint to review a place by a secret token
+
 ## v0.12.1 (2023-01-04)
 
 - new: Make recipient roles configurable for sending reminders.

@@ -51,6 +51,12 @@ impl From<ofdb_entities::nonce::EmailNonceDecodingError> for AppError {
     }
 }
 
+impl From<ofdb_entities::nonce::ReviewNonceDecodingError> for AppError {
+    fn from(err: ofdb_entities::nonce::ReviewNonceDecodingError) -> Self {
+        BError::from(err).into()
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum BError {
     #[error(transparent)]
@@ -85,6 +91,12 @@ impl From<ofdb_entities::event::RegistrationTypeParseError> for BError {
 
 impl From<ofdb_entities::nonce::EmailNonceDecodingError> for BError {
     fn from(_: ofdb_entities::nonce::EmailNonceDecodingError) -> Self {
+        Self::Parameter(ParameterError::InvalidNonce)
+    }
+}
+
+impl From<ofdb_entities::nonce::ReviewNonceDecodingError> for BError {
+    fn from(_: ofdb_entities::nonce::ReviewNonceDecodingError) -> Self {
         Self::Parameter(ParameterError::InvalidNonce)
     }
 }
