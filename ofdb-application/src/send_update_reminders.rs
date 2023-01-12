@@ -3,20 +3,39 @@ use ofdb_core::{gateways::email::EmailGateway, usecases::EmailReminderFormatter}
 use std::time::Instant;
 use time::Duration;
 
+#[derive(Debug)]
+pub struct SendReminderParams {
+    pub recipient_role: usecases::RecipientRole,
+    pub not_updated_since: Timestamp,
+    pub resend_period: Duration,
+    pub send_max: u32,
+    pub current_time: Timestamp,
+}
+
 pub fn send_update_reminders<G, F>(
     connections: &sqlite::Connections,
     email_gateway: &G,
     formatter: &F,
-    recipient_role: usecases::RecipientRole,
-    not_updated_since: Timestamp,
-    resend_period: Duration,
-    send_max: u32,
+    params: SendReminderParams,
 ) -> Result<()>
 where
     G: EmailGateway,
     F: EmailReminderFormatter,
 {
+    let SendReminderParams {
+        recipient_role,
+        not_updated_since,
+        resend_period,
+        send_max,
+        current_time,
+    } = params;
+
     log::info!("Send update reminders to {recipient_role:?}s for places that were not updated since {not_updated_since:?}");
+
+    // TODO: Safe splitting into multiple transactions.
+    // This would require more efforts and intermediate states that are persisted in the database.
+    // Using a single transaction would block the DB for a longer time.
+    // So for now we make a compromise, unless we are experience frequent issues with duplicate reminders.
 
     // 1. First use read-only DB connection
     let start_time = Instant::now();
@@ -28,6 +47,7 @@ where
             not_updated_since,
             resend_period,
             send_max,
+            current_time,
         )?
     };
     log::debug!(
@@ -51,7 +71,7 @@ where
     // 3. Remember what emails have been sent.
     let start_time = Instant::now();
     connections.exclusive()?.transaction(|conn| {
-        usecases::save_sent_reminders(conn, &sent_reminders).map_err(|err| {
+        usecases::save_sent_reminders(conn, &sent_reminders, current_time).map_err(|err| {
             log::warn!("Failed to save sent update reminders: {}", err);
             err
         })
@@ -190,17 +210,20 @@ mod tests {
         let email_gw = MockEmailGw::default();
         let email_fmt = MockEmailFormatter::default();
 
-        let unchanged_since = last_update_time;
+        let not_updated_since = last_update_time;
         let resend_period = Duration::milliseconds(90);
 
         send_update_reminders(
             &fixture.db_connections,
             &email_gw,
             &email_fmt,
-            usecases::RecipientRole::Owner,
-            unchanged_since,
-            resend_period,
-            10,
+            SendReminderParams {
+                recipient_role: usecases::RecipientRole::Owner,
+                not_updated_since,
+                resend_period,
+                send_max: 10,
+                current_time: Timestamp::now(),
+            },
         )
         .unwrap();
 
@@ -259,17 +282,20 @@ mod tests {
         let email_gw = MockEmailGw::default();
         let email_fmt = MockEmailFormatter::default();
 
-        let unchanged_since = last_update_time;
+        let not_updated_since = last_update_time;
         let resend_period = Duration::milliseconds(90);
 
         send_update_reminders(
             &fixture.db_connections,
             &email_gw,
             &email_fmt,
-            usecases::RecipientRole::Scout,
-            unchanged_since,
-            resend_period,
-            10,
+            SendReminderParams {
+                recipient_role: usecases::RecipientRole::Scout,
+                not_updated_since,
+                resend_period,
+                send_max: 10,
+                current_time: Timestamp::now(),
+            },
         )
         .unwrap();
 

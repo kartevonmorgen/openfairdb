@@ -12,6 +12,7 @@ pub fn find_unsent_reminders<R>(
     not_updated_since: Timestamp,
     resend_period: Duration,
     send_max: u32,
+    now: Timestamp,
 ) -> Result<Vec<Reminder>>
 where
     R: PlaceRepo + SubscriptionRepo + ReminderRepo + UserRepo,
@@ -33,6 +34,7 @@ where
             outdated_places,
             recipient_role,
             resend_period,
+            now,
         )?;
         if unsent.is_empty() {
             // All reminders were sent for these outdated places,
@@ -56,26 +58,29 @@ where
 pub fn send_reminder_emails<G>(
     email_gateway: &G,
     emails: Vec<(Reminder, EmailContent)>,
-) -> Vec<(Reminder, Timestamp)>
+) -> Vec<Reminder>
 where
     G: EmailGateway,
 {
     emails
         .into_iter()
         .map(|(r, email)| {
-            let sent_at = Timestamp::now();
             email_gateway.compose_and_send(&r.recipients, &email);
-            (r, sent_at)
+            r
         })
         .collect()
 }
 
-pub fn save_sent_reminders<R>(repo: &R, sent_reminders: &[(Reminder, Timestamp)]) -> Result<()>
+pub fn save_sent_reminders<R>(
+    repo: &R,
+    sent_reminders: &[Reminder],
+    sent_at: Timestamp,
+) -> Result<()>
 where
     R: ReminderRepo,
 {
-    for (reminder, sent_at) in sent_reminders {
-        repo.save_sent_reminders(&reminder.place.id, &reminder.recipients, *sent_at)?;
+    for reminder in sent_reminders {
+        repo.save_sent_reminders(&reminder.place.id, &reminder.recipients, sent_at)?;
     }
     Ok(())
 }
@@ -112,6 +117,7 @@ fn find_unsent_reminders_for_outdated_places<R>(
     outdated_places: Vec<Place>,
     recipient_role: RecipientRole,
     resend_period: Duration,
+    now: Timestamp,
 ) -> Result<Vec<Reminder>>
 where
     R: SubscriptionRepo + ReminderRepo + UserRepo,
@@ -128,9 +134,9 @@ where
         .into_iter()
         .filter_map(|place| {
             match recipient_role {
-                RecipientRole::Owner => contact_email_addresses(repo, &place, resend_period),
+                RecipientRole::Owner => contact_email_addresses(repo, &place, resend_period, now),
                 RecipientRole::Scout => {
-                    scout_email_addresses(repo, &place, &users, &subscriptions, resend_period)
+                    scout_email_addresses(repo, &place, &users, &subscriptions, resend_period, now)
                 }
             }
             .map(|recipients| (place, recipients))
@@ -154,12 +160,12 @@ fn scout_email_addresses<R>(
     users: &[User],
     subscriptions: &[BboxSubscription],
     resend_period: Duration,
+    now: Timestamp,
 ) -> Option<Vec<EmailAddress>>
 where
     R: ReminderRepo,
 {
     let scouts = get_scouts_subscribed_to_place(place, users, subscriptions);
-    let now = Timestamp::now();
     let email_addresses = scouts
         .iter()
         .filter_map(|scout| {
@@ -175,11 +181,11 @@ fn contact_email_addresses<R>(
     repo: &R,
     place: &Place,
     resend_period: Duration,
+    now: Timestamp,
 ) -> Option<Vec<EmailAddress>>
 where
     R: ReminderRepo,
 {
-    let now = Timestamp::now();
     place.contact_email().and_then(|email| {
         sending_new_reminder_is_needed(repo, &place.id, email, now, resend_period)
             .then(|| vec![email.clone()])

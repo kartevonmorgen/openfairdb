@@ -400,6 +400,23 @@ pub struct UserTokenEntity {
 }
 
 #[derive(Insertable, AsChangeset)]
+#[diesel(table_name = review_tokens)]
+pub struct NewReviewToken {
+    pub place_rowid: i64,
+    pub revision: i64,
+    pub expires_at: i64,
+    pub nonce: String,
+}
+
+#[derive(Queryable)]
+pub struct ReviewTokenEntity {
+    pub place_id: String,
+    pub place_revision: i64,
+    pub expires_at: i64,
+    pub nonce: String,
+}
+
+#[derive(Insertable, AsChangeset)]
 #[diesel(table_name = organization_place_clearance)]
 #[diesel(treat_none_as_null = true)]
 pub struct NewPendingClearanceForPlace {

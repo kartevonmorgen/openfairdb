@@ -214,7 +214,7 @@ fn review_place(
         usecases::authorize_user_by_email(&db, email, Role::Scout)?.email
     };
     let status = ReviewStatus::try_from(status)
-        .ok_or_else(|| ParameterError::RatingContext(status.to_string()))?;
+        .map_err(|_| ParameterError::RatingContext(status.to_string()))?;
     // TODO: Record context information
     let context = None;
     let review = usecases::Review {

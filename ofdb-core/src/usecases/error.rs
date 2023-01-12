@@ -1,5 +1,6 @@
 use crate::{
     repositories,
+    usecases::ReviewPlaceWithNonceError,
     util::validate::{ContactInvalidation, EventInvalidation, PlaceInvalidation},
 };
 use thiserror::Error;
@@ -64,6 +65,8 @@ pub enum Error {
     EmptyIdList,
     #[error(transparent)]
     Repo(#[from] repositories::Error),
+    #[error("Invalid or outdated place revision")]
+    PlaceRevision,
 }
 
 impl From<ofdb_entities::password::ParseError> for Error {
@@ -113,6 +116,15 @@ impl From<ContactInvalidation> for Error {
     fn from(err: ContactInvalidation) -> Self {
         match err {
             ContactInvalidation::EmailAddress => Self::EmailAddress,
+        }
+    }
+}
+
+impl From<ReviewPlaceWithNonceError> for Error {
+    fn from(err: ReviewPlaceWithNonceError) -> Self {
+        match err {
+            ReviewPlaceWithNonceError::Repo(err) => Self::Repo(err),
+            ReviewPlaceWithNonceError::PlaceRevision => Self::PlaceRevision,
         }
     }
 }

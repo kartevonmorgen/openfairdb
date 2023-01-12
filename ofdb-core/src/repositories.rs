@@ -81,6 +81,12 @@ pub trait UserTokenRepo {
     fn get_user_token_by_email(&self, email: &EmailAddress) -> Result<UserToken>;
 }
 
+pub trait ReviewTokenRepo {
+    fn add_review_token(&self, review_token: &ReviewToken) -> Result<()>;
+    fn consume_review_token(&self, review_nonce: &ReviewNonce) -> Result<ReviewToken>;
+    fn delete_expired_review_tokens(&self, expired_before: Timestamp) -> Result<usize>;
+}
+
 #[derive(Clone, Debug, Copy, Default, PartialEq, Eq, Hash)]
 pub struct Pagination {
     pub offset: Option<u64>,
@@ -100,7 +106,9 @@ pub struct MostPopularTagsParams {
 }
 
 pub trait PlaceRepo {
+    // TODO: use typed ID
     fn get_place(&self, id: &str) -> Result<(Place, ReviewStatus)>;
+    // TODO: use typed IDs
     fn get_places(&self, ids: &[&str]) -> Result<Vec<(Place, ReviewStatus)>>;
     fn all_places(&self) -> Result<Vec<(Place, ReviewStatus)>>; // TODO: remove
     fn count_places(&self) -> Result<usize>;
@@ -123,6 +131,7 @@ pub trait PlaceRepo {
         pagination: &Pagination,
     ) -> Result<Vec<TagFrequency>>;
 
+    // TODO: use typed IDs
     fn review_places(
         &self,
         ids: &[&str],
@@ -132,8 +141,10 @@ pub trait PlaceRepo {
 
     fn create_or_update_place(&self, place: Place) -> Result<()>;
 
+    // TODO: use typed ID
     fn get_place_history(&self, id: &str, revision: Option<Revision>) -> Result<PlaceHistory>;
 
+    // TODO: use typed ID
     fn load_place_revision(&self, id: &str, rev: Revision) -> Result<(Place, ReviewStatus)>;
 }
 
@@ -245,6 +256,7 @@ pub trait TagRepo {
     fn count_tags(&self) -> Result<usize>;
 }
 
+// TODO: remove
 pub trait CategoryRepo {
     fn all_categories(&self) -> Result<Vec<Category>> {
         Ok(vec![

@@ -8,6 +8,8 @@ use uuid::Uuid;
 pub struct Id(String);
 
 impl Id {
+    pub const STR_LEN: usize = 32;
+
     pub fn new() -> Self {
         Uuid::new_v4().into()
     }
@@ -27,18 +29,21 @@ impl AsRef<String> for Id {
     }
 }
 
+// FIXME: remove
 impl AsRef<str> for Id {
     fn as_ref(&self) -> &str {
         self.0.as_str()
     }
 }
 
+// FIXME: use TryFrom
 impl From<String> for Id {
     fn from(from: String) -> Self {
         Self(from)
     }
 }
 
+// FIXME: use TryFrom
 impl From<&str> for Id {
     fn from(from: &str) -> Self {
         from.to_owned().into()
@@ -73,5 +78,18 @@ impl Borrow<str> for Id {
 impl fmt::Display for Id {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         f.write_str(self.as_ref())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // FIXME
+    #[ignore]
+    #[test]
+    fn parse_id() {
+        let invalid_id = "foo".parse::<Id>();
+        assert!(invalid_id.is_err());
     }
 }
