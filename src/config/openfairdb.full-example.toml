@@ -40,6 +40,7 @@ dir = "/tmp/openfairdb-email-tests"
 task-interval-time = "2h"
 send-max = 100
 send-to = ["scouts"]
+token-expire-in = "30d"
 
 [reminders.scouts]
 not-updated-for = "400d"

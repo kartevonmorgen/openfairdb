@@ -1,5 +1,5 @@
 use super::*;
-use ofdb_core::{gateways::email::EmailGateway, usecases::EmailReminderFormatter};
+use ofdb_core::{gateways::email::EmailGateway, usecases, usecases::EmailReminderFormatter};
 use std::time::Instant;
 use time::Duration;
 
@@ -10,6 +10,7 @@ pub struct SendReminderParams {
     pub resend_period: Duration,
     pub send_max: u32,
     pub current_time: Timestamp,
+    pub token_expire_at: Timestamp,
 }
 
 pub fn send_update_reminders<G, F>(
@@ -28,6 +29,7 @@ where
         resend_period,
         send_max,
         current_time,
+        token_expire_at,
     } = params;
 
     log::info!("Send update reminders to {recipient_role:?}s for places that were not updated since {not_updated_since:?}");
@@ -41,7 +43,7 @@ where
     let start_time = Instant::now();
     let unsent_reminders = {
         let conn = connections.shared()?;
-        ofdb_core::usecases::find_unsent_reminders(
+        usecases::find_unsent_reminders(
             &conn,
             recipient_role,
             not_updated_since,
@@ -59,16 +61,34 @@ where
         return Ok(());
     }
 
-    // 2. Send emails (fire and forget)
+    // 2. Create review tokens
+    let unsent_reminders_with_review_tokens =
+        usecases::create_reminder_review_tokens(unsent_reminders, token_expire_at);
+
+    connections
+        .exclusive()?
+        .transaction::<_, _, usecases::Error>(|conn| {
+            for (_, token) in &unsent_reminders_with_review_tokens {
+                conn.add_review_token(token).map_err(|err| {
+                    log::warn!("Failed to save review token: {}", err);
+                    err
+                })?;
+            }
+            Ok(())
+        })?;
+
+    // 3. Send emails (fire and forget)
     let start_time = Instant::now();
-    let unsent_emails = ofdb_core::usecases::create_emails(formatter, unsent_reminders);
+
+    let unsent_emails =
+        ofdb_core::usecases::create_reminder_emails(formatter, unsent_reminders_with_review_tokens);
     let sent_reminders = ofdb_core::usecases::send_reminder_emails(email_gateway, unsent_emails);
     log::debug!(
         "Sending update reminders for {recipient_role:?} stook {}ms",
         start_time.elapsed().as_millis()
     );
 
-    // 3. Remember what emails have been sent.
+    // 4. Remember what emails have been sent.
     let start_time = Instant::now();
     connections.exclusive()?.transaction(|conn| {
         usecases::save_sent_reminders(conn, &sent_reminders, current_time).map_err(|err| {
@@ -108,7 +128,7 @@ mod tests {
     struct MockEmailFormatter;
 
     impl EmailReminderFormatter for MockEmailFormatter {
-        fn format_email(&self, r: &Reminder) -> EmailContent {
+        fn format_email(&self, r: &Reminder, _: &ReviewNonce) -> EmailContent {
             EmailContent {
                 subject: format!("{}", r.place.id),
                 body: format!("{r:?}"),
@@ -212,6 +232,8 @@ mod tests {
 
         let not_updated_since = last_update_time;
         let resend_period = Duration::milliseconds(90);
+        let current_time = Timestamp::now();
+        let token_expire_at = current_time + Duration::seconds(30);
 
         send_update_reminders(
             &fixture.db_connections,
@@ -222,7 +244,8 @@ mod tests {
                 not_updated_since,
                 resend_period,
                 send_max: 10,
-                current_time: Timestamp::now(),
+                current_time,
+                token_expire_at,
             },
         )
         .unwrap();
@@ -284,6 +307,8 @@ mod tests {
 
         let not_updated_since = last_update_time;
         let resend_period = Duration::milliseconds(90);
+        let current_time = Timestamp::now();
+        let token_expire_at = current_time + Duration::seconds(30);
 
         send_update_reminders(
             &fixture.db_connections,
@@ -294,7 +319,8 @@ mod tests {
                 not_updated_since,
                 resend_period,
                 send_max: 10,
-                current_time: Timestamp::now(),
+                current_time,
+                token_expire_at,
             },
         )
         .unwrap();

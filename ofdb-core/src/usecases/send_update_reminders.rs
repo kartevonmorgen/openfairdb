@@ -252,21 +252,45 @@ pub struct Reminder {
 }
 
 pub trait EmailReminderFormatter {
-    fn format_email(&self, reminder: &Reminder) -> EmailContent;
+    fn format_email(&self, reminder: &Reminder, review_nonce: &ReviewNonce) -> EmailContent;
 }
 
-pub fn create_emails<F>(
+pub fn create_reminder_review_tokens(
+    reminders: Vec<Reminder>,
+    expires_at: Timestamp,
+) -> Vec<(Reminder, ReviewToken)> {
+    reminders
+        .into_iter()
+        .map(|reminder| {
+            let place_id = reminder.place.id.clone();
+            let place_revision = reminder.place.revision;
+            let nonce = Nonce::new();
+            let review_nonce = ReviewNonce {
+                place_id,
+                place_revision,
+                nonce,
+            };
+            let review_token = ReviewToken {
+                expires_at,
+                review_nonce,
+            };
+            (reminder, review_token)
+        })
+        .collect()
+}
+
+pub fn create_reminder_emails<F>(
     formatter: &F,
-    unsent_reminders: Vec<Reminder>,
+    unsent_reminders: Vec<(Reminder, ReviewToken)>,
 ) -> Vec<(Reminder, EmailContent)>
 where
     F: EmailReminderFormatter,
 {
     unsent_reminders
         .into_iter()
-        .map(|r| {
-            let email = formatter.format_email(&r);
-            (r, email)
+        .map(|(reminder, token)| {
+            let email = formatter.format_email(&reminder, &token.review_nonce);
+            (reminder, email)
         })
         .collect()
 }

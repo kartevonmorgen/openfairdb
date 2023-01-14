@@ -18,10 +18,7 @@ pub struct Config {
 
 impl Default for Config {
     fn default() -> Self {
-        let cfg: Self = toml::from_slice(DEFAULT_CONFIG_FILE).unwrap();
-        debug_assert!(cfg.db.is_some());
-        debug_assert!(cfg.webserver.is_some());
-        debug_assert!(cfg.reminders.is_some());
+        let cfg: Self = toml::from_slice(DEFAULT_CONFIG_FILE).expect("Default configuration");
         cfg
     }
 }
@@ -144,18 +141,15 @@ pub struct Reminders {
     pub send_to: Option<Vec<RecipientRole>>,
     pub scouts: Option<ScoutReminders>,
     pub owners: Option<OwnerReminders>,
+    #[serde(deserialize_with = "deserialize_option_duration")]
+    pub token_expire_in: Option<Duration>,
 }
 
 impl Default for Reminders {
     fn default() -> Self {
-        let cfg = Config::default()
+        Config::default()
             .reminders
-            .expect("Reminders configuration");
-        debug_assert!(cfg.task_interval_time.is_some());
-        debug_assert!(cfg.send_max.is_some());
-        debug_assert!(cfg.scouts.is_some());
-        debug_assert!(cfg.owners.is_some());
-        cfg
+            .expect("Reminders configuration")
     }
 }
 
@@ -203,8 +197,23 @@ mod tests {
 
     #[test]
     fn parse_default_config_from_file() {
-        let _: Config = toml::from_slice(DEFAULT_CONFIG_FILE).unwrap();
+        let cfg: Config = toml::from_slice(DEFAULT_CONFIG_FILE).unwrap();
+        assert!(cfg.db.is_some());
+        assert!(cfg.webserver.is_some());
+        assert!(cfg.reminders.is_some());
     }
+
+    #[test]
+    fn default_reminders_config() {
+        let cfg = Reminders::default();
+        assert!(cfg.task_interval_time.is_some());
+        assert!(cfg.send_max.is_some());
+        assert!(cfg.send_to.is_none());
+        assert!(cfg.scouts.is_some());
+        assert!(cfg.owners.is_some());
+        assert!(cfg.token_expire_in.is_some());
+    }
+
     #[test]
     fn parse_full_config_example_from_file() {
         let cfg_string = fs::read_to_string("src/config/openfairdb.full-example.toml").unwrap();

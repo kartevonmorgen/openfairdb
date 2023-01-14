@@ -104,6 +104,7 @@ pub struct Reminders {
     pub scouts: ScoutReminders,
     pub owners: OwnerReminders,
     pub send_to: Vec<RecipientRole>,
+    pub token_expire_in: Duration,
 }
 
 pub struct ScoutReminders {
@@ -232,10 +233,27 @@ impl TryFrom<raw::Config> for Config {
             send_to,
             scouts,
             owners,
+            token_expire_in,
         } = reminders.unwrap_or_default();
 
-        let task_interval_time = task_interval_time.expect("Reminder task interval");
-        let send_max = send_max.expect("Send max. reminders configuration");
+        let default_reminders_cfg = raw::Reminders::default();
+
+        let task_interval_time = task_interval_time.unwrap_or_else(|| {
+            default_reminders_cfg
+                .task_interval_time
+                .expect("Reminder task interval")
+        });
+        let token_expire_in = token_expire_in.unwrap_or_else(|| {
+            default_reminders_cfg
+                .token_expire_in
+                .expect("Token expire duration")
+        });
+        let send_max = send_max.unwrap_or_else(|| {
+            default_reminders_cfg
+                .send_max
+                .expect("Send max. reminders configuration")
+        });
+
         let send_to = send_to
             .unwrap_or_default()
             .into_iter()
@@ -254,6 +272,7 @@ impl TryFrom<raw::Config> for Config {
             send_to,
             scouts,
             owners,
+            token_expire_in,
         };
 
         Ok(Self {
