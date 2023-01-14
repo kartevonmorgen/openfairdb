@@ -17,6 +17,7 @@ pub async fn run(
 
     let mut interval = tokio::time::interval(cfg.task_interval_time);
     let email_gw = gateways::email_gateway(email_gateway_cfg);
+    let token_expire_in = Duration::try_from(cfg.token_expire_in).expect("Token expiring duration");
 
     loop {
         interval.tick().await;
@@ -27,6 +28,7 @@ pub async fn run(
             let resend_period = resend_period(recipient_role, &cfg);
             let current_time = Timestamp::now();
             let not_updated_since = current_time - resend_period;
+            let token_expire_at = current_time + token_expire_in;
 
             let params = SendReminderParams {
                 recipient_role,
@@ -34,6 +36,7 @@ pub async fn run(
                 resend_period,
                 send_max: cfg.send_max,
                 current_time,
+                token_expire_at,
             };
 
             if let Err(err) = send_update_reminders(connections, &email_gw, &formatter, params) {

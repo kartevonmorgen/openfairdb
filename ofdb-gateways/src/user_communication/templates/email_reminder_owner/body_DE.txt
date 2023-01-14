@@ -10,9 +10,15 @@ Hier die Infos, die wir derzeit von euch haben:
 
     Tags: {{ tags }}
 
+
 Ist das noch alles richtig und aktuell?
 
-Eintrag anschauen oder bearbeiten: {{ entry_url }}
+  Ja, das stimmt so: {{ confirm_url }}
+
+  Nein, Eintrag anschauen oder bearbeiten: {{ entry_url }}
+
+  Das gibt es nicht mehr: {{ archive_url }})
+
 
 Unterstützende Grüße,
 dein Team der Karte von morgen

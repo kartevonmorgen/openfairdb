@@ -4,11 +4,12 @@ pub fn review_place_with_review_nonce(
     connections: &sqlite::Connections,
     review_nonce: ReviewNonce,
     status: ReviewStatus,
+    current_time: Timestamp,
 ) -> Result<()> {
     // The token should be consumed only once, even if the
     // following transaction for reviewing the place fails!
     let token = connections.exclusive()?.transaction(|conn| {
-        usecases::consume_review_token(conn, &review_nonce).map_err(|err| {
+        usecases::consume_review_token(conn, &review_nonce, current_time).map_err(|err| {
             log::warn!(
                 "Missing or invalid token to review place ({}) for revision '{}': {}",
                 review_nonce.place_id,

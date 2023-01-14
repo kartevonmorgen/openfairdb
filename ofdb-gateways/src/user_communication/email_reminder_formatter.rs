@@ -1,6 +1,6 @@
 use askama::Template;
 use ofdb_core::usecases::{EmailReminderFormatter, RecipientRole, Reminder};
-use ofdb_entities::{email::EmailContent, place::Place};
+use ofdb_entities::{email::EmailContent, nonce::ReviewNonce, place::Place};
 use time::{format_description::FormatItem, macros::format_description};
 
 // TODO: support different languages
@@ -17,7 +17,7 @@ impl ReminderFormatter {
 const DATE_FORMAT_DE: &[FormatItem] = format_description!("[day].[month].[year]");
 
 impl EmailReminderFormatter for ReminderFormatter {
-    fn format_email(&self, r: &Reminder) -> EmailContent {
+    fn format_email(&self, r: &Reminder, review_nonce: &ReviewNonce) -> EmailContent {
         let Place {
             id,
             title,
@@ -34,6 +34,13 @@ impl EmailReminderFormatter for ReminderFormatter {
         // TODO: inject base URL
         let entry_url = &format!("https://kartevonmorgen.org/#/?entry={id}");
 
+        let token = review_nonce.encode_to_string();
+        let archive_url = &format!(
+            "https://openfairdb.org/api/review-place-with-token?token={token}?status=archived"
+        );
+        let confirm_url = &format!(
+            "https://openfairdb.org/api/review-place-with-token?token={token}?status=confirmed"
+        );
         let tags = &tags.join(",");
         let body = match self.recipient_role {
             RecipientRole::Scout => EmailReminderScoutsBodyTemplate {
@@ -42,6 +49,8 @@ impl EmailReminderFormatter for ReminderFormatter {
                 description,
                 tags,
                 entry_url,
+                archive_url,
+                confirm_url,
             }
             .render(),
             RecipientRole::Owner => EmailReminderOwnerBodyTemplate {
@@ -50,6 +59,8 @@ impl EmailReminderFormatter for ReminderFormatter {
                 description,
                 tags,
                 entry_url,
+                archive_url,
+                confirm_url,
             }
             .render(),
         }
@@ -73,6 +84,8 @@ struct EmailReminderScoutsBodyTemplate<'a> {
     description: &'a str,
     tags: &'a str,
     entry_url: &'a str,
+    confirm_url: &'a str,
+    archive_url: &'a str,
 }
 
 #[derive(Template)]
@@ -89,4 +102,6 @@ struct EmailReminderOwnerBodyTemplate<'a> {
     description: &'a str,
     tags: &'a str,
     entry_url: &'a str,
+    confirm_url: &'a str,
+    archive_url: &'a str,
 }

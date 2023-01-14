@@ -168,7 +168,8 @@ pub fn get_review_with_token(
         ApiError::OtherWithStatus(anyhow::anyhow!("Invalid review status"), Status::BadRequest)
     })?;
     let review_nonce = ReviewNonce::decode_from_str(&token)?;
-    flows::review_place_with_review_nonce(&connections, review_nonce, review_status)?;
+    let now = Timestamp::now();
+    flows::review_place_with_review_nonce(&connections, review_nonce, review_status, now)?;
     Ok(Json(()))
 }
 
