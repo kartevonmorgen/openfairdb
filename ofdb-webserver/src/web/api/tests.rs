@@ -2159,11 +2159,14 @@ fn review_place_with_token() {
         .unwrap();
     let token = review_token.review_nonce.encode_to_string();
     let res = client
-        .get(format!(
-            "/places/review-with-token?token={token}&status=archived"
+        .post("/places/review-with-token")
+        .header(ContentType::JSON)
+        .body(&format!(
+            "{{\"token\":\"{token}\",\"status\":\"archived\"}}",
         ))
         .dispatch();
     // TODO: should be Status::Created
+    test_json(&res);
     assert_eq!(res.status(), Status::Ok);
 }
 
@@ -2189,11 +2192,14 @@ fn review_place_with_token_and_invalid_status() {
         .unwrap();
     let token = review_token.review_nonce.encode_to_string();
     let res = client
-        .get(format!(
-            "/places/review-with-token?token={token}&status=doesnotexist"
+        .post("/places/review-with-token")
+        .header(ContentType::JSON)
+        .body(&format!(
+            "{{\"token\":\"{token}\",\"status\":\"doesnotexist\"}}",
         ))
         .dispatch();
-    assert_eq!(res.status(), Status::BadRequest);
+    test_json(&res);
+    assert_eq!(res.status(), Status::UnprocessableEntity);
 }
 
 #[test]
@@ -2218,9 +2224,12 @@ fn review_place_with_token_and_invalid_revision() {
         .unwrap();
     let token = review_token.review_nonce.encode_to_string();
     let res = client
-        .get(format!(
-            "/places/review-with-token?token={token}&status=confirmed"
+        .post("/places/review-with-token")
+        .header(ContentType::JSON)
+        .body(&format!(
+            "{{\"token\":\"{token}\",\"status\":\"confirmed\"}}",
         ))
         .dispatch();
+    test_json(&res);
     assert_eq!(res.status(), Status::BadRequest);
 }

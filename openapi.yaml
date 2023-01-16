@@ -360,7 +360,7 @@ paths:
         '401':
           $ref: '#/components/responses/UnauthorizedError'
   '/places/review-with-token':
-    get:
+    post:
       tags:
         - Entries/Places
       summary: Review a place by a secret token
@@ -371,17 +371,16 @@ paths:
         Depending on the review status the affected place might be
         hidden from search results (archived, rejected) or re-appear
         (created, confirmed).
-      parameters:
-        - name: token
-          in: query
-          required: true
-          schema:
-            type: string
-        - name: status
-          in: query
-          required: true
-          schema:
-            $ref: '#/components/schemas/ReviewStatus'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              properties:
+                status:
+                  $ref: '#/components/schemas/ReviewStatus'
+                token:
+                  $ref: '#/components/schemas/ReviewToken'
       responses:
         '201':
           description: Created a review for the place.
@@ -1502,6 +1501,11 @@ components:
         * confirmed/rejected = after positive/negative review
         * archived = final status
       example: rejected
+    ReviewToken:
+      type: string
+      description: |
+        A secret one time token to review a specific place.
+      example: e43e4a348172480c8f48b5b734f591f4ef9d626c42d04dc8bc826087299a7a65372
     ReviewStatusList:
       type: string
       description: |

@@ -157,19 +157,26 @@ pub fn post_review(
     Ok(Json(()))
 }
 
-// TODO: make this a POST request
-#[get("/places/review-with-token?<token>&<status>")]
-pub fn get_review_with_token(
+#[derive(Deserialize)]
+pub struct ReviewWithToken {
+    pub token: String,
+    pub status: json::ReviewStatus,
+}
+
+#[post("/places/review-with-token", data = "<review>")]
+pub fn post_review_with_token(
     connections: sqlite::Connections,
-    token: String,
-    status: String,
+    review: JsonResult<ReviewWithToken>,
 ) -> Result<()> {
-    let review_status: ReviewStatus = status.parse().map_err(|_| {
-        ApiError::OtherWithStatus(anyhow::anyhow!("Invalid review status"), Status::BadRequest)
-    })?;
+    let ReviewWithToken { token, status } = review
+        .map_err(|err| {
+            log::debug!("Invalid review: {:?}", err);
+            err
+        })?
+        .into_inner();
     let review_nonce = ReviewNonce::decode_from_str(&token)?;
     let now = Timestamp::now();
-    flows::review_place_with_review_nonce(&connections, review_nonce, review_status, now)?;
+    flows::review_place_with_review_nonce(&connections, review_nonce, status.into(), now)?;
     Ok(Json(()))
 }
 
