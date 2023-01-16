@@ -267,3 +267,16 @@ pub fn search_users_form() -> Markup {
         }
     }
 }
+
+// TODO: Return some info.
+pub fn review_place_with_token() -> Markup {
+    page(
+        "Place Review",
+        None,
+        None,
+        None,
+        html! {
+          "Thank your for updating"
+        },
+    )
+}

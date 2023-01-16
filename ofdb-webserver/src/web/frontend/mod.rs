@@ -6,7 +6,7 @@ use rocket::{
     self,
     form::Form,
     get,
-    http::ContentType,
+    http::{ContentType, Status},
     post,
     response::{
         content::{RawCss, RawHtml, RawJavaScript},
@@ -199,6 +199,29 @@ pub fn post_place_review(
             "Failed to archive the place.",
         )
     })
+}
+
+// TODO: Move this into the separate web application
+// that uses the official JSON API.
+#[get("/places/review-with-token?<token>&<status>")]
+pub fn get_place_review_with_token(
+    connections: sqlite::Connections,
+    token: String,
+    status: String,
+) -> Result<Markup> {
+    let review_status: ReviewStatus = status.parse().map_err(|_| {
+        ApiError::OtherWithStatus(anyhow::anyhow!("Invalid review status"), Status::BadRequest)
+    })?;
+    let review_nonce = ReviewNonce::decode_from_str(&token)?;
+    let now = Timestamp::now();
+    // TODO: return place, revision and status and display it to the user.
+    ofdb_application::prelude::review_place_with_review_nonce(
+        &connections,
+        review_nonce,
+        review_status,
+        now,
+    )?;
+    Ok(view::review_place_with_token())
 }
 
 fn review_place(
@@ -409,6 +432,7 @@ pub fn routes() -> Vec<Route> {
         get_entry,
         get_place_history,
         get_place_review,
+        get_place_review_with_token,
         post_place_review,
         get_events_chronologically,
         get_event,

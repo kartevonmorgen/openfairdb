@@ -444,6 +444,35 @@ mod entry {
             .dispatch();
         assert_eq!(res.status(), Status::Unauthorized);
     }
+
+    #[test]
+    fn review_place_with_token() {
+        let (client, db, mut search) = setup();
+        let (place_id, _, _) = create_place_with_rating(&db, &mut *search);
+        let place_revision = Revision::initial();
+        let nonce = Nonce::new();
+        let expires_at = Timestamp::now() + time::Duration::seconds(10);
+        let review_nonce = ReviewNonce {
+            place_id: place_id.into(),
+            place_revision,
+            nonce,
+        };
+        let review_token = ReviewToken {
+            expires_at,
+            review_nonce,
+        };
+        db.exclusive()
+            .unwrap()
+            .add_review_token(&review_token)
+            .unwrap();
+        let token = review_token.review_nonce.encode_to_string();
+        let res = client
+            .get(format!(
+                "/places/review-with-token?token={token}&status=archived"
+            ))
+            .dispatch();
+        assert_eq!(res.status(), Status::Ok);
+    }
 }
 
 mod admin {

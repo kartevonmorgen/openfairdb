@@ -36,10 +36,10 @@ impl EmailReminderFormatter for ReminderFormatter {
 
         let token = review_nonce.encode_to_string();
         let archive_url = &format!(
-            "https://openfairdb.org/api/review-place-with-token?token={token}?status=archived"
+            "https://openfairdb.org/review-place-with-token?token={token}?status=archived"
         );
         let confirm_url = &format!(
-            "https://openfairdb.org/api/review-place-with-token?token={token}?status=confirmed"
+            "https://openfairdb.org/review-place-with-token?token={token}?status=confirmed"
         );
         let tags = &tags.join(",");
         let body = match self.recipient_role {
