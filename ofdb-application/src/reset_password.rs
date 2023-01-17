@@ -1,4 +1,4 @@
-use ofdb_core::gateways::notify::NotificationGateway;
+use ofdb_core::gateways::notify::{NotificationEvent, NotificationGateway};
 
 use super::*;
 
@@ -18,7 +18,10 @@ pub fn reset_password_request(
     // writing.
     let user = connections.shared()?.get_user_by_email(email)?;
     let email_nonce = refresh_user_token(connections, &user)?;
-    notify.user_reset_password_requested(&email_nonce);
+    let event = NotificationEvent::UserResetPasswordRequested {
+        email_nonce: &email_nonce,
+    };
+    notify.notify(event);
     Ok(email_nonce)
 }
 

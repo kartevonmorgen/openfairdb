@@ -72,15 +72,10 @@ pub mod prelude {
 
     pub struct DummyNotifyGW;
 
-    impl ofdb_core::gateways::notify::NotificationGateway for DummyNotifyGW {
-        fn place_added(&self, _: &[EmailAddress], _: &Place, _: Vec<Category>) {}
-        fn place_updated(&self, _: &[EmailAddress], _: &Place, _: Vec<Category>) {}
-        fn event_created(&self, _: &[EmailAddress], _: &Event) {}
-        fn event_updated(&self, _: &[EmailAddress], _: &Event) {}
-        fn user_registered_kvm(&self, _: &User) {}
-        fn user_registered_ofdb(&self, _: &User) {}
-        fn user_registered(&self, _: &User, _: &str) {}
-        fn user_reset_password_requested(&self, _: &EmailNonce) {}
+    use ofdb_core::gateways::notify::{NotificationEvent, NotificationGateway};
+
+    impl NotificationGateway for DummyNotifyGW {
+        fn notify(&self, _: NotificationEvent) {}
     }
 
     pub struct BackendFixture {

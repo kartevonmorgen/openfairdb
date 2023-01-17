@@ -1,5 +1,8 @@
 use super::prelude::*;
-use crate::{gateways::email::EmailGateway, repositories};
+use crate::{
+    gateways::notify::{NotificationEvent, NotificationGateway},
+    repositories,
+};
 use anyhow::anyhow;
 use std::{ops::Not, time::Instant};
 use time::Duration;
@@ -55,17 +58,18 @@ where
     Ok(unsent_reminders)
 }
 
-pub fn send_reminder_emails<G>(
-    email_gateway: &G,
-    emails: Vec<(Reminder, EmailContent)>,
-) -> Vec<Reminder>
+pub fn send_reminder_emails<G>(notify: &G, emails: Vec<(Reminder, EmailContent)>) -> Vec<Reminder>
 where
-    G: EmailGateway,
+    G: NotificationGateway,
 {
     emails
         .into_iter()
         .map(|(r, email)| {
-            email_gateway.compose_and_send(&r.recipients, &email);
+            let event = NotificationEvent::ReminderCreated {
+                recipients: &r.recipients,
+                email: &email,
+            };
+            notify.notify(event);
             r
         })
         .collect()

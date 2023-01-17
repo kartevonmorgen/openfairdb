@@ -1,8 +1,10 @@
 use jfs::Store;
-use ofdb_core::{entities::Timestamp, gateways::email::EmailGateway};
+use ofdb_core::entities::Timestamp;
 use ofdb_entities::email::*;
 use serde::{Deserialize, Serialize};
 use std::{io, path::Path};
+
+use super::EmailGateway;
 
 /// A dummy email gateway for testing purposes.
 pub struct SendToJsonFile {
