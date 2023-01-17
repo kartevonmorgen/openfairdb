@@ -129,7 +129,7 @@ pub fn get_user(db: sqlite::Connections, account: Account, email: String) -> Res
 }
 
 #[post(
-    "/confirm-email-address",
+    "/users/confirm-email-address",
     format = "application/json",
     data = "<token>"
 )]

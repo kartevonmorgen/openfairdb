@@ -1543,7 +1543,7 @@ fn confirm_email_address() {
     }
     .encode_to_string();
     let response = client
-        .post("/confirm-email-address")
+        .post("/users/confirm-email-address")
         .header(ContentType::JSON)
         .body(format!("{{\"token\":\"{}\"}}", token))
         .dispatch();
