@@ -51,15 +51,19 @@ pub fn post_logout(
     Json(())
 }
 
-#[post("/users", format = "application/json", data = "<u>")]
-pub fn post_user(db: sqlite::Connections, n: &State<Notify>, u: JsonResult<NewUser>) -> Result<()> {
-    let new_user = from_json::try_new_user(u?.into_inner())?;
+#[post("/users", format = "application/json", data = "<new_user>")]
+pub fn post_user(
+    db: sqlite::Connections,
+    notify: &State<Notify>,
+    new_user: JsonResult<NewUser>,
+) -> Result<()> {
+    let new_user = from_json::try_new_user(new_user?.into_inner())?;
     let user = {
         let db = db.exclusive()?;
         usecases::create_new_user(&db, new_user.clone())?;
         db.get_user_by_email(&new_user.email)?
     };
-    n.user_registered_kvm(&user);
+    notify.user_registered_kvm(&user);
     Ok(Json(()))
 }
 

@@ -618,12 +618,7 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                email:
-                  $ref: '#/components/schemas/UserEmail'
-                password:
-                  type: string
+              $ref: '#/components/schemas/Credentials'
       responses:
         '200':
           description: Successful response - the JWT token
@@ -638,6 +633,20 @@ paths:
         - Users
       security:
         - jwtAuth: []
+      responses:
+        '200':
+          description: Successful response
+  '/users':
+    post:
+      summary: Register a new user
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewUser'
       responses:
         '200':
           description: Successful response
@@ -1548,6 +1557,18 @@ components:
         - email
         - email_confirmed
         - role
+    NewUser:
+      properties:
+        email:
+          $ref: '#/components/schemas/UserEmail'
+        password:
+          type: string
+    Credentials:
+      properties:
+        email:
+          $ref: '#/components/schemas/UserEmail'
+        password:
+          type: string
     Event:
       properties:
         id:
