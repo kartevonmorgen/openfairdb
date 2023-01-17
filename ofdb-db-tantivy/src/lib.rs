@@ -9,7 +9,6 @@ use parking_lot::Mutex;
 use strum::IntoEnumIterator as _;
 use tantivy::{
     collector::TopDocs,
-    fastfield::FastFieldReader as _,
     query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
     schema::*,
     tokenizer::{LowerCaser, RawTokenizer, RemoveLongFilter, SimpleTokenizer, TextAnalyzer},
@@ -744,7 +743,7 @@ impl TantivyIndex {
 
                         move |doc: DocId, original_score: Score| {
                             let total_rating =
-                                f64::from(u64_to_avg_rating(total_rating_reader.get(doc)));
+                                f64::from(u64_to_avg_rating(total_rating_reader.get_val(doc)));
                             let boost_factor =
                                 if total_rating < f64::from(AvgRatingValue::default()) {
                                     // Negative ratings result in a boost factor < 1

@@ -78,6 +78,7 @@ impl JwtState {
 
 #[cfg(feature = "jwt")]
 mod jwt_service {
+    use base64::Engine;
     use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 
     use super::{Claims, Result};
@@ -85,7 +86,7 @@ mod jwt_service {
     /// generate a Rocket-compatible secret (Rocket expects a
     /// 256-bit base64 encoded string)
     fn generate_rocket_secret() -> String {
-        base64::encode(rand::random::<[u8; 32]>())
+        base64::engine::general_purpose::STANDARD.encode(rand::random::<[u8; 32]>())
     }
 
     pub struct Key {

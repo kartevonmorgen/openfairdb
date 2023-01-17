@@ -461,7 +461,7 @@ dependencies = [
 
 [[package]]
 name = "ofdb-boundary"
-version = "0.12.1"
+version = "0.12.2"
 dependencies = [
  "ofdb-entities",
  "serde",
@@ -471,7 +471,7 @@ dependencies = [
 
 [[package]]
 name = "ofdb-entities"
-version = "0.12.1"
+version = "0.12.2"
 dependencies = [
  "bs58",
  "itertools",
@@ -487,7 +487,7 @@ dependencies = [
 
 [[package]]
 name = "ofdb-seed"
-version = "0.12.1"
+version = "0.12.2"
 dependencies = [
  "ofdb-boundary",
  "percent-encoding",
@@ -533,9 +533,9 @@ checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.49"
+version = "1.0.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57a8eca9f9c4ffde41714334dee777596264c7825420f521abc92b5b5deb63a5"
+checksum = "6ef7d57beacfaf2d8aee5937dab7b7f28de3cb8b1828479bb5de2a7106f2bae2"
 dependencies = [
  "unicode-ident",
 ]
