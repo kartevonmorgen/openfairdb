@@ -157,18 +157,12 @@ pub fn post_review(
     Ok(Json(()))
 }
 
-#[derive(Deserialize)]
-pub struct ReviewWithToken {
-    pub token: String,
-    pub status: json::ReviewStatus,
-}
-
 #[post("/places/review-with-token", data = "<review>")]
 pub fn post_review_with_token(
     connections: sqlite::Connections,
-    review: JsonResult<ReviewWithToken>,
+    review: JsonResult<json::ReviewWithToken>,
 ) -> Result<()> {
-    let ReviewWithToken { token, status } = review
+    let json::ReviewWithToken { token, status } = review
         .map_err(|err| {
             log::debug!("Invalid review: {:?}", err);
             err
