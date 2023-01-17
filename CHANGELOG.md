@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v0.12.2 (2023-01-17)
 
 - new: Add endpoint to review a place by a secret token
 - new: Add review tokens to reminder emails
