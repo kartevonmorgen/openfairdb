@@ -1,6 +1,7 @@
 use super::*;
 use crate::adapters::json::from_json;
 use ofdb_boundary::NewUser;
+use ofdb_core::gateways::notify::NotificationEvent;
 
 #[post("/login", format = "application/json", data = "<login>")]
 pub fn post_login(
@@ -58,12 +59,24 @@ pub fn post_user(
     new_user: JsonResult<NewUser>,
 ) -> Result<()> {
     let new_user = from_json::try_new_user(new_user?.into_inner())?;
+    // TODO: move this into ofdb-application
     let user = {
         let db = db.exclusive()?;
         usecases::create_new_user(&db, new_user.clone())?;
         db.get_user_by_email(&new_user.email)?
     };
-    notify.user_registered_kvm(&user);
+    let token = EmailNonce {
+        email: user.email.clone(),
+        nonce: Nonce::new(),
+    }
+    .encode_to_string();
+    let confirmation_url = format!("https://kartevonmorgen.org/#/?confirm_email={}", token)
+        .parse()
+        .expect("Valid email confirmation URL");
+    notify.notify(NotificationEvent::UserRegistered {
+        user: &user,
+        confirmation_url,
+    });
     Ok(Json(()))
 }
 

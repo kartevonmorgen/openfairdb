@@ -13,7 +13,7 @@ use crate::{
     core::{prelude::*, usecases},
     web::{guards::*, sqlite::Connections},
 };
-use ofdb_core::usecases::Error as ParameterError;
+use ofdb_core::{gateways::notify::NotificationEvent, usecases::Error as ParameterError};
 
 #[get("/register")]
 pub fn get_register(flash: Option<FlashMessage>) -> Markup {
@@ -58,7 +58,19 @@ pub fn post_register(
                 Ok(()) => {
                     if let Ok(user) = db.get_user_by_email(login.email) {
                         debug_assert_eq!(user.email, *login.email);
-                        notify.user_registered_ofdb(&user);
+                        let token = EmailNonce {
+                            email: user.email.clone(),
+                            nonce: Nonce::new(),
+                        }
+                        .encode_to_string();
+                        let confirmation_url =
+                            format!("https://openfairdb.org/register/confirm/{}", token)
+                                .parse()
+                                .expect("Valid email confirmation URL");
+                        notify.notify(NotificationEvent::UserRegistered {
+                            user: &user,
+                            confirmation_url,
+                        });
 
                         let msg = "Registered successfully. Please confirm your email address.";
                         return Ok(Flash::success(

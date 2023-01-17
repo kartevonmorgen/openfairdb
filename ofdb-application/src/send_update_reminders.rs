@@ -1,5 +1,7 @@
 use super::*;
-use ofdb_core::{gateways::email::EmailGateway, usecases, usecases::EmailReminderFormatter};
+use ofdb_core::{
+    gateways::notify::NotificationGateway, usecases, usecases::EmailReminderFormatter,
+};
 use std::time::Instant;
 use time::Duration;
 
@@ -15,12 +17,12 @@ pub struct SendReminderParams {
 
 pub fn send_update_reminders<G, F>(
     connections: &sqlite::Connections,
-    email_gateway: &G,
+    notification_gateway: &G,
     formatter: &F,
     params: SendReminderParams,
 ) -> Result<()>
 where
-    G: EmailGateway,
+    G: NotificationGateway,
     F: EmailReminderFormatter,
 {
     let SendReminderParams {
@@ -82,7 +84,8 @@ where
 
     let unsent_emails =
         ofdb_core::usecases::create_reminder_emails(formatter, unsent_reminders_with_review_tokens);
-    let sent_reminders = ofdb_core::usecases::send_reminder_emails(email_gateway, unsent_emails);
+    let sent_reminders =
+        ofdb_core::usecases::send_reminder_emails(notification_gateway, unsent_emails);
     log::debug!(
         "Sending update reminders for {recipient_role:?} stook {}ms",
         start_time.elapsed().as_millis()
@@ -109,18 +112,23 @@ mod tests {
 
     use super::*;
     use crate::tests::prelude::*;
-    use ofdb_core::{repositories::*, usecases::Reminder};
+    use ofdb_core::{gateways::notify::NotificationEvent, repositories::*, usecases::Reminder};
     use std::cell::RefCell;
 
     #[derive(Default)]
-    struct MockEmailGw {
+    struct MockNotifyGw {
         sent_mails: RefCell<Vec<(Vec<EmailAddress>, EmailContent)>>,
     }
 
-    impl EmailGateway for MockEmailGw {
-        fn compose_and_send(&self, recipients: &[EmailAddress], email: &EmailContent) {
-            let data = (recipients.to_vec(), email.clone());
-            self.sent_mails.borrow_mut().push(data);
+    impl NotificationGateway for MockNotifyGw {
+        fn notify(&self, event: NotificationEvent) {
+            match event {
+                NotificationEvent::ReminderCreated { email, recipients } => {
+                    let data = (recipients.to_vec(), email.clone());
+                    self.sent_mails.borrow_mut().push(data);
+                }
+                _ => unreachable!(),
+            }
         }
     }
 
@@ -227,7 +235,7 @@ mod tests {
         let last_update_time = Timestamp::now();
         let _recent = create_place(&fixture, "recent", admin_email, None);
 
-        let email_gw = MockEmailGw::default();
+        let notify_gw = MockNotifyGw::default();
         let email_fmt = MockEmailFormatter::default();
 
         let not_updated_since = last_update_time;
@@ -237,7 +245,7 @@ mod tests {
 
         send_update_reminders(
             &fixture.db_connections,
-            &email_gw,
+            &notify_gw,
             &email_fmt,
             SendReminderParams {
                 recipient_role: usecases::RecipientRole::Owner,
@@ -251,9 +259,9 @@ mod tests {
         .unwrap();
 
         let owner_email = "owner@example.org".parse::<EmailAddress>().unwrap();
-        assert_eq!(email_gw.sent_mails.borrow().len(), 1);
-        assert_eq!(email_gw.sent_mails.borrow()[0].0, vec![owner_email]);
-        assert_eq!(email_gw.sent_mails.borrow()[0].1.subject, old.id.as_str());
+        assert_eq!(notify_gw.sent_mails.borrow().len(), 1);
+        assert_eq!(notify_gw.sent_mails.borrow()[0].0, vec![owner_email]);
+        assert_eq!(notify_gw.sent_mails.borrow()[0].1.subject, old.id.as_str());
     }
 
     #[test]
@@ -302,7 +310,7 @@ mod tests {
         let last_update_time = Timestamp::now();
         let _recent = create_place(&fixture, "recent", admin, None);
 
-        let email_gw = MockEmailGw::default();
+        let notify_gw = MockNotifyGw::default();
         let email_fmt = MockEmailFormatter::default();
 
         let not_updated_since = last_update_time;
@@ -312,7 +320,7 @@ mod tests {
 
         send_update_reminders(
             &fixture.db_connections,
-            &email_gw,
+            &notify_gw,
             &email_fmt,
             SendReminderParams {
                 recipient_role: usecases::RecipientRole::Scout,
@@ -325,8 +333,8 @@ mod tests {
         )
         .unwrap();
 
-        assert_eq!(email_gw.sent_mails.borrow().len(), 1);
-        assert_eq!(email_gw.sent_mails.borrow()[0].0, vec![subscribed_scout]);
-        assert_eq!(email_gw.sent_mails.borrow()[0].1.subject, old.id.as_str());
+        assert_eq!(notify_gw.sent_mails.borrow().len(), 1);
+        assert_eq!(notify_gw.sent_mails.borrow()[0].0, vec![subscribed_scout]);
+        assert_eq!(notify_gw.sent_mails.borrow()[0].1.subject, old.id.as_str());
     }
 }

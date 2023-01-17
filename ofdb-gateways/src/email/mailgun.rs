@@ -1,8 +1,9 @@
 use anyhow::Result;
 use itertools::Itertools;
-use ofdb_core::gateways::email::EmailGateway;
 use ofdb_entities::email::*;
 use std::thread;
+
+use super::EmailGateway;
 
 /// An email notification manager based on mailgun.net.
 #[derive(Debug, Clone)]

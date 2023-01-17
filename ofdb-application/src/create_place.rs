@@ -1,6 +1,6 @@
 use super::*;
 
-use ofdb_core::gateways::notify::NotificationGateway;
+use ofdb_core::gateways::notify::{NotificationEvent, NotificationGateway};
 use std::collections::HashSet;
 
 pub fn create_place(
@@ -72,6 +72,11 @@ fn notify_place_added(
         let all_categories = connection.all_categories()?;
         (email_addresses, all_categories)
     };
-    notify.place_added(&email_addresses, place, all_categories);
+    let event = NotificationEvent::PlaceAdded {
+        email_addresses: &email_addresses,
+        place,
+        all_categories,
+    };
+    notify.notify(event);
     Ok(())
 }

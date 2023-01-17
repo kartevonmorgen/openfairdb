@@ -1,6 +1,6 @@
 use super::*;
 
-use ofdb_core::gateways::notify::NotificationGateway;
+use ofdb_core::gateways::notify::{NotificationEvent, NotificationGateway};
 use std::collections::HashSet;
 
 #[allow(clippy::too_many_arguments)]
@@ -70,6 +70,11 @@ fn notify_place_updated(
         let all_categories = connection.all_categories()?;
         (email_addresses, all_categories)
     };
-    notify.place_updated(&email_addresses, place, all_categories);
+    let event = NotificationEvent::PlaceUpdated {
+        email_addresses: &email_addresses,
+        place,
+        all_categories,
+    };
+    notify.notify(event);
     Ok(())
 }

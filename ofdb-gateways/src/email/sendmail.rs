@@ -9,9 +9,10 @@ use std::{
 };
 
 use fast_chemail::is_valid_email;
-use ofdb_core::gateways::email::EmailGateway;
 use ofdb_entities::email::*;
 use time::format_description::well_known::Rfc2822;
+
+use super::EmailGateway;
 
 #[derive(Debug, Clone)]
 pub struct Sendmail {

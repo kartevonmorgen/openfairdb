@@ -1,4 +1,4 @@
-use ofdb_core::gateways::notify::NotificationGateway;
+use ofdb_core::gateways::notify::{NotificationEvent, NotificationGateway};
 
 use super::*;
 
@@ -59,7 +59,11 @@ fn notify_event_updated(
             let conn = connections.shared()?;
             usecases::email_addresses_by_coordinate(&conn, location.pos)?
         };
-        notify.event_updated(&email_addresses, event);
+        let event = NotificationEvent::EventUpdated {
+            event,
+            email_addresses: &email_addresses,
+        };
+        notify.notify(event);
     }
     Ok(())
 }
