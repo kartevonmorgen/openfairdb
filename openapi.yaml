@@ -693,6 +693,22 @@ paths:
       responses:
         '200':
            description: Successful response
+
+  /users/confirm-email-address:
+    post:
+      summary: Confirm that an email is valid.
+      tags:
+        - Users
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+
   /subscribe-to-bbox:
     post:
       summary: Subscribe to a bounding box

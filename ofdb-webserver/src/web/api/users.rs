@@ -111,11 +111,6 @@ pub fn get_user(db: sqlite::Connections, account: Account, email: String) -> Res
     Ok(Json(user.into()))
 }
 
-#[derive(Deserialize, Debug, Clone)]
-pub struct ConfirmationToken {
-    token: String,
-}
-
 #[post(
     "/confirm-email-address",
     format = "application/json",
@@ -123,7 +118,7 @@ pub struct ConfirmationToken {
 )]
 pub fn confirm_email_address(
     db: sqlite::Connections,
-    token: JsonResult<ConfirmationToken>,
+    token: JsonResult<json::ConfirmEmailAddress>,
 ) -> Result<()> {
     let token = token?.into_inner().token;
     usecases::confirm_email_address(&db.exclusive()?, &token)?;

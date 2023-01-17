@@ -391,6 +391,12 @@ pub struct Credentials {
 }
 
 #[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+pub struct ConfirmEmailAddress {
+    pub token: String,
+}
+
+#[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
 pub struct TagFrequency(pub String, pub u64);
 
@@ -627,6 +633,13 @@ pub struct ActivityLog {
 pub struct ReviewStatusLog {
     pub rev: u64,
     pub act: ActivityLog,
+    pub status: ReviewStatus,
+}
+
+#[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "extra-derive", derive(Debug))]
+pub struct ReviewWithToken {
+    pub token: String,
     pub status: ReviewStatus,
 }
 
