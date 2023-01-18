@@ -4,14 +4,14 @@ info:
   version: 0.12.2
   contact:
     name: slowtec GmbH
-    url: 'https://slowtec.de'
+    url: "https://slowtec.de"
   license:
     name: AGPLv3
-    url: 'https://github.com/slowtec/openfairdb/blob/main/LICENSE'
+    url: "https://github.com/slowtec/openfairdb/blob/main/LICENSE"
 servers:
-  - url: 'https://api.ofdb.io/v0/'
+  - url: "https://api.ofdb.io/v0/"
     description: Public production server
-  - url: 'https://dev.ofdb.io/v0/'
+  - url: "https://dev.ofdb.io/v0/"
     description: Public unstable development server
 paths:
   /search:
@@ -31,8 +31,8 @@ paths:
       tags:
         - Search
       parameters:
-        - $ref: '#/components/parameters/BoundingBox'
-        - $ref: '#/components/parameters/OrgTagFilter'
+        - $ref: "#/components/parameters/BoundingBox"
+        - $ref: "#/components/parameters/OrgTagFilter"
         - name: categories
           in: query
           schema:
@@ -46,17 +46,17 @@ paths:
           in: query
           schema:
             type: string
-        - $ref: '#/components/parameters/IdList'
-        - $ref: '#/components/parameters/TagList'
-        - $ref: '#/components/parameters/ReviewStatusList'
-        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: "#/components/parameters/IdList"
+        - $ref: "#/components/parameters/TagList"
+        - $ref: "#/components/parameters/ReviewStatusList"
+        - $ref: "#/components/parameters/PaginationLimit"
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SearchResponse'
+                $ref: "#/components/schemas/SearchResponse"
   /search/duplicates:
     post:
       summary: Search for duplicate places
@@ -76,17 +76,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewEntryWithLicense'
+              $ref: "#/components/schemas/NewEntryWithLicense"
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/SearchEntry'
-  '/entries':
+                  $ref: "#/components/schemas/SearchEntry"
+  "/entries":
     post:
       summary: Create an entry
       tags:
@@ -96,33 +96,33 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewEntryWithLicense'
+              $ref: "#/components/schemas/NewEntryWithLicense"
       security:
         - bearerAuth: []
         - captchaCookieAuth: []
         - jwtAuth: []
         - userEmailCookieAuth: []
       responses:
-        '200':
+        "200":
           description: Successful response
-  '/entries/{ids}':
+  "/entries/{ids}":
     get:
       summary: Get multiple entries
       tags:
         - Entries/Places
       parameters:
-        - $ref: '#/components/parameters/IdListPath'
-        - $ref: '#/components/parameters/OrgTagFilter'
+        - $ref: "#/components/parameters/IdListPath"
+        - $ref: "#/components/parameters/OrgTagFilter"
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Entry'
-  '/entries/{id}':
+                  $ref: "#/components/schemas/Entry"
+  "/entries/{id}":
     put:
       summary: Update an entry
       description: |
@@ -131,20 +131,20 @@ paths:
       tags:
         - Entries/Places
       parameters:
-        - $ref: '#/components/parameters/IdPath'
+        - $ref: "#/components/parameters/IdPath"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewEntryWithVersion'
+              $ref: "#/components/schemas/NewEntryWithVersion"
       security:
         - bearerAuth: []
         - captchaCookieAuth: []
         - jwtAuth: []
         - userEmailCookieAuth: []
       responses:
-        '200':
+        "200":
           description: Successful response
 
   /entries/recently-changed:
@@ -162,27 +162,27 @@ paths:
           required: false
           description: Time stamp of the oldest change (inclusive)
           schema:
-            $ref: '#/components/schemas/UnixTime'
+            $ref: "#/components/schemas/UnixTime"
         - name: until
           in: query
           required: false
           description: Time stamp of the most recent change (exclusive)
           schema:
-            $ref: '#/components/schemas/UnixTime'
+            $ref: "#/components/schemas/UnixTime"
         - name: with_ratings
           in: query
           description: Return entries including their ratings
           schema:
             type: boolean
-        - $ref: '#/components/parameters/PaginationLimit'
-        - $ref: '#/components/parameters/PaginationOffset'
+        - $ref: "#/components/parameters/PaginationLimit"
+        - $ref: "#/components/parameters/PaginationOffset"
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Entry'
+                $ref: "#/components/schemas/Entry"
   /entries/most-popular-tags:
     get:
       summary: Get most popular tags for entries
@@ -208,8 +208,8 @@ paths:
           schema:
             type: integer
             format: int64
-        - $ref: '#/components/parameters/PaginationLimit'
-        - $ref: '#/components/parameters/PaginationOffset'
+        - $ref: "#/components/parameters/PaginationLimit"
+        - $ref: "#/components/parameters/PaginationOffset"
         - name: max_cache_age
           in: query
           required: false
@@ -221,14 +221,14 @@ paths:
             type: integer
             format: int64
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TagCounts'
+                $ref: "#/components/schemas/TagCounts"
 
-  '/places/clearance':
+  "/places/clearance":
     get:
       tags:
         - Entries/Places
@@ -239,19 +239,19 @@ paths:
 
         Requests must include the API token of the organization.
       parameters:
-        - $ref: '#/components/parameters/PaginationLimit'
-        - $ref: '#/components/parameters/PaginationOffset'
+        - $ref: "#/components/parameters/PaginationLimit"
+        - $ref: "#/components/parameters/PaginationOffset"
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/PendingClearanceForPlace'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
+                  $ref: "#/components/schemas/PendingClearanceForPlace"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
     post:
       tags:
         - Entries/Places
@@ -275,17 +275,17 @@ paths:
             schema:
               type: array
               items:
-                $ref: '#/components/schemas/ClearanceForPlace'
+                $ref: "#/components/schemas/ClearanceForPlace"
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResultCount'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-  '/places/clearance/count':
+                $ref: "#/components/schemas/ResultCount"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+  "/places/clearance/count":
     get:
       tags:
         - Entries/Places
@@ -296,15 +296,15 @@ paths:
 
         Requests must include the API token of the organization.
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ResultCount'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-  '/places/{id}/history/{revision}':
+                $ref: "#/components/schemas/ResultCount"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+  "/places/{id}/history/{revision}":
     get:
       tags:
         - Entries/Places
@@ -321,18 +321,18 @@ paths:
         Only users with the role scout or admin are entitled to invoke this function.
         Organizations must provide their API token for authorization.
       parameters:
-        - $ref: '#/components/parameters/IdPath'
-        - $ref: '#/components/parameters/OptionalRevisionPath'
+        - $ref: "#/components/parameters/IdPath"
+        - $ref: "#/components/parameters/OptionalRevisionPath"
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PlaceHistory'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-  '/places/{ids}/review':
+                $ref: "#/components/schemas/PlaceHistory"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+  "/places/{ids}/review":
     post:
       tags:
         - Entries/Places
@@ -345,21 +345,21 @@ paths:
         (created, confirmed).
         Only scouts and admins are entitled to invoke this function.
       parameters:
-        - $ref: '#/components/parameters/IdListPath'
+        - $ref: "#/components/parameters/IdListPath"
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Review'
+              $ref: "#/components/schemas/Review"
       responses:
-        '201':
+        "201":
           description: Created a review for all places.
-        '400':
-          $ref: '#/components/responses/ParameterError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-  '/places/review-with-token':
+        "400":
+          $ref: "#/components/responses/ParameterError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+  "/places/review-with-token":
     post:
       tags:
         - Entries/Places
@@ -378,17 +378,17 @@ paths:
             schema:
               properties:
                 status:
-                  $ref: '#/components/schemas/ReviewStatus'
+                  $ref: "#/components/schemas/ReviewStatus"
                 token:
-                  $ref: '#/components/schemas/ReviewToken'
+                  $ref: "#/components/schemas/ReviewToken"
       responses:
-        '201':
+        "201":
           description: Created a review for the place.
-        '400':
-          $ref: '#/components/responses/ParameterError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-  '/places/not-updated':
+        "400":
+          $ref: "#/components/responses/ParameterError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+  "/places/not-updated":
     get:
       tags:
         - Entries/Places
@@ -403,11 +403,11 @@ paths:
           required: false
           description: The point in time from which the places are to be considered up-to-date.
           schema:
-            $ref: '#/components/schemas/UnixTime'
-        - $ref: '#/components/parameters/PaginationLimit'
-        - $ref: '#/components/parameters/PaginationOffset'
+            $ref: "#/components/schemas/UnixTime"
+        - $ref: "#/components/parameters/PaginationLimit"
+        - $ref: "#/components/parameters/PaginationOffset"
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
@@ -419,25 +419,25 @@ paths:
                   maxLength: 3
                   items:
                     oneOf:
-                      - $ref: '#/components/schemas/PlaceRoot'
-                      - $ref: '#/components/schemas/PlaceRevision'
-                      - $ref: '#/components/schemas/ReviewStatus'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-  '/ratings/{ids}':
+                      - $ref: "#/components/schemas/PlaceRoot"
+                      - $ref: "#/components/schemas/PlaceRevision"
+                      - $ref: "#/components/schemas/ReviewStatus"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+  "/ratings/{ids}":
     get:
       summary: Get multiple ratings
       tags:
         - Ratings
       parameters:
-        - $ref: '#/components/parameters/IdListPath'
+        - $ref: "#/components/parameters/IdListPath"
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Rating'
+                $ref: "#/components/schemas/Rating"
 
   /categories/:
     get:
@@ -445,52 +445,52 @@ paths:
       tags:
         - Categories
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Category'
-  '/categories/{ids}':
+                  $ref: "#/components/schemas/Category"
+  "/categories/{ids}":
     get:
       summary: Get multiple categories
       tags:
         - Categories
       parameters:
-        - $ref: '#/components/parameters/IdListPath'
+        - $ref: "#/components/parameters/IdListPath"
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Category'
+                $ref: "#/components/schemas/Category"
   /events:
     get:
       tags:
         - Events
       summary: Search events
       parameters:
-        - $ref: '#/components/parameters/BoundingBox'
-        - $ref: '#/components/parameters/PaginationLimit'
-        - $ref: '#/components/parameters/EventTagList'
-        - $ref: '#/components/parameters/EventStartMin'
-        - $ref: '#/components/parameters/EventStartMax'
-        - $ref: '#/components/parameters/EventEndMin'
-        - $ref: '#/components/parameters/EventEndMax'
-        - $ref: '#/components/parameters/EventFilterText'
-        - $ref: '#/components/parameters/EventCreatedBy'
+        - $ref: "#/components/parameters/BoundingBox"
+        - $ref: "#/components/parameters/PaginationLimit"
+        - $ref: "#/components/parameters/EventTagList"
+        - $ref: "#/components/parameters/EventStartMin"
+        - $ref: "#/components/parameters/EventStartMax"
+        - $ref: "#/components/parameters/EventEndMin"
+        - $ref: "#/components/parameters/EventEndMax"
+        - $ref: "#/components/parameters/EventFilterText"
+        - $ref: "#/components/parameters/EventCreatedBy"
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Event'
+                  $ref: "#/components/schemas/Event"
     post:
       tags:
         - Events
@@ -509,18 +509,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Event'
+              $ref: "#/components/schemas/Event"
       responses:
-        '201':
+        "201":
           description: Created a new event
           content:
             application/json:
               schema:
                 description: The ID of the created event
                 type: string
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-  '/events/{id}':
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+  "/events/{id}":
     get:
       summary: Get a single event
       tags:
@@ -532,12 +532,12 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Event'
+                $ref: "#/components/schemas/Event"
     put:
       summary: Update an event
       description: |
@@ -562,12 +562,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Event'
+              $ref: "#/components/schemas/Event"
       responses:
-        '200':
+        "200":
           description: Successfully updated the event
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
     delete:
       summary: Delete an event
       description: |
@@ -584,11 +584,11 @@ paths:
           schema:
             type: string
       responses:
-        '200':
+        "200":
           description: Successfully deleted the event
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
-  '/events/{ids}/archive':
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+  "/events/{ids}/archive":
     post:
       tags:
         - Events
@@ -599,16 +599,16 @@ paths:
 
         Only scouts and admins are entitled to invoke this function.
       parameters:
-        - $ref: '#/components/parameters/IdListPath'
+        - $ref: "#/components/parameters/IdListPath"
       responses:
-        '204':
+        "204":
           description: Archived the given events if not already archived.
-        '400':
-          $ref: '#/components/responses/ParameterError'
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
+        "400":
+          $ref: "#/components/responses/ParameterError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-  '/login':
+  "/login":
     post:
       summary: User login
       tags:
@@ -618,15 +618,15 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Credentials'
+              $ref: "#/components/schemas/Credentials"
       responses:
-        '200':
+        "200":
           description: Successful response - the JWT token
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/JwtToken'
-  '/logout':
+                $ref: "#/components/schemas/JwtToken"
+  "/logout":
     post:
       summary: User logout
       tags:
@@ -634,9 +634,9 @@ paths:
       security:
         - jwtAuth: []
       responses:
-        '200':
+        "200":
           description: Successful response
-  '/users':
+  "/users":
     post:
       summary: Register a new user
       tags:
@@ -646,11 +646,11 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewUser'
+              $ref: "#/components/schemas/NewUser"
       responses:
-        '200':
+        "200":
           description: Successful response
-  '/users/current':
+  "/users/current":
     get:
       summary: Get the current user
       tags:
@@ -658,13 +658,13 @@ paths:
       security:
         - jwtAuth: []
       responses:
-        '200':
+        "200":
           description: The current user
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
-  '/users/reset-password-request':
+                $ref: "#/components/schemas/User"
+  "/users/reset-password-request":
     post:
       summary: Request a password reset
       tags:
@@ -677,11 +677,11 @@ paths:
               type: object
               properties:
                 email:
-                  $ref: '#/components/schemas/UserEmail'
+                  $ref: "#/components/schemas/UserEmail"
       responses:
-        '200':
-           description: Successful response
-  '/users/reset-password':
+        "200":
+          description: Successful response
+  "/users/reset-password":
     post:
       summary: Request a users password
       tags:
@@ -694,14 +694,14 @@ paths:
               type: object
               properties:
                 email:
-                  $ref: '#/components/schemas/UserEmail'
+                  $ref: "#/components/schemas/UserEmail"
                 token:
                   type: string
                 new_password:
                   type: string
       responses:
-        '200':
-           description: Successful response
+        "200":
+          description: Successful response
 
   /users/confirm-email-address:
     post:
@@ -730,14 +730,14 @@ paths:
             schema:
               type: array
               items:
-                $ref: '#/components/schemas/LatLonDeg'
+                $ref: "#/components/schemas/LatLonDeg"
             example:
-             - lat: 45.3
-               lng: 8.6
-             - lat: 48.7
-               lng: 9.2
+              - lat: 45.3
+                lng: 8.6
+              - lat: 48.7
+                lng: 9.2
       responses:
-        '200':
+        "200":
           description: Successful response
   /bbox-subscriptions:
     get:
@@ -745,21 +745,21 @@ paths:
       tags:
         - Subscriptions
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/BboxSubscription'
+                  $ref: "#/components/schemas/BboxSubscription"
   /unsubscribe-all-bboxes:
     delete:
       summary: Delete all subscriptions
       tags:
         - Subscriptions
       responses:
-        '200':
+        "200":
           description: Successful response
   /tags:
     get:
@@ -767,7 +767,7 @@ paths:
       tags:
         - Tags
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
@@ -782,7 +782,7 @@ paths:
       tags:
         - Stats
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
@@ -794,7 +794,7 @@ paths:
       tags:
         - Stats
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             application/json:
@@ -806,7 +806,7 @@ paths:
       tags:
         - Stats
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             text/plain:
@@ -818,7 +818,7 @@ paths:
       tags:
         - Stats
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             text/yaml:
@@ -844,7 +844,7 @@ paths:
       tags:
         - Export
       parameters:
-        - $ref: '#/components/parameters/BoundingBox'
+        - $ref: "#/components/parameters/BoundingBox"
         - name: categories
           in: query
           schema:
@@ -858,19 +858,19 @@ paths:
           in: query
           schema:
             type: string
-        - $ref: '#/components/parameters/IdList'
-        - $ref: '#/components/parameters/TagList'
-        - $ref: '#/components/parameters/ReviewStatusList'
-        - $ref: '#/components/parameters/PaginationLimit'
+        - $ref: "#/components/parameters/IdList"
+        - $ref: "#/components/parameters/TagList"
+        - $ref: "#/components/parameters/ReviewStatusList"
+        - $ref: "#/components/parameters/PaginationLimit"
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             text/csv:
               schema:
                 type: string
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
   /export/events.csv:
     get:
       summary: Export events as CSV.
@@ -886,22 +886,22 @@ paths:
       tags:
         - Export
       parameters:
-        - $ref: '#/components/parameters/BoundingBox'
-        - $ref: '#/components/parameters/PaginationLimit'
-        - $ref: '#/components/parameters/EventTagList'
-        - $ref: '#/components/parameters/EventStartMin'
-        - $ref: '#/components/parameters/EventStartMax'
-        - $ref: '#/components/parameters/EventFilterText'
-        - $ref: '#/components/parameters/EventCreatedBy'
+        - $ref: "#/components/parameters/BoundingBox"
+        - $ref: "#/components/parameters/PaginationLimit"
+        - $ref: "#/components/parameters/EventTagList"
+        - $ref: "#/components/parameters/EventStartMin"
+        - $ref: "#/components/parameters/EventStartMax"
+        - $ref: "#/components/parameters/EventFilterText"
+        - $ref: "#/components/parameters/EventCreatedBy"
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             text/csv:
               schema:
                 type: string
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
   /export/events.ical:
     get:
       summary: Export events as iCal.
@@ -917,31 +917,31 @@ paths:
       tags:
         - Export
       parameters:
-        - $ref: '#/components/parameters/BoundingBox'
-        - $ref: '#/components/parameters/PaginationLimit'
-        - $ref: '#/components/parameters/EventTagList'
-        - $ref: '#/components/parameters/EventStartMin'
-        - $ref: '#/components/parameters/EventStartMax'
-        - $ref: '#/components/parameters/EventFilterText'
-        - $ref: '#/components/parameters/EventCreatedBy'
+        - $ref: "#/components/parameters/BoundingBox"
+        - $ref: "#/components/parameters/PaginationLimit"
+        - $ref: "#/components/parameters/EventTagList"
+        - $ref: "#/components/parameters/EventStartMin"
+        - $ref: "#/components/parameters/EventStartMax"
+        - $ref: "#/components/parameters/EventFilterText"
+        - $ref: "#/components/parameters/EventCreatedBy"
       responses:
-        '200':
+        "200":
           description: Successful response
           content:
             text/calendar:
               schema:
                 type: string
-        '401':
-          $ref: '#/components/responses/UnauthorizedError'
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
   /captcha:
     post:
       summary: Request a new captcha challenge
       tags:
         - Captcha
       responses:
-        '200':
-          $ref: '#/components/parameters/CaptchaToken'
-  '/captcha/{captcha-token}':
+        "200":
+          $ref: "#/components/parameters/CaptchaToken"
+  "/captcha/{captcha-token}":
     get:
       summary: Get the captcha challenge
       description: |
@@ -949,27 +949,27 @@ paths:
       tags:
         - Captcha
       parameters:
-        - $ref: '#/components/parameters/CaptchaToken'
+        - $ref: "#/components/parameters/CaptchaToken"
       responses:
-        '200':
-          $ref: '#/components/schemas/CaptchaImage'
-        '404':
+        "200":
+          $ref: "#/components/schemas/CaptchaImage"
+        "404":
           description: Unknown or expired token
-  '/captcha/{captcha-token}/verify':
+  "/captcha/{captcha-token}/verify":
     post:
       summary: Verify a captcha answer for the given token
       tags:
         - Captcha
       parameters:
-        - $ref: '#/components/parameters/CaptchaToken'
+        - $ref: "#/components/parameters/CaptchaToken"
       requestBody:
         required: true
         content:
           text/plain:
             schema:
-              $ref: '#/components/schemas/CaptchaAnswer'
+              $ref: "#/components/schemas/CaptchaAnswer"
       responses:
-        '200':
+        "200":
           description: |
             The answer to the capcha challenge was correct.
 
@@ -980,7 +980,7 @@ paths:
               schema:
                 type: string
                 example: ofdb-captcha=2f006JTvKBr5KJggwirdTzTssdzschIwThWF8LdqPZTr4wSY6r%2F79ayYNz46NTrKn4VR6KPxpkNeIOoGbA%3D%3D; HttpOnly; Path=/;
-        '400':
+        "400":
           description: The answer to the capcha challenge was not correct
 
 components:
@@ -992,9 +992,9 @@ components:
         description:
           type: string
         lat:
-          $ref: '#/components/schemas/Latitude'
+          $ref: "#/components/schemas/Latitude"
         lng:
-          $ref: '#/components/schemas/Longitude'
+          $ref: "#/components/schemas/Longitude"
         street:
           type: string
         zip:
@@ -1006,29 +1006,29 @@ components:
         state:
           type: string
         contact_name:
-          $ref: '#/components/schemas/ContactName'
+          $ref: "#/components/schemas/ContactName"
         email:
-          $ref: '#/components/schemas/ContactEmail'
+          $ref: "#/components/schemas/ContactEmail"
         telephone:
-          $ref: '#/components/schemas/ContactPhone'
+          $ref: "#/components/schemas/ContactPhone"
         homepage:
-          $ref: '#/components/schemas/Url'
+          $ref: "#/components/schemas/Url"
         opening_hours:
-          $ref: '#/components/schemas/OpeningHours'
+          $ref: "#/components/schemas/OpeningHours"
         founded_on:
-          $ref: '#/components/schemas/FoundingDate'
+          $ref: "#/components/schemas/FoundingDate"
         categories:
           type: array
           items:
             type: string
         tags:
-          $ref: '#/components/schemas/TagArray'
+          $ref: "#/components/schemas/TagArray"
         image_url:
-          $ref: '#/components/schemas/ImageUrl'
+          $ref: "#/components/schemas/ImageUrl"
         image_link_url:
-          $ref: '#/components/schemas/ImageLink'
+          $ref: "#/components/schemas/ImageLink"
         links:
-          $ref: '#/components/schemas/CustomLinkList'
+          $ref: "#/components/schemas/CustomLinkList"
       required:
         - title
         - description
@@ -1036,25 +1036,25 @@ components:
         - lng
     NewEntryWithLicense:
       allOf:
-        - $ref: '#/components/schemas/NewEntry'
+        - $ref: "#/components/schemas/NewEntry"
         - type: object
           properties:
             license:
-              $ref: '#/components/schemas/License'
+              $ref: "#/components/schemas/License"
     NewEntryWithVersion:
       allOf:
-        - $ref: '#/components/schemas/NewEntry'
+        - $ref: "#/components/schemas/NewEntry"
         - type: object
           properties:
             version:
               type: integer
     Entry:
       allOf:
-        - $ref: '#/components/schemas/NewEntryWithLicense'
+        - $ref: "#/components/schemas/NewEntryWithLicense"
         - type: object
           properties:
             id:
-              $ref: '#/components/schemas/Id'
+              $ref: "#/components/schemas/Id"
             version:
               type: integer
             created:
@@ -1067,19 +1067,19 @@ components:
       description: |
         The external URL for an image.
       allOf:
-        - $ref: '#/components/schemas/Url'
+        - $ref: "#/components/schemas/Url"
     ImageLink:
       description: |
         A hyperlink behind an image that is supposed to be opened when
         clicking on the image.
       allOf:
-        - $ref: '#/components/schemas/Url'
+        - $ref: "#/components/schemas/Url"
     CustomLink:
       description: |
         A custom hyperlink with an optional title and description.
       properties:
         url:
-          $ref: '#/components/schemas/Url'
+          $ref: "#/components/schemas/Url"
         title:
           type: string
         description:
@@ -1095,11 +1095,11 @@ components:
         make any assumptions about a particular ordering!
       type: array
       items:
-        $ref: '#/components/schemas/CustomLink'
+        $ref: "#/components/schemas/CustomLink"
     Category:
       properties:
         id:
-          $ref: '#/components/schemas/Id'
+          $ref: "#/components/schemas/Id"
         created:
           type: integer
         version:
@@ -1109,7 +1109,7 @@ components:
     Rating:
       properties:
         id:
-          $ref: '#/components/schemas/Id'
+          $ref: "#/components/schemas/Id"
         title:
           type: string
         created:
@@ -1123,50 +1123,50 @@ components:
         comments:
           type: array
           items:
-            $ref: '#/components/schemas/RatingComment'
+            $ref: "#/components/schemas/RatingComment"
     RatingComment:
       properties:
         id:
-          $ref: '#/components/schemas/Id'
+          $ref: "#/components/schemas/Id"
         created:
-          $ref: '#/components/schemas/CreatedAt'
+          $ref: "#/components/schemas/CreatedAt"
         text:
           type: string
     BboxSubscription:
       properties:
         id:
-          $ref: '#/components/schemas/Id'
+          $ref: "#/components/schemas/Id"
         south_west_lat:
-          $ref: '#/components/schemas/Latitude'
+          $ref: "#/components/schemas/Latitude"
         south_west_lng:
-          $ref: '#/components/schemas/Longitude'
+          $ref: "#/components/schemas/Longitude"
         north_east_lat:
-          $ref: '#/components/schemas/Latitude'
+          $ref: "#/components/schemas/Latitude"
         north_east_lng:
-          $ref: '#/components/schemas/Longitude'
+          $ref: "#/components/schemas/Longitude"
     SearchResponse:
       properties:
         visible:
           description: The entries that are in the given bounding box (bbox, area of the map).
           type: array
           items:
-            $ref: '#/components/schemas/SearchEntry'
+            $ref: "#/components/schemas/SearchEntry"
         invisible:
           description: Up to 5 entries outside the bbox.
           type: array
           items:
-            $ref: '#/components/schemas/SearchEntry'
+            $ref: "#/components/schemas/SearchEntry"
     SearchEntry:
       description: The compact view of an entry as returned in search results.
       properties:
         id:
-          $ref: '#/components/schemas/Id'
+          $ref: "#/components/schemas/Id"
         status:
-          $ref: '#/components/schemas/ReviewStatus'
+          $ref: "#/components/schemas/ReviewStatus"
         lat:
-          $ref: '#/components/schemas/Latitude'
+          $ref: "#/components/schemas/Latitude"
         lng:
-          $ref: '#/components/schemas/Longitude'
+          $ref: "#/components/schemas/Longitude"
         title:
           type: string
         description:
@@ -1176,14 +1176,14 @@ components:
           items:
             type: string
         tags:
-          $ref: '#/components/schemas/TagArray'
+          $ref: "#/components/schemas/TagArray"
         ratings:
-          $ref: '#/components/schemas/AvgRatings'
+          $ref: "#/components/schemas/AvgRatings"
     PlaceId:
       description: |
         The id of a place
       allOf:
-        - $ref: '#/components/schemas/Id'
+        - $ref: "#/components/schemas/Id"
     PendingClearanceForPlace:
       description: |
         The compact view of an entry as returned in search results.
@@ -1192,11 +1192,11 @@ components:
         is available, e.g. for newly created entries.
       properties:
         place_id:
-          $ref: '#/components/schemas/PlaceId'
+          $ref: "#/components/schemas/PlaceId"
         created_at:
-          $ref: '#/components/schemas/CreatedAt'
+          $ref: "#/components/schemas/CreatedAt"
         last_cleared_revision:
-          $ref: '#/components/schemas/Revision'
+          $ref: "#/components/schemas/Revision"
       required:
         - place_id
         - created_at
@@ -1208,9 +1208,9 @@ components:
         is cleared unconditionally.
       properties:
         place_id:
-          $ref: '#/components/schemas/PlaceId'
+          $ref: "#/components/schemas/PlaceId"
         cleared_revision:
-          $ref: '#/components/schemas/Revision'
+          $ref: "#/components/schemas/Revision"
       required:
         - place_id
     AvgRatings:
@@ -1240,7 +1240,7 @@ components:
     IdArray:
       type: array
       items:
-        $ref: '#/components/schemas/Id'
+        $ref: "#/components/schemas/Id"
     Revision:
       type: integer
       format: int64
@@ -1272,17 +1272,17 @@ components:
       description: |
         The e-mail address of a user account.
       allOf:
-        - $ref: '#/components/schemas/Email'
+        - $ref: "#/components/schemas/Email"
     ContactName:
       description: |
         The name of the contact person.
       allOf:
-        - $ref: '#/components/schemas/PersonFullName'
+        - $ref: "#/components/schemas/PersonFullName"
     ContactEmail:
       description: |
         An e-mail address to get in contact.
       allOf:
-        - $ref: '#/components/schemas/Email'
+        - $ref: "#/components/schemas/Email"
     PersonFullName:
       type: string
       description: |
@@ -1318,7 +1318,7 @@ components:
       description: |
         An phone number to get in contact.
       allOf:
-        - $ref: '#/components/schemas/Phone'
+        - $ref: "#/components/schemas/Phone"
     Tag:
       type: string
       minLength: 1
@@ -1326,7 +1326,7 @@ components:
     TagArray:
       type: array
       items:
-        $ref: '#/components/schemas/Tag'
+        $ref: "#/components/schemas/Tag"
       example: [organic, non-profit]
     Url:
       type: string
@@ -1335,9 +1335,9 @@ components:
     Activity:
       properties:
         at:
-          $ref: '#/components/schemas/CreatedAt'
+          $ref: "#/components/schemas/CreatedAt"
         by:
-          $ref: '#/components/schemas/UserEmail'
+          $ref: "#/components/schemas/UserEmail"
       required:
         - at
     ActivityContext:
@@ -1352,43 +1352,43 @@ components:
     ActivityLog:
       properties:
         at:
-          $ref: '#/components/schemas/CreatedAt'
+          $ref: "#/components/schemas/CreatedAt"
         by:
-          $ref: '#/components/schemas/UserEmail'
+          $ref: "#/components/schemas/UserEmail"
         ctx:
-          $ref: '#/components/schemas/ActivityContext'
+          $ref: "#/components/schemas/ActivityContext"
         comment:
-          $ref: '#/components/schemas/ActivityComment'
+          $ref: "#/components/schemas/ActivityComment"
       required:
         - at
     Location:
       properties:
         deg:
-          $ref: '#/components/schemas/LatLonDeg'
+          $ref: "#/components/schemas/LatLonDeg"
         adr:
-          $ref: '#/components/schemas/Address'
+          $ref: "#/components/schemas/Address"
       required:
         - deg
     Contact:
       properties:
         name:
-          $ref: '#/components/schemas/ContactName'
+          $ref: "#/components/schemas/ContactName"
         phone:
-          $ref: '#/components/schemas/ContactPhone'
+          $ref: "#/components/schemas/ContactPhone"
         email:
-          $ref: '#/components/schemas/ContactEmail'
+          $ref: "#/components/schemas/ContactEmail"
     Address:
       properties:
         street:
-          $ref: '#/components/schemas/Street'
+          $ref: "#/components/schemas/Street"
         city:
-          $ref: '#/components/schemas/City'
+          $ref: "#/components/schemas/City"
         zip:
-          $ref: '#/components/schemas/ZipCode'
+          $ref: "#/components/schemas/ZipCode"
         country:
-          $ref: '#/components/schemas/Country'
+          $ref: "#/components/schemas/Country"
         state:
-          $ref: '#/components/schemas/State'
+          $ref: "#/components/schemas/State"
     OpeningHours:
       type: string
       minLength: 4
@@ -1407,17 +1407,17 @@ components:
     PlaceLinks:
       properties:
         www:
-          $ref: '#/components/schemas/Url'
+          $ref: "#/components/schemas/Url"
         img:
-          $ref: '#/components/schemas/ImageUrl'
+          $ref: "#/components/schemas/ImageUrl"
         img_href:
-          $ref: '#/components/schemas/ImageLink'
+          $ref: "#/components/schemas/ImageLink"
     FoundingDate:
-        description: |
-          The date on which an organization, initiative, or company has been founded or established.
-        type: string
-        format: date
-        example: 1945-10-24
+      description: |
+        The date on which an organization, initiative, or company has been founded or established.
+      type: string
+      format: date
+      example: 1945-10-24
     LatLonDeg:
       type: array
       minLength: 2
@@ -1427,40 +1427,40 @@ components:
         format: double
       description: |
         WGS 84 coordinates (latitude, longitude) in degrees
-      example: [48.720334,9.152239]
+      example: [48.720334, 9.152239]
     PlaceRoot:
       description: |
         Immutable properties of a place
       properties:
         id:
-          $ref: '#/components/schemas/Id'
+          $ref: "#/components/schemas/Id"
         lic:
-          $ref: '#/components/schemas/License'
+          $ref: "#/components/schemas/License"
       required:
         - id
         - lic
     PlaceRevision:
       properties:
         created:
-          $ref: '#/components/schemas/Activity'
+          $ref: "#/components/schemas/Activity"
         rev:
-          $ref: '#/components/schemas/Revision'
+          $ref: "#/components/schemas/Revision"
         tit:
-          $ref: '#/components/schemas/Title'
+          $ref: "#/components/schemas/Title"
         dsc:
-          $ref: '#/components/schemas/Description'
+          $ref: "#/components/schemas/Description"
         loc:
-          $ref: '#/components/schemas/Location'
+          $ref: "#/components/schemas/Location"
         cnt:
-          $ref: '#/components/schemas/Contact'
+          $ref: "#/components/schemas/Contact"
         hrs:
-          $ref: '#/components/schemas/OpeningHours'
+          $ref: "#/components/schemas/OpeningHours"
         fnd:
-          $ref: '#/components/schemas/FoundingDate'
+          $ref: "#/components/schemas/FoundingDate"
         lnk:
-          $ref: '#/components/schemas/PlaceLinks'
+          $ref: "#/components/schemas/PlaceLinks"
         tag:
-          $ref: '#/components/schemas/TagArray'
+          $ref: "#/components/schemas/TagArray"
       required:
         - created
         - rev
@@ -1472,30 +1472,30 @@ components:
       maxLength: 2
       items:
         oneOf:
-          - $ref: '#/components/schemas/PlaceRevision'
-          - $ref: '#/components/schemas/ReviewStatusLogArray'
+          - $ref: "#/components/schemas/PlaceRevision"
+          - $ref: "#/components/schemas/ReviewStatusLogArray"
     PlaceRevisionLogArray:
       type: array
       items:
-        $ref: '#/components/schemas/PlaceRevisionLog'
+        $ref: "#/components/schemas/PlaceRevisionLog"
     ReviewStatusLog:
       properties:
         rev:
-          $ref: '#/components/schemas/Revision'
+          $ref: "#/components/schemas/Revision"
         act:
-          $ref: '#/components/schemas/ActivityLog'
+          $ref: "#/components/schemas/ActivityLog"
         status:
-          $ref: '#/components/schemas/ReviewStatus'
+          $ref: "#/components/schemas/ReviewStatus"
     ReviewStatusLogArray:
       type: array
       items:
-        $ref: '#/components/schemas/ReviewStatusLog'
+        $ref: "#/components/schemas/ReviewStatusLog"
     PlaceHistory:
       properties:
         place:
-          $ref: '#/components/schemas/PlaceRoot'
+          $ref: "#/components/schemas/PlaceRoot"
         revisions:
-          $ref: '#/components/schemas/PlaceRevisionLogArray'
+          $ref: "#/components/schemas/PlaceRevisionLogArray"
       required:
         - place
     ResultCount:
@@ -1509,9 +1509,9 @@ components:
     Review:
       properties:
         status:
-          $ref: '#/components/schemas/ReviewStatus'
+          $ref: "#/components/schemas/ReviewStatus"
         comment:
-          $ref: '#/components/schemas/ActivityComment'
+          $ref: "#/components/schemas/ActivityComment"
       required:
         - status
     ReviewStatus:
@@ -1548,11 +1548,11 @@ components:
     User:
       properties:
         email:
-          $ref: '#/components/schemas/UserEmail'
+          $ref: "#/components/schemas/UserEmail"
         email_confirmed:
           type: boolean
         role:
-          $ref: '#/components/schemas/UserRole'
+          $ref: "#/components/schemas/UserRole"
       required:
         - email
         - email_confirmed
@@ -1560,19 +1560,19 @@ components:
     NewUser:
       properties:
         email:
-          $ref: '#/components/schemas/UserEmail'
+          $ref: "#/components/schemas/UserEmail"
         password:
           type: string
     Credentials:
       properties:
         email:
-          $ref: '#/components/schemas/UserEmail'
+          $ref: "#/components/schemas/UserEmail"
         password:
           type: string
     Event:
       properties:
         id:
-          $ref: '#/components/schemas/Id'
+          $ref: "#/components/schemas/Id"
         title:
           type: string
           example: A great event
@@ -1580,20 +1580,20 @@ components:
           type: string
           example: Detailed description of the event
         start:
-          $ref: '#/components/schemas/EventTime'
+          $ref: "#/components/schemas/EventTime"
         end:
-          $ref: '#/components/schemas/EventTime'
+          $ref: "#/components/schemas/EventTime"
         created_at:
-          $ref: '#/components/schemas/CreatedAt'
+          $ref: "#/components/schemas/CreatedAt"
         created_by:
           type: string
           description: |
             The email address of the user who is responsible for the content.
             This information is only available for authorized organizations.
         lat:
-          $ref: '#/components/schemas/Latitude'
+          $ref: "#/components/schemas/Latitude"
         lng:
-          $ref: '#/components/schemas/Longitude'
+          $ref: "#/components/schemas/Longitude"
         street:
           type: string
         zip:
@@ -1605,13 +1605,13 @@ components:
         state:
           type: string
         email:
-          $ref: '#/components/schemas/ContactEmail'
+          $ref: "#/components/schemas/ContactEmail"
         telephone:
-          $ref: '#/components/schemas/ContactPhone'
+          $ref: "#/components/schemas/ContactPhone"
         tags:
-          $ref: '#/components/schemas/TagArray'
+          $ref: "#/components/schemas/TagArray"
         homepage:
-          $ref: '#/components/schemas/Url'
+          $ref: "#/components/schemas/Url"
         registration:
           type: string
           enum:
@@ -1623,9 +1623,9 @@ components:
         organizer:
           type: string
         image_url:
-          $ref: '#/components/schemas/ImageUrl'
+          $ref: "#/components/schemas/ImageUrl"
         image_link_url:
-          $ref: '#/components/schemas/ImageLink'
+          $ref: "#/components/schemas/ImageLink"
     UnixTime:
       type: integer
       format: int64
@@ -1648,7 +1648,7 @@ components:
         geographical location of the event nor the current local time zone of the
         client itself!
       allOf:
-        - $ref: '#/components/schemas/UnixTime'
+        - $ref: "#/components/schemas/UnixTime"
     UnixTimeMillis:
       type: integer
       format: int64
@@ -1664,7 +1664,7 @@ components:
 
         Most entities/records are immutable and never updated.
       allOf:
-        - $ref: '#/components/schemas/UnixTimeMillis'
+        - $ref: "#/components/schemas/UnixTimeMillis"
     TagCounts:
       type: array
       items:
@@ -1708,13 +1708,13 @@ components:
       in: path
       required: true
       schema:
-        $ref: '#/components/schemas/Id'
+        $ref: "#/components/schemas/Id"
     IdListPath:
       name: ids
       in: path
       required: true
       schema:
-        $ref: '#/components/schemas/IdList'
+        $ref: "#/components/schemas/IdList"
     OptionalRevisionPath:
       name: revision
       in: path
@@ -1722,14 +1722,14 @@ components:
       # https://github.com/OAI/OpenAPI-Specification/issues/93
       required: true
       schema:
-        $ref: '#/components/schemas/Revision'
+        $ref: "#/components/schemas/Revision"
     BoundingBox:
       name: bbox
       in: query
       description: Bounding Box
       schema:
         type: string
-        example: '42.27,-7.97,52.58,38.25'
+        example: "42.27,-7.97,52.58,38.25"
     OrgTagFilter:
       name: org_tag
       in: query
@@ -1762,37 +1762,37 @@ components:
       in: query
       required: false
       schema:
-        $ref: '#/components/schemas/IdList'
+        $ref: "#/components/schemas/IdList"
     TagList:
       name: tags
       in: query
       required: false
       schema:
-        $ref: '#/components/schemas/TagList'
+        $ref: "#/components/schemas/TagList"
     EventStartMin:
       name: start_min
       in: query
       description: Filter events by `event.start` >= `start_min`
       schema:
-        $ref: '#/components/schemas/EventTime'
+        $ref: "#/components/schemas/EventTime"
     EventStartMax:
       name: start_max
       in: query
       description: Filter events by `event.start` <= `start_max`
       schema:
-        $ref: '#/components/schemas/EventTime'
+        $ref: "#/components/schemas/EventTime"
     EventEndMin:
       name: end_min
       in: query
       description: Filter events by `event.end` >= `end_min`
       schema:
-        $ref: '#/components/schemas/EventTime'
+        $ref: "#/components/schemas/EventTime"
     EventEndMax:
       name: end_max
       in: query
       description: Filter events by `event.end` <= `end_max`
       schema:
-        $ref: '#/components/schemas/EventTime'
+        $ref: "#/components/schemas/EventTime"
     EventFilterText:
       name: text
       in: query
@@ -1808,20 +1808,20 @@ components:
         The email address of the event creator. Requests with this parameter
         will be rejected without a valid API token!
       schema:
-        $ref: '#/components/schemas/Email'
+        $ref: "#/components/schemas/Email"
     EventTagList:
       name: tag
       description: Filter events by tags
       in: query
       required: false
       schema:
-        $ref: '#/components/schemas/TagList'
+        $ref: "#/components/schemas/TagList"
     ReviewStatusList:
       name: status
       in: query
       required: false
       schema:
-        $ref: '#/components/schemas/ReviewStatusList'
+        $ref: "#/components/schemas/ReviewStatusList"
     PaginationLimit:
       name: limit
       description: Maximum number of items to return or implicit/unlimited if unspecified.
