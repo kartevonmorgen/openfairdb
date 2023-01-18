@@ -8,7 +8,8 @@ permissions:
 on:
   pull_request:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 env:
@@ -22,31 +23,22 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.x'
+          python-version: "3.x"
 
       - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@master
         with:
           toolchain: stable
-          profile: minimal
-          components: rustfmt, clippy
-
-      - name: Install Rust toolchain for WASM
-        uses: actions-rs/toolchain@v1
-        with:
-          target: wasm32-unknown-unknown
-          toolchain: stable
-          profile: minimal
+          components: clippy, rustfmt
 
       - name: Check out repository
         uses: actions/checkout@v3
 
       - name: Cache Rust toolchain and build artifacts
         uses: Swatinem/rust-cache@v2
-
-      - name: Install Trunk for building the webapp
-        run: |
-          cargo install --locked trunk
+        with:
+          # Distinguished by the action name to avoid sharing across different actions!
+          shared-key: "pre-commit"
 
       - name: Detect code style issues (push)
         uses: pre-commit/action@v3.0.0
