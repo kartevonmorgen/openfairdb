@@ -7,7 +7,7 @@ rust-version = "1.65"
 
 [dependencies]
 ofdb-application = { version = "=0.0.0" }
-ofdb-boundary = { version = "0.12.0", features = ["extra-derive"] }
+ofdb-boundary = { version = "0.12.2", features = ["extra-derive"] }
 ofdb-core = "=0.0.0"
 ofdb-db-sqlite = "=0.0.0" # TODO: remove
 ofdb-db-tantivy = "=0.0.0" # TODO: remove

@@ -7,9 +7,9 @@ publish = false
 
 [dependencies]
 # Project dependencies
-ofdb-boundary = { version = "0.12.0", features = ["extra-derive"] }
+ofdb-boundary = { version = "0.12.2", features = ["extra-derive"] }
 ofdb-entities = "0.12.0"
-ofdb-seed = "0.12.0"
+ofdb-seed = "0.12.2"
 
 # External dependencies
 difference = "2.0.0"
