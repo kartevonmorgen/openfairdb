@@ -42,7 +42,7 @@ The executable in the container is controlled by the following environment varia
 - `DATABASE_URL`: Database file path
 
 The database file must be placed in a volume outside of the container. For
-this purpose the image defines the mountpoint */volume* where an external volume
+this purpose the image defines the mountpoint _/volume_ where an external volume
 from the host can be mounted.
 
 The container exposes the port `8080` for publishing to the host.

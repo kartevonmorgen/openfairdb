@@ -2,18 +2,18 @@
 
 Most tests can be run as usual:
 
-``` bash
+```bash
 just test
 ```
 
 or
 
-``` bash
+```bash
 cargo test
 ```
 
 but some tests needs to be run within a real browser:
 
-``` bash
+```bash
 wasm-pack test --chrome
 ```

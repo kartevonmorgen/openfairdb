@@ -1,6 +1,6 @@
 # Context
 
-The diagrom below shows the *general* context of the OpenFairDB system.
+The diagrom below shows the _general_ context of the OpenFairDB system.
 
 ```plantuml
 @startuml

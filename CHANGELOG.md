@@ -51,7 +51,7 @@
 - fix(api): Implement JSON errors for most cases
 - chore(web): Clearance center: Use trunk to build the app
 - chore(ci): Some GithubCI improvements
-- chore(*): Update dependencies
+- chore(\*): Update dependencies
 
 ## v0.10.3 (2021-06-13)
 
@@ -64,7 +64,7 @@
 ## v0.10.1 (2021-04-21)
 
 - new(api): Make capthca protection optional
-- chore(*): update dependencies
+- chore(\*): update dependencies
 
 ## v0.10.0 (2021-03-06)
 
@@ -73,7 +73,7 @@
 - new(api): Add JWT authorization for API
 - new(api): Cache most popular tags to accelerate response time
 - new(api): Make accepted licenses configurable
-- new(*): Allow to use custom MailGun API URL
+- new(\*): Allow to use custom MailGun API URL
 - chore(web): update rocket: v0.4.5 -> v0.4.7
 
 ## v0.9.3 (2020-10-21)
@@ -88,13 +88,13 @@
 ## v0.9.1 (2020-08-18)
 
 - new(api/db): Add new fields `contact_name` and `founded_on` to entries/places
-- new(api): Filter entries by `org_tag` and return only revisions that have been *cleared* by the responsible organization (`/entries`)
+- new(api): Filter entries by `org_tag` and return only revisions that have been _cleared_ by the responsible organization (`/entries`)
 
 ## v0.9.0 (2020-08-13)
 
 - new(api/db): Moderated tags: Fine-grained permissions for organizations
-- new(api/db): Clearance: Allow organizations to manually *clear* new place/entry revisions after editing
-- new(api/db): Clearance: Optionally replace or exclude revisions with *pending clearance* from search results, i.e. return an older, already cleared revision if
+- new(api/db): Clearance: Allow organizations to manually _clear_ new place/entry revisions after editing
+- new(api/db): Clearance: Optionally replace or exclude revisions with _pending clearance_ from search results, i.e. return an older, already cleared revision if
 - new(api/db): Add support for custom links in place entries
 - new(api): Allow organizations to read the history of places
 - new(api): Add route to search for duplicate entries/places by example (`/search/duplicates`)
@@ -112,7 +112,7 @@
 - fix(doc): Add missing API docs for subscriptions
 - fix(db): Fix parsing of text queries to enable searching for sub-terms
 - chore(web): update rocket: v0.4.4 -> v0.4.5
-- chore(*): use `rustls` instead of OpenSSL
+- chore(\*): use `rustls` instead of OpenSSL
 
 ## v0.8.19 (2020-05-20)
 
@@ -236,7 +236,7 @@
 ## v0.6.2 (2019-10-15)
 
 - fix(db): Increased maximum number of search results via `limit` request parameter
-from 250 to 500. The default number of results if no limit is requested is still 100.
+  from 250 to 500. The default number of results if no limit is requested is still 100.
 - new(db): Add image_url and image_link_url to CSV export
 - chore(db): Disabled CSV export temporarily
 
@@ -382,25 +382,25 @@ from 250 to 500. The default number of results if no limit is requested is still
 - fix(email): consistent corporate naming "Karte von morgen"
 - fix(email): write RFC 2047 Subject header
 - chore(db): add indexes for foreign key relations
-- chore(*): update various dependencies
+- chore(\*): update various dependencies
 
 ## v0.3.8 (2018-08-27)
 
 - new(db): add image URL fields to entries
 - chore(web): update `rocket` to `v0.3.16`
 - chore(db): update `diesel` to `v1.3.x`
-- chore(*): update dependencies
+- chore(\*): update dependencies
 
 ## v0.3.7 (2018-05-22)
 
 - chore(web): update `rocket` to `v0.3.11`
-- chore(*): update dependencies
+- chore(\*): update dependencies
 
 ## v0.3.6 (2018-05-13)
 
 - new(csv-export): export average rating of an entry
 - chore(web): update `rocket` to `v0.3.10`
-- chore(*): update dependencies
+- chore(\*): update dependencies
 
 ## v0.3.5 (2018-04-27)
 
@@ -412,9 +412,9 @@ from 250 to 500. The default number of results if no limit is requested is still
 - new(csv-export): implement csv-export of entries for a given bbox
 - new(tags): ignore `#` char in tags
 - new(cli): log info message when calculating average ratings is finished
-- refactor(*): reorganize files
-- chore(*): update `rocket` to `v0.3.8`
-- chore(*): update dependencies to compile on latest nightly
+- refactor(\*): reorganize files
+- chore(\*): update `rocket` to `v0.3.8`
+- chore(\*): update dependencies to compile on latest nightly
 
 ## v0.3.3 (2018-02-23)
 
@@ -438,25 +438,25 @@ from 250 to 500. The default number of results if no limit is requested is still
 
 - new(db): remove neo4j support (SQLite is now required)
 - new(db): add functionality to import OSM nodes
-- new(*): Improve sorting & search algorithms
+- new(\*): Improve sorting & search algorithms
 - refactor(db): freeze initial DB-Schema
-- refactor(*): remove tripples (make relations explicit)
-- refactor(*): tidy up & format code & rename some functions
+- refactor(\*): remove tripples (make relations explicit)
+- refactor(\*): tidy up & format code & rename some functions
 - chore(email): make email functionality optional
 - chore(web): update `rocket` to `v0.3.6`
 - chore(web): update `diesel` to `v1.1.1`
-- fix(*): use logging level from environment
+- fix(\*): use logging level from environment
 - fix(sort): don't overflow on calculating the average rating
 
 ## v0.2.12 (2018-01-09)
 
-- fix(*): use logging level from the environment
+- fix(\*): use logging level from the environment
 
 ## v0.2.11 (2018-01-08)
 
 - new(search): improve performance
 - revert(db): use neo4j by default
-- chore(*): update `rocket` to `v0.3.5`
+- chore(\*): update `rocket` to `v0.3.5`
 
 ## v0.2.10 (2017-12-06)
 
