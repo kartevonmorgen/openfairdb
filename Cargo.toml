@@ -56,7 +56,7 @@ env_logger = "0.10.0"
 log = "0.4.17"
 serde = { version = "1.0.152", features = ["derive"] }
 time = "0.3.17"
-tokio = "1.24.1"
+tokio = "1.24.2"
 toml = "0.5.10"
 
 [patch.crates-io.maud]
