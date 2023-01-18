@@ -83,7 +83,29 @@ branch = "fixes"
 rand = "0.8.5"
 ofdb-entities = { version = "*", features = ["builders"] }
 
+[profile.dev]
+opt-level = 2
+# TODO: Uncomment after
+# <https://github.com/rust-lang/cargo/pull/11347>
+# has been merged and released in stable.
+#split-debuginfo = "unpacked"
+
+[profile.test]
+inherits = "dev"
+
 [profile.release]
-lto = true
 opt-level = 3
+lto = "thin"
+strip = "debuginfo"
+
+[profile.profiling]
+inherits = "release"
+# Keep debug symbols for profiling -> results in huge binary!
+debug = true
+
+[profile.production]
+inherits = "release"
+lto = true
 codegen-units = 1
+strip = true
+panic = "abort"
