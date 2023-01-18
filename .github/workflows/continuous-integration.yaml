@@ -16,7 +16,6 @@ env:
   CARGO_INCREMENTAL: 0
   CARGO_TERM_COLOR: always
   RUST_BACKTRACE: short
-  BUILD_TARGET: x86_64-unknown-linux-musl
 
 jobs:
   continuous-integration:
@@ -36,86 +35,60 @@ jobs:
         run: |
           sudo apt -y install musl-tools
 
-      - name: Install Rust toolchain for target
-        uses: actions-rs/toolchain@v1
-        id: toolchain
+      - name: Install Rust toolchains for both native target and WASM
+        uses: dtolnay/rust-toolchain@master
         with:
-          target: ${{ matrix.target }}
           toolchain: stable
-          profile: minimal
-          override: true
-
-      - name: Install Rust toolchain for WASM
-        uses: actions-rs/toolchain@v1
-        with:
-          target: wasm32-unknown-unknown
-          toolchain: stable
-          profile: minimal
-          override: true
+          targets: ${{ matrix.target }}, wasm32-unknown-unknown
 
       - name: Check out repository
         uses: actions/checkout@v3
 
       - name: Cache Rust toolchain and build artifacts
         uses: Swatinem/rust-cache@v2
+        with:
+          # Distinguished by the action name to avoid sharing across different actions!
+          shared-key: "continuous-integration"
 
       - name: Install Trunk for building the webapp
         run: |
           cargo install --locked trunk
 
       - name: Check ofdb-application crate
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --locked --all-targets --all-features --manifest-path  ofdb-application/Cargo.toml
+        run: |
+          cargo check --locked --all-targets --all-features --manifest-path ofdb-application/Cargo.toml
 
       - name: Check ofdb-entities crate
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --locked --all-targets --all-features --manifest-path  ofdb-entities/Cargo.toml
+        run: |
+          cargo check --locked --all-targets --all-features --manifest-path ofdb-entities/Cargo.toml
 
       - name: Check ofdb-core crate
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --locked --all-targets --all-features --manifest-path  ofdb-core/Cargo.toml
+        run: |
+          cargo check --locked --all-targets --all-features --manifest-path ofdb-core/Cargo.toml
 
       - name: Check ofdb-db-sqlite crate
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --locked --all-targets --all-features --manifest-path  ofdb-db-sqlite/Cargo.toml
+        run: |
+          cargo check --locked --all-targets --all-features --manifest-path ofdb-db-sqlite/Cargo.toml
 
       - name: Check ofdb-db-tantivy crate
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --locked --all-targets --all-features --manifest-path  ofdb-db-tantivy/Cargo.toml
+        run: |
+          cargo check --locked --all-targets --all-features --manifest-path ofdb-db-tantivy/Cargo.toml
 
       - name: Check ofdb-boundary crate
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --locked --all-targets --all-features --manifest-path  ofdb-boundary/Cargo.toml
+        run: |
+          cargo check --locked --all-targets --all-features --manifest-path ofdb-boundary/Cargo.toml
 
       - name: Check ofdb-gateways crate
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --locked --all-targets --all-features --manifest-path  ofdb-gateways/Cargo.toml
+        run: |
+          cargo check --locked --all-targets --all-features --manifest-path ofdb-gateways/Cargo.toml
 
       - name: Check ofdb-webserver crate
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --locked --all-targets --all-features --manifest-path  ofdb-webserver/Cargo.toml
+        run: |
+          cargo check --locked --all-targets --all-features --manifest-path ofdb-webserver/Cargo.toml
 
       - name: Check ofdb-app-clearance crate
-        uses: actions-rs/cargo@v1
-        with:
-          command: check
-          args: --locked --all-targets --all-features --manifest-path  ofdb-app-clearance/Cargo.toml
+        run: |
+          cargo check --locked --all-targets --all-features --manifest-path ofdb-app-clearance/Cargo.toml
 
       - name: Build workspace tests
         uses: actions-rs/cargo@v1
@@ -123,14 +96,10 @@ jobs:
           command: test
           args: --locked --workspace --all-targets --all-features --no-run
 
-      - name: Run workspace tests (excluding benchmarks)
-        uses: actions-rs/cargo@v1
-        with:
-          command: test
-          args: --locked --workspace --lib --bins --tests --examples --all-features -- --nocapture --quiet
+      - name: Build tests with default features
+        run: |
+          cargo test --locked --workspace --all-targets --no-run
 
-      - name: Build release
-        uses: actions-rs/cargo@v1
-        with:
-          command: build
-          args: --locked --workspace --all-targets --profile release
+      - name: Run tests with default features
+        run: |
+          cargo test --locked --workspace --all-targets -- --nocapture --quiet
