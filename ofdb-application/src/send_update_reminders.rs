@@ -6,19 +6,21 @@ use std::time::Instant;
 use time::Duration;
 
 #[derive(Debug)]
-pub struct SendReminderParams {
+pub struct SendReminderParams<'a> {
     pub recipient_role: usecases::RecipientRole,
     pub not_updated_since: Timestamp,
     pub resend_period: Duration,
     pub send_max: u32,
     pub current_time: Timestamp,
     pub token_expire_at: Timestamp,
+    pub bcc: &'a [EmailAddress],
 }
 
+// TODO: Format email outside of this function.
 pub fn send_update_reminders<G, F>(
     connections: &sqlite::Connections,
     notification_gateway: &G,
-    formatter: &F,
+    formatter: &F, // TODO: remove
     params: SendReminderParams,
 ) -> Result<()>
 where
@@ -32,6 +34,7 @@ where
         send_max,
         current_time,
         token_expire_at,
+        bcc,
     } = params;
 
     log::info!("Send update reminders to {recipient_role:?}s for places that were not updated since {not_updated_since:?}");
@@ -84,6 +87,13 @@ where
 
     let unsent_emails =
         ofdb_core::usecases::create_reminder_emails(formatter, unsent_reminders_with_review_tokens);
+    let unsent_emails = unsent_emails
+        .into_iter()
+        .map(|(mut reminder, content)| {
+            reminder.recipients.extend_from_slice(bcc);
+            (reminder, content)
+        })
+        .collect();
     let sent_reminders =
         ofdb_core::usecases::send_reminder_emails(notification_gateway, unsent_emails);
     let count = sent_reminders.len();
@@ -244,6 +254,8 @@ mod tests {
         let current_time = Timestamp::now();
         let token_expire_at = current_time + Duration::seconds(30);
 
+        let bcc_email = "bcc@example.com".parse::<EmailAddress>().unwrap();
+
         send_update_reminders(
             &fixture.db_connections,
             &notify_gw,
@@ -255,13 +267,17 @@ mod tests {
                 send_max: 10,
                 current_time,
                 token_expire_at,
+                bcc: &[bcc_email.clone()],
             },
         )
         .unwrap();
 
         let owner_email = "owner@example.org".parse::<EmailAddress>().unwrap();
         assert_eq!(notify_gw.sent_mails.borrow().len(), 1);
-        assert_eq!(notify_gw.sent_mails.borrow()[0].0, vec![owner_email]);
+        assert_eq!(
+            notify_gw.sent_mails.borrow()[0].0,
+            vec![owner_email, bcc_email]
+        );
         assert_eq!(notify_gw.sent_mails.borrow()[0].1.subject, old.id.as_str());
     }
 
@@ -330,6 +346,7 @@ mod tests {
                 send_max: 10,
                 current_time,
                 token_expire_at,
+                bcc: &[],
             },
         )
         .unwrap();
@@ -384,6 +401,7 @@ mod tests {
                 send_max: 1,
                 current_time,
                 token_expire_at,
+                bcc: &[],
             },
         )
         .unwrap();
