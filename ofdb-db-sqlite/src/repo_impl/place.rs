@@ -746,7 +746,7 @@ fn find_places_not_updated_since(
             dsl::id,
             dsl::license,
         ))
-        .order_by(rev_dsl::created_at.desc())
+        .order_by(rev_dsl::created_at.asc())
         .filter(rev_dsl::created_at.lt(not_updated_since.as_millis()))
         .into_boxed();
 

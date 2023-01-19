@@ -12,6 +12,7 @@ pub async fn run(
     cfg: config::Reminders,
 ) {
     if cfg.send_to.is_empty() {
+        log::info!("Do not send recurring reminders");
         return;
     }
 
@@ -19,9 +20,12 @@ pub async fn run(
     let notification_gw = gateways::notification_gateway(email_gateway_cfg);
     let token_expire_in = Duration::try_from(cfg.token_expire_in).expect("Token expiring duration");
 
-    loop {
-        interval.tick().await;
+    log::info!(
+        "Send recurring reminders to {:?} (interval = {interval:?})",
+        cfg.send_to
+    );
 
+    loop {
         for recipient_role in &cfg.send_to {
             let recipient_role = *recipient_role;
             let formatter = ReminderFormatter::new(recipient_role);
@@ -45,6 +49,7 @@ pub async fn run(
                 log::warn!("Update reminders could not be sent: {err}");
             }
         }
+        interval.tick().await;
     }
 }
 
