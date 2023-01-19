@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- new: Change `/confirm-email-address` to `/users/confirm-email-address`
+
 ## v0.12.2 (2023-01-17)
 
 - new: Add endpoint to review a place by a secret token
