@@ -31,15 +31,17 @@ impl EmailReminderFormatter for ReminderFormatter {
             RecipientRole::Owner => EmailReminderOwnerSubjectTemplate { title }.render(),
         }
         .unwrap();
-        // TODO: inject base URL
+        // TODO: inject URL
         let entry_url = &format!("https://kartevonmorgen.org/#/?entry={id}");
 
         let token = review_nonce.encode_to_string();
+        // TODO: inject URL
         let archive_url = &format!(
-            "https://openfairdb.org/review-place-with-token?token={token}?status=archived"
+            "https://openfairdb.org/places/review-with-token?token={token}&status=archived"
         );
+        // TODO: inject URL
         let confirm_url = &format!(
-            "https://openfairdb.org/review-place-with-token?token={token}?status=confirmed"
+            "https://openfairdb.org/places/review-with-token?token={token}&status=confirmed"
         );
         let tags = &tags.join(",");
         let body = match self.recipient_role {
