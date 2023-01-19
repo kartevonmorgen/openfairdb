@@ -86,8 +86,9 @@ where
         ofdb_core::usecases::create_reminder_emails(formatter, unsent_reminders_with_review_tokens);
     let sent_reminders =
         ofdb_core::usecases::send_reminder_emails(notification_gateway, unsent_emails);
+    let count = sent_reminders.len();
     log::debug!(
-        "Sending update reminders for {recipient_role:?} stook {}ms",
+        "Sending {count} update reminders for {recipient_role:?} stook {}ms",
         start_time.elapsed().as_millis()
     );
 
@@ -204,7 +205,7 @@ mod tests {
     }
 
     #[test]
-    fn send_update_reminders_to_owners() {
+    fn send_to_owners() {
         let fixture = BackendFixture::new();
 
         let admin_email = "admin@example.org".parse::<EmailAddress>().unwrap();
@@ -265,7 +266,7 @@ mod tests {
     }
 
     #[test]
-    fn send_update_reminders_to_scouts() {
+    fn send_to_scouts() {
         let fixture = BackendFixture::new();
 
         let admin = "admin@example.org".parse::<EmailAddress>().unwrap();
@@ -335,6 +336,59 @@ mod tests {
 
         assert_eq!(notify_gw.sent_mails.borrow().len(), 1);
         assert_eq!(notify_gw.sent_mails.borrow()[0].0, vec![subscribed_scout]);
+        assert_eq!(notify_gw.sent_mails.borrow()[0].1.subject, old.id.as_str());
+    }
+
+    #[test]
+    fn send_oldest_first() {
+        let fixture = BackendFixture::new();
+
+        let scout = "scout-a@example.org".parse::<EmailAddress>().unwrap();
+        create_user(&fixture, Role::Scout, scout.clone());
+
+        let status = Some(ReviewStatus::Confirmed);
+        let old = create_place(&fixture, "old", scout.clone(), status);
+        let _new = create_place(&fixture, "new", scout.clone(), status);
+
+        // Resolution of time stamps in the query is 1 sec
+        // TODO: Don't waste time by sleeping
+        std::thread::sleep(std::time::Duration::from_millis(1001));
+        let last_update_time = Timestamp::now();
+
+        let subscription_bbox =
+            MapBbox::centered_around(old.location.pos, Distance(10.0), Distance(10.0));
+
+        usecases::subscribe_to_bbox(
+            &fixture.db_connections.exclusive().unwrap(),
+            scout,
+            subscription_bbox,
+        )
+        .unwrap();
+
+        let notify_gw = MockNotifyGw::default();
+        let email_fmt = MockEmailFormatter::default();
+
+        let not_updated_since = last_update_time;
+        let resend_period = Duration::milliseconds(90);
+        let current_time = Timestamp::now();
+        let token_expire_at = current_time + Duration::seconds(30);
+
+        send_update_reminders(
+            &fixture.db_connections,
+            &notify_gw,
+            &email_fmt,
+            SendReminderParams {
+                recipient_role: usecases::RecipientRole::Scout,
+                not_updated_since,
+                resend_period,
+                send_max: 1,
+                current_time,
+                token_expire_at,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(notify_gw.sent_mails.borrow().len(), 1);
         assert_eq!(notify_gw.sent_mails.borrow()[0].1.subject, old.id.as_str());
     }
 }
