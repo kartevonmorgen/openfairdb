@@ -33,6 +33,7 @@ pub async fn run(
             let current_time = Timestamp::now();
             let not_updated_since = current_time - resend_period;
             let token_expire_at = current_time + token_expire_in;
+            let bcc = &cfg.send_bcc;
 
             let params = SendReminderParams {
                 recipient_role,
@@ -41,6 +42,7 @@ pub async fn run(
                 send_max: cfg.send_max,
                 current_time,
                 token_expire_at,
+                bcc,
             };
 
             if let Err(err) =

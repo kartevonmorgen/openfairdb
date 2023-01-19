@@ -104,6 +104,7 @@ pub struct Reminders {
     pub scouts: ScoutReminders,
     pub owners: OwnerReminders,
     pub send_to: Vec<RecipientRole>,
+    pub send_bcc: Vec<EmailAddress>,
     pub token_expire_in: Duration,
 }
 
@@ -231,10 +232,19 @@ impl TryFrom<raw::Config> for Config {
             task_interval_time,
             send_max,
             send_to,
+            send_bcc,
             scouts,
             owners,
             token_expire_in,
         } = reminders.unwrap_or_default();
+
+        let send_bcc = if let Some(bcc) = send_bcc {
+            bcc.into_iter()
+                .map(|a| a.parse::<EmailAddress>())
+                .collect::<Result<Vec<_>, _>>()?
+        } else {
+            vec![]
+        };
 
         let default_reminders_cfg = raw::Reminders::default();
 
@@ -270,6 +280,7 @@ impl TryFrom<raw::Config> for Config {
             task_interval_time,
             send_max,
             send_to,
+            send_bcc,
             scouts,
             owners,
             token_expire_in,

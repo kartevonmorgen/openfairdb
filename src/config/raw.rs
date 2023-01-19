@@ -139,6 +139,7 @@ pub struct Reminders {
     pub task_interval_time: Option<Duration>,
     pub send_max: Option<u32>,
     pub send_to: Option<Vec<RecipientRole>>,
+    pub send_bcc: Option<Vec<String>>,
     pub scouts: Option<ScoutReminders>,
     pub owners: Option<OwnerReminders>,
     #[serde(deserialize_with = "deserialize_option_duration")]
