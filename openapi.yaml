@@ -717,6 +717,9 @@ paths:
               properties:
                 token:
                   type: string
+      responses:
+        "200":
+          description: Successful response
 
   /subscribe-to-bbox:
     post:
@@ -940,7 +943,11 @@ paths:
         - Captcha
       responses:
         "200":
-          $ref: "#/components/parameters/CaptchaToken"
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaptchaToken"
   "/captcha/{captcha-token}":
     get:
       summary: Get the captcha challenge
@@ -952,7 +959,11 @@ paths:
         - $ref: "#/components/parameters/CaptchaToken"
       responses:
         "200":
-          $ref: "#/components/schemas/CaptchaImage"
+          description: Successful response
+          content:
+            image/png:
+              schema:
+                $ref: "#/components/schemas/CaptchaImage"
         "404":
           description: Unknown or expired token
   "/captcha/{captcha-token}/verify":
@@ -1689,6 +1700,10 @@ components:
       maximum: 180.0
       example: 120.7
       description: Geographic longitude (in degrees)
+    CaptchaToken:
+      type: string
+      description: A unique captcha token
+      example: 863bd305b8294cdcaa17277ffee6ae5a
     CaptchaAnswer:
       type: string
       description: The answer to a given captcha challenge
@@ -1873,4 +1888,4 @@ components:
     ParameterError:
       description: Parameters are missing or invalid
     UnauthorizedError:
-      description: Access token is missing or invalid or the user has insufficient permissions
+      description: Access token is missing or invalid or the user has insufficient permission
