@@ -4,7 +4,7 @@
 use std::{env, path::PathBuf};
 
 use clap::{Parser, Subcommand};
-use dotenv::dotenv;
+use dotenvy::dotenv;
 
 use ofdb_core::{
     entities::MapPoint, gateways::geocode::GeoCodingGateway, repositories::EventRepo, RepoError,
