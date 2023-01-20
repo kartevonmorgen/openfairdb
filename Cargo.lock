@@ -1932,7 +1932,7 @@ dependencies = [
 
 [[package]]
 name = "ofdb-boundary"
-version = "0.12.2"
+version = "0.12.3"
 dependencies = [
  "ofdb-entities",
  "serde",
@@ -1987,7 +1987,7 @@ dependencies = [
 
 [[package]]
 name = "ofdb-entities"
-version = "0.12.2"
+version = "0.12.3"
 dependencies = [
  "bs58",
  "itertools",
@@ -2025,7 +2025,7 @@ dependencies = [
 
 [[package]]
 name = "ofdb-seed"
-version = "0.12.2"
+version = "0.12.3"
 dependencies = [
  "ofdb-boundary",
  "percent-encoding",
@@ -2091,7 +2091,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "openfairdb"
-version = "0.12.2"
+version = "0.12.3"
 dependencies = [
  "anyhow",
  "clap",
@@ -2494,11 +2494,11 @@ dependencies = [
 
 [[package]]
 name = "reqwest"
-version = "0.11.13"
+version = "0.11.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "68cc60575865c7831548863cc02356512e3f1dc2f3f82cb837d7fc4cc8f3c97c"
+checksum = "21eed90ec8570952d53b772ecf8f206aa1ec9a3d76b2521c56c42973f2d91ee9"
 dependencies = [
- "base64 0.13.1",
+ "base64 0.21.0",
  "bytes",
  "encoding_rs",
  "futures-core",
@@ -2712,9 +2712,9 @@ checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustix"
-version = "0.36.6"
+version = "0.36.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4feacf7db682c6c329c4ede12649cd36ecab0f3be5b7d74e6a20304725db4549"
+checksum = "d4fdebc4b395b7fbb9ab11e462e20ed9051e7b16e42d24042c776eca0ac81b03"
 dependencies = [
  "bitflags",
  "errno",
@@ -3438,9 +3438,9 @@ dependencies = [
 
 [[package]]
 name = "unicode-bidi"
-version = "0.3.8"
+version = "0.3.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "099b7128301d285f79ddd55b9a83d5e6b9e97c92e0ea0daebee7263e932de992"
+checksum = "0046be40136ef78dc325e0edefccf84ccddacd0afcc1ca54103fa3c61bbdab1d"
 
 [[package]]
 name = "unicode-ident"
