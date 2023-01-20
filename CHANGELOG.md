@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.12.3 (2023-01-20)
+
+- new: config option for reminder BCC addresses
+- fix: recurring reminders for oldest places first
+- fix: review URLs in reminder emails
+- fix: openapi.yaml
+
 ## v0.12.2 (2023-01-17)
 
 - new: Add endpoint to review a place by a secret token
