@@ -10,6 +10,7 @@ _default:
 fmt:
     cargo fmt --all
     cd ofdb-app-clearance && cargo fmt
+    cd ofdb-frontend && cargo fmt
 
 # Check all crates individually (takes a long time)
 check:
@@ -29,6 +30,8 @@ clippy:
     cargo clippy --locked --workspace --all-targets --no-deps --profile release -- -D warnings --cap-lints warn
     cd ofdb-app-clearance && cargo clippy --locked --no-deps --target wasm32-unknown-unknown --all-features --all-targets --profile dev -- -D warnings --cap-lints warn
     cd ofdb-app-clearance && cargo clippy --locked --no-deps --target wasm32-unknown-unknown --all-features --all-targets --profile release -- -D warnings --cap-lints warn
+    cd ofdb-frontend && cargo clippy --locked --no-deps --target wasm32-unknown-unknown --all-features --all-targets --profile release -- -D warnings --cap-lints warn
+    cd ofdb-frontend && cargo clippy --locked --no-deps --target wasm32-unknown-unknown --all-features --all-targets --profile dev -- -D warnings --cap-lints warn
 
 # Fix lint warnings
 fix:
@@ -36,11 +39,14 @@ fix:
     cargo clippy --locked --workspace --no-deps --all-features --all-targets --fix
     cd ofdb-app-clearance && cargo fix --locked --target wasm32-unknown-unknown --all-features --all-targets
     cd ofdb-app-clearance && cargo clippy --locked --no-deps --target wasm32-unknown-unknown --all-features --all-targets --fix
+    cd ofdb-frontend && cargo fix --locked --target wasm32-unknown-unknown --all-features --all-targets
+    cd ofdb-frontend && cargo clippy --locked --no-deps --target wasm32-unknown-unknown --all-features --all-targets --fix
 
 # Run tests
 test:
     RUST_BACKTRACE=1 RUST_LOG=info cargo test --locked --workspace --all-features -- --nocapture
     RUST_BACKTRACE=1 RUST_LOG=info cd ofdb-app-clearance && cargo test --locked --all-features -- --nocapture
+    RUST_BACKTRACE=1 RUST_LOG=info cd ofdb-frontend && cargo test --locked --all-features -- --nocapture
 
 # Set up (and update) tooling
 setup:
@@ -60,7 +66,23 @@ upgrade: setup
     cd ofdb-app-clearance \
         && cargo upgrade \
         && cargo update
+    cd ofdb-frontend \
+        && cargo upgrade \
+        && cargo update
 
 # Run pre-commit hooks
 pre-commit:
     pre-commit run --all-files
+
+# Build frontend
+build-frontend:
+    cd ofdb-frontend && tailwind -i src/style.css -o style.css --minify
+    cd ofdb-frontend && trunk build --release
+
+# Build clearance app
+build-clearance:
+    cd ofdb-app-clearance && trunk build --release
+
+# Run
+run: build-clearance
+    RUST_LOG=debug,tantivy=info cargo run
