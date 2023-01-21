@@ -21,12 +21,13 @@ in
       rust
       cmake
       pkgconfig
-      openssl
+      openssl # TODO: do we still need this?
       pre-commit
-      nodejs
       graphviz
       plantuml
       sassc # dart-sass is only available as flake
+      nodejs # TODO: do we still need this?
+      nodePackages.tailwindcss
     ];
     SQLITE3_DIR = "${sqlite.dev}";
     SQLITE3_LIB_DIR = "${sqlite.out}/lib";
