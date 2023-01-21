@@ -375,7 +375,6 @@ dependencies = [
  "js-sys",
  "num-integer",
  "num-traits",
- "time 0.1.45",
  "wasm-bindgen",
  "winapi",
 ]
@@ -485,7 +484,7 @@ dependencies = [
  "rand",
  "sha2 0.10.6",
  "subtle",
- "time 0.3.17",
+ "time",
  "version_check 0.9.4",
 ]
 
@@ -1099,7 +1098,7 @@ dependencies = [
  "cfg-if",
  "js-sys",
  "libc",
- "wasi 0.11.0+wasi-snapshot-preview1",
+ "wasi",
  "wasm-bindgen",
 ]
 
@@ -1787,7 +1786,7 @@ checksum = "e5d732bc30207a6423068df043e3d02e0735b155ad7ce1a6f76fe2baa5b158de"
 dependencies = [
  "libc",
  "log",
- "wasi 0.11.0+wasi-snapshot-preview1",
+ "wasi",
  "windows-sys",
 ]
 
@@ -1927,7 +1926,7 @@ dependencies = [
  "r2d2",
  "serde_json",
  "thiserror",
- "time 0.3.17",
+ "time",
 ]
 
 [[package]]
@@ -1937,7 +1936,7 @@ dependencies = [
  "ofdb-entities",
  "serde",
  "thiserror",
- "time 0.3.17",
+ "time",
 ]
 
 [[package]]
@@ -1953,7 +1952,7 @@ dependencies = [
  "passwords",
  "regex",
  "thiserror",
- "time 0.3.17",
+ "time",
  "url",
 ]
 
@@ -1969,7 +1968,7 @@ dependencies = [
  "num-traits",
  "ofdb-core",
  "parking_lot",
- "time 0.3.17",
+ "time",
 ]
 
 [[package]]
@@ -1998,7 +1997,7 @@ dependencies = [
  "rand",
  "strum",
  "thiserror",
- "time 0.3.17",
+ "time",
  "url",
  "uuid",
 ]
@@ -2020,7 +2019,7 @@ dependencies = [
  "reqwest",
  "serde",
  "thiserror",
- "time 0.3.17",
+ "time",
 ]
 
 [[package]]
@@ -2063,7 +2062,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
- "time 0.3.17",
+ "time",
  "uuid",
  "walkdir",
 ]
@@ -2108,7 +2107,7 @@ dependencies = [
  "ofdb-webserver",
  "rand",
  "serde",
- "time 0.3.17",
+ "time",
  "tokio",
  "toml",
 ]
@@ -2584,7 +2583,7 @@ dependencies = [
  "serde_json",
  "state",
  "tempfile",
- "time 0.3.17",
+ "time",
  "tokio",
  "tokio-stream",
  "tokio-util",
@@ -2645,7 +2644,7 @@ dependencies = [
  "smallvec",
  "stable-pattern",
  "state",
- "time 0.3.17",
+ "time",
  "tokio",
  "uncased",
 ]
@@ -2937,7 +2936,7 @@ dependencies = [
  "num-bigint",
  "num-traits",
  "thiserror",
- "time 0.3.17",
+ "time",
 ]
 
 [[package]]
@@ -3093,7 +3092,7 @@ dependencies = [
  "tantivy-query-grammar",
  "tempfile",
  "thiserror",
- "time 0.3.17",
+ "time",
  "uuid",
  "winapi",
 ]
@@ -3186,17 +3185,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5516c27b78311c50bf42c071425c560ac799b11c30b31f87e3081965fe5e0180"
 dependencies = [
  "once_cell",
-]
-
-[[package]]
-name = "time"
-version = "0.1.45"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1b797afad3f312d1c66a56d11d0316f916356d11bd158fbc6ca6389ff6bf805a"
-dependencies = [
- "libc",
- "wasi 0.10.0+wasi-snapshot-preview1",
- "winapi",
 ]
 
 [[package]]
@@ -3556,12 +3544,6 @@ dependencies = [
  "log",
  "try-lock",
 ]
-
-[[package]]
-name = "wasi"
-version = "0.10.0+wasi-snapshot-preview1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1a143597ca7c7793eff794def352d41792a93c481eb1042423ff7ff72ba2c31f"
 
 [[package]]
 name = "wasi"
