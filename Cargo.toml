@@ -26,7 +26,7 @@ members = [
   "ofdb-seed",
   "ofdb-webserver",
 ]
-exclude = [ "ofdb-app-clearance" ]
+exclude = [ "ofdb-frontend", "ofdb-app-clearance" ]
 
 [patch.crates-io]
 ofdb-application  = { path = "./ofdb-application"  }
