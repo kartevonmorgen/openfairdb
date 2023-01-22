@@ -54,8 +54,6 @@ setup:
 # Upgrade (and update) dependencies and tools
 upgrade: setup
     pre-commit autoupdate
-    cargo upgrade
-    cargo update
     cargo upgrade \
         --exclude libsqlite3-sys
     cargo update
