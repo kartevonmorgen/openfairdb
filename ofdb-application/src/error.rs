@@ -17,7 +17,6 @@ impl From<ofdb_core::usecases::Error> for AppError {
 }
 
 #[derive(Debug, Error)]
-#[allow(clippy::large_enum_variant)]
 pub enum AppError {
     #[error(transparent)]
     Business(#[from] BError),
@@ -29,8 +28,6 @@ pub enum AppError {
     Io(#[from] io::Error),
     #[error(transparent)]
     R2d2(#[from] r2d2::Error),
-    #[error(transparent)]
-    CsvIntoInner(#[from] ::csv::IntoInnerError<::csv::Writer<Vec<u8>>>),
     #[error(transparent)]
     String(#[from] ::std::string::FromUtf8Error),
     #[error(transparent)]
