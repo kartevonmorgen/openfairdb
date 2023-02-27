@@ -11,7 +11,7 @@ keywords = ["geo", "fair", "sustainability"]
 authors = ["slowtec GmbH <post@slowtec.de>"]
 license = "AGPL-3.0-or-later"
 edition = "2021"
-rust-version = "1.66.0"
+rust-version = "1.67.0"
 
 [workspace]
 members = [
@@ -48,16 +48,16 @@ ofdb-webserver   = "=0.0.0"
 
 ofdb-entities    =  "*"
 
-anyhow = "1.0.68"
-clap = { version = "4.1.1", features = ["cargo", "derive"] }
+anyhow = "1.0.69"
+clap = { version = "4.1.6", features = ["cargo", "derive"] }
 dotenvy = "0.15.6"
 duration-str = { version = "0.5.0", default-features = false, features = ["serde"] }
 env_logger = "0.10.0"
 log = "0.4.17"
 serde = { version = "1.0.152", features = ["derive"] }
-time = "0.3.17"
-tokio = "1.24.2"
-toml = "0.5.10"
+time = "0.3.20"
+tokio = "1.25.0"
+toml = "0.5.11"
 
 [patch.crates-io.maud]
 # TODO: use v0.25.0 as soon as it's published
