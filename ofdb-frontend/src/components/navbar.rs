@@ -2,8 +2,10 @@ use crate::Page;
 use leptos::*;
 use leptos_router::*;
 
+use ofdb_boundary::User;
+
 #[component]
-pub fn NavBar<F>(cx: Scope, logged_in: Signal<bool>, on_logout: F) -> impl IntoView
+pub fn NavBar<F>(cx: Scope, user: Signal<Option<User>>, on_logout: F) -> impl IntoView
 where
     F: Fn() + 'static + Copy,
 {
@@ -20,12 +22,7 @@ where
 
           // Menu items
           <div class="hidden space-x-6 md:flex">
-            <Show
-              when = move || logged_in.get()
-              fallback = |cx| view! { cx, <PublicMenuItems /> }
-            >
-              <UserMenuItems on_logout />
-            </Show>
+            <UserMenu user on_logout />
           </div>
 
           // Hamburger Icon
@@ -55,12 +52,7 @@ where
                 "hidden absolute flex-col items-center self-end py-8 mt-10 space-y-6 font-bold bg-white sm:w-auto sm:self-center left-6 right-6 drop-shadow-md"
               }
             }>
-            <Show
-              when = move || logged_in.get()
-              fallback = |cx| view! { cx, <PublicMenuItems /> }
-            >
-              <UserMenuItems on_logout />
-            </Show>
+            <UserMenu user on_logout />
           </menu>
         </div>
       </nav>
@@ -68,16 +60,30 @@ where
 }
 
 #[component]
-fn UserMenuItems<F>(cx: Scope, on_logout: F) -> impl IntoView
+fn UserMenu<F>(cx: Scope, user: Signal<Option<User>>, on_logout: F) -> impl IntoView
+where
+    F: Fn() + 'static + Copy,
+{
+    let memorized_user = create_memo(cx, move |_| user.get());
+
+    move || match memorized_user.get() {
+        Some(user) => view! { cx, <UserMenuItems user on_logout /> }.into_view(cx),
+        None => view! { cx, <PublicMenuItems /> }.into_view(cx),
+    }
+}
+
+#[component]
+fn UserMenuItems<F>(cx: Scope, user: User, on_logout: F) -> impl IntoView
 where
     F: Fn() + 'static + Clone,
 {
     view! { cx,
       <MenuItem page = Page::Home label = "Search" />
-      <a href="#" on:click={
-        let on_logout = on_logout.clone();
-        move |_| on_logout()
-      }>"Logout"</a>
+      <a href="#" on:click= move |_| on_logout()>
+      {
+        format!("Logout ({})", user.email)
+      }
+      </a>
     }
 }
 

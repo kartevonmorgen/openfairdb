@@ -31,57 +31,53 @@ where
     });
 
     view! { cx,
-      <section>
-        <div class="container p-6 mx-auto">
-          <div class="flex items-center justify-center">
-            { search_error.get().map(|err| view!{ cx, <p>{ err }</p> }) }
-            <input
-              type="search"
-              class="w-full max-w-md py-3 px-4 bg-gray-50 text-gray-700 outline-none mb-4 rounded"
-              placeholder="search"
-              on:keyup = move |ev| {
-                ev.stop_propagation();
-                let target = event_target::<web_sys::HtmlInputElement>(&ev);
-                match &*ev.key() {
-                  "Enter" => {
-                    let value = event_target_value(&ev);
-                    let value = value.trim();
-                    search_action.dispatch(value.to_string());
-                  }
-                  "Escape" => {
-                    target.set_value("");
-                  }
-                  _=> { /* nothing to to */ }
-                }
+      <div class="flex items-center justify-center">
+        { search_error.get().map(|err| view!{ cx, <p>{ err }</p> }) }
+        <input
+          type="search"
+          class="w-full max-w-md py-3 px-4 bg-gray-50 text-gray-700 outline-none mb-4 rounded"
+          placeholder="search"
+          on:keyup = move |ev| {
+            ev.stop_propagation();
+            let target = event_target::<web_sys::HtmlInputElement>(&ev);
+            match &*ev.key() {
+              "Enter" => {
+                let value = event_target_value(&ev);
+                let value = value.trim();
+                search_action.dispatch(value.to_string());
+              }
+              "Escape" => {
+                target.set_value("");
+              }
+              _=> { /* nothing to to */ }
+            }
+          }
+        />
+      </div>
+      { move || search_response.get().is_some().then(||{
+        let count = search_response.get().map(|r|r.visible.len()).unwrap_or_default();
+        view!{ cx,
+          <div class="flex justify-start mb-4">
+            <p class="py-2 text-gray-500 border-b border-gray-300">
+              "Found "
+              <span class="font-bold">{ count }</span>
+              " results"
+            </p>
+          </div>
+        }})
+      }
+      { move || search_response.get().is_some().then(|| view!{ cx,
+          <ul>
+            <For
+              each = move || search_response.get().map(|res|res.visible).unwrap_or_default()
+              key = |place| place.id.clone() // TODO: can we avoid this clone?
+              view = move |cx, place| {
+                view! { cx, <li class="mb-3"><PlaceSearchResultItem place /></li> }
               }
             />
-          </div>
-          { move || search_response.get().is_some().then(||{
-            let count = search_response.get().map(|r|r.visible.len()).unwrap_or_default();
-            view!{ cx,
-              <div class="flex justify-start mb-4">
-                <p class="py-2 text-gray-500 border-b border-gray-300">
-                  "Found "
-                  <span class="font-bold">{ count }</span>
-                  " results"
-                </p>
-              </div>
-            }})
-          }
-          { move || search_response.get().is_some().then(|| view!{ cx,
-              <ul>
-                <For
-                  each = move || search_response.get().map(|res|res.visible).unwrap_or_default()
-                  key = |place| place.id.clone() // TODO: can we avoid this clone?
-                  view = move |cx, place| {
-                    view! { cx, <li class="mb-3"><PlaceSearchResultItem place /></li> }
-                  }
-                />
-              </ul>
-            })
-          }
-        </div>
-      </section>
+          </ul>
+        })
+      }
     }
 }
 

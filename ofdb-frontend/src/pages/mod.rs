@@ -1,3 +1,4 @@
+mod home;
 mod login;
 mod register;
 mod reset_password;
@@ -22,4 +23,4 @@ impl Page {
     }
 }
 
-pub use self::{login::*, register::*, reset_password::*};
+pub use self::{home::*, login::*, register::*, reset_password::*};

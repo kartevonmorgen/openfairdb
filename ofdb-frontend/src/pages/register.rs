@@ -16,7 +16,10 @@ pub fn Register(cx: Scope, api: UnauthorizedApi) -> impl IntoView {
     let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
 
     let register_action = create_action(cx, move |credentials: &Credentials| {
-        log::info!("Registering new account for {email}", email = credentials.email);
+        log::info!(
+            "Registering new account for {email}",
+            email = credentials.email
+        );
         let credentials = credentials.to_owned();
         async move {
             set_wait_for_response.update(|w| *w = true);
