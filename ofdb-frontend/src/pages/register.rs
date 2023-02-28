@@ -15,11 +15,9 @@ pub fn Register(cx: Scope, api: UnauthorizedApi) -> impl IntoView {
     let (register_error, set_register_error) = create_signal(cx, None::<String>);
     let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
 
-    let register_action = create_action(cx, move |(email, password): &(String, String)| {
-        log!("Try to register new account for {email}");
-        let email = email.to_string();
-        let password = password.to_string();
-        let credentials = Credentials { email, password };
+    let register_action = create_action(cx, move |credentials: &Credentials| {
+        log::info!("Registering new account for {email}", email = credentials.email);
+        let credentials = credentials.to_owned();
         async move {
             set_wait_for_response.update(|w| *w = true);
             let result = api.register(&credentials).await;
@@ -60,8 +58,9 @@ pub fn Register(cx: Scope, api: UnauthorizedApi) -> impl IntoView {
                       <CredentialsForm
                           title = "Register"
                           description = "Please enter the desired credentials"
-                          action_label = "Register"
-                          action = register_action
+                          submit_credentials_label = "Register"
+                          initial_credentials = Default::default()
+                          submit_credentials_action = register_action
                           error = register_error.into()
                           disabled = disabled.into()
                       />
