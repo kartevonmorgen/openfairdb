@@ -79,6 +79,7 @@ where
 {
     view! { cx,
       <MenuItem page = Page::Home label = "Search" />
+      <MenuItem page = Page::Dashboard label = "Dashboard" />
       <a href="#" on:click= move |_| on_logout()>
       {
         format!("Logout ({})", user.email)
@@ -91,6 +92,7 @@ where
 fn PublicMenuItems(cx: Scope) -> impl IntoView {
     view! { cx,
       <MenuItem page = Page::Home label = "Search" />
+      <MenuItem page = Page::Dashboard label = "Dashboard" />
       <MenuItem page = Page::Login label = "Login" />
       <MenuItem page = Page::Register label = "Register" />
     }

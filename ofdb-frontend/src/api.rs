@@ -9,6 +9,8 @@ use ofdb_boundary::*;
 #[async_trait(?Send)]
 pub trait PublicApi {
     async fn search(&self, text: &str, bbox: &MapBbox) -> Result<SearchResponse>;
+    async fn count_entries(&self) -> Result<usize>;
+    async fn count_tags(&self) -> Result<usize>;
 }
 
 /// Public OpenFairDB API
@@ -84,6 +86,12 @@ impl PublicApi for UnauthorizedApi {
     async fn search(&self, text: &str, bbox: &MapBbox) -> Result<SearchResponse> {
         search(self.url, text, bbox).await
     }
+    async fn count_entries(&self) -> Result<usize> {
+        count_entries(self.url).await
+    }
+    async fn count_tags(&self) -> Result<usize> {
+        count_tags(self.url).await
+    }
 }
 
 #[async_trait(?Send)]
@@ -91,26 +99,41 @@ impl PublicApi for AuthorizedApi {
     async fn search(&self, text: &str, bbox: &MapBbox) -> Result<SearchResponse> {
         search(self.url, text, bbox).await
     }
+    async fn count_entries(&self) -> Result<usize> {
+        count_entries(self.url).await
+    }
+    async fn count_tags(&self) -> Result<usize> {
+        count_tags(self.url).await
+    }
 }
 
 async fn search(endpoint_url: &str, text: &str, bbox: &MapBbox) -> Result<SearchResponse> {
     let encoded_txt = utf8_percent_encode(text, NON_ALPHANUMERIC);
     let MapBbox { sw, ne } = bbox;
     let bbox_str = format!("{},{},{},{}", sw.lat, sw.lng, ne.lat, ne.lng);
-    let url = format!(
-        "{}/search?text={}&bbox={}",
-        endpoint_url, encoded_txt, bbox_str
-    );
+    let url = format!("{endpoint_url}/search?text={encoded_txt}&bbox={bbox_str}");
+    let response = Request::get(&url).send().await?;
+    into_json(response).await
+}
+
+async fn count_entries(endpoint_url: &str) -> Result<usize> {
+    let url = format!("{endpoint_url}/count/entries");
+    let response = Request::get(&url).send().await?;
+    into_json(response).await
+}
+
+async fn count_tags(endpoint_url: &str) -> Result<usize> {
+    let url = format!("{endpoint_url}/count/tags");
     let response = Request::get(&url).send().await?;
     into_json(response).await
 }
 
 type Result<T> = std::result::Result<T, Error>;
 
-#[derive(Debug, Error)]
+#[derive(Debug, Clone, Error, PartialEq)]
 pub enum Error {
-    #[error(transparent)]
-    Fetch(#[from] gloo_net::Error),
+    #[error("{0}")]
+    Fetch(String),
     #[error("{0:?}")]
     Api(ofdb_boundary::Error),
 }
@@ -119,6 +142,12 @@ pub enum Error {
 impl From<ofdb_boundary::Error> for Error {
     fn from(e: ofdb_boundary::Error) -> Self {
         Self::Api(e)
+    }
+}
+
+impl From<gloo_net::Error> for Error {
+    fn from(err: gloo_net::Error) -> Self {
+        Self::Fetch(format!("{err}"))
     }
 }
 

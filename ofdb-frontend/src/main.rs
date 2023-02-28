@@ -1,7 +1,6 @@
 use gloo_storage::{LocalStorage, Storage};
 use leptos::*;
 use leptos_router::*;
-use wasm_bindgen::JsCast;
 
 use ofdb_boundary::*;
 
@@ -139,6 +138,12 @@ fn App(cx: Scope) -> impl IntoView {
                 <ResetPassword api = unauthorized_api />
               }
             />
+            <Route
+              path=Page::Dashboard.path()
+              view=move|cx| view! { cx,
+                <Dashboard api = unauthorized_api />
+              }
+            />
           </Routes>
         </main>
       </Router>
@@ -149,10 +154,5 @@ fn main() {
     _ = console_log::init_with_level(log::Level::Debug);
     console_error_panic_hook::set_once();
     log::info!("Start web application");
-    let app_container = document()
-        .get_element_by_id("app")
-        .expect("app container element")
-        .dyn_into()
-        .expect("HtmlElement");
-    mount_to(app_container, |cx| view! { cx, <App /> });
+    mount_to_body(|cx| view! { cx, <App /> });
 }
