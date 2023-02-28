@@ -1,23 +1,47 @@
 use leptos::{ev, *};
 
+use ofdb_boundary::Credentials;
+
 #[component]
 pub fn CredentialsForm(
     cx: Scope,
     title: &'static str,
     description: &'static str,
-    action_label: &'static str,
-    action: Action<(String, String), ()>,
+    submit_credentials_label: &'static str,
+    initial_credentials: Credentials,
+    submit_credentials_action: Action<Credentials, ()>,
     error: Signal<Option<String>>,
     disabled: Signal<bool>,
 ) -> impl IntoView {
-    let (password, set_password) = create_signal(cx, String::new());
-    let (email, set_email) = create_signal(cx, String::new());
+    let Credentials { email, password } = initial_credentials;
+    let (email, set_email) = create_signal(cx, email);
+    let (password, set_password) = create_signal(cx, password);
 
-    let dispatch_action = move || action.dispatch((email.get(), password.get()));
-
-    let button_is_disabled = Signal::derive(cx, move || {
-        disabled.get() || password.get().is_empty() || email.get().is_empty()
+    let credentials = Signal::derive(cx, move || {
+        email.with(|email| {
+            let email = email.trim();
+            if email.is_empty() {
+                return None;
+            }
+            password.with(|password| {
+                let password = password.trim();
+                if password.trim().is_empty() {
+                    return None;
+                }
+                // Clone the signal data at the very last moment
+                Some(Credentials {
+                    email: email.to_owned(),
+                    password: password.to_owned(),
+                })
+            })
+        })
     });
+
+    let submit_credentials_disabled =
+        Signal::derive(cx, move || disabled.get() || credentials.get().is_none());
+
+    let submit_credentials =
+        move || submit_credentials_action.dispatch(credentials.get().expect("Some"));
 
     view! { cx,
       <form on:submit=|ev|ev.prevent_default()>
@@ -59,11 +83,11 @@ pub fn CredentialsForm(
             required
             placeholder = "Password"
             class="form-control block w-full px-3 py-1.5 text-base font-normal text-gray-700 bg-white bg-clip-padding border border-solid border-gray-300 rounded transition ease-in-out m-0 focus:text-gray-700 focus:bg-white focus:border-kvm-blue focus:outline-none"
-            prop:disabled = move || disabled.get()
+            prop:disabled = move || submit_credentials_disabled.get()
             on:keyup = move |ev: ev::KeyboardEvent| {
               match &*ev.key() {
                   "Enter" => {
-                     dispatch_action();
+                    submit_credentials();
                   }
                   _=> {
                      let val = event_target_value(&ev);
@@ -80,11 +104,11 @@ pub fn CredentialsForm(
         </div>
         <div class="text-center pt-1 mb-12 pb-1">
           <button
-            prop:disabled = move || button_is_disabled.get()
-            on:click = move |_| dispatch_action()
+            prop:disabled = move || submit_credentials_disabled.get()
+            on:click = move |_| submit_credentials()
             class="inline-block px-6 py-2.5 font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-kvm-blue hover:text-white hover:shadow-lg focus:shadow-lg focus:outline-none focus:ring-0 active:shadow-lg transition duration-150 ease-in-out w-full mb-3 bg-kvm-blue-light"
           >
-          { action_label }
+          { submit_credentials_label }
           </button>
         </div>
       </form>

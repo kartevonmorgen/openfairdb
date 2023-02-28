@@ -384,7 +384,7 @@ pub struct ResetPassword {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, Default))]
 pub struct Credentials {
     pub email: String,
     pub password: String,
