@@ -217,7 +217,7 @@ pub struct NewUser {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq))]
 pub struct User {
     pub email: String,
     pub email_confirmed: bool,

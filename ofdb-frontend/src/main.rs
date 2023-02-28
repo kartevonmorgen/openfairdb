@@ -104,12 +104,15 @@ fn App(cx: Scope) -> impl IntoView {
 
     view! { cx,
       <Router>
-        <NavBar logged_in on_logout />
+        <NavBar user = user_info.into() on_logout />
         <main>
           <Routes>
             <Route
               path=Page::Home.path()
-              view=move |cx| view! { cx, <PlaceSearch api = unauthorized_api bbox /> } />
+              view=move |cx| view! { cx,
+                <Home api = unauthorized_api bbox />
+              }
+            />
             <Route
               path=Page::Login.path()
               view=move |cx| view! { cx,
@@ -132,7 +135,9 @@ fn App(cx: Scope) -> impl IntoView {
             />
             <Route
               path=Page::ResetPassword.path()
-              view=move|cx| view! { cx, <ResetPassword api = unauthorized_api /> }
+              view=move|cx| view! { cx,
+                <ResetPassword api = unauthorized_api />
+              }
             />
           </Routes>
         </main>
