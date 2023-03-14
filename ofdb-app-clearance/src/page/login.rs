@@ -1,3 +1,4 @@
+use gloo_storage::{SessionStorage, Storage};
 use seed::{prelude::*, *};
 
 use crate::components::navbar;
@@ -42,13 +43,13 @@ pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
                 orders.send_msg(Msg::TogglePasswordVisible);
                 orders.send_msg(Msg::Login);
             } else {
-                if let Err(err) = SessionStorage::insert(crate::TOKEN_KEY, &mdl.token) {
-                    log!(err);
+                if let Err(err) = SessionStorage::set(crate::TOKEN_KEY, &mdl.token) {
+                    log::debug!("{err}");
                 }
                 let el = document().get_element_by_id("login-form").unwrap();
                 let form = el.dyn_ref::<web_sys::HtmlFormElement>().unwrap();
                 if let Err(err) = form.submit() {
-                    error!(err);
+                    log::error!("{err:?}");
                 }
             }
         }

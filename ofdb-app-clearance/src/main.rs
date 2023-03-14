@@ -58,5 +58,7 @@ fn view(mdl: &Mdl) -> Node<Msg> {
 }
 
 pub fn main() {
+    console_log::init_with_level(log::Level::Info).expect("Browser's console");
+    console_error_panic_hook::set_once();
     App::start("app", init, update, view);
 }

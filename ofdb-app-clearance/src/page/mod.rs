@@ -1,4 +1,4 @@
-use seed::{prelude::*, *};
+use seed::prelude::*;
 
 use crate::Msg;
 
@@ -27,7 +27,7 @@ impl Page {
             },
             Some(crate::HASH_PATH_LOGIN) => Self::Login(login::init(url)),
             _ => {
-                log!("not found:", url);
+                log::debug!("not found: {url}");
                 Self::NotFound
             }
         }
