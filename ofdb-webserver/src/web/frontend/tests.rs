@@ -5,7 +5,7 @@ use crate::web::{
     tests::{prelude::*, register_user},
 };
 
-fn setup() -> (
+pub fn setup() -> (
     rocket::local::blocking::Client,
     sqlite::Connections,
     tantivy::SearchEngine,
