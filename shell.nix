@@ -22,6 +22,7 @@ in
       nodejs
       graphviz
       plantuml
+      sassc # dart-sass is only available as flake
     ];
     SQLITE3_DIR = "${sqlite.dev}";
     SQLITE3_LIB_DIR = "${sqlite.out}/lib";

@@ -1,13 +1,7 @@
 use std::{borrow::Cow, ffi::OsStr, path::PathBuf};
 
+use rocket::{self, get, http::ContentType, response::content::RawHtml};
 use rust_embed::RustEmbed;
-use rocket::{
-    self,
-    get,
-    http::ContentType,
-    response::content::RawHtml,
-    
-};
 
 #[derive(RustEmbed)]
 #[folder = "../ofdb-app-clearance/dist/"]
@@ -32,8 +26,8 @@ pub fn get_file(file: PathBuf) -> Option<(ContentType, Cow<'static, [u8]>)> {
 
 #[cfg(test)]
 mod tests {
-  use crate::web::frontend::tests::setup;
-  use rocket::http::Status;
+    use crate::web::frontend::tests::setup;
+    use rocket::http::Status;
 
     #[test]
     fn index_html() {
@@ -45,7 +39,9 @@ mod tests {
     #[test]
     fn web_fonts() {
         let (client, _, _) = setup();
-        let res = client.get("/clearance/webfonts/fa-solid-900.woff2").dispatch();
+        let res = client
+            .get("/clearance/webfonts/fa-solid-900.woff2")
+            .dispatch();
         assert_eq!(res.status(), Status::Ok);
     }
 }
