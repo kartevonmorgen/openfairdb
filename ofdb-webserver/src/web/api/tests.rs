@@ -1722,8 +1722,7 @@ fn count_most_popular_tags_on_empty_db_to_verify_sql() {
 
 fn init_tags_cache_test_db(cnt: usize, db: &sqlite::Connections) {
     (1..=cnt)
-        .into_iter()
-        .map(|i| (1..=i).into_iter().map(|i| i.to_string()).collect())
+        .map(|i| (1..=i).map(|i| i.to_string()).collect())
         .map(|tags| Place::build().tags(tags).finish())
         .for_each(|place| {
             db.exclusive()
