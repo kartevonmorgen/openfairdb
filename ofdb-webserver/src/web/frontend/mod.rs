@@ -1,20 +1,17 @@
-use std::{borrow::Cow, ffi::OsStr, path::PathBuf};
-
 use maud::Markup;
 use num_traits::FromPrimitive;
 use rocket::{
     self,
     form::Form,
     get,
-    http::{ContentType, Status},
+    http::Status,
     post,
     response::{
-        content::{RawCss, RawHtml, RawJavaScript},
+        content::{RawCss, RawJavaScript},
         Flash, Redirect,
     },
     routes, uri, FromForm, Route,
 };
-use rust_embed::RustEmbed;
 
 use crate::{
     core::{prelude::*, usecases},
@@ -32,16 +29,13 @@ mod login;
 mod password;
 mod register;
 mod view;
+mod app_clearance;
 
 #[cfg(test)]
 mod tests;
 
 const MAP_JS: &str = include_str!("map.js");
 const MAIN_CSS: &str = include_str!("main.css");
-
-#[derive(RustEmbed)]
-#[folder = "../ofdb-app-clearance/dist/"]
-struct ClearanceAsset;
 
 type Result<T> = std::result::Result<T, ApiError>;
 
@@ -58,23 +52,6 @@ pub fn get_index() -> Markup {
 #[get("/index.html")]
 pub fn get_index_html() -> Markup {
     view::index(None)
-}
-
-#[get("/clearance")]
-pub fn get_clearance_index() -> Option<RawHtml<Cow<'static, [u8]>>> {
-    ClearanceAsset::get("index.html").map(|html| RawHtml(html.data))
-}
-
-#[get("/clearance/<file..>")]
-pub fn get_clearance(file: PathBuf) -> Option<(ContentType, Cow<'static, [u8]>)> {
-    let filename = file.display().to_string();
-    let asset = ClearanceAsset::get(&filename)?;
-    let content_type = file
-        .extension()
-        .and_then(OsStr::to_str)
-        .and_then(ContentType::from_extension)
-        .unwrap_or(ContentType::Bytes);
-    Some((content_type, asset.data))
 }
 
 #[get("/search?<q>&<limit>")]
@@ -422,8 +399,8 @@ pub fn post_ratings_archive(
 
 pub fn routes() -> Vec<Route> {
     routes![
-        get_clearance,
-        get_clearance_index,
+        app_clearance::get_file,
+        app_clearance::get_index,
         get_index_user,
         get_index,
         get_index_html,
