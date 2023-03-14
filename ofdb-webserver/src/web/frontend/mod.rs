@@ -25,11 +25,11 @@ use crate::{
 use ofdb_application::prelude::*;
 use ofdb_core::{repositories::Error as RepoError, usecases::Error as ParameterError};
 
+mod app_clearance;
 mod login;
 mod password;
 mod register;
 mod view;
-mod app_clearance;
 
 #[cfg(test)]
 mod tests;
