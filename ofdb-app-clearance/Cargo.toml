@@ -21,9 +21,10 @@ seed = { version = "0.10.0", features = ["routing"] }
 web-sys = { version = "0.3.61", features = ["HtmlFormElement"] }
 
 [patch.crates-io]
-ofdb-boundary = { path = "../ofdb-boundary" }
-ofdb-entities = { path = "../ofdb-entities" }
-ofdb-seed     = { path = "../ofdb-seed"     }
+ofdb-boundary     = { path = "../ofdb-boundary"     }
+ofdb-entities     = { path = "../ofdb-entities"     }
+ofdb-frontend-api = { path = "../ofdb-frontend-api" }
+ofdb-seed         = { path = "../ofdb-seed"         }
 
 [profile.release]
 lto = true

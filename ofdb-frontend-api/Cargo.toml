@@ -1,0 +1,21 @@
+[package]
+name = "ofdb-frontend-api"
+version = "0.0.0" # will stay 0.0.0 until published
+publish = false
+
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+repository.workspace = true
+
+[dependencies]
+gloo-net = "0.2.6"
+percent-encoding = "2.2.0"
+serde = "1.0.156"
+thiserror = "1.0.39"
+
+[dependencies.ofdb-boundary]
+version = "0.12.2"
+path = "../ofdb-boundary"
+default-features = false
+features = ["extra-derive"]
