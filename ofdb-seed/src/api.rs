@@ -1,6 +1,10 @@
+use gloo_net::http::{Request, RequestCredentials, Response};
 use ofdb_boundary::*;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
-use seed::browser::fetch::{fetch, Header, Method, Request, Result};
+use serde::de::DeserializeOwned;
+use thiserror::Error;
+
+type Result<T> = std::result::Result<T, Error>;
 
 /// OpenFairDB API
 #[derive(Debug, Clone)]
@@ -17,46 +21,37 @@ impl Api {
         let MapBbox { sw, ne } = bbox;
         let bbox_str = format!("{},{},{},{}", sw.lat, sw.lng, ne.lat, ne.lng);
         let url = format!("{}/search?text={}&bbox={}", self.url, encoded_txt, bbox_str);
-        let response = fetch(url).await?;
-        response
-            .check_status()? // ensure we've got 2xx status
-            .json()
-            .await
+        let response = Request::get(&url).send().await?;
+        into_json(response).await
     }
     pub async fn places(&self, ids: &[String]) -> Result<Vec<Entry>> {
         let ids = ids.join(",");
         let url = format!("{}/entries/{}", self.url, ids);
-        let response = fetch(url).await?;
-        response
-            .check_status()? // ensure we've got 2xx status
-            .json()
-            .await
+        let response = Request::get(&url).send().await?;
+        into_json(response).await
     }
     pub async fn create_place(&self, place: &NewPlace) -> Result<()> {
         let url = format!("{}/entries", self.url);
-        let request = Request::new(url).method(Method::Post).json(place)?;
-        let response = fetch(request).await?;
-        response.check_status()?; // ensure we've got 2xx status
-        Ok(())
+        let request = Request::post(&url).json(place)?;
+        let response = request.send().await?;
+        into_json(response).await
     }
     pub async fn update_place(&self, id: &str, place: &UpdatePlace) -> Result<()> {
         let url = format!("{}/entries/{}", self.url, id);
-        let request = Request::new(url).method(Method::Put).json(place)?;
-        let response = fetch(request).await?;
-        response.check_status()?; // ensure we've got 2xx status
-        Ok(())
+        let request = Request::put(&url).json(place)?;
+        let response = request.send().await?;
+        into_json(response).await
     }
     pub async fn get_places_clearance_with_api_token(
         &self,
         api_token: &str,
     ) -> Result<Vec<PendingClearanceForPlace>> {
         let url = format!("{}/places/clearance", self.url);
-        let request = Request::new(url)
-            .method(Method::Get)
-            .header(Header::bearer(api_token));
-        let response = fetch(request).await?;
-        let result = response.check_status()?.json().await?;
-        Ok(result)
+        let request = Request::get(&url)
+            .header("Authorization", &auth_header_value(api_token))
+            .header("Content-Type", "application/json");
+        let response = request.send().await?;
+        into_json(response).await
     }
     pub async fn get_place_history_with_api_token(
         &self,
@@ -64,15 +59,11 @@ impl Api {
         id: &str,
     ) -> Result<PlaceHistory> {
         let url = format!("{}/places/{}/history", self.url, id);
-        let request = Request::new(url)
-            .method(Method::Get)
-            .header(Header::bearer(api_token));
-        let response = fetch(request).await?;
-        let result = response
-            .check_status()? // ensure we've got 2xx status
-            .json()
-            .await?;
-        Ok(result)
+        let request = Request::get(&url)
+            .header("Authorization", &auth_header_value(api_token))
+            .header("Content-Type", "application/json");
+        let response = request.send().await?;
+        into_json(response).await
     }
     pub async fn post_places_clearance_with_api_token(
         &self,
@@ -80,58 +71,39 @@ impl Api {
         clearances: Vec<ClearanceForPlace>,
     ) -> Result<ResultCount> {
         let url = format!("{}/places/clearance", self.url);
-        let request = Request::new(url)
-            .method(Method::Post)
-            .header(Header::bearer(api_token))
+        let request = Request::post(&url)
+            .header("Authorization", &auth_header_value(api_token))
             .json(&clearances)?;
-        let response = fetch(request).await?;
-        let result = response
-            .check_status()? // ensure we've got 2xx status
-            .json()
-            .await?;
-        Ok(result)
+        let response = request.send().await?;
+        into_json(response).await
     }
     pub async fn post_login(&self, req: &Credentials) -> Result<()> {
         let url = format!("{}/login", self.url);
-        let request = Request::new(url)
-            .credentials(web_sys::RequestCredentials::Include)
-            .method(Method::Post)
+        let request = Request::post(&url)
+            .credentials(RequestCredentials::Include)
             .json(&req)?;
-        let response = fetch(request).await?;
-        response.check_status()?; // ensure we've got 2xx status
-        Ok(())
+        let response = request.send().await?;
+        into_json(response).await
     }
     pub async fn post_logout(&self) -> Result<()> {
         let url = format!("{}/logout", self.url);
-        let request = Request::new(url)
-            .method(Method::Post)
-            .credentials(web_sys::RequestCredentials::Include)
+        let request = Request::post(&url)
+            .credentials(RequestCredentials::Include)
             .json(&())?;
-        let response = fetch(request).await?;
-        response.check_status()?; // ensure we've got 2xx status
-        Ok(())
+        let response = request.send().await?;
+        into_json(response).await
     }
     pub async fn get_users_current(&self) -> Result<User> {
         let url = format!("{}/users/current", self.url);
-        let request = Request::new(url)
-            .method(Method::Get)
-            .credentials(web_sys::RequestCredentials::Include);
-        let response = fetch(request).await?;
-        let result = response
-            .check_status()? // ensure we've got 2xx status
-            .json()
-            .await?;
-        Ok(result)
+        let request = Request::get(&url).credentials(RequestCredentials::Include);
+        let response = request.send().await?;
+        into_json(response).await
     }
     pub async fn get_tags(&self) -> Result<Vec<String>> {
         let url = format!("{}/tags", self.url);
-        let request = Request::new(url).method(Method::Get);
-        let response = fetch(request).await?;
-        let result = response
-            .check_status()? // ensure we've got 2xx status
-            .json()
-            .await?;
-        Ok(result)
+        let request = Request::get(&url);
+        let response = request.send().await?;
+        into_json(response).await
     }
     pub async fn get_most_popular_tags(
         &self,
@@ -156,12 +128,45 @@ impl Api {
                 url = format!("{}&offset={}", url, o);
             }
         }
-        let request = Request::new(url).method(Method::Get);
-        let response = fetch(request).await?;
-        let result = response
-            .check_status()? // ensure we've got 2xx status
-            .json()
-            .await?;
-        Ok(result)
+        let request = Request::get(&url);
+        let response = request.send().await?;
+        into_json(response).await
+    }
+}
+
+fn auth_header_value(token: &str) -> String {
+    format!("Bearer {}", token)
+}
+
+#[derive(Debug, Clone, Error, PartialEq)]
+pub enum Error {
+    #[error("{0}")]
+    Fetch(String),
+    #[error("{0:?}")]
+    Api(ofdb_boundary::Error),
+}
+
+// TODO: use thiserror in ofdb_boundary::Error
+impl From<ofdb_boundary::Error> for Error {
+    fn from(e: ofdb_boundary::Error) -> Self {
+        Self::Api(e)
+    }
+}
+
+impl From<gloo_net::Error> for Error {
+    fn from(err: gloo_net::Error) -> Self {
+        Self::Fetch(format!("{err}"))
+    }
+}
+
+async fn into_json<T>(response: Response) -> Result<T>
+where
+    T: DeserializeOwned,
+{
+    // ensure we've got 2xx status
+    if response.ok() {
+        Ok(response.json().await?)
+    } else {
+        Err(response.json::<ofdb_boundary::Error>().await?.into())
     }
 }

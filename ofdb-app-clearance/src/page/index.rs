@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use difference::{Changeset, Difference};
+use gloo_storage::{SessionStorage, Storage};
 use ofdb_boundary::{ClearanceForPlace, PendingClearanceForPlace, ResultCount};
 use ofdb_entities::{
     email::EmailAddress,
@@ -47,7 +48,7 @@ pub enum ClearanceError {
 pub fn init(orders: &mut impl Orders<Msg>) -> Option<Mdl> {
     SessionStorage::get(crate::TOKEN_KEY)
         .map_err(|err| {
-            log!("No token found", err);
+            log::debug!("No token found {err}");
         })
         .ok()
         .map(|token| {
@@ -167,14 +168,12 @@ pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
         }
         Msg::ClearanceResult(Err(err)) => {
             // TODO: handle error, e.g. show error message to the user
-            error!(err);
+            log::error!("{err:?}");
         }
-        Msg::ConsoleLog(str) => log!(str),
+        Msg::ConsoleLog(msg) => log::debug!("{msg}"),
         Msg::Navbar(msg) => match msg {
             navbar::Msg::Logout => {
-                if let Err(err) = SessionStorage::remove(crate::TOKEN_KEY) {
-                    error!(err);
-                }
+                SessionStorage::delete(crate::TOKEN_KEY);
                 Url::reload();
             }
             _ => {
@@ -539,9 +538,9 @@ async fn get_pending_clearances(api_token: String) -> Option<Msg> {
     match api.get_places_clearance_with_api_token(&api_token).await {
         Ok(pending) => Some(Msg::GotPendingClearances(pending)),
         Err(err) => {
-            error!(err);
-            if let FetchError::StatusError(Status { code, .. }) = err {
-                if code == 401 {
+            log::error!("{err}");
+            if let ofdb_seed::Error::Api(ofdb_boundary::Error { http_status, .. }) = err {
+                if http_status == 401 {
                     let url = Url::new()
                         .set_path([crate::PAGE_URL])
                         .set_hash_path([crate::HASH_PATH_LOGIN, crate::HASH_PATH_INVALID]);
@@ -561,7 +560,7 @@ async fn get_place_history(api_token: String, id: String) -> Option<Msg> {
             Some(Msg::GotPlaceHistory(ph))
         }
         Err(err) => {
-            error!(err);
+            log::error!("{err}");
             None
         }
     }
@@ -587,7 +586,7 @@ async fn places_clearance(token: String, clearances: Vec<ClearanceForPlace>) -> 
             }
         }
         Err(err) => {
-            error!(err);
+            log::error!("{err}");
             Msg::ClearanceResult(Err(ClearanceError::Fetch))
         }
     }
