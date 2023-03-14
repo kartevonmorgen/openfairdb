@@ -21,6 +21,7 @@ members = [
   "ofdb-db-sqlite",
   "ofdb-db-tantivy",
   "ofdb-entities",
+  "ofdb-frontend-api",
   "ofdb-gateways",
   "ofdb-seed",
   "ofdb-webserver",
@@ -28,25 +29,27 @@ members = [
 exclude = [ "ofdb-app-clearance" ]
 
 [patch.crates-io]
-ofdb-application = { path = "./ofdb-application" }
-ofdb-boundary    = { path = "./ofdb-boundary"    }
-ofdb-core        = { path = "./ofdb-core"        }
-ofdb-db-sqlite   = { path = "./ofdb-db-sqlite"   }
-ofdb-db-tantivy  = { path = "./ofdb-db-tantivy"  }
-ofdb-entities    = { path = "./ofdb-entities"    }
-ofdb-gateways    = { path = "./ofdb-gateways"    }
-ofdb-seed        = { path = "./ofdb-seed"        }
-ofdb-webserver   = { path = "./ofdb-webserver"   }
+ofdb-application  = { path = "./ofdb-application"  }
+ofdb-boundary     = { path = "./ofdb-boundary"     }
+ofdb-core         = { path = "./ofdb-core"         }
+ofdb-db-sqlite    = { path = "./ofdb-db-sqlite"    }
+ofdb-db-tantivy   = { path = "./ofdb-db-tantivy"   }
+ofdb-entities     = { path = "./ofdb-entities"     }
+ofdb-frontend-api = { path = "./ofdb-frontend-api" }
+ofdb-gateways     = { path = "./ofdb-gateways"     }
+ofdb-seed         = { path = "./ofdb-seed"         }
+ofdb-webserver    = { path = "./ofdb-webserver"    }
 
 [dependencies]
-ofdb-application = "=0.0.0"
-ofdb-core        = "=0.0.0"
-ofdb-db-sqlite   = "=0.0.0"
-ofdb-db-tantivy  = "=0.0.0"
-ofdb-gateways    = "=0.0.0"
-ofdb-webserver   = "=0.0.0"
+ofdb-application  = "=0.0.0"
+ofdb-core         = "=0.0.0"
+ofdb-db-sqlite    = "=0.0.0"
+ofdb-db-tantivy   = "=0.0.0"
+ofdb-frontend-api = "=0.0.0"
+ofdb-gateways     = "=0.0.0"
+ofdb-webserver    = "=0.0.0"
 
-ofdb-entities    =  "*"
+ofdb-entities     =  "*"
 
 anyhow = "1.0.69"
 clap = { version = "4.1.6", features = ["cargo", "derive"] }

@@ -78,6 +78,10 @@ jobs:
         run: |
           cargo check --locked --all-targets --all-features --manifest-path ofdb-boundary/Cargo.toml
 
+      - name: Check ofdb-frontend-api crate
+        run: |
+          cargo check --locked --all-targets --all-features --manifest-path ofdb-frontend-api/Cargo.toml
+
       - name: Check ofdb-gateways crate
         run: |
           cargo check --locked --all-targets --all-features --manifest-path ofdb-gateways/Cargo.toml

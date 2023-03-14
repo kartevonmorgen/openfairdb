@@ -515,16 +515,23 @@ dependencies = [
 ]
 
 [[package]]
-name = "ofdb-seed"
-version = "0.12.3"
+name = "ofdb-frontend-api"
+version = "0.0.0"
 dependencies = [
  "gloo-net",
  "ofdb-boundary",
  "percent-encoding",
- "seed",
  "serde",
  "thiserror",
- "web-sys",
+]
+
+[[package]]
+name = "ofdb-seed"
+version = "0.12.3"
+dependencies = [
+ "ofdb-boundary",
+ "ofdb-frontend-api",
+ "seed",
 ]
 
 [[package]]

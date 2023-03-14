@@ -1998,6 +1998,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ofdb-frontend-api"
+version = "0.0.0"
+dependencies = [
+ "gloo-net",
+ "ofdb-boundary",
+ "percent-encoding",
+ "serde",
+ "thiserror",
+]
+
+[[package]]
 name = "ofdb-gateways"
 version = "0.0.0"
 dependencies = [
@@ -2021,13 +2032,9 @@ dependencies = [
 name = "ofdb-seed"
 version = "0.12.3"
 dependencies = [
- "gloo-net",
  "ofdb-boundary",
- "percent-encoding",
+ "ofdb-frontend-api",
  "seed",
- "serde",
- "thiserror",
- "web-sys",
 ]
 
 [[package]]
@@ -2101,6 +2108,7 @@ dependencies = [
  "ofdb-db-sqlite",
  "ofdb-db-tantivy",
  "ofdb-entities",
+ "ofdb-frontend-api",
  "ofdb-gateways",
  "ofdb-webserver",
  "rand",
