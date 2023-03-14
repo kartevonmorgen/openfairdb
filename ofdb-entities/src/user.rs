@@ -12,16 +12,11 @@ pub struct User {
 }
 
 #[rustfmt::skip]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromPrimitive, ToPrimitive)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, FromPrimitive, ToPrimitive)]
 pub enum Role {
+    #[default]
     Guest = 0,
     User  = 1,
     Scout = 2,
     Admin = 3,
-}
-
-impl Default for Role {
-    fn default() -> Role {
-        Role::Guest
-    }
 }
