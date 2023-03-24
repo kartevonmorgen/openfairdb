@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.12.4 (2023-03-24)
+
+- fix: webfonts in clearance app
+- chore: Update dependencies
+
 ## v0.12.3 (2023-01-20)
 
 - new: config option for reminder BCC addresses
