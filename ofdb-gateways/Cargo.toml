@@ -9,16 +9,16 @@ publish = false
 ofdb-core = "=0.0.0"
 ofdb-entities = "0.12.0"
 
-anyhow = "1.0.69"
-askama = "0.11.1"
+anyhow = "1.0.70"
+askama = "0.12.0"
 fast_chemail = "0.9.6"
 itertools = "0.10.5"
-jfs = "0.8.0"
+jfs = "0.9.0"
 log = "0.4.17"
 quoted_printable = "0.4.7"
-serde = { version = "1.0.152", features = ["derive"] }
+serde = { version = "1.0.158", features = ["derive"] }
 time = { version = "0.3.20", features = ["macros", "formatting", "local-offset"] }
-thiserror = "1.0.38"
+thiserror = "1.0.40"
 
 [dependencies.geocoding]
 version = "0.4.0"
@@ -26,6 +26,6 @@ default-features = false
 features = ["rustls-tls"]
 
 [dependencies.reqwest]
-version = "0.11.14"
+version = "0.11.15"
 default-features = false
 features = ["blocking", "rustls-tls", "json"]
