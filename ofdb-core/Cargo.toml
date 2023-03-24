@@ -10,18 +10,18 @@ publish = false
 ofdb-entities = { version = "0.12.0", features = ["url"] }
 
 # External dependencies
-anyhow = "1.0.69"
+anyhow = "1.0.70"
 fast_chemail = "0.9.6"
 lazy_static = "1.4.0"
 log = "0.4.17"
 passwords = "3.1.12"
-regex = "1.7.1"
-thiserror = "1.0.38"
+regex = "1.7.2"
+thiserror = "1.0.40"
 time = "0.3.20"
 url = "2.3.1"
 
 [dev-dependencies]
-brunch = "0.3.7"
+brunch = "0.4.0"
 ofdb-entities = { version = "*", features = ["builders"] }
 time = "0.3.20"
 

@@ -2,7 +2,7 @@ use duration_str::{deserialize_duration, deserialize_option_duration};
 use serde::{Deserialize, Serialize};
 use std::{collections::HashSet, path::PathBuf, time::Duration};
 
-const DEFAULT_CONFIG_FILE: &[u8] = include_bytes!("openfairdb.default.toml");
+const DEFAULT_CONFIG_FILE: &str = include_str!("openfairdb.default.toml");
 
 #[derive(Deserialize)]
 #[serde(rename_all = "kebab-case")]
@@ -18,7 +18,7 @@ pub struct Config {
 
 impl Default for Config {
     fn default() -> Self {
-        let cfg: Self = toml::from_slice(DEFAULT_CONFIG_FILE).expect("Default configuration");
+        let cfg: Self = toml::from_str(DEFAULT_CONFIG_FILE).expect("Default configuration");
         cfg
     }
 }
@@ -198,7 +198,7 @@ mod tests {
 
     #[test]
     fn parse_default_config_from_file() {
-        let cfg: Config = toml::from_slice(DEFAULT_CONFIG_FILE).unwrap();
+        let cfg: Config = toml::from_str(DEFAULT_CONFIG_FILE).unwrap();
         assert!(cfg.db.is_some());
         assert!(cfg.webserver.is_some());
         assert!(cfg.reminders.is_some());
