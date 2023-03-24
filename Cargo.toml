@@ -4,14 +4,14 @@ version.workspace = true
 edition.workspace = true
 
 [workspace.package]
-version = "0.12.3"
+version = "0.12.4"
 repository = "https://github.com/kartevonmorgen/openfairdb"
 homepage = "https://github.com/kartevonmorgen/openfairdb"
 keywords = ["geo", "fair", "sustainability"]
 authors = ["slowtec GmbH <post@slowtec.de>"]
 license = "AGPL-3.0-or-later"
 edition = "2021"
-rust-version = "1.68.0"
+rust-version = "1.68.1"
 
 [workspace]
 members = [
