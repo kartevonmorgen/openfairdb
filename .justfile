@@ -53,7 +53,7 @@ setup:
     # pre-commit install --hook-type commit-msg --hook-type pre-commit
 
 # Upgrade (and update) dependencies and tools
-upgrade: setup
+upgrade:
     pre-commit autoupdate
     cargo upgrade \
         --exclude libsqlite3-sys
@@ -65,3 +65,7 @@ upgrade: setup
 # Run pre-commit hooks
 pre-commit:
     pre-commit run --all-files
+
+# Build ofdb-app-clearance
+build-app-clearance:
+    cd ofdb-app-clearance/ && trunk build

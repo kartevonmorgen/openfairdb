@@ -30,6 +30,7 @@ jobs:
         with:
           toolchain: stable
           components: clippy, rustfmt
+          targets: wasm32-unknown-unknown
 
       - name: Check out repository
         uses: actions/checkout@v3
@@ -39,6 +40,17 @@ jobs:
         with:
           # Distinguished by the action name to avoid sharing across different actions!
           shared-key: "pre-commit"
+
+      - name: Install just
+        uses: extractions/setup-just@v1
+
+      - name: Install Trunk for building the webapp
+        run: |
+          cargo install --locked trunk
+
+        # Required for rust-embed to find the dist/ folder
+      - name: Build ofdb-app-clearance
+        run: just build-app-clearance
 
       - name: Detect code style issues (push)
         uses: pre-commit/action@v3.0.0

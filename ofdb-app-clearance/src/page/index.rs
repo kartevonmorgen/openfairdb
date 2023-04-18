@@ -108,20 +108,10 @@ pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
             }
         }
         Msg::ExpandAll => {
-            mdl.expanded = mdl
-                .place_clearances
-                .iter()
-                .map(|(id, _)| id)
-                .cloned()
-                .collect();
+            mdl.expanded = mdl.place_clearances.keys().cloned().collect();
         }
         Msg::SelectAll => {
-            mdl.selected = mdl
-                .place_clearances
-                .iter()
-                .map(|(id, _)| id)
-                .cloned()
-                .collect();
+            mdl.selected = mdl.place_clearances.keys().cloned().collect();
         }
         Msg::DeselectAll => {
             mdl.selected.clear();
@@ -184,7 +174,7 @@ pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
 }
 
 pub fn view(mdl: &Mdl) -> Node<Msg> {
-    let li = mdl.place_clearances.iter().map(|(_, pc)| {
+    let li = mdl.place_clearances.values().map(|pc| {
         let id = &pc.pending.place_id;
         let expanded = mdl.expanded.contains(id);
         let selected = mdl.selected.contains(id);
