@@ -11,7 +11,7 @@ keywords = ["geo", "fair", "sustainability"]
 authors = ["slowtec GmbH <post@slowtec.de>"]
 license = "AGPL-3.0-or-later"
 edition = "2021"
-rust-version = "1.68.1"
+rust-version = "1.69.0"
 
 [workspace]
 members = [
@@ -52,25 +52,20 @@ ofdb-webserver    = "=0.0.0"
 ofdb-entities     =  "*"
 
 anyhow = "1.0.70"
-clap = { version = "4.1.13", features = ["cargo", "derive"] }
+clap = { version = "4.2.4", features = ["cargo", "derive"] }
 dotenvy = "0.15.7"
 duration-str = { version = "0.5.0", default-features = false, features = ["serde"] }
 env_logger = "0.10.0"
 log = "0.4.17"
-serde = { version = "1.0.158", features = ["derive"] }
+serde = { version = "1.0.160", features = ["derive"] }
 time = "0.3.20"
-tokio = "1.26.0"
+tokio = "1.27.0"
 toml = "0.7.3"
 
 [patch.crates-io.maud]
-# TODO: use v0.25.0 as soon as it's published
+# TODO: use v0.26.0 as soon as it's published
 git = "https://github.com/slowtec/maud"
 branch = "rocket-0.5.0-rc.3"
-
-[patch.crates-io.rocket_cors]
-# TODO: use v0.6.0 as soon as it's published
-git = "https://github.com/flosse/rocket_cors.git"
-branch = "update-to-rocket-05rc3"
 
 [patch.crates-io.geocoding]
 # TODO: use upstream as soon as https://github.com/georust/geocoding/pull/58 is merged.
@@ -83,10 +78,7 @@ ofdb-entities = { version = "*", features = ["builders"] }
 
 [profile.dev]
 opt-level = 2
-# TODO: Uncomment after
-# <https://github.com/rust-lang/cargo/pull/11347>
-# has been merged and released in stable.
-#split-debuginfo = "unpacked"
+split-debuginfo = "unpacked"
 
 [profile.test]
 inherits = "dev"

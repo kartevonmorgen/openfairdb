@@ -8,7 +8,7 @@ publish = false
 anyhow = "1.0.70"
 log = "0.4.17"
 num-traits = "0.2.15"
-diesel = { version = "2.0.3", features = ["sqlite", "r2d2"] }
+diesel = { version = "2.0.4", features = ["sqlite", "r2d2"] }
 diesel_migrations = { version = "2.0.0", features = ["sqlite"] }
 ofdb-core = { version = "0.0.0", path = "../ofdb-core" }
 parking_lot = "0.12.1"
@@ -16,4 +16,4 @@ time = { version = "0.3.20", features = ["macros", "formatting", "parsing"] }
 
 # Bundle SQLite code to prevent dynamic linking.
 # The pinned version must be compatible with diesel!
-libsqlite3-sys = { version = "0.25.2", features = ["bundled"] }
+libsqlite3-sys = { version = "0.26.0", features = ["bundled"] }
