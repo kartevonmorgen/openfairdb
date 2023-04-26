@@ -347,7 +347,7 @@ pub enum UserRole {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq))]
 pub struct BboxSubscription {
     pub id: String,
     pub south_west_lat: f64,

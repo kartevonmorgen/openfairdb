@@ -50,7 +50,7 @@ jobs:
 
         # Required for rust-embed to find the dist/ folder
       - name: Build ofdb-app-clearance
-        run: just build-app-clearance
+        run: just build-clearance
 
       - name: Detect code style issues (push)
         uses: pre-commit/action@v3.0.0

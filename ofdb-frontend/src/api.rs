@@ -13,6 +13,15 @@ pub trait PublicApi {
     async fn count_tags(&self) -> Result<usize>;
 }
 
+#[async_trait(?Send)]
+pub trait UserApi: PublicApi {
+    async fn user_info(&self) -> Result<User>;
+    async fn bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>>;
+    async fn unsubscribe_all_bboxes(&self) -> Result<()>;
+    async fn logout(&self) -> Result<()>;
+    fn token(&self) -> &JwtToken;
+}
+
 /// Public OpenFairDB API
 #[derive(Clone, Copy)]
 pub struct UnauthorizedApi {
@@ -72,6 +81,14 @@ impl AuthorizedApi {
         let url = format!("{}/users/current", self.url);
         self.send(Request::get(&url)).await
     }
+    pub async fn bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>> {
+        let url = format!("{}/bbox-subscriptions", self.url);
+        self.send(Request::get(&url)).await
+    }
+    pub async fn unsubscribe_all_bboxes(&self) -> Result<()> {
+        let url = format!("{}/unsubscribe-all-bboxes", self.url);
+        self.send(Request::delete(&url)).await
+    }
     pub async fn logout(&self) -> Result<()> {
         let url = format!("{}/logout", self.url);
         self.send(Request::post(&url)).await
@@ -104,6 +121,25 @@ impl PublicApi for AuthorizedApi {
     }
     async fn count_tags(&self) -> Result<usize> {
         count_tags(self.url).await
+    }
+}
+
+#[async_trait(?Send)]
+impl UserApi for AuthorizedApi {
+    async fn user_info(&self) -> Result<User> {
+        self.user_info().await
+    }
+    async fn bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>> {
+        self.bbox_subscriptions().await
+    }
+    async fn unsubscribe_all_bboxes(&self) -> Result<()> {
+        self.unsubscribe_all_bboxes().await
+    }
+    async fn logout(&self) -> Result<()> {
+        self.logout().await
+    }
+    fn token(&self) -> &JwtToken {
+        self.token()
     }
 }
 
