@@ -71,7 +71,7 @@ jobs:
         uses: extractions/setup-just@v1
 
       - name: Build ofdb-app-clearance
-        run: just build-app-clearance
+        run: just build-clearance
 
       - name: Build server executable
         run: |
