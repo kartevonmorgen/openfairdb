@@ -28,6 +28,7 @@ const DEFAULT_BBOX: MapBbox = MapBbox {
 #[component]
 fn App(cx: Scope) -> impl IntoView {
     // -- signals -- //
+
     let authorized_api = create_rw_signal(cx, None::<api::AuthorizedApi>);
     let user_info = create_rw_signal(cx, None::<User>);
     let logged_in = Signal::derive(cx, move || authorized_api.get().is_some());
@@ -141,7 +142,10 @@ fn App(cx: Scope) -> impl IntoView {
             <Route
               path=Page::Dashboard.path()
               view=move|cx| view! { cx,
-                <Dashboard api = unauthorized_api />
+                <Dashboard
+                  public_api = unauthorized_api
+                  user_api = authorized_api.into()
+                />
               }
             />
           </Routes>
