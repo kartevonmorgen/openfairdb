@@ -14,6 +14,33 @@ let
     rustfmt
     rust_targets
   ]);
+  sass = with pkgs; stdenv.mkDerivation rec {
+    name = "dart-sass-${version}";
+    version = "1.62.1";
+    system = "x86_64-linux";
+
+    isExecutable = true;
+
+    src = fetchurl {
+      sha256 = "AbBHLUrVMk2t0ma+hlinCA7C71a5TrloODbM1SZmuG0=";
+      url = "https://github.com/sass/dart-sass/releases/download/${version}/dart-sass-${version}-linux-x64.tar.gz";
+    };
+
+    phases = "unpackPhase installPhase fixupPhase";
+
+    fixupPhase = ''
+      patchelf \
+        --set-interpreter ${binutils.dynamicLinker} \
+        $out/src/dart
+    '';
+
+    installPhase = ''
+      mkdir -p $out/bin
+      cp -r . $out
+      ln -s $out/sass $out/bin/sass
+    '';
+  };
+
 in
   with pkgs;
   mkShell {
@@ -25,7 +52,7 @@ in
       pre-commit
       graphviz
       plantuml
-      sassc # dart-sass is only available as flake
+      sass
       nodejs # TODO: do we still need this?
       nodePackages.tailwindcss
     ];
