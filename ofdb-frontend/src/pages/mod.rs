@@ -1,4 +1,5 @@
 mod dashboard;
+mod entry;
 mod home;
 mod login;
 mod register;
@@ -12,6 +13,7 @@ pub enum Page {
     Register,
     ResetPassword,
     Dashboard,
+    Entries,
 }
 
 impl Page {
@@ -22,8 +24,9 @@ impl Page {
             Self::Register => "/register",
             Self::ResetPassword => "/reset-password",
             Self::Dashboard => "/dashboard",
+            Self::Entries => "/entries",
         }
     }
 }
 
-pub use self::{dashboard::*, home::*, login::*, register::*, reset_password::*};
+pub use self::{dashboard::*, entry::*, home::*, login::*, register::*, reset_password::*};

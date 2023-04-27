@@ -15,6 +15,9 @@
 use serde::{Deserialize, Serialize};
 use time::Date;
 
+#[cfg(feature = "extra-derive")]
+use thiserror::Error;
+
 #[cfg(feature = "entity-conversions")]
 mod conv;
 
@@ -703,7 +706,8 @@ pub struct JwtToken {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq, Eq, Error))]
+#[cfg_attr(feature = "extra-derive", error("{http_status}:{message}"))]
 pub struct Error {
     /// HTTP status code
     pub http_status: u16,

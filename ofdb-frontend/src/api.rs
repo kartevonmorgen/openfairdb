@@ -11,6 +11,7 @@ pub trait PublicApi {
     async fn search(&self, text: &str, bbox: &MapBbox) -> Result<SearchResponse>;
     async fn count_entries(&self) -> Result<usize>;
     async fn count_tags(&self) -> Result<usize>;
+    async fn entries(&self, ids: &[&str]) -> Result<Vec<Entry>>;
 }
 
 #[async_trait(?Send)]
@@ -55,6 +56,11 @@ impl UnauthorizedApi {
             .json(&RequestPasswordReset { email })?
             .send()
             .await?;
+        into_json(response).await
+    }
+    pub async fn entries(&self, ids: &[&str]) -> Result<Vec<Entry>> {
+        let url = format!("{}/entries/{}", self.url, ids.join(","));
+        let response = Request::get(&url).send().await?;
         into_json(response).await
     }
 }
@@ -109,6 +115,9 @@ impl PublicApi for UnauthorizedApi {
     async fn count_tags(&self) -> Result<usize> {
         count_tags(self.url).await
     }
+    async fn entries(&self, ids: &[&str]) -> Result<Vec<Entry>> {
+        self.entries(ids).await
+    }
 }
 
 #[async_trait(?Send)]
@@ -121,6 +130,9 @@ impl PublicApi for AuthorizedApi {
     }
     async fn count_tags(&self) -> Result<usize> {
         count_tags(self.url).await
+    }
+    async fn entries(&self, ids: &[&str]) -> Result<Vec<Entry>> {
+        self.entries(ids).await
     }
 }
 
@@ -170,15 +182,8 @@ type Result<T> = std::result::Result<T, Error>;
 pub enum Error {
     #[error("{0}")]
     Fetch(String),
-    #[error("{0:?}")]
-    Api(ofdb_boundary::Error),
-}
-
-// TODO: use thiserror in ofdb_boundary::Error
-impl From<ofdb_boundary::Error> for Error {
-    fn from(e: ofdb_boundary::Error) -> Self {
-        Self::Api(e)
-    }
+    #[error(transparent)]
+    Api(#[from] ofdb_boundary::Error),
 }
 
 impl From<gloo_net::Error> for Error {
