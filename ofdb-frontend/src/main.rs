@@ -2,7 +2,7 @@ use gloo_storage::{LocalStorage, Storage};
 use leptos::*;
 use leptos_router::*;
 
-use ofdb_boundary::*;
+use ofdb_boundary::{MapBbox, MapPoint, User};
 
 mod api;
 
@@ -122,7 +122,7 @@ fn App(cx: Scope) -> impl IntoView {
                       log::info!("Successfully logged in");
                       authorized_api.update(|v| *v = Some(api));
                       let navigate = use_navigate(cx);
-                      navigate(Page::Home.path(), Default::default()).expect("Home route");
+                      navigate(Page::Dashboard.path(), Default::default()).expect("Dashboard route");
                       fetch_user_info.dispatch(());
                   } />
               }
@@ -145,6 +145,14 @@ fn App(cx: Scope) -> impl IntoView {
                 <Dashboard
                   public_api = unauthorized_api
                   user_api = authorized_api.into()
+                />
+              }
+            />
+            <Route
+              path=format!("{}/:id", Page::Entries.path())
+              view=move|cx| view! { cx,
+                <Entry
+                  api = unauthorized_api
                 />
               }
             />

@@ -1,7 +1,7 @@
 use leptos::*;
 use ofdb_boundary::{MapBbox, PlaceSearchResult, SearchResponse};
 
-use crate::api::PublicApi;
+use crate::{api::PublicApi, pages::Page};
 
 #[component]
 pub fn PlaceSearch<A>(cx: Scope, api: A, bbox: ReadSignal<MapBbox>) -> impl IntoView
@@ -84,7 +84,11 @@ where
 #[component]
 fn PlaceSearchResultItem(cx: Scope, place: PlaceSearchResult) -> impl IntoView {
     view! { cx,
-      <div class="font-bold text-lg hover:text-gray-600"><a href="#">{ place.title }</a></div>
+      <div class="font-bold text-lg hover:text-gray-600">
+        <a href=format!("{}/{}", Page::Entries.path(), place.id)>
+          { place.title }
+        </a>
+      </div>
       <div class="text-gray-600">{ place.description }</div>
       <ul>
         <For

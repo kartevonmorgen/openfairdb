@@ -1174,6 +1174,7 @@ name = "ofdb-boundary"
 version = "0.12.4"
 dependencies = [
  "serde",
+ "thiserror",
  "time",
 ]
 
