@@ -1516,6 +1516,86 @@ fn login_logout_succeeds_jwt() {
 }
 
 #[test]
+#[cfg(feature = "jwt")]
+fn review_place_after_logout_must_fail() {
+    let (client, db, mut search_engine, notify) = setup2();
+
+    // Create user
+    let user = User {
+        email: "foo@bar".parse().unwrap(),
+        email_confirmed: true,
+        password: "secret".parse::<Password>().unwrap(),
+        role: Role::Scout,
+    };
+    db.exclusive().unwrap().create_user(&user).unwrap();
+
+    // Create place
+    let new_place = usecases::NewPlace {
+        title: "created".into(),
+        ..default_new_entry()
+    };
+    let place_id = flows::create_place(
+        &db,
+        &mut *search_engine,
+        &notify,
+        new_place,
+        None,
+        None,
+        &default_accepted_licenses(),
+    )
+    .unwrap()
+    .id;
+
+    // Login
+    let res = client
+        .post("/login")
+        .header(ContentType::JSON)
+        .body(r#"{"email": "foo@bar", "password": "secret"}"#)
+        .dispatch();
+    assert_eq!(res.status(), Status::Ok);
+    let body_str = res.into_string().unwrap();
+    let jwt_token: ofdb_boundary::JwtToken = serde_json::from_str(&body_str).unwrap();
+
+    // Rate place
+    let req = client
+        .post(format!("/places/{}/review", place_id))
+        .header(ContentType::JSON)
+        .body(&format!(
+            "{{\"status\":\"confirmed\",\"comment\":\"{place_id}\"}}"
+        ));
+    let response = req.dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // Logout
+    let auth_header =
+        rocket::http::Header::new("Authorization", format!("Bearer {}", jwt_token.token));
+    let response = client
+        .post("/logout")
+        .header(ContentType::JSON)
+        .header(auth_header.clone())
+        .dispatch();
+    assert_eq!(response.status(), Status::Ok);
+
+    // Assert logout succeeded
+    let res = client
+        .get("/users/current")
+        .header(ContentType::JSON)
+        .header(auth_header.clone())
+        .dispatch();
+    assert_eq!(res.status(), Status::Unauthorized);
+
+    let req = client
+        .post(format!("/places/{}/review", place_id))
+        .header(ContentType::JSON)
+        .header(auth_header)
+        .body(&format!(
+            "{{\"status\":\"rejected\",\"comment\":\"{place_id}\"}}"
+        ));
+    let res = req.dispatch();
+    assert_eq!(res.status(), Status::Unauthorized);
+}
+
+#[test]
 fn confirm_email_address() {
     let (client, db) = setup();
     let users = vec![User {
