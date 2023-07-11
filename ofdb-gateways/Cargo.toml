@@ -1,24 +1,24 @@
 [package]
 name = "ofdb-gateways"
 version = "0.0.0" # will stay 0.0.0 until published
-authors = ["slowtec GmbH <post@slowtec.de>"]
-edition = "2021"
+authors.workspace = true
+edition.workspace = true
 publish = false
 
 [dependencies]
 ofdb-core = "=0.0.0"
 ofdb-entities = "0.12.0"
 
-anyhow = "1.0.70"
+anyhow = "1.0.71"
 askama = "0.12.0"
 fast_chemail = "0.9.6"
-itertools = "0.10.5"
+itertools = "0.11.0"
 jfs = "0.9.0"
-log = "0.4.17"
-quoted_printable = "0.4.7"
-serde = { version = "1.0.160", features = ["derive"] }
-time = { version = "0.3.20", features = ["macros", "formatting", "local-offset"] }
-thiserror = "1.0.40"
+log = "0.4.19"
+quoted_printable = "0.5.0"
+serde = { version = "1.0.171", features = ["derive"] }
+time = { version = "0.3.23", features = ["macros", "formatting", "local-offset"] }
+thiserror = "1.0.43"
 
 [dependencies.geocoding]
 version = "0.4.0"
@@ -26,6 +26,6 @@ default-features = false
 features = ["rustls-tls"]
 
 [dependencies.reqwest]
-version = "0.11.16"
+version = "0.11.18"
 default-features = false
 features = ["blocking", "rustls-tls", "json"]

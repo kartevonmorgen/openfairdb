@@ -10,9 +10,9 @@ repository.workspace = true
 
 [dependencies]
 gloo-net = "0.2.6"
-percent-encoding = "2.2.0"
-serde = "1.0.160"
-thiserror = "1.0.40"
+percent-encoding = "2.3.0"
+serde = "1.0.171"
+thiserror = "1.0.43"
 
 [dependencies.ofdb-boundary]
 version = "0.12.2"

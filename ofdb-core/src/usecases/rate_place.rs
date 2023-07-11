@@ -14,9 +14,9 @@ pub struct NewPlaceRating {
 
 #[derive(Debug, Clone)]
 
-pub struct Storable(Place, ReviewStatus, Rating, Comment);
+pub struct StorableRating(Place, ReviewStatus, Rating, Comment);
 
-impl Storable {
+impl StorableRating {
     pub fn rating_id(&self) -> &str {
         self.2.id.as_ref()
     }
@@ -25,7 +25,7 @@ impl Storable {
     }
 }
 
-pub fn prepare_new_rating<R>(repo: &R, r: NewPlaceRating) -> Result<Storable>
+pub fn prepare_new_rating<R>(repo: &R, r: NewPlaceRating) -> Result<StorableRating>
 where
     R: PlaceRepo,
 {
@@ -58,14 +58,17 @@ where
         archived_at: None,
         text: r.comment,
     };
-    Ok(Storable(place, status, rating, comment))
+    Ok(StorableRating(place, status, rating, comment))
 }
 
-pub fn store_new_rating<R>(repo: &R, s: Storable) -> Result<(Place, ReviewStatus, Vec<Rating>)>
+pub fn store_new_rating<R>(
+    repo: &R,
+    s: StorableRating,
+) -> Result<(Place, ReviewStatus, Vec<Rating>)>
 where
     R: RatingRepository + CommentRepository,
 {
-    let Storable(place, status, rating, comment) = s;
+    let StorableRating(place, status, rating, comment) = s;
     debug_assert_eq!(place.id, rating.place_id);
     debug_assert_eq!(rating.id, comment.rating_id);
     repo.create_rating(rating)?;
