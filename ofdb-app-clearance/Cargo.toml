@@ -16,9 +16,9 @@ console_error_panic_hook = "0.1.7"
 console_log = "1.0.0"
 difference = "2.0.0"
 gloo-storage = "0.2.2"
-log = "0.4.17"
+log = "0.4.19"
 seed = { version = "0.10.0", features = ["routing"] }
-web-sys = { version = "0.3.61", features = ["HtmlFormElement"] }
+web-sys = { version = "0.3.64", features = ["HtmlFormElement"] }
 
 [patch.crates-io]
 ofdb-boundary     = { path = "../ofdb-boundary"     }

@@ -46,7 +46,7 @@ pub struct NewPlace {
 }
 
 #[derive(Debug, Clone)]
-pub struct Storable {
+pub struct StorablePlace {
     place: Place,
     clearance_org_ids: Vec<Id>,
 }
@@ -57,7 +57,7 @@ pub fn prepare_new_place<R>(
     created_by_email: Option<&EmailAddress>,
     created_by_org: Option<&Organization>,
     accepted_licenses: &HashSet<String>,
-) -> Result<Storable>
+) -> Result<StorablePlace>
 where
     R: OrganizationRepo,
 {
@@ -169,17 +169,17 @@ where
     if !accepted_licenses.contains(&place.license) {
         return Err(Error::License);
     }
-    Ok(Storable {
+    Ok(StorablePlace {
         place,
         clearance_org_ids,
     })
 }
 
-pub fn store_new_place<R>(repo: &R, s: Storable) -> Result<(Place, Vec<Rating>)>
+pub fn store_new_place<R>(repo: &R, s: StorablePlace) -> Result<(Place, Vec<Rating>)>
 where
     R: TagRepo + PlaceRepo + PlaceClearanceRepo,
 {
-    let Storable {
+    let StorablePlace {
         place,
         clearance_org_ids,
     } = s;

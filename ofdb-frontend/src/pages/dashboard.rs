@@ -207,6 +207,7 @@ fn DisplayNumber(
 ) -> impl IntoView {
     let memorized_number = create_memo(cx, move |_| number.get());
 
+    #[allow(unused_braces)]
     move || match memorized_number.get() {
         Some(Ok(nr)) => view! {cx, { nr.to_string() } }.into_view(cx),
         Some(Err(_)) => {

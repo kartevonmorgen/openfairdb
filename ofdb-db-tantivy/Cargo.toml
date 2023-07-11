@@ -1,14 +1,14 @@
 [package]
 name = "ofdb-db-tantivy"
 version = "0.0.0"
-edition = "2021"
+edition.workspace = true
 
 [dependencies]
 ofdb-core = "=0.0.0"
 
-anyhow = "1.0.70"
-log = "0.4.17"
+anyhow = "1.0.71"
+log = "0.4.19"
 num-traits = "0.2.15"
 parking_lot = "0.12.1"
-strum = "0.24.1"
+strum = "0.25.0"
 tantivy = "0.19.2"

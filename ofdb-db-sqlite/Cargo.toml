@@ -1,18 +1,18 @@
 [package]
 name = "ofdb-db-sqlite"
 version = "0.0.0"
-edition = "2021"
+edition.workspace = true
 publish = false
 
 [dependencies]
-anyhow = "1.0.70"
-log = "0.4.17"
+anyhow = "1.0.71"
+log = "0.4.19"
 num-traits = "0.2.15"
-diesel = { version = "2.0.4", features = ["sqlite", "r2d2"] }
-diesel_migrations = { version = "2.0.0", features = ["sqlite"] }
+diesel = { version = "2.1.0", features = ["sqlite", "r2d2"] }
+diesel_migrations = { version = "2.1.0", features = ["sqlite"] }
 ofdb-core = { version = "0.0.0", path = "../ofdb-core" }
 parking_lot = "0.12.1"
-time = { version = "0.3.20", features = ["macros", "formatting", "parsing"] }
+time = { version = "0.3.23", features = ["macros", "formatting", "parsing"] }
 
 # Bundle SQLite code to prevent dynamic linking.
 # The pinned version must be compatible with diesel!

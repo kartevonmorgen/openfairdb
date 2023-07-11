@@ -42,14 +42,14 @@ pub enum NewEventMode<'a> {
 }
 
 #[derive(Debug, Clone)]
-pub struct Storable(Event);
+pub struct StorableEvent(Event);
 
 pub fn import_new_event<R>(
     repo: &R,
     token: Option<&str>,
     e: NewEvent,
     mode: NewEventMode,
-) -> Result<Storable>
+) -> Result<StorableEvent>
 where
     R: OrganizationRepo + UserRepo + EventRepo,
 {
@@ -294,14 +294,14 @@ where
     };
     let event = event.auto_correct();
     event.validate()?;
-    Ok(Storable(event))
+    Ok(StorableEvent(event))
 }
 
-pub fn store_created_event<R>(repo: &R, storable: Storable) -> Result<Event>
+pub fn store_created_event<R>(repo: &R, storable: StorableEvent) -> Result<Event>
 where
     R: TagRepo + EventRepo,
 {
-    let Storable(event) = storable;
+    let StorableEvent(event) = storable;
     log::debug!("Storing newly created event: {:?}", event);
     for t in &event.tags {
         repo.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
@@ -310,11 +310,11 @@ where
     Ok(event)
 }
 
-pub fn store_updated_event<R>(repo: &R, storable: Storable) -> Result<Event>
+pub fn store_updated_event<R>(repo: &R, storable: StorableEvent) -> Result<Event>
 where
     R: TagRepo + EventRepo,
 {
-    let Storable(event) = storable;
+    let StorableEvent(event) = storable;
     log::debug!("Storing updated event: {:?}", event);
     for t in &event.tags {
         repo.create_tag_if_it_does_not_exist(&Tag { id: t.clone() })?;
