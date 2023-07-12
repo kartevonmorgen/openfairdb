@@ -143,7 +143,7 @@ impl TryFrom<raw::Config> for Config {
 
         let email_gateway = match email.and_then(|m| m.gateway) {
             Some(gw_name) => {
-                let toml_name = toml::to_string(&gw_name).unwrap();
+                let toml_name = gw_name.as_str();
                 let gateway = gateway.clone().unwrap_or_default();
 
                 let gw = match gw_name {
@@ -203,7 +203,7 @@ impl TryFrom<raw::Config> for Config {
 
         let geo_gateway = match geocoding.and_then(|g| g.gateway) {
             Some(gw_name) => {
-                let toml_name = toml::to_string(&gw_name).unwrap();
+                let toml_name = gw_name.as_str();
                 let gateway = gateway.ok_or_else(|| anyhow!("Missing gateway configuration"))?;
                 let gw = match gw_name {
                     raw::GeocodingGateway::Opencage => {
