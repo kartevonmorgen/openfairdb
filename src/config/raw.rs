@@ -49,6 +49,14 @@ pub enum GeocodingGateway {
     Opencage,
 }
 
+impl GeocodingGateway {
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            Self::Opencage => "opencage",
+        }
+    }
+}
+
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct OpenCage {
@@ -94,6 +102,16 @@ pub enum EmailGateway {
     Mailgun,
     Sendmail,
     EmailToJsonFile,
+}
+
+impl EmailGateway {
+    pub const fn as_str(&self) -> &'static str {
+        match self {
+            Self::Mailgun => "mailgun",
+            Self::Sendmail => "sendmail",
+            Self::EmailToJsonFile => "email-to-json-file",
+        }
+    }
 }
 
 #[derive(Clone, Deserialize)]
