@@ -401,6 +401,8 @@ pub fn routes() -> Vec<Route> {
     routes![
         app_clearance::get_file,
         app_clearance::get_index,
+        app_clearance::get_login,
+        app_clearance::get_logout,
         get_index_user,
         get_index,
         get_index_html,

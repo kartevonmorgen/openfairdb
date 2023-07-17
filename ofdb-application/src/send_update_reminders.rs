@@ -247,7 +247,7 @@ mod tests {
         let _recent = create_place(&fixture, "recent", admin_email, None);
 
         let notify_gw = MockNotifyGw::default();
-        let email_fmt = MockEmailFormatter::default();
+        let email_fmt = MockEmailFormatter;
 
         let not_updated_since = last_update_time;
         let resend_period = Duration::milliseconds(90);
@@ -328,7 +328,7 @@ mod tests {
         let _recent = create_place(&fixture, "recent", admin, None);
 
         let notify_gw = MockNotifyGw::default();
-        let email_fmt = MockEmailFormatter::default();
+        let email_fmt = MockEmailFormatter;
 
         let not_updated_since = last_update_time;
         let resend_period = Duration::milliseconds(90);
@@ -383,7 +383,7 @@ mod tests {
         .unwrap();
 
         let notify_gw = MockNotifyGw::default();
-        let email_fmt = MockEmailFormatter::default();
+        let email_fmt = MockEmailFormatter;
 
         let not_updated_since = last_update_time;
         let resend_period = Duration::milliseconds(90);

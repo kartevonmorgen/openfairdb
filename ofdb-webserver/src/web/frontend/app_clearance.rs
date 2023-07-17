@@ -12,6 +12,16 @@ pub fn get_index() -> Option<RawHtml<Cow<'static, [u8]>>> {
     ClearanceAsset::get("index.html").map(|html| RawHtml(html.data))
 }
 
+#[get("/clearance/login")]
+pub fn get_login() -> Option<RawHtml<Cow<'static, [u8]>>> {
+    get_index()
+}
+
+#[get("/clearance/logout")]
+pub fn get_logout() -> Option<RawHtml<Cow<'static, [u8]>>> {
+    get_index()
+}
+
 #[get("/clearance/<file..>")]
 pub fn get_file(file: PathBuf) -> Option<(ContentType, Cow<'static, [u8]>)> {
     let filename = file.display().to_string();
