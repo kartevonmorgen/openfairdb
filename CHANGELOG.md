@@ -1,5 +1,12 @@
 # Changelog
 
+## v0.12.5 (2023-07-51)
+
+- fix: loading config
+- refactor: migrate clearance app to [leptos](https://leptos.dev)
+- chore: Update dependencies
+- new: Add a new basic frontend based on leptos
+
 ## v0.12.4 (2023-03-24)
 
 - fix: webfonts in clearance app
