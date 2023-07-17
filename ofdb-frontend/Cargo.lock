@@ -1063,7 +1063,7 @@ dependencies = [
 
 [[package]]
 name = "ofdb-boundary"
-version = "0.12.4"
+version = "0.12.5"
 dependencies = [
  "serde",
  "thiserror",
