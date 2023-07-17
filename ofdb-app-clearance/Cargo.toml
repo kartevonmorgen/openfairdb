@@ -4,6 +4,7 @@ version = "0.0.0" # will stay 0.0.0 until published
 authors = ["slowtec GmbH <post@slowtec.de>"]
 edition = "2021"
 publish = false
+rust-version = "1.71.0"
 
 [dependencies]
 # Project dependencies

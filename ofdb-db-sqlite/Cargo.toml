@@ -5,7 +5,7 @@ edition.workspace = true
 publish = false
 
 [dependencies]
-anyhow = "1.0.71"
+anyhow = "1.0.72"
 log = "0.4.19"
 num-traits = "0.2.15"
 diesel = { version = "2.1.0", features = ["sqlite", "r2d2"] }

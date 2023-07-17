@@ -1,16 +1,17 @@
 [package]
 name = "ofdb-core"
 version = "0.0.0" # will stay 0.0.0 until published
-authors = ["slowtec GmbH <post@slowtec.de>"]
-edition.workspace = true
 publish = false
+
+edition.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 # Project dependencies
 ofdb-entities = { version = "0.12.0", features = ["url"] }
 
 # External dependencies
-anyhow = "1.0.71"
+anyhow = "1.0.72"
 fast_chemail = "0.9.6"
 lazy_static = "1.4.0"
 log = "0.4.19"

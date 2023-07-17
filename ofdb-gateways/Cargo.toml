@@ -1,15 +1,17 @@
 [package]
 name = "ofdb-gateways"
 version = "0.0.0" # will stay 0.0.0 until published
+publish = false
+
 authors.workspace = true
 edition.workspace = true
-publish = false
+rust-version.workspace = true
 
 [dependencies]
 ofdb-core = "=0.0.0"
 ofdb-entities = "0.12.0"
 
-anyhow = "1.0.71"
+anyhow = "1.0.72"
 askama = "0.12.0"
 fast_chemail = "0.9.6"
 itertools = "0.11.0"
