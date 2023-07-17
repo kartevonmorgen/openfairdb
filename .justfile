@@ -22,7 +22,6 @@ check:
     cargo check --locked --all-features --all-targets -p ofdb-db-tantivy
     cargo check --locked --all-features --all-targets -p ofdb-frontend-api
     cargo check --locked --all-features --all-targets -p ofdb-gateways
-    cargo check --locked --all-features --all-targets -p ofdb-seed
     cargo check --locked --all-features --all-targets -p ofdb-webserver
 
 # Run clippy on the workspace (both dev and release profile)

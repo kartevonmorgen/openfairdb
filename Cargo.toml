@@ -23,7 +23,6 @@ members = [
   "ofdb-entities",
   "ofdb-frontend-api",
   "ofdb-gateways",
-  "ofdb-seed",
   "ofdb-webserver",
 ]
 exclude = [ "ofdb-frontend", "ofdb-app-clearance" ]
@@ -37,7 +36,6 @@ ofdb-db-tantivy   = { path = "./ofdb-db-tantivy"   }
 ofdb-entities     = { path = "./ofdb-entities"     }
 ofdb-frontend-api = { path = "./ofdb-frontend-api" }
 ofdb-gateways     = { path = "./ofdb-gateways"     }
-ofdb-seed         = { path = "./ofdb-seed"         }
 ofdb-webserver    = { path = "./ofdb-webserver"    }
 
 [dependencies]
