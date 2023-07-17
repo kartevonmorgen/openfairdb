@@ -16,13 +16,13 @@ let
   ]);
   sass = with pkgs; stdenv.mkDerivation rec {
     name = "dart-sass-${version}";
-    version = "1.62.1";
+    version = "1.63.6";
     system = "x86_64-linux";
 
     isExecutable = true;
 
     src = fetchurl {
-      sha256 = "AbBHLUrVMk2t0ma+hlinCA7C71a5TrloODbM1SZmuG0=";
+      sha256 = "3my+oDsYySHFgpAwx3cyHWw4FEA168zS7k3q/5wzPe0=";
       url = "https://github.com/sass/dart-sass/releases/download/${version}/dart-sass-${version}-linux-x64.tar.gz";
     };
 
