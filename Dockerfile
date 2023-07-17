@@ -59,8 +59,6 @@ RUN USER=root cargo new --lib ofdb-application \
     && \
     USER=root cargo new --lib ofdb-gateways \
     && \
-    USER=root cargo new --lib ofdb-seed \
-    && \
     USER=root cargo new --lib ofdb-webserver
 
 COPY [ \
@@ -89,9 +87,6 @@ COPY [ \
 COPY [ \
     "ofdb-gateways/Cargo.toml", \
     "./ofdb-gateways/" ]
-COPY [ \
-    "ofdb-seed/Cargo.toml", \
-    "./ofdb-seed/" ]
 COPY [ \
     "ofdb-webserver/Cargo.toml", \
     "./ofdb-webserver/" ]
@@ -135,8 +130,6 @@ RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
     && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-gateways-* \
     && \
-    rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-seed-* \
-    && \
     rm -rf ./target/${BUILD_TARGET}/${BUILD_MODE}/.fingerprint/ofdb-webserver-*
 
 # Copy all project (re-)sources that are required for building (ordered alphabetically)
@@ -174,9 +167,6 @@ COPY [ \
     "ofdb-webserver/build.rs", \
     "./ofdb-webserver/build.rs" ]
 COPY [ \
-    "ofdb-seed/src", \
-    "./ofdb-seed/src/" ]
-COPY [ \
     "ofdb-webserver/src", \
     "./ofdb-webserver/src/" ]
 COPY [ \
@@ -197,8 +187,6 @@ RUN cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-applicat
     cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-entities \
     && \
     cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-gateways \
-    && \
-    cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-seed \
     && \
     cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-webserver \
     && \

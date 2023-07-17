@@ -25,7 +25,7 @@ Boundary(infrastructure, "infrastructure") {
   Component(ofdb_gateways, "ofdb-db-gateways", "...")
   Component(ofdb_boundary, "ofdb-boundary", "...")
   Component(ofdb_app_clearance, "ofdb-app-clearance", "...")
-  Component(ofdb_seed, "ofdb-seed", "...")
+  Component(ofdb_frontend_api, "ofdb-frontend-api", "...")
 }
 
 Rel(ofdb, ofdb_gateways, "...")
@@ -45,7 +45,7 @@ Rel(ofdb_webserver, ofdb_entities, "...")
 Rel(ofdb_webserver, ofdb_db_sqlite, "...")
 Rel(ofdb_webserver, ofdb_db_tantivy, "...")
 
-Rel(ofdb_app_clearance, ofdb_seed, "...")
+Rel(ofdb_app_clearance, ofdb_frontend_api, "...")
 
 @enduml
 ```
