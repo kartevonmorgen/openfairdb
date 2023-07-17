@@ -1,7 +1,8 @@
 [package]
 name = "ofdb-webserver"
-version = "0.0.0"
+version = "0.0.0" # will stay 0.0.0 until published
 publish = false
+
 edition.workspace = true
 rust-version.workspace = true
 
@@ -13,7 +14,7 @@ ofdb-db-sqlite = "=0.0.0" # TODO: remove
 ofdb-db-tantivy = "=0.0.0" # TODO: remove
 ofdb-entities = { version = "0.12.0", features = ["url"] }
 
-anyhow = "1.0.71"
+anyhow = "1.0.72"
 base64 = { version = "0.21.2", optional = true }
 captcha = "0.0.9"
 chrono = { version = "0.4.26", default-features = false }
@@ -31,10 +32,10 @@ rust-embed = "6.8.1"
 rocket = { version = "0.5.0-rc.3", features = ["secrets", "json"] }
 rocket_cors = "0.6.0-alpha2"
 serde = { version = "1.0.171", features = ["derive"] }
-serde_json = "1.0.100"
+serde_json = "1.0.103"
 time = { version = "0.3.23", features = ["macros", "formatting"] }
 thiserror = "1.0.43"
-uuid = { version = "1.4.0", features = ["v4"] }
+uuid = { version = "1.4.1", features = ["v4"] }
 
 [dev-dependencies]
 ofdb-entities = { version = "0.12.0", features = ["url", "builders"] }

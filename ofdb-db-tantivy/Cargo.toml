@@ -1,12 +1,14 @@
 [package]
 name = "ofdb-db-tantivy"
-version = "0.0.0"
+version = "0.0.0" # will stay 0.0.0 until published
+
 edition.workspace = true
+rust-version.workspace = true
 
 [dependencies]
 ofdb-core = "=0.0.0"
 
-anyhow = "1.0.71"
+anyhow = "1.0.72"
 log = "0.4.19"
 num-traits = "0.2.15"
 parking_lot = "0.12.1"

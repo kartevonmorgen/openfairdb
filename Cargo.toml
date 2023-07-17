@@ -11,7 +11,7 @@ keywords = ["geo", "fair", "sustainability"]
 authors = ["slowtec GmbH <post@slowtec.de>"]
 license = "AGPL-3.0-or-later"
 edition = "2021"
-rust-version = "1.70.0"
+rust-version = "1.71.0"
 
 [workspace]
 members = [
@@ -49,8 +49,8 @@ ofdb-webserver    = "=0.0.0"
 
 ofdb-entities     =  "*"
 
-anyhow = "1.0.71"
-clap = { version = "4.3.11", features = ["cargo", "derive"] }
+anyhow = "1.0.72"
+clap = { version = "4.3.12", features = ["cargo", "derive"] }
 dotenvy = "0.15.7"
 duration-str = { version = "0.5.1", default-features = false, features = ["serde"] }
 env_logger = "0.10.0"
