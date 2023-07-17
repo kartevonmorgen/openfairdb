@@ -8,23 +8,24 @@ publish = false
 [dependencies]
 # Project dependencies
 ofdb-boundary = { version = "0.12.2", features = ["extra-derive"] }
-ofdb-entities = "0.12.0"
-ofdb-seed = "0.12.2"
+ofdb-entities = { version = "0.12.0", features = ["wasm-bindgen"] }
+ofdb-frontend-api = "=0.0.0"
 
 # External dependencies
 console_error_panic_hook = "0.1.7"
 console_log = "1.0.0"
 difference = "2.0.0"
 gloo-storage = "0.2.2"
+leptos = { version = "0.4.3", features = ["csr"] }
+leptos_router = { version = "0.4.3", features = ["csr"] }
 log = "0.4.19"
-seed = { version = "0.10.0", features = ["routing"] }
+wasm-bindgen = "0.2.87"
 web-sys = { version = "0.3.64", features = ["HtmlFormElement"] }
 
 [patch.crates-io]
 ofdb-boundary     = { path = "../ofdb-boundary"     }
 ofdb-entities     = { path = "../ofdb-entities"     }
 ofdb-frontend-api = { path = "../ofdb-frontend-api" }
-ofdb-seed         = { path = "../ofdb-seed"         }
 
 [profile.release]
 lto = true

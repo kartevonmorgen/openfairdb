@@ -1,154 +1,86 @@
 use gloo_storage::{SessionStorage, Storage};
-use seed::{prelude::*, *};
+use leptos::*;
+use leptos_router::Form;
 
-use crate::components::navbar;
+use crate::Page;
 
-#[derive(Debug)]
-pub struct Mdl {
-    token: String,
-    invalid: bool,
-    show_password: bool,
-    navbar: navbar::Mdl,
-}
+#[component]
+pub fn Login(cx: Scope, invalid_token: Signal<bool>) -> impl IntoView {
+    let show_token = create_rw_signal(cx, false);
+    let token = create_rw_signal(cx, String::new());
 
-#[derive(Clone)]
-pub enum Msg {
-    TogglePasswordVisible,
-    Login,
-    TokenInput(String),
-    Navbar(navbar::Msg),
-}
+    let token_field_type = move || if show_token.get() { "text" } else { "password" };
 
-pub fn init(mut url: Url) -> Mdl {
-    let invalid = url.next_hash_path_part().unwrap_or("") == crate::HASH_PATH_INVALID;
-    Mdl {
-        token: String::new(),
-        invalid,
-        show_password: false,
-        navbar: navbar::Mdl {
-            login_status: navbar::LoginStatus::LoggedOut,
-            menu_is_active: false,
-        },
+    view! { cx,
+        <div class="container">
+            <div class="section">
+                <h2 class="title">"Login"</h2>
+                {move || {
+                    invalid_token
+                        .get()
+                        .then(|| {
+                            view! { cx,
+                                <div style="color:red;padding-bottom:20px">
+                                    "Your API token is invalid. Please try again"
+                                </div>
+                            }
+                        })
+                }}
+                <div style="pdding-bottom:20px">"Enter your organization's API token: "</div>
+                <Form
+                    method="GET"
+                    action=Page::Home.path()
+                    on:submit=move |ev| {
+                        ev.prevent_default();
+                        show_token.update(|v| *v = false);
+                        if let Err(err) = SessionStorage::set(crate::TOKEN_KEY, token.get()) {
+                            log::debug!("{err}");
+                        }
+                        let form: web_sys::HtmlFormElement = event_target(&ev);
+                        if let Err(err) = form.submit() {
+                            log::error!("{err:?}");
+                        }
+                        log::info!("foo");
+                    }
+                >
+                    <input
+                        class="input"
+                        name="username"
+                        type="text"
+                        value=crate::TITLE
+                        style="display:none"
+                    />
+                    <div class="field">
+                        <label class="label">"Token"</label>
+                        <input
+                            class="input"
+                            name="password"
+                            type=token_field_type
+                            style="width:50%"
+                            on:change=move |ev| {
+                                let value = event_target_value(&ev);
+                                token.update(|v| *v = value);
+                            }
+                        />
+                    </div>
+                    <div class="field">
+                        <div class="control">
+                            <label class="checkbox">
+                                <input
+                                    class="checkbox"
+                                    type="checkbox"
+                                    on:click=move |_| {
+                                        show_token.update(|v| *v = !*v);
+                                    }
+                                    checked=move || show_token.get()
+                                />
+                                " show token"
+                            </label>
+                        </div>
+                    </div>
+                    <input class="button is-primary" type="submit" value="Login"/>
+                </Form>
+            </div>
+        </div>
     }
-}
-
-pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
-    match msg {
-        Msg::TogglePasswordVisible => {
-            mdl.show_password = !mdl.show_password;
-            orders.force_render_now();
-        }
-        Msg::Login => {
-            if mdl.show_password {
-                orders.send_msg(Msg::TogglePasswordVisible);
-                orders.send_msg(Msg::Login);
-            } else {
-                if let Err(err) = SessionStorage::set(crate::TOKEN_KEY, &mdl.token) {
-                    log::debug!("{err}");
-                }
-                let el = document().get_element_by_id("login-form").unwrap();
-                let form = el.dyn_ref::<web_sys::HtmlFormElement>().unwrap();
-                if let Err(err) = form.submit() {
-                    log::error!("{err:?}");
-                }
-            }
-        }
-        Msg::TokenInput(token) => mdl.token = token,
-        Msg::Navbar(msg) => {
-            navbar::update(msg, &mut mdl.navbar, &mut orders.proxy(Msg::Navbar));
-        }
-    }
-}
-
-pub fn view(mdl: &Mdl) -> Node<Msg> {
-    let pwfield_type = if mdl.show_password {
-        "text"
-    } else {
-        "password"
-    };
-    div![
-        navbar::view(&mdl.navbar).map_msg(Msg::Navbar),
-        main![div![
-            C!["container"],
-            div![
-                C!["section"],
-                h2![C!["title"], "Login"],
-                if mdl.invalid {
-                    div![
-                        style! {
-                            St::Color => "red",
-                            St::PaddingBottom => px(20),
-                        },
-                        "Your API token is invalid. Please try again"
-                    ]
-                } else {
-                    empty!()
-                },
-                div![
-                    style! {
-                        St::PaddingBottom => px(20),
-                    },
-                    "Enter your organization's API token: ",
-                ],
-                form![
-                    id!("login-form"),
-                    attrs! {
-                        At::Action => crate::PAGE_URL,
-                    },
-                    input![
-                        C!["input"],
-                        attrs! {
-                            At::Name => "username",
-                            At::Type => "text",
-                            At::Value => crate::TITLE,
-                        },
-                        style! {
-                            St::Display => "none",
-                        },
-                    ],
-                    div![
-                        C!["field"],
-                        label![C!["label"], "Token"],
-                        input![
-                            C!["input"],
-                            attrs! {
-                                At::Name => "password",
-                                At::Type => pwfield_type,
-                            },
-                            style! {
-                                St::Width => "50%",
-                            },
-                            input_ev(Ev::Input, Msg::TokenInput),
-                        ],
-                    ],
-                    div![
-                        C!["field"],
-                        div![
-                            C!["control"],
-                            label![
-                                C!["checkbox"],
-                                input![
-                                    C!["checkbox"],
-                                    attrs! {
-                                        At::Type => "checkbox",
-                                        At::Checked => mdl.show_password.as_at_value(),
-                                    },
-                                    ev(Ev::Click, |_| Msg::TogglePasswordVisible),
-                                ],
-                                " show token",
-                            ],
-                        ]
-                    ],
-                    input![
-                        C!["button", "is-primary"],
-                        attrs! {
-                            At::Type => "submit",
-                            At::Value => "Login",
-                        },
-                        ev(Ev::Click, |_| Msg::Login),
-                    ],
-                ]
-            ]
-        ]]
-    ]
 }

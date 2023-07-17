@@ -1,138 +1,71 @@
 use std::collections::{HashMap, HashSet};
 
+use leptos::*;
+
 use difference::{Changeset, Difference};
-use gloo_storage::{SessionStorage, Storage};
-use ofdb_boundary::{ClearanceForPlace, PendingClearanceForPlace, ResultCount};
-use ofdb_entities::{
-    email::EmailAddress,
-    place::{PlaceHistory, PlaceRevision},
-};
-use ofdb_seed::Api;
-use seed::{prelude::*, *};
+use ofdb_boundary::{ClearanceForPlace, ResultCount};
+use ofdb_entities::{email::EmailAddress, place::PlaceRevision};
+use ofdb_frontend_api::Api;
 
-use crate::{api, components::navbar};
+use crate::api;
 
-#[derive(Debug)]
-pub struct Mdl {
+#[component]
+pub fn Index(
+    cx: Scope,
     token: String,
-    place_clearances: HashMap<String, api::PlaceClearance>,
-    expanded: HashSet<String>,
-    selected: HashSet<String>,
-    navbar: navbar::Mdl,
-}
+    place_clearances: RwSignal<HashMap<String, api::PlaceClearance>>,
+    fetch_pending_clearances: Action<(), ()>,
+) -> impl IntoView {
+    let expanded = create_rw_signal(cx, HashSet::<String>::new());
+    let selected = create_rw_signal(cx, HashSet::<String>::new());
 
-#[derive(Clone)]
-pub enum Msg {
-    GetPendingClearances,
-    GotPendingClearances(Vec<PendingClearanceForPlace>),
-    GotPlaceHistory(PlaceHistory),
-    ToggleExpand(String),
-    ToggleSelect(String),
-    Accept(String, u64),
-    AcceptAllSelected,
-    ClearanceResult(Result<Vec<String>, ClearanceError>),
-    ConsoleLog(String),
-    Navbar(navbar::Msg),
-    ExpandAll,
-    SelectAll,
-    DeselectAll,
-    CollapseAll,
-}
-
-#[derive(Clone, Debug)]
-pub enum ClearanceError {
-    Fetch,
-    Incomplete,
-}
-
-pub fn init(orders: &mut impl Orders<Msg>) -> Option<Mdl> {
-    SessionStorage::get(crate::TOKEN_KEY)
-        .map_err(|err| {
-            log::debug!("No token found {err}");
-        })
-        .ok()
-        .map(|token| {
-            orders.send_msg(Msg::GetPendingClearances);
-            Mdl {
-                token,
-                place_clearances: HashMap::new(),
-                expanded: HashSet::new(),
-                selected: HashSet::new(),
-                navbar: navbar::Mdl {
-                    login_status: navbar::LoginStatus::LoggedIn,
-                    menu_is_active: false,
-                },
-            }
-        })
-}
-
-pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
-    match msg {
-        Msg::GetPendingClearances => {
-            orders.perform_cmd(get_pending_clearances(mdl.token.clone()));
-        }
-        Msg::GotPendingClearances(pending) => {
-            for p in pending {
-                let id = p.place_id.clone();
-                if let Some(pc) = mdl.place_clearances.get_mut(&p.place_id) {
-                    pc.pending = p;
-                } else {
-                    mdl.place_clearances.insert(
-                        id.clone(),
-                        api::PlaceClearance {
-                            pending: p,
-                            history: None,
-                        },
-                    );
+    let handle_clearance_result = move |result| {
+        match result {
+            Ok(ids) => {
+                for id in ids {
+                    place_clearances.update(|x| {
+                        x.remove(&id);
+                    });
+                    selected.update(|x| {
+                        x.remove(&id);
+                    });
+                    expanded.update(|x| {
+                        x.remove(&id);
+                    });
                 }
-                orders.perform_cmd(get_place_history(mdl.token.clone(), id));
+            }
+            Err(err) => {
+                // TODO: handle error, e.g. show error message to the user
+                log::error!("{err:?}");
             }
         }
-        Msg::GotPlaceHistory(ph) => {
-            if let Some(pc) = mdl.place_clearances.get_mut(ph.place.id.as_str()) {
-                pc.history = Some(ph);
-            }
-        }
-        Msg::ToggleExpand(id) => {
-            if mdl.expanded.contains(&id) {
-                mdl.expanded.remove(&id);
-            } else {
-                mdl.expanded.insert(id);
-            }
-        }
-        Msg::ToggleSelect(id) => {
-            if mdl.selected.contains(&id) {
-                mdl.selected.remove(&id);
-            } else {
-                mdl.selected.insert(id);
-            }
-        }
-        Msg::ExpandAll => {
-            mdl.expanded = mdl.place_clearances.keys().cloned().collect();
-        }
-        Msg::SelectAll => {
-            mdl.selected = mdl.place_clearances.keys().cloned().collect();
-        }
-        Msg::DeselectAll => {
-            mdl.selected.clear();
-        }
-        Msg::CollapseAll => {
-            mdl.expanded.clear();
-        }
-        Msg::Accept(id, rev_nr) => {
+        fetch_pending_clearances.dispatch(());
+    };
+
+    let accept = {
+        let token = token.clone();
+        create_action(cx, move |(id, rev_nr): &(String, u64)| {
             let c = ClearanceForPlace {
-                place_id: id,
-                cleared_revision: Some(rev_nr),
+                place_id: id.clone(),
+                cleared_revision: Some(*rev_nr),
             };
             let clearances = vec![c];
-            let token = mdl.token.to_owned();
-            orders.perform_cmd(places_clearance(token, clearances));
-        }
-        Msg::AcceptAllSelected => {
-            let clearances = mdl
-                .selected
+            let token = token.clone();
+            async move {
+                let result = places_clearance(token, clearances).await;
+                handle_clearance_result(result);
+            }
+        })
+    };
+
+    let accept_all_selected = {
+        let token = token.clone();
+        create_action(cx, move |_: &()| {
+            let place_clearances = place_clearances.get();
+            let clearances = selected
+                .get()
                 .iter()
-                .filter_map(|id| mdl.place_clearances.get(id).map(|pc| (id, pc)))
+                .filter_map(|id| place_clearances.get(id).map(|pc| (id, pc)))
                 .filter_map(|(id, pc)| {
                     pc.current_rev()
                         .map(|rev| rev.revision)
@@ -145,196 +78,365 @@ pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
                     cleared_revision,
                 })
                 .collect();
-            let token = mdl.token.to_owned();
-            orders.perform_cmd(places_clearance(token, clearances));
-        }
-        Msg::ClearanceResult(Ok(ids)) => {
-            for id in ids {
-                mdl.place_clearances.remove(&id);
-                mdl.selected.remove(&id);
-                mdl.expanded.remove(&id);
+            let token = token.clone();
+            async move {
+                let result = places_clearance(token, clearances).await;
+                handle_clearance_result(result);
             }
-            orders.perform_cmd(get_pending_clearances(mdl.token.clone()));
-        }
-        Msg::ClearanceResult(Err(err)) => {
-            // TODO: handle error, e.g. show error message to the user
-            log::error!("{err:?}");
-        }
-        Msg::ConsoleLog(msg) => log::debug!("{msg}"),
-        Msg::Navbar(msg) => match msg {
-            navbar::Msg::Logout => {
-                SessionStorage::delete(crate::TOKEN_KEY);
-                Url::reload();
-            }
-            _ => {
-                navbar::update(msg, &mut mdl.navbar, &mut orders.proxy(Msg::Navbar));
-            }
-        },
+        })
+    };
+
+    view! { cx,
+        <div>
+            <main>
+                <div class="container">
+                    <div class="section">
+                        {move || {
+                            if place_clearances.get().is_empty() {
+                                view! { cx, <p>"There is nothing to clear :)"</p> }.into_view(cx)
+                            } else {
+                                view! { cx,
+                                    <div class="panel">
+                                        <p class="panel-heading">
+                                            "Pending Clearances"
+                                            <span class="subtitle is-5">
+                                                " (" {place_clearances.get().len()} ")"
+                                            </span>
+                                        </p>
+                                        <div class="panel-block">
+                                            <PanelActions place_clearances expanded selected/>
+                                        </div>
+                                        <ul>
+                                            <For
+                                                each=move || place_clearances.get()
+                                                key=|(id, _)| id.clone()
+                                                view=move |cx, (_, place_clearance)| {
+                                                    view! { cx,
+                                                        <PanelBlock place_clearance expanded selected accept/>
+                                                    }
+                                                }
+                                            />
+                                        </ul>
+                                        <div class="panel-block">
+                                            <button
+                                                class="button is-danger is-outlined is-fullwidth"
+                                                disabled=move || selected.get().is_empty()
+                                                on:click=move |_| accept_all_selected.dispatch(())
+                                            >
+                                                {format!("Accept all ({}) selected", selected.get().len())}
+                                            </button>
+                                        </div>
+                                    </div>
+                                }
+                                    .into_view(cx)
+                            }
+                        }}
+                    </div>
+                </div>
+            </main>
+        </div>
     }
 }
 
-pub fn view(mdl: &Mdl) -> Node<Msg> {
-    let li = mdl.place_clearances.values().map(|pc| {
-        let id = &pc.pending.place_id;
-        let expanded = mdl.expanded.contains(id);
-        let selected = mdl.selected.contains(id);
-        let toggle_expand_msg = Msg::ToggleExpand(id.clone());
-        let toggle_select_msg = Msg::ToggleSelect(id.clone());
+#[component]
+fn PanelBlock(
+    cx: Scope,
+    place_clearance: api::PlaceClearance,
+    expanded: RwSignal<HashSet<String>>,
+    selected: RwSignal<HashSet<String>>,
+    accept: Action<(String, u64), ()>,
+) -> impl IntoView {
+    let id = place_clearance.pending.place_id.clone();
+    let is_expanded = {
+        let id = id.clone();
+        Signal::derive(cx, move || expanded.get().contains(&id))
+    };
+    let is_selected = {
+        let id = id.clone();
+        Signal::derive(cx, move || selected.get().contains(&id))
+    };
 
-        li![
-            C!["panel-block"],
-            div![
-                div![
-                    C!["level"],
-                    div![
-                        C!["level-left"],
-                        div![
-                            C!["level-item"],
-                            div![
-                                C!["field", "is-grouped"],
-                                p![
-                                    C!["control"],
-                                    label![
-                                        C!["checkbox"],
-                                        input![
-                                            attrs! {
-                                                At::Type => "checkbox";
-                                                At::Checked => selected.as_at_value(),
-                                            },
-                                            ev(Ev::Click, |_| toggle_select_msg),
-                                        ]
-                                    ]
-                                ],
-                                p![
-                                    C!["control"],
-                                    button![
-                                        C!["button", "is-small"],
-                                        ev(Ev::Click, |_| toggle_expand_msg),
-                                        span![
-                                            C!["icon", "is-small"],
-                                            i![if expanded {
-                                                C!["fa", "fa-chevron-down"]
-                                            } else {
-                                                C!["fa", "fa-chevron-right"]
-                                            }],
-                                        ]
-                                    ],
-                                ]
-                            ]
-                        ],
-                        div![C!["level-item"], pc.overview_title(),]
-                    ],
-                ],
-                if expanded {
-                    if let Some(curr_rev) = pc.current_rev() {
-                        div![details_table(
-                            &pc.pending.place_id,
-                            pc.last_cleared_rev_nr(),
-                            pc.last_cleared_rev(),
-                            curr_rev,
-                        )]
-                    } else {
-                        p!["Loading current revision ..."]
-                    }
-                } else {
-                    empty![]
-                }
-            ]
-        ]
-    });
-    div![
-        navbar::view(&mdl.navbar).map_msg(Msg::Navbar),
-        main![div![
-            C!["container"],
-            div![
-                C!["section"],
-                if li.clone().count() == 0 {
-                    p!["There is nothing to clear :)"]
-                } else {
-                    div![
-                        C!["panel"],
-                        p![
-                            C!["panel-heading"],
-                            "Pending Clearances",
-                            span![
-                                C!["subtitle", "is-5"],
-                                " (",
-                                mdl.place_clearances.len(),
-                                ")"
-                            ]
-                        ],
-                        div![C!["panel-block"], panel_actions()],
-                        ul![li],
-                        div![
-                            C!["panel-block"],
-                            button![
-                                C!["button", "is-danger", "is-outlined", "is-fullwidth"],
-                                ev(Ev::Click, |_| Msg::AcceptAllSelected),
-                                attrs! {
-                                    At::Disabled => mdl.selected.is_empty().as_at_value();
-                                },
-                                format!("Accept all ({}) selected", mdl.selected.len())
-                            ]
-                        ]
-                    ]
-                }
-            ]
-        ]]
-    ]
+    view! { cx,
+        <li class="panel-block">
+            <div>
+                <div class="level">
+                    <div class="level-left">
+                        <div class="level-item">
+                            <div class="field is-grouped">
+                                <p class="control">
+                                    <label class="checkbox">
+                                        <input
+                                            type="checkbox"
+                                            checked=move || is_selected.get()
+                                            on:click={
+                                                let id = id.clone();
+                                                move |_| {
+                                                    selected
+                                                        .update(|selected| {
+                                                            if selected.contains(&id) {
+                                                                selected.remove(&id);
+                                                            } else {
+                                                                selected.insert(id.clone());
+                                                            }
+                                                        })
+                                                }
+                                            }
+                                        />
+                                    </label>
+                                </p>
+                                <p class="control">
+                                    <button
+                                        class="button is-small"
+                                        on:click=move |_| {
+                                            expanded
+                                                .update(|expanded| {
+                                                    if expanded.contains(&id) {
+                                                        expanded.remove(&id);
+                                                    } else {
+                                                        expanded.insert(id.clone());
+                                                    }
+                                                })
+                                        }
+                                    >
+                                        <span class="icon is-small">
+                                            <i class=move || {
+                                                if is_expanded.get() {
+                                                    "fa fa-chevron-down"
+                                                } else {
+                                                    "fa fa-chevron-right"
+                                                }
+                                            }></i>
+
+                                        // #[derive(Debug)]
+                                        // pub struct Mdl {
+                                        //     token: String,
+                                        //     place_clearances: HashMap<String, api::PlaceClearance>,
+                                        //     expanded: HashSet<String>,
+                                        //     selected: HashSet<String>,
+                                        //     navbar: navbar::Mdl,
+                                        // }
+                                        //
+                                        // #[derive(Clone)]
+                                        // pub enum Msg {
+                                        //     GetPendingClearances,
+                                        //     GotPendingClearances(Vec<PendingClearanceForPlace>),
+                                        //     GotPlaceHistory(PlaceHistory),
+                                        //     ToggleExpand(String),
+                                        //     ToggleSelect(String),
+                                        //     Accept(String, u64),
+                                        //     AcceptAllSelected,
+                                        //     ClearanceResult(Result<Vec<String>, ClearanceError>),
+                                        //     ConsoleLog(String),
+                                        //     Navbar(navbar::Msg),
+                                        //     ExpandAll,
+                                        //     SelectAll,
+                                        //     DeselectAll,
+                                        //     CollapseAll,
+                                        // }
+
+                                        // pub fn init(orders: &mut impl Orders<Msg>) -> Option<Mdl> {
+                                        //     SessionStorage::get(crate::TOKEN_KEY)
+                                        //         .map_err(|err| {
+                                        //             log::debug!("No token found {err}");
+                                        //         })
+                                        //         .ok()
+                                        //         .map(|token| {
+                                        //             orders.send_msg(Msg::GetPendingClearances);
+                                        //             Mdl {
+                                        //                 token,
+                                        //                 place_clearances: HashMap::new(),
+                                        //                 expanded: HashSet::new(),
+                                        //                 selected: HashSet::new(),
+                                        //                 navbar: navbar::Mdl {
+                                        //                     login_status: navbar::LoginStatus::LoggedIn,
+                                        //                     menu_is_active: false,
+                                        //                 },
+                                        //             }
+                                        //         })
+                                        // }
+                                        //
+                                        // pub fn update(msg: Msg, mdl: &mut Mdl, orders: &mut impl Orders<Msg>) {
+                                        //     match msg {
+                                        //         Msg::GetPendingClearances => {
+                                        //             orders.perform_cmd(get_pending_clearances(mdl.token.clone()));
+                                        //         }
+                                        //         Msg::GotPendingClearances(pending) => {
+                                        //             for p in pending {
+                                        //                 let id = p.place_id.clone();
+                                        //                 if let Some(pc) = mdl.place_clearances.get_mut(&p.place_id) {
+                                        //                     pc.pending = p;
+                                        //                 } else {
+                                        //                     mdl.place_clearances.insert(
+                                        //                         id.clone(),
+                                        //                         api::PlaceClearance {
+                                        //                             pending: p,
+                                        //                             history: None,
+                                        //                         },
+                                        //                     );
+                                        //                 }
+                                        //                 orders.perform_cmd(get_place_history(mdl.token.clone(), id));
+                                        //             }
+                                        //         }
+                                        //         Msg::GotPlaceHistory(ph) => {
+                                        //             if let Some(pc) = mdl.place_clearances.get_mut(ph.place.id.as_str()) {
+                                        //                 pc.history = Some(ph);
+                                        //             }
+                                        //         }
+                                        //         Msg::ToggleExpand(id) => {
+                                        //             if mdl.expanded.contains(&id) {
+                                        //                 mdl.expanded.remove(&id);
+                                        //             } else {
+                                        //                 mdl.expanded.insert(id);
+                                        //             }
+                                        //         }
+                                        //         Msg::ToggleSelect(id) => {
+                                        //             if mdl.selected.contains(&id) {
+                                        //                 mdl.selected.remove(&id);
+                                        //             } else {
+                                        //                 mdl.selected.insert(id);
+                                        //             }
+                                        //         }
+                                        //         Msg::ExpandAll => {
+                                        //             mdl.expanded = mdl.place_clearances.keys().cloned().collect();
+                                        //         }
+                                        //         Msg::SelectAll => {
+                                        //             mdl.selected = mdl.place_clearances.keys().cloned().collect();
+                                        //         }
+                                        //         Msg::DeselectAll => {
+                                        //             mdl.selected.clear();
+                                        //         }
+                                        //         Msg::CollapseAll => {
+                                        //             mdl.expanded.clear();
+                                        //         }
+                                        //         Msg::Accept(id, rev_nr) => {
+                                        //         }
+                                        //         Msg::ClearanceResult(Ok(ids)) => {
+                                        //             for id in ids {
+                                        //                 mdl.place_clearances.remove(&id);
+                                        //                 mdl.selected.remove(&id);
+                                        //                 mdl.expanded.remove(&id);
+                                        //             }
+                                        //             orders.perform_cmd(get_pending_clearances(mdl.token.clone()));
+                                        //         }
+                                        //         Msg::ClearanceResult(Err(err)) => {
+                                        //
+                                        //             log::error!("{err:?}");
+                                        //         }
+                                        //         Msg::ConsoleLog(msg) => log::debug!("{msg}"),
+                                        //         Msg::Navbar(msg) => match msg {
+                                        //             navbar::Msg::Logout => {
+                                        //                 SessionStorage::delete(crate::TOKEN_KEY);
+                                        //                 Url::reload();
+                                        //             }
+                                        //             _ => {
+                                        //                 navbar::update(msg, &mut mdl.navbar, &mut orders.proxy(Msg::Navbar));
+                                        //             }
+                                        //         },
+                                        //     }
+                                        // }
+
+                                        // TODO: handle error, e.g. show error message to the user
+
+                                        </span>
+                                    </button>
+                                </p>
+                            </div>
+                        </div>
+                        <div class="level-item">{place_clearance.overview_title().to_string()}</div>
+                    </div>
+                </div>
+                {move || {
+                    is_expanded
+                        .get()
+                        .then(|| {
+                            if let Some(curr_rev) = place_clearance.current_rev() {
+                                view! { cx,
+                                    <div>
+                                        <DetailsTable
+                                            id=place_clearance.pending.place_id.clone()
+                                            last_cleared_rev_nr=place_clearance.last_cleared_rev_nr()
+                                            lastrev=place_clearance.last_cleared_rev().cloned()
+                                            currrev=curr_rev.clone()
+                                            accept
+                                        />
+                                    </div>
+                                }
+                                    .into_view(cx)
+                            } else {
+                                view! { cx, <p>"Loading current revision ..."</p> }.into_view(cx)
+                            }
+                        })
+                }}
+            </div>
+        </li>
+    }
 }
 
-fn panel_actions() -> Node<Msg> {
-    div![
-        C!["field", "is-grouped"],
-        p![
-            C!["control"],
-            button![
-                C!["button"],
-                ev(Ev::Click, |_| Msg::ExpandAll),
-                "expand all"
-            ],
-        ],
-        p![
-            C!["control"],
-            button![
-                C!["button"],
-                ev(Ev::Click, |_| Msg::CollapseAll),
-                "collapse all"
-            ]
-        ],
-        p![
-            C!["control"],
-            button![
-                C!["button"],
-                ev(Ev::Click, |_| Msg::SelectAll),
-                "select all"
-            ]
-        ],
-        p![
-            C!["control"],
-            button![
-                C!["button"],
-                ev(Ev::Click, |_| Msg::DeselectAll),
-                "deselect all"
-            ]
-        ]
-    ]
+#[component]
+fn PanelActions(
+    cx: Scope,
+    place_clearances: RwSignal<HashMap<String, api::PlaceClearance>>,
+    expanded: RwSignal<HashSet<String>>,
+    selected: RwSignal<HashSet<String>>,
+) -> impl IntoView {
+    let expand_all = move |_| {
+        expanded.update(|expanded| {
+            *expanded = place_clearances.get().keys().cloned().collect();
+        });
+    };
+    let select_all = move |_| {
+        selected.update(|selected| {
+            *selected = place_clearances.get().keys().cloned().collect();
+        });
+    };
+    let deselect_all = move |_| {
+        selected.update(|x| x.clear());
+    };
+    let collapse_all = move |_| {
+        expanded.update(|x| x.clear());
+    };
+    view! { cx,
+        <div class="field is-grouped">
+            <p class="control">
+                <button class="button" on:click=expand_all>
+                    "expand all"
+                </button>
+            </p>
+            <p class="control">
+                <button class="button" on:click=collapse_all>
+                    "collapse all"
+                </button>
+            </p>
+            <p class="control">
+                <button class="button" on:click=select_all>
+                    "select all"
+                </button>
+            </p>
+            <p class="control">
+                <button class="button" on:click=deselect_all>
+                    "deselect all"
+                </button>
+            </p>
+        </div>
+    }
 }
 
-fn details_table(
-    id: &str,
+#[component]
+fn DetailsTable(
+    cx: Scope,
+    id: String,
     last_cleared_rev_nr: Option<u64>,
-    lastrev: Option<&PlaceRevision>,
-    currrev: &PlaceRevision,
-) -> Node<Msg> {
-    let accept_msg = Msg::Accept(id.to_string(), currrev.revision.into());
-    let title_cs = changeset(lastrev, currrev, |r| r.title.clone());
-    let desc_cs = changeset(lastrev, currrev, |r| r.description.clone());
-    let location_cs = location_cs(lastrev, currrev);
-    let contact_cs = contact_cs(lastrev, currrev);
-    let opening_cs = opening_cs(lastrev, currrev);
-    let links_cs = links_cs(lastrev, currrev);
-    let tags_cs = changeset_split(lastrev, currrev, "\n", |r| r.tags.join("<br>\n"));
+    lastrev: Option<PlaceRevision>,
+    currrev: PlaceRevision,
+    accept: Action<(String, u64), ()>,
+) -> impl IntoView {
+    let title_cs = changeset(lastrev.as_ref(), &currrev, |r| r.title.clone());
+    let desc_cs = changeset(lastrev.as_ref(), &currrev, |r| r.description.clone());
+    let location_cs = location_cs(lastrev.as_ref(), &currrev);
+    let contact_cs = contact_cs(lastrev.as_ref(), &currrev);
+    let opening_cs = opening_cs(lastrev.as_ref(), &currrev);
+    let links_cs = links_cs(lastrev.as_ref(), &currrev);
+    let tags_cs = changeset_split(lastrev.as_ref(), &currrev, "\n", |r| r.tags.join("<br>\n"));
     let center = currrev.location.pos;
     let href = format!(
         "https://kartevonmorgen.org/#/?entry={}&center={},{}&zoom=15.00",
@@ -349,40 +451,37 @@ fn details_table(
         String::new()
     };
 
-    table![
-        C!["details-table"],
-        col![C!["col-head"]],
-        col![C!["col-last"]],
-        col![C!["col-curr"]],
-        tr![
-            th![],
-            th!["Last checked ", last_rev],
-            th![
-                a![
-                    attrs! {
-                        At::Target => "_blank",
-                        At::Rel => "noopener noreferrer",
-                        At::Href => href,
-                    },
-                    "Current ",
-                    format!("(rev {})", u64::from(currrev.revision))
-                ],
-                " ",
-                button![
-                    C!["button", "is-primary"],
-                    "Accept",
-                    ev(Ev::Click, |_| accept_msg)
-                ],
-            ]
-        ],
-        table_row_always("Title", &title_cs),
-        table_row_always("Description", &desc_cs),
-        table_row_always("Location", &location_cs),
-        table_row("Contact", &contact_cs),
-        table_row("Opening hours", &opening_cs),
-        table_row("Links", &links_cs),
-        table_row("Tags", &tags_cs),
-    ]
+    view! { cx,
+        <table class="details-table">
+            <col class="col-head"/>
+            <col class="col-last"/>
+            <col class="col-curr"/>
+            <tr>
+                <th></th>
+                <th>"Last checked " {last_rev}</th>
+                <th>
+                    <a target="_blank" rel="noopener noreferrer" href=href>
+                        "Current "
+                        {format!("(rev {})", u64::from(currrev.revision))}
+                    </a>
+                    " "
+                    <button
+                        class="button is-primary"
+                        on:click=move |_| accept.dispatch((id.clone(), currrev.revision.into()))
+                    >
+                        "Accept"
+                    </button>
+                </th>
+            </tr>
+            {table_row_always(cx, "Title", &title_cs)}
+            {table_row_always(cx, "Description", &desc_cs)}
+            {table_row_always(cx, "Location", &location_cs)}
+            {table_row(cx, "Contact", &contact_cs)}
+            {table_row(cx, "Opening hours", &opening_cs)}
+            {table_row(cx, "Links", &links_cs)}
+            {table_row(cx, "Tags", &tags_cs)}
+        </table>
+    }
 }
 
 fn location_cs(lastrev: Option<&PlaceRevision>, currrev: &PlaceRevision) -> Changeset {
@@ -493,70 +592,56 @@ where
     Changeset::new(&slast, &scurr, split)
 }
 
-fn table_row_always<Ms>(title: &str, cs: &Changeset) -> Node<Ms> {
-    tr![td![title], td![diffy_last(cs)], td![diffy_current(cs)],]
+fn table_row_always(cx: Scope, title: &'static str, cs: &Changeset) -> impl IntoView {
+    view! { cx,
+        <tr>
+            <td>{title}</td>
+            <td>{diffy_last(cx, cs)}</td>
+            <td>{diffy_current(cx, cs)}</td>
+        </tr>
+    }
 }
 
-fn table_row<Ms>(title: &str, cs: &Changeset) -> Node<Ms> {
+fn table_row(cx: Scope, title: &'static str, cs: &Changeset) -> impl IntoView {
     if cs.distance == 0 {
-        empty![]
+        None
     } else {
-        table_row_always(title, cs)
+        Some(table_row_always(cx, title, cs))
     }
 }
 
-fn diffy_current<Ms>(cs: &Changeset) -> Node<Ms> {
+fn diffy_current(cx: Scope, cs: &Changeset) -> impl IntoView {
     let csm = cs.diffs.iter().map(|d| match d {
-        Difference::Same(s) => span![raw![s]],
-        Difference::Add(s) => span![C!["diffadd"], raw![s]],
-        _ => empty![],
+        Difference::Same(s) => Some(view! { cx, <span inner_html=s></span> }.into_view(cx)),
+        Difference::Add(s) => {
+            Some(view! { cx, <span class="diffadd" inner_html=s></span> }.into_view(cx))
+        }
+        _ => None,
     });
-    span![csm]
+    view! { cx, <span>{csm.collect_view(cx)}</span> }
 }
 
-fn diffy_last<Ms>(cs: &Changeset) -> Node<Ms> {
+fn diffy_last(cx: Scope, cs: &Changeset) -> impl IntoView {
     let csm = cs.diffs.iter().map(|d| match d {
-        Difference::Same(s) => span![raw![s]],
-        Difference::Rem(s) => span![C!["diffrem"], raw![s]],
-        _ => empty![],
+        Difference::Same(s) => Some(view! { cx, <span inner_html=s></span> }.into_view(cx)),
+        Difference::Rem(s) => {
+            Some(view! { cx, <span class="diffrem" inner_html=s></span> }.into_view(cx))
+        }
+        _ => None,
     });
-    span![csm]
+    view! { cx, <span>{csm.collect_view(cx)}</span> }
 }
 
-async fn get_pending_clearances(api_token: String) -> Option<Msg> {
-    let api = Api::new(api::API_ROOT.into());
-    match api.get_places_clearance_with_api_token(&api_token).await {
-        Ok(pending) => Some(Msg::GotPendingClearances(pending)),
-        Err(err) => {
-            log::error!("{err}");
-            if let ofdb_seed::Error::Api(ofdb_boundary::Error { http_status, .. }) = err {
-                if http_status == 401 {
-                    let url = Url::new()
-                        .set_path([crate::PAGE_URL])
-                        .set_hash_path([crate::HASH_PATH_LOGIN, crate::HASH_PATH_INVALID]);
-                    url.go_and_load();
-                }
-            }
-            None
-        }
-    }
+#[derive(Clone, Debug)]
+pub enum ClearanceError {
+    Fetch,
+    Incomplete,
 }
 
-async fn get_place_history(api_token: String, id: String) -> Option<Msg> {
-    let api = Api::new(api::API_ROOT.into());
-    match api.get_place_history_with_api_token(&api_token, &id).await {
-        Ok(ph) => {
-            let ph = PlaceHistory::try_from(ph).ok()?;
-            Some(Msg::GotPlaceHistory(ph))
-        }
-        Err(err) => {
-            log::error!("{err}");
-            None
-        }
-    }
-}
-
-async fn places_clearance(token: String, clearances: Vec<ClearanceForPlace>) -> Msg {
+async fn places_clearance(
+    token: String,
+    clearances: Vec<ClearanceForPlace>,
+) -> Result<Vec<String>, ClearanceError> {
     let api = Api::new(api::API_ROOT.into());
     let cnt = clearances.len();
     let ids = clearances
@@ -570,14 +655,14 @@ async fn places_clearance(token: String, clearances: Vec<ClearanceForPlace>) -> 
     {
         Ok(ResultCount { count }) => {
             if count as usize == cnt {
-                Msg::ClearanceResult(Ok(ids))
+                Ok(ids)
             } else {
-                Msg::ClearanceResult(Err(ClearanceError::Incomplete))
+                Err(ClearanceError::Incomplete)
             }
         }
         Err(err) => {
             log::error!("{err}");
-            Msg::ClearanceResult(Err(ClearanceError::Fetch))
+            Err(ClearanceError::Fetch)
         }
     }
 }

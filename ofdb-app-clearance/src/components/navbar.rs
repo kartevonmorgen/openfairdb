@@ -1,105 +1,70 @@
-use seed::{prelude::*, *};
+use leptos::*;
+use leptos_router::*;
 
-#[derive(Debug)]
-pub struct Mdl {
-    pub login_status: LoginStatus,
-    pub menu_is_active: bool,
-}
+use crate::page::Page;
 
-#[derive(Debug, Clone)]
-pub enum Msg {
-    ToggleMenu,
-    Brand,
-    Login,
-    Logout,
-}
+#[component]
+pub fn Navbar(cx: Scope, logged_in: Signal<bool>) -> impl IntoView {
+    let menu_is_active = create_rw_signal(cx, false);
 
-#[derive(Debug)]
-pub enum LoginStatus {
-    LoggedIn,
-    LoggedOut,
-}
-
-pub fn update(msg: Msg, mdl: &mut Mdl, _: &mut impl Orders<Msg>) {
-    #[allow(clippy::single_match)]
-    match msg {
-        Msg::ToggleMenu => {
-            mdl.menu_is_active = !mdl.menu_is_active;
-        }
-        _ => {
-            // should be handled by the parent component
-        }
+    view! { cx,
+        <nav class="navbar" roler="navigation" aria-label="main navigation">
+            <div class="navbar-brand">
+                <A class="navbar-item" href=Page::Home.path()>
+                    {crate::TITLE}
+                </A>
+                <BurgerMenu menu_is_active/>
+            </div>
+            ,
+            <div class=move || {
+                if menu_is_active.get() { "navbar-menu is-active" } else { "navbar-menu" }
+            }>
+                <div class="navbar-start"></div>
+                <div class="navbar-end">
+                    <div class="navbar-item">
+                        <div class="buttons">
+                            {move || {
+                                if logged_in.get() {
+                                    view! { cx,
+                                        <A class="button is-light" href=Page::Logout.path()>
+                                            "Log out"
+                                        </A>
+                                    }
+                                        .into_view(cx)
+                                } else {
+                                    view! { cx,
+                                        <A href=Page::Login.path() class="button is-light">
+                                            "Log in"
+                                        </A>
+                                    }
+                                        .into_view(cx)
+                                }
+                            }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
     }
 }
 
-pub fn view(mdl: &Mdl) -> Node<Msg> {
-    nav![
-        C!["navbar"],
-        attrs! {
-            At::Custom("role".into()) => "navigation";
-            At::Custom("aria-label".into()) => "main navigation";
-        },
-        div![
-            C!["navbar-brand"],
-            a![
-                C!["navbar-item"],
-                ev(Ev::Click, |_| Msg::Brand),
-                crate::TITLE
-            ],
-            burger_menu(mdl.menu_is_active, Msg::ToggleMenu)
-        ],
-        div![
-            if mdl.menu_is_active {
-                C!["navbar-menu", "is-active"]
-            } else {
-                C!["navbar-menu"]
-            },
-            div![C!["navbar-start"]],
-            div![
-                C!["navbar-end"],
-                div![
-                    C!["navbar-item"],
-                    div![
-                        C!["buttons"],
-                        match &mdl.login_status {
-                            LoginStatus::LoggedIn => {
-                                logout_button(Msg::Logout)
-                            }
-                            LoginStatus::LoggedOut => {
-                                login_button(Msg::Login)
-                            }
-                        }
-                    ]
-                ]
-            ]
-        ]
-    ]
-}
-
-fn burger_menu<M: Clone + 'static>(active: bool, msg: M) -> Node<M> {
-    let span = span![attrs! {At::Custom("aria-hidden".into())=>"true";}];
-    a![
-        ev(Ev::Click, |_| msg),
-        if active {
-            C!["navbar-burger", "is-active"]
-        } else {
-            C!["navbar-burger"]
-        },
-        attrs! {
-            At::Custom("role".into()) => "button";
-            At::Custom("aria-label".into()) =>"menu";
-            At::Custom("aria-expanded".into()) =>"false";
-        },
-        &span,
-        &span,
-        &span,
-    ]
-}
-
-fn login_button<M: Clone + 'static>(msg: M) -> Node<M> {
-    a![C!["button", "is-light"], ev(Ev::Click, |_| msg), "Log in"]
-}
-
-fn logout_button<M: Clone + 'static>(msg: M) -> Node<M> {
-    a![C!["button", "is-light"], ev(Ev::Click, |_| msg), "Log out"]
+#[component]
+pub fn BurgerMenu(cx: Scope, menu_is_active: RwSignal<bool>) -> impl IntoView {
+    view! { cx,
+        <a
+            on:click=move |_| {
+                menu_is_active.update(|v| *v = !*v);
+            }
+            class=move || {
+                if menu_is_active.get() { "navbar-burger is-active" } else { "navbar-burger" }
+            }
+            role="button"
+            aria-label="menu"
+            aria-expanded="false"
+        >
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+        </a>
+    }
 }
