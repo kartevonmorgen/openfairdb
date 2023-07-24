@@ -5,7 +5,7 @@ use leptos::*;
 use difference::{Changeset, Difference};
 use ofdb_boundary::{ClearanceForPlace, ResultCount};
 use ofdb_entities::{email::EmailAddress, place::PlaceRevision};
-use ofdb_frontend_api::Api;
+use ofdb_frontend_api::ClearanceApi;
 
 use crate::api;
 
@@ -642,17 +642,14 @@ async fn places_clearance(
     token: String,
     clearances: Vec<ClearanceForPlace>,
 ) -> Result<Vec<String>, ClearanceError> {
-    let api = Api::new(api::API_ROOT.into());
+    let api = ClearanceApi::new(api::API_ROOT, token);
     let cnt = clearances.len();
     let ids = clearances
         .iter()
         .map(|c| &c.place_id)
         .map(|id| id.to_string())
         .collect();
-    match api
-        .post_places_clearance_with_api_token(&token, clearances)
-        .await
-    {
+    match api.update_place_clearances(clearances).await {
         Ok(ResultCount { count }) => {
             if count as usize == cnt {
                 Ok(ids)

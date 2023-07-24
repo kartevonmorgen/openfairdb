@@ -4,7 +4,7 @@ use gloo_storage::{SessionStorage, Storage};
 use leptos::*;
 use leptos_router::*;
 use ofdb_entities::place::PlaceHistory;
-use ofdb_frontend_api::Api;
+use ofdb_frontend_api::ClearanceApi;
 use wasm_bindgen::JsCast;
 
 mod api;
@@ -29,11 +29,10 @@ fn App(cx: Scope) -> impl IntoView {
     // -- actions -- //
 
     let get_place_history = create_action(cx, move |(token, id): &(String, String)| {
-        let api = Api::new(api::API_ROOT.into());
-        let token = token.clone();
+        let api = ClearanceApi::new(api::API_ROOT, token.clone());
         let id = id.clone();
         async move {
-            match api.get_place_history_with_api_token(&token, &id).await {
+            match api.place_history(&id).await {
                 Ok(ph) => {
                     let ph = match PlaceHistory::try_from(ph) {
                         Ok(ph) => ph,
@@ -58,8 +57,8 @@ fn App(cx: Scope) -> impl IntoView {
     let fetch_pending_clearances = create_action(cx, move |_: &()| async move {
         match token.get() {
             Some(token) => {
-                let api = Api::new(api::API_ROOT.into());
-                match api.get_places_clearance_with_api_token(&token).await {
+                let api = ClearanceApi::new(api::API_ROOT, token.clone());
+                match api.place_clearances().await {
                     Ok(pending) => {
                         invalid_token.update(|v| *v = false);
                         place_clearances.update(|place_clearances| {

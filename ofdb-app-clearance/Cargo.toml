@@ -8,8 +8,8 @@ rust-version = "1.71.0"
 
 [dependencies]
 # Project dependencies
-ofdb-boundary = { version = "0.12.2", features = ["extra-derive"] }
-ofdb-entities = { version = "0.12.0", features = ["wasm-bindgen"] }
+ofdb-boundary = { version = "0.12.5", features = ["extra-derive"] }
+ofdb-entities = { version = "0.12.5", features = ["wasm-bindgen"] }
 ofdb-frontend-api = "=0.0.0"
 
 # External dependencies

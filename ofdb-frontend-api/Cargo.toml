@@ -10,13 +10,20 @@ repository.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-gloo-net = "0.2.6"
 percent-encoding = "2.3.0"
-serde = "1.0.171"
-thiserror = "1.0.43"
+serde = "1.0.175"
+thiserror = "1.0.44"
+
+# Update to v0.3.x as soon as
+# https://github.com/rustwasm/gloo/issues/353
+# has been fixed.
+[dependencies.gloo-net]
+version = "0.2.6"
+default-features = false
+features = ["http", "json"]
 
 [dependencies.ofdb-boundary]
-version = "0.12.2"
+version = "0.12.5"
 path = "../ofdb-boundary"
 default-features = false
 features = ["extra-derive"]

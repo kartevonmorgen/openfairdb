@@ -4,10 +4,7 @@ use leptos_router::*;
 use crate::api::PublicApi;
 
 #[component]
-pub fn Entry<A>(cx: Scope, api: A) -> impl IntoView
-where
-    A: PublicApi + Clone + 'static,
-{
+pub fn Entry(cx: Scope, api: PublicApi) -> impl IntoView {
     // -- signals -- //
 
     let params = use_params_map(cx);
@@ -16,7 +13,6 @@ where
     // -- actions -- //
 
     let fetch_entry = create_action(cx, move |id: &String| {
-        let api = api.clone();
         let id = id.to_owned();
         async move {
             match api.entries(&[&id]).await {

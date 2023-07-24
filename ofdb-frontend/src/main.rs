@@ -3,8 +3,7 @@ use leptos::*;
 use leptos_router::*;
 
 use ofdb_boundary::{MapBbox, MapPoint, User};
-
-mod api;
+use ofdb_frontend_api as api;
 
 mod pages;
 use pages::*;
@@ -29,15 +28,15 @@ const DEFAULT_BBOX: MapBbox = MapBbox {
 fn App(cx: Scope) -> impl IntoView {
     // -- signals -- //
 
-    let authorized_api = create_rw_signal(cx, None::<api::AuthorizedApi>);
+    let user_api = create_rw_signal(cx, None::<api::UserApi>);
     let user_info = create_rw_signal(cx, None::<User>);
-    let logged_in = Signal::derive(cx, move || authorized_api.get().is_some());
+    let logged_in = Signal::derive(cx, move || user_api.get().is_some());
     let (bbox, _) = create_signal(cx, DEFAULT_BBOX);
 
     // -- actions -- //
 
     let fetch_user_info = create_action(cx, move |_| async move {
-        match authorized_api.get() {
+        match user_api.get() {
             Some(api) => match api.user_info().await {
                 Ok(info) => {
                     user_info.update(|i| *i = Some(info));
@@ -53,10 +52,10 @@ fn App(cx: Scope) -> impl IntoView {
     });
 
     let logout = create_action(cx, move |_| async move {
-        match authorized_api.get() {
+        match user_api.get() {
             Some(api) => match api.logout().await {
                 Ok(_) => {
-                    authorized_api.update(|a| *a = None);
+                    user_api.update(|a| *a = None);
                     user_info.update(|i| *i = None);
                 }
                 Err(err) => {
@@ -77,10 +76,10 @@ fn App(cx: Scope) -> impl IntoView {
 
     // -- init API -- //
 
-    let unauthorized_api = api::UnauthorizedApi::new(DEFAULT_API_URL);
+    let public_api = api::PublicApi::new(DEFAULT_API_URL);
     if let Ok(token) = LocalStorage::get(API_TOKEN_STORAGE_KEY) {
-        let api = api::AuthorizedApi::new(DEFAULT_API_URL, token);
-        authorized_api.update(|a| *a = Some(api));
+        let api = api::UserApi::new(DEFAULT_API_URL, token);
+        user_api.update(|a| *a = Some(api));
         fetch_user_info.dispatch(());
     }
 
@@ -90,7 +89,7 @@ fn App(cx: Scope) -> impl IntoView {
 
     create_effect(cx, move |_| {
         log::debug!("API authorization state changed");
-        match authorized_api.get() {
+        match user_api.get() {
             Some(api) => {
                 log::debug!("API is now authorized: save token in LocalStorage");
                 LocalStorage::set(API_TOKEN_STORAGE_KEY, api.token()).expect("LocalStorage::set");
@@ -110,17 +109,17 @@ fn App(cx: Scope) -> impl IntoView {
             <Route
               path=Page::Home.path()
               view=move |cx| view! { cx,
-                <Home api = unauthorized_api bbox />
+                <Home api = public_api bbox />
               }
             />
             <Route
               path=Page::Login.path()
               view=move |cx| view! { cx,
                 <Login
-                  api = unauthorized_api
+                  api = public_api
                   on_success = move |api| {
                       log::info!("Successfully logged in");
-                      authorized_api.update(|v| *v = Some(api));
+                      user_api.update(|v| *v = Some(api));
                       let navigate = use_navigate(cx);
                       navigate(Page::Dashboard.path(), Default::default()).expect("Dashboard route");
                       fetch_user_info.dispatch(());
@@ -130,21 +129,21 @@ fn App(cx: Scope) -> impl IntoView {
             <Route
               path=Page::Register.path()
               view=move |cx| view! { cx,
-                <Register api = unauthorized_api />
+                <Register api = public_api />
               }
             />
             <Route
               path=Page::ResetPassword.path()
               view=move|cx| view! { cx,
-                <ResetPassword api = unauthorized_api />
+                <ResetPassword api = public_api />
               }
             />
             <Route
               path=Page::Dashboard.path()
               view=move|cx| view! { cx,
                 <Dashboard
-                  public_api = unauthorized_api
-                  user_api = authorized_api.into()
+                  public_api = public_api
+                  user_api = user_api.into()
                 />
               }
             />
@@ -152,7 +151,7 @@ fn App(cx: Scope) -> impl IntoView {
               path=format!("{}/:id", Page::Entries.path())
               view=move|cx| view! { cx,
                 <Entry
-                  api = unauthorized_api
+                  api = public_api
                 />
               }
             />
