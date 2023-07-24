@@ -5,10 +5,7 @@ use ofdb_boundary::MapBbox;
 use crate::{api::PublicApi, components::*};
 
 #[component]
-pub fn Home<A>(cx: Scope, api: A, bbox: ReadSignal<MapBbox>) -> impl IntoView
-where
-    A: PublicApi + Clone + 'static,
-{
+pub fn Home(cx: Scope, api: PublicApi, bbox: ReadSignal<MapBbox>) -> impl IntoView {
     view! { cx,
       <section>
         <div class="container p-6 mx-auto">

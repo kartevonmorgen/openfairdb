@@ -4,15 +4,15 @@ use leptos_router::*;
 use ofdb_boundary::Credentials;
 
 use crate::{
-    api::{self, AuthorizedApi, UnauthorizedApi},
+    api::{self, PublicApi, UserApi},
     components::*,
     Page,
 };
 
 #[component]
-pub fn Login<F>(cx: Scope, api: UnauthorizedApi, on_success: F) -> impl IntoView
+pub fn Login<F>(cx: Scope, api: PublicApi, on_success: F) -> impl IntoView
 where
-    F: Fn(AuthorizedApi) + 'static + Clone,
+    F: Fn(UserApi) + 'static + Clone,
 {
     let (login_error, set_login_error) = create_signal(cx, None::<String>);
     let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
@@ -62,7 +62,7 @@ where
                           initial_credentials = Default::default()
                           submit_credentials_action = login_action
                           error = login_error.into()
-                          disabled = disabled.into()
+                          disabled
                       />
                       <div class="text-center pt-1 mb-6 pb-1">
                         <A

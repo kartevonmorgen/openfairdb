@@ -1,9 +1,9 @@
 use leptos::*;
 
-use crate::api::{self, UnauthorizedApi};
+use crate::api::{self, PublicApi};
 
 #[component]
-pub fn ResetPassword(cx: Scope, api: UnauthorizedApi) -> impl IntoView {
+pub fn ResetPassword(cx: Scope, api: PublicApi) -> impl IntoView {
     let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
     let (request_response, set_request_response) = create_signal(cx, None::<()>);
     let (request_error, set_request_error) = create_signal(cx, None::<String>);

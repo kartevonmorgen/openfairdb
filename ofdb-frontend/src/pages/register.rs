@@ -4,13 +4,13 @@ use leptos_router::*;
 use ofdb_boundary::Credentials;
 
 use crate::{
-    api::{self, UnauthorizedApi},
+    api::{self, PublicApi},
     components::*,
     Page,
 };
 
 #[component]
-pub fn Register(cx: Scope, api: UnauthorizedApi) -> impl IntoView {
+pub fn Register(cx: Scope, api: PublicApi) -> impl IntoView {
     let (register_response, set_register_response) = create_signal(cx, None::<()>);
     let (register_error, set_register_error) = create_signal(cx, None::<String>);
     let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
@@ -65,7 +65,7 @@ pub fn Register(cx: Scope, api: UnauthorizedApi) -> impl IntoView {
                           initial_credentials = Default::default()
                           submit_credentials_action = register_action
                           error = register_error.into()
-                          disabled = disabled.into()
+                          disabled
                       />
                       <div class="flex items-center justify-between pb-6">
                         <p class="mb-0 mr-2 text-gray-600">"Your already have an account?"</p>

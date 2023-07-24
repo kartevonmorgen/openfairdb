@@ -5,29 +5,24 @@ use ofdb_boundary::*;
 use crate::api::{PublicApi, UserApi};
 
 #[component]
-pub fn Dashboard<A, U>(cx: Scope, public_api: A, user_api: Signal<Option<U>>) -> impl IntoView
-where
-    A: PublicApi + Clone + 'static,
-    U: UserApi + Clone + 'static,
-{
+pub fn Dashboard(
+    cx: Scope,
+    public_api: PublicApi,
+    user_api: Signal<Option<UserApi>>,
+) -> impl IntoView {
     // -- signals -- //
 
     let subscriptions = create_rw_signal(cx, None::<Vec<BboxSubscription>>);
 
     // -- actions -- //
 
-    let api_clone = public_api.clone();
-    let fetch_entries_count_action = create_action(cx, move |_| {
-        let api = api_clone.clone();
-        async move { api.count_entries().await }
-    });
+    let fetch_entries_count_action =
+        create_action(cx, move |_| async move { public_api.count_entries().await });
 
-    let fetch_tags_count_action = create_action(cx, move |_| {
-        let api = public_api.clone();
-        async move { api.count_tags().await }
-    });
+    let fetch_tags_count_action =
+        create_action(cx, move |_| async move { public_api.count_tags().await });
 
-    let fetch_bbox_subscriptions = create_action(cx, move |api: &U| {
+    let fetch_bbox_subscriptions = create_action(cx, move |api: &UserApi| {
         let api = api.clone();
         async move {
             match api.bbox_subscriptions().await {
@@ -41,7 +36,7 @@ where
         }
     });
 
-    let delete_bbox_subscriptions = create_action(cx, move |api: &U| {
+    let delete_bbox_subscriptions = create_action(cx, move |api: &UserApi| {
         let api = api.clone();
         async move {
             match api.unsubscribe_all_bboxes().await {
