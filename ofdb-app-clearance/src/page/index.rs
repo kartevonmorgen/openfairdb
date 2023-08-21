@@ -11,13 +11,12 @@ use crate::api;
 
 #[component]
 pub fn Index(
-    cx: Scope,
     token: String,
     place_clearances: RwSignal<HashMap<String, api::PlaceClearance>>,
     fetch_pending_clearances: Action<(), ()>,
 ) -> impl IntoView {
-    let expanded = create_rw_signal(cx, HashSet::<String>::new());
-    let selected = create_rw_signal(cx, HashSet::<String>::new());
+    let expanded = create_rw_signal(HashSet::<String>::new());
+    let selected = create_rw_signal(HashSet::<String>::new());
 
     let handle_clearance_result = move |result| {
         match result {
@@ -44,7 +43,7 @@ pub fn Index(
 
     let accept = {
         let token = token.clone();
-        create_action(cx, move |(id, rev_nr): &(String, u64)| {
+        create_action(move |(id, rev_nr): &(String, u64)| {
             let c = ClearanceForPlace {
                 place_id: id.clone(),
                 cleared_revision: Some(*rev_nr),
@@ -60,7 +59,7 @@ pub fn Index(
 
     let accept_all_selected = {
         let token = token.clone();
-        create_action(cx, move |_: &()| {
+        create_action(move |_: &()| {
             let place_clearances = place_clearances.get();
             let clearances = selected
                 .get()
@@ -86,16 +85,16 @@ pub fn Index(
         })
     };
 
-    view! { cx,
+    view! {
         <div>
             <main>
                 <div class="container">
                     <div class="section">
                         {move || {
                             if place_clearances.get().is_empty() {
-                                view! { cx, <p>"There is nothing to clear :)"</p> }.into_view(cx)
+                                view! { <p>"There is nothing to clear :)"</p> }.into_view()
                             } else {
-                                view! { cx,
+                                view! {
                                     <div class="panel">
                                         <p class="panel-heading">
                                             "Pending Clearances"
@@ -110,8 +109,8 @@ pub fn Index(
                                             <For
                                                 each=move || place_clearances.get()
                                                 key=|(id, _)| id.clone()
-                                                view=move |cx, (_, place_clearance)| {
-                                                    view! { cx,
+                                                view=move |(_, place_clearance)| {
+                                                    view! {
                                                         <PanelBlock place_clearance expanded selected accept/>
                                                     }
                                                 }
@@ -128,7 +127,7 @@ pub fn Index(
                                         </div>
                                     </div>
                                 }
-                                    .into_view(cx)
+                                    .into_view()
                             }
                         }}
                     </div>
@@ -140,7 +139,6 @@ pub fn Index(
 
 #[component]
 fn PanelBlock(
-    cx: Scope,
     place_clearance: api::PlaceClearance,
     expanded: RwSignal<HashSet<String>>,
     selected: RwSignal<HashSet<String>>,
@@ -149,14 +147,14 @@ fn PanelBlock(
     let id = place_clearance.pending.place_id.clone();
     let is_expanded = {
         let id = id.clone();
-        Signal::derive(cx, move || expanded.get().contains(&id))
+        Signal::derive(move || expanded.get().contains(&id))
     };
     let is_selected = {
         let id = id.clone();
-        Signal::derive(cx, move || selected.get().contains(&id))
+        Signal::derive(move || selected.get().contains(&id))
     };
 
-    view! { cx,
+    view! {
         <li class="panel-block">
             <div>
                 <div class="level">
@@ -350,7 +348,7 @@ fn PanelBlock(
                         .get()
                         .then(|| {
                             if let Some(curr_rev) = place_clearance.current_rev() {
-                                view! { cx,
+                                view! {
                                     <div>
                                         <DetailsTable
                                             id=place_clearance.pending.place_id.clone()
@@ -361,9 +359,9 @@ fn PanelBlock(
                                         />
                                     </div>
                                 }
-                                    .into_view(cx)
+                                    .into_view()
                             } else {
-                                view! { cx, <p>"Loading current revision ..."</p> }.into_view(cx)
+                                view! { <p>"Loading current revision ..."</p> }.into_view()
                             }
                         })
                 }}
@@ -374,7 +372,6 @@ fn PanelBlock(
 
 #[component]
 fn PanelActions(
-    cx: Scope,
     place_clearances: RwSignal<HashMap<String, api::PlaceClearance>>,
     expanded: RwSignal<HashSet<String>>,
     selected: RwSignal<HashSet<String>>,
@@ -395,7 +392,7 @@ fn PanelActions(
     let collapse_all = move |_| {
         expanded.update(|x| x.clear());
     };
-    view! { cx,
+    view! {
         <div class="field is-grouped">
             <p class="control">
                 <button class="button" on:click=expand_all>
@@ -423,7 +420,6 @@ fn PanelActions(
 
 #[component]
 fn DetailsTable(
-    cx: Scope,
     id: String,
     last_cleared_rev_nr: Option<u64>,
     lastrev: Option<PlaceRevision>,
@@ -451,7 +447,7 @@ fn DetailsTable(
         String::new()
     };
 
-    view! { cx,
+    view! {
         <table class="details-table">
             <col class="col-head"/>
             <col class="col-last"/>
@@ -473,13 +469,13 @@ fn DetailsTable(
                     </button>
                 </th>
             </tr>
-            {table_row_always(cx, "Title", &title_cs)}
-            {table_row_always(cx, "Description", &desc_cs)}
-            {table_row_always(cx, "Location", &location_cs)}
-            {table_row(cx, "Contact", &contact_cs)}
-            {table_row(cx, "Opening hours", &opening_cs)}
-            {table_row(cx, "Links", &links_cs)}
-            {table_row(cx, "Tags", &tags_cs)}
+            {table_row_always("Title", &title_cs)}
+            {table_row_always("Description", &desc_cs)}
+            {table_row_always("Location", &location_cs)}
+            {table_row("Contact", &contact_cs)}
+            {table_row("Opening hours", &opening_cs)}
+            {table_row("Links", &links_cs)}
+            {table_row("Tags", &tags_cs)}
         </table>
     }
 }
@@ -592,44 +588,44 @@ where
     Changeset::new(&slast, &scurr, split)
 }
 
-fn table_row_always(cx: Scope, title: &'static str, cs: &Changeset) -> impl IntoView {
-    view! { cx,
+fn table_row_always(title: &'static str, cs: &Changeset) -> impl IntoView {
+    view! {
         <tr>
             <td>{title}</td>
-            <td>{diffy_last(cx, cs)}</td>
-            <td>{diffy_current(cx, cs)}</td>
+            <td>{diffy_last(cs)}</td>
+            <td>{diffy_current(cs)}</td>
         </tr>
     }
 }
 
-fn table_row(cx: Scope, title: &'static str, cs: &Changeset) -> impl IntoView {
+fn table_row(title: &'static str, cs: &Changeset) -> impl IntoView {
     if cs.distance == 0 {
         None
     } else {
-        Some(table_row_always(cx, title, cs))
+        Some(table_row_always(title, cs))
     }
 }
 
-fn diffy_current(cx: Scope, cs: &Changeset) -> impl IntoView {
+fn diffy_current(cs: &Changeset) -> impl IntoView {
     let csm = cs.diffs.iter().map(|d| match d {
-        Difference::Same(s) => Some(view! { cx, <span inner_html=s></span> }.into_view(cx)),
+        Difference::Same(s) => Some(view! { <span inner_html=s></span> }.into_view()),
         Difference::Add(s) => {
-            Some(view! { cx, <span class="diffadd" inner_html=s></span> }.into_view(cx))
+            Some(view! { <span class="diffadd" inner_html=s></span> }.into_view())
         }
         _ => None,
     });
-    view! { cx, <span>{csm.collect_view(cx)}</span> }
+    view! { <span>{csm.collect_view()}</span> }
 }
 
-fn diffy_last(cx: Scope, cs: &Changeset) -> impl IntoView {
+fn diffy_last(cs: &Changeset) -> impl IntoView {
     let csm = cs.diffs.iter().map(|d| match d {
-        Difference::Same(s) => Some(view! { cx, <span inner_html=s></span> }.into_view(cx)),
+        Difference::Same(s) => Some(view! { <span inner_html=s></span> }.into_view()),
         Difference::Rem(s) => {
-            Some(view! { cx, <span class="diffrem" inner_html=s></span> }.into_view(cx))
+            Some(view! { <span class="diffrem" inner_html=s></span> }.into_view())
         }
         _ => None,
     });
-    view! { cx, <span>{csm.collect_view(cx)}</span> }
+    view! { <span>{csm.collect_view()}</span> }
 }
 
 #[derive(Clone, Debug)]

@@ -1,6 +1,7 @@
-use gloo_net::http::{Request, RequestCredentials};
+use gloo_net::http::{Request, RequestBuilder};
 use ofdb_boundary::*;
 use serde::de::DeserializeOwned;
+use web_sys::RequestCredentials;
 
 use crate::{into_json, Result};
 
@@ -18,7 +19,7 @@ impl UserApi {
     fn auth_header_value(&self) -> String {
         format!("Bearer {}", self.token.token)
     }
-    async fn send<T>(&self, req: Request) -> Result<T>
+    async fn send<T>(&self, req: RequestBuilder) -> Result<T>
     where
         T: DeserializeOwned,
     {

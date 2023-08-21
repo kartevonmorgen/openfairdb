@@ -4,7 +4,6 @@ use ofdb_boundary::Credentials;
 
 #[component]
 pub fn CredentialsForm(
-    cx: Scope,
     title: &'static str,
     description: &'static str,
     submit_credentials_label: &'static str,
@@ -14,10 +13,10 @@ pub fn CredentialsForm(
     disabled: Signal<bool>,
 ) -> impl IntoView {
     let Credentials { email, password } = initial_credentials;
-    let (email, set_email) = create_signal(cx, email);
-    let (password, set_password) = create_signal(cx, password);
+    let (email, set_email) = create_signal(email);
+    let (password, set_password) = create_signal(password);
 
-    let credentials = Signal::derive(cx, move || {
+    let credentials = Signal::derive(move || {
         email.with(|email| {
             let email = email.trim();
             if email.is_empty() {
@@ -38,12 +37,12 @@ pub fn CredentialsForm(
     });
 
     let submit_credentials_disabled =
-        Signal::derive(cx, move || disabled.get() || credentials.get().is_none());
+        Signal::derive(move || disabled.get() || credentials.get().is_none());
 
     let submit_credentials =
         move || submit_credentials_action.dispatch(credentials.get().expect("Some"));
 
-    view! { cx,
+    view! {
       <form on:submit=|ev|ev.prevent_default()>
         //<p>{ title }</p>
         <div class="text-center">
@@ -56,7 +55,7 @@ pub fn CredentialsForm(
           <h4 class="text-xl font-semibold mt-1 mb-12 pb-1">{ title }</h4>
         </div>
         <p class="mb-4 text-gray-600">{ description }</p>
-        {move || error.get().map(|err| view!{ cx,
+        {move || error.get().map(|err| view!{
           <p class="mb-4 text-red-700">{ err }</p>
         })}
         <div class="mb-4">

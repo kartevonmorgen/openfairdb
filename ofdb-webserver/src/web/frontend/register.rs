@@ -37,8 +37,8 @@ pub fn post_register(
             let credentials = credentials.into_inner();
 
             let Ok(email) = credentials.email.parse::<EmailAddress>() else {
-                   let msg = "Invalid email address.";
-                   return Err(Flash::error(Redirect::to(uri!(get_register)), msg));
+                let msg = "Invalid email address.";
+                return Err(Flash::error(Redirect::to(uri!(get_register)), msg));
             };
             let login = usecases::Credentials {
                 email: &email,

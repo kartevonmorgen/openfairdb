@@ -3,12 +3,12 @@ use leptos::*;
 use crate::api::{self, PublicApi};
 
 #[component]
-pub fn ResetPassword(cx: Scope, api: PublicApi) -> impl IntoView {
-    let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
-    let (request_response, set_request_response) = create_signal(cx, None::<()>);
-    let (request_error, set_request_error) = create_signal(cx, None::<String>);
-    let (email, set_email) = create_signal(cx, String::new());
-    let reset_password_action = create_action(cx, move |_: &()| {
+pub fn ResetPassword(api: PublicApi) -> impl IntoView {
+    let (wait_for_response, set_wait_for_response) = create_signal(false);
+    let (request_response, set_request_response) = create_signal(None::<()>);
+    let (request_error, set_request_error) = create_signal(None::<String>);
+    let (email, set_email) = create_signal(String::new());
+    let reset_password_action = create_action(move |_: &()| {
         let email = email.get().to_string();
         log::info!("Request password reset for {}", email);
         async move {
@@ -35,7 +35,7 @@ pub fn ResetPassword(cx: Scope, api: PublicApi) -> impl IntoView {
     });
     let input_is_disabled = move || request_response.get().is_some() || wait_for_response.get();
     let reset_button_is_disabled = move || input_is_disabled() || email.get().is_empty();
-    view! { cx,
+    view! {
       <section>
         <div class="container py-12 px-6 mx-auto">
           <div class="flex justify-center items-center flex-wrap h-full g-6 text-gray-800">
@@ -55,7 +55,7 @@ pub fn ResetPassword(cx: Scope, api: PublicApi) -> impl IntoView {
                       </div>
                       <form>
                         <p class="mb-4 text-gray-600">"Please enter your email address to reset your password"</p>
-                        {move || request_error.get().map(|err| view!{ cx,
+                        {move || request_error.get().map(|err| view!{
                           <p class="mb-4 text-red-700">{ err }</p>
                         })}
                         <div class="mb-4">
@@ -87,18 +87,18 @@ pub fn ResetPassword(cx: Scope, api: PublicApi) -> impl IntoView {
                   </div>
                   <div class="lg:w-6/12 flex items-center lg:rounded-r-lg rounded-b-lg lg:rounded-bl-none bg-kvm-blue-light">
                     <div class="px-4 py-6 md:p-12 md:mx-6">{move || match request_response.get() {
-                        Some(()) => view!{ cx,
+                        Some(()) => view!{
                           <h4 class="text-xl font-semibold mb-6">"Request to reset the password sent."</h4>
                           <p class="text-sm">
                             "Now check your email inbox and open corresponding email. Then click on the link contained therein to enter your new password."
                           </p>
-                        }.into_view(cx),
-                        None => view!{ cx,
+                        }.into_view(),
+                        None => view!{
                           <h4 class="text-xl font-semibold mb-6">"How does it work?"</h4>
                           <p class="text-sm">
                             "You will be sent an email with a link to set your new password."
                           </p>
-                        }.into_view(cx)
+                        }.into_view()
                       }}
                     </div>
                   </div>

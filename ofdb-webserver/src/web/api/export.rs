@@ -197,12 +197,12 @@ fn event_to_ical(event: Event) -> Option<icalendar::Event> {
         let end_calendar_date_time = timestamp_as_calendar_date_time(end);
         debug_assert!(end_calendar_date_time.is_some());
         let Some(end) = end_calendar_date_time else {
-                log::warn!(
-                    "Invalid end date time for event '{}' (ID={})",
-                    &title,
-                    id.as_str()
-                );
-                return None;
+            log::warn!(
+                "Invalid end date time for event '{}' (ID={})",
+                &title,
+                id.as_str()
+            );
+            return None;
         };
         event = event.ends(end).done();
     }

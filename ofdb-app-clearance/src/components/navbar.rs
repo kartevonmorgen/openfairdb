@@ -4,10 +4,10 @@ use leptos_router::*;
 use crate::page::Page;
 
 #[component]
-pub fn Navbar(cx: Scope, logged_in: Signal<bool>) -> impl IntoView {
-    let menu_is_active = create_rw_signal(cx, false);
+pub fn Navbar(logged_in: Signal<bool>) -> impl IntoView {
+    let menu_is_active = create_rw_signal(false);
 
-    view! { cx,
+    view! {
         <nav class="navbar" roler="navigation" aria-label="main navigation">
             <div class="navbar-brand">
                 <A class="navbar-item" href=Page::Home.path()>
@@ -25,19 +25,19 @@ pub fn Navbar(cx: Scope, logged_in: Signal<bool>) -> impl IntoView {
                         <div class="buttons">
                             {move || {
                                 if logged_in.get() {
-                                    view! { cx,
+                                    view! {
                                         <A class="button is-light" href=Page::Logout.path()>
                                             "Log out"
                                         </A>
                                     }
-                                        .into_view(cx)
+                                        .into_view()
                                 } else {
-                                    view! { cx,
+                                    view! {
                                         <A href=Page::Login.path() class="button is-light">
                                             "Log in"
                                         </A>
                                     }
-                                        .into_view(cx)
+                                        .into_view()
                                 }
                             }}
                         </div>
@@ -49,8 +49,8 @@ pub fn Navbar(cx: Scope, logged_in: Signal<bool>) -> impl IntoView {
 }
 
 #[component]
-pub fn BurgerMenu(cx: Scope, menu_is_active: RwSignal<bool>) -> impl IntoView {
-    view! { cx,
+pub fn BurgerMenu(menu_is_active: RwSignal<bool>) -> impl IntoView {
+    view! {
         <a
             on:click=move |_| {
                 menu_is_active.update(|v| *v = !*v);

@@ -1,6 +1,7 @@
-use gloo_net::http::{Request, RequestCredentials};
+use gloo_net::http::Request;
 use ofdb_boundary::*;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
+use web_sys::RequestCredentials;
 
 use crate::{into_json, Result, UserApi};
 
