@@ -4,11 +4,11 @@ use ofdb_boundary::{MapBbox, PlaceSearchResult, SearchResponse};
 use crate::{api::PublicApi, pages::Page};
 
 #[component]
-pub fn PlaceSearch(cx: Scope, api: PublicApi, bbox: ReadSignal<MapBbox>) -> impl IntoView {
-    let (search_response, set_search_response) = create_signal(cx, None::<SearchResponse>);
-    let (search_error, set_search_error) = create_signal(cx, None::<String>);
+pub fn PlaceSearch(api: PublicApi, bbox: ReadSignal<MapBbox>) -> impl IntoView {
+    let (search_response, set_search_response) = create_signal(None::<SearchResponse>);
+    let (search_error, set_search_error) = create_signal(None::<String>);
 
-    let search_action = create_action(cx, move |text: &String| {
+    let search_action = create_action(move |text: &String| {
         //let bbox = DEFAULT_BBOX;
         let bbox = bbox.get();
         let text = text.clone();
@@ -26,9 +26,9 @@ pub fn PlaceSearch(cx: Scope, api: PublicApi, bbox: ReadSignal<MapBbox>) -> impl
         }
     });
 
-    view! { cx,
+    view! {
       <div class="flex items-center justify-center">
-        { search_error.get().map(|err| view!{ cx, <p>{ err }</p> }) }
+        { search_error.get().map(|err| view!{  <p>{ err }</p> }) }
         <input
           type="search"
           class="w-full max-w-md py-3 px-4 bg-gray-50 text-gray-700 outline-none mb-4 rounded"
@@ -52,7 +52,7 @@ pub fn PlaceSearch(cx: Scope, api: PublicApi, bbox: ReadSignal<MapBbox>) -> impl
       </div>
       { move || search_response.get().is_some().then(||{
         let count = search_response.get().map(|r|r.visible.len()).unwrap_or_default();
-        view!{ cx,
+        view!{
           <div class="flex justify-start mb-4">
             <p class="py-2 text-gray-500 border-b border-gray-300">
               "Found "
@@ -62,13 +62,13 @@ pub fn PlaceSearch(cx: Scope, api: PublicApi, bbox: ReadSignal<MapBbox>) -> impl
           </div>
         }})
       }
-      { move || search_response.get().is_some().then(|| view!{ cx,
+      { move || search_response.get().is_some().then(|| view!{
           <ul>
             <For
               each = move || search_response.get().map(|res|res.visible).unwrap_or_default()
               key = |place| place.id.clone() // TODO: can we avoid this clone?
-              view = move |cx, place| {
-                view! { cx, <li class="mb-3"><PlaceSearchResultItem place /></li> }
+              view = move | place| {
+                view! {  <li class="mb-3"><PlaceSearchResultItem place /></li> }
               }
             />
           </ul>
@@ -78,8 +78,8 @@ pub fn PlaceSearch(cx: Scope, api: PublicApi, bbox: ReadSignal<MapBbox>) -> impl
 }
 
 #[component]
-fn PlaceSearchResultItem(cx: Scope, place: PlaceSearchResult) -> impl IntoView {
-    view! { cx,
+fn PlaceSearchResultItem(place: PlaceSearchResult) -> impl IntoView {
+    view! {
       <div class="font-bold text-lg hover:text-gray-600">
         <a href=format!("{}/{}", Page::Entries.path(), place.id)>
           { place.title }
@@ -90,8 +90,8 @@ fn PlaceSearchResultItem(cx: Scope, place: PlaceSearchResult) -> impl IntoView {
         <For
           each = move || place.tags.clone() // TODO: can we avoid this clone?
           key = |tag| tag.clone() // TODO: can we avoid this clone?
-          view = move |cx, tag| {
-             view!{ cx, <span class="text-xs bg-gray-100 text-gray-500 rounded mr-1 p-1">{ tag }</span> }
+          view = move | tag| {
+             view!{  <span class="text-xs bg-gray-100 text-gray-500 rounded mr-1 p-1">{ tag }</span> }
           }
         />
       </ul>

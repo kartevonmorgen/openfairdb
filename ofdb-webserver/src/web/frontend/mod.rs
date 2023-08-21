@@ -94,10 +94,10 @@ pub fn post_change_user_role(
     };
 
     let Some(role) = Role::from_u8(d.role) else {
-       return Err(Flash::error(
-           Redirect::to(uri!(get_search_users(email.as_str()))),
-           "Failed to change user role: invalid role.",
-       ));
+        return Err(Flash::error(
+            Redirect::to(uri!(get_search_users(email.as_str()))),
+            "Failed to change user role: invalid role.",
+        ));
     };
 
     match change_user_role(&db, account.email(), &email, role) {

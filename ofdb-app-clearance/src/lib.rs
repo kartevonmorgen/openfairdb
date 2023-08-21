@@ -18,17 +18,17 @@ const TOKEN_KEY: &str = "org-token";
 const TITLE: &str = "Clearance Center";
 
 #[component]
-fn App(cx: Scope) -> impl IntoView {
+fn App() -> impl IntoView {
     // -- signals -- //
 
-    let (token, set_token) = create_signal(cx, Option::<String>::None);
-    let logged_in = Signal::derive(cx, move || token.get().is_some());
-    let invalid_token = create_rw_signal(cx, false);
-    let place_clearances = create_rw_signal(cx, HashMap::<String, api::PlaceClearance>::new());
+    let (token, set_token) = create_signal(Option::<String>::None);
+    let logged_in = Signal::derive(move || token.get().is_some());
+    let invalid_token = create_rw_signal(false);
+    let place_clearances = create_rw_signal(HashMap::<String, api::PlaceClearance>::new());
 
     // -- actions -- //
 
-    let get_place_history = create_action(cx, move |(token, id): &(String, String)| {
+    let get_place_history = create_action(move |(token, id): &(String, String)| {
         let api = ClearanceApi::new(api::API_ROOT, token.clone());
         let id = id.clone();
         async move {
@@ -54,7 +54,7 @@ fn App(cx: Scope) -> impl IntoView {
         }
     });
 
-    let fetch_pending_clearances = create_action(cx, move |_: &()| async move {
+    let fetch_pending_clearances = create_action(move |_: &()| async move {
         match token.get() {
             Some(token) => {
                 let api = ClearanceApi::new(api::API_ROOT, token.clone());
@@ -111,46 +111,45 @@ fn App(cx: Scope) -> impl IntoView {
 
     // -- effects -- //
 
-    view! { cx,
+    view! {
         <Router>
             <Navbar logged_in/>
             <main>
                 <Routes>
                     <Route
                         path=Page::Home.path()
-                        view=move |cx| {
+                        view=move || {
                             if let Some(token) = token.get() {
-                                view! { cx,
+                                view! {
                                     <Index token place_clearances fetch_pending_clearances/>
                                 }
-                                    .into_view(cx)
+                                    .into_view()
                             } else {
-                                let navigate = leptos_router::use_navigate(cx);
+                                let navigate = leptos_router::use_navigate();
                                 request_animation_frame(move || {
                                     _ = navigate(Page::Login.path(), Default::default());
                                 });
                                 view! {
-                                    cx,
                                 }
-                                    .into_view(cx)
+                                    .into_view()
                             }
                         }
                     />
                     <Route
                         path=Page::Login.path()
-                        view=move |cx| view! { cx, <Login invalid_token=invalid_token.into()/> }
+                        view=move || view! { <Login invalid_token=invalid_token.into()/> }
                     />
                     <Route
                         path=Page::Logout.path()
-                        view=move |cx| {
+                        view=move || {
                             SessionStorage::delete(TOKEN_KEY);
                             set_token.update(|x| *x = None);
-                            let navigate = leptos_router::use_navigate(cx);
+                            let navigate = leptos_router::use_navigate();
                             request_animation_frame(move || {
                                 _ = navigate(Page::Login.path(), Default::default());
                             });
                             view! {
-                                cx,
+
                             }
                         }
                     />
@@ -164,5 +163,5 @@ pub fn run() {
     let container = document()
         .get_element_by_id("app")
         .expect("container element");
-    mount_to(container.unchecked_into(), |cx| view! { cx, <App/> });
+    mount_to(container.unchecked_into(), || view! { <App/> });
 }

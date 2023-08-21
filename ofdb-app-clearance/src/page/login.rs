@@ -5,13 +5,13 @@ use leptos_router::Form;
 use crate::Page;
 
 #[component]
-pub fn Login(cx: Scope, invalid_token: Signal<bool>) -> impl IntoView {
-    let show_token = create_rw_signal(cx, false);
-    let token = create_rw_signal(cx, String::new());
+pub fn Login(invalid_token: Signal<bool>) -> impl IntoView {
+    let show_token = create_rw_signal(false);
+    let token = create_rw_signal(String::new());
 
     let token_field_type = move || if show_token.get() { "text" } else { "password" };
 
-    view! { cx,
+    view! {
         <div class="container">
             <div class="section">
                 <h2 class="title">"Login"</h2>
@@ -19,7 +19,7 @@ pub fn Login(cx: Scope, invalid_token: Signal<bool>) -> impl IntoView {
                     invalid_token
                         .get()
                         .then(|| {
-                            view! { cx,
+                            view! {
                                 <div style="color:red;padding-bottom:20px">
                                     "Your API token is invalid. Please try again"
                                 </div>

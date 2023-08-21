@@ -5,24 +5,20 @@ use ofdb_boundary::*;
 use crate::api::{PublicApi, UserApi};
 
 #[component]
-pub fn Dashboard(
-    cx: Scope,
-    public_api: PublicApi,
-    user_api: Signal<Option<UserApi>>,
-) -> impl IntoView {
+pub fn Dashboard(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> impl IntoView {
     // -- signals -- //
 
-    let subscriptions = create_rw_signal(cx, None::<Vec<BboxSubscription>>);
+    let subscriptions = create_rw_signal(None::<Vec<BboxSubscription>>);
 
     // -- actions -- //
 
     let fetch_entries_count_action =
-        create_action(cx, move |_| async move { public_api.count_entries().await });
+        create_action(move |_| async move { public_api.count_entries().await });
 
     let fetch_tags_count_action =
-        create_action(cx, move |_| async move { public_api.count_tags().await });
+        create_action(move |_| async move { public_api.count_tags().await });
 
-    let fetch_bbox_subscriptions = create_action(cx, move |api: &UserApi| {
+    let fetch_bbox_subscriptions = create_action(move |api: &UserApi| {
         let api = api.clone();
         async move {
             match api.bbox_subscriptions().await {
@@ -36,7 +32,7 @@ pub fn Dashboard(
         }
     });
 
-    let delete_bbox_subscriptions = create_action(cx, move |api: &UserApi| {
+    let delete_bbox_subscriptions = create_action(move |api: &UserApi| {
         let api = api.clone();
         async move {
             match api.unsubscribe_all_bboxes().await {
@@ -56,7 +52,7 @@ pub fn Dashboard(
 
     // -- effects -- //
 
-    create_effect(cx, move |_| {
+    create_effect(move |_| {
         if let Some(user_api) = user_api.get() {
             fetch_bbox_subscriptions.dispatch(user_api);
         }
@@ -64,7 +60,7 @@ pub fn Dashboard(
 
     // -- memos -- //
 
-    let memorized_subscriptions = create_memo(cx, move |_| subscriptions.get());
+    let memorized_subscriptions = create_memo(move |_| subscriptions.get());
 
     // -- callbacks -- //
 
@@ -77,7 +73,7 @@ pub fn Dashboard(
         }
     };
 
-    view! { cx,
+    view! {
       <section class="container mx-auto">
         <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
           <div class="mx-auto max-w-none">
@@ -111,7 +107,7 @@ pub fn Dashboard(
         </div>
         <Show
           when = move || user_api.get().is_some()
-          fallback = |_| view! { cx, }
+          fallback = || view! {  }
         >
           <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
             <div class="mx-auto max-w-none">
@@ -120,18 +116,18 @@ pub fn Dashboard(
                   <h3 class="text-base font-semibold leading-6 text-gray-900">"Subscriptions"</h3>
                 </div>
                 { move || match memorized_subscriptions.get() {
-                    Some(subs) => view! { cx,
+                    Some(subs) => view! {
                       <ul role="list" class="divide-y divide-gray-100">
                         <For
                           each=move||subs.clone()
                           key=|sub|sub.id.clone()
-                          view=move |cx, subscription|view!{ cx, <BboxSubscriptionListElement subscription on_delete = on_bbox_delete /> }
+                          view=move | subscription|view!{  <BboxSubscriptionListElement subscription on_delete = on_bbox_delete /> }
                         />
                       </ul>
-                    }.into_view(cx),
-                    None => view! { cx,
+                    }.into_view(),
+                    None => view! {
                       <p class="text-gray-500 p-5">"There are currently no active subscriptions."</p>
-                    }.into_view(cx)
+                    }.into_view()
                   }
                 }
               </div>
@@ -143,11 +139,7 @@ pub fn Dashboard(
 }
 
 #[component]
-fn BboxSubscriptionListElement<F>(
-    cx: Scope,
-    subscription: BboxSubscription,
-    on_delete: F,
-) -> impl IntoView
+fn BboxSubscriptionListElement<F>(subscription: BboxSubscription, on_delete: F) -> impl IntoView
 where
     F: Fn(String) + 'static + Copy,
 {
@@ -159,7 +151,7 @@ where
         north_east_lng,
     } = subscription;
 
-    view! { cx,
+    view! {
       <li class="flex items-center justify-between gap-x-6 p-5">
         <div class="min-w-0">
           <div class="flex items-start gap-x-3">
@@ -196,22 +188,19 @@ where
 }
 
 #[component]
-fn DisplayNumber(
-    cx: Scope,
-    number: Signal<Option<Result<usize, crate::api::Error>>>,
-) -> impl IntoView {
-    let memorized_number = create_memo(cx, move |_| number.get());
+fn DisplayNumber(number: Signal<Option<Result<usize, crate::api::Error>>>) -> impl IntoView {
+    let memorized_number = create_memo(move |_| number.get());
 
     #[allow(unused_braces)]
     move || match memorized_number.get() {
-        Some(Ok(nr)) => view! {cx, { nr.to_string() } }.into_view(cx),
+        Some(Ok(nr)) => view! { { nr.to_string() } }.into_view(),
         Some(Err(_)) => {
             // TODO: use an appropriate icon
-            view! {cx, "- API error -" }.into_view(cx)
+            view! { "- API error -" }.into_view()
         }
         None => {
             // TODO: use spinner icon
-            view! {cx, "-" }.into_view(cx)
+            view! { "-" }.into_view()
         }
     }
 }

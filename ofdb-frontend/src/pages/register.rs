@@ -10,12 +10,12 @@ use crate::{
 };
 
 #[component]
-pub fn Register(cx: Scope, api: PublicApi) -> impl IntoView {
-    let (register_response, set_register_response) = create_signal(cx, None::<()>);
-    let (register_error, set_register_error) = create_signal(cx, None::<String>);
-    let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
+pub fn Register(api: PublicApi) -> impl IntoView {
+    let (register_response, set_register_response) = create_signal(None::<()>);
+    let (register_error, set_register_error) = create_signal(None::<String>);
+    let (wait_for_response, set_wait_for_response) = create_signal(false);
 
-    let register_action = create_action(cx, move |credentials: &Credentials| {
+    let register_action = create_action(move |credentials: &Credentials| {
         log::info!(
             "Registering new account for {email}",
             email = credentials.email
@@ -47,9 +47,9 @@ pub fn Register(cx: Scope, api: PublicApi) -> impl IntoView {
         }
     });
 
-    let disabled = Signal::derive(cx, move || wait_for_response.get());
+    let disabled = Signal::derive(move || wait_for_response.get());
 
-    view! { cx,
+    view! {
       <section>
         <div class="container py-12 px-6 mx-auto">
           <div class="flex justify-center items-center flex-wrap h-full g-6 text-gray-800">
@@ -80,7 +80,7 @@ pub fn Register(cx: Scope, api: PublicApi) -> impl IntoView {
                   </div>
                   <div class="lg:w-6/12 flex items-center lg:rounded-r-lg rounded-b-lg lg:rounded-bl-none bg-kvm-blue-light">
                     <div class="px-4 py-6 md:p-12 md:mx-6">{move || match register_response.get() {
-                        Some(()) => view!{ cx,
+                        Some(()) => view!{
                           <h4 class="text-xl font-semibold mb-6">"Successfully registered"</h4>
                           <p class="text-sm">
                             "Congratulations! You've successfully registered your OpenFairDB account."
@@ -88,13 +88,13 @@ pub fn Register(cx: Scope, api: PublicApi) -> impl IntoView {
                           <p class="text-sm">
                             "Now check your email inbox and confirm the validity of your email address."
                           </p>
-                        }.into_view(cx),
-                        None => view!{ cx,
+                        }.into_view(),
+                        None => view!{
                           <h4 class="text-xl font-semibold mb-6">"What you can do with OpenFairDB"</h4>
                           <p class="text-sm">
                             "OpenFairDB is an Open Source Database to map sustainable places around the world. With an account you can subscribe to a map section so that you are always informed about new or changed entries."
                           </p>
-                        }.into_view(cx)
+                        }.into_view()
                       }}
                     </div>
                   </div>

@@ -55,7 +55,7 @@ jobs:
           targets: ${{ matrix.target }}, wasm32-unknown-unknown
 
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Cache Rust toolchain and build artifacts
         uses: Swatinem/rust-cache@v2

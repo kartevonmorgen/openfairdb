@@ -25,17 +25,17 @@ const DEFAULT_BBOX: MapBbox = MapBbox {
 };
 
 #[component]
-fn App(cx: Scope) -> impl IntoView {
+fn App() -> impl IntoView {
     // -- signals -- //
 
-    let user_api = create_rw_signal(cx, None::<api::UserApi>);
-    let user_info = create_rw_signal(cx, None::<User>);
-    let logged_in = Signal::derive(cx, move || user_api.get().is_some());
-    let (bbox, _) = create_signal(cx, DEFAULT_BBOX);
+    let user_api = create_rw_signal(None::<api::UserApi>);
+    let user_info = create_rw_signal(None::<User>);
+    let logged_in = Signal::derive(move || user_api.get().is_some());
+    let (bbox, _) = create_signal(DEFAULT_BBOX);
 
     // -- actions -- //
 
-    let fetch_user_info = create_action(cx, move |_| async move {
+    let fetch_user_info = create_action(move |_| async move {
         match user_api.get() {
             Some(api) => match api.user_info().await {
                 Ok(info) => {
@@ -51,7 +51,7 @@ fn App(cx: Scope) -> impl IntoView {
         }
     });
 
-    let logout = create_action(cx, move |_| async move {
+    let logout = create_action(move |_| async move {
         match user_api.get() {
             Some(api) => match api.logout().await {
                 Ok(_) => {
@@ -87,7 +87,7 @@ fn App(cx: Scope) -> impl IntoView {
 
     // -- effects -- //
 
-    create_effect(cx, move |_| {
+    create_effect(move |_| {
         log::debug!("API authorization state changed");
         match user_api.get() {
             Some(api) => {
@@ -101,46 +101,46 @@ fn App(cx: Scope) -> impl IntoView {
         }
     });
 
-    view! { cx,
+    view! {
       <Router>
         <NavBar user = user_info.into() on_logout />
         <main>
           <Routes>
             <Route
               path=Page::Home.path()
-              view=move |cx| view! { cx,
+              view=move || view! {
                 <Home api = public_api bbox />
               }
             />
             <Route
               path=Page::Login.path()
-              view=move |cx| view! { cx,
+              view=move || view! {
                 <Login
                   api = public_api
                   on_success = move |api| {
                       log::info!("Successfully logged in");
                       user_api.update(|v| *v = Some(api));
-                      let navigate = use_navigate(cx);
-                      navigate(Page::Dashboard.path(), Default::default()).expect("Dashboard route");
+                      let navigate = use_navigate();
+                      navigate(Page::Dashboard.path(), Default::default());
                       fetch_user_info.dispatch(());
                   } />
               }
             />
             <Route
               path=Page::Register.path()
-              view=move |cx| view! { cx,
+              view=move || view! {
                 <Register api = public_api />
               }
             />
             <Route
               path=Page::ResetPassword.path()
-              view=move|cx| view! { cx,
+              view=move|| view! {
                 <ResetPassword api = public_api />
               }
             />
             <Route
               path=Page::Dashboard.path()
-              view=move|cx| view! { cx,
+              view=move|| view! {
                 <Dashboard
                   public_api = public_api
                   user_api = user_api.into()
@@ -149,7 +149,7 @@ fn App(cx: Scope) -> impl IntoView {
             />
             <Route
               path=format!("{}/:id", Page::Entries.path())
-              view=move|cx| view! { cx,
+              view=move|| view! {
                 <Entry
                   api = public_api
                 />
@@ -165,5 +165,5 @@ fn main() {
     _ = console_log::init_with_level(log::Level::Debug);
     console_error_panic_hook::set_once();
     log::info!("Start web application");
-    mount_to_body(|cx| view! { cx, <App /> });
+    mount_to_body(|| view! {  <App /> });
 }

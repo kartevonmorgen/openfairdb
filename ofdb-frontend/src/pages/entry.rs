@@ -4,15 +4,15 @@ use leptos_router::*;
 use crate::api::PublicApi;
 
 #[component]
-pub fn Entry(cx: Scope, api: PublicApi) -> impl IntoView {
+pub fn Entry(api: PublicApi) -> impl IntoView {
     // -- signals -- //
 
-    let params = use_params_map(cx);
-    let entry = create_rw_signal(cx, None::<ofdb_boundary::Entry>);
+    let params = use_params_map();
+    let entry = create_rw_signal(None::<ofdb_boundary::Entry>);
 
     // -- actions -- //
 
-    let fetch_entry = create_action(cx, move |id: &String| {
+    let fetch_entry = create_action(move |id: &String| {
         let id = id.to_owned();
         async move {
             match api.entries(&[&id]).await {
@@ -31,7 +31,7 @@ pub fn Entry(cx: Scope, api: PublicApi) -> impl IntoView {
 
     // -- effects -- //
 
-    create_effect(cx, move |_| {
+    create_effect(move |_| {
         if let Some(id) = params.with(|p| p.get("id").cloned()) {
             fetch_entry.dispatch(id);
         }
@@ -39,19 +39,19 @@ pub fn Entry(cx: Scope, api: PublicApi) -> impl IntoView {
 
     move || {
         if let Some(entry) = entry.get() {
-            view! { cx, <EntryProfile entry /> }.into_view(cx)
+            view! { <EntryProfile entry /> }.into_view()
         } else {
-            view!{ cx,
+            view!{
               <div class="mx-auto text-center max-w-7xl px-4 mt-12 pb-16 sm:px-6 sm:pb-24 lg:px-8">
                 <h2 class="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">"Entry not found"</h2>
               </div>
-            }.into_view(cx)
+            }.into_view()
         }
     }
 }
 
 #[component]
-fn EntryProfile(cx: Scope, entry: ofdb_boundary::Entry) -> impl IntoView {
+fn EntryProfile(entry: ofdb_boundary::Entry) -> impl IntoView {
     let ofdb_boundary::Entry {
         title,
         description,
@@ -69,7 +69,7 @@ fn EntryProfile(cx: Scope, entry: ofdb_boundary::Entry) -> impl IntoView {
         ..
     } = entry;
 
-    view! { cx,
+    view! {
       <div class="bg-white">
         <div aria-hidden="true" class="relative">
           <img src={ image_url } alt="" class="h-96 w-full object-cover object-center" />

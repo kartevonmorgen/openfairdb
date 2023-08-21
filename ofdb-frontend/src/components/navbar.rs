@@ -5,13 +5,13 @@ use leptos_router::*;
 use ofdb_boundary::User;
 
 #[component]
-pub fn NavBar<F>(cx: Scope, user: Signal<Option<User>>, on_logout: F) -> impl IntoView
+pub fn NavBar<F>(user: Signal<Option<User>>, on_logout: F) -> impl IntoView
 where
     F: Fn() + 'static + Copy,
 {
-    let (menu_open, set_menu_open) = create_signal(cx, false);
+    let (menu_open, set_menu_open) = create_signal(false);
 
-    view! { cx,
+    view! {
       <nav class="relative container mx-auto p-6">
         <div class="flex items-center justify-between">
 
@@ -60,24 +60,24 @@ where
 }
 
 #[component]
-fn UserMenu<F>(cx: Scope, user: Signal<Option<User>>, on_logout: F) -> impl IntoView
+fn UserMenu<F>(user: Signal<Option<User>>, on_logout: F) -> impl IntoView
 where
     F: Fn() + 'static + Copy,
 {
-    let memorized_user = create_memo(cx, move |_| user.get());
+    let memorized_user = create_memo(move |_| user.get());
 
     move || match memorized_user.get() {
-        Some(user) => view! { cx, <UserMenuItems user on_logout /> }.into_view(cx),
-        None => view! { cx, <PublicMenuItems /> }.into_view(cx),
+        Some(user) => view! {  <UserMenuItems user on_logout /> }.into_view(),
+        None => view! {  <PublicMenuItems /> }.into_view(),
     }
 }
 
 #[component]
-fn UserMenuItems<F>(cx: Scope, user: User, on_logout: F) -> impl IntoView
+fn UserMenuItems<F>(user: User, on_logout: F) -> impl IntoView
 where
     F: Fn() + 'static + Clone,
 {
-    view! { cx,
+    view! {
       <MenuItem page = Page::Home label = "Search" />
       <MenuItem page = Page::Dashboard label = "Dashboard" />
       <a href="#" on:click= move |_| on_logout()>
@@ -89,8 +89,8 @@ where
 }
 
 #[component]
-fn PublicMenuItems(cx: Scope) -> impl IntoView {
-    view! { cx,
+fn PublicMenuItems() -> impl IntoView {
+    view! {
       <MenuItem page = Page::Home label = "Search" />
       <MenuItem page = Page::Dashboard label = "Dashboard" />
       <MenuItem page = Page::Login label = "Login" />
@@ -100,8 +100,8 @@ fn PublicMenuItems(cx: Scope) -> impl IntoView {
 
 // TODO: Highlight active item.
 #[component]
-fn MenuItem(cx: Scope, page: Page, label: &'static str) -> impl IntoView {
-    view! { cx,
+fn MenuItem(page: Page, label: &'static str) -> impl IntoView {
+    view! {
       <A href=page.path() class="hover:text-gray-600".to_string()>{ label }</A>
     }
 }

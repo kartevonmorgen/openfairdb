@@ -10,14 +10,14 @@ use crate::{
 };
 
 #[component]
-pub fn Login<F>(cx: Scope, api: PublicApi, on_success: F) -> impl IntoView
+pub fn Login<F>(api: PublicApi, on_success: F) -> impl IntoView
 where
     F: Fn(UserApi) + 'static + Clone,
 {
-    let (login_error, set_login_error) = create_signal(cx, None::<String>);
-    let (wait_for_response, set_wait_for_response) = create_signal(cx, false);
+    let (login_error, set_login_error) = create_signal(None::<String>);
+    let (wait_for_response, set_wait_for_response) = create_signal(false);
 
-    let login_action = create_action(cx, move |credentials: &Credentials| {
+    let login_action = create_action(move |credentials: &Credentials| {
         log::info!("Logging in with {email}", email = credentials.email);
         let credentials = credentials.to_owned();
         let on_success = on_success.clone();
@@ -37,16 +37,16 @@ where
                         }
                         api::Error::Api(err) => err.message,
                     };
-                    error!("Unable to login with {}: {msg}", credentials.email);
+                    log::error!("Unable to login with {}: {msg}", credentials.email);
                     set_login_error.update(|e| *e = Some(msg));
                 }
             }
         }
     });
 
-    let disabled = Signal::derive(cx, move || wait_for_response.get());
+    let disabled = Signal::derive(move || wait_for_response.get());
 
-    view! { cx,
+    view! {
       <section>
         <div class="container py-12 px-6 mx-auto">
           <div class="flex justify-center items-center flex-wrap h-full g-6 text-gray-800">
