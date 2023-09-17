@@ -1,5 +1,3 @@
-use std::fmt::Write as _;
-
 use ofdb_core::rating::Rated;
 
 use super::*;
@@ -10,6 +8,14 @@ pub mod prelude {
     use crate::web::{self, api, sqlite, tantivy};
     use ofdb_core::gateways::notify::NotificationGateway;
     use std::collections::HashSet;
+
+    pub use reqwest::StatusCode;
+    pub use serde_json::json;
+    pub use std::net::SocketAddr;
+
+    pub fn endpoint(address: SocketAddr, endpoint: &str) -> String {
+        format!("http://{address}/api{endpoint}")
+    }
 
     pub use crate::{
         core::db::*,
@@ -29,7 +35,8 @@ pub mod prelude {
     }
 
     pub fn setup_with_cfg(cfg: Cfg) -> (Client, sqlite::Connections) {
-        let (client, conn, _) = web::tests::setup_with_cfg(vec![("/", api::routes())], cfg);
+        let (client, conn, _) =
+            web::tests::rocket_test_setup_with_cfg(vec![("/", api::routes())], cfg);
         (client, conn)
     }
 
@@ -39,13 +46,21 @@ pub mod prelude {
         tantivy::SearchEngine,
         impl NotificationGateway,
     ) {
-        let (client, connections, search_engine) = web::tests::setup(vec![("/", api::routes())]);
+        let (client, connections, search_engine) =
+            web::tests::rocket_test_setup(vec![("/", api::routes())]);
         (client, connections, search_engine, DummyNotifyGW {})
     }
 
-    pub fn test_json(r: &Response) {
+    pub fn assert_rocket_response_has_json_content_type(r: &Response) {
         assert_eq!(
             r.headers().get("Content-Type").collect::<Vec<_>>()[0],
+            "application/json"
+        );
+    }
+
+    pub fn assert_reqwest_response_has_json_content_type(response: &reqwest::Response) {
+        assert_eq!(
+            response.headers().get("Content-Type").unwrap(),
             "application/json"
         );
     }
@@ -69,16 +84,25 @@ pub mod prelude {
 
 use self::prelude::*;
 
-#[test]
-fn create_a_new_place() {
-    let (client, db) = setup();
-    let req = client.post("/entries")
-                    .header(ContentType::JSON)
-                    .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#);
-    let response = req.dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
-    let body_str = response.into_string().unwrap();
+#[tokio::test]
+async fn create_a_new_place() {
+    let (addr, db, _) = run_server();
+    let client = reqwest::Client::new();
+    let req = client.post(endpoint(addr, "/entries")).json(&json!(
+        {
+          "title":"foo",
+          "description":"blablabla",
+          "lat":0.0,
+          "lng":0.0,
+          "categories":["x"],
+          "license":"CC0-1.0",
+          "tags":[]
+        }
+    ));
+    let response = req.send().await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_reqwest_response_has_json_content_type(&response);
+    let body_str = response.text().await.unwrap();
     let eid = db.exclusive().unwrap().all_places().unwrap()[0]
         .0
         .id
@@ -107,16 +131,16 @@ fn create_place_with_reserved_tag() {
     assert_eq!(res.status(), Status::Forbidden);
 }
 
-#[test]
-fn create_place_with_tag_duplicates() {
-    let (client, db) = setup();
-    let req = client.post("/entries")
-                    .header(ContentType::JSON)
-                    .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","foo"]}"#);
-    let response = req.dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
-    let body_str = response.into_string().unwrap();
+#[tokio::test]
+async fn create_place_with_tag_duplicates() {
+    let (addr, db, _) = run_server();
+    let client = reqwest::Client::new();
+    let req = client.post(endpoint(addr,"/entries"))
+                    .json(&json!({"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","foo"]}));
+    let response = req.send().await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_reqwest_response_has_json_content_type(&response);
+    let body_str = response.text().await.unwrap();
     let eid = db.exclusive().unwrap().all_places().unwrap()[0]
         .0
         .id
@@ -124,17 +148,19 @@ fn create_place_with_tag_duplicates() {
     assert_eq!(body_str, format!("\"{}\"", eid));
 }
 
-#[test]
-fn create_place_with_sharp_tag_and_custom_link() {
-    let (client, db) = setup();
-    let json = r##"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","#bar","#foo&bar","foo#bar"],"links":[{"url":"example.com","title":"Auto-completed URL"}]}"##;
+#[tokio::test]
+async fn create_place_with_sharp_tag_and_custom_link() {
+    let (addr, db, _) = run_server();
+    let client = reqwest::Client::new();
+    let json = json!({"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["foo","#bar","#foo&bar","foo#bar"],"links":[{"url":"example.com","title":"Auto-completed URL"}]});
     let response = client
-        .post("/entries")
-        .header(ContentType::JSON)
-        .body(json)
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+        .post(endpoint(addr, "/entries"))
+        .json(&json)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_reqwest_response_has_json_content_type(&response);
     let (place, _) = db
         .shared()
         .unwrap()
@@ -155,28 +181,31 @@ fn create_place_with_sharp_tag_and_custom_link() {
     );
 }
 
-#[test]
-fn update_place_with_tag_duplicates() {
-    let (client, db) = setup();
-    let req = client.post("/entries")
-                    .header(ContentType::JSON)
-                    .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"ODbL-1.0","tags":["foo","foo"]}"#);
-    let _res = req.dispatch();
+#[tokio::test]
+async fn update_place_with_tag_duplicates() {
+    let (addr, db, _) = run_server();
+    let client = reqwest::Client::new();
+    let req = client.post(endpoint(addr,"/entries"))
+                    .json(&json!({"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"ODbL-1.0","tags":["foo","foo"]}));
+    let _res = req.send().await.unwrap();
     let (place, _) = db.exclusive().unwrap().all_places().unwrap()[0].clone();
-    let mut json = String::new();
-    write!(
-        &mut json,
-        "{{\"version\":{},\"id\":\"{}\"",
-        u64::from(place.revision.next()),
-        place.id
-    )
-    .unwrap();
-    json.push_str(r#","title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":["bar","bar"]}"#);
+    let json = json!({
+      "version": u64::from(place.revision.next()),
+      "id": place.id.to_string(),
+      "title":"foo",
+      "description":"blablabla",
+      "lat":0.0,
+      "lng":0.0,
+      "categories":["x"],
+      "license":"CC0-1.0",
+      "tags":["bar","bar"]
+    });
+
     let url = format!("/entries/{}", place.id);
-    let req = client.put(url).header(ContentType::JSON).body(json);
-    let response = req.dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    let req = client.put(endpoint(addr, &url)).json(&json);
+    let response = req.send().await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_reqwest_response_has_json_content_type(&response);
     let (e, _) = db.exclusive().unwrap().all_places().unwrap()[0].clone();
     assert_eq!(e.tags, vec!["bar"]);
 }
@@ -212,7 +241,7 @@ fn get_one_entry() {
     let req = client.get("/entries/get_one_entry_test");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert_eq!(body_str.as_str().chars().next().unwrap(), '[');
     let entries: Vec<json::Entry> = serde_json::from_str(&body_str).unwrap();
@@ -253,7 +282,7 @@ fn get_multiple_places() {
     let req = client.get("/entries/get_multiple_entry_test_one,get_multiple_entry_test_two");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert_eq!(body_str.as_str().chars().next().unwrap(), '[');
     let entries: Vec<json::Entry> = serde_json::from_str(&body_str).unwrap();
@@ -333,7 +362,7 @@ fn search_with_categories_and_bbox() {
     ));
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -345,7 +374,7 @@ fn search_with_categories_and_bbox() {
     ));
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -430,7 +459,7 @@ fn search_with_text() {
     let req = client.get("/search?bbox=-10,-10,10,10&text=Foo&limit=2");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -440,7 +469,7 @@ fn search_with_text() {
     let req = client.get("/search?bbox=1.8,0.5,3.0,3.0&text=Foo");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -450,7 +479,7 @@ fn search_with_text() {
     let req = client.get("/search?bbox=-10,-10,10,10&text=blub%20foo");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -460,7 +489,7 @@ fn search_with_text() {
     let req = client.get("/search?bbox=0.9,0.5,2.5,2.0&text=blub%20foo");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -473,7 +502,7 @@ fn search_with_text() {
     let req = client.get("/search?bbox=-10,-10,10,10&text=blub,Foo");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -511,7 +540,7 @@ fn search_partial_text() {
     let req = client.get("/search?bbox=-10,-10,10,10&text=bar-baz");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -521,7 +550,7 @@ fn search_partial_text() {
     let req = client.get("/search?bbox=-10,-10,10,10&text=blub-");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -558,7 +587,7 @@ fn search_with_text_terms_inclusive_exclusive() {
     let req = client.get("/search?bbox=-10,-10,10,10&text=+Foo");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -567,7 +596,7 @@ fn search_with_text_terms_inclusive_exclusive() {
     let req = client.get("/search?bbox=-10,-10,10,10&text=+Foo%20-BAZ");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -576,7 +605,7 @@ fn search_with_text_terms_inclusive_exclusive() {
     let req = client.get("/search?bbox=-10,-10,10,10&text=+Foo%20+BAZ&limit=1");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -585,7 +614,7 @@ fn search_with_text_terms_inclusive_exclusive() {
     let req = client.get("/search?bbox=-10,-10,10,10&text=+Foo%20+BAZ%20-bar");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -594,7 +623,7 @@ fn search_with_text_terms_inclusive_exclusive() {
     let req = client.get("/search?bbox=-10,-10,10,10&text=+bAz%20+BAr&limit=1");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -603,7 +632,7 @@ fn search_with_text_terms_inclusive_exclusive() {
     let req = client.get("/search?bbox=-10,-10,10,10&text=-foo%20+bAz%20+BAr");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -612,7 +641,7 @@ fn search_with_text_terms_inclusive_exclusive() {
     let req = client.get("/search?bbox=-10,-10,10,10&text=-foo%20+bar");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -621,7 +650,7 @@ fn search_with_text_terms_inclusive_exclusive() {
     let req = client.get("/search?bbox=-10,-10,10,10&text=+foo+bar");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -670,7 +699,7 @@ fn search_with_city() {
     let req = client.get("/search?bbox=-10,-10,10,10&text=stuttgart&limit=2");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!("\"{}\"", place_ids[0])));
     assert!(!body_str.contains(&format!("\"{}\"", place_ids[1])));
@@ -738,7 +767,7 @@ fn search_with_tags() {
     let req = client.get("/search?bbox=-10,-10,10,10&tags=bla-blubb");
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(body_str.contains(&format!(
         "\"visible\":[{{\"id\":\"{}\",\"status\":\"created\",\"lat\":0.0,\"lng\":0.0,\"title\":\"\",\"description\":\"\",\"categories\":[\"{}\"],\"tags\":[\"bla-blubb\",\"foo-bar\"],\"ratings\":{{\"total\":0.0,\"diversity\":0.0,\"fairness\":0.0,\"humanity\":0.0,\"renewable\":0.0,\"solidarity\":0.0,\"transparency\":0.0}}}}]",
@@ -1236,7 +1265,7 @@ fn create_new_user() {
         .unwrap();
     assert_eq!(u.email.as_str(), "foo@bar.com");
     assert!(u.password.verify("foo bar"));
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
 }
 
 #[test]
@@ -1264,7 +1293,7 @@ fn create_rating() {
             .value,
         RatingValue::from(1)
     );
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
 }
 
 #[test]
@@ -1300,7 +1329,7 @@ fn get_one_rating() {
     let req = client.get(format!("/ratings/{}", rid));
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert_eq!(body_str.as_str().chars().next().unwrap(), '[');
     let ratings: Vec<json::Rating> = serde_json::from_str(&body_str).unwrap();
@@ -1362,7 +1391,7 @@ fn ratings_with_and_without_source() {
     let req = client.get(format!("/ratings/{}", rid));
     let response = req.dispatch();
     assert_eq!(response.status(), Status::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert_eq!(body_str.as_str().chars().next().unwrap(), '[');
     let ratings: Vec<json::Rating> = serde_json::from_str(&body_str).unwrap();
@@ -1492,7 +1521,7 @@ fn login_logout_succeeds_jwt() {
         .body(r#"{"email": "foo@bar", "password": "secret"}"#)
         .dispatch();
     assert_eq!(res.status(), Status::Ok);
-    test_json(&res);
+    assert_rocket_response_has_json_content_type(&res);
     let body_str = res.into_string().unwrap();
     let jwt_token: ofdb_boundary::JwtToken = serde_json::from_str(&body_str).unwrap();
 
@@ -1761,43 +1790,66 @@ fn recently_changed_entries() {
     assert!(!body_since_until_str.contains("\"id\":\"new\""));
 }
 
-#[test]
-fn count_most_popular_tags_on_empty_db_to_verify_sql() {
+#[tokio::test]
+async fn count_most_popular_tags_on_empty_db_to_verify_sql() {
+    let (addr, _, _) = run_server();
+    let client = reqwest::Client::new();
+
     // Check that the requests succeeds on an empty database just
     // to verify that the literal SQL query that is not verified
     // at compile-time still matches the current database schema!
-    let (client, _) = setup();
+
     // All parameters
     let response = client
-        .get("/entries/most-popular-tags?offset=10&limit=1000&min_count=10&max_count=100&max_cache_age=0")
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    let body_str = response.into_string().unwrap();
+        .get(endpoint(addr, "/entries/most-popular-tags?offset=10&limit=1000&min_count=10&max_count=100&max_cache_age=0"))
+        .send().await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let body_str = response.text().await.unwrap();
     assert_eq!(body_str, "[]");
 
     // Only offset parameter
     let response = client
-        .get("/entries/most-popular-tags?offset=1&max_cache_age=0")
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
+        .get(endpoint(
+            addr,
+            "/entries/most-popular-tags?offset=1&max_cache_age=0",
+        ))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
 
     // Only limit parameter
     let response = client
-        .get("/entries/most-popular-tags?limit=1&max_cache_age=0")
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
+        .get(endpoint(
+            addr,
+            "/entries/most-popular-tags?limit=1&max_cache_age=0",
+        ))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
 
     // Only min_count parameter
     let response = client
-        .get("/entries/most-popular-tags?min_count=1&max_cache_age=0")
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
+        .get(endpoint(
+            addr,
+            "/entries/most-popular-tags?min_count=1&max_cache_age=0",
+        ))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
 
     // Only max_count parameter
     let response = client
-        .get("/entries/most-popular-tags?max_count=1&max_cache_age=0")
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
+        .get(endpoint(
+            addr,
+            "/entries/most-popular-tags?max_count=1&max_cache_age=0",
+        ))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
 }
 
 fn init_tags_cache_test_db(cnt: usize, db: &sqlite::Connections) {
@@ -1812,51 +1864,59 @@ fn init_tags_cache_test_db(cnt: usize, db: &sqlite::Connections) {
         });
 }
 
-#[test]
-fn update_most_popular_tags_on_outdated_cache() {
-    let (client, db) = setup();
+#[tokio::test]
+async fn update_most_popular_tags_on_outdated_cache() {
+    let (addr, db, _) = run_server();
+    let client = reqwest::Client::new();
 
     // init
     init_tags_cache_test_db(10, &db);
 
     // get only popular tags
     let response = client
-        .get("/entries/most-popular-tags?min_count=8&max_cache_age=0")
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    let body_str = response.into_string().unwrap();
+        .get(endpoint(
+            addr,
+            "/entries/most-popular-tags?min_count=8&max_cache_age=0",
+        ))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let body_str = response.text().await.unwrap();
     let tags: Vec<ofdb_boundary::TagFrequency> = serde_json::from_str(&body_str).unwrap();
     assert_eq!(tags.len(), 3);
 
     let response = client
-        .get("/entries/most-popular-tags?max_count=1")
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    let body_str = response.into_string().unwrap();
+        .get(endpoint(addr, "/entries/most-popular-tags?max_count=1"))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let body_str = response.text().await.unwrap();
     let tags: Vec<ofdb_boundary::TagFrequency> = serde_json::from_str(&body_str).unwrap();
     assert_eq!(tags.len(), 1);
 
     // get cached popular tags again
     let response = client
-        .get("/entries/most-popular-tags?min_count=8")
-        .dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    let body_str = response.into_string().unwrap();
+        .get(endpoint(addr, "/entries/most-popular-tags?min_count=8"))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let body_str = response.text().await.unwrap();
     let tags: Vec<ofdb_boundary::TagFrequency> = serde_json::from_str(&body_str).unwrap();
     assert_eq!(tags.len(), 3);
 }
 
-#[test]
-fn openapi() {
-    let (client, _) = setup();
-    let req = client.get("/server/openapi.yaml");
-    let response = req.dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    assert_eq!(
-        response.headers().get("Content-Type").collect::<Vec<_>>()[0],
-        "text/yaml"
-    );
-    let body_str = response.into_string().unwrap();
+#[tokio::test]
+async fn openapi() {
+    let (addr, _, _) = run_server();
+    let client = reqwest::Client::new();
+    let req = client.get(endpoint(addr, "/server/openapi.yaml"));
+    let response = req.send().await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response.headers().get("Content-Type").unwrap(), "text/yaml");
+    let body_str = response.text().await.unwrap();
     assert!(body_str.contains("openapi:"))
 }
 
@@ -2094,7 +2154,7 @@ fn search_duplicates() {
         .body(r#"{"title":"foO","description":"bla","lat":0.0005,"lng":0.0005}"#)
         .dispatch();
     assert_eq!(res.status(), Status::Ok);
-    test_json(&res);
+    assert_rocket_response_has_json_content_type(&res);
     let body_str = res.into_string().unwrap();
     let duplicate_places: Vec<ofdb_boundary::PlaceSearchResult> =
         serde_json::from_str(&body_str).unwrap();
@@ -2102,13 +2162,14 @@ fn search_duplicates() {
     assert_eq!(place.id.to_string(), duplicate_places.first().unwrap().id);
 }
 
-#[test]
-fn get_version() {
-    let (client, _) = setup();
-    let req = client.get("/server/version");
-    let response = req.dispatch();
-    assert_eq!(response.status(), Status::Ok);
-    let body_str = response.into_string().unwrap();
+#[tokio::test]
+async fn get_version() {
+    let (addr, _, _) = run_server();
+    let client = reqwest::Client::new();
+    let req = client.get(endpoint(addr, "/server/version"));
+    let response = req.send().await.unwrap();
+    assert_eq!(response.status(), StatusCode::OK);
+    let body_str = response.text().await.unwrap();
     assert_eq!(body_str, DUMMY_VERSION);
 }
 
@@ -2143,7 +2204,7 @@ mod with_captcha_protection_enabled {
                         .body(r#"{"title":"foo","description":"blablabla","lat":0.0,"lng":0.0,"categories":["x"],"license":"CC0-1.0","tags":[]}"#);
         let response = req.dispatch();
         assert_eq!(response.status(), Status::Ok);
-        test_json(&response);
+        assert_rocket_response_has_json_content_type(&response);
         let body_str = response.into_string().unwrap();
         let eid = db.exclusive().unwrap().all_places().unwrap()[0]
             .0
@@ -2245,7 +2306,7 @@ fn review_place_with_token() {
         ))
         .dispatch();
     // TODO: should be Status::Created
-    test_json(&res);
+    assert_rocket_response_has_json_content_type(&res);
     assert_eq!(res.status(), Status::Ok);
 }
 
@@ -2277,7 +2338,7 @@ fn review_place_with_token_and_invalid_status() {
             "{{\"token\":\"{token}\",\"status\":\"doesnotexist\"}}",
         ))
         .dispatch();
-    test_json(&res);
+    assert_rocket_response_has_json_content_type(&res);
     assert_eq!(res.status(), Status::UnprocessableEntity);
 }
 
@@ -2309,6 +2370,6 @@ fn review_place_with_token_and_invalid_revision() {
             "{{\"token\":\"{token}\",\"status\":\"confirmed\"}}",
         ))
         .dispatch();
-    test_json(&res);
+    assert_rocket_response_has_json_content_type(&res);
     assert_eq!(res.status(), Status::BadRequest);
 }

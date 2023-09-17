@@ -101,7 +101,7 @@ pub mod tests {
     };
 
     fn setup() -> (Client, Connections) {
-        let (client, db, _) = web::tests::setup(vec![("/", super::super::routes())]);
+        let (client, db, _) = web::tests::rocket_test_setup(vec![("/", super::super::routes())]);
         (client, db)
     }
 
