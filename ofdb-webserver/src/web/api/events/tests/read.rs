@@ -19,7 +19,7 @@ fn by_id() {
         .header(ContentType::JSON);
     let response = req.dispatch();
     assert_eq!(response.status(), HttpStatus::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert_eq!(
                 body_str,
@@ -55,7 +55,7 @@ fn all() {
     let req = client.get("/events").header(ContentType::JSON);
     let response = req.dispatch();
     assert_eq!(response.status(), HttpStatus::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(body_str.contains("\"id\":\"a\""));
 }
@@ -77,7 +77,7 @@ fn sorted_by_start() {
     }
     let res = client.get("/events").header(ContentType::JSON).dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
-    test_json(&res);
+    assert_rocket_response_has_json_content_type(&res);
     let body_str = res.into_string().unwrap();
     let objects: Vec<_> = body_str.split("},{").collect();
     assert!(objects[0].contains(&format!("\"start\":{}", now)));
@@ -105,7 +105,7 @@ fn filtered_by_tags() {
     let req = client.get("/events?tag=a").header(ContentType::JSON);
     let response = req.dispatch();
     assert_eq!(response.status(), HttpStatus::Ok);
-    test_json(&response);
+    assert_rocket_response_has_json_content_type(&response);
     let body_str = response.into_string().unwrap();
     assert!(body_str.contains("\"tags\":[\"a\"]"));
     assert!(!body_str.contains("\"tags\":[\"b\"]"));
@@ -230,7 +230,7 @@ fn filtered_by_start_min() {
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
-    test_json(&res);
+    assert_rocket_response_has_json_content_type(&res);
     let body_str = res.into_string().unwrap();
     let objects: Vec<_> = body_str.split("},{").collect();
     assert_eq!(objects.len(), 2);
@@ -261,7 +261,7 @@ fn filtered_by_end_min() {
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
-    test_json(&res);
+    assert_rocket_response_has_json_content_type(&res);
     let body_str = res.into_string().unwrap();
     let objects: Vec<_> = body_str.split("},{").collect();
     assert_eq!(objects.len(), 2);
@@ -289,7 +289,7 @@ fn filtered_by_start_max() {
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
-    test_json(&res);
+    assert_rocket_response_has_json_content_type(&res);
     let body_str = res.into_string().unwrap();
     let objects: Vec<_> = body_str.split("},{").collect();
     assert_eq!(objects.len(), 4);
@@ -322,7 +322,7 @@ fn filtered_by_end_max() {
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
-    test_json(&res);
+    assert_rocket_response_has_json_content_type(&res);
     let body_str = res.into_string().unwrap();
     let objects: Vec<_> = body_str.split("},{").collect();
     assert_eq!(objects.len(), 4);
@@ -352,7 +352,7 @@ fn filtered_by_bounding_box() {
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
-    test_json(&res);
+    assert_rocket_response_has_json_content_type(&res);
     let body_str = res.into_string().unwrap();
     assert!(body_str.contains("\"title\":\"-8-0\""));
     assert!(body_str.contains("\"title\":\"7-7.9\""));
@@ -364,7 +364,7 @@ fn filtered_by_bounding_box() {
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
-    test_json(&res);
+    assert_rocket_response_has_json_content_type(&res);
     let body_str = res.into_string().unwrap();
     assert!(!body_str.contains("\"title\":\"-8-0\""));
     assert!(!body_str.contains("\"title\":\"7-7.9\""));

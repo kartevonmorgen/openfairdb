@@ -10,7 +10,7 @@ pub fn setup() -> (
     sqlite::Connections,
     tantivy::SearchEngine,
 ) {
-    crate::web::tests::setup(vec![("/", super::routes())])
+    crate::web::tests::rocket_test_setup(vec![("/", super::routes())])
 }
 
 fn create_user(pool: &Connections, name: &str, role: Role) {

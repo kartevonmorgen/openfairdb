@@ -1,8 +1,13 @@
+use std::{
+    net::{SocketAddr, TcpListener},
+    thread,
+};
+
 use rocket::{config::Config as RocketCfg, local::blocking::Client, Route};
 
 use crate::{
     core::{prelude::*, usecases},
-    web::{sqlite, tantivy, Cfg},
+    web::{api::tests::prelude::default_accepted_licenses, sqlite, tantivy, Cfg},
 };
 
 pub mod prelude {
@@ -15,27 +20,47 @@ pub mod prelude {
         response::Response,
     };
 
-    pub use super::DummyNotifyGW;
+    pub use super::{run_server, DummyNotifyGW};
+
     pub use crate::core::db::*;
 }
 
-pub fn setup(
-    mounts: Vec<(&'static str, Vec<Route>)>,
-) -> (Client, sqlite::Connections, tantivy::SearchEngine) {
-    setup_with_cfg(
-        mounts,
-        Cfg {
-            accepted_licenses: crate::web::api::tests::prelude::default_accepted_licenses(),
-            protect_with_captcha: false,
-        },
-    )
+pub fn run_server() -> (SocketAddr, sqlite::Connections, tantivy::SearchEngine) {
+    let cfg = Cfg {
+        accepted_licenses: default_accepted_licenses(),
+        protect_with_captcha: false,
+    };
+
+    let address = {
+        let listener = TcpListener::bind("127.0.0.1:0".parse::<SocketAddr>().unwrap()).unwrap();
+        listener.local_addr().unwrap()
+    };
+
+    let mut rocket_cfg = RocketCfg::debug_default();
+    rocket_cfg.port = address.port();
+    rocket_cfg.address = address.ip();
+
+    let socket_address: SocketAddr = (rocket_cfg.address, rocket_cfg.port).into();
+
+    let (rocket, db, search_engine) =
+        rocket_test_instance_with_cfg(crate::web::mounts(), cfg, rocket_cfg);
+
+    thread::spawn(move || {
+        rocket::execute(rocket.launch()).unwrap();
+    });
+
+    (socket_address, db, search_engine)
 }
 
-pub fn setup_with_cfg(
+fn rocket_test_instance_with_cfg(
     mounts: Vec<(&'static str, Vec<Route>)>,
     cfg: Cfg,
-) -> (Client, sqlite::Connections, tantivy::SearchEngine) {
-    let rocket_cfg = RocketCfg::debug_default();
+    rocket_cfg: RocketCfg,
+) -> (
+    rocket::Rocket<rocket::Build>,
+    sqlite::Connections,
+    tantivy::SearchEngine,
+) {
     let connections = ofdb_db_sqlite::Connections::init(":memory:", 1).unwrap();
     ofdb_db_sqlite::run_embedded_database_migrations(connections.exclusive().unwrap());
     let search_engine = tantivy::SearchEngine::init_in_ram().unwrap();
@@ -58,6 +83,27 @@ pub fn setup_with_cfg(
         notify: Box::new(notify_gw),
     };
     let rocket = super::rocket_instance(options, connections, gateways);
+    (rocket, db, search_engine)
+}
+
+pub fn rocket_test_setup(
+    mounts: Vec<(&'static str, Vec<Route>)>,
+) -> (Client, sqlite::Connections, tantivy::SearchEngine) {
+    rocket_test_setup_with_cfg(
+        mounts,
+        Cfg {
+            accepted_licenses: default_accepted_licenses(),
+            protect_with_captcha: false,
+        },
+    )
+}
+
+pub fn rocket_test_setup_with_cfg(
+    mounts: Vec<(&'static str, Vec<Route>)>,
+    cfg: Cfg,
+) -> (Client, sqlite::Connections, tantivy::SearchEngine) {
+    let rocket_cfg = RocketCfg::debug_default();
+    let (rocket, db, search_engine) = rocket_test_instance_with_cfg(mounts, cfg, rocket_cfg);
     let client = Client::tracked(rocket).unwrap();
     (client, db, search_engine)
 }

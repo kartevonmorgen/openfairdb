@@ -18,7 +18,7 @@ fn without_creator_email() {
     // But in the future we might allow anonymous event creation:
     //
     // assert_eq!(response.status(), HttpStatus::Ok);
-    // test_json(&response);
+    // assert_rocket_response_has_json_content_type(&response);
     // let body_str = response.into_string().unwrap();
     // let eid = db.get().unwrap().all_events_chronologically().unwrap()[0].id.
     // clone(); assert_eq!(body_str, format!("\"{}\"", eid));
@@ -39,7 +39,7 @@ fn without_api_token_but_with_creator_email() {
     // But in the future we might allow anonymous event creation:
     //
     // assert_eq!(response.status(), HttpStatus::Ok);
-    // test_json(&response);
+    // assert_rocket_response_has_json_content_type(&response);
     // let body_str = response.into_string().unwrap();
     // let ev = db.get().unwrap().all_events_chronologically().unwrap()[0].
     // clone(); let eid = ev.id.clone();
@@ -50,7 +50,7 @@ fn without_api_token_but_with_creator_email() {
     //     .header(ContentType::JSON);
     // let response = req.dispatch();
     // assert_eq!(response.status(), HttpStatus::Ok);
-    // test_json(&response);
+    // assert_rocket_response_has_json_content_type(&response);
     // let body_str = response.into_string().unwrap();
     // assert_eq!(
     //     body_str,
@@ -83,7 +83,7 @@ mod with_api_token {
             .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com"}"#)
             .dispatch();
         assert_eq!(res.status(), HttpStatus::Ok);
-        test_json(&res);
+        assert_rocket_response_has_json_content_type(&res);
         let body_str = res.into_string().unwrap();
         let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
         let eid = ev.id.clone();
@@ -110,7 +110,7 @@ mod with_api_token {
             .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com"}"#)
             .dispatch();
         assert_eq!(res.status(), HttpStatus::Ok);
-        test_json(&res);
+        assert_rocket_response_has_json_content_type(&res);
         let body_str = res.into_string().unwrap();
         let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
         let eid = ev.id.clone();
@@ -163,7 +163,7 @@ mod with_api_token {
                     .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com","email":"","homepage":"","description":"","registration":""}"#)
                     .dispatch();
         assert_eq!(res.status(), HttpStatus::Ok);
-        test_json(&res);
+        assert_rocket_response_has_json_content_type(&res);
         let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
         assert!(ev.contact.is_none());
         assert!(ev.homepage.is_none());
@@ -189,7 +189,7 @@ mod with_api_token {
                     .body(r#"{"title":"title","description":"","start":-4132508400,"end":-4132508399,"created_by":"foo@bar.com"}"#)
                     .dispatch();
         assert_eq!(res.status(), HttpStatus::Ok);
-        test_json(&res);
+        assert_rocket_response_has_json_content_type(&res);
         let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
         assert_eq!(-4132508400, ev.start.as_secs());
         assert_eq!(Some(-4132508399), ev.end.map(Timestamp::as_secs));
@@ -214,7 +214,7 @@ mod with_api_token {
                     .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com","registration":"telephone","telephone":"12345"}"#)
                     .dispatch();
         assert_eq!(res.status(), HttpStatus::Ok);
-        test_json(&res);
+        assert_rocket_response_has_json_content_type(&res);
         let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
         assert_eq!(ev.registration.unwrap(), RegistrationType::Phone);
     }
@@ -282,7 +282,7 @@ mod with_api_token {
                     .body(r#"{"title":"x","start":4132508400,"created_by":"foo@bar.com","tags":["", " "," tag","tag ","two tags", "tag"]}"#)
                     .dispatch();
         assert_eq!(res.status(), HttpStatus::Ok);
-        test_json(&res);
+        assert_rocket_response_has_json_content_type(&res);
         let ev = db.shared().unwrap().all_events_chronologically().unwrap()[0].clone();
         let mut actual_tags = ev.tags;
         actual_tags.sort_unstable();
