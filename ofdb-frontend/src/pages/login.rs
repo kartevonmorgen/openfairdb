@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[component]
-pub fn Login<F>(api: PublicApi, on_success: F) -> impl IntoView
+pub fn Login<F>(public_api: PublicApi, on_success: F) -> impl IntoView
 where
     F: Fn(UserApi) + 'static + Clone,
 {
@@ -23,7 +23,7 @@ where
         let on_success = on_success.clone();
         async move {
             set_wait_for_response.update(|w| *w = true);
-            let result = api.login(&credentials).await;
+            let result = public_api.login(&credentials).await;
             set_wait_for_response.update(|w| *w = false);
             match result {
                 Ok(res) => {

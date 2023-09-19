@@ -108,15 +108,13 @@ fn App() -> impl IntoView {
           <Routes>
             <Route
               path=Page::Home.path()
-              view=move || view! {
-                <Home api = public_api bbox />
-              }
+              view=move || view! { <Home public_api bbox /> }
             />
             <Route
               path=Page::Login.path()
               view=move || view! {
                 <Login
-                  api = public_api
+                  public_api
                   on_success = move |api| {
                       log::info!("Successfully logged in");
                       user_api.update(|v| *v = Some(api));
@@ -128,32 +126,32 @@ fn App() -> impl IntoView {
             />
             <Route
               path=Page::Register.path()
-              view=move || view! {
-                <Register api = public_api />
-              }
+              view=move || view! { <Register public_api /> }
             />
             <Route
               path=Page::ResetPassword.path()
-              view=move|| view! {
-                <ResetPassword api = public_api />
-              }
+              view=move|| view! { <ResetPassword public_api /> }
             />
             <Route
               path=Page::Dashboard.path()
               view=move|| view! {
                 <Dashboard
-                  public_api = public_api
+                  public_api
                   user_api = user_api.into()
                 />
               }
             />
             <Route
               path=format!("{}/:id", Page::Entries.path())
-              view=move|| view! {
-                <Entry
-                  api = public_api
-                />
-              }
+              view=move|| view! { <Entry public_api /> }
+            />
+            <Route
+              path=Page::Events.path()
+              view=move|| view! { <Events public_api /> }
+            />
+            <Route
+              path=format!("{}/:id", Page::Events.path())
+              view=move|| view! { <Event public_api /> }
             />
           </Routes>
         </main>
@@ -165,5 +163,5 @@ fn main() {
     _ = console_log::init_with_level(log::Level::Debug);
     console_error_panic_hook::set_once();
     log::info!("Start web application");
-    mount_to_body(|| view! {  <App /> });
+    mount_to_body(|| view! { <App /> });
 }

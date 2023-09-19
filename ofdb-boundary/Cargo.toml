@@ -12,10 +12,14 @@ rust-version.workspace = true
 
 [dependencies]
 serde = { version = "1.0.188", features = ["derive"] }
-time = { version = "0.3.28", features = ["serde"] }
+
+[dependencies.time]
+version = "0.3.28"
+default-features = false
+features = ["serde"]
 
 [dependencies.ofdb-entities]
-version = "0.12.0"
+version = "0.12.6"
 path = "../ofdb-entities"
 optional = true
 
@@ -24,10 +28,10 @@ version = "1.0.48"
 optional = true
 
 [features]
-default = ["entity-conversions", "thiserror"]
-extra-derive = ["thiserror"]
-entity-conversions = ["ofdb-entities"]
-wasm-bindgen = ["ofdb-entities/wasm-bindgen"]
+default = ["entity-conversions", "dep:thiserror"]
+extra-derive = ["dep:thiserror"]
+entity-conversions = ["dep:ofdb-entities"]
+wasm-bindgen = ["ofdb-entities/wasm-bindgen", "time/wasm-bindgen"]
 
 [badges]
 maintenance = { status = "actively-developed" }
