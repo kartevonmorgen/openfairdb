@@ -127,7 +127,7 @@ fn App() -> impl IntoView {
                             } else {
                                 let navigate = leptos_router::use_navigate();
                                 request_animation_frame(move || {
-                                    _ = navigate(Page::Login.path(), Default::default());
+                                    navigate(Page::Login.path(), Default::default());
                                 });
                                 view! {
                                 }
@@ -146,7 +146,7 @@ fn App() -> impl IntoView {
                             set_token.update(|x| *x = None);
                             let navigate = leptos_router::use_navigate();
                             request_animation_frame(move || {
-                                _ = navigate(Page::Login.path(), Default::default());
+                                navigate(Page::Login.path(), Default::default());
                             });
                             view! {
 

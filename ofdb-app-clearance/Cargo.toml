@@ -17,8 +17,8 @@ console_error_panic_hook = "0.1.7"
 console_log = "1.0.0"
 difference = "2.0.0"
 gloo-storage = "0.3.0"
-leptos = { version = "0.5.0-rc1", features = ["csr"] }
-leptos_router = { version = "0.5.0-rc1", features = ["csr"] }
+leptos = { version = "0.5.0-rc2", features = ["csr"] }
+leptos_router = { version = "0.5.0-rc2", features = ["csr"] }
 log = "0.4.20"
 wasm-bindgen = "0.2.87"
 web-sys = { version = "0.3.64", features = ["HtmlFormElement"] }
