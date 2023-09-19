@@ -1,5 +1,4 @@
 use super::*;
-use time::OffsetDateTime;
 
 #[test]
 fn without_api_token() {
@@ -49,7 +48,7 @@ fn with_api_token() {
         title: "x".into(),
         tags: Some(vec!["bla".into(), "org-tag".into()]),
         created_by: Some("foo@bar.com".parse().unwrap()),
-        start: OffsetDateTime::now_utc().unix_timestamp(),
+        start: Timestamp::now(),
         ..Default::default()
     };
     let id = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e)
@@ -85,7 +84,7 @@ fn with_api_token_for_organization_without_any_moderated_tags() {
         title: "x".into(),
         tags: Some(vec!["bla".into()]),
         created_by: Some("foo@bar.com".parse().unwrap()),
-        start: OffsetDateTime::now_utc().unix_timestamp(),
+        start: Timestamp::now(),
         ..Default::default()
     };
     let id = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e)
@@ -132,7 +131,7 @@ fn with_api_token_but_mismatching_tag() {
         title: "x".into(),
         tags: Some(vec!["bla".into()]),
         created_by: Some("foo@bar.com".parse().unwrap()),
-        start: OffsetDateTime::now_utc().unix_timestamp(),
+        start: Timestamp::now(),
         ..Default::default()
     };
     let id = flows::create_event(&db, &mut *search_engine, &notify, Some("bar"), e)
@@ -164,7 +163,7 @@ fn with_api_token_keep_org_tag() {
         title: "x".into(),
         tags: Some(vec!["bla".into(), "org-tag".into()]),
         created_by: Some("foo@bar.com".parse().unwrap()),
-        start: OffsetDateTime::now_utc().unix_timestamp(),
+        start: Timestamp::now(),
         ..Default::default()
     };
     let id = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e)
@@ -196,19 +195,15 @@ fn with_api_token_and_removing_tag() {
             api_token: "foo".into(),
         })
         .unwrap();
-    let e = usecases::NewEvent {
-        title: "x".into(),
-        tags: Some(vec![
-            "bli".into(),
-            "org-tag".into(),
-            "org-tag1".into(),
-            "bla".into(),
-            "blub".into(),
-        ]),
-        created_by: Some("foo@bar.com".parse().unwrap()),
-        start: OffsetDateTime::now_utc().unix_timestamp(),
-        ..Default::default()
-    };
+    let mut e = usecases::NewEvent::new("x".into(), Timestamp::now());
+    e.tags = Some(vec![
+        "bli".into(),
+        "org-tag".into(),
+        "org-tag1".into(),
+        "bla".into(),
+        "blub".into(),
+    ]);
+    e.created_by = Some("foo@bar.com".parse().unwrap());
     let id = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e)
         .unwrap()
         .id;
@@ -241,7 +236,7 @@ fn with_api_token_created_by() {
         })
         .unwrap();
     let created_by = Some("foo@bar.com".parse().unwrap());
-    let start = OffsetDateTime::now_utc().unix_timestamp();
+    let start = Timestamp::now();
     let e = usecases::NewEvent {
         title: "x".into(),
         tags: Some(vec!["bla".into()]),
@@ -274,7 +269,7 @@ fn with_api_token_created_by() {
         .header(Header::new("Authorization", "Bearer foo"))
         .body(&format!(
             "{{\"title\":\"Changed again\",\"created_by\":\"changed@bar.com\",\"start\":{}}}",
-            start
+            start.as_secs()
         ))
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
@@ -309,7 +304,7 @@ fn with_api_token_from_different_org_unauthorized() {
         title: "x".into(),
         tags: Some(vec!["bla".into(), "creator".into()]),
         created_by: Some("creator@example.com".parse().unwrap()),
-        start: now(),
+        start: Timestamp::now(),
         ..Default::default()
     };
     let id = flows::create_event(&db, &mut *search_engine, &notify, Some("creator"), e)
@@ -341,15 +336,13 @@ fn update_geo_location() {
             api_token: "foo".into(),
         })
         .unwrap();
-    let e = usecases::NewEvent {
-        title: "x".into(),
-        tags: Some(vec!["bla".into(), "org-tag".into()]),
-        created_by: Some("foo@bar.com".parse().unwrap()),
-        start: OffsetDateTime::now_utc().unix_timestamp(),
-        lat: Some(1.0),
-        lng: Some(2.0),
-        ..Default::default()
-    };
+
+    let mut e = usecases::NewEvent::new("x".into(), Timestamp::now());
+    e.tags = Some(vec!["bla".into(), "org-tag".into()]);
+    e.created_by = Some("foo@bar.com".parse().unwrap());
+    e.lat = Some(1.0);
+    e.lng = Some(2.0);
+
     let id = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e)
         .unwrap()
         .id;

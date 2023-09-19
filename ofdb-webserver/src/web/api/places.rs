@@ -193,9 +193,10 @@ pub fn get_not_updated(
         })?;
     }
     let pagination = Pagination { offset, limit };
+    let since = Timestamp::try_from_secs(since)?;
     let entries = {
         let db = db.shared()?;
-        db.find_places_not_updated_since(Timestamp::from_secs(since), &pagination)?
+        db.find_places_not_updated_since(since, &pagination)?
     };
     let entries = entries
         .into_iter()

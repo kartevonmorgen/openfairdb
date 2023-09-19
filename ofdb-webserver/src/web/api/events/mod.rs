@@ -220,7 +220,13 @@ impl<'r> FromForm<'r> for EventQuery {
                 }
             }
             "start_max" => {
-                let result = value.parse().map(Timestamp::from_secs).map_err(Error::from);
+                let result = value.parse().map_err(Error::from).and_then(|seconds| {
+                    Timestamp::try_from_secs(seconds).map_err(|_| {
+                        Error::from(ErrorKind::Validation(
+                            "Invalid value for 'start_max'".into(),
+                        ))
+                    })
+                });
                 match result {
                     Ok(max) => {
                         ctx.query.start_max = Some(max);
@@ -231,7 +237,13 @@ impl<'r> FromForm<'r> for EventQuery {
                 }
             }
             "start_min" => {
-                let result = value.parse().map(Timestamp::from_secs).map_err(Error::from);
+                let result = value.parse().map_err(Error::from).and_then(|seconds| {
+                    Timestamp::try_from_secs(seconds).map_err(|_| {
+                        Error::from(ErrorKind::Validation(
+                            "Invalid value for 'start_min'".into(),
+                        ))
+                    })
+                });
                 match result {
                     Ok(min) => {
                         ctx.query.start_min = Some(min);
@@ -242,7 +254,11 @@ impl<'r> FromForm<'r> for EventQuery {
                 }
             }
             "end_max" => {
-                let result = value.parse().map(Timestamp::from_secs).map_err(Error::from);
+                let result = value.parse().map_err(Error::from).and_then(|seconds| {
+                    Timestamp::try_from_secs(seconds).map_err(|_| {
+                        Error::from(ErrorKind::Validation("Invalid value for 'end_max'".into()))
+                    })
+                });
                 match result {
                     Ok(max) => {
                         ctx.query.end_max = Some(max);
@@ -253,7 +269,11 @@ impl<'r> FromForm<'r> for EventQuery {
                 }
             }
             "end_min" => {
-                let result = value.parse().map(Timestamp::from_secs).map_err(Error::from);
+                let result = value.parse().map_err(Error::from).and_then(|seconds| {
+                    Timestamp::try_from_secs(seconds).map_err(|_| {
+                        Error::from(ErrorKind::Validation("Invalid value for 'end_min'".into()))
+                    })
+                });
                 match result {
                     Ok(min) => {
                         ctx.query.end_min = Some(min);

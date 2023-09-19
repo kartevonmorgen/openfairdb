@@ -48,7 +48,7 @@ fn export_csv() {
             api_token: "bar".into(),
         })
         .unwrap();
-    let start1 = now();
+    let start1 = Timestamp::now();
     let e1 = usecases::NewEvent {
         title: "title1".into(),
         start: start1,
@@ -62,7 +62,7 @@ fn export_csv() {
     let id1 = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e1)
         .unwrap()
         .id;
-    let start2 = now();
+    let start2 = Timestamp::now();
     let e2 = usecases::NewEvent {
         title: "title2".into(),
         start: start2,
@@ -104,11 +104,13 @@ fn export_csv() {
     assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,state,email,phone,homepage,image_url,image_link_url,tags\n"));
     assert!(body_str.contains(&format!(
         "{},,,title1,,{},,,,,,,,state,email1@example.com,phone1,,,,\"bla,tag\"\n",
-        id1, start1
+        id1,
+        start1.as_secs()
     )));
     assert!(body_str.contains(&format!(
         "{},,,title2,,{},,,,,,,,,email2@example.com,phone2,,,,\"bli,tag2\"\n",
-        id2, start2
+        id2,
+        start2.as_secs()
     )));
     assert!(!body_str.contains("createdby1@example.com"));
     assert!(!body_str.contains("createdby2@example.com"));
@@ -128,10 +130,11 @@ fn export_csv() {
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.into_string().unwrap();
     assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,state,email,phone,homepage,image_url,image_link_url,tags\n"));
-    assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,state,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1)));
+    assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,state,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1.as_secs())));
     assert!(body_str.contains(&format!(
         "{},,,title2,,{},,,,,,,,,email2@example.com,phone2,,,,\"bli,tag2\"\n",
-        id2, start2
+        id2,
+        start2.as_secs()
     )));
     assert!(!body_str.contains("createdby2@example.com"));
 
@@ -146,9 +149,10 @@ fn export_csv() {
     assert_eq!(response.status(), Status::Ok);
     let body_str = response.into_string().unwrap();
     assert!(body_str.starts_with("id,created_by,organizer,title,description,start,end,lat,lng,street,zip,city,country,state,email,phone,homepage,image_url,image_link_url,tags\n"));
-    assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,state,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1)));
+    assert!(body_str.contains(&format!("{},createdby1@example.com,,title1,,{},,,,,,,,state,email1@example.com,phone1,,,,\"bla,tag\"\n", id1, start1.as_secs())));
     assert!(body_str.contains(&format!(
         "{},createdby2@example.com,,title2,,{},,,,,,,,,email2@example.com,phone2,,,,\"bli,tag2\"\n",
-        id2, start2
+        id2,
+        start2.as_secs()
     )));
 }

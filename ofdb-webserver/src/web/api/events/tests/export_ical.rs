@@ -40,7 +40,7 @@ fn export_ical() {
             api_token: "bar".into(),
         })
         .unwrap();
-    let start1 = now();
+    let start1 = Timestamp::now();
     let e1 = usecases::NewEvent {
         title: "title1".into(),
         start: start1,
@@ -60,7 +60,7 @@ fn export_ical() {
     let id1 = flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), e1)
         .unwrap()
         .id;
-    let start2 = now();
+    let start2 = Timestamp::now();
     let e2 = usecases::NewEvent {
         title: "title2".into(),
         start: start2,
@@ -109,7 +109,7 @@ fn export_ical() {
     assert!(body_str.contains(";-133.3"));
     assert!(body_str.contains(&format!(
         "DTSTART:{}\r\n",
-        chrono::NaiveDateTime::from_timestamp_opt(start1, 0)
+        chrono::NaiveDateTime::from_timestamp_opt(start1.as_secs(), 0)
             .unwrap()
             .format("%Y%m%dT%H%M%S")
     )));
@@ -120,7 +120,7 @@ fn export_ical() {
     assert!(body_str.contains("SUMMARY:title2\r\n"));
     assert!(body_str.contains(&format!(
         "DTSTART:{}\r\n",
-        chrono::NaiveDateTime::from_timestamp_opt(start2, 0)
+        chrono::NaiveDateTime::from_timestamp_opt(start2.as_secs(), 0)
             .unwrap()
             .format("%Y%m%dT%H%M%S")
     )));

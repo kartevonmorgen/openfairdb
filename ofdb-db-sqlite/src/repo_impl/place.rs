@@ -635,17 +635,19 @@ fn get_place_history(
             .map_err(from_diesel_err)?;
         let mut review_logs = Vec::with_capacity(rows.len());
         for row in rows {
+            let revision = Revision::from(row.rev as u64);
+            let at = Timestamp::try_from_millis(row.created_at).unwrap();
+            let by = row.created_by_email.map(EmailAddress::new_unchecked);
+            let activity = ActivityLog {
+                activity: Activity { at, by },
+                context: row.context,
+                comment: row.comment,
+            };
+            let status = ReviewStatus::try_from(row.status).unwrap();
             let review_log = ReviewStatusLog {
-                revision: Revision::from(row.rev as u64),
-                activity: ActivityLog {
-                    activity: Activity {
-                        at: Timestamp::from_millis(row.created_at),
-                        by: row.created_by_email.map(EmailAddress::new_unchecked),
-                    },
-                    context: row.context,
-                    comment: row.comment,
-                },
-                status: ReviewStatus::try_from(row.status).unwrap(),
+                revision,
+                activity,
+                status,
             };
             review_logs.push(review_log);
         }

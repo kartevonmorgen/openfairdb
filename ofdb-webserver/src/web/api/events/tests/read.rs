@@ -1,18 +1,18 @@
+use rocket::http::StatusClass;
+use serde_json::json;
+use time::Duration;
+
 use super::*;
 
 #[test]
 fn by_id() {
     let (client, db, mut search_engine, notify) = setup2();
-    let now = now();
-    let e = usecases::NewEvent {
-        title: "x".into(),
-        start: now,
-        tags: Some(vec!["bla".into()]),
-        registration: Some("email".into()),
-        email: Some("test@example.com".parse().unwrap()),
-        created_by: Some("test@example.com".parse().unwrap()),
-        ..Default::default()
-    };
+    let now = Timestamp::now();
+    let mut e = usecases::NewEvent::new("x".into(), now);
+    e.tags = Some(vec!["bla".into()]);
+    e.registration = Some("email".into());
+    e.email = Some("test@example.com".parse().unwrap());
+    e.created_by = Some("test@example.com".parse().unwrap());
     let e = flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
     let req = client
         .get(format!("/events/{}", e.id))
@@ -20,11 +20,17 @@ fn by_id() {
     let response = req.dispatch();
     assert_eq!(response.status(), HttpStatus::Ok);
     test_json(&response);
-    let body_str = response.into_string().unwrap();
-    assert_eq!(
-                body_str,
-                format!("{{\"id\":\"{}\",\"title\":\"x\",\"start\":{},\"email\":\"test@example.com\",\"tags\":[\"bla\"],\"registration\":\"email\"}}", e.id, now)
-            );
+    let body_string = response.into_string().unwrap();
+    let json_body = serde_json::from_str::<serde_json::Value>(&body_string).unwrap();
+    let expected_json = json!({
+      "id": e.id.to_string(),
+      "title":"x",
+      "start": now.as_secs(),
+      "email":"test@example.com",
+      "tags":["bla"],
+      "registration":"email"
+    });
+    assert_eq!(json_body, expected_json);
 }
 
 #[test]
@@ -63,16 +69,12 @@ fn all() {
 #[test]
 fn sorted_by_start() {
     let (client, db, mut search_engine, notify) = setup2();
-    let now = Timestamp::now().as_secs();
+    let now = Timestamp::now();
     let start_offsets = vec![100, 0, 300, 50, 200];
     for start_offset in start_offsets {
-        let start = now + start_offset;
-        let e = usecases::NewEvent {
-            title: start_offset.to_string(),
-            start,
-            created_by: Some("test@example.com".parse().unwrap()),
-            ..Default::default()
-        };
+        let start = now + Duration::seconds(start_offset);
+        let mut e = usecases::NewEvent::new(start_offset.to_string(), start);
+        e.created_by = Some("test@example.com".parse().unwrap());
         flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
     }
     let res = client.get("/events").header(ContentType::JSON).dispatch();
@@ -80,11 +82,11 @@ fn sorted_by_start() {
     test_json(&res);
     let body_str = res.into_string().unwrap();
     let objects: Vec<_> = body_str.split("},{").collect();
-    assert!(objects[0].contains(&format!("\"start\":{}", now)));
-    assert!(objects[1].contains(&format!("\"start\":{}", now + 50)));
-    assert!(objects[2].contains(&format!("\"start\":{}", now + 100)));
-    assert!(objects[3].contains(&format!("\"start\":{}", now + 200)));
-    assert!(objects[4].contains(&format!("\"start\":{}", now + 300)));
+    assert!(objects[0].contains(&format!("\"start\":{}", now.as_secs())));
+    assert!(objects[1].contains(&format!("\"start\":{}", now.as_secs() + 50)));
+    assert!(objects[2].contains(&format!("\"start\":{}", now.as_secs() + 100)));
+    assert!(objects[3].contains(&format!("\"start\":{}", now.as_secs() + 200)));
+    assert!(objects[4].contains(&format!("\"start\":{}", now.as_secs() + 300)));
 }
 
 #[test]
@@ -94,7 +96,7 @@ fn filtered_by_tags() {
     for tags in tags {
         let e = usecases::NewEvent {
             title: format!("{:?}", tags),
-            start: now(),
+            start: Timestamp::now(),
             tags: Some(tags.into_iter().map(str::to_string).collect()),
             created_by: Some("test@example.com".parse().unwrap()),
             ..Default::default()
@@ -169,7 +171,7 @@ fn filtered_by_creator_with_valid_api_token() {
             let new_event = usecases::NewEvent {
                 title: m.to_string(),
                 created_by: Some(m.parse::<EmailAddress>().unwrap()),
-                start: now(),
+                start: Timestamp::now(),
                 ..Default::default()
             };
             flows::create_event(&db, &mut *search_engine, &notify, Some("foo"), new_event)
@@ -213,20 +215,16 @@ fn filtered_by_creator_with_invalid_api_token() {
 #[test]
 fn filtered_by_start_min() {
     let (client, db, mut search_engine, notify) = setup2();
-    let now = now();
+    let now = Timestamp::now();
     let start_offsets = vec![100, 0, 300, 50, 200];
     for start_offset in start_offsets {
-        let start = now + start_offset;
-        let e = usecases::NewEvent {
-            title: start_offset.to_string(),
-            start,
-            created_by: Some("test@example.com".parse().unwrap()),
-            ..Default::default()
-        };
+        let start = now + Duration::seconds(start_offset);
+        let mut e = usecases::NewEvent::new(start_offset.to_string(), start);
+        e.created_by = Some("test@example.com".parse().unwrap());
         flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
     }
     let res = client
-        .get(format!("/events?start_min={}", now + 150))
+        .get(format!("/events?start_min={}", now.as_secs() + 150))
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
@@ -234,19 +232,37 @@ fn filtered_by_start_min() {
     let body_str = res.into_string().unwrap();
     let objects: Vec<_> = body_str.split("},{").collect();
     assert_eq!(objects.len(), 2);
-    assert!(objects[0].contains(&format!("\"start\":{}", now + 200)));
-    assert!(objects[1].contains(&format!("\"start\":{}", now + 300)));
+    assert!(objects[0].contains(&format!("\"start\":{}", now.as_secs() + 200)));
+    assert!(objects[1].contains(&format!("\"start\":{}", now.as_secs() + 300)));
+}
+
+#[test]
+fn dont_accept_invalid_timestamps() {
+    let (client, _, _, _) = setup2();
+    let maximum_timestamp_value = 253402300799_i64;
+    let invalid_timestamp_value = maximum_timestamp_value + 1;
+
+    // TODO:
+    // Make sure there is a helpful error response message.
+    let params = ["start_min", "start_max", "end_min", "end_max"];
+    for param in params {
+        let res = client
+            .get(format!("/events?{param}={invalid_timestamp_value}"))
+            .header(ContentType::JSON)
+            .dispatch();
+        assert_eq!(res.status().class(), StatusClass::ClientError);
+    }
 }
 
 #[test]
 fn filtered_by_end_min() {
     let (client, db, mut search_engine, notify) = setup2();
-    let now = now();
+    let now = Timestamp::now();
     let end_offsets = vec![100, 1, 300, 50, 200];
     for (start_offset, end_offset) in end_offsets.into_iter().enumerate() {
         // Differing start dates are required for ordering of search results!
-        let start = now + start_offset as i64;
-        let end = Some(now + end_offset);
+        let start = now + Duration::seconds(start_offset as i64);
+        let end = Some(now + Duration::seconds(end_offset));
         let e = usecases::NewEvent {
             title: start.to_string(),
             start,
@@ -257,7 +273,7 @@ fn filtered_by_end_min() {
         flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
     }
     let res = client
-        .get(format!("/events?end_min={}", now + 150))
+        .get(format!("/events?end_min={}", now.as_secs() + 150))
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
@@ -265,17 +281,17 @@ fn filtered_by_end_min() {
     let body_str = res.into_string().unwrap();
     let objects: Vec<_> = body_str.split("},{").collect();
     assert_eq!(objects.len(), 2);
-    assert!(objects[0].contains(&format!("\"end\":{}", now + 300)));
-    assert!(objects[1].contains(&format!("\"end\":{}", now + 200)));
+    assert!(objects[0].contains(&format!("\"end\":{}", now.as_secs() + 300)));
+    assert!(objects[1].contains(&format!("\"end\":{}", now.as_secs() + 200)));
 }
 
 #[test]
 fn filtered_by_start_max() {
     let (client, db, mut search_engine, notify) = setup2();
-    let now = now();
+    let now = Timestamp::now();
     let start_offsets = vec![100, 0, 300, 50, 200];
     for start_offset in start_offsets {
-        let start = now + start_offset;
+        let start = now + Duration::seconds(start_offset);
         let e = usecases::NewEvent {
             title: start.to_string(),
             start,
@@ -285,7 +301,7 @@ fn filtered_by_start_max() {
         flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
     }
     let res = client
-        .get(format!("/events?start_max={}", now + 250))
+        .get(format!("/events?start_max={}", now.as_secs() + 250))
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
@@ -293,21 +309,21 @@ fn filtered_by_start_max() {
     let body_str = res.into_string().unwrap();
     let objects: Vec<_> = body_str.split("},{").collect();
     assert_eq!(objects.len(), 4);
-    assert!(objects[0].contains(&format!("\"start\":{}", now)));
-    assert!(objects[1].contains(&format!("\"start\":{}", now + 50)));
-    assert!(objects[2].contains(&format!("\"start\":{}", now + 100)));
-    assert!(objects[3].contains(&format!("\"start\":{}", now + 200)));
+    assert!(objects[0].contains(&format!("\"start\":{}", now.as_secs())));
+    assert!(objects[1].contains(&format!("\"start\":{}", now.as_secs() + 50)));
+    assert!(objects[2].contains(&format!("\"start\":{}", now.as_secs() + 100)));
+    assert!(objects[3].contains(&format!("\"start\":{}", now.as_secs() + 200)));
 }
 
 #[test]
 fn filtered_by_end_max() {
     let (client, db, mut search_engine, notify) = setup2();
-    let now = now();
+    let now = Timestamp::now();
     let end_offsets = vec![100, 1, 300, 50, 200];
     for (start_offset, end_offset) in end_offsets.into_iter().enumerate() {
         // Differing start dates are required for ordering of search results!
-        let start = now + start_offset as i64;
-        let end = Some(now + end_offset);
+        let start = now + Duration::seconds(start_offset as i64);
+        let end = Some(now + Duration::seconds(end_offset));
         let e = usecases::NewEvent {
             title: start.to_string(),
             start,
@@ -318,7 +334,7 @@ fn filtered_by_end_max() {
         flows::create_event(&db, &mut *search_engine, &notify, None, e).unwrap();
     }
     let res = client
-        .get(format!("/events?end_max={}", now + 250))
+        .get(format!("/events?end_max={}", now.as_secs() + 250))
         .header(ContentType::JSON)
         .dispatch();
     assert_eq!(res.status(), HttpStatus::Ok);
@@ -326,10 +342,10 @@ fn filtered_by_end_max() {
     let body_str = res.into_string().unwrap();
     let objects: Vec<_> = body_str.split("},{").collect();
     assert_eq!(objects.len(), 4);
-    assert!(objects[0].contains(&format!("\"end\":{}", now + 100)));
-    assert!(objects[1].contains(&format!("\"end\":{}", now + 1)));
-    assert!(objects[2].contains(&format!("\"end\":{}", now + 50)));
-    assert!(objects[3].contains(&format!("\"end\":{}", now + 200)));
+    assert!(objects[0].contains(&format!("\"end\":{}", now.as_secs() + 100)));
+    assert!(objects[1].contains(&format!("\"end\":{}", now.as_secs() + 1)));
+    assert!(objects[2].contains(&format!("\"end\":{}", now.as_secs() + 50)));
+    assert!(objects[3].contains(&format!("\"end\":{}", now.as_secs() + 200)));
 }
 
 #[test]
@@ -339,7 +355,7 @@ fn filtered_by_bounding_box() {
     for &(lat, lng) in coordinates {
         let e = usecases::NewEvent {
             title: format!("{}-{}", lat, lng),
-            start: now(),
+            start: Timestamp::now(),
             lat: Some(lat),
             lng: Some(lng),
             created_by: Some("test@example.com".parse().unwrap()),

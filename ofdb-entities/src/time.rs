@@ -2,6 +2,8 @@ use std::{
     fmt,
     ops::{Add, Sub},
 };
+
+use thiserror::Error;
 use time::{
     format_description::FormatItem, macros::format_description, Duration, OffsetDateTime,
     PrimitiveDateTime,
@@ -28,18 +30,26 @@ impl fmt::Display for Timestamp {
     }
 }
 
+#[derive(Debug, Error)]
+#[error("Invalid time range: {0}")]
+pub struct OutOfRangeError(String);
+
 impl Timestamp {
     pub fn now() -> Self {
         Self(OffsetDateTime::now_utc())
     }
 
-    pub fn from_secs(seconds: i64) -> Self {
-        Self(time::OffsetDateTime::from_unix_timestamp(seconds).unwrap())
+    pub fn try_from_secs(seconds: i64) -> Result<Self, OutOfRangeError> {
+        let date_time = time::OffsetDateTime::from_unix_timestamp(seconds)
+            .map_err(|err| OutOfRangeError(err.to_string()))?;
+        Ok(Self(date_time))
     }
 
-    pub fn from_millis(milliseconds: i64) -> Self {
+    pub fn try_from_millis(milliseconds: i64) -> Result<Self, OutOfRangeError> {
         let nanos = millis_to_nanos(milliseconds);
-        Self(time::OffsetDateTime::from_unix_timestamp_nanos(nanos).unwrap())
+        let date_time = time::OffsetDateTime::from_unix_timestamp_nanos(nanos)
+            .map_err(|err| OutOfRangeError(err.to_string()))?;
+        Ok(Self(date_time))
     }
 
     pub fn as_secs(self) -> i64 {
@@ -92,7 +102,7 @@ mod tests {
 
     #[test]
     fn format_timestamp() {
-        let ts = Timestamp::from_millis(1_658_146_497_321);
+        let ts = Timestamp::try_from_millis(1_658_146_497_321).unwrap();
         assert_eq!("2022-07-18 12:14:57.321", format!("{ts}"));
     }
 }

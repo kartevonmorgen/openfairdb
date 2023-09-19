@@ -288,8 +288,8 @@ fn get_events_chronologically(conn: &mut SqliteConnection, ids: &[&str]) -> Resu
         let event = Event {
             id: uid.into(),
             title,
-            start: Timestamp::from_secs(start),
-            end: end.map(Timestamp::from_secs),
+            start: Timestamp::try_from_secs(start).unwrap(),
+            end: end.map(Timestamp::try_from_secs).transpose().unwrap(),
             description,
             location,
             contact,
@@ -297,7 +297,7 @@ fn get_events_chronologically(conn: &mut SqliteConnection, ids: &[&str]) -> Resu
             tags,
             created_by,
             registration,
-            archived: archived.map(Timestamp::from_secs),
+            archived: archived.map(Timestamp::try_from_secs).transpose().unwrap(),
             image_url: image_url.and_then(load_url),
             image_link_url: image_link_url.and_then(load_url),
         };

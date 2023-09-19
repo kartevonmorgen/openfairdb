@@ -14,15 +14,17 @@ impl From<e::time::Timestamp> for UnixTimeSeconds {
     }
 }
 
-impl From<UnixTimeSeconds> for e::time::Timestamp {
-    fn from(from: UnixTimeSeconds) -> Self {
-        Self::from_secs(from.0)
+impl TryFrom<UnixTimeSeconds> for e::time::Timestamp {
+    type Error = e::time::OutOfRangeError;
+    fn try_from(from: UnixTimeSeconds) -> Result<Self, Self::Error> {
+        Self::try_from_secs(from.0)
     }
 }
 
-impl From<UnixTimeMillis> for e::time::Timestamp {
-    fn from(from: UnixTimeMillis) -> Self {
-        Self::from_millis(from.0)
+impl TryFrom<UnixTimeMillis> for e::time::Timestamp {
+    type Error = e::time::OutOfRangeError;
+    fn try_from(from: UnixTimeMillis) -> Result<Self, Self::Error> {
+        Self::try_from_millis(from.0)
     }
 }
 
@@ -467,6 +469,8 @@ impl From<e::activity::Activity> for Activity {
 pub enum ActivityConversionError {
     #[error(transparent)]
     Email(#[from] e::email::EmailAddressParseError),
+    #[error(transparent)]
+    Time(#[from] e::time::OutOfRangeError),
 }
 
 impl TryFrom<Activity> for e::activity::Activity {
@@ -474,7 +478,8 @@ impl TryFrom<Activity> for e::activity::Activity {
     fn try_from(from: Activity) -> Result<Self, Self::Error> {
         let Activity { at, by } = from;
         let by = by.map(|email| email.parse()).transpose()?;
-        Ok(Self { at: at.into(), by })
+        let at = at.try_into()?;
+        Ok(Self { at, by })
     }
 }
 
