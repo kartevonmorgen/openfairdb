@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.12.6 (2023-09-19)
+
+- fix: check invalid timestamp values
+- chore: Update dependencies
+- chore: slightly refactor the frontend code
+
 ## v0.12.5 (2023-07-51)
 
 - fix: loading config

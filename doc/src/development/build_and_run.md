@@ -20,6 +20,17 @@ cargo build
 RUST_LOG=debug ./target/debug/openfairdb
 ```
 
+The following log levels are available:
+
+- `error
+- `warn`
+- `info`
+- `debug`
+- `trace`
+
+More information can be found in the
+[documentation of the `env_logger` crate](https://docs.rs/env_logger/latest/env_logger/).
+
 If you want to get stacktraces on panics use
 
 ```sh

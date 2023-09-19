@@ -4,7 +4,7 @@ version.workspace = true
 edition.workspace = true
 
 [workspace.package]
-version = "0.12.5"
+version = "0.12.6"
 repository = "https://github.com/kartevonmorgen/openfairdb"
 homepage = "https://github.com/kartevonmorgen/openfairdb"
 keywords = ["geo", "fair", "sustainability"]
@@ -50,7 +50,7 @@ ofdb-webserver    = "=0.0.0"
 ofdb-entities     =  "*"
 
 anyhow = "1.0.75"
-clap = { version = "4.4.3", features = ["cargo", "derive"] }
+clap = { version = "4.4.4", features = ["cargo", "derive"] }
 dotenvy = "0.15.7"
 duration-str = { version = "0.5.1", default-features = false, features = ["serde"] }
 env_logger = "0.10.0"
