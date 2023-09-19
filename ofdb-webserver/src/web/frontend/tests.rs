@@ -53,46 +53,36 @@ mod events {
     #[test]
     fn search_events() {
         let (client, db, mut search_engine) = setup();
-        let new_events = vec![
-            usecases::NewEvent {
-                title: "x".into(),
-                start: (Timestamp::now() - Duration::days(2)).as_secs(),
-                tags: Some(vec!["foo".into()]),
-                registration: Some("email".into()),
-                email: Some("test@example.com".parse().unwrap()),
-                created_by: Some("test@example.com".parse().unwrap()),
-                ..Default::default()
-            },
-            usecases::NewEvent {
-                title: "x".into(),
-                start: Timestamp::now()
-                    .checked_sub(Duration::hours(2))
-                    .unwrap()
-                    .as_secs(),
-                tags: Some(vec!["bla".into()]),
-                registration: Some("email".into()),
-                email: Some("test@example.com".parse().unwrap()),
-                created_by: Some("test@example.com".parse().unwrap()),
-                ..Default::default()
-            },
-            usecases::NewEvent {
-                title: "foo".into(),
-                start: (Timestamp::now() + Duration::days(1)).as_secs(),
-                registration: Some("email".into()),
-                email: Some("test@example.com".parse().unwrap()),
-                created_by: Some("test@example.com".parse().unwrap()),
-                ..Default::default()
-            },
-            usecases::NewEvent {
-                title: "x".into(),
-                start: (Timestamp::now() + Duration::days(2)).as_secs(),
-                tags: Some(vec!["foo".into()]),
-                registration: Some("email".into()),
-                email: Some("test@example.com".parse().unwrap()),
-                created_by: Some("test@example.com".parse().unwrap()),
-                ..Default::default()
-            },
-        ];
+
+        let mut ev_0 = usecases::NewEvent::new("x".into(), Timestamp::now() - Duration::days(2));
+        ev_0.tags = Some(vec!["foo".into()]);
+        ev_0.registration = Some("email".into());
+        ev_0.email = Some("test@example.com".parse().unwrap());
+        ev_0.created_by = Some("test@example.com".parse().unwrap());
+
+        let mut ev_1 = usecases::NewEvent::new(
+            "x".into(),
+            Timestamp::now().checked_sub(Duration::hours(2)).unwrap(),
+        );
+
+        ev_1.tags = Some(vec!["bla".into()]);
+        ev_1.registration = Some("email".into());
+        ev_1.email = Some("test@example.com".parse().unwrap());
+        ev_1.created_by = Some("test@example.com".parse().unwrap());
+
+        let mut ev_2 = usecases::NewEvent::new("foo".into(), Timestamp::now() + Duration::days(1));
+        ev_2.registration = Some("email".into());
+        ev_2.email = Some("test@example.com".parse().unwrap());
+        ev_2.created_by = Some("test@example.com".parse().unwrap());
+
+        let mut ev_3 = usecases::NewEvent::new("x".into(), Timestamp::now() + Duration::days(2));
+        ev_3.tags = Some(vec!["foo".into()]);
+        ev_3.registration = Some("email".into());
+        ev_3.email = Some("test@example.com".parse().unwrap());
+        ev_3.created_by = Some("test@example.com".parse().unwrap());
+
+        let new_events = vec![ev_0, ev_1, ev_2, ev_3];
+
         let gw = DummyNotifyGW;
         let event_ids = {
             let mut event_ids = Vec::with_capacity(new_events.len());
@@ -170,41 +160,32 @@ mod events {
     #[test]
     fn get_a_list_of_events_filtered_by_tags() {
         let (client, db, mut search_engine) = setup();
-        let new_events = vec![
-            usecases::NewEvent {
-                title: "x".into(),
-                start: Timestamp::now()
-                    .checked_sub(Duration::hours(2))
-                    .unwrap()
-                    .as_secs(),
-                tags: Some(vec!["bla".into(), "blub".into()]),
-                registration: Some("email".into()),
-                email: Some("test@example.com".parse().unwrap()),
-                created_by: Some("test@example.com".parse().unwrap()),
-                ..Default::default()
-            },
-            usecases::NewEvent {
-                title: "x".into(),
-                start: (Timestamp::now() + Duration::days(2)).as_secs(),
-                tags: Some(vec!["bli".into(), "blub".into()]),
-                registration: Some("email".into()),
-                email: Some("test@example.com".parse().unwrap()),
-                created_by: Some("test@example.com".parse().unwrap()),
-                ..Default::default()
-            },
-            usecases::NewEvent {
-                title: "x".into(),
-                start: Timestamp::now()
-                    .checked_sub(Duration::days(2))
-                    .unwrap()
-                    .as_secs(),
-                tags: Some(vec!["blub".into()]),
-                registration: Some("email".into()),
-                email: Some("test@example.com".parse().unwrap()),
-                created_by: Some("test@example.com".parse().unwrap()),
-                ..Default::default()
-            },
-        ];
+
+        let mut ev_0 = usecases::NewEvent::new(
+            "x".to_string(),
+            Timestamp::now().checked_sub(Duration::hours(2)).unwrap(),
+        );
+        ev_0.tags = Some(vec!["bla".into(), "blub".into()]);
+        ev_0.registration = Some("email".into());
+        ev_0.email = Some("test@example.com".parse().unwrap());
+        ev_0.created_by = Some("test@example.com".parse().unwrap());
+
+        let mut ev_1 = usecases::NewEvent::new("x".into(), Timestamp::now() + Duration::days(2));
+        ev_1.tags = Some(vec!["bli".into(), "blub".into()]);
+        ev_1.registration = Some("email".into());
+        ev_1.email = Some("test@example.com".parse().unwrap());
+        ev_1.created_by = Some("test@example.com".parse().unwrap());
+
+        let mut ev_2 = usecases::NewEvent::new(
+            "x".into(),
+            Timestamp::now().checked_sub(Duration::days(2)).unwrap(),
+        );
+        ev_2.tags = Some(vec!["blub".into()]);
+        ev_2.registration = Some("email".into());
+        ev_2.email = Some("test@example.com".parse().unwrap());
+        ev_2.created_by = Some("test@example.com".parse().unwrap());
+
+        let new_events = vec![ev_0, ev_1, ev_2];
         let gw = DummyNotifyGW;
         let event_ids = {
             let mut event_ids = Vec::with_capacity(new_events.len());
@@ -237,7 +218,7 @@ mod events {
             id: "1234".into(),
             title: "A great event".into(),
             description: Some("Foo bar baz".into()),
-            start: Timestamp::from_secs(0),
+            start: Timestamp::try_from_secs(0).unwrap(),
             end: None,
             location: None,
             contact: None,

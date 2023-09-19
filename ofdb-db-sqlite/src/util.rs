@@ -165,15 +165,15 @@ pub(crate) fn event_from_event_entity_and_tags(e: EventEntity, tag_rels: &[Event
         id: uid.into(),
         title,
         description,
-        start: Timestamp::from_secs(start),
-        end: end.map(Timestamp::from_secs),
+        start: Timestamp::try_from_secs(start).unwrap(),
+        end: end.map(Timestamp::try_from_secs).transpose().unwrap(),
         location,
         contact,
         homepage: homepage.and_then(load_url),
         tags,
         created_by,
         registration,
-        archived: archived.map(Timestamp::from_secs),
+        archived: archived.map(Timestamp::try_from_secs).transpose().unwrap(),
         image_url: image_url.and_then(load_url),
         image_link_url: image_link_url.and_then(load_url),
     }
@@ -245,8 +245,11 @@ impl From<PlaceRatingComment> for e::Comment {
         Self {
             id: id.into(),
             rating_id: rating_id.into(),
-            created_at: Timestamp::from_millis(created_at),
-            archived_at: archived_at.map(Timestamp::from_millis),
+            created_at: Timestamp::try_from_millis(created_at).unwrap(),
+            archived_at: archived_at
+                .map(Timestamp::try_from_millis)
+                .transpose()
+                .unwrap(),
             text,
         }
     }
@@ -268,8 +271,11 @@ impl From<PlaceRating> for e::Rating {
         Self {
             id: id.into(),
             place_id: place_id.into(),
-            created_at: Timestamp::from_millis(created_at),
-            archived_at: archived_at.map(Timestamp::from_millis),
+            created_at: Timestamp::try_from_millis(created_at).unwrap(),
+            archived_at: archived_at
+                .map(Timestamp::try_from_millis)
+                .transpose()
+                .unwrap(),
             title,
             value: (value as i8).into(),
             context: rating_context_from_str(&context).unwrap(),
@@ -310,7 +316,7 @@ impl From<UserTokenEntity> for e::UserToken {
                 email: e::EmailAddress::new_unchecked(from.user_email),
                 nonce: from.nonce.parse::<Nonce>().unwrap_or_default(),
             },
-            expires_at: Timestamp::from_millis(from.expires_at),
+            expires_at: Timestamp::try_from_millis(from.expires_at).unwrap(),
         }
     }
 }
@@ -320,7 +326,7 @@ impl From<ReviewTokenEntity> for e::ReviewToken {
         let place_revision = e::Revision::from(from.place_revision as u64);
         let place_id = e::Id::from(from.place_id);
         let nonce = from.nonce.parse::<Nonce>().unwrap_or_default();
-        let expires_at = Timestamp::from_millis(from.expires_at);
+        let expires_at = Timestamp::try_from_millis(from.expires_at).unwrap();
         let review_nonce = e::ReviewNonce {
             place_id,
             place_revision,
@@ -456,7 +462,7 @@ impl From<PendingClearanceForPlace> for e::PendingClearanceForPlace {
         let last_cleared_revision = last_cleared_revision.map(|rev| e::Revision::from(rev as u64));
         Self {
             place_id: place_id.into(),
-            created_at: e::Timestamp::from_millis(created_at),
+            created_at: e::Timestamp::try_from_millis(created_at).unwrap(),
             last_cleared_revision,
         }
     }

@@ -98,10 +98,9 @@ pub fn get_entries_recently_changed(
         limit = Some(limit.unwrap_or(ENTRIES_RECECENTLY_CHANGED_MAX_COUNT - offset.unwrap_or(0)));
     }
     debug_assert!(limit.is_some());
-    let params = RecentlyChangedEntriesParams {
-        since: since.map(Timestamp::from_secs),
-        until: until.map(Timestamp::from_secs),
-    };
+    let since = since.map(Timestamp::try_from_secs).transpose()?;
+    let until = until.map(Timestamp::try_from_secs).transpose()?;
+    let params = RecentlyChangedEntriesParams { since, until };
     let pagination = Pagination { offset, limit };
     let results = {
         let db = db.shared()?;

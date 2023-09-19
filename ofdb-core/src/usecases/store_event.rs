@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::{
     repositories::Error as RepoError,
     usecases::{
@@ -9,31 +11,65 @@ use crate::{
         validate::{AutoCorrect, Validate},
     },
 };
-use std::str::FromStr;
 
 #[rustfmt::skip]
-#[derive(Default, Debug, Clone)]
+#[derive(Debug, Clone)]
 pub struct NewEvent {
-    pub title        : String,
-    pub description  : Option<String>,
-    pub start        : i64,
-    pub end          : Option<i64>,
-    pub lat          : Option<f64>,
-    pub lng          : Option<f64>,
-    pub street       : Option<String>,
-    pub zip          : Option<String>,
-    pub city         : Option<String>,
-    pub country      : Option<String>,
-    pub state        : Option<String>,
-    pub email        : Option<EmailAddress>,
-    pub telephone    : Option<String>,
-    pub homepage     : Option<String>,
-    pub tags         : Option<Vec<String>>,
-    pub created_by   : Option<EmailAddress>,
-    pub registration : Option<String>,
-    pub organizer    : Option<String>,
-    pub image_url     : Option<String>,
-    pub image_link_url: Option<String>,
+    pub title          : String,
+    pub description    : Option<String>,
+    pub start          : Timestamp,
+    pub end            : Option<Timestamp>,
+    pub lat            : Option<f64>,
+    pub lng            : Option<f64>,
+    pub street         : Option<String>,
+    pub zip            : Option<String>,
+    pub city           : Option<String>,
+    pub country        : Option<String>,
+    pub state          : Option<String>,
+    pub email          : Option<EmailAddress>,
+    pub telephone      : Option<String>,
+    pub homepage       : Option<String>,
+    pub tags           : Option<Vec<String>>,
+    pub created_by     : Option<EmailAddress>,
+    pub registration   : Option<String>,
+    pub organizer      : Option<String>,
+    pub image_url      : Option<String>,
+    pub image_link_url : Option<String>,
+}
+
+// TODO:
+// Avoid using this outside of tests.
+impl Default for NewEvent {
+    fn default() -> Self {
+        Self::new(String::new(), Timestamp::now())
+    }
+}
+
+impl NewEvent {
+    pub fn new(title: String, start: Timestamp) -> Self {
+        Self {
+            title,
+            start,
+            description: None,
+            end: None,
+            lat: None,
+            lng: None,
+            street: None,
+            zip: None,
+            city: None,
+            country: None,
+            state: None,
+            email: None,
+            telephone: None,
+            homepage: None,
+            tags: None,
+            created_by: None,
+            registration: None,
+            organizer: None,
+            image_url: None,
+            image_link_url: None,
+        }
+    }
 }
 
 pub enum NewEventMode<'a> {
@@ -263,9 +299,6 @@ where
         None => None,
     };
 
-    let start = Timestamp::from_secs(start);
-    let end = end.map(Timestamp::from_secs);
-
     let homepage = homepage
         .and_then(|ref url| parse_url_param(url).transpose())
         .transpose()?;
@@ -338,7 +371,7 @@ mod tests {
 
     #[test]
     fn create_new_valid_event() {
-        let now = Timestamp::now().as_secs();
+        let now = Timestamp::now();
         #[rustfmt::skip]
         let x = NewEvent {
             title        : "foo".into(),
@@ -369,7 +402,7 @@ mod tests {
         assert_eq!(mock_db.tags.borrow().len(), 2);
         let x = &mock_db.events.borrow()[0];
         assert_eq!(x.title, "foo");
-        assert_eq!(x.start.as_secs(), now);
+        assert_eq!(x.start, now);
         assert!(x.location.is_none());
         assert_eq!(x.description.as_ref().unwrap(), "bar");
         assert!(x.id.is_valid());
@@ -390,7 +423,7 @@ mod tests {
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),
-            start        : Timestamp::now().as_secs(),
+            start        : Timestamp::now(),
             end          : None,
             lat          : None,
             lng          : None,
@@ -419,7 +452,7 @@ mod tests {
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),
-            start        : Timestamp::now().as_secs(),
+            start        : Timestamp::now(),
             end          : None,
             lat          : None,
             lng          : None,
@@ -465,7 +498,7 @@ mod tests {
         let x = NewEvent {
             title        : "foo".into(),
             description  : Some("bar".into()),
-            start        : Timestamp::now().as_secs(),
+            start        : Timestamp::now(),
             end          : None,
             lat          : None,
             lng          : None,

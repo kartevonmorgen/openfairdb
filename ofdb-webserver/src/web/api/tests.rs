@@ -1913,7 +1913,7 @@ fn entries_export_csv() {
             .finish(),
     ];
     entries[0].location.address = Some(Address::build().street("street1").finish());
-    entries[0].created.at = Timestamp::from_secs(1111);
+    entries[0].created.at = Timestamp::try_from_secs(1111).unwrap();
     entries[0].created.by = Some("user@example.com".parse().unwrap());
     entries[0].contact = Some(Contact {
         name: Some("John Smith".to_string()),
@@ -1940,7 +1940,7 @@ fn entries_export_csv() {
     entries[0].opening_hours = Some("24/7".parse().unwrap());
     entries[0].founded_on =
         Some(time::Date::from_calendar_date(1945, time::Month::October, 24).unwrap());
-    entries[1].created.at = Timestamp::from_secs(2222);
+    entries[1].created.at = Timestamp::try_from_secs(2222).unwrap();
 
     db.exclusive()
         .unwrap()
@@ -1972,7 +1972,7 @@ fn entries_export_csv() {
         .create_rating(Rating {
             id: "123".into(),
             place_id: "entry1".into(),
-            created_at: Timestamp::from_secs(123),
+            created_at: Timestamp::try_from_secs(123).unwrap(),
             archived_at: None,
             title: "rating1".into(),
             value: RatingValue::from(2),
@@ -1985,7 +1985,7 @@ fn entries_export_csv() {
         .create_rating(Rating {
             id: "345".into(),
             place_id: "entry1".into(),
-            created_at: Timestamp::from_secs(123),
+            created_at: Timestamp::try_from_secs(123).unwrap(),
             archived_at: None,
             title: "rating2".into(),
             value: RatingValue::from(1),

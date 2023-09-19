@@ -191,6 +191,9 @@ pub mod from_json {
             .map(|email| email.parse::<e::EmailAddress>())
             .transpose()?;
 
+        let start = e::Timestamp::try_from_secs(start)?;
+        let end = end.map(e::Timestamp::try_from_secs).transpose()?;
+
         Ok(usecases::NewEvent {
             title,
             description,

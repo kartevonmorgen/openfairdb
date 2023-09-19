@@ -174,7 +174,7 @@ fn load_place(
         license,
         revision: Revision::from(rev as u64),
         created: Activity {
-            at: Timestamp::from_millis(created_at),
+            at: Timestamp::try_from_millis(created_at).unwrap(),
             by: created_by.map(EmailAddress::new_unchecked),
         },
         title,
@@ -290,7 +290,7 @@ fn load_place_with_status_review(
         license,
         revision: Revision::from(rev as u64),
         created: Activity {
-            at: Timestamp::from_millis(created_at),
+            at: Timestamp::try_from_millis(created_at).unwrap(),
             by: created_by.map(EmailAddress::new_unchecked),
         },
         title,
@@ -305,7 +305,7 @@ fn load_place_with_status_review(
 
     let activity_log = ActivityLog {
         activity: Activity {
-            at: Timestamp::from_millis(review_created_at),
+            at: Timestamp::try_from_millis(review_created_at).unwrap(),
             by: review_created_by.map(EmailAddress::new_unchecked),
         },
         context: review_context,

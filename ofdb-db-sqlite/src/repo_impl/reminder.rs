@@ -100,7 +100,7 @@ fn find_last_sent_reminder(
         .map_err(from_diesel_err)?
         .into_iter()
         .map(|r| r.sent_at)
-        .map(Timestamp::from_millis);
+        .map(|millis| Timestamp::try_from_millis(millis).unwrap());
     let first = iter.next();
     debug_assert!(iter.next().is_none());
     Ok(first)

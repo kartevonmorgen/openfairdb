@@ -1,15 +1,18 @@
-use super::json_error_response;
+use std::{io, string};
+
 use anyhow::anyhow;
-use ofdb_application::error::{AppError, BError};
-pub use ofdb_core::{repositories::Error as RepoError, usecases::Error as ParameterError};
 use rocket::{
     self,
     http::Status,
     response::{self, Responder},
     serde::json::Error as JsonError,
 };
-use std::{io, string};
 use thiserror::Error;
+
+use ofdb_application::error::{AppError, BError};
+pub use ofdb_core::{repositories::Error as RepoError, usecases::Error as ParameterError};
+
+use super::json_error_response;
 
 #[derive(Debug, Error)]
 #[allow(clippy::large_enum_variant)]
@@ -135,6 +138,12 @@ impl From<ofdb_entities::email::EmailAddressParseError> for Error {
 
 impl From<ofdb_entities::review::InvalidReviewStatusPrimitive> for Error {
     fn from(err: ofdb_entities::review::InvalidReviewStatusPrimitive) -> Self {
+        Self::OtherWithStatus(err.into(), Status::BadRequest)
+    }
+}
+
+impl From<ofdb_entities::time::OutOfRangeError> for Error {
+    fn from(err: ofdb_entities::time::OutOfRangeError) -> Self {
         Self::OtherWithStatus(err.into(), Status::BadRequest)
     }
 }

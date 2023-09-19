@@ -886,7 +886,7 @@ fn receive_event_with_creators_email() {
         id: "x".into(),
         title: "t".into(),
         description: None,
-        start: Timestamp::from_secs(0),
+        start: Timestamp::try_from_secs(0).unwrap(),
         end: None,
         contact: None,
         location: None,
