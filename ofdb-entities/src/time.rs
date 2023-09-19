@@ -45,11 +45,21 @@ impl Timestamp {
         Ok(Self(date_time))
     }
 
+    #[deprecated]
+    pub fn from_secs(seconds: i64) -> Self {
+        Self::try_from_secs(seconds).unwrap()
+    }
+
     pub fn try_from_millis(milliseconds: i64) -> Result<Self, OutOfRangeError> {
         let nanos = millis_to_nanos(milliseconds);
         let date_time = time::OffsetDateTime::from_unix_timestamp_nanos(nanos)
             .map_err(|err| OutOfRangeError(err.to_string()))?;
         Ok(Self(date_time))
+    }
+
+    #[deprecated]
+    pub fn from_millis(milliseconds: i64) -> Self {
+        Self::try_from_millis(milliseconds).unwrap()
     }
 
     pub fn as_secs(self) -> i64 {
