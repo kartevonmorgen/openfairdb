@@ -10,7 +10,7 @@ use crate::{
 };
 
 #[component]
-pub fn Register(api: PublicApi) -> impl IntoView {
+pub fn Register(public_api: PublicApi) -> impl IntoView {
     let (register_response, set_register_response) = create_signal(None::<()>);
     let (register_error, set_register_error) = create_signal(None::<String>);
     let (wait_for_response, set_wait_for_response) = create_signal(false);
@@ -23,7 +23,7 @@ pub fn Register(api: PublicApi) -> impl IntoView {
         let credentials = credentials.to_owned();
         async move {
             set_wait_for_response.update(|w| *w = true);
-            let result = api.register(&credentials).await;
+            let result = public_api.register(&credentials).await;
             set_wait_for_response.update(|w| *w = false);
             match result {
                 Ok(res) => {

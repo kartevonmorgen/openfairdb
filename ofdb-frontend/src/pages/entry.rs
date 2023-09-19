@@ -4,7 +4,7 @@ use leptos_router::*;
 use crate::api::PublicApi;
 
 #[component]
-pub fn Entry(api: PublicApi) -> impl IntoView {
+pub fn Entry(public_api: PublicApi) -> impl IntoView {
     // -- signals -- //
 
     let params = use_params_map();
@@ -15,7 +15,7 @@ pub fn Entry(api: PublicApi) -> impl IntoView {
     let fetch_entry = create_action(move |id: &String| {
         let id = id.to_owned();
         async move {
-            match api.entries(&[&id]).await {
+            match public_api.entries(&[&id]).await {
                 Ok(mut entries) => {
                     debug_assert_eq!(entries.len(), 1);
                     let e = entries.remove(0);

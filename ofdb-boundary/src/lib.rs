@@ -32,6 +32,19 @@ pub struct UnixTimeMillis(i64);
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone, Copy, Eq, PartialEq))]
 pub struct UnixTimeSeconds(i64);
 
+impl From<time::OffsetDateTime> for UnixTimeSeconds {
+    fn from(from: time::OffsetDateTime) -> Self {
+        Self(from.unix_timestamp())
+    }
+}
+
+impl TryFrom<UnixTimeSeconds> for time::OffsetDateTime {
+    type Error = time::error::ComponentRange;
+    fn try_from(from: UnixTimeSeconds) -> Result<Self, Self::Error> {
+        Self::from_unix_timestamp(from.0)
+    }
+}
+
 #[rustfmt::skip]
 #[derive(Serialize, Deserialize)]
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq))]
