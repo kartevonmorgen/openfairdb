@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate log;
-
 use std::{ops::Bound, path::Path, sync::Arc};
 
 use anyhow::{bail, Result as Fallible};
@@ -12,7 +9,7 @@ use tantivy::{
     query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
     schema::*,
     tokenizer::{LowerCaser, RawTokenizer, RemoveLongFilter, SimpleTokenizer, TextAnalyzer},
-    DocAddress, DocId, Document, Index, IndexReader, IndexWriter, ReloadPolicy, Score,
+    DocAddress, DocId, Document, Index, IndexReader, IndexWriter, Order, ReloadPolicy, Score,
     SegmentReader,
 };
 
@@ -69,6 +66,30 @@ struct IndexedFields {
     total_rating: Field,
 }
 
+const FIELD_NAME_KIND: &str = "kind";
+const FIELD_NAME_ID: &str = "id";
+const FIELD_NAME_STATUS: &str = "status";
+const FIELD_NAME_LAT: &str = "lat";
+const FIELD_NAME_LNG: &str = "lon";
+const FIELD_NAME_TS_MIN: &str = "ts_min";
+const FIELD_NAME_TS_MAX: &str = "ts_max";
+const FIELD_NAME_TITLE: &str = "tit";
+const FIELD_NAME_DESCRIPTION: &str = "dsc";
+const FIELD_NAME_CONTACT_NAME: &str = "cnt_name";
+const FIELD_NAME_ADDRESS_STREET: &str = "adr_street";
+const FIELD_NAME_ADDRESS_CITY: &str = "adr_city";
+const FIELD_NAME_ADDRESS_ZIP: &str = "adr_zip";
+const FIELD_NAME_ADDRESS_COUNTRY: &str = "adr_country";
+const FIELD_NAME_ADDRESS_STATE: &str = "adr_state";
+const FIELD_NAME_TAG: &str = "tag";
+const FIELD_NAME_RATINGS_DIVERSITY: &str = "rat_diversity";
+const FIELD_NAME_RATINGS_FAIRNESS: &str = "rat_fairness";
+const FIELD_NAME_RATINGS_HUMANITY: &str = "rat_humanity";
+const FIELD_NAME_RATINGS_RENEWABLE: &str = "rat_renewable";
+const FIELD_NAME_RATINGS_SOLIDARITY: &str = "rat_solidarity";
+const FIELD_NAME_RATINGS_TRANSPARENCY: &str = "rat_transparency";
+const FIELD_NAME_TOTAL_RATING: &str = "rat_total";
+
 impl IndexedFields {
     fn build_schema() -> (Self, Schema) {
         let id_options = TextOptions::default()
@@ -96,31 +117,36 @@ impl IndexedFields {
         let stored_text_options = indexed_text_options.clone().set_stored();
         let mut schema_builder = SchemaBuilder::default();
         let fields = Self {
-            kind: schema_builder.add_i64_field("kind", INDEXED),
-            id: schema_builder.add_text_field("id", id_options),
-            status: schema_builder.add_i64_field("status", INDEXED | STORED),
-            lat: schema_builder.add_f64_field("lat", INDEXED | STORED),
-            lng: schema_builder.add_f64_field("lon", INDEXED | STORED),
-            ts_min: schema_builder.add_i64_field("ts_min", INDEXED | STORED),
-            ts_max: schema_builder.add_i64_field("ts_max", INDEXED | STORED),
-            title: schema_builder.add_text_field("tit", stored_text_options.clone()),
-            description: schema_builder.add_text_field("dsc", stored_text_options),
-            contact_name: schema_builder.add_text_field("cnt_name", indexed_text_options.clone()),
+            kind: schema_builder.add_i64_field(FIELD_NAME_KIND, INDEXED),
+            id: schema_builder.add_text_field(FIELD_NAME_ID, id_options),
+            status: schema_builder.add_i64_field(FIELD_NAME_STATUS, INDEXED | STORED),
+            lat: schema_builder.add_f64_field(FIELD_NAME_LAT, INDEXED | STORED),
+            lng: schema_builder.add_f64_field(FIELD_NAME_LNG, INDEXED | STORED),
+            ts_min: schema_builder.add_i64_field(FIELD_NAME_TS_MIN, INDEXED | STORED),
+            ts_max: schema_builder.add_i64_field(FIELD_NAME_TS_MAX, INDEXED | STORED),
+            title: schema_builder.add_text_field(FIELD_NAME_TITLE, stored_text_options.clone()),
+            description: schema_builder.add_text_field(FIELD_NAME_DESCRIPTION, stored_text_options),
+            contact_name: schema_builder
+                .add_text_field(FIELD_NAME_CONTACT_NAME, indexed_text_options.clone()),
             address_street: schema_builder
-                .add_text_field("adr_street", indexed_text_options.clone()),
-            address_city: schema_builder.add_text_field("adr_city", indexed_text_options.clone()),
-            address_zip: schema_builder.add_text_field("adr_zip", indexed_text_options.clone()),
+                .add_text_field(FIELD_NAME_ADDRESS_STREET, indexed_text_options.clone()),
+            address_city: schema_builder
+                .add_text_field(FIELD_NAME_ADDRESS_CITY, indexed_text_options.clone()),
+            address_zip: schema_builder
+                .add_text_field(FIELD_NAME_ADDRESS_ZIP, indexed_text_options.clone()),
             address_country: schema_builder
-                .add_text_field("adr_country", indexed_text_options.clone()),
-            address_state: schema_builder.add_text_field("adr_state", indexed_text_options),
-            tag: schema_builder.add_text_field("tag", tag_options),
-            ratings_diversity: schema_builder.add_f64_field("rat_diversity", STORED),
-            ratings_fairness: schema_builder.add_f64_field("rat_fairness", STORED),
-            ratings_humanity: schema_builder.add_f64_field("rat_humanity", STORED),
-            ratings_renewable: schema_builder.add_f64_field("rat_renewable", STORED),
-            ratings_solidarity: schema_builder.add_f64_field("rat_solidarity", STORED),
-            ratings_transparency: schema_builder.add_f64_field("rat_transparency", STORED),
-            total_rating: schema_builder.add_u64_field("rat_total", STORED | FAST),
+                .add_text_field(FIELD_NAME_ADDRESS_COUNTRY, indexed_text_options.clone()),
+            address_state: schema_builder
+                .add_text_field(FIELD_NAME_ADDRESS_STATE, indexed_text_options),
+            tag: schema_builder.add_text_field(FIELD_NAME_TAG, tag_options),
+            ratings_diversity: schema_builder.add_f64_field(FIELD_NAME_RATINGS_DIVERSITY, STORED),
+            ratings_fairness: schema_builder.add_f64_field(FIELD_NAME_RATINGS_FAIRNESS, STORED),
+            ratings_humanity: schema_builder.add_f64_field(FIELD_NAME_RATINGS_HUMANITY, STORED),
+            ratings_renewable: schema_builder.add_f64_field(FIELD_NAME_RATINGS_RENEWABLE, STORED),
+            ratings_solidarity: schema_builder.add_f64_field(FIELD_NAME_RATINGS_SOLIDARITY, STORED),
+            ratings_transparency: schema_builder
+                .add_f64_field(FIELD_NAME_RATINGS_TRANSPARENCY, STORED),
+            total_rating: schema_builder.add_u64_field(FIELD_NAME_TOTAL_RATING, STORED | FAST),
         };
         (fields, schema_builder.build())
     }
@@ -151,7 +177,7 @@ impl IndexedFields {
                     if let Some(id) = fv.value().as_text() {
                         place.id = id.into();
                     } else {
-                        error!("Invalid id value: {:?}", fv.value());
+                        log::error!("Invalid id value: {:?}", fv.value());
                     }
                 }
                 fv if fv.field() == self.title => {
@@ -159,7 +185,7 @@ impl IndexedFields {
                     if let Some(title) = fv.value().as_text() {
                         place.title = title.to_owned();
                     } else {
-                        error!("Invalid title value: {:?}", fv.value());
+                        log::error!("Invalid title value: {:?}", fv.value());
                     }
                 }
                 fv if fv.field() == self.description => {
@@ -167,14 +193,14 @@ impl IndexedFields {
                     if let Some(description) = fv.value().as_text() {
                         place.description = description.to_owned();
                     } else {
-                        error!("Invalid description value: {:?}", fv.value());
+                        log::error!("Invalid description value: {:?}", fv.value());
                     }
                 }
                 fv if fv.field() == self.tag => {
                     if let Some(tag) = fv.value().as_text() {
                         place.tags.push(tag.to_owned());
                     } else {
-                        error!("Invalid tag value: {:?}", fv.value());
+                        log::error!("Invalid tag value: {:?}", fv.value());
                     }
                 }
                 fv if fv.field() == self.ratings_diversity => {
@@ -215,14 +241,14 @@ impl IndexedFields {
                 //fv if fv.field() == self.address_country => (),
                 //fv if fv.field() == self.address_state => (),
                 fv => {
-                    error!("Unexpected field value: {:?}", fv);
+                    log::error!("Unexpected field value: {:?}", fv);
                 }
             }
         }
         if let (Some(lat), Some(lng)) = (lat, lng) {
             place.pos = MapPoint::new(lat, lng);
         } else {
-            error!("Invalid position: lat = {:?}, lng = {:?}", lat, lng);
+            log::error!("Invalid position: lat = {:?}, lng = {:?}", lat, lng);
         }
         place
     }
@@ -247,13 +273,15 @@ fn register_tokenizers(index: &Index) {
     debug_assert!(index.tokenizers().get(TEXT_TOKENIZER).is_some());
     // Custom tokenizer(s)
     debug_assert!(index.tokenizers().get(TAG_TOKENIZER).is_none());
-    let tag_tokenizer = TextAnalyzer::from(RawTokenizer)
+    let tag_tokenizer = TextAnalyzer::builder(RawTokenizer::default())
         .filter(LowerCaser)
-        .filter(RemoveLongFilter::limit(MAX_TOKEN_LEN));
+        .filter(RemoveLongFilter::limit(MAX_TOKEN_LEN))
+        .build();
     index.tokenizers().register(TAG_TOKENIZER, tag_tokenizer);
-    let text_tokenizer = TextAnalyzer::from(SimpleTokenizer)
+    let text_tokenizer = TextAnalyzer::builder(SimpleTokenizer::default())
         .filter(LowerCaser)
-        .filter(RemoveLongFilter::limit(MAX_TOKEN_LEN));
+        .filter(RemoveLongFilter::limit(MAX_TOKEN_LEN))
+        .build();
     index.tokenizers().register(TEXT_TOKENIZER, text_tokenizer);
 }
 
@@ -319,13 +347,13 @@ impl TantivyIndex {
 
         // TODO: Open index from existing directory
         let index = if let Some(path) = path {
-            info!(
+            log::info!(
                 "Creating full-text search index in directory: {}",
                 path.as_ref().to_string_lossy()
             );
             Index::create_in_dir(path, schema)?
         } else {
-            warn!("Creating full-text search index in RAM");
+            log::warn!("Creating full-text search index in RAM");
             Index::create_in_ram(schema)
         };
 
@@ -370,7 +398,7 @@ impl TantivyIndex {
 
         if !query.ids.is_empty() {
             let ids_query: Box<dyn Query> = if query.ids.len() > 1 {
-                debug!("Query multiple ids: {:?}", query.ids);
+                log::debug!("Query multiple ids: {:?}", query.ids);
                 let mut id_queries: Vec<(Occur, Box<dyn Query>)> =
                     Vec::with_capacity(query.ids.len());
                 for id in &query.ids {
@@ -382,7 +410,7 @@ impl TantivyIndex {
                 Box::new(BooleanQuery::from(id_queries))
             } else {
                 let id = &query.ids[0];
-                debug!("Query single id: {:?}", id);
+                log::debug!("Query single id: {:?}", id);
                 debug_assert!(!id.trim().is_empty());
                 let id_term = Term::from_field_text(self.fields.id, id);
                 Box::new(TermQuery::new(id_term, IndexRecordOption::Basic))
@@ -449,7 +477,7 @@ impl TantivyIndex {
                 .map(|(occur, status)| {
                     let status = status.to_i64().unwrap();
                     let boxed_query: Box<dyn Query> = Box::new(RangeQuery::new_i64_bounds(
-                        self.fields.status,
+                        FIELD_NAME_STATUS.to_string(),
                         Bound::Included(status),
                         Bound::Included(status),
                     ));
@@ -461,11 +489,11 @@ impl TantivyIndex {
 
         // Bbox (include)
         if let Some(ref bbox) = query.include_bbox {
-            debug!("Query bbox (include): {}", bbox);
+            log::debug!("Query bbox (include): {}", bbox);
             debug_assert!(bbox.is_valid());
             debug_assert!(!bbox.is_empty());
             let lat_query = RangeQuery::new_f64_bounds(
-                self.fields.lat,
+                FIELD_NAME_LAT.to_string(),
                 Bound::Included(bbox.southwest().lat().to_deg()),
                 Bound::Included(bbox.northeast().lat().to_deg()),
             );
@@ -475,7 +503,7 @@ impl TantivyIndex {
             if bbox.southwest().lng() <= bbox.northeast().lng() {
                 // regular (inclusive)
                 let lng_query = RangeQuery::new_f64_bounds(
-                    self.fields.lng,
+                    FIELD_NAME_LNG.to_string(),
                     Bound::Included(bbox.southwest().lng().to_deg()),
                     Bound::Included(bbox.northeast().lng().to_deg()),
                 );
@@ -483,7 +511,7 @@ impl TantivyIndex {
             } else {
                 // inverse (exclusive)
                 let lng_query = RangeQuery::new_f64_bounds(
-                    self.fields.lng,
+                    FIELD_NAME_LNG.to_string(),
                     Bound::Excluded(bbox.northeast().lng().to_deg()),
                     Bound::Excluded(bbox.southwest().lng().to_deg()),
                 );
@@ -493,11 +521,11 @@ impl TantivyIndex {
 
         // Inverse Bbox (exclude)
         if let Some(ref bbox) = query.exclude_bbox {
-            debug!("Query bbox (exclude): {}", bbox);
+            log::debug!("Query bbox (exclude): {}", bbox);
             debug_assert!(bbox.is_valid());
             debug_assert!(!bbox.is_empty());
             let lat_query = RangeQuery::new_f64_bounds(
-                self.fields.lat,
+                FIELD_NAME_LAT.to_string(),
                 Bound::Included(bbox.southwest().lat().to_deg()),
                 Bound::Included(bbox.northeast().lat().to_deg()),
             );
@@ -507,7 +535,7 @@ impl TantivyIndex {
             if bbox.southwest().lng() <= bbox.northeast().lng() {
                 // regular (exclusive)
                 let lng_query = RangeQuery::new_f64_bounds(
-                    self.fields.lng,
+                    FIELD_NAME_LNG.to_string(),
                     Bound::Included(bbox.southwest().lng().to_deg()),
                     Bound::Included(bbox.northeast().lng().to_deg()),
                 );
@@ -515,7 +543,7 @@ impl TantivyIndex {
             } else {
                 // inverse (inclusive)
                 let lng_query = RangeQuery::new_f64_bounds(
-                    self.fields.lng,
+                    FIELD_NAME_LNG.to_string(),
                     Bound::Excluded(bbox.northeast().lng().to_deg()),
                     Bound::Excluded(bbox.southwest().lng().to_deg()),
                 );
@@ -549,7 +577,7 @@ impl TantivyIndex {
                 });
         if !place_categories.is_empty() {
             let categories_query: Box<dyn Query> = if place_categories.len() > 1 {
-                debug!("Query multiple place categories: {:?}", place_categories);
+                log::debug!("Query multiple place categories: {:?}", place_categories);
                 let mut category_queries: Vec<(Occur, Box<dyn Query>)> =
                     Vec::with_capacity(place_categories.len());
                 for category in &place_categories {
@@ -560,7 +588,7 @@ impl TantivyIndex {
                 Box::new(BooleanQuery::from(category_queries))
             } else {
                 let category = &place_categories[0];
-                debug!("Query single place category: {:?}", category);
+                log::debug!("Query single place category: {:?}", category);
                 let tag_term = Term::from_field_text(self.fields.tag, &category.tag);
                 Box::new(TermQuery::new(tag_term, IndexRecordOption::Basic))
             };
@@ -592,7 +620,7 @@ impl TantivyIndex {
 
         // Hash tags (mandatory)
         for tag in &tags {
-            debug!("Query hash tag (mandatory): {}", tag);
+            log::debug!("Query hash tag (mandatory): {}", tag);
             debug_assert!(!tag.trim().is_empty());
             let tag_term = Term::from_field_text(self.fields.tag, &tag.to_lowercase());
             let tag_query = TermQuery::new(tag_term, IndexRecordOption::Basic);
@@ -604,7 +632,7 @@ impl TantivyIndex {
 
         // Text
         if let Some(text) = &query.text {
-            debug!("Query text: {}", text);
+            log::debug!("Query text: {}", text);
             debug_assert!(!text.trim().is_empty());
             let text = text.to_lowercase();
             match self.text_query_parser.parse_query(&text) {
@@ -616,14 +644,14 @@ impl TantivyIndex {
                     }
                 }
                 Err(err) => {
-                    warn!("Failed to parse query text '{}': {:?}", text, err);
+                    log::warn!("Failed to parse query text '{}': {:?}", text, err);
                 }
             }
         }
 
         // Text tags (optional)
         for tag in &query.text_tags {
-            debug!("Query text tag (optional): {}", tag);
+            log::debug!("Query text tag (optional): {}", tag);
             debug_assert!(!tag.trim().is_empty());
             let tag_term = Term::from_field_text(self.fields.tag, &tag.to_lowercase());
             let tag_query = TermQuery::new(tag_term, IndexRecordOption::Basic);
@@ -640,7 +668,8 @@ impl TantivyIndex {
             .map(|x| Bound::Included(x.as_secs()))
             .unwrap_or(Bound::Unbounded);
         if (ts_min_lb, ts_min_ub) != (Bound::Unbounded, Bound::Unbounded) {
-            let ts_min_query = RangeQuery::new_i64_bounds(self.fields.ts_min, ts_min_lb, ts_min_ub);
+            let ts_min_query =
+                RangeQuery::new_i64_bounds(FIELD_NAME_TS_MIN.to_string(), ts_min_lb, ts_min_ub);
             sub_queries.push((Occur::Must, Box::new(ts_min_query)));
         }
 
@@ -654,7 +683,8 @@ impl TantivyIndex {
             .map(|x| Bound::Included(x.as_secs()))
             .unwrap_or(Bound::Unbounded);
         if (ts_max_lb, ts_max_ub) != (Bound::Unbounded, Bound::Unbounded) {
-            let ts_max_query = RangeQuery::new_i64_bounds(self.fields.ts_max, ts_max_lb, ts_max_ub);
+            let ts_max_query =
+                RangeQuery::new_i64_bounds(FIELD_NAME_TS_MAX.to_string(), ts_max_lb, ts_max_ub);
             sub_queries.push((Occur::Must, Box::new(ts_max_query)));
         }
 
@@ -709,24 +739,24 @@ impl TantivyIndex {
                             doc_collector.collect_document(doc_addr, doc);
                         }
                         Err(err) => {
-                            warn!("Failed to load document {:?}: {}", doc_addr, err);
+                            log::warn!("Failed to load document {:?}: {}", doc_addr, err);
                         }
                     }
                 }
                 Ok(doc_collector)
             }
             TopDocsMode::Rating => {
-                let collector =
-                    TopDocs::with_limit(limit).order_by_u64_field(self.fields.total_rating);
+                let collector = TopDocs::with_limit(limit)
+                    .order_by_fast_field(FIELD_NAME_TOTAL_RATING, Order::Desc);
                 searcher.search(&search_query, &collector)?;
-                let top_docs = searcher.search(&search_query, &collector)?;
+                let top_docs: Vec<(u64, _)> = searcher.search(&search_query, &collector)?;
                 for (_, doc_addr) in top_docs {
                     match searcher.doc(doc_addr) {
                         Ok(doc) => {
                             doc_collector.collect_document(doc_addr, doc);
                         }
                         Err(err) => {
-                            warn!("Failed to load document {:?}: {}", doc_addr, err);
+                            log::warn!("Failed to load document {:?}: {}", doc_addr, err);
                         }
                     }
                 }
@@ -734,7 +764,7 @@ impl TantivyIndex {
             }
             TopDocsMode::ScoreBoostedByRating => {
                 let collector = {
-                    let total_rating_field = self.fields.total_rating;
+                    let total_rating_field = FIELD_NAME_TOTAL_RATING;
                     TopDocs::with_limit(limit).tweak_score(move |segment_reader: &SegmentReader| {
                         let total_rating_reader = segment_reader
                             .fast_fields()
@@ -742,8 +772,9 @@ impl TantivyIndex {
                             .unwrap();
 
                         move |doc: DocId, original_score: Score| {
-                            let total_rating =
-                                f64::from(u64_to_avg_rating(total_rating_reader.get_val(doc)));
+                            let total_rating = f64::from(u64_to_avg_rating(
+                                total_rating_reader.values.get_val(doc),
+                            ));
                             let boost_factor =
                                 if total_rating < f64::from(AvgRatingValue::default()) {
                                     // Negative ratings result in a boost factor < 1
@@ -775,7 +806,7 @@ impl TantivyIndex {
                             doc_collector.collect_document(doc_addr, doc);
                         }
                         Err(err) => {
-                            warn!("Failed to load document {:?}: {}", doc_addr, err);
+                            log::warn!("Failed to load document {:?}: {}", doc_addr, err);
                         }
                     }
                 }
@@ -814,9 +845,10 @@ impl DocumentCollector for IdCollector {
         if let Some(id) = doc.get_first(self.id_field).and_then(Value::as_text) {
             self.collected_ids.push(Id::from(id));
         } else {
-            error!(
+            log::error!(
                 "Document ({:?}) has no id field ({:?}) value",
-                doc_addr, self.id_field
+                doc_addr,
+                self.id_field
             );
         }
     }
