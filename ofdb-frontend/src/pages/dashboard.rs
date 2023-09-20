@@ -1,8 +1,7 @@
 use leptos::*;
 
 use ofdb_boundary::*;
-
-use crate::api::{PublicApi, UserApi};
+use ofdb_frontend_api::{PublicApi, UserApi};
 
 #[component]
 pub fn Dashboard(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> impl IntoView {

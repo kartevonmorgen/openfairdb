@@ -1,7 +1,8 @@
 use gloo_net::http::{Request, RequestBuilder};
-use ofdb_boundary::*;
 use serde::de::DeserializeOwned;
 use web_sys::RequestCredentials;
+
+use ofdb_boundary::*;
 
 use crate::{into_json, Result};
 
@@ -32,8 +33,8 @@ impl UserApi {
     }
     pub async fn user_info(&self) -> Result<User> {
         let url = format!("{}/users/current", self.url);
-        self.send(Request::get(&url).credentials(RequestCredentials::Include))
-            .await
+        let request = Request::get(&url).credentials(RequestCredentials::Include);
+        self.send(request).await
     }
     pub async fn bbox_subscriptions(&self) -> Result<Vec<BboxSubscription>> {
         let url = format!("{}/bbox-subscriptions", self.url);
@@ -45,10 +46,15 @@ impl UserApi {
     }
     pub async fn logout(&self) -> Result<()> {
         let url = format!("{}/logout", self.url);
-        self.send(Request::post(&url).credentials(RequestCredentials::Include))
-            .await
+        let request = Request::post(&url).credentials(RequestCredentials::Include);
+        self.send(request).await
     }
     pub fn token(&self) -> &JwtToken {
         &self.token
+    }
+    pub async fn archive_events(&self, ids: &[&str]) -> Result<()> {
+        let url = format!("{}/events/{}/archive", self.url, ids.join(","));
+        let request = Request::post(&url).credentials(RequestCredentials::Include);
+        self.send(request).await
     }
 }

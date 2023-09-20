@@ -1238,6 +1238,7 @@ dependencies = [
  "ofdb-boundary",
  "percent-encoding",
  "serde",
+ "serde_json",
  "thiserror",
  "web-sys",
 ]

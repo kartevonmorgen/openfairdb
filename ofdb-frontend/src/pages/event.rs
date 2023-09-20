@@ -2,9 +2,9 @@ use leptos::*;
 use leptos_router::*;
 use time::{format_description::FormatItem, macros::format_description, Duration, OffsetDateTime};
 
-use ofdb_frontend_api::EventQuery;
+use ofdb_frontend_api::{EventQuery, PublicApi, UserApi};
 
-use crate::{api::PublicApi, Page};
+use crate::Page;
 
 const DATE_TIME_FORMAT: &[FormatItem] = format_description!("[year]-[month]-[day] [hour]:[minute]");
 
@@ -92,7 +92,7 @@ fn EventListItem(event: ofdb_boundary::Event) -> impl IntoView {
 }
 
 #[component]
-pub fn Event(public_api: PublicApi) -> impl IntoView {
+pub fn Event(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> impl IntoView {
     // -- signals -- //
 
     let params = use_params_map();
@@ -113,15 +113,16 @@ pub fn Event(public_api: PublicApi) -> impl IntoView {
     });
 
     move || match fetch_event.value().get() {
-        Some(Ok(event)) => view! { <EventProfile event /> }.into_view(),
+        Some(Ok(event)) => view! { <EventProfile event user_api = user_api /> }.into_view(),
         None => view! { <p>"The event is loaded ..."</p> }.into_view(),
         Some(Err(_)) => view! { <p>"An error occurred while loading the event."</p> }.into_view(),
     }
 }
 
 #[component]
-fn EventProfile(event: ofdb_boundary::Event) -> impl IntoView {
+fn EventProfile(event: ofdb_boundary::Event, user_api: Signal<Option<UserApi>>) -> impl IntoView {
     let ofdb_boundary::Event {
+        id,
         title,
         start,
         description,
@@ -136,7 +137,28 @@ fn EventProfile(event: ofdb_boundary::Event) -> impl IntoView {
         tags,
         ..
     } = event;
+
+    let archive_event = create_action(move |_| {
+        let id = id.clone();
+        let navigate = use_navigate();
+        async move {
+            let Some(user_api) = user_api.get() else {
+                unreachable!();
+            };
+            match user_api.archive_events(&[&id]).await {
+                Ok(_) => {
+                    log::info!("Successfully archived event {id}");
+                    navigate(Page::Events.path(), Default::default());
+                }
+                Err(err) => {
+                    log::error!("Unable to archive event {id}: {err}");
+                }
+            }
+        }
+    });
+
     let start = OffsetDateTime::try_from(start).expect("valid date time");
+
     view! {
       <div class="bg-white">
         <div aria-hidden="true" class="relative">
@@ -153,7 +175,9 @@ fn EventProfile(event: ofdb_boundary::Event) -> impl IntoView {
           <dl class="mx-auto mt-16 grid max-w-2xl grid-cols-1 gap-x-6 gap-y-10 sm:grid-cols-2 sm:gap-y-16 lg:max-w-none lg:grid-cols-3 lg:gap-x-8">
             <div class="border-t border-gray-200 pt-4">
               <dt class="font-medium text-gray-900">"Date & Time"</dt>
-              <dd class="mt-2 text-sm text-gray-500"><time>{ start.format(DATE_TIME_FORMAT) }</time></dd>
+              <dd class="mt-2 text-sm text-gray-500">
+                <time>{ start.format(DATE_TIME_FORMAT) }</time>
+              </dd>
             </div>
             <div class="border-t border-gray-200 pt-4">
               <dt class="font-medium text-gray-900">"Address"</dt>
@@ -183,6 +207,22 @@ fn EventProfile(event: ofdb_boundary::Event) -> impl IntoView {
               <dt class="font-medium text-gray-900">"Web"</dt>
               <dd class="mt-2 text-sm text-gray-500">{ homepage }</dd>
             </div>
+            { move || user_api.get().map(|_|
+                view! {
+                  <div class="border-t border-gray-200 pt-4">
+                    <dt class="font-medium text-gray-900">"Actions"</dt>
+                    <dd class="mt-2 text-sm text-gray-500">
+                      <button
+                        type="button"
+                        class="rounded bg-indigo-600 px-2 py-1 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                        on:click=move|_|archive_event.dispatch(()) >
+                        "Archive event"
+                      </button>
+                    </dd>
+                  </div>
+                }
+              )
+            }
           </dl>
         </div>
       </div>

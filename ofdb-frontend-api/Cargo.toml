@@ -12,6 +12,7 @@ rust-version.workspace = true
 [dependencies]
 percent-encoding = "2.3.0"
 serde = "1.0.188"
+serde_json = "1.0.107"
 thiserror = "1.0.48"
 
 [dependencies.gloo-net]
