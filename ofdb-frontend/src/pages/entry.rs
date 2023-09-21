@@ -1,10 +1,13 @@
 use leptos::*;
 use leptos_router::*;
 
-use crate::api::PublicApi;
+use ofdb_boundary::{Review, ReviewStatus};
+use ofdb_frontend_api::{PublicApi, UserApi};
+
+use crate::Page;
 
 #[component]
-pub fn Entry(public_api: PublicApi) -> impl IntoView {
+pub fn Entry(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> impl IntoView {
     // -- signals -- //
 
     let params = use_params_map();
@@ -39,7 +42,7 @@ pub fn Entry(public_api: PublicApi) -> impl IntoView {
 
     move || {
         if let Some(entry) = entry.get() {
-            view! { <EntryProfile entry /> }.into_view()
+            view! { <EntryProfile entry user_api /> }.into_view()
         } else {
             view!{
               <div class="mx-auto text-center max-w-7xl px-4 mt-12 pb-16 sm:px-6 sm:pb-24 lg:px-8">
@@ -51,8 +54,9 @@ pub fn Entry(public_api: PublicApi) -> impl IntoView {
 }
 
 #[component]
-fn EntryProfile(entry: ofdb_boundary::Entry) -> impl IntoView {
+fn EntryProfile(entry: ofdb_boundary::Entry, user_api: Signal<Option<UserApi>>) -> impl IntoView {
     let ofdb_boundary::Entry {
+        id,
         title,
         description,
         image_url,
@@ -68,6 +72,29 @@ fn EntryProfile(entry: ofdb_boundary::Entry) -> impl IntoView {
         opening_hours,
         ..
     } = entry;
+
+    let archive_place = create_action(move |_| {
+        let id = id.clone();
+        let navigate = use_navigate();
+        async move {
+            let Some(user_api) = user_api.get() else {
+                unreachable!();
+            };
+            let review = Review {
+                status: ReviewStatus::Archived,
+                comment: None,
+            };
+            match user_api.review_places(&[&id], &review).await {
+                Ok(_) => {
+                    log::info!("Successfully archived entry {id}");
+                    navigate(Page::Home.path(), Default::default());
+                }
+                Err(err) => {
+                    log::error!("Unable to archive entry {id}: {err}");
+                }
+            }
+        }
+    });
 
     view! {
       <div class="bg-white">
@@ -119,6 +146,22 @@ fn EntryProfile(entry: ofdb_boundary::Entry) -> impl IntoView {
               <dt class="font-medium text-gray-900">"Version"</dt>
               <dd class="mt-2 text-sm text-gray-500">{ version }</dd>
             </div>
+            { move || user_api.get().map(|_|
+              view! {
+                <div class="border-t border-gray-200 pt-4">
+                  <dt class="font-medium text-gray-900">"Actions"</dt>
+                  <dd class="mt-2 text-sm text-gray-500">
+                    <button
+                      type="button"
+                      class="rounded bg-indigo-600 px-2 py-1 text-xs font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600"
+                      on:click=move|_|archive_place.dispatch(()) >
+                      "Archive entry"
+                    </button>
+                  </dd>
+                </div>
+                }
+              )
+            }
           </dl>
         </div>
       </div>

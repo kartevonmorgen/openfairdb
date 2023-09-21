@@ -151,7 +151,12 @@ pub fn App() -> impl IntoView {
             />
             <Route
               path=format!("{}/:id", Page::Entries.path())
-              view=move|| view! { <Entry public_api /> }
+              view=move|| view! {
+                <Entry
+                  public_api
+                  user_api = user_api.into()
+                />
+              }
             />
             <Route
               path=Page::Events.path()
