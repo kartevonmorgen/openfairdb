@@ -113,7 +113,7 @@ pub fn Event(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> impl I
     });
 
     move || match fetch_event.value().get() {
-        Some(Ok(event)) => view! { <EventProfile event user_api = user_api /> }.into_view(),
+        Some(Ok(event)) => view! { <EventProfile event user_api /> }.into_view(),
         None => view! { <p>"The event is loaded ..."</p> }.into_view(),
         Some(Err(_)) => view! { <p>"An error occurred while loading the event."</p> }.into_view(),
     }
