@@ -70,6 +70,12 @@ branch = "rocket-0.5.0-rc.3"
 git = "https://github.com/slowtec/geocoding"
 branch = "remove-reqwest-default-tls-feature"
 
+[patch.crates-io.tantivy]
+# TODO: update to >0.21.0
+# Somehow with 0.21.0 there is a bug that leads to endless loops at startup.
+git = "https://github.com/quickwit-oss/tantivy"
+rev = "38db53c"
+
 [dev-dependencies]
 rand = "0.8.5"
 ofdb-entities = { version = "*", features = ["builders"] }
