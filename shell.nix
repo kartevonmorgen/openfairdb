@@ -7,13 +7,11 @@ let
   };
   sass = with pkgs; stdenv.mkDerivation rec {
     name = "dart-sass-${version}";
-    version = "1.63.6";
+    version = "1.69.5";
     system = "x86_64-linux";
-
     isExecutable = true;
-
     src = fetchurl {
-      sha256 = "3my+oDsYySHFgpAwx3cyHWw4FEA168zS7k3q/5wzPe0=";
+      sha256 = "sha256-QrPXuCCYQy+A0FfaXnRk6W5s2NkIJ6njpHl085yTAhg=";
       url = "https://github.com/sass/dart-sass/releases/download/${version}/dart-sass-${version}-linux-x64.tar.gz";
     };
 
@@ -38,7 +36,7 @@ in
     buildInputs = [
       rust
       cmake
-      pkgconfig
+      pkg-config
       openssl # TODO: do we still need this?
       pre-commit
       graphviz
