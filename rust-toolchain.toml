@@ -2,7 +2,13 @@
 # Must be overridden in CI builds to specify different,
 # custom targets!
 [toolchain]
-channel = "stable"
+
+# Because 1.74 causes an internal compiler error
+# (see https://github.com/rust-lang/rust/issues/117976)
+# in combination with tantivy
+# (see https://github.com/quickwit-oss/tantivy/issues/2260)
+# we need to pin Rust to 1.73.
+channel = "1.73"
 profile = "minimal"
 components = [ "rustfmt", "clippy" ]
 targets = [ "wasm32-unknown-unknown" ]
