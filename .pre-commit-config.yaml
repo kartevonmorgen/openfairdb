@@ -80,7 +80,7 @@ repos:
         language: system
         pass_filenames: false
         args: [doc, --locked, --workspace, --no-deps]
-  - repo: https://github.com/dudefellah/pre-commit-openapi
-    rev: "v0.0.1"
+  - repo: https://github.com/python-openapi/openapi-spec-validator
+    rev: 0.7.1
     hooks:
-      - id: check-openapi
+      - id: openapi-spec-validator
