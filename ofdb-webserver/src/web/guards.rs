@@ -167,7 +167,7 @@ impl<'r> FromRequest<'r> for Account {
         let auth = try_outcome!(Auth::from_request(request).await);
         match auth.account_email() {
             Ok(email) => Outcome::Success(Account(email.clone())),
-            _ => Outcome::Failure((Status::Unauthorized, ())),
+            _ => Outcome::Error((Status::Unauthorized, ())),
         }
     }
 }

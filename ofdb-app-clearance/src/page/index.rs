@@ -86,54 +86,57 @@ pub fn Index(
     };
 
     view! {
-        <div>
-            <main>
-                <div class="container">
-                    <div class="section">
-                        {move || {
-                            if place_clearances.get().is_empty() {
-                                view! { <p>"There is nothing to clear :)"</p> }.into_view()
-                            } else {
-                                view! {
-                                    <div class="panel">
-                                        <p class="panel-heading">
-                                            "Pending Clearances"
-                                            <span class="subtitle is-5">
-                                                " (" {place_clearances.get().len()} ")"
-                                            </span>
-                                        </p>
-                                        <div class="panel-block">
-                                            <PanelActions place_clearances expanded selected/>
-                                        </div>
-                                        <ul>
-                                            <For
-                                                each=move || place_clearances.get()
-                                                key=|(id, _)| id.clone()
-                                                view=move |(_, place_clearance)| {
-                                                    view! {
-                                                        <PanelBlock place_clearance expanded selected accept/>
-                                                    }
-                                                }
-                                            />
-                                        </ul>
-                                        <div class="panel-block">
-                                            <button
-                                                class="button is-danger is-outlined is-fullwidth"
-                                                disabled=move || selected.get().is_empty()
-                                                on:click=move |_| accept_all_selected.dispatch(())
-                                            >
-                                                {format!("Accept all ({}) selected", selected.get().len())}
-                                            </button>
-                                        </div>
-                                    </div>
-                                }
-                                    .into_view()
-                            }
-                        }}
+      <div>
+        <main>
+          <div class="container">
+            <div class="section">
+              {move || {
+                if place_clearances.get().is_empty() {
+                  view! { <p>"There is nothing to clear :)"</p> }.into_view()
+                } else {
+                  view! {
+                    <div class="panel">
+                      <p class="panel-heading">
+                        "Pending Clearances"
+                        <span class="subtitle is-5">
+                          " (" {place_clearances.get().len()} ")"
+                        </span>
+                      </p>
+                      <div class="panel-block">
+                        <PanelActions place_clearances expanded selected/>
+                      </div>
+                      <ul>
+                        <For
+                          each=move || place_clearances.get()
+                          key=|(id, _)| id.clone()
+                          let:place_clearances
+                        >
+                          <PanelBlock
+                            place_clearance = { place_clearances.1 }
+                            expanded
+                            selected
+                            accept
+                          />
+                        </For>
+                      </ul>
+                      <div class="panel-block">
+                        <button
+                          class="button is-danger is-outlined is-fullwidth"
+                          disabled=move || selected.get().is_empty()
+                          on:click=move |_| accept_all_selected.dispatch(())
+                        >
+                          {format!("Accept all ({}) selected", selected.get().len())}
+                        </button>
+                      </div>
                     </div>
-                </div>
-            </main>
-        </div>
+                  }
+                  .into_view()
+                }
+              }}
+            </div>
+          </div>
+        </main>
+      </div>
     }
 }
 

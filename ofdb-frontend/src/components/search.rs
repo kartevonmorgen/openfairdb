@@ -67,10 +67,10 @@ pub fn PlaceSearch(public_api: PublicApi, bbox: ReadSignal<MapBbox>) -> impl Int
             <For
               each = move || search_response.get().map(|res|res.visible).unwrap_or_default()
               key = |place| place.id.clone() // TODO: can we avoid this clone?
-              view = move | place| {
-                view! {  <li class="mb-3"><PlaceSearchResultItem place /></li> }
-              }
-            />
+              let:place
+            >
+              <li class="mb-3"><PlaceSearchResultItem place /></li>
+            </For>
           </ul>
         })
       }
@@ -90,10 +90,10 @@ fn PlaceSearchResultItem(place: PlaceSearchResult) -> impl IntoView {
         <For
           each = move || place.tags.clone() // TODO: can we avoid this clone?
           key = |tag| tag.clone() // TODO: can we avoid this clone?
-          view = move | tag| {
-             view!{  <span class="text-xs bg-gray-100 text-gray-500 rounded mr-1 p-1">{ tag }</span> }
-          }
-        />
+          let:tag
+        >
+          <span class="text-xs bg-gray-100 text-gray-500 rounded mr-1 p-1">{ tag }</span>
+        </For>
       </ul>
     }
 }

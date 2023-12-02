@@ -2,7 +2,10 @@ use gloo_net::http::Request;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use web_sys::RequestCredentials;
 
-use ofdb_boundary::*;
+use ofdb_boundary::{
+    Credentials, Entry, Event, MapBbox, NewPlace, RequestPasswordReset, SearchResponse,
+    TagFrequency, UpdatePlace,
+};
 
 use crate::{into_json, Result, UserApi};
 
@@ -26,6 +29,7 @@ pub struct EventQuery {
 }
 
 impl EventQuery {
+    #[must_use]
     pub fn is_empty(&self) -> bool {
         let Self {
             bbox,
@@ -51,6 +55,7 @@ impl EventQuery {
 }
 
 impl PublicApi {
+    #[must_use]
     pub const fn new(url: &'static str) -> Self {
         Self { url }
     }
@@ -188,18 +193,18 @@ impl PublicApi {
     ) -> Result<Vec<TagFrequency>> {
         let mut url = format!("{}/entries/most-popular-tags", self.url);
         if min_count.or(max_count).or(limit).or(offset).is_some() {
-            url = format!("{}?", url);
+            url = format!("{url}?");
             if let Some(cnt) = min_count {
-                url = format!("{}&min_count={}", url, cnt);
+                url = format!("{url}&min_count={cnt}");
             }
             if let Some(cnt) = max_count {
-                url = format!("{}&max_count={}", url, cnt);
+                url = format!("{url}&max_count={cnt}");
             }
             if let Some(l) = limit {
-                url = format!("{}&limit={}", url, l);
+                url = format!("{url}&limit={l}");
             }
             if let Some(o) = offset {
-                url = format!("{}&offset={}", url, o);
+                url = format!("{url}&offset={o}");
             }
         }
         let request = Request::get(&url);

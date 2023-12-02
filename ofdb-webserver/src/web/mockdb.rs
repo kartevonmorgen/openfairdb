@@ -53,7 +53,7 @@ impl<'r> FromRequest<'r> for Connections {
         let pool = try_outcome!(request.guard::<&State<ConnectionPool>>().await);
         match pool.get() {
             Ok(conn) => Outcome::Success(Connections(conn)),
-            Err(_) => Outcome::Failure((Status::ServiceUnavailable, ())),
+            Err(_) => Outcome::Error((Status::ServiceUnavailable, ())),
         }
     }
 }

@@ -12,7 +12,7 @@ default_stages:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.4.0
+    rev: v4.5.0
     hooks:
       - id: check-case-conflict
       - id: check-json
@@ -32,32 +32,32 @@ repos:
       - id: trailing-whitespace
         exclude: ^ofdb-app-clearance/assets/.*$
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
-    rev: v9.5.0
+    rev: v9.10.0
     hooks:
       - id: commitlint
         stages:
           - commit-msg
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.10.0
+    rev: v0.11.0
     hooks:
       - id: markdownlint-cli2
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.9.0.5
+    rev: v0.9.0.6
     hooks:
       - id: shellcheck
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.5
+    rev: v2.2.6
     hooks:
       - id: codespell
         args: [--ignore-words=.codespellignore]
         exclude: ^search_results\.json|src/ports/web/frontend/login\.rs|ofdb-gateways/src/user_communication/mod\.rs|doc/c4-plantuml/.*\.puml|Cargo.lock|ofdb-gateways/src/user_communication/templates/.*\.txt|ofdb-core/src/usecases/find_duplicates.rs|ofdb-gateways/src/email/sendmail.rs$
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.26.3
+    rev: 0.27.2
     hooks:
       - id: check-github-actions
       - id: check-github-workflows
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.0.3
+    rev: v3.1.0
     hooks:
       - id: prettier
         types_or:

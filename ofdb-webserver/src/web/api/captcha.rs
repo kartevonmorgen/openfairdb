@@ -81,10 +81,9 @@ pub async fn post_captcha_verify(
         let expires = now_utc + MAX_CAPTCHA_TTL;
         let cookie_value = now_utc.unix_timestamp().to_string();
         cookies.add_private(
-            Cookie::build(COOKIE_CAPTCHA_KEY, cookie_value)
+            Cookie::build((COOKIE_CAPTCHA_KEY, cookie_value))
                 .expires(expires)
-                .same_site(rocket::http::SameSite::None)
-                .finish(),
+                .same_site(rocket::http::SameSite::None),
         );
         Ok(())
     } else {

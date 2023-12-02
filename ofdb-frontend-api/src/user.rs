@@ -2,7 +2,7 @@ use gloo_net::http::{Request, RequestBuilder};
 use serde::{de::DeserializeOwned, Serialize};
 use web_sys::RequestCredentials;
 
-use ofdb_boundary::*;
+use ofdb_boundary::{BboxSubscription, JwtToken, Review, User};
 
 use crate::{into_json, Result};
 
@@ -14,6 +14,7 @@ pub struct UserApi {
 }
 
 impl UserApi {
+    #[must_use]
     pub const fn new(url: &'static str, token: JwtToken) -> Self {
         Self { url, token }
     }
@@ -61,6 +62,7 @@ impl UserApi {
         let request = Request::post(&url);
         self.send(request).await
     }
+    #[must_use]
     pub fn token(&self) -> &JwtToken {
         &self.token
     }

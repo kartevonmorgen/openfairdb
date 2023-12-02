@@ -120,8 +120,13 @@ pub fn Dashboard(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> im
                         <For
                           each=move||subs.clone()
                           key=|sub|sub.id.clone()
-                          view=move | subscription|view!{  <BboxSubscriptionListElement subscription on_delete = on_bbox_delete /> }
-                        />
+                          let:subscription
+                        >
+                          <BboxSubscriptionListElement
+                            subscription
+                            on_delete = on_bbox_delete
+                          />
+                        </For>
                       </ul>
                     }.into_view(),
                     None => view! {
