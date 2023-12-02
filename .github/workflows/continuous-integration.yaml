@@ -35,14 +35,11 @@ jobs:
         run: |
           sudo apt -y install musl-tools
 
-      - name: Install Rust toolchains for both native target and WASM
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
-          targets: ${{ matrix.target }}, wasm32-unknown-unknown
-
       - name: Check out repository
         uses: actions/checkout@v4
+
+      - name: Install Rust toolchains for both native target and WASM
+        uses: dsherret/rust-toolchain-file@v1
 
       - name: Cache Rust toolchain and build artifacts
         uses: Swatinem/rust-cache@v2

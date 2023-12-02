@@ -18,16 +18,14 @@ jobs:
   security-audit:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: stable
+        uses: dsherret/rust-toolchain-file@v1
 
       - name: Install cargo-audit
         run: |
           cargo install cargo-audit
-
-      - uses: actions/checkout@v4
 
       - name: Cache Rust toolchain and build artifacts
         uses: Swatinem/rust-cache@v2
