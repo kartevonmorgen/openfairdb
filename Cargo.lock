@@ -1923,7 +1923,7 @@ dependencies = [
 
 [[package]]
 name = "ofdb-boundary"
-version = "0.12.6"
+version = "0.12.7"
 dependencies = [
  "ofdb-entities",
  "serde",
@@ -1978,7 +1978,7 @@ dependencies = [
 
 [[package]]
 name = "ofdb-entities"
-version = "0.12.6"
+version = "0.12.7"
 dependencies = [
  "bs58",
  "itertools 0.12.0",
@@ -2085,7 +2085,7 @@ checksum = "624a8340c38c1b80fd549087862da4ba43e08858af025b236e509b6649fc13d5"
 
 [[package]]
 name = "openfairdb"
-version = "0.12.6"
+version = "0.12.7"
 dependencies = [
  "anyhow",
  "clap",

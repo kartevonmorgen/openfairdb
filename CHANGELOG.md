@@ -1,28 +1,33 @@
 # Changelog
 
+## v0.12.7 (2023-11-02)
+
+- chore: Update dependencies
+- chore: Slightly refactor the frontend code
+
 ## v0.12.6 (2023-09-19)
 
-- fix: check invalid timestamp values
+- fix: Check invalid timestamp values
 - chore: Update dependencies
-- chore: slightly refactor the frontend code
+- chore: Slightly refactor the frontend code
 
 ## v0.12.5 (2023-07-51)
 
-- fix: loading config
-- refactor: migrate clearance app to [leptos](https://leptos.dev)
+- fix: Loading config
+- refactor: Migrate clearance app to [leptos](https://leptos.dev)
 - chore: Update dependencies
 - new: Add a new basic frontend based on leptos
 
 ## v0.12.4 (2023-03-24)
 
-- fix: webfonts in clearance app
+- fix: Webfonts in clearance app
 - chore: Update dependencies
 
 ## v0.12.3 (2023-01-20)
 
-- new: config option for reminder BCC addresses
-- fix: recurring reminders for oldest places first
-- fix: review URLs in reminder emails
+- new: Config option for reminder BCC addresses
+- fix: Recurring reminders for oldest places first
+- fix: Review URLs in reminder emails
 - fix: openapi.yaml
 
 ## v0.12.2 (2023-01-17)
@@ -262,7 +267,7 @@
 
 - fix(db): Increased maximum number of search results via `limit` request parameter
   from 250 to 500. The default number of results if no limit is requested is still 100.
-- new(db): Add image_url and image_link_url to CSV export
+- new(db): Add `image_url` and `image_link_url` to CSV export
 - chore(db): Disabled CSV export temporarily
 
 ## v0.6.1 (2019-08-22)
@@ -309,7 +314,7 @@
 ## v0.5.8 (2019-08-14)
 
 - new(web): New endpoint /entries/recently-changed for retrieving recent changes
-- chore(db): Optimize filtering of events by start_min/start_max
+- chore(db): Optimize filtering of events by `start_min`/`start_max`
 
 ## v0.5.7 (2019-07-24)
 
@@ -331,7 +336,7 @@
 
 - new(web): Added admin interface for archiving comments and ratings
 - new(web): Added admin interface for assigning user roles
-- chore(web): update rocket: v0.4.0 -> v0.4.1
+- chore(web): Update rocket: v0.4.0 -> v0.4.1
 
 ## v0.5.3 (2019-04-02)
 
