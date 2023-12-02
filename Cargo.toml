@@ -11,7 +11,7 @@ keywords = ["geo", "fair", "sustainability"]
 authors = ["slowtec GmbH <post@slowtec.de>"]
 license = "AGPL-3.0-or-later"
 edition = "2021"
-rust-version = "1.72.1"
+rust-version = "1.74.0"
 
 [workspace]
 members = [
@@ -50,31 +50,25 @@ ofdb-webserver    = "=0.0.0"
 ofdb-entities     =  "*"
 
 anyhow = "1.0.75"
-clap = { version = "4.4.4", features = ["cargo", "derive"] }
+clap = { version = "4.4.10", features = ["cargo", "derive"] }
 dotenvy = "0.15.7"
-duration-str = { version = "0.5.1", default-features = false, features = ["serde"] }
-env_logger = "0.10.0"
+duration-str = { version = "0.7.0", default-features = false, features = ["serde"] }
+env_logger = "0.10.1"
 log = "0.4.20"
-serde = { version = "1.0.188", features = ["derive"] }
-time = "0.3.28"
-tokio = "1.32.0"
-toml = "0.7.8"
+serde = { version = "1.0.193", features = ["derive"] }
+time = "0.3.30"
+tokio = "1.34.0"
+toml = "0.8.8"
 
 [patch.crates-io.maud]
 # TODO: use v0.26.0 as soon as it's published
 git = "https://github.com/slowtec/maud"
-branch = "rocket-0.5.0-rc.3"
+branch = "rocket-0.5.0"
 
 [patch.crates-io.geocoding]
 # TODO: use upstream as soon as https://github.com/georust/geocoding/pull/58 is merged.
 git = "https://github.com/slowtec/geocoding"
 branch = "remove-reqwest-default-tls-feature"
-
-[patch.crates-io.tantivy]
-# TODO: update to >0.21.0
-# Somehow with 0.21.0 there is a bug that leads to endless loops at startup.
-git = "https://github.com/quickwit-oss/tantivy"
-rev = "38db53c"
 
 [dev-dependencies]
 rand = "0.8.5"

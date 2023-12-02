@@ -40,8 +40,10 @@ pub fn Events(public_api: PublicApi) -> impl IntoView {
                     <For
                       each = move || events.clone()
                       key = |event| event.id.clone() // TODO: can we avoid this clone?
-                      view = move |event| view!{ <EventListItem event /> }
-                    />
+                      let:event
+                    >
+                      <EventListItem event />
+                    </For>
                   </ul>
                 }.into_view()
               }

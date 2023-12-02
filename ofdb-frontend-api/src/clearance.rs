@@ -1,5 +1,5 @@
 use gloo_net::http::Request;
-use ofdb_boundary::*;
+use ofdb_boundary::{ClearanceForPlace, PendingClearanceForPlace, PlaceHistory, ResultCount};
 
 use crate::{into_json, Result};
 
@@ -11,6 +11,7 @@ pub struct ClearanceApi {
 }
 
 impl ClearanceApi {
+    #[must_use]
     pub const fn new(url: &'static str, token: String) -> Self {
         Self { url, token }
     }

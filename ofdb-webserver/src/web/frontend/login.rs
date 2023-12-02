@@ -71,10 +71,9 @@ pub fn post_login(
         Ok(_) => {
             let email = login.email.to_string();
             cookies.add_private(
-                Cookie::build(COOKIE_EMAIL_KEY, email)
+                Cookie::build((COOKIE_EMAIL_KEY, email))
                     .http_only(true)
-                    .same_site(SameSite::Lax)
-                    .finish(),
+                    .same_site(SameSite::Lax),
             );
             Ok(Redirect::to(uri!(super::get_index)))
         }
@@ -83,7 +82,7 @@ pub fn post_login(
 
 #[post("/logout")]
 pub fn post_logout(cookies: &CookieJar<'_>) -> Flash<Redirect> {
-    cookies.remove_private(Cookie::named(COOKIE_EMAIL_KEY));
+    cookies.remove_private(Cookie::build(COOKIE_EMAIL_KEY));
     Flash::success(
         Redirect::to(uri!(super::get_index)),
         "You have successfully logged out.",

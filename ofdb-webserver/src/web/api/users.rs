@@ -29,9 +29,7 @@ pub fn post_login(
     }
     if cfg!(feature = "cookies") {
         cookies.add_private(
-            Cookie::build(COOKIE_EMAIL_KEY, login.email)
-                .same_site(rocket::http::SameSite::None)
-                .finish(),
+            Cookie::build((COOKIE_EMAIL_KEY, login.email)).same_site(rocket::http::SameSite::None),
         );
     }
     Ok(Json(response))
@@ -43,7 +41,7 @@ pub fn post_logout(
     cookies: &CookieJar<'_>,
     jwt_state: &State<jwt::JwtState>,
 ) -> Json<()> {
-    cookies.remove_private(Cookie::named(COOKIE_EMAIL_KEY));
+    cookies.remove_private(Cookie::build(COOKIE_EMAIL_KEY));
     if cfg!(feature = "jwt") {
         for bearer in auth.bearer_tokens() {
             jwt_state.blacklist_token(bearer.to_owned());
