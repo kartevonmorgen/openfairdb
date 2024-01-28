@@ -3,12 +3,7 @@
 # custom targets!
 [toolchain]
 
-# Because 1.74 causes an internal compiler error
-# (see https://github.com/rust-lang/rust/issues/117976)
-# in combination with tantivy
-# (see https://github.com/quickwit-oss/tantivy/issues/2260)
-# we need to pin Rust to 1.73.
-channel = "1.73"
+channel = "stable"
 profile = "minimal"
 components = [ "rustfmt", "clippy" ]
 targets = [

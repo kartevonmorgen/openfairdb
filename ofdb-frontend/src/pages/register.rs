@@ -68,7 +68,7 @@ pub fn Register(public_api: PublicApi) -> impl IntoView {
                           disabled
                       />
                       <div class="flex items-center justify-between pb-6">
-                        <p class="mb-0 mr-2 text-gray-600">"Your already have an account?"</p>
+                        <p class="mb-0 mr-2 text-gray-600">"You already have an account?"</p>
                         <A
                           href=Page::Login.path()
                           class="inline-block px-6 py-2 border-2 border-kvm-raspberry-light text-kvm-raspberry font-medium text-xs leading-tight uppercase rounded hover:border-kvm-raspberry hover:bg-kvm-raspberry-light hover:bg-opacity-25 focus:outline-none focus:ring-0 transition duration-150 ease-in-out"

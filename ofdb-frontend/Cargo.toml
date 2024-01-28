@@ -14,18 +14,18 @@ ofdb-frontend-api = "=0.0.0"
 console_error_panic_hook = "0.1.7"
 console_log = "1.0.0"
 gloo-storage = "0.3.0"
-leptos = { version = "0.5.4", features = ["csr"] }
-leptos_router = { version = "0.5.4", features = ["csr"] }
+leptos = { version = "0.6.3", features = ["csr"] }
+leptos_router = { version = "0.6.3", features = ["csr"] }
 log = "0.4.20"
-web-sys = "0.3.66"
+web-sys = "0.3.67"
 
 [dependencies.time]
-version = "0.3.30"
+version = "0.3.31"
 default-features = false
 features = ["macros", "formatting", "wasm-bindgen"]
 
 [dependencies.ofdb-boundary]
-version = "0.12.6"
+version = "0.12.7"
 default-features = false
 features = ["extra-derive", "wasm-bindgen"]
 
