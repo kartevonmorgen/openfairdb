@@ -20,7 +20,7 @@ You can generate a key e.g. with OpenSSL:
 openssl rand -base64 32
 ```
 
-Further details can be found in the [Rocket documentation](https://rocket.rs/v0.5-rc/guide/configuration/#secret-key).
+Further details can be found in the [Rocket documentation](https://rocket.rs/guide/v0.5/configuration/#secret-key).
 
 ## Docker
 
