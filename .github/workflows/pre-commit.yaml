@@ -21,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Setup Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.x"
 
@@ -38,7 +38,7 @@ jobs:
           shared-key: "pre-commit"
 
       - name: Install just
-        uses: extractions/setup-just@v1
+        uses: extractions/setup-just@v2
 
       - name: Install Trunk for building the webapp
         run: |
@@ -49,11 +49,11 @@ jobs:
         run: just build-clearance
 
       - name: Detect code style issues (push)
-        uses: pre-commit/action@v3.0.0
+        uses: pre-commit/action@v3.0.1
         if: github.event_name == 'push'
 
       - name: Detect code style issues (pull_request)
-        uses: pre-commit/action@v3.0.0
+        uses: pre-commit/action@v3.0.1
         if: github.event_name == 'pull_request'
         env:
           SKIP: no-commit-to-branch
