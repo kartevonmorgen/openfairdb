@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.12.8 (2024-03-26)
+
+- chore: Update dependencies
+
 ## v0.12.7 (2023-11-02)
 
 - chore: Update dependencies
