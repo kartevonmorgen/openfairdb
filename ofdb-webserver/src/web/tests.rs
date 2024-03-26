@@ -10,13 +10,11 @@ pub mod prelude {
     pub const DUMMY_VERSION: &str = "3.2.1";
 
     pub use rocket::{
-        http::{ContentType, Cookie, Status},
+        http::{ContentType, Cookie},
         local::blocking::{Client, LocalResponse},
-        response::Response,
     };
 
     pub use super::DummyNotifyGW;
-    pub use crate::core::db::*;
 }
 
 pub fn setup(

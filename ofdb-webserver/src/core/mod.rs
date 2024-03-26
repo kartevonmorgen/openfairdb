@@ -675,11 +675,7 @@ pub mod prelude {
         db::*,
         entities::*,
         repositories::*,
-        util::{
-            geo::{Distance, LatCoord, LngCoord, MapPoint},
-            nonce::Nonce,
-            time::Timestamp,
-        },
+        util::{geo::MapPoint, nonce::Nonce, time::Timestamp},
     };
 
     pub type Result<T> = result::Result<T, ofdb_application::error::AppError>;

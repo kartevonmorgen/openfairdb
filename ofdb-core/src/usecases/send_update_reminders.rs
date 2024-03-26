@@ -394,7 +394,7 @@ mod tests {
         assert_eq!(scouts.len(), 1);
         let scouts = get_scouts_subscribed_to_place(&place, &users, &subscriptions);
         assert_eq!(scouts.len(), 1);
-        assert_eq!(**scouts.get(0).unwrap(), valid_scout_with_affected_sub);
+        assert_eq!(**scouts.first().unwrap(), valid_scout_with_affected_sub);
     }
 
     #[test]

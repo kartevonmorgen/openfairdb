@@ -68,7 +68,7 @@ pub mod prelude {
         pub use ofdb_db_tantivy::SearchEngine;
     }
 
-    pub use crate::{error::AppError, prelude as flows};
+    pub use crate::prelude as flows;
 
     pub struct DummyNotifyGW;
 
