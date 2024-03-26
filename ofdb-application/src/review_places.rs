@@ -99,12 +99,12 @@ mod tests {
             None,
         );
 
-        let place_ids = vec![
+        let place_ids = [
             fixture.create_place(0.into(), None),
             fixture.create_place(1.into(), None),
             fixture.create_place(2.into(), None),
         ];
-        let entry_tags = vec![
+        let entry_tags = [
             fixture
                 .try_get_place(&place_ids[0])
                 .unwrap()

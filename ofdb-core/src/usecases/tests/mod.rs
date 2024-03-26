@@ -653,7 +653,7 @@ impl ReminderRepo for MockDb {
             .collect::<Vec<_>>();
 
         sent_reminders_dates.sort();
-        Ok(sent_reminders_dates.get(0).cloned().copied())
+        Ok(sent_reminders_dates.first().cloned().copied())
     }
 
     fn save_sent_reminders(

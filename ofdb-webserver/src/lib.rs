@@ -1,5 +1,11 @@
 #![allow(proc_macro_derive_resolution_fallback)]
 #![recursion_limit = "128"]
+// TODO:
+// Remove as soon as rocket > v0.5.0 is published.
+// See: <https://github.com/rwf2/Rocket/issues/2738>
+#![allow(clippy::blocks_in_conditions)]
+// FIXME:
+#![allow(deprecated)]
 
 #[macro_use]
 extern crate log;

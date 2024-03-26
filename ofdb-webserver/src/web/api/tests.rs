@@ -11,15 +11,11 @@ pub mod prelude {
     use ofdb_core::gateways::notify::NotificationGateway;
     use std::collections::HashSet;
 
-    pub use crate::{
-        core::db::*,
-        web::{
-            api::captcha::tests::get_valid_captcha_cookie as get_captcha_cookie,
-            tests::prelude::{LocalResponse as Response, *},
-            Cfg,
-        },
+    pub use crate::web::{
+        api::captcha::tests::get_valid_captcha_cookie as get_captcha_cookie,
+        tests::prelude::{LocalResponse as Response, *},
+        Cfg,
     };
-    pub use ofdb_application::prelude as flows;
 
     pub fn setup() -> (Client, sqlite::Connections) {
         setup_with_cfg(Cfg {

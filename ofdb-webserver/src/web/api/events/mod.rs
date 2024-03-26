@@ -387,7 +387,7 @@ pub fn get_events_chronologically(
     // Release the database connection asap
     drop(db);
 
-    let moderated_tags = vec![];
+    let moderated_tags = [];
     let events: Vec<_> = events
         .into_iter()
         .map(|e| usecases::filter_event(e, moderated_tags.iter().map(String::as_str)))

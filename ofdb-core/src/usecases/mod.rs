@@ -72,7 +72,7 @@ pub fn prepare_tag_list<'a>(tags: impl IntoIterator<Item = &'a str>) -> Vec<Stri
         .map(|t| t.replace('#', ""))
         // Filter empty tags (2nd pass) and conversion to lowercase
         .filter_map(|t| match t.trim() {
-            t if t.is_empty() => None,
+            "" => None,
             t => Some(t.to_lowercase()),
         })
         .collect();

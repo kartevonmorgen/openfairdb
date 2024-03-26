@@ -97,11 +97,11 @@ mod tests {
             Some(Role::Scout),
         );
 
-        let place_ids = vec![
+        let place_ids = [
             fixture.create_place(0.into(), None),
             fixture.create_place(1.into(), None),
         ];
-        let rating_comment_ids = vec![
+        let rating_comment_ids = [
             fixture.create_rating(new_entry_rating(
                 0,
                 &place_ids[0],

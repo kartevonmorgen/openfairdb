@@ -8,9 +8,9 @@ rust-version.workspace = true
 [dependencies]
 ofdb-core = "=0.0.0"
 
-anyhow = "1.0.79"
-log = "0.4.20"
-num-traits = "0.2.17"
+anyhow = "1.0.81"
+log = "0.4.21"
+num-traits = "0.2.18"
 parking_lot = "0.12.1"
-strum = "0.26.0"
+strum = "0.26.2"
 tantivy = "0.21.1"

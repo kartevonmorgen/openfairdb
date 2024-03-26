@@ -5,8 +5,6 @@ use rocket::{
 };
 use std::ops::{Deref, DerefMut};
 
-pub use ofdb_db_tantivy::*;
-
 // Wrapper to be able to implement `FromRequest`
 #[derive(Clone)]
 pub struct SearchEngine(pub ofdb_db_tantivy::SearchEngine);
