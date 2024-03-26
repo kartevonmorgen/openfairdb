@@ -38,7 +38,7 @@ jobs:
           shared-key: "pre-commit"
 
       - name: Install just
-        uses: extractions/setup-just@v1
+        uses: extractions/setup-just@v2
 
       - name: Install Trunk for building the webapp
         run: |
