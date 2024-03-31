@@ -27,7 +27,7 @@ ARG BUILD_BIN=${PROJECT_NAME}
 # 1st Build Stage
 # The tag of the base image must match the version in the file rust-toolchain!
 # Available images can be found at https://hub.docker.com/r/clux/muslrust/tags/
-FROM clux/muslrust:stable AS build
+FROM docker.io/clux/muslrust:stable AS build
 
 # Import global ARGs
 ARG WORKDIR_ROOT
@@ -57,6 +57,8 @@ RUN USER=root cargo new --lib ofdb-application \
     && \
     USER=root cargo new --lib ofdb-entities \
     && \
+    USER=root cargo new --lib ofdb-frontend-api \
+    && \
     USER=root cargo new --lib ofdb-gateways \
     && \
     USER=root cargo new --lib ofdb-webserver
@@ -85,6 +87,9 @@ COPY [ \
     "ofdb-entities/Cargo.toml", \
     "./ofdb-entities/" ]
 COPY [ \
+    "ofdb-frontend-api/Cargo.toml", \
+    "./ofdb-frontend-api/" ]
+COPY [ \
     "ofdb-gateways/Cargo.toml", \
     "./ofdb-gateways/" ]
 COPY [ \
@@ -109,6 +114,8 @@ RUN cargo build --${BUILD_MODE} --target ${BUILD_TARGET} --workspace \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_db_tantivy-* \
     && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_entities-* \
+    && \
+    rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_frontend_api-* \
     && \
     rm -f ./target/${BUILD_TARGET}/${BUILD_MODE}/deps/ofdb_gateways-* \
     && \
@@ -137,9 +144,6 @@ COPY [ \
     "openapi.yaml", \
     "./" ]
 COPY [ \
-    "migrations", \
-    "./migrations/" ]
-COPY [ \
     "ofdb-app-clearance", \
     "./ofdb-app-clearance/" ]
 COPY [ \
@@ -155,14 +159,20 @@ COPY [ \
     "ofdb-db-sqlite/src", \
     "./ofdb-db-sqlite/src/" ]
 COPY [ \
+    "ofdb-db-sqlite/migrations", \
+    "./ofdb-db-sqlite/migrations/" ]
+COPY [ \
     "ofdb-db-tantivy/src", \
     "./ofdb-db-tantivy/src/" ]
 COPY [ \
     "ofdb-entities/src", \
     "./ofdb-entities/src/" ]
 COPY [ \
-    "ofdb-gateways/src", \
-    "./ofdb-gateways/src/" ]
+    "ofdb-frontend-api/src", \
+    "./ofdb-frontend-api/src/" ]
+COPY [ \
+    "ofdb-gateways", \
+    "./ofdb-gateways/" ]
 COPY [ \
     "ofdb-webserver/build.rs", \
     "./ofdb-webserver/build.rs" ]
@@ -185,6 +195,8 @@ RUN cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-applicat
     cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-db-tantivy \
     && \
     cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-entities \
+    && \
+    cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-frontend-api \
     && \
     cargo check --${BUILD_MODE} --target ${BUILD_TARGET} --package ofdb-gateways \
     && \
