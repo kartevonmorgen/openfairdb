@@ -57,7 +57,7 @@ env_logger = "0.11.3"
 log = "0.4.21"
 serde = { version = "1.0.197", features = ["derive"] }
 time = "0.3.34"
-tokio = "1.36.0"
+tokio = "1.37.0"
 toml = "0.8.12"
 
 [patch.crates-io.geocoding]
