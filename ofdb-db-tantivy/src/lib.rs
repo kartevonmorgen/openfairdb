@@ -9,8 +9,8 @@ use tantivy::{
     query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
     schema::*,
     tokenizer::{LowerCaser, RawTokenizer, RemoveLongFilter, SimpleTokenizer, TextAnalyzer},
-    DocAddress, DocId, Document, Index, IndexReader, IndexWriter, Order, ReloadPolicy, Score,
-    SegmentReader,
+    DocAddress, DocId, Index, IndexReader, IndexWriter, Order, ReloadPolicy, Score, SegmentReader,
+    TantivyDocument,
 };
 
 use ofdb_core::{
@@ -151,7 +151,7 @@ impl IndexedFields {
         (fields, schema_builder.build())
     }
 
-    fn read_indexed_place(&self, doc: &Document) -> IndexedPlace {
+    fn read_indexed_place(&self, doc: &TantivyDocument) -> IndexedPlace {
         let mut lat: Option<LatCoord> = Default::default();
         let mut lng: Option<LngCoord> = Default::default();
         let mut place = IndexedPlace::default();
@@ -174,7 +174,7 @@ impl IndexedFields {
                 }
                 fv if fv.field() == self.id => {
                     debug_assert!(place.id.is_empty());
-                    if let Some(id) = fv.value().as_text() {
+                    if let Some(id) = fv.value().as_str() {
                         place.id = id.into();
                     } else {
                         log::error!("Invalid id value: {:?}", fv.value());
@@ -182,7 +182,7 @@ impl IndexedFields {
                 }
                 fv if fv.field() == self.title => {
                     debug_assert!(place.title.is_empty());
-                    if let Some(title) = fv.value().as_text() {
+                    if let Some(title) = fv.value().as_str() {
                         place.title = title.to_owned();
                     } else {
                         log::error!("Invalid title value: {:?}", fv.value());
@@ -190,14 +190,14 @@ impl IndexedFields {
                 }
                 fv if fv.field() == self.description => {
                     debug_assert!(place.description.is_empty());
-                    if let Some(description) = fv.value().as_text() {
+                    if let Some(description) = fv.value().as_str() {
                         place.description = description.to_owned();
                     } else {
                         log::error!("Invalid description value: {:?}", fv.value());
                     }
                 }
                 fv if fv.field() == self.tag => {
-                    if let Some(tag) = fv.value().as_text() {
+                    if let Some(tag) = fv.value().as_str() {
                         place.tags.push(tag.to_owned());
                     } else {
                         log::error!("Invalid tag value: {:?}", fv.value());
@@ -817,7 +817,7 @@ impl TantivyIndex {
 }
 
 trait DocumentCollector {
-    fn collect_document(&mut self, doc_addr: DocAddress, doc: Document);
+    fn collect_document(&mut self, doc_addr: DocAddress, doc: TantivyDocument);
 }
 
 struct IdCollector {
@@ -841,8 +841,12 @@ impl From<IdCollector> for Vec<Id> {
 }
 
 impl DocumentCollector for IdCollector {
-    fn collect_document(&mut self, doc_addr: DocAddress, doc: Document) {
-        if let Some(id) = doc.get_first(self.id_field).and_then(Value::as_text) {
+    fn collect_document(&mut self, doc_addr: DocAddress, doc: TantivyDocument) {
+        if let Some(id) = doc
+            .get_first(self.id_field)
+            .as_ref()
+            .and_then(Value::as_str)
+        {
             self.collected_ids.push(Id::from(id));
         } else {
             log::error!(
@@ -875,7 +879,7 @@ impl<'a> From<IndexedPlaceCollector<'a>> for Vec<IndexedPlace> {
 }
 
 impl<'a> DocumentCollector for IndexedPlaceCollector<'a> {
-    fn collect_document(&mut self, _doc_addr: DocAddress, doc: Document) {
+    fn collect_document(&mut self, _doc_addr: DocAddress, doc: TantivyDocument) {
         self.collected_places
             .push(self.fields.read_indexed_place(&doc));
     }
@@ -921,7 +925,7 @@ impl PlaceIndexer for TantivyIndex {
     ) -> Fallible<()> {
         let id_term = Term::from_field_text(self.fields.id, place.id.as_str());
         self.index_writer.delete_term(id_term);
-        let mut doc = Document::default();
+        let mut doc = TantivyDocument::default();
         doc.add_i64(self.fields.kind, PLACE_KIND_FLAG);
         if let Some(status) = status.to_i64() {
             doc.add_i64(self.fields.status, status);
@@ -983,7 +987,7 @@ impl EventIndexer for TantivyIndex {
     fn add_or_update_event(&self, event: &Event) -> Fallible<()> {
         let id_term = Term::from_field_text(self.fields.id, event.id.as_str());
         self.index_writer.delete_term(id_term);
-        let mut doc = Document::default();
+        let mut doc = TantivyDocument::default();
         doc.add_i64(self.fields.kind, EVENT_KIND_FLAG);
         doc.add_text(self.fields.id, &event.id);
         if let Some(ref location) = event.location {
