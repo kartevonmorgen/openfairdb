@@ -981,7 +981,7 @@ dependencies = [
 
 [[package]]
 name = "ofdb-boundary"
-version = "0.12.8"
+version = "0.12.9"
 dependencies = [
  "ofdb-entities",
  "serde",
@@ -991,7 +991,7 @@ dependencies = [
 
 [[package]]
 name = "ofdb-entities"
-version = "0.12.8"
+version = "0.12.9"
 dependencies = [
  "bs58",
  "itertools",

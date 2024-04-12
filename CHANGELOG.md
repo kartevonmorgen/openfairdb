@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.12.9 (2024-04-12)
+
+- chore: Upgrade tantivy to v0.22.0-dev
+- chore: Update dependencies
+
 ## v0.12.8 (2024-03-26)
 
 - chore: Update dependencies
