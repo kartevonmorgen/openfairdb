@@ -13,5 +13,4 @@ log = "0.4.21"
 num-traits = "0.2.18"
 parking_lot = "0.12.1"
 strum = "0.26.2"
-# TODO: upgrade to tantivy v0.22.0 after it has been released.
-tantivy = { version = "0.22.0-dev", git = "https://github.com/quickwit-oss/tantivy.git" }
+tantivy = "0.22.0"
