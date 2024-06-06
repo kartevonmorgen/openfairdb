@@ -24,19 +24,23 @@ where
 {
     let events = repo.all_events_chronologically()?;
     for mut e in events {
-        if let Some(ref mut loc) = e.location {
-            if let Some(ref addr) = loc.address {
-                if let Some((lat, lng)) = geo.resolve_address_lat_lng(addr) {
-                    if let Ok(pos) = MapPoint::try_from_lat_lng_deg(lat, lng) {
-                        if pos.is_valid() {
-                            if let Err(err) = repo.update_event(&e) {
-                                log::warn!("Failed to update location of event {}: {}", e.id, err);
-                            } else {
-                                log::info!("Updated location of event {}", e.id);
-                            }
-                        }
-                    }
-                }
+        let Some(ref mut loc) = e.location else {
+            continue;
+        };
+        let Some(ref addr) = loc.address else {
+            continue;
+        };
+        let Some((lat, lng)) = geo.resolve_address_lat_lng(addr) else {
+            continue;
+        };
+        let Ok(pos) = MapPoint::try_from_lat_lng_deg(lat, lng) else {
+            continue;
+        };
+        if pos.is_valid() {
+            if let Err(err) = repo.update_event(&e) {
+                log::warn!("Failed to update location of event {}: {err}", e.id);
+            } else {
+                log::info!("Updated location of event {}", e.id);
             }
         }
     }
@@ -59,13 +63,38 @@ enum Command {
     FixEventAddressLocation,
 }
 
+const ENV_NAME_DB_URL: &str = "DATABASE_URL";
+const ENV_NAME_RUST_LOG: &str = "RUST_LOG";
+
+const DEFAULT_CONFIG_FILE_NAME: &str = "openfairdb.toml";
+
+const FALLBACK_RUST_LOG_CONFIG: &str = "info,tantivy=warn";
+
 #[tokio::main]
 pub async fn main() -> anyhow::Result<()> {
-    env_logger::init();
     dotenv().ok();
+    if env::var(ENV_NAME_RUST_LOG) == Err(env::VarError::NotPresent) {
+        env::set_var(ENV_NAME_RUST_LOG, FALLBACK_RUST_LOG_CONFIG);
+    }
+    env_logger::init();
+
     let args = Args::parse();
 
-    let cfg = config::Config::try_load_from_file_or_default(args.config_file)?;
+    let mut cfg = match args.config_file {
+        Some(file_path) => config::Config::try_load_from_file(file_path)?,
+        None => {
+            log::info!("No configuration file specified: load {DEFAULT_CONFIG_FILE_NAME}");
+            config::Config::try_load_from_file_or_default(DEFAULT_CONFIG_FILE_NAME)?
+        }
+    };
+
+    if let Ok(db_url) = env::var(ENV_NAME_DB_URL) {
+        log::info!("Use DB connection {db_url} defined by {ENV_NAME_DB_URL}");
+        cfg.db.conn_sqlite = db_url;
+    }
+
+    log::info!("Start server with the following config:\n {cfg:#?}");
+
     let config::Db {
         conn_sqlite,
         conn_pool_size,

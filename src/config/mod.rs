@@ -1,20 +1,20 @@
-use anyhow::{anyhow, Result};
-use ofdb_core::usecases::RecipientRole;
-use ofdb_entities::email::EmailAddress;
 use std::{
     collections::HashSet,
-    env, fs,
-    io::ErrorKind,
+    fmt, fs, io,
     path::{Path, PathBuf},
     time::Duration,
 };
 
+use anyhow::anyhow;
+use thiserror::Error;
+
+use ofdb_core::usecases::RecipientRole;
+use ofdb_entities::email::EmailAddress;
+
 mod raw;
 
-const DEFAULT_CONFIG_FILE_NAME: &str = "openfairdb.toml";
-
-const ENV_NAME_DB_URL: &str = "DATABASE_URL";
-
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Config {
     pub db: Db,
     pub entries: Entries,
@@ -24,33 +24,59 @@ pub struct Config {
     pub reminders: Reminders,
 }
 
-impl Config {
-    pub fn try_load_from_file_or_default<P: AsRef<Path>>(file_path: Option<P>) -> Result<Self> {
-        let file_path: &Path = file_path.as_ref().map(|p| p.as_ref()).unwrap_or_else(|| {
-            log::info!("No configuration file specified. load {DEFAULT_CONFIG_FILE_NAME}");
-            Path::new(DEFAULT_CONFIG_FILE_NAME)
-        });
+#[derive(Debug, Error)]
+pub enum LoadError {
+    #[error("Config file not found")]
+    NotFound,
 
-        let raw_config = match fs::read_to_string(file_path) {
-            Ok(cfg_string) => toml::from_str(&cfg_string)?,
-            Err(err) => match err.kind() {
-                ErrorKind::NotFound => {
-                    log::info!(
-                        "{DEFAULT_CONFIG_FILE_NAME} not found => load default configuration."
-                    );
-                    Ok(raw::Config::default())
-                }
-                _ => Err(err),
-            }?,
-        };
-        let mut cfg = Self::try_from(raw_config)?;
-        if let Ok(db_url) = env::var(ENV_NAME_DB_URL) {
-            cfg.db.conn_sqlite = db_url;
-        }
+    #[error(transparent)]
+    Toml(#[from] toml::de::Error),
+
+    #[error(transparent)]
+    Other(#[from] anyhow::Error),
+}
+
+impl Config {
+    pub fn try_load_from_file<P: AsRef<Path>>(file_path: P) -> Result<Self, LoadError> {
+        let raw_config = try_load_raw_config_from_file(file_path)?;
+        let cfg = Self::try_from(raw_config)?;
         Ok(cfg)
+    }
+
+    pub fn try_load_from_file_or_default<P: AsRef<Path>>(file_path: P) -> anyhow::Result<Self> {
+        match Self::try_load_from_file(file_path.as_ref()) {
+            Ok(cfg) => Ok(cfg),
+            Err(err) => match err {
+                LoadError::NotFound => {
+                    log::info!(
+                        "Configuration file {} not found: load default configuration.",
+                        file_path.as_ref().display()
+                    );
+                    Ok(Self::default())
+                }
+                _ => Err(err.into()),
+            },
+        }
     }
 }
 
+impl Default for Config {
+    fn default() -> Self {
+        Self::try_from(raw::Config::default()).expect("default config")
+    }
+}
+
+fn try_load_raw_config_from_file<P: AsRef<Path>>(file_path: P) -> Result<raw::Config, LoadError> {
+    let cfg_string = fs::read_to_string(file_path).map_err(|err| match err.kind() {
+        io::ErrorKind::NotFound => LoadError::NotFound,
+        _ => LoadError::Other(err.into()),
+    })?;
+    let raw_config = toml::from_str(&cfg_string)?;
+    Ok(raw_config)
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Db {
     /// SQLite connection
     pub conn_sqlite: String,
@@ -59,28 +85,48 @@ pub struct Db {
     pub index_dir: Option<PathBuf>,
 }
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Geocoding {
     pub gateway: Option<GeocodingGateway>,
 }
 
+#[cfg_attr(test, derive(PartialEq))]
 pub enum GeocodingGateway {
     OpenCage { api_key: String },
 }
 
+impl fmt::Debug for GeocodingGateway {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            GeocodingGateway::OpenCage { api_key: _ } => {
+                f.debug_struct("OpenCage").field("api_key", &"***").finish()
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Entries {
     pub accepted_licenses: HashSet<String>,
 }
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct WebServer {
     pub protect_with_captcha: bool,
     pub enable_cors: bool,
 }
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Email {
     pub gateway: Option<EmailGateway>,
 }
 
 #[derive(Clone)]
+#[cfg_attr(test, derive(PartialEq))]
 pub enum EmailGateway {
     MailGun {
         api_base_url: String, // TODO: use url::Url
@@ -98,6 +144,37 @@ pub enum EmailGateway {
     },
 }
 
+impl fmt::Debug for EmailGateway {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            EmailGateway::MailGun {
+                api_base_url,
+                api_key: _,
+                domain,
+                sender_address,
+            } => f
+                .debug_struct("MailGun")
+                .field("api_base_url", &api_base_url)
+                .field("api_key", &"***")
+                .field("domain", &domain)
+                .field("sender_address", &sender_address)
+                .finish(),
+
+            EmailGateway::Sendmail { sender_address } => f
+                .debug_struct("Sendmail")
+                .field("sender_address", &sender_address)
+                .finish(),
+
+            EmailGateway::EmailToJsonFile { dir } => f
+                .debug_struct("EmailToJsonFile")
+                .field("dir", &dir)
+                .finish(),
+        }
+    }
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct Reminders {
     pub task_interval_time: Duration,
     pub send_max: u32,
@@ -108,17 +185,21 @@ pub struct Reminders {
     pub token_expire_in: Duration,
 }
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct ScoutReminders {
     pub not_updated_for: Duration,
 }
 
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct OwnerReminders {
     pub not_updated_for: Duration,
 }
 
 impl TryFrom<raw::Config> for Config {
     type Error = anyhow::Error;
-    fn try_from(from: raw::Config) -> Result<Self> {
+    fn try_from(from: raw::Config) -> anyhow::Result<Self> {
         let raw::Config {
             db,
             geocoding,
@@ -241,7 +322,7 @@ impl TryFrom<raw::Config> for Config {
         let send_bcc = if let Some(bcc) = send_bcc {
             bcc.into_iter()
                 .map(|a| a.parse::<EmailAddress>())
-                .collect::<Result<Vec<_>, _>>()?
+                .collect::<anyhow::Result<Vec<_>, _>>()?
         } else {
             vec![]
         };
@@ -312,7 +393,34 @@ mod tests {
 
     #[test]
     fn load_default_config() {
-        let file: Option<&Path> = None;
-        let _: Config = Config::try_load_from_file_or_default(file).unwrap();
+        let file = Path::new("");
+        let cfg = Config::try_load_from_file_or_default(file).unwrap();
+        assert_eq!(cfg, Config::default());
+        assert!(cfg.reminders.send_to.is_empty());
+        assert!(cfg.reminders.send_bcc.is_empty());
+    }
+
+    #[test]
+    fn hide_api_key_of_geo_gateway() {
+        let x = GeocodingGateway::OpenCage {
+            api_key: "123".to_string(),
+        };
+        let d = format!("{x:?}");
+        assert_eq!(r#"OpenCage { api_key: "***" }"#, d);
+    }
+
+    #[test]
+    fn hide_api_key_of_mailgun_gateway() {
+        let x = EmailGateway::MailGun {
+            api_base_url: "x".to_string(),
+            domain: "y".to_string(),
+            sender_address: "z@example.com".parse().unwrap(),
+            api_key: "123".to_string(),
+        };
+        let d = format!("{x:?}");
+        assert_eq!(
+            r#"MailGun { api_base_url: "x", api_key: "***", domain: "y", sender_address: EmailAddress { address: "z@example.com", display_name: None } }"#,
+            d
+        );
     }
 }

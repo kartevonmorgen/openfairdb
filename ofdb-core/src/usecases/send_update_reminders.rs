@@ -89,7 +89,7 @@ where
     Ok(())
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RecipientRole {
     Owner,
     Scout,

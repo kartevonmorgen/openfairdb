@@ -2266,6 +2266,7 @@ dependencies = [
  "ofdb-webserver",
  "rand",
  "serde",
+ "thiserror",
  "time",
  "tokio",
  "toml",
