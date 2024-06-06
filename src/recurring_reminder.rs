@@ -12,7 +12,7 @@ pub async fn run(
     cfg: config::Reminders,
 ) {
     if cfg.send_to.is_empty() {
-        log::info!("Do not send recurring reminders");
+        log::info!("No recipient defined in `send_to`: do not send recurring reminders");
         return;
     }
 

@@ -228,6 +228,7 @@ mod tests {
         assert!(cfg.task_interval_time.is_some());
         assert!(cfg.send_max.is_some());
         assert!(cfg.send_to.is_none());
+        assert!(cfg.send_bcc.is_none());
         assert!(cfg.scouts.is_some());
         assert!(cfg.owners.is_some());
         assert!(cfg.token_expire_in.is_some());

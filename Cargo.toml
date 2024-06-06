@@ -56,6 +56,7 @@ duration-str = { version = "0.7.1", default-features = false, features = ["serde
 env_logger = "0.11.3"
 log = "0.4.21"
 serde = { version = "1.0.203", features = ["derive"] }
+thiserror = "1.0.61"
 time = "0.3.36"
 tokio = "1.38.0"
 toml = "0.8.14"
