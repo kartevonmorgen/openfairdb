@@ -36,6 +36,7 @@ in
     buildInputs = [
       rust
       cmake
+      just
       pkg-config
       openssl # TODO: do we still need this?
       pre-commit

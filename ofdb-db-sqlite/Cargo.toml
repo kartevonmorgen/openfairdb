@@ -5,13 +5,13 @@ edition.workspace = true
 publish = false
 
 [dependencies]
-anyhow = "1.0.82"
+anyhow = "1.0.86"
 log = "0.4.21"
-num-traits = "0.2.18"
-diesel = { version = "2.1.5", features = ["sqlite", "r2d2"] }
-diesel_migrations = { version = "2.1.0", features = ["sqlite"] }
+num-traits = "0.2.19"
+diesel = { version = "2.2.0", features = ["sqlite", "r2d2"] }
+diesel_migrations = { version = "2.2.0", features = ["sqlite"] }
 ofdb-core = { version = "0.0.0", path = "../ofdb-core" }
-parking_lot = "0.12.1"
+parking_lot = "0.12.3"
 time = { version = "0.3.36", features = ["macros", "formatting", "parsing"] }
 
 # Bundle SQLite code to prevent dynamic linking.

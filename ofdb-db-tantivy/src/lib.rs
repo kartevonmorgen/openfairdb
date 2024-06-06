@@ -183,7 +183,7 @@ impl IndexedFields {
                 fv if fv.field() == self.title => {
                     debug_assert!(place.title.is_empty());
                     if let Some(title) = fv.value().as_str() {
-                        place.title = title.to_owned();
+                        title.clone_into(&mut place.title);
                     } else {
                         log::error!("Invalid title value: {:?}", fv.value());
                     }
@@ -191,7 +191,7 @@ impl IndexedFields {
                 fv if fv.field() == self.description => {
                     debug_assert!(place.description.is_empty());
                     if let Some(description) = fv.value().as_str() {
-                        place.description = description.to_owned();
+                        description.clone_into(&mut place.description);
                     } else {
                         log::error!("Invalid description value: {:?}", fv.value());
                     }

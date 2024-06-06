@@ -531,7 +531,7 @@ fn should_return_the_last_cleared_revision_when_loading_or_searching_cleared_pla
     assert_ne!(old_place.title, new_title);
     let new_revision = old_place.revision.next();
     let mut update_place = usecases::UpdatePlace::from(old_place.clone());
-    update_place.title = new_title.clone();
+    update_place.title.clone_from(&new_title);
     update_place.version = new_revision.into();
     let new_place = flows::update_place(
         &fixture.backend.db_connections,
@@ -740,8 +740,8 @@ fn should_hide_untagged_cleared_revision_when_loading_or_searching_for_cleared_p
     let new_revision = old_place.revision.next();
 
     let mut update_place = usecases::UpdatePlace::from(old_place.clone());
-    update_place.title = new_title.clone();
-    update_place.tags = new_tags.clone();
+    update_place.title.clone_from(&new_title);
+    update_place.tags.clone_from(&new_tags);
     update_place.version = new_revision.into();
     let new_place = flows::update_place(
         &fixture.backend.db_connections,
