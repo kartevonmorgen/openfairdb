@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.12.10 (2024-06-07)
+
+- new: Set `RUST_LOG` to `info,tantivy=warn` if nothing was specified
+- new: Log loaded configuration at startup
+- chore: Update dependencies
+
 ## v0.12.9 (2024-04-12)
 
 - chore: Upgrade tantivy to v0.22.0-dev
