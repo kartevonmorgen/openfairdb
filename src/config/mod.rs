@@ -8,7 +8,7 @@ use std::{
 use anyhow::anyhow;
 use thiserror::Error;
 
-use ofdb_core::usecases::RecipientRole;
+use ofdb_core::{gateways::notify::NotificationType, usecases::RecipientRole};
 use ofdb_entities::email::EmailAddress;
 
 mod raw;
@@ -22,6 +22,7 @@ pub struct Config {
     pub email: Email,
     pub geocoding: Geocoding,
     pub reminders: Reminders,
+    pub subscriptions: Subscriptions,
 }
 
 #[derive(Debug, Error)]
@@ -208,6 +209,7 @@ impl TryFrom<raw::Config> for Config {
             email,
             gateway,
             reminders,
+            subscriptions,
         } = from;
 
         let raw::Db {
@@ -367,6 +369,16 @@ impl TryFrom<raw::Config> for Config {
             token_expire_in,
         };
 
+        let raw::Subscriptions { notify_on } = subscriptions.unwrap_or_default();
+
+        let notify_on = notify_on
+            .unwrap_or_default()
+            .into_iter()
+            .map(NotificationType::from)
+            .collect();
+
+        let subscriptions = Subscriptions { notify_on };
+
         Ok(Self {
             db,
             email,
@@ -374,6 +386,7 @@ impl TryFrom<raw::Config> for Config {
             geocoding,
             webserver,
             reminders,
+            subscriptions,
         })
     }
 }
@@ -383,6 +396,24 @@ impl From<raw::RecipientRole> for RecipientRole {
         match from {
             raw::RecipientRole::Scouts => Self::Scout,
             raw::RecipientRole::Owners => Self::Owner,
+        }
+    }
+}
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq))]
+pub struct Subscriptions {
+    pub notify_on: HashSet<NotificationType>,
+}
+
+impl From<raw::NotificationType> for NotificationType {
+    fn from(from: raw::NotificationType) -> Self {
+        use raw::NotificationType as F;
+        match from {
+            F::PlaceAdded => Self::PlaceAdded,
+            F::PlaceUpdated => Self::PlaceUpdated,
+            F::EventAdded => Self::EventAdded,
+            F::EventUpdated => Self::EventUpdated,
         }
     }
 }

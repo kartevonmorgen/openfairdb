@@ -34,6 +34,14 @@ sender-address = "no-reply@example.org"
 [gateway.email-to-json-file]
 dir = "/tmp/openfairdb-email-tests"
 
+[subscriptions]
+notify-on = [
+  "place-added",
+  "place-updated",
+  "event-added",
+  "event-updated",
+]
+
 ## Reminder Emails ##
 
 [reminders]

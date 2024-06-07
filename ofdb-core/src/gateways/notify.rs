@@ -48,6 +48,33 @@ pub enum NotificationEvent<'a> {
     },
 }
 
+impl NotificationEvent<'_> {
+    pub const fn kind(&self) -> NotificationType {
+        use NotificationType as T;
+
+        match self {
+            Self::PlaceAdded { .. } => T::PlaceAdded,
+            Self::PlaceUpdated { .. } => T::PlaceUpdated,
+            Self::EventAdded { .. } => T::EventAdded,
+            Self::EventUpdated { .. } => T::EventUpdated,
+            Self::UserRegistered { .. } => T::UserRegistered,
+            Self::UserResetPasswordRequested { .. } => T::UserResetPasswordRequested,
+            Self::ReminderCreated { .. } => T::ReminderCreated,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum NotificationType {
+    PlaceAdded,
+    PlaceUpdated,
+    EventAdded,
+    EventUpdated,
+    UserRegistered,
+    UserResetPasswordRequested,
+    ReminderCreated,
+}
+
 pub trait NotificationGateway {
     fn notify(&self, event: NotificationEvent);
 }

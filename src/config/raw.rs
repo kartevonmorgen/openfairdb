@@ -14,6 +14,7 @@ pub struct Config {
     pub email: Option<Email>,
     pub gateway: Option<Gateway>,
     pub reminders: Option<Reminders>,
+    pub subscriptions: Option<Subscriptions>,
 }
 
 impl Default for Config {
@@ -207,6 +208,21 @@ impl Default for OwnerReminders {
             .owners
             .expect("Owner reminders configuration")
     }
+}
+
+#[derive(Default, Clone, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub struct Subscriptions {
+    pub notify_on: Option<Vec<NotificationType>>,
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+pub enum NotificationType {
+    PlaceAdded,
+    PlaceUpdated,
+    EventAdded,
+    EventUpdated,
 }
 
 #[cfg(test)]
