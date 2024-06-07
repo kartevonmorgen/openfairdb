@@ -110,13 +110,11 @@ pub async fn main() -> anyhow::Result<()> {
     let search_engine = tantivy::SearchEngine::init_with_path(index_dir).unwrap();
 
     let geo_gw = gateways::geocoding_gateway(cfg.geocoding.gateway);
-    let notify_gw = gateways::notification_gateway(cfg.email.gateway.clone());
+    let notify_gw = gateways::notification_gateway(cfg.email.gateway.clone(), cfg.subscriptions);
 
-    let db_connections = connections.clone();
-
-    tokio::spawn(async move {
-        recurring_reminder::run(&db_connections, cfg.email.gateway, cfg.reminders).await;
-    });
+    let recurring_reminder_task =
+        recurring_reminder::run(connections.clone(), notify_gw.clone(), cfg.reminders);
+    let recurring_reminder_abort_handle = tokio::spawn(recurring_reminder_task).abort_handle();
 
     match args.command {
         Some(cmd) => match cmd {
@@ -142,5 +140,6 @@ pub async fn main() -> anyhow::Result<()> {
             .await;
         }
     }
+    recurring_reminder_abort_handle.abort();
     Ok(())
 }

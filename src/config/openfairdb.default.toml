@@ -9,6 +9,9 @@ accepted-licenses = ["CC0-1.0", "ODbL-1.0"]
 cors = false
 captcha = false
 
+[subscriptions]
+notify-on = []
+
 [reminders]
 task-interval-time = "2h"
 send-max = 100

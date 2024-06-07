@@ -1,7 +1,8 @@
-use crate::config;
+use std::collections::HashSet;
+
 use ofdb_core::{
     entities::{EmailAddress, EmailContent},
-    gateways::geocode::GeoCodingGateway,
+    gateways::{geocode::GeoCodingGateway, notify::NotificationType},
 };
 use ofdb_gateways::{
     email::{
@@ -11,33 +12,55 @@ use ofdb_gateways::{
     opencage::OpenCage,
 };
 
-pub fn notification_gateway(cfg: Option<config::EmailGateway>) -> Notify {
-    cfg.and_then(|gw| match gw {
+use crate::config;
+
+const ALLWAYS_NOTIFY_ON: [NotificationType; 2] = [
+    NotificationType::UserRegistered,
+    NotificationType::UserResetPasswordRequested,
+];
+
+pub fn notification_gateway(
+    gateway_cfg: Option<config::EmailGateway>,
+    subscriptions_cfg: config::Subscriptions,
+) -> Notify {
+    let notify_on = HashSet::from(ALLWAYS_NOTIFY_ON)
+        .union(&subscriptions_cfg.notify_on)
+        .copied()
+        .collect();
+
+    let Some(gateway_cfg) = gateway_cfg else {
+        log::info!("No eMail gateway was configured");
+        return Notify::new(DummyMailGw, notify_on);
+    };
+
+    match gateway_cfg {
         config::EmailGateway::MailGun {
             api_key,
             domain,
             sender_address,
             api_base_url,
-        } => Some(Notify::new(Mailgun {
-            from_email: sender_address,
-            domain,
-            api_key,
-            api_base_url,
-        })),
-        config::EmailGateway::Sendmail { sender_address } => {
-            Some(Notify::new(Sendmail::new(sender_address)))
+        } => {
+            let mailgun = Mailgun {
+                from_email: sender_address,
+                domain,
+                api_key,
+                api_base_url,
+            };
+            Notify::new(mailgun, notify_on)
         }
-        config::EmailGateway::EmailToJsonFile { dir } => SendToJsonFile::try_new(dir)
-            .map_err(|err| {
+        config::EmailGateway::Sendmail { sender_address } => {
+            let sendmail = Sendmail::new(sender_address);
+            Notify::new(sendmail, notify_on)
+        }
+        config::EmailGateway::EmailToJsonFile { dir } => {
+            let Ok(gw) = SendToJsonFile::try_new(dir).map_err(|err| {
                 log::warn!("Could not create JSON file email gateway: {err}");
-            })
-            .ok()
-            .map(Notify::new),
-    })
-    .unwrap_or_else(|| {
-        log::info!("No eMail gateway was configured");
-        Notify::new(DummyMailGw)
-    })
+            }) else {
+                return Notify::new(DummyMailGw, notify_on);
+            };
+            Notify::new(gw, notify_on)
+        }
+    }
 }
 
 pub fn geocoding_gateway(

@@ -1,26 +1,38 @@
-use ofdb_core::gateways::notify::{NotificationEvent, NotificationGateway};
+use std::{collections::HashSet, sync::Arc};
+
+use ofdb_core::gateways::notify::{NotificationEvent, NotificationGateway, NotificationType};
 use ofdb_entities::{category::*, email::*};
 
 use crate::{email::EmailGateway, user_communication};
 
+#[derive(Clone)]
 pub struct Notify {
-    email_gw: Box<dyn EmailGateway + Send + Sync + 'static>,
+    email_gw: Arc<dyn EmailGateway + Send + Sync + 'static>,
+    notify_on: HashSet<NotificationType>,
 }
 
 impl Notify {
-    pub fn new<G>(gw: G) -> Self
+    pub fn new<G>(gw: G, notify_on: HashSet<NotificationType>) -> Self
     where
         G: EmailGateway + Send + Sync + 'static,
     {
         Self {
-            email_gw: Box::new(gw),
+            email_gw: Arc::new(gw),
+            notify_on,
         }
+    }
+
+    fn skip(&self, ev: &NotificationEvent) -> bool {
+        !self.notify_on.contains(&ev.kind())
     }
 }
 
 impl NotificationGateway for Notify {
     fn notify(&self, event: NotificationEvent) {
         use NotificationEvent as E;
+        if self.skip(&event) {
+            return;
+        }
         match event {
             E::PlaceAdded {
                 place,

@@ -1,23 +1,20 @@
-use crate::{config, gateways};
+use time::Duration;
 
 use ofdb_application::prelude::{send_update_reminders, SendReminderParams};
 use ofdb_core::{entities::Timestamp, usecases::RecipientRole};
 use ofdb_db_sqlite::Connections;
+use ofdb_gateways::notify::Notify;
 use ofdb_gateways::user_communication::ReminderFormatter;
-use time::Duration;
 
-pub async fn run(
-    connections: &Connections,
-    email_gateway_cfg: Option<config::EmailGateway>,
-    cfg: config::Reminders,
-) {
+use crate::config;
+
+pub async fn run(connections: Connections, notification_gw: Notify, cfg: config::Reminders) {
     if cfg.send_to.is_empty() {
         log::info!("No recipient defined in `send_to`: do not send recurring reminders");
         return;
     }
 
     let mut interval = tokio::time::interval(cfg.task_interval_time);
-    let notification_gw = gateways::notification_gateway(email_gateway_cfg);
     let token_expire_in = Duration::try_from(cfg.token_expire_in).expect("Token expiring duration");
 
     log::info!(
@@ -46,7 +43,7 @@ pub async fn run(
             };
 
             if let Err(err) =
-                send_update_reminders(connections, &notification_gw, &formatter, params)
+                send_update_reminders(&connections, &notification_gw, &formatter, params)
             {
                 log::warn!("Update reminders could not be sent: {err}");
             }
