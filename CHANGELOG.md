@@ -2,8 +2,9 @@
 
 ## v0.12.10 (2024-06-07)
 
-- new: Set `RUST_LOG` to `info,tantivy=warn` if nothing was specified
+- new: Make subscription notifications configurable
 - new: Log loaded configuration at startup
+- new: Set `RUST_LOG` to `info,tantivy=warn` if nothing was specified
 - chore: Update dependencies
 
 ## v0.12.9 (2024-04-12)
