@@ -52,7 +52,7 @@ repos:
         args: [--ignore-words=.codespellignore]
         exclude: ^search_results\.json|src/ports/web/frontend/login\.rs|ofdb-gateways/src/user_communication/mod\.rs|doc/c4-plantuml/.*\.puml|Cargo.lock|ofdb-gateways/src/user_communication/templates/.*\.txt|ofdb-core/src/usecases/find_duplicates.rs|ofdb-gateways/src/email/sendmail.rs|ofdb-webserver/src/web/frontend/view/.*\.rs$
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.28.4
+    rev: 0.29.1
     hooks:
       - id: check-github-actions
       - id: check-github-workflows

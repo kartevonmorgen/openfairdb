@@ -16,14 +16,6 @@ pub struct NewPlace<'a, 'b> {
     pub current_rev: i64,
 }
 
-#[derive(Queryable)]
-pub struct Place {
-    pub rowid: i64,
-    pub current_rev: i64,
-    pub id: String,
-    pub license: String,
-}
-
 #[derive(Insertable)]
 #[diesel(table_name = place_revision)]
 pub struct NewPlaceRevision {
@@ -106,6 +98,7 @@ pub struct JoinedPlaceRevisionWithStatusReview {
     // Joined columns
     pub place_id: String,
     pub place_license: String,
+    #[allow(dead_code)] // FIXME
     pub review_rev: i64,
     pub review_created_at: i64,
     pub review_created_by: Option<i64>,
@@ -130,6 +123,7 @@ pub struct NewPlaceReviewedRevision<'a, 'b> {
 pub struct PlaceReviewedRevision {
     pub rev: i64,
     pub created_at: i64,
+    #[allow(dead_code)] // FIXME
     pub created_by: Option<i64>,
     pub created_by_email: Option<String>,
     pub status: i16,
@@ -139,6 +133,7 @@ pub struct PlaceReviewedRevision {
 
 #[derive(Queryable)]
 pub struct PlaceRevisionTag {
+    #[allow(dead_code)] // FIXME
     pub parent_rowid: i64,
     pub tag: String,
 }
@@ -152,6 +147,7 @@ pub struct NewPlaceRevisionTag<'a> {
 
 #[derive(Queryable)]
 pub struct PlaceRevisionCustomLink {
+    #[allow(dead_code)] // FIXME
     pub parent_rowid: i64,
     pub url: String,
     pub title: Option<String>,
@@ -267,6 +263,7 @@ pub struct EventEntity {
     pub email: Option<String>,
     pub telephone: Option<String>,
     pub homepage: Option<String>,
+    #[allow(dead_code)] // FIXME
     pub created_by_id: Option<i64>,
     pub registration: Option<i16>,
     pub organizer: Option<String>,
@@ -443,7 +440,9 @@ pub struct NewSentReminder<'a> {
 
 #[derive(Queryable)]
 pub struct SentReminder {
+    #[allow(dead_code)] // FIXME
     pub place_id: String,
     pub sent_at: i64,
+    #[allow(dead_code)] // FIXME
     pub sent_to_email: String,
 }
