@@ -8,7 +8,7 @@ publish = false
 anyhow = "1.0.86"
 log = "0.4.21"
 num-traits = "0.2.19"
-diesel = { version = "2.2.0", features = ["sqlite", "r2d2"] }
+diesel = { version = "2.2.1", features = ["sqlite", "r2d2"] }
 diesel_migrations = { version = "2.2.0", features = ["sqlite"] }
 ofdb-core = { version = "0.0.0", path = "../ofdb-core" }
 parking_lot = "0.12.3"
