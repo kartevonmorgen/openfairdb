@@ -289,25 +289,25 @@ fn f64_to_u64(val: f64, min: f64, max: f64) -> u64 {
     debug_assert!(val >= min);
     debug_assert!(val <= max);
     debug_assert!(min < max);
-    if (val - max).abs() <= std::f64::EPSILON {
-        u64::max_value()
-    } else if (val - min).abs() <= std::f64::EPSILON {
+    if (val - max).abs() <= f64::EPSILON {
+        u64::MAX
+    } else if (val - min).abs() <= f64::EPSILON {
         0u64
     } else {
         let norm = (val.clamp(min, max) - min) / (max - min);
-        let mapped = u64::max_value() as f64 * norm;
+        let mapped = u64::MAX as f64 * norm;
         mapped.round() as u64
     }
 }
 
 fn u64_to_f64(val: u64, min: f64, max: f64) -> f64 {
     debug_assert!(min < max);
-    if val == u64::max_value() {
+    if val == u64::MAX {
         max
     } else if val == 0 {
         min
     } else {
-        min + val as f64 * ((max - min) / u64::max_value() as f64)
+        min + val as f64 * ((max - min) / u64::MAX as f64)
     }
 }
 

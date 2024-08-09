@@ -9,8 +9,8 @@ use thiserror::Error;
 pub type RawCoord = i32;
 
 // Assumption: 2-complement binary representation
-const RAW_COORD_INVALID: RawCoord = std::i32::MIN;
-const RAW_COORD_MAX: RawCoord = std::i32::MAX;
+const RAW_COORD_INVALID: RawCoord = i32::MIN;
+const RAW_COORD_MAX: RawCoord = i32::MAX;
 const RAW_COORD_MIN: RawCoord = -RAW_COORD_MAX;
 
 #[derive(Debug, Error)]
@@ -127,7 +127,7 @@ impl LatCoord {
             debug_assert!(rad <= Self::RAD_MAX);
             rad
         } else {
-            std::f64::NAN
+            f64::NAN
         }
     }
 
@@ -141,7 +141,7 @@ impl LatCoord {
             debug_assert!(deg <= Self::DEG_MAX);
             deg
         } else {
-            std::f64::NAN
+            f64::NAN
         }
     }
 
@@ -253,7 +253,7 @@ impl LngCoord {
             debug_assert!(rad <= Self::RAD_MAX);
             rad
         } else {
-            std::f64::NAN
+            f64::NAN
         }
     }
 
@@ -267,7 +267,7 @@ impl LngCoord {
             debug_assert!(deg <= Self::DEG_MAX);
             deg
         } else {
-            std::f64::NAN
+            f64::NAN
         }
     }
 
@@ -428,7 +428,7 @@ pub struct Distance(pub f64);
 
 impl Distance {
     pub const fn infinite() -> Self {
-        Self(std::f64::INFINITY)
+        Self(f64::INFINITY)
     }
 
     pub const fn from_meters(meters: f64) -> Self {

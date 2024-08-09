@@ -1,6 +1,6 @@
 //#![deny(missing_docs)] // TODO: Complete missing documentation and enable this
 //#![deny(missing_docs)] option
-#![cfg_attr(features = "extra-derive", deny(missing_debug_implementations))]
+#![cfg_attr(feature = "extra-derive", deny(missing_debug_implementations))]
 #![deny(rustdoc::broken_intra_doc_links)]
 #![cfg_attr(test, deny(warnings))]
 
