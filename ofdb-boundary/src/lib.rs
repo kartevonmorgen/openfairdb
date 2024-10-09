@@ -32,6 +32,12 @@ pub struct UnixTimeMillis(i64);
 #[cfg_attr(feature = "extra-derive", derive(Debug, Clone, Copy, Eq, PartialEq))]
 pub struct UnixTimeSeconds(i64);
 
+impl UnixTimeSeconds {
+    pub const fn as_i64(&self) -> i64 {
+        self.0
+    }
+}
+
 impl From<time::OffsetDateTime> for UnixTimeSeconds {
     fn from(from: time::OffsetDateTime) -> Self {
         Self(from.unix_timestamp())
