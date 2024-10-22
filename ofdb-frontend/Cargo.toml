@@ -14,10 +14,10 @@ ofdb-frontend-api = "=0.0.0"
 console_error_panic_hook = "0.1.7"
 console_log = "1.0.0"
 gloo-storage = "0.3.0"
-leptos = { version = "0.6.12", features = ["csr"] }
-leptos_router = { version = "0.6.12", features = ["csr"] }
-log = "0.4.21"
-web-sys = "0.3.69"
+leptos = { version = "0.6.15", features = ["csr"] }
+leptos_router = { version = "0.6.15", features = ["csr"] }
+log = "0.4.22"
+web-sys = "0.3.72"
 
 [dependencies.time]
 version = "0.3.36"

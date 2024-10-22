@@ -11,15 +11,15 @@ rust-version.workspace = true
 ofdb-entities = { version = "0.12.7", features = ["url"] }
 
 # External dependencies
-anyhow = "1.0.86"
+anyhow = "1.0.91"
 fast_chemail = "0.9.6"
-lazy_static = "1.4.0"
-log = "0.4.21"
+lazy_static = "1.5.0"
+log = "0.4.22"
 passwords = "3.1.16"
-regex = "1.10.5"
-thiserror = "1.0.61"
+regex = "1.11.0"
+thiserror = "1.0.65"
 time = "0.3.36"
-url = "2.5.1"
+url = "2.5.2"
 
 [dev-dependencies]
 brunch = "0.5.3"

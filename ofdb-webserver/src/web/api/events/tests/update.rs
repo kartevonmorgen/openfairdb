@@ -267,7 +267,7 @@ fn with_api_token_created_by() {
         .put(format!("/events/{}", id))
         .header(ContentType::JSON)
         .header(Header::new("Authorization", "Bearer foo"))
-        .body(&format!(
+        .body(format!(
             "{{\"title\":\"Changed again\",\"created_by\":\"changed@bar.com\",\"start\":{}}}",
             start.as_secs()
         ))

@@ -1,4 +1,5 @@
 use std::{
+    fmt,
     num::ParseFloatError,
     ops::{Add, Sub},
 };
@@ -9,8 +10,8 @@ use thiserror::Error;
 pub type RawCoord = i32;
 
 // Assumption: 2-complement binary representation
-const RAW_COORD_INVALID: RawCoord = std::i32::MIN;
-const RAW_COORD_MAX: RawCoord = std::i32::MAX;
+const RAW_COORD_INVALID: RawCoord = i32::MIN;
+const RAW_COORD_MAX: RawCoord = i32::MAX;
 const RAW_COORD_MIN: RawCoord = -RAW_COORD_MAX;
 
 #[derive(Debug, Error)]
@@ -127,7 +128,7 @@ impl LatCoord {
             debug_assert!(rad <= Self::RAD_MAX);
             rad
         } else {
-            std::f64::NAN
+            f64::NAN
         }
     }
 
@@ -141,7 +142,7 @@ impl LatCoord {
             debug_assert!(deg <= Self::DEG_MAX);
             deg
         } else {
-            std::f64::NAN
+            f64::NAN
         }
     }
 
@@ -199,7 +200,7 @@ impl Sub for LatCoord {
     }
 }
 
-impl std::fmt::Display for LatCoord {
+impl fmt::Display for LatCoord {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         write!(f, "{}", self.to_deg())
     }
@@ -253,7 +254,7 @@ impl LngCoord {
             debug_assert!(rad <= Self::RAD_MAX);
             rad
         } else {
-            std::f64::NAN
+            f64::NAN
         }
     }
 
@@ -267,7 +268,7 @@ impl LngCoord {
             debug_assert!(deg <= Self::DEG_MAX);
             deg
         } else {
-            std::f64::NAN
+            f64::NAN
         }
     }
 
@@ -325,8 +326,8 @@ impl Sub for LngCoord {
     }
 }
 
-impl std::fmt::Display for LngCoord {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+impl fmt::Display for LngCoord {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
         write!(f, "{}", self.to_deg())
     }
 }
@@ -405,7 +406,7 @@ pub enum MapPointInputError {
     Format(String),
 }
 
-impl std::fmt::Display for MapPoint {
+impl fmt::Display for MapPoint {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         write!(f, "{},{}", self.lat, self.lng)
     }
@@ -428,7 +429,7 @@ pub struct Distance(pub f64);
 
 impl Distance {
     pub const fn infinite() -> Self {
-        Self(std::f64::INFINITY)
+        Self(f64::INFINITY)
     }
 
     pub const fn from_meters(meters: f64) -> Self {
@@ -558,7 +559,7 @@ impl MapBbox {
     }
 }
 
-impl std::fmt::Display for MapBbox {
+impl fmt::Display for MapBbox {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
         write!(f, "{},{}", self.sw, self.ne)
     }

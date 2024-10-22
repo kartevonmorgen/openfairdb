@@ -164,7 +164,7 @@ fn event_to_ical(event: Event) -> Option<icalendar::Event> {
   .starts(start_calendar_date_time)
   .class(Class::Public)
   // https://icalendar.org/iCalendar-RFC-5545/3-8-1-2-categories.html
-  .append_property(Property::new("CATEGORIES", &tags.join(",")).done())
+  .append_property(Property::new("CATEGORIES", tags.join(",")).done())
   .done();
 
     if let Some(l) = &location {
@@ -173,7 +173,7 @@ fn event_to_ical(event: Event) -> Option<icalendar::Event> {
             .append_property(
                 Property::new(
                     "GEO",
-                    &format!("{};{}", l.pos.lat().to_deg(), l.pos.lng().to_deg()),
+                    format!("{};{}", l.pos.lat().to_deg(), l.pos.lng().to_deg()),
                 )
                 .done(),
             )

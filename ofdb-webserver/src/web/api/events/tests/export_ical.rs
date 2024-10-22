@@ -104,7 +104,7 @@ fn export_ical() {
     assert!(body_str.ends_with("END:VCALENDAR\r\n"));
     assert!(body_str.contains(&format!("UID:{}\r\n", id1)));
     assert!(body_str.contains("SUMMARY:title1\r\n"));
-    assert!(body_str.contains("LOCATION:Königsstr. 1\\, 70000\\, Stuttgart\\, state\r\n"));
+    assert!(body_str.contains(r#"LOCATION:Königsstr. 1\\\, 70000\\\, Stuttgart\\\, state"#));
     assert!(body_str.contains("GEO:22.2"));
     assert!(body_str.contains(";-133.3"));
     assert!(body_str.contains(&format!(
@@ -113,10 +113,9 @@ fn export_ical() {
             .unwrap()
             .format("%Y%m%dT%H%M%S")
     )));
-    assert!(body_str.contains("CATEGORIES:bla,tag\r\n"));
-    assert!(body_str.contains("CONTACT:Contact Name\\, email1@example.com\\, phone1\r\n"));
-
-    assert!(body_str.contains(&format!("UID:{}\r\n", id2)));
+    assert!(body_str.contains("CATEGORIES:bla\\,tag\r\n"));
+    assert!(body_str.contains(r#"CONTACT:Contact Name\\\, email1@example.com\\\, phone1"#));
+    assert!(body_str.contains(&format!("UID:{id2}\r\n")));
     assert!(body_str.contains("SUMMARY:title2\r\n"));
     assert!(body_str.contains(&format!(
         "DTSTART:{}\r\n",
@@ -124,6 +123,6 @@ fn export_ical() {
             .unwrap()
             .format("%Y%m%dT%H%M%S")
     )));
-    assert!(body_str.contains("CATEGORIES:bli,tag2\r\n"));
-    assert!(body_str.contains("CONTACT:email2@example.com\\, phone2\r\n"));
+    assert!(body_str.contains("CATEGORIES:bli\\,tag2\r\n"));
+    assert!(body_str.contains(r#"CONTACT:email2@example.com\\\, phone2"#));
 }

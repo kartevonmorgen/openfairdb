@@ -1179,7 +1179,7 @@ fn search_with_status() {
         let req = client
             .post(format!("/places/{}/review", id))
             .header(ContentType::JSON)
-            .body(&format!(
+            .body(format!(
                 "{{\"status\":\"{}\",\"comment\":\"{}\"}}",
                 status, id
             ));
@@ -1556,7 +1556,7 @@ fn review_place_after_logout_must_fail() {
     let req = client
         .post(format!("/places/{}/review", place_id))
         .header(ContentType::JSON)
-        .body(&format!(
+        .body(format!(
             "{{\"status\":\"confirmed\",\"comment\":\"{place_id}\"}}"
         ));
     let response = req.dispatch();
@@ -1584,7 +1584,7 @@ fn review_place_after_logout_must_fail() {
         .post(format!("/places/{}/review", place_id))
         .header(ContentType::JSON)
         .header(auth_header)
-        .body(&format!(
+        .body(format!(
             "{{\"status\":\"rejected\",\"comment\":\"{place_id}\"}}"
         ));
     let res = req.dispatch();
@@ -2181,7 +2181,7 @@ fn not_updated_since() {
         let req = client
             .post(format!("/places/{}/review", id))
             .header(ContentType::JSON)
-            .body(&format!(
+            .body(format!(
                 "{{\"status\":\"{}\",\"comment\":\"{}\"}}",
                 status, id
             ));
@@ -2236,9 +2236,7 @@ fn review_place_with_token() {
     let res = client
         .post("/places/review-with-token")
         .header(ContentType::JSON)
-        .body(&format!(
-            "{{\"token\":\"{token}\",\"status\":\"archived\"}}",
-        ))
+        .body(format!("{{\"token\":\"{token}\",\"status\":\"archived\"}}",))
         .dispatch();
     // TODO: should be Status::Created
     test_json(&res);
@@ -2269,7 +2267,7 @@ fn review_place_with_token_and_invalid_status() {
     let res = client
         .post("/places/review-with-token")
         .header(ContentType::JSON)
-        .body(&format!(
+        .body(format!(
             "{{\"token\":\"{token}\",\"status\":\"doesnotexist\"}}",
         ))
         .dispatch();
@@ -2301,7 +2299,7 @@ fn review_place_with_token_and_invalid_revision() {
     let res = client
         .post("/places/review-with-token")
         .header(ContentType::JSON)
-        .body(&format!(
+        .body(format!(
             "{{\"token\":\"{token}\",\"status\":\"confirmed\"}}",
         ))
         .dispatch();

@@ -49,17 +49,17 @@ ofdb-webserver    = "=0.0.0"
 
 ofdb-entities     =  "*"
 
-anyhow = "1.0.86"
-clap = { version = "4.5.7", features = ["cargo", "derive"] }
+anyhow = "1.0.91"
+clap = { version = "4.5.20", features = ["cargo", "derive"] }
 dotenvy = "0.15.7"
 duration-str = { version = "0.7.1", default-features = false, features = ["serde"] }
-env_logger = "0.11.3"
-log = "0.4.21"
-serde = { version = "1.0.203", features = ["derive"] }
-thiserror = "1.0.61"
+env_logger = "0.11.5"
+log = "0.4.22"
+serde = { version = "1.0.213", features = ["derive"] }
+thiserror = "1.0.65"
 time = "0.3.36"
-tokio = "1.38.0"
-toml = "0.8.14"
+tokio = "1.41.0"
+toml = "0.8.19"
 
 [patch.crates-io.geocoding]
 # TODO: use upstream as soon as https://github.com/georust/geocoding/pull/58 is merged.

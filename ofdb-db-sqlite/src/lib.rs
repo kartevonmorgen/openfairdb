@@ -34,9 +34,8 @@ pub struct DbReadOnly<'a> {
 impl<'a> DbReadOnly<'a> {
     fn try_new(pool: &'a SharedConnectionPool) -> Fallible<Self> {
         let locked_pool = pool.read();
-        let conn = locked_pool.get().map_err(|err| {
-            log::error!("Failed to obtain pooled database connection for read-only access");
-            err
+        let conn = locked_pool.get().inspect_err(|err| {
+            log::error!("Failed to obtain pooled database connection for read-only access: {err}");
         })?;
         Ok(Self {
             _locked_pool: locked_pool,
@@ -65,9 +64,8 @@ impl<'a> DbConnection<'a> {
 impl<'a> DbReadWrite<'a> {
     fn try_new(pool: &'a SharedConnectionPool) -> Fallible<Self> {
         let locked_pool = pool.write();
-        let conn = locked_pool.get().map_err(|err| {
-            log::error!("Failed to obtain pooled database connection for read/write access");
-            err
+        let conn = locked_pool.get().inspect_err(|err| {
+            log::error!("Failed to obtain pooled database connection for read/write access: {err}");
         })?;
         Ok(Self {
             _locked_pool: locked_pool,
