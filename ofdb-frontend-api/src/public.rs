@@ -7,7 +7,7 @@ use ofdb_boundary::{
     TagFrequency, UpdatePlace,
 };
 
-use crate::{into_json, Result, UserApi};
+use crate::{bbox_string, into_json, Result, UserApi};
 
 /// Public OpenFairDB API
 #[derive(Clone, Copy)]
@@ -211,9 +211,4 @@ impl PublicApi {
         let response = request.send().await?;
         into_json(response).await
     }
-}
-
-fn bbox_string(bbox: &MapBbox) -> String {
-    let MapBbox { sw, ne } = bbox;
-    format!("{},{},{},{}", sw.lat, sw.lng, ne.lat, ne.lng)
 }

@@ -1,10 +1,11 @@
 use gloo_net::http::{Request, RequestBuilder};
+use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde::{de::DeserializeOwned, Serialize};
 use web_sys::RequestCredentials;
 
-use ofdb_boundary::{BboxSubscription, JwtToken, Review, User};
+use ofdb_boundary::{BboxSubscription, JwtToken, MapBbox, Review, User};
 
-use crate::{into_json, Result};
+use crate::{bbox_string, into_json, Result};
 
 /// Authorized OpenFairDB API
 #[derive(Clone)]
@@ -75,5 +76,21 @@ impl UserApi {
         let url = format!("{}/places/{}/review", self.url, ids.join(","));
         let request = Request::post(&url);
         self.send_json(request, review).await
+    }
+
+    // TODO: add other options like `limit`, `tags`, etc.
+    pub async fn export_csv(&self, bbox: &MapBbox, search_term: Option<&str>) -> Result<String> {
+        let bbox_string = bbox_string(bbox);
+        let search = search_term
+            .map(|term| {
+                let encoded_txt = utf8_percent_encode(term, NON_ALPHANUMERIC);
+                format!("&text={encoded_txt}")
+            })
+            .unwrap_or_default();
+        let url = format!("{}/export/entries.csv?bbox={bbox_string}{search}", self.url);
+        let request = self.add_auth_headers(Request::get(&url));
+        let response = request.send().await?;
+        let csv_string = response.text().await?;
+        Ok(csv_string)
     }
 }

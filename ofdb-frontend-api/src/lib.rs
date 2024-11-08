@@ -2,6 +2,8 @@ use gloo_net::http::Response;
 use serde::de::DeserializeOwned;
 use thiserror::Error;
 
+use ofdb_boundary::MapBbox;
+
 mod clearance;
 mod public;
 mod user;
@@ -47,4 +49,9 @@ where
     } else {
         Err(response.json::<ofdb_boundary::Error>().await?.into())
     }
+}
+
+pub(crate) fn bbox_string(bbox: &MapBbox) -> String {
+    let MapBbox { sw, ne } = bbox;
+    format!("{},{},{},{}", sw.lat, sw.lng, ne.lat, ne.lng)
 }

@@ -18,3 +18,4 @@ where
         Err(response.json::<ofdb_boundary::Error>().await?.into())
     }
 }
+
