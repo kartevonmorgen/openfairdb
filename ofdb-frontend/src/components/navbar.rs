@@ -78,7 +78,7 @@ where
     F: Fn() + 'static + Clone,
 {
     view! {
-      <MenuItem page = Page::Home label = "Search" />
+      <MenuItem page = Page::Home label = "Map" />
       <MenuItem page = Page::Events label = "Events" />
       <MenuItem page = Page::Dashboard label = "Dashboard" />
       <a href="#" on:click= move |_| on_logout()>
@@ -92,7 +92,7 @@ where
 #[component]
 fn PublicMenuItems() -> impl IntoView {
     view! {
-      <MenuItem page = Page::Home label = "Search" />
+      <MenuItem page = Page::Home label = "Map" />
       <MenuItem page = Page::Events label = "Events" />
       <MenuItem page = Page::Dashboard label = "Dashboard" />
       <MenuItem page = Page::Login label = "Login" />

@@ -676,6 +676,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbd2bcb4c963f2ddae06a2efc7e9f3591312473c50c6685e1f298068316e66fe"
 
 [[package]]
+name = "leaflet"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "365807eb9e73da9377d2e313e5863af3d64e02b770ec31972d76feda3a271d17"
+dependencies = [
+ "js-sys",
+ "paste",
+ "url",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
 name = "leptos"
 version = "0.6.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -691,6 +704,23 @@ dependencies = [
  "tracing",
  "typed-builder",
  "typed-builder-macro",
+ "wasm-bindgen",
+ "web-sys",
+]
+
+[[package]]
+name = "leptos-leaflet"
+version = "0.8.1"
+source = "git+https://github.com/headless-studio/leptos-leaflet#0f046988c50160176258a57f3a6b967bc2046683"
+dependencies = [
+ "getrandom",
+ "js-sys",
+ "leaflet",
+ "leptos",
+ "leptos_meta",
+ "paste",
+ "rand",
+ "serde-wasm-bindgen",
  "wasm-bindgen",
  "web-sys",
 ]
@@ -777,6 +807,20 @@ dependencies = [
  "syn",
  "tracing",
  "uuid",
+]
+
+[[package]]
+name = "leptos_meta"
+version = "0.6.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "25acc2f63cf91932013e400a95bf6e35e5d3dbb44a7b7e25a8e3057d12005b3b"
+dependencies = [
+ "cfg-if",
+ "indexmap",
+ "leptos",
+ "tracing",
+ "wasm-bindgen",
+ "web-sys",
 ]
 
 [[package]]
@@ -990,7 +1034,10 @@ dependencies = [
  "console_error_panic_hook",
  "console_log",
  "gloo-storage",
+ "js-sys",
+ "leaflet",
  "leptos",
+ "leptos-leaflet",
  "leptos_router",
  "log",
  "ofdb-boundary",

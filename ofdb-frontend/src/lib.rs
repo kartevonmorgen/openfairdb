@@ -15,12 +15,12 @@ const DEFAULT_API_URL: &str = "/api";
 const API_TOKEN_STORAGE_KEY: &str = "api-token";
 const DEFAULT_BBOX: MapBbox = MapBbox {
     sw: MapPoint {
-        lat: 43.0,
-        lng: -16.0,
+        lat: 48.5,
+        lng: 8.7,
     },
     ne: MapPoint {
-        lat: 60.0,
-        lng: 25.0,
+        lat: 49.0,
+        lng: 9.7,
     },
 };
 
@@ -31,7 +31,7 @@ pub fn App() -> impl IntoView {
     let user_api = create_rw_signal(None::<api::UserApi>);
     let user_info = create_rw_signal(None::<User>);
     let logged_in = Signal::derive(move || user_api.get().is_some());
-    let (bbox, _) = create_signal(DEFAULT_BBOX);
+    let bbox = RwSignal::new(DEFAULT_BBOX);
 
     // -- signal modifiers -- //
 
@@ -42,8 +42,8 @@ pub fn App() -> impl IntoView {
 
     // -- actions -- //
 
-    let fetch_user_info = create_action(move |_| async move {
-        match user_api.get() {
+    let fetch_user_info = Action::new(move |_| async move {
+        match user_api.get_untracked() {
             Some(api) => match api.user_info().await {
                 Ok(info) => {
                     user_info.update(|i| *i = Some(info));
@@ -59,7 +59,7 @@ pub fn App() -> impl IntoView {
         }
     });
 
-    let logout = create_action(move |_| async move {
+    let logout = Action::new(move |_| async move {
         match user_api.get() {
             Some(api) => match api.logout().await {
                 Ok(_) => {
@@ -91,7 +91,7 @@ pub fn App() -> impl IntoView {
         fetch_user_info.dispatch(());
     }
 
-    log::debug!("User is logged in: {}", logged_in.get());
+    log::debug!("User is logged in: {}", logged_in.get_untracked());
 
     // -- effects -- //
 
@@ -112,11 +112,13 @@ pub fn App() -> impl IntoView {
     view! {
       <Router>
         <NavBar user = user_info.into() on_logout />
-        <main>
+        <main class="h-full">
           <Routes>
             <Route
               path=Page::Home.path()
-              view=move || view! { <Home public_api bbox /> }
+              view=move || view! {
+                <Home public_api bbox user_api = user_api.into() />
+              }
             />
             <Route
               path=Page::Login.path()
