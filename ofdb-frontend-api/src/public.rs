@@ -156,7 +156,7 @@ impl PublicApi {
         let response = request.send().await?;
         into_json(response).await
     }
-    pub async fn create_place(&self, place: &NewPlace) -> Result<()> {
+    pub async fn create_place(&self, place: &NewPlace) -> Result<String> {
         let url = format!("{}/entries", self.url);
         let request = Request::post(&url).json(place)?;
         let response = request.send().await?;
