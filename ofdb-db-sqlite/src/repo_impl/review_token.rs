@@ -1,6 +1,6 @@
 use super::*;
 
-impl<'a> ReviewTokenRepo for DbReadWrite<'a> {
+impl ReviewTokenRepo for DbReadWrite<'_> {
     fn add_review_token(&self, review_token: &ReviewToken) -> Result<()> {
         add_review_token(&mut self.conn.borrow_mut(), review_token)
     }
@@ -12,7 +12,7 @@ impl<'a> ReviewTokenRepo for DbReadWrite<'a> {
     }
 }
 
-impl<'a> ReviewTokenRepo for DbReadOnly<'a> {
+impl ReviewTokenRepo for DbReadOnly<'_> {
     fn add_review_token(&self, _review_token: &ReviewToken) -> Result<()> {
         unreachable!();
     }
@@ -24,7 +24,7 @@ impl<'a> ReviewTokenRepo for DbReadOnly<'a> {
     }
 }
 
-impl<'a> ReviewTokenRepo for DbConnection<'a> {
+impl ReviewTokenRepo for DbConnection<'_> {
     fn add_review_token(&self, review_token: &ReviewToken) -> Result<()> {
         add_review_token(&mut self.conn.borrow_mut(), review_token)
     }

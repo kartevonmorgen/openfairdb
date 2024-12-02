@@ -600,4 +600,4 @@ fn resolve_user_created_by_email(conn: &mut SqliteConnection, email: &EmailAddre
         .map_err(from_diesel_err)
 }
 
-impl<'a> CategoryRepo for DbReadOnly<'a> {}
+impl CategoryRepo for DbReadOnly<'_> {}

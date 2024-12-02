@@ -878,7 +878,7 @@ impl<'a> From<IndexedPlaceCollector<'a>> for Vec<IndexedPlace> {
     }
 }
 
-impl<'a> DocumentCollector for IndexedPlaceCollector<'a> {
+impl DocumentCollector for IndexedPlaceCollector<'_> {
     fn collect_document(&mut self, _doc_addr: DocAddress, doc: TantivyDocument) {
         self.collected_places
             .push(self.fields.read_indexed_place(&doc));

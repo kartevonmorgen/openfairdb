@@ -4,20 +4,22 @@ version = "0.0.0" # will stay 0.0.0 until published
 authors = ["slowtec GmbH <post@slowtec.de>"]
 edition = "2021"
 publish = false
-rust-version = "1.79.0"
+rust-version = "1.83.0"
 
 [dependencies]
 # Project dependencies
 ofdb-frontend-api = "=0.0.0"
 
 # External dependencies
+anyhow = "1.0.93"
 console_error_panic_hook = "0.1.7"
 console_log = "1.0.0"
 gloo-storage = "0.3.0"
 leptos = { version = "0.6.15", features = ["csr"] }
 leptos_router = { version = "0.6.15", features = ["csr"] }
 log = "0.4.22"
-web-sys = "0.3.72"
+wasm-bindgen-futures = "0.4.47"
+web-sys = { version = "0.3.74", features = ["Clipboard", "Navigator"] }
 
 [dependencies.time]
 version = "0.3.36"
@@ -32,6 +34,26 @@ features = ["extra-derive", "wasm-bindgen"]
 [patch.crates-io]
 ofdb-boundary     = { path = "../ofdb-boundary"     }
 ofdb-frontend-api = { path = "../ofdb-frontend-api" }
+
+[lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+missing_const_for_fn = "warn"
+
+# The error types returned should be self-explanatory.
+missing_errors_doc = "allow"
+
+# Repetitions of module/type names occur frequently when using many
+# modules for keeping the size of the source files handy. Often
+# types have the same name as their parent module.
+module_name_repetitions = "allow"
+
+# This is a matter of taste... and I just like it that way ;-P
+mod_module_files = "allow"
+
+# In general, wildcard imports should be avoided
+# but since we are using the `leptos` framework,
+# it is quite common to import a prelude.
+wildcard_imports = "allow"
 
 [profile.release]
 lto = true

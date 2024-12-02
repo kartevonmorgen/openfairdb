@@ -53,6 +53,7 @@ pub fn Entry(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> impl I
     }
 }
 
+#[allow(clippy::too_many_lines)] // TODO
 #[component]
 fn EntryProfile(entry: ofdb_boundary::Entry, user_api: Signal<Option<UserApi>>) -> impl IntoView {
     let ofdb_boundary::Entry {
@@ -73,7 +74,7 @@ fn EntryProfile(entry: ofdb_boundary::Entry, user_api: Signal<Option<UserApi>>) 
         ..
     } = entry;
 
-    let archive_place = create_action(move |_| {
+    let archive_place = create_action(move |()| {
         let id = id.clone();
         let navigate = use_navigate();
         async move {
@@ -85,9 +86,9 @@ fn EntryProfile(entry: ofdb_boundary::Entry, user_api: Signal<Option<UserApi>>) 
                 comment: None,
             };
             match user_api.review_places(&[&id], &review).await {
-                Ok(_) => {
+                Ok(()) => {
                     log::info!("Successfully archived entry {id}");
-                    navigate(Page::Home.path(), Default::default());
+                    navigate(Page::Home.path(), NavigateOptions::default());
                 }
                 Err(err) => {
                     log::error!("Unable to archive entry {id}: {err}");

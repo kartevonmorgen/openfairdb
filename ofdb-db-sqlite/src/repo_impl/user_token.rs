@@ -1,6 +1,6 @@
 use super::*;
 
-impl<'a> UserTokenRepo for DbReadWrite<'a> {
+impl UserTokenRepo for DbReadWrite<'_> {
     fn replace_user_token(&self, user_token: UserToken) -> Result<EmailNonce> {
         replace_user_token(&mut self.conn.borrow_mut(), user_token)
     }
@@ -18,7 +18,7 @@ impl<'a> UserTokenRepo for DbReadWrite<'a> {
     }
 }
 
-impl<'a> UserTokenRepo for DbConnection<'a> {
+impl UserTokenRepo for DbConnection<'_> {
     fn replace_user_token(&self, user_token: UserToken) -> Result<EmailNonce> {
         replace_user_token(&mut self.conn.borrow_mut(), user_token)
     }
@@ -36,7 +36,7 @@ impl<'a> UserTokenRepo for DbConnection<'a> {
     }
 }
 
-impl<'a> UserTokenRepo for DbReadOnly<'a> {
+impl UserTokenRepo for DbReadOnly<'_> {
     fn replace_user_token(&self, _user_token: UserToken) -> Result<EmailNonce> {
         unreachable!();
     }

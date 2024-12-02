@@ -8,6 +8,7 @@ use crate::Page;
 
 const DATE_TIME_FORMAT: &[FormatItem] = format_description!("[year]-[month]-[day] [hour]:[minute]");
 
+#[allow(clippy::too_many_lines)] // TODO
 #[component]
 pub fn Events(public_api: PublicApi) -> impl IntoView {
     let mut query = EventQuery::default();
@@ -15,7 +16,7 @@ pub fn Events(public_api: PublicApi) -> impl IntoView {
     query.start_min = Some(start_min.unix_timestamp());
 
     // -- actions -- //
-    let fetch_events = create_action(move |_| {
+    let fetch_events = create_action(move |()| {
         let query = query.clone();
         async move { public_api.events(&query).await }
     });
@@ -121,6 +122,7 @@ pub fn Event(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> impl I
     }
 }
 
+#[allow(clippy::too_many_lines)] // TODO
 #[component]
 fn EventProfile(event: ofdb_boundary::Event, user_api: Signal<Option<UserApi>>) -> impl IntoView {
     let ofdb_boundary::Event {
@@ -140,7 +142,7 @@ fn EventProfile(event: ofdb_boundary::Event, user_api: Signal<Option<UserApi>>) 
         ..
     } = event;
 
-    let archive_event = create_action(move |_| {
+    let archive_event = create_action(move |()| {
         let id = id.clone();
         let navigate = use_navigate();
         async move {
@@ -148,9 +150,9 @@ fn EventProfile(event: ofdb_boundary::Event, user_api: Signal<Option<UserApi>>) 
                 unreachable!();
             };
             match user_api.archive_events(&[&id]).await {
-                Ok(_) => {
+                Ok(()) => {
                     log::info!("Successfully archived event {id}");
-                    navigate(Page::Events.path(), Default::default());
+                    navigate(Page::Events.path(), NavigateOptions::default());
                 }
                 Err(err) => {
                     log::error!("Unable to archive event {id}: {err}");

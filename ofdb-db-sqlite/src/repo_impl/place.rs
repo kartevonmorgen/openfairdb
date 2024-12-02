@@ -1,7 +1,7 @@
 use super::*;
 use crate::schema::{place, place_revision, place_revision_tag};
 
-impl<'a> PlaceRepo for DbReadWrite<'a> {
+impl PlaceRepo for DbReadWrite<'_> {
     fn get_place(&self, id: &str) -> Result<(Place, ReviewStatus)> {
         get_place(&mut self.conn.borrow_mut(), id)
     }
@@ -62,7 +62,7 @@ impl<'a> PlaceRepo for DbReadWrite<'a> {
     }
 }
 
-impl<'a> PlaceRepo for DbConnection<'a> {
+impl PlaceRepo for DbConnection<'_> {
     fn get_place(&self, id: &str) -> Result<(Place, ReviewStatus)> {
         get_place(&mut self.conn.borrow_mut(), id)
     }
@@ -123,7 +123,7 @@ impl<'a> PlaceRepo for DbConnection<'a> {
     }
 }
 
-impl<'a> PlaceRepo for DbReadOnly<'a> {
+impl PlaceRepo for DbReadOnly<'_> {
     fn get_place(&self, id: &str) -> Result<(Place, ReviewStatus)> {
         get_place(&mut self.conn.borrow_mut(), id)
     }

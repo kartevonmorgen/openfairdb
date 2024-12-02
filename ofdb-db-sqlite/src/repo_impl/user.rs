@@ -1,6 +1,6 @@
 use super::*;
 
-impl<'a> UserRepo for DbReadOnly<'a> {
+impl UserRepo for DbReadOnly<'_> {
     fn create_user(&self, _user: &User) -> Result<()> {
         unreachable!();
     }
@@ -26,7 +26,7 @@ impl<'a> UserRepo for DbReadOnly<'a> {
     }
 }
 
-impl<'a> UserRepo for DbReadWrite<'a> {
+impl UserRepo for DbReadWrite<'_> {
     fn create_user(&self, user: &User) -> Result<()> {
         create_user(&mut self.conn.borrow_mut(), user)
     }
@@ -52,7 +52,7 @@ impl<'a> UserRepo for DbReadWrite<'a> {
     }
 }
 
-impl<'a> UserRepo for DbConnection<'a> {
+impl UserRepo for DbConnection<'_> {
     fn create_user(&self, user: &User) -> Result<()> {
         create_user(&mut self.conn.borrow_mut(), user)
     }

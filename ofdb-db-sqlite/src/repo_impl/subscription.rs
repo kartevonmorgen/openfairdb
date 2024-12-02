@@ -1,6 +1,6 @@
 use super::*;
 
-impl<'a> SubscriptionRepo for DbReadWrite<'a> {
+impl SubscriptionRepo for DbReadWrite<'_> {
     fn create_bbox_subscription(&self, sub: &BboxSubscription) -> Result<()> {
         create_bbox_subscription(&mut self.conn.borrow_mut(), sub)
     }
@@ -18,7 +18,7 @@ impl<'a> SubscriptionRepo for DbReadWrite<'a> {
     }
 }
 
-impl<'a> SubscriptionRepo for DbConnection<'a> {
+impl SubscriptionRepo for DbConnection<'_> {
     fn create_bbox_subscription(&self, sub: &BboxSubscription) -> Result<()> {
         create_bbox_subscription(&mut self.conn.borrow_mut(), sub)
     }
@@ -36,7 +36,7 @@ impl<'a> SubscriptionRepo for DbConnection<'a> {
     }
 }
 
-impl<'a> SubscriptionRepo for DbReadOnly<'a> {
+impl SubscriptionRepo for DbReadOnly<'_> {
     fn create_bbox_subscription(&self, _sub: &BboxSubscription) -> Result<()> {
         unreachable!();
     }

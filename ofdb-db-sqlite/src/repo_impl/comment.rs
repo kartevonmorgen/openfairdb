@@ -1,6 +1,6 @@
 use super::*;
 
-impl<'a> CommentRepository for DbReadWrite<'a> {
+impl CommentRepository for DbReadWrite<'_> {
     fn create_comment(&self, comment: Comment) -> Result<()> {
         create_comment(&mut self.conn.borrow_mut(), comment)
     }
@@ -28,7 +28,7 @@ impl<'a> CommentRepository for DbReadWrite<'a> {
     }
 }
 
-impl<'a> CommentRepository for DbConnection<'a> {
+impl CommentRepository for DbConnection<'_> {
     fn create_comment(&self, comment: Comment) -> Result<()> {
         create_comment(&mut self.conn.borrow_mut(), comment)
     }
@@ -56,7 +56,7 @@ impl<'a> CommentRepository for DbConnection<'a> {
     }
 }
 
-impl<'a> CommentRepository for DbReadOnly<'a> {
+impl CommentRepository for DbReadOnly<'_> {
     fn create_comment(&self, _comment: Comment) -> Result<()> {
         unreachable!();
     }

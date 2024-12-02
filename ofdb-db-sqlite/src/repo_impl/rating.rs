@@ -1,6 +1,6 @@
 use super::*;
 
-impl<'a> RatingRepository for DbReadWrite<'a> {
+impl RatingRepository for DbReadWrite<'_> {
     fn create_rating(&self, rating: Rating) -> Result<()> {
         create_rating(&mut self.conn.borrow_mut(), rating)
     }
@@ -27,7 +27,7 @@ impl<'a> RatingRepository for DbReadWrite<'a> {
     }
 }
 
-impl<'a> RatingRepository for DbConnection<'a> {
+impl RatingRepository for DbConnection<'_> {
     fn create_rating(&self, rating: Rating) -> Result<()> {
         create_rating(&mut self.conn.borrow_mut(), rating)
     }
@@ -54,7 +54,7 @@ impl<'a> RatingRepository for DbConnection<'a> {
     }
 }
 
-impl<'a> RatingRepository for DbReadOnly<'a> {
+impl RatingRepository for DbReadOnly<'_> {
     fn create_rating(&self, _rating: Rating) -> Result<()> {
         unreachable!();
     }

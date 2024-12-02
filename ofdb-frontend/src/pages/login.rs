@@ -59,7 +59,7 @@ where
                           title = "Login"
                           description = "Please login to your account"
                           submit_credentials_label = "Log in"
-                          initial_credentials = Default::default()
+                          initial_credentials = Credentials::default()
                           submit_credentials_action = login_action
                           error = login_error.into()
                           disabled

@@ -62,7 +62,7 @@ pub fn Register(public_api: PublicApi) -> impl IntoView {
                           title = "Register"
                           description = "Please enter the desired credentials"
                           submit_credentials_label = "Register"
-                          initial_credentials = Default::default()
+                          initial_credentials = Credentials::default()
                           submit_credentials_action = register_action
                           error = register_error.into()
                           disabled

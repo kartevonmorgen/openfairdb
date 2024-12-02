@@ -1,6 +1,6 @@
 use super::*;
 
-impl<'a> EventRepo for DbReadOnly<'a> {
+impl EventRepo for DbReadOnly<'_> {
     fn create_event(&self, _ev: Event) -> Result<()> {
         unreachable!();
     }
@@ -35,7 +35,7 @@ impl<'a> EventRepo for DbReadOnly<'a> {
     }
 }
 
-impl<'a> EventRepo for DbReadWrite<'a> {
+impl EventRepo for DbReadWrite<'_> {
     fn create_event(&self, ev: Event) -> Result<()> {
         create_event(&mut self.conn.borrow_mut(), ev)
     }
@@ -70,7 +70,7 @@ impl<'a> EventRepo for DbReadWrite<'a> {
     }
 }
 
-impl<'a> EventRepo for DbConnection<'a> {
+impl EventRepo for DbConnection<'_> {
     fn create_event(&self, ev: Event) -> Result<()> {
         create_event(&mut self.conn.borrow_mut(), ev)
     }

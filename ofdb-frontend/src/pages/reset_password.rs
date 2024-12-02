@@ -8,7 +8,7 @@ pub fn ResetPassword(public_api: PublicApi) -> impl IntoView {
     let (request_response, set_request_response) = create_signal(None::<()>);
     let (request_error, set_request_error) = create_signal(None::<String>);
     let (email, set_email) = create_signal(String::new());
-    let reset_password_action = create_action(move |_: &()| {
+    let reset_password_action = create_action(move |(): &()| {
         let email = email.get().to_string();
         log::info!("Request password reset for {}", email);
         async move {

@@ -1,6 +1,6 @@
 use super::*;
 
-impl<'a> OrganizationRepo for DbReadWrite<'a> {
+impl OrganizationRepo for DbReadWrite<'_> {
     fn create_org(&mut self, org: Organization) -> Result<()> {
         create_org(&mut self.conn.borrow_mut(), org)
     }
@@ -18,7 +18,7 @@ impl<'a> OrganizationRepo for DbReadWrite<'a> {
     }
 }
 
-impl<'a> OrganizationRepo for DbConnection<'a> {
+impl OrganizationRepo for DbConnection<'_> {
     fn create_org(&mut self, org: Organization) -> Result<()> {
         create_org(&mut self.conn.borrow_mut(), org)
     }
@@ -36,7 +36,7 @@ impl<'a> OrganizationRepo for DbConnection<'a> {
     }
 }
 
-impl<'a> OrganizationRepo for DbReadOnly<'a> {
+impl OrganizationRepo for DbReadOnly<'_> {
     fn create_org(&mut self, _org: Organization) -> Result<()> {
         unreachable!();
     }

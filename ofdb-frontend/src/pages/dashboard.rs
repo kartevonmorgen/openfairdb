@@ -3,6 +3,7 @@ use leptos::*;
 use ofdb_boundary::*;
 use ofdb_frontend_api::{PublicApi, UserApi};
 
+#[allow(clippy::too_many_lines)] // TODO
 #[component]
 pub fn Dashboard(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> impl IntoView {
     // -- signals -- //
@@ -12,10 +13,10 @@ pub fn Dashboard(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> im
     // -- actions -- //
 
     let fetch_entries_count_action =
-        create_action(move |_| async move { public_api.count_entries().await });
+        create_action(move |()| async move { public_api.count_entries().await });
 
     let fetch_tags_count_action =
-        create_action(move |_| async move { public_api.count_tags().await });
+        create_action(move |()| async move { public_api.count_tags().await });
 
     let fetch_bbox_subscriptions = create_action(move |api: &UserApi| {
         let api = api.clone();
@@ -35,7 +36,7 @@ pub fn Dashboard(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> im
         let api = api.clone();
         async move {
             match api.unsubscribe_all_bboxes().await {
-                Ok(_) => {
+                Ok(()) => {
                     log::info!("Deleted all subscriptions");
                     subscriptions.update(|s| *s = None);
                 }

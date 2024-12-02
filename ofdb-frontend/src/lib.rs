@@ -1,6 +1,8 @@
+use anyhow::anyhow;
 use gloo_storage::{LocalStorage, Storage};
 use leptos::*;
 use leptos_router::*;
+use wasm_bindgen_futures::JsFuture;
 
 use ofdb_boundary::{MapBbox, MapPoint, User};
 use ofdb_frontend_api as api;
@@ -24,12 +26,14 @@ const DEFAULT_BBOX: MapBbox = MapBbox {
     },
 };
 
+#[allow(clippy::too_many_lines)] // TODO
 #[component]
+#[must_use]
 pub fn App() -> impl IntoView {
     // -- signals -- //
 
-    let user_api = create_rw_signal(None::<api::UserApi>);
-    let user_info = create_rw_signal(None::<User>);
+    let user_api = RwSignal::new(None::<api::UserApi>);
+    let user_info = RwSignal::new(None::<User>);
     let logged_in = Signal::derive(move || user_api.get().is_some());
     let (bbox, _) = create_signal(DEFAULT_BBOX);
 
@@ -42,8 +46,8 @@ pub fn App() -> impl IntoView {
 
     // -- actions -- //
 
-    let fetch_user_info = create_action(move |_| async move {
-        match user_api.get() {
+    let fetch_user_info = Action::new(move |()| async move {
+        match user_api.get_untracked() {
             Some(api) => match api.user_info().await {
                 Ok(info) => {
                     user_info.update(|i| *i = Some(info));
@@ -54,24 +58,35 @@ pub fn App() -> impl IntoView {
                 }
             },
             None => {
-                log::error!("Unable to fetch user info: not logged in")
+                log::error!("Unable to fetch user info: not logged in");
             }
         }
     });
 
-    let logout = create_action(move |_| async move {
-        match user_api.get() {
+    let logout = Action::new(move |()| async move {
+        match user_api.get_untracked() {
             Some(api) => match api.logout().await {
-                Ok(_) => {
+                Ok(()) => {
                     clear_user_data();
                 }
                 Err(err) => {
-                    log::error!("Unable to logout: {err}")
+                    log::error!("Unable to logout: {err}");
                 }
             },
             None => {
-                log::error!("Unable to logout user: not logged in")
+                log::error!("Unable to logout user: not logged in");
             }
+        }
+    });
+
+    let copy_token = Action::new(move |()| async move {
+        let Some(api) = user_api.get_untracked() else {
+            log::warn!("Expect available user API");
+            return;
+        };
+        log::debug!("Copy API token to clipboard");
+        if let Err(err) = copy_to_clipboard(&api.token().token).await {
+            log::warn!("Unable to copy token: {err}");
         }
     });
 
@@ -79,6 +94,10 @@ pub fn App() -> impl IntoView {
 
     let on_logout = move || {
         logout.dispatch(());
+    };
+
+    let on_copy_token = move || {
+        copy_token.dispatch(());
     };
 
     // -- init API -- //
@@ -95,23 +114,20 @@ pub fn App() -> impl IntoView {
 
     // -- effects -- //
 
-    create_effect(move |_| {
+    Effect::new(move |_| {
         log::debug!("API authorization state changed");
-        match user_api.get() {
-            Some(api) => {
-                log::debug!("API is now authorized: save token in LocalStorage");
-                LocalStorage::set(API_TOKEN_STORAGE_KEY, api.token()).expect("LocalStorage::set");
-            }
-            None => {
-                log::debug!("API is no longer authorized: delete token from LocalStorage");
-                LocalStorage::delete(API_TOKEN_STORAGE_KEY);
-            }
+        if let Some(api) = user_api.get() {
+            log::debug!("API is now authorized: save token in LocalStorage");
+            LocalStorage::set(API_TOKEN_STORAGE_KEY, api.token()).expect("LocalStorage::set");
+        } else {
+            log::debug!("API is no longer authorized: delete token from LocalStorage");
+            LocalStorage::delete(API_TOKEN_STORAGE_KEY);
         }
     });
 
     view! {
       <Router>
-        <NavBar user = user_info.into() on_logout />
+        <NavBar user = user_info.into() on_logout on_copy_token />
         <main>
           <Routes>
             <Route
@@ -127,7 +143,7 @@ pub fn App() -> impl IntoView {
                       log::info!("Successfully logged in");
                       user_api.update(|v| *v = Some(api));
                       let navigate = use_navigate();
-                      navigate(Page::Dashboard.path(), Default::default());
+                      navigate(Page::Dashboard.path(), NavigateOptions::default());
                       fetch_user_info.dispatch(());
                   } />
               }
@@ -175,4 +191,15 @@ pub fn App() -> impl IntoView {
         </main>
       </Router>
     }
+}
+
+async fn copy_to_clipboard(text: &str) -> anyhow::Result<()> {
+    let clipboard = window().navigator().clipboard();
+    let promise = clipboard.write_text(text);
+    JsFuture::from(promise).await.map_err(|err| {
+        anyhow!(err
+            .as_string()
+            .unwrap_or_else(|| "unknown JS error".to_string()))
+    })?;
+    Ok(())
 }

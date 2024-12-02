@@ -1,6 +1,6 @@
 use super::*;
 
-impl<'a> ReminderRepo for DbReadWrite<'a> {
+impl ReminderRepo for DbReadWrite<'_> {
     fn find_last_sent_reminder(
         &self,
         place_id: &Id,
@@ -18,7 +18,7 @@ impl<'a> ReminderRepo for DbReadWrite<'a> {
     }
 }
 
-impl<'a> ReminderRepo for DbConnection<'a> {
+impl ReminderRepo for DbConnection<'_> {
     fn find_last_sent_reminder(
         &self,
         place_id: &Id,
@@ -36,7 +36,7 @@ impl<'a> ReminderRepo for DbConnection<'a> {
     }
 }
 
-impl<'a> ReminderRepo for DbReadOnly<'a> {
+impl ReminderRepo for DbReadOnly<'_> {
     fn find_last_sent_reminder(
         &self,
         place_id: &Id,

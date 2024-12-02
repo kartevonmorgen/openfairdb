@@ -1,6 +1,6 @@
 use super::*;
 
-impl<'a> TagRepo for DbReadOnly<'a> {
+impl TagRepo for DbReadOnly<'_> {
     fn create_tag_if_it_does_not_exist(&self, _tag: &Tag) -> Result<()> {
         unreachable!();
     }
@@ -12,7 +12,7 @@ impl<'a> TagRepo for DbReadOnly<'a> {
     }
 }
 
-impl<'a> TagRepo for DbReadWrite<'a> {
+impl TagRepo for DbReadWrite<'_> {
     fn create_tag_if_it_does_not_exist(&self, tag: &Tag) -> Result<()> {
         create_tag_if_it_does_not_exist(&mut self.conn.borrow_mut(), tag)
     }
@@ -24,7 +24,7 @@ impl<'a> TagRepo for DbReadWrite<'a> {
     }
 }
 
-impl<'a> TagRepo for DbConnection<'a> {
+impl TagRepo for DbConnection<'_> {
     fn create_tag_if_it_does_not_exist(&self, tag: &Tag) -> Result<()> {
         create_tag_if_it_does_not_exist(&mut self.conn.borrow_mut(), tag)
     }

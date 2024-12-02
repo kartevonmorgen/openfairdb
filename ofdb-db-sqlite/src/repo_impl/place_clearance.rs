@@ -1,6 +1,6 @@
 use super::*;
 
-impl<'a> PlaceClearanceRepo for DbReadWrite<'a> {
+impl PlaceClearanceRepo for DbReadWrite<'_> {
     fn add_pending_clearance_for_places(
         &self,
         org_ids: &[Id],
@@ -37,7 +37,7 @@ impl<'a> PlaceClearanceRepo for DbReadWrite<'a> {
     }
 }
 
-impl<'a> PlaceClearanceRepo for DbConnection<'a> {
+impl PlaceClearanceRepo for DbConnection<'_> {
     fn add_pending_clearance_for_places(
         &self,
         org_ids: &[Id],
@@ -74,7 +74,7 @@ impl<'a> PlaceClearanceRepo for DbConnection<'a> {
     }
 }
 
-impl<'a> PlaceClearanceRepo for DbReadOnly<'a> {
+impl PlaceClearanceRepo for DbReadOnly<'_> {
     fn add_pending_clearance_for_places(
         &self,
         _org_ids: &[Id],
