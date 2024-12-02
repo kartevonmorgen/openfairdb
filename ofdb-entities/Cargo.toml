@@ -18,9 +18,9 @@ num-derive = "0.4.2"
 num-traits = "0.2.19"
 pwhash = "1.0.0"
 uuid = { version = "1.11.0", features = ["v4"] }
-url = { version = "2.5.2", optional = true }
+url = { version = "2.5.4", optional = true }
 strum = { version = "0.26.3", features = ["derive"] }
-thiserror = "1.0.65"
+thiserror = "2.0.3"
 time = { version = "0.3.36", features = ["formatting", "macros"] }
 
 [features]

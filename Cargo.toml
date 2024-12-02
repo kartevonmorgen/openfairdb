@@ -49,16 +49,16 @@ ofdb-webserver    = "=0.0.0"
 
 ofdb-entities     =  "*"
 
-anyhow = "1.0.91"
-clap = { version = "4.5.20", features = ["cargo", "derive"] }
+anyhow = "1.0.93"
+clap = { version = "4.5.21", features = ["cargo", "derive"] }
 dotenvy = "0.15.7"
 duration-str = { version = "0.7.1", default-features = false, features = ["serde"] }
 env_logger = "0.11.5"
 log = "0.4.22"
-serde = { version = "1.0.213", features = ["derive"] }
-thiserror = "1.0.65"
+serde = { version = "1.0.215", features = ["derive"] }
+thiserror = "2.0.3"
 time = "0.3.36"
-tokio = "1.41.0"
+tokio = "1.41.1"
 toml = "0.8.19"
 
 [patch.crates-io.geocoding]
