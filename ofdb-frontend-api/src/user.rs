@@ -3,7 +3,7 @@ use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde::{de::DeserializeOwned, Serialize};
 use web_sys::RequestCredentials;
 
-use ofdb_boundary::{BboxSubscription, JwtToken, MapBbox, Review, User};
+use ofdb_boundary::{BboxSubscription, JwtToken, MapBbox, NewPlace, Review, User};
 
 use crate::{bbox_string, into_json, Result};
 
@@ -75,6 +75,12 @@ impl UserApi {
     #[must_use]
     pub const fn token(&self) -> &JwtToken {
         &self.token
+    }
+
+    pub async fn create_place(&self, place: &NewPlace) -> Result<String> {
+        let url = format!("{}/entries", self.url);
+        let request = Request::post(&url);
+        self.send_json(request, place).await
     }
 
     pub async fn archive_events(&self, ids: &[&str]) -> Result<()> {
