@@ -178,7 +178,7 @@ impl PublicApi {
         let response = Request::get(&url).send().await?;
         into_json(response).await
     }
-    pub async fn update_place(&self, id: &str, place: &UpdatePlace) -> Result<()> {
+    pub async fn update_place(&self, id: &str, place: &UpdatePlace) -> Result<String> {
         let url = format!("{}/entries/{}", self.url, id);
         let request = Request::put(&url).json(place)?;
         let response = request.send().await?;

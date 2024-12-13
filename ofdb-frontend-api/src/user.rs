@@ -83,7 +83,7 @@ impl UserApi {
         self.send_json(request, place).await
     }
 
-    pub async fn update_place(&self, id: &str, place: &UpdatePlace) -> Result<()> {
+    pub async fn update_place(&self, id: &str, place: &UpdatePlace) -> Result<String> {
         let url = format!("{}/entries/{id}", self.url);
         let request = Request::put(&url);
         self.send_json(request, place).await
