@@ -3,8 +3,8 @@ use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use web_sys::RequestCredentials;
 
 use ofdb_boundary::{
-    Credentials, Entry, Event, MapBbox, NewPlace, RequestPasswordReset, SearchResponse,
-    TagFrequency, UpdatePlace,
+    Credentials, Entry, Event, MapBbox, NewPlace, NewPlaceRating, Rating, RequestPasswordReset,
+    SearchResponse, TagFrequency, UpdatePlace,
 };
 
 use crate::{bbox_string, into_json, Result, UserApi};
@@ -209,6 +209,16 @@ impl PublicApi {
         }
         let request = Request::get(&url);
         let response = request.send().await?;
+        into_json(response).await
+    }
+    pub async fn ratings(&self, ids: &[&str]) -> Result<Vec<Rating>> {
+        let url = format!("{}/ratings/{}", self.url, ids.join(","));
+        let response = Request::get(&url).send().await?;
+        into_json(response).await
+    }
+    pub async fn create_place_rating(&self, rating: &NewPlaceRating) -> Result<()> {
+        let url = format!("{}/ratings", self.url);
+        let response = Request::post(&url).json(rating)?.send().await?;
         into_json(response).await
     }
 }
