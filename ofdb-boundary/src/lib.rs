@@ -247,7 +247,7 @@ pub struct User {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, Copy))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, Copy, PartialEq, Eq))]
 pub struct RatingValue(i8);
 
 #[derive(Serialize, Deserialize)]
@@ -300,7 +300,7 @@ pub struct EntrySearchRatings {
 }
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq))]
 pub struct Comment {
     pub id: String,
     pub created: i64,
@@ -423,7 +423,7 @@ pub struct ConfirmEmailAddress {
 pub struct TagFrequency(pub String, pub u64);
 
 #[derive(Serialize, Deserialize)]
-#[cfg_attr(feature = "extra-derive", derive(Debug, Clone))]
+#[cfg_attr(feature = "extra-derive", derive(Debug, Clone, PartialEq))]
 pub struct Rating {
     pub id: String,
     pub title: String,
