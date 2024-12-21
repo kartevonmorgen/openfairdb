@@ -4,16 +4,15 @@ use ofdb_boundary::{MapBbox, PlaceSearchResult, SearchResponse};
 use crate::{api::PublicApi, pages::Page};
 
 #[component]
-pub fn PlaceSearch(public_api: PublicApi, bbox: ReadSignal<MapBbox>) -> impl IntoView {
+pub fn PlaceSearch(public_api: Signal<PublicApi>, bbox: ReadSignal<MapBbox>) -> impl IntoView {
     let (search_response, set_search_response) = create_signal(None::<SearchResponse>);
     let (search_error, set_search_error) = create_signal(None::<String>);
 
-    let search_action = create_action(move |text: &String| {
-        //let bbox = DEFAULT_BBOX;
+    let search_action = Action::new(move |text: &String| {
         let bbox = bbox.get();
         let text = text.clone();
         async move {
-            let result = public_api.search(&text, &bbox).await;
+            let result = public_api.get_untracked().search(&text, &bbox).await;
             match result {
                 Ok(res) => {
                     set_search_response.update(|v| *v = Some(res));

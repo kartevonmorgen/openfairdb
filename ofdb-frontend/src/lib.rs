@@ -102,10 +102,10 @@ pub fn App() -> impl IntoView {
 
     // -- init API -- //
 
-    let public_api = api::PublicApi::new(DEFAULT_API_URL);
+    let public_api = RwSignal::new(api::PublicApi::new(DEFAULT_API_URL.to_string()));
 
     if let Ok(token) = LocalStorage::get(API_TOKEN_STORAGE_KEY) {
-        let api = api::UserApi::new(DEFAULT_API_URL, token);
+        let api = api::UserApi::new(DEFAULT_API_URL.to_string(), token);
         user_api.update(|a| *a = Some(api));
         fetch_user_info.dispatch(());
     }
@@ -132,13 +132,18 @@ pub fn App() -> impl IntoView {
           <Routes>
             <Route
               path=Page::Home.path()
-              view=move || view! { <Home public_api bbox /> }
+              view=move || view! {
+                <Home
+                  public_api = public_api.into()
+                  bbox
+                />
+              }
             />
             <Route
               path=Page::Login.path()
               view=move || view! {
                 <Login
-                  public_api
+                  public_api = public_api.into()
                   on_success = move |api| {
                       log::info!("Successfully logged in");
                       user_api.update(|v| *v = Some(api));
@@ -150,17 +155,25 @@ pub fn App() -> impl IntoView {
             />
             <Route
               path=Page::Register.path()
-              view=move || view! { <Register public_api /> }
+              view=move || view! {
+                <Register
+                  public_api = public_api.into()
+                />
+              }
             />
             <Route
               path=Page::ResetPassword.path()
-              view=move|| view! { <ResetPassword public_api /> }
+              view=move|| view! {
+                <ResetPassword
+                  public_api = public_api.into()
+                />
+              }
             />
             <Route
               path=Page::Dashboard.path()
               view=move|| view! {
                 <Dashboard
-                  public_api
+                  public_api = public_api.into()
                   user_api = user_api.into()
                 />
               }
@@ -169,20 +182,24 @@ pub fn App() -> impl IntoView {
               path=format!("{}/:id", Page::Entries.path())
               view=move|| view! {
                 <Entry
-                  public_api
+                  public_api = public_api.into()
                   user_api = user_api.into()
                 />
               }
             />
             <Route
               path=Page::Events.path()
-              view=move|| view! { <Events public_api /> }
+              view=move|| view! {
+                <Events
+                  public_api = public_api.into()
+                />
+              }
             />
             <Route
               path=format!("{}/:id", Page::Events.path())
               view=move|| view! {
                 <Event
-                  public_api
+                  public_api = public_api.into()
                   user_api = user_api.into()
                 />
               }

@@ -10,7 +10,7 @@ const DATE_TIME_FORMAT: &[FormatItem] = format_description!("[year]-[month]-[day
 
 #[allow(clippy::too_many_lines)] // TODO
 #[component]
-pub fn Events(public_api: PublicApi) -> impl IntoView {
+pub fn Events(public_api: Signal<PublicApi>) -> impl IntoView {
     let mut query = EventQuery::default();
     let start_min = OffsetDateTime::now_utc() - Duration::hours(12);
     query.start_min = Some(start_min.unix_timestamp());
@@ -18,7 +18,7 @@ pub fn Events(public_api: PublicApi) -> impl IntoView {
     // -- actions -- //
     let fetch_events = create_action(move |()| {
         let query = query.clone();
-        async move { public_api.events(&query).await }
+        async move { public_api.get_untracked().events(&query).await }
     });
 
     fetch_events.dispatch(());
@@ -95,7 +95,7 @@ fn EventListItem(event: ofdb_boundary::Event) -> impl IntoView {
 }
 
 #[component]
-pub fn Event(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> impl IntoView {
+pub fn Event(public_api: Signal<PublicApi>, user_api: Signal<Option<UserApi>>) -> impl IntoView {
     // -- signals -- //
 
     let params = use_params_map();
@@ -104,7 +104,7 @@ pub fn Event(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> impl I
 
     let fetch_event = create_action(move |id: &String| {
         let id = id.to_owned();
-        async move { public_api.event(&id).await }
+        async move { public_api.get_untracked().event(&id).await }
     });
 
     // -- effects -- //

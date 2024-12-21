@@ -10,13 +10,13 @@ use crate::{bbox_string, into_json, Result};
 /// Authorized OpenFairDB API
 #[derive(Clone)]
 pub struct UserApi {
-    url: &'static str,
+    url: String,
     token: JwtToken,
 }
 
 impl UserApi {
     #[must_use]
-    pub const fn new(url: &'static str, token: JwtToken) -> Self {
+    pub const fn new(url: String, token: JwtToken) -> Self {
         Self { url, token }
     }
 

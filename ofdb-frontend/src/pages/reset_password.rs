@@ -3,7 +3,7 @@ use leptos::*;
 use crate::api::{self, PublicApi};
 
 #[component]
-pub fn ResetPassword(public_api: PublicApi) -> impl IntoView {
+pub fn ResetPassword(public_api: Signal<PublicApi>) -> impl IntoView {
     let (wait_for_response, set_wait_for_response) = create_signal(false);
     let (request_response, set_request_response) = create_signal(None::<()>);
     let (request_error, set_request_error) = create_signal(None::<String>);
@@ -13,7 +13,10 @@ pub fn ResetPassword(public_api: PublicApi) -> impl IntoView {
         log::info!("Request password reset for {}", email);
         async move {
             set_wait_for_response.update(|w| *w = true);
-            let result = public_api.request_password_reset(email).await;
+            let result = public_api
+                .get_untracked()
+                .request_password_reset(email)
+                .await;
             set_wait_for_response.update(|w| *w = false);
             match result {
                 Ok(res) => {

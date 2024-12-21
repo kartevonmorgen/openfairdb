@@ -5,20 +5,23 @@ use ofdb_frontend_api::{PublicApi, UserApi};
 
 #[allow(clippy::too_many_lines)] // TODO
 #[component]
-pub fn Dashboard(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> impl IntoView {
+pub fn Dashboard(
+    public_api: Signal<PublicApi>,
+    user_api: Signal<Option<UserApi>>,
+) -> impl IntoView {
     // -- signals -- //
 
-    let subscriptions = create_rw_signal(None::<Vec<BboxSubscription>>);
+    let subscriptions = RwSignal::new(None::<Vec<BboxSubscription>>);
 
     // -- actions -- //
 
     let fetch_entries_count_action =
-        create_action(move |()| async move { public_api.count_entries().await });
+        Action::new(move |()| async move { public_api.get_untracked().count_entries().await });
 
     let fetch_tags_count_action =
-        create_action(move |()| async move { public_api.count_tags().await });
+        Action::new(move |()| async move { public_api.get_untracked().count_tags().await });
 
-    let fetch_bbox_subscriptions = create_action(move |api: &UserApi| {
+    let fetch_bbox_subscriptions = Action::new(move |api: &UserApi| {
         let api = api.clone();
         async move {
             match api.bbox_subscriptions().await {
@@ -32,7 +35,7 @@ pub fn Dashboard(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> im
         }
     });
 
-    let delete_bbox_subscriptions = create_action(move |api: &UserApi| {
+    let delete_bbox_subscriptions = Action::new(move |api: &UserApi| {
         let api = api.clone();
         async move {
             match api.unsubscribe_all_bboxes().await {
@@ -52,7 +55,7 @@ pub fn Dashboard(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> im
 
     // -- effects -- //
 
-    create_effect(move |_| {
+    Effect::new(move |_| {
         if let Some(user_api) = user_api.get() {
             fetch_bbox_subscriptions.dispatch(user_api);
         }

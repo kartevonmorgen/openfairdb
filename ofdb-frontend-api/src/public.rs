@@ -10,9 +10,9 @@ use ofdb_boundary::{
 use crate::{bbox_string, into_json, Result, UserApi};
 
 /// Public OpenFairDB API
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct PublicApi {
-    url: &'static str,
+    url: String,
 }
 
 #[derive(Debug, Clone, Default)]
@@ -56,9 +56,10 @@ impl EventQuery {
 
 impl PublicApi {
     #[must_use]
-    pub const fn new(url: &'static str) -> Self {
+    pub const fn new(url: String) -> Self {
         Self { url }
     }
+
     pub async fn search(&self, text: &str, bbox: &MapBbox) -> Result<SearchResponse> {
         let encoded_txt = utf8_percent_encode(text, NON_ALPHANUMERIC);
         let bbox_string = bbox_string(bbox);
@@ -66,11 +67,13 @@ impl PublicApi {
         let response = Request::get(&url).send().await?;
         into_json(response).await
     }
+
     pub async fn register(&self, credentials: &Credentials) -> Result<()> {
         let url = format!("{}/users", self.url);
         let response = Request::post(&url).json(credentials)?.send().await?;
         into_json(response).await
     }
+
     pub async fn login(&self, credentials: &Credentials) -> Result<UserApi> {
         let url = format!("{}/login", self.url);
         let response = Request::post(&url)
@@ -79,8 +82,9 @@ impl PublicApi {
             .send()
             .await?;
         let token = into_json(response).await?;
-        Ok(UserApi::new(self.url, token))
+        Ok(UserApi::new(self.url.clone(), token))
     }
+
     pub async fn request_password_reset(&self, email: String) -> Result<()> {
         let url = format!("{}/users/reset-password-request", self.url);
         let response = Request::post(&url)
@@ -89,11 +93,13 @@ impl PublicApi {
             .await?;
         into_json(response).await
     }
+
     pub async fn entries(&self, ids: &[&str]) -> Result<Vec<Entry>> {
         let url = format!("{}/entries/{}", self.url, ids.join(","));
         let response = Request::get(&url).send().await?;
         into_json(response).await
     }
+
     pub async fn events(&self, query: &EventQuery) -> Result<Vec<Event>> {
         let mut url = format!("{}/events", self.url);
         if !query.is_empty() {
@@ -150,40 +156,47 @@ impl PublicApi {
         let response = Request::get(&url).send().await?;
         into_json(response).await
     }
+
     pub async fn event(&self, id: &str) -> Result<Event> {
         let url = format!("{}/events/{id}", self.url);
         let request = Request::get(&url);
         let response = request.send().await?;
         into_json(response).await
     }
+
     pub async fn create_place(&self, place: &NewPlace) -> Result<String> {
         let url = format!("{}/entries", self.url);
         let request = Request::post(&url).json(place)?;
         let response = request.send().await?;
         into_json(response).await
     }
+
     pub async fn tags(&self) -> Result<Vec<String>> {
         let url = format!("{}/tags", self.url);
         let request = Request::get(&url);
         let response = request.send().await?;
         into_json(response).await
     }
+
     pub async fn count_entries(&self) -> Result<usize> {
         let url = format!("{}/count/entries", self.url);
         let response = Request::get(&url).send().await?;
         into_json(response).await
     }
+
     pub async fn count_tags(&self) -> Result<usize> {
         let url = format!("{}/count/tags", self.url);
         let response = Request::get(&url).send().await?;
         into_json(response).await
     }
+
     pub async fn update_place(&self, id: &str, place: &UpdatePlace) -> Result<String> {
         let url = format!("{}/entries/{}", self.url, id);
         let request = Request::put(&url).json(place)?;
         let response = request.send().await?;
         into_json(response).await
     }
+
     pub async fn most_popular_tags(
         &self,
         min_count: Option<usize>,
@@ -211,11 +224,13 @@ impl PublicApi {
         let response = request.send().await?;
         into_json(response).await
     }
+
     pub async fn ratings(&self, ids: &[&str]) -> Result<Vec<Rating>> {
         let url = format!("{}/ratings/{}", self.url, ids.join(","));
         let response = Request::get(&url).send().await?;
         into_json(response).await
     }
+
     pub async fn create_place_rating(&self, rating: &NewPlaceRating) -> Result<()> {
         let url = format!("{}/ratings", self.url);
         let response = Request::post(&url).json(rating)?.send().await?;

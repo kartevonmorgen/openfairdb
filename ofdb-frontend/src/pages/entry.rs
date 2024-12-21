@@ -7,7 +7,7 @@ use ofdb_frontend_api::{PublicApi, UserApi};
 use crate::Page;
 
 #[component]
-pub fn Entry(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> impl IntoView {
+pub fn Entry(public_api: Signal<PublicApi>, user_api: Signal<Option<UserApi>>) -> impl IntoView {
     // -- signals -- //
 
     let params = use_params_map();
@@ -18,7 +18,7 @@ pub fn Entry(public_api: PublicApi, user_api: Signal<Option<UserApi>>) -> impl I
     let fetch_entry = create_action(move |id: &String| {
         let id = id.to_owned();
         async move {
-            match public_api.entries(&[&id]).await {
+            match public_api.get_untracked().entries(&[&id]).await {
                 Ok(mut entries) => {
                     debug_assert_eq!(entries.len(), 1);
                     let e = entries.remove(0);
