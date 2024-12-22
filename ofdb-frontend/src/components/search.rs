@@ -11,8 +11,9 @@ pub fn PlaceSearch(public_api: Signal<PublicApi>, bbox: ReadSignal<MapBbox>) -> 
     let search_action = Action::new(move |text: &String| {
         let bbox = bbox.get();
         let text = text.clone();
+        let limit = None;
         async move {
-            let result = public_api.get_untracked().search(&text, &bbox).await;
+            let result = public_api.get_untracked().search(&text, &bbox, limit).await;
             match result {
                 Ok(res) => {
                     set_search_response.update(|v| *v = Some(res));

@@ -60,10 +60,19 @@ impl PublicApi {
         Self { url }
     }
 
-    pub async fn search(&self, text: &str, bbox: &MapBbox) -> Result<SearchResponse> {
+    pub async fn search(
+        &self,
+        text: &str,
+        bbox: &MapBbox,
+        limit: Option<usize>,
+    ) -> Result<SearchResponse> {
         let encoded_txt = utf8_percent_encode(text, NON_ALPHANUMERIC);
         let bbox_string = bbox_string(bbox);
-        let url = format!("{}/search?text={encoded_txt}&bbox={bbox_string}", self.url);
+        let limit = limit.map(|n| format!("&limit={n}")).unwrap_or_default();
+        let url = format!(
+            "{}/search?text={encoded_txt}&bbox={bbox_string}{limit}",
+            self.url
+        );
         let response = Request::get(&url).send().await?;
         into_json(response).await
     }
