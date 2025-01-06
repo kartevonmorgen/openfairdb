@@ -12,16 +12,16 @@ rust-version.workspace = true
 
 [dependencies]
 bs58 = "0.5.1"
-itertools = "0.12.1"
-mailparse = "0.14.1"
+itertools = "0.14.0"
+mailparse = "0.15.0"
 num-derive = "0.4.2"
 num-traits = "0.2.19"
 pwhash = "1.0.0"
 uuid = { version = "1.11.0", features = ["v4"] }
 url = { version = "2.5.4", optional = true }
 strum = { version = "0.26.3", features = ["derive"] }
-thiserror = "2.0.3"
-time = { version = "0.3.36", features = ["formatting", "macros"] }
+thiserror = "2.0.9"
+time = { version = "0.3.37", features = ["formatting", "macros"] }
 
 [features]
 default = []

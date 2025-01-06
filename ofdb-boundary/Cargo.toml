@@ -11,10 +11,10 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
-serde = { version = "1.0.215", features = ["derive"] }
+serde = { version = "1.0.217", features = ["derive"] }
 
 [dependencies.time]
-version = "0.3.36"
+version = "0.3.37"
 default-features = false
 features = ["serde"]
 
@@ -24,7 +24,7 @@ path = "../ofdb-entities"
 optional = true
 
 [dependencies.thiserror]
-version = "2.0.3"
+version = "2.0.9"
 optional = true
 
 [features]
