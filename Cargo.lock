@@ -2202,7 +2202,7 @@ dependencies = [
 
 [[package]]
 name = "ofdb-boundary"
-version = "0.12.10"
+version = "0.12.11"
 dependencies = [
  "ofdb-entities",
  "serde",
@@ -2257,7 +2257,7 @@ dependencies = [
 
 [[package]]
 name = "ofdb-entities"
-version = "0.12.10"
+version = "0.12.11"
 dependencies = [
  "bs58",
  "itertools 0.14.0",
@@ -2361,7 +2361,7 @@ checksum = "c08d65885ee38876c4f86fa503fb49d7b507c2b62552df7c70b2fce627e06381"
 
 [[package]]
 name = "openfairdb"
-version = "0.12.10"
+version = "0.12.11"
 dependencies = [
  "anyhow",
  "clap",
@@ -3278,9 +3278,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.134"
+version = "1.0.135"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d00f4175c42ee48b15416f6193a959ba3a0d67fc699a0db9ad12df9f83991c7d"
+checksum = "2b0d7ba2887406110130a978386c4e1befb98c674b4fba677954e4db976630d9"
 dependencies = [
  "itoa",
  "memchr",

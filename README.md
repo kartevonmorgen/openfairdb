@@ -20,7 +20,7 @@ or at <https://book.ofdb.io>.
 
 ## License
 
-Copyright (c) 2018 - 2024 [slowtec GmbH](https://slowtec.de)\
+Copyright (c) 2018 - 2025 [slowtec GmbH](https://slowtec.de)\
 Copyright (c) 2015 - 2018 Markus Kohlhase
 
 This project is licensed under the AGPLv3 license.

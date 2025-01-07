@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.12.11 (2025-01-07)
+
+- new: Add option to copy API token to clipboard in the frontend
+- new: Extend `ofdb-frontend-api`
+- chore: Update dependencies
+
 ## v0.12.10 (2024-06-07)
 
 - new: Make subscription notifications configurable
