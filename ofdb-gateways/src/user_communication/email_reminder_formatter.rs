@@ -6,11 +6,15 @@ use time::{format_description::FormatItem, macros::format_description};
 // TODO: support different languages
 pub struct ReminderFormatter {
     recipient_role: RecipientRole,
+    base_url: String,
 }
 
 impl ReminderFormatter {
-    pub const fn new(recipient_role: RecipientRole) -> Self {
-        Self { recipient_role }
+    pub const fn new(recipient_role: RecipientRole, base_url: String) -> Self {
+        Self {
+            recipient_role,
+            base_url,
+        }
     }
 }
 
@@ -35,13 +39,13 @@ impl EmailReminderFormatter for ReminderFormatter {
         let entry_url = &format!("https://kartevonmorgen.org/#/?entry={id}");
 
         let token = review_nonce.encode_to_string();
-        // TODO: inject URL
         let archive_url = &format!(
-            "https://openfairdb.org/places/review-with-token?token={token}&status=archived"
+            "{}/places/review-with-token?token={token}&status=archived",
+            self.base_url
         );
-        // TODO: inject URL
         let confirm_url = &format!(
-            "https://openfairdb.org/places/review-with-token?token={token}&status=confirmed"
+            "{}/places/review-with-token?token={token}&status=confirmed",
+            self.base_url
         );
         let tags = &tags.join(",");
         let body = match self.recipient_role {

@@ -1,6 +1,7 @@
+use std::{collections::HashSet, path::PathBuf, time::Duration};
+
 use duration_str::{deserialize_duration, deserialize_option_duration};
 use serde::{Deserialize, Serialize};
-use std::{collections::HashSet, path::PathBuf, time::Duration};
 
 const DEFAULT_CONFIG_FILE: &str = include_str!("openfairdb.default.toml");
 
@@ -81,6 +82,7 @@ impl Default for Entries {
 pub struct WebServer {
     pub captcha: bool,
     pub cors: bool,
+    pub base_url: Option<String>,
 }
 
 impl Default for WebServer {
