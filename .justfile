@@ -6,6 +6,10 @@ set dotenv-load := false
 _default:
     @just --list
 
+# Build the server in release mode (musl)
+build-musl-release: build-frontend
+  cargo zigbuild --release --target x86_64-unknown-linux-musl
+
 # Format source code
 fmt:
     cargo fmt --all
@@ -76,7 +80,7 @@ pre-commit:
 
 # Build frontend
 build-frontend:
-    cd ofdb-frontend && tailwind -i src/style.css -o style.css --minify
+    cd ofdb-frontend && tailwindcss -i src/style.css -o style.css --minify
     cd ofdb-frontend && trunk build --release
 
 # Build clearance app
