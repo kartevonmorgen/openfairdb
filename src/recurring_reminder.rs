@@ -8,35 +8,42 @@ use ofdb_gateways::user_communication::ReminderFormatter;
 
 use crate::config;
 
-pub async fn run(connections: Connections, notification_gw: Notify, cfg: config::Reminders) {
-    if cfg.send_to.is_empty() {
+pub async fn run(
+    connections: Connections,
+    notification_gw: Notify,
+    reminders_cfg: config::Reminders,
+    web_server_cfg: config::WebServer,
+) {
+    if reminders_cfg.send_to.is_empty() {
         log::info!("No recipient defined in `send_to`: do not send recurring reminders");
         return;
     }
 
-    let mut interval = tokio::time::interval(cfg.task_interval_time);
-    let token_expire_in = Duration::try_from(cfg.token_expire_in).expect("Token expiring duration");
+    let mut interval = tokio::time::interval(reminders_cfg.task_interval_time);
+    let token_expire_in =
+        Duration::try_from(reminders_cfg.token_expire_in).expect("Token expiring duration");
 
     log::info!(
         "Send recurring reminders to {:?} (interval = {interval:?})",
-        cfg.send_to
+        reminders_cfg.send_to
     );
 
     loop {
-        for recipient_role in &cfg.send_to {
+        for recipient_role in &reminders_cfg.send_to {
             let recipient_role = *recipient_role;
-            let formatter = ReminderFormatter::new(recipient_role);
-            let resend_period = resend_period(recipient_role, &cfg);
+            let formatter = ReminderFormatter::new(recipient_role, web_server_cfg.base_url.clone());
+            let resend_period = resend_period(recipient_role, &reminders_cfg);
             let current_time = Timestamp::now();
             let not_updated_since = current_time - resend_period;
             let token_expire_at = current_time + token_expire_in;
-            let bcc = &cfg.send_bcc;
+            let bcc = &reminders_cfg.send_bcc;
+            let send_max = reminders_cfg.send_max;
 
             let params = SendReminderParams {
                 recipient_role,
                 not_updated_since,
                 resend_period,
-                send_max: cfg.send_max,
+                send_max,
                 current_time,
                 token_expire_at,
                 bcc,

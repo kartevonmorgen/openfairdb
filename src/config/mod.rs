@@ -113,11 +113,12 @@ pub struct Entries {
     pub accepted_licenses: HashSet<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 #[cfg_attr(test, derive(PartialEq))]
 pub struct WebServer {
     pub protect_with_captcha: bool,
     pub enable_cors: bool,
+    pub base_url: String,
 }
 
 #[derive(Debug)]
@@ -304,11 +305,18 @@ impl TryFrom<raw::Config> for Config {
             gateway: geo_gateway,
         };
 
-        let raw::WebServer { captcha, cors } = webserver.unwrap_or_default();
+        let raw::WebServer {
+            captcha,
+            cors,
+            base_url,
+        } = webserver.unwrap_or_default();
+
+        let base_url = base_url.unwrap_or_else(|| raw::WebServer::default().base_url.unwrap());
 
         let webserver = WebServer {
             protect_with_captcha: captcha,
             enable_cors: cors,
+            base_url,
         };
 
         let raw::Reminders {

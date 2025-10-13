@@ -9,16 +9,18 @@ use crate::{email::EmailGateway, user_communication};
 pub struct Notify {
     email_gw: Arc<dyn EmailGateway + Send + Sync + 'static>,
     notify_on: HashSet<NotificationType>,
+    base_url: String,
 }
 
 impl Notify {
-    pub fn new<G>(gw: G, notify_on: HashSet<NotificationType>) -> Self
+    pub fn new<G>(gw: G, notify_on: HashSet<NotificationType>, base_url: String) -> Self
     where
         G: EmailGateway + Send + Sync + 'static,
     {
         Self {
             email_gw: Arc::new(gw),
             notify_on,
+            base_url,
         }
     }
 
@@ -127,7 +129,8 @@ impl NotificationGateway for Notify {
             }
             E::UserResetPasswordRequested { email_nonce } => {
                 let url = format!(
-                    "https://openfairdb.org/reset-password?token={}",
+                    "{}/reset-password?token={}",
+                    self.base_url,
                     email_nonce.encode_to_string()
                 );
                 let content = user_communication::user_reset_password_email(&url);

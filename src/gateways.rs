@@ -20,6 +20,7 @@ const ALLWAYS_NOTIFY_ON: [NotificationType; 2] = [
 ];
 
 pub fn notification_gateway(
+    webserver_cfg: config::WebServer,
     gateway_cfg: Option<config::EmailGateway>,
     subscriptions_cfg: config::Subscriptions,
 ) -> Notify {
@@ -28,9 +29,11 @@ pub fn notification_gateway(
         .copied()
         .collect();
 
+    let web_base_url = webserver_cfg.base_url;
+
     let Some(gateway_cfg) = gateway_cfg else {
         log::info!("No eMail gateway was configured");
-        return Notify::new(DummyMailGw, notify_on);
+        return Notify::new(DummyMailGw, notify_on, web_base_url);
     };
 
     match gateway_cfg {
@@ -46,19 +49,19 @@ pub fn notification_gateway(
                 api_key,
                 api_base_url,
             };
-            Notify::new(mailgun, notify_on)
+            Notify::new(mailgun, notify_on, web_base_url)
         }
         config::EmailGateway::Sendmail { sender_address } => {
             let sendmail = Sendmail::new(sender_address);
-            Notify::new(sendmail, notify_on)
+            Notify::new(sendmail, notify_on, web_base_url)
         }
         config::EmailGateway::EmailToJsonFile { dir } => {
             let Ok(gw) = SendToJsonFile::try_new(dir).map_err(|err| {
                 log::warn!("Could not create JSON file email gateway: {err}");
             }) else {
-                return Notify::new(DummyMailGw, notify_on);
+                return Notify::new(DummyMailGw, notify_on, web_base_url);
             };
-            Notify::new(gw, notify_on)
+            Notify::new(gw, notify_on, web_base_url)
         }
     }
 }

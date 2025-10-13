@@ -8,6 +8,7 @@ accepted-licenses = ["CC0-1.0", "ODbL-1.0"]
 [webserver]
 cors = false
 captcha = false
+base-url = "https://api.ofdb.io"
 
 [subscriptions]
 notify-on = []
