@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 
-use ::captcha::{gen, Difficulty};
+use ::captcha::{Difficulty, r#gen};
 use parking_lot::{Mutex, MutexGuard};
 use rocket::{
+    State,
     data::{Data, ToByteUnit},
     get,
     http::{ContentType, Cookie, CookieJar, Status},
-    post, State,
+    post,
 };
 use uuid::Uuid;
 
@@ -34,7 +35,7 @@ impl CaptchaCache {
         self.lock().remove(&uuid);
         is_valid
     }
-    fn lock(&self) -> MutexGuard<HashMap<Uuid, Option<String>>> {
+    fn lock(&self) -> MutexGuard<'_, HashMap<Uuid, Option<String>>> {
         self.0.lock()
     }
 }
@@ -54,7 +55,7 @@ pub fn get_captcha(
     if !captcha_cache.is_prepared(&uuid) {
         return Err(Status::BadRequest);
     }
-    let captcha = gen(Difficulty::Easy);
+    let captcha = r#gen(Difficulty::Easy);
     let answer = captcha.chars_as_string();
     captcha_cache.activate(uuid, answer);
     let png = captcha.as_png().ok_or(Status::InternalServerError)?;

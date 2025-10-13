@@ -1,4 +1,4 @@
-use time::{format_description::FormatItem, macros::format_description, Date};
+use time::{Date, format_description::FormatItem, macros::format_description};
 
 use super::models::*;
 use ofdb_core::{

@@ -1,16 +1,16 @@
 use std::{ops::Bound, path::Path, sync::Arc};
 
-use anyhow::{bail, Result as Fallible};
+use anyhow::{Result as Fallible, bail};
 use num_traits::ToPrimitive;
 use parking_lot::Mutex;
 use strum::IntoEnumIterator as _;
 use tantivy::{
+    DocAddress, DocId, Index, IndexReader, IndexWriter, Order, ReloadPolicy, Score, SegmentReader,
+    TantivyDocument,
     collector::TopDocs,
     query::{BooleanQuery, Occur, Query, QueryParser, RangeQuery, TermQuery},
     schema::*,
     tokenizer::{LowerCaser, RawTokenizer, RemoveLongFilter, SimpleTokenizer, TextAnalyzer},
-    DocAddress, DocId, Index, IndexReader, IndexWriter, Order, ReloadPolicy, Score, SegmentReader,
-    TantivyDocument,
 };
 
 use ofdb_core::{
@@ -464,7 +464,7 @@ impl TantivyIndex {
             } else {
                 ReviewStatus::iter()
                     .map(|s1| {
-                        if status.iter().any(|s2| s1 == *s2) {
+                        if status.contains(&s1) {
                             (Occur::Should, s1)
                         } else {
                             (Occur::MustNot, s1)

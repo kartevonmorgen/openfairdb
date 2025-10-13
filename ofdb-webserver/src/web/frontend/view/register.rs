@@ -1,4 +1,4 @@
-use maud::{html, Markup};
+use maud::{Markup, html};
 use rocket::request::FlashMessage;
 
 use super::page::*;

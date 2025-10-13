@@ -67,10 +67,10 @@ impl Validate for Contact {
         // NOTE:
         // self.email should be always valid because
         // the validation is done in the constructor.
-        if let Some(ref e) = self.email {
-            if !is_valid_email(e.as_str()) {
-                return Err(Self::Error::EmailAddress);
-            }
+        if let Some(ref e) = self.email
+            && !is_valid_email(e.as_str())
+        {
+            return Err(Self::Error::EmailAddress);
         }
         //TODO: check phone
         Ok(())
@@ -120,10 +120,10 @@ impl Validate for Event {
         if let Some(ref c) = self.contact {
             c.validate().map_err(Self::Error::Contact)?;
         }
-        if let Some(end) = self.end {
-            if end < self.start {
-                return Err(Self::Error::EndDateBeforeStart);
-            }
+        if let Some(end) = self.end
+            && end < self.start
+        {
+            return Err(Self::Error::EndDateBeforeStart);
         }
         Ok(())
     }
@@ -180,20 +180,24 @@ mod tests {
 
     #[test]
     fn contact_email_test() {
-        assert!(Contact {
-            name: None,
-            email: Some(EmailAddress::new_unchecked("foo".to_string())),
-            phone: None
-        }
-        .validate()
-        .is_err());
-        assert!(Contact {
-            name: None,
-            email: Some(EmailAddress::new_unchecked("foo@bar.tld".to_string())),
-            phone: None
-        }
-        .validate()
-        .is_ok());
+        assert!(
+            Contact {
+                name: None,
+                email: Some(EmailAddress::new_unchecked("foo".to_string())),
+                phone: None
+            }
+            .validate()
+            .is_err()
+        );
+        assert!(
+            Contact {
+                name: None,
+                email: Some(EmailAddress::new_unchecked("foo@bar.tld".to_string())),
+                phone: None
+            }
+            .validate()
+            .is_ok()
+        );
     }
 
     #[test]
@@ -319,18 +323,22 @@ mod tests {
             image_link_url: None,
         };
         assert!(e.validate().is_ok());
-        assert!(Event {
-            start: now - Duration::days(10_000),
-            ..e.clone()
-        }
-        .validate()
-        .is_ok());
-        assert!(Event {
-            start: now + Duration::days(10_000),
-            ..e
-        }
-        .validate()
-        .is_ok());
+        assert!(
+            Event {
+                start: now - Duration::days(10_000),
+                ..e.clone()
+            }
+            .validate()
+            .is_ok()
+        );
+        assert!(
+            Event {
+                start: now + Duration::days(10_000),
+                ..e
+            }
+            .validate()
+            .is_ok()
+        );
     }
 
     #[test]

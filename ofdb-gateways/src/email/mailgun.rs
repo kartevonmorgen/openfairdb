@@ -1,7 +1,9 @@
+use std::thread;
+
 use anyhow::Result;
 use itertools::Itertools;
+
 use ofdb_entities::email::*;
-use std::thread;
 
 use super::EmailGateway;
 
@@ -34,6 +36,7 @@ impl Mailgun {
     }
 }
 
+#[cfg(not(test))]
 #[derive(Debug, serde::Deserialize, thiserror::Error)]
 #[error("{message}")]
 struct JsonError {

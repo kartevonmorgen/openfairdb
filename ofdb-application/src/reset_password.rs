@@ -113,16 +113,14 @@ mod tests {
         );
 
         // Verify that password is invalid for both users
-        debug_assert!(usecases::login_with_email(
-            &fixture.db_connections.shared().unwrap(),
-            &credentials1
-        )
-        .is_err());
-        debug_assert!(usecases::login_with_email(
-            &fixture.db_connections.shared().unwrap(),
-            &credentials2
-        )
-        .is_err());
+        debug_assert!(
+            usecases::login_with_email(&fixture.db_connections.shared().unwrap(), &credentials1)
+                .is_err()
+        );
+        debug_assert!(
+            usecases::login_with_email(&fixture.db_connections.shared().unwrap(), &credentials2)
+                .is_err()
+        );
 
         // Request and reset password for user 1 (by email)
         let email_nonce1 = reset_password_request(&fixture, &email1).unwrap();
@@ -133,56 +131,60 @@ mod tests {
         assert_eq!(email2, email_nonce2.email);
 
         // Reset the password of user 1
-        assert!(reset_password_with_email_nonce(
-            &fixture,
-            email_nonce1.clone(),
-            credentials1.password.parse::<Password>().unwrap()
-        )
-        .is_ok());
+        assert!(
+            reset_password_with_email_nonce(
+                &fixture,
+                email_nonce1.clone(),
+                credentials1.password.parse::<Password>().unwrap()
+            )
+            .is_ok()
+        );
         // Verify that a 2nd attempt to reset the password with the same token fails
-        assert!(reset_password_with_email_nonce(
-            &fixture,
-            email_nonce1,
-            credentials1.password.parse::<Password>().unwrap()
-        )
-        .is_err());
+        assert!(
+            reset_password_with_email_nonce(
+                &fixture,
+                email_nonce1,
+                credentials1.password.parse::<Password>().unwrap()
+            )
+            .is_err()
+        );
 
         // Check that user 1 is able to login with the new password
-        debug_assert!(usecases::login_with_email(
-            &fixture.db_connections.shared().unwrap(),
-            &credentials1
-        )
-        .is_ok());
-        debug_assert!(usecases::login_with_email(
-            &fixture.db_connections.shared().unwrap(),
-            &credentials2
-        )
-        .is_err());
+        debug_assert!(
+            usecases::login_with_email(&fixture.db_connections.shared().unwrap(), &credentials1)
+                .is_ok()
+        );
+        debug_assert!(
+            usecases::login_with_email(&fixture.db_connections.shared().unwrap(), &credentials2)
+                .is_err()
+        );
 
-        assert!(reset_password_with_email_nonce(
-            &fixture,
-            email_nonce2.clone(),
-            credentials2.password.parse::<Password>().unwrap()
-        )
-        .is_ok());
+        assert!(
+            reset_password_with_email_nonce(
+                &fixture,
+                email_nonce2.clone(),
+                credentials2.password.parse::<Password>().unwrap()
+            )
+            .is_ok()
+        );
         // Verify that a 2nd attempt to reset the password with the same token fails
-        assert!(reset_password_with_email_nonce(
-            &fixture,
-            email_nonce2,
-            credentials2.password.parse::<Password>().unwrap()
-        )
-        .is_err());
+        assert!(
+            reset_password_with_email_nonce(
+                &fixture,
+                email_nonce2,
+                credentials2.password.parse::<Password>().unwrap()
+            )
+            .is_err()
+        );
 
         // Check that both users are able to login with their new passwords
-        debug_assert!(usecases::login_with_email(
-            &fixture.db_connections.shared().unwrap(),
-            &credentials1
-        )
-        .is_ok());
-        debug_assert!(usecases::login_with_email(
-            &fixture.db_connections.shared().unwrap(),
-            &credentials2
-        )
-        .is_ok());
+        debug_assert!(
+            usecases::login_with_email(&fixture.db_connections.shared().unwrap(), &credentials1)
+                .is_ok()
+        );
+        debug_assert!(
+            usecases::login_with_email(&fixture.db_connections.shared().unwrap(), &credentials2)
+                .is_ok()
+        );
     }
 }

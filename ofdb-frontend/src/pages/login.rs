@@ -4,9 +4,9 @@ use leptos_router::*;
 use ofdb_boundary::Credentials;
 
 use crate::{
+    Page,
     api::{self, PublicApi, UserApi},
     components::*,
-    Page,
 };
 
 #[component]

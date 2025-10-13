@@ -37,7 +37,9 @@ where
         bcc,
     } = params;
 
-    log::info!("Send update reminders to {recipient_role:?}s for places that were not updated since {not_updated_since:?}");
+    log::info!(
+        "Send update reminders to {recipient_role:?}s for places that were not updated since {not_updated_since:?}"
+    );
 
     // TODO: Safe splitting into multiple transactions.
     // This would require more efforts and intermediate states that are persisted in the database.
@@ -267,7 +269,7 @@ mod tests {
                 send_max: 10,
                 current_time,
                 token_expire_at,
-                bcc: &[bcc_email.clone()],
+                bcc: std::slice::from_ref(&bcc_email),
             },
         )
         .unwrap();

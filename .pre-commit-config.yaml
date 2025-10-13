@@ -12,7 +12,7 @@ default_stages:
 
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-case-conflict
       - id: check-json
@@ -32,27 +32,27 @@ repos:
       - id: trailing-whitespace
         exclude: ^ofdb-app-clearance/assets/.*$
   - repo: https://github.com/alessandrojcm/commitlint-pre-commit-hook
-    rev: v9.20.0
+    rev: v9.23.0
     hooks:
       - id: commitlint
         stages:
           - commit-msg
   - repo: https://github.com/DavidAnson/markdownlint-cli2
-    rev: v0.17.1
+    rev: v0.18.1
     hooks:
       - id: markdownlint-cli2
   - repo: https://github.com/shellcheck-py/shellcheck-py
-    rev: v0.10.0.1
+    rev: v0.11.0.1
     hooks:
       - id: shellcheck
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.3.0
+    rev: v2.4.1
     hooks:
       - id: codespell
         args: [--ignore-words=.codespellignore]
-        exclude: ^search_results\.json|src/ports/web/frontend/login\.rs|ofdb-gateways/src/user_communication/mod\.rs|doc/c4-plantuml/.*\.puml|Cargo.lock|ofdb-gateways/src/user_communication/templates/.*\.txt|ofdb-core/src/usecases/find_duplicates.rs|ofdb-gateways/src/email/sendmail.rs|ofdb-webserver/src/web/frontend/view/.*\.rs$
+        exclude: ^search_results\.json|src/ports/web/frontend/login\.rs|ofdb-gateways/src/user_communication/mod\.rs|doc/c4-plantuml/.*\.puml|Cargo.lock|ofdb-gateways/src/user_communication/templates/.*\.txt|ofdb-core/src/usecases/find_duplicates.rs|ofdb-gateways/src/email/sendmail.rs|ofdb-webserver/src/web/frontend/view/.*\.rs|ofdb-core/Cargo.toml|ofdb-core/benches/.*\.rs$
   - repo: https://github.com/sirosen/check-jsonschema
-    rev: 0.30.0
+    rev: 0.34.1
     hooks:
       - id: check-github-actions
       - id: check-github-workflows
@@ -81,6 +81,6 @@ repos:
         pass_filenames: false
         args: [doc, --locked, --workspace, --no-deps]
   - repo: https://github.com/python-openapi/openapi-spec-validator
-    rev: 0.7.1
+    rev: 0.8.0b1
     hooks:
       - id: openapi-spec-validator

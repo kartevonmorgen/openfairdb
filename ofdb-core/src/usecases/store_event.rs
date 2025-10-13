@@ -241,7 +241,7 @@ where
     let contact = if organizer.is_some() || email.is_some() || telephone.is_some() {
         Some(Contact {
             name: organizer,
-            email: email.map(Into::into),
+            email,
             phone: telephone,
         })
     } else {

@@ -12,7 +12,7 @@ mod components;
 mod page;
 
 use components::navbar::Navbar;
-use page::{index::Index, login::Login, Page};
+use page::{Page, index::Index, login::Login};
 
 const TOKEN_KEY: &str = "org-token";
 const TITLE: &str = "Clearance Center";

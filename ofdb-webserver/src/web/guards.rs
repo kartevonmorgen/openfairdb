@@ -1,11 +1,10 @@
 use core::ops::Deref;
 
 use rocket::{
-    self,
+    self, State,
     http::Status,
     outcome::try_outcome,
     request::{FromRequest, Outcome, Request},
-    State,
 };
 use time::{Duration, OffsetDateTime};
 
@@ -120,7 +119,7 @@ impl Auth {
                     .checked_sub(unix_ts)
             })
             .map(Duration::seconds)
-            .map_or(false, |duration: Duration| duration <= MAX_CAPTCHA_TTL)
+            .is_some_and(|duration: Duration| duration <= MAX_CAPTCHA_TTL)
     }
 }
 

@@ -1,7 +1,7 @@
 use std::result;
 
 use rocket::serde::json::Json;
-use rocket::{self, get, post, FromForm};
+use rocket::{self, FromForm, get, post};
 
 use super::{JsonResult, Result};
 use crate::{

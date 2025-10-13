@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use time::Date;
 
-use super::{parse_custom_link_param, CustomLinkParam};
+use super::{CustomLinkParam, parse_custom_link_param};
 use crate::{
     usecases::{authorize, prelude::*},
     util::{parse::parse_url_param, validate::Validate},
@@ -113,7 +113,7 @@ where
     let contact = if email.is_some() || telephone.is_some() {
         let contact = Contact {
             name: contact_name,
-            email: email.map(Into::into),
+            email,
             phone: telephone,
         };
         contact.validate()?;
@@ -208,7 +208,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::usecases::tests::{accepted_licenses, MockDb};
+    use crate::usecases::tests::{MockDb, accepted_licenses};
 
     #[test]
     fn create_new_valid_place() {

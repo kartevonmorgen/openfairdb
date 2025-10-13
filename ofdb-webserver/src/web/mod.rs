@@ -12,7 +12,7 @@ use ofdb_core::{
     rating::Rated,
 };
 
-use rocket::{config::Config as RocketCfg, serde::json::Json, Rocket, Route};
+use rocket::{Rocket, Route, config::Config as RocketCfg, serde::json::Json};
 
 pub mod api;
 #[cfg(feature = "frontend")]
@@ -23,8 +23,6 @@ mod popular_tags_cache;
 mod sqlite;
 pub mod tantivy;
 
-#[cfg(test)]
-mod mockdb;
 #[cfg(test)]
 pub mod tests;
 

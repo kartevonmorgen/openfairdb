@@ -65,24 +65,25 @@ pub fn entries_csv_export(
                     ref ratings,
                     ..
                 } = indexed_entry;
-                if let Ok((mut place, _)) = db.get_place(id) {
-                    let (tags, categories) = Category::split_from_tags(place.tags);
-                    place.tags = tags;
-                    let categories = all_categories
-                        .iter()
-                        .filter(|c1| categories.iter().any(|c2| c1.id == c2.id))
-                        .cloned()
-                        .collect::<Vec<Category>>();
-                    let place = usecases::export_place(
-                        place,
-                        user.role,
-                        moderated_tags
+                match db.get_place(id) {
+                    Ok((mut place, _)) => {
+                        let (tags, categories) = Category::split_from_tags(place.tags);
+                        place.tags = tags;
+                        let categories = all_categories
                             .iter()
-                            .map(|moderated_tag| moderated_tag.label.as_str()),
-                    );
-                    Some((place, categories, ratings.total()))
-                } else {
-                    None
+                            .filter(|c1| categories.iter().any(|c2| c1.id == c2.id))
+                            .cloned()
+                            .collect::<Vec<Category>>();
+                        let place = usecases::export_place(
+                            place,
+                            user.role,
+                            moderated_tags
+                                .iter()
+                                .map(|moderated_tag| moderated_tag.label.as_str()),
+                        );
+                        Some((place, categories, ratings.total()))
+                    }
+                    _ => None,
                 }
             })
             .collect::<Vec<_>>()
@@ -227,10 +228,11 @@ fn query_events(
     let query = query.into_inner();
     let db = connections.shared()?;
 
-    let moderated_tags = if let Ok(org) = auth.organization(&db) {
-        org.moderated_tags
-    } else {
-        vec![]
+    let moderated_tags = match auth.organization(&db) {
+        Ok(org) => org.moderated_tags,
+        _ => {
+            vec![]
+        }
     };
 
     let user = auth.user_with_min_role(&db, Role::Scout)?;

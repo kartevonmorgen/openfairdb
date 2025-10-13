@@ -214,9 +214,10 @@ async fn copy_to_clipboard(text: &str) -> anyhow::Result<()> {
     let clipboard = window().navigator().clipboard();
     let promise = clipboard.write_text(text);
     JsFuture::from(promise).await.map_err(|err| {
-        anyhow!(err
-            .as_string()
-            .unwrap_or_else(|| "unknown JS error".to_string()))
+        anyhow!(
+            err.as_string()
+                .unwrap_or_else(|| "unknown JS error".to_string())
+        )
     })?;
     Ok(())
 }

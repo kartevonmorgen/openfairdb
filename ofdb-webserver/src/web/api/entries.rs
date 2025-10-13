@@ -1,12 +1,12 @@
 use std::time::Duration;
 
-use rocket::{self, get, post, put, serde::json::Json, FromForm, State};
+use rocket::{self, FromForm, State, get, post, put, serde::json::Json};
 
 use super::{JsonResult, Result, *};
 use crate::{
     adapters::json::{self, from_json},
     core::{usecases, util},
-    web::{popular_tags_cache::PopularTagsCache, sqlite, tantivy, Cfg},
+    web::{Cfg, popular_tags_cache::PopularTagsCache, sqlite, tantivy},
 };
 
 #[derive(FromForm, Clone)]

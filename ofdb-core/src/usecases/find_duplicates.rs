@@ -218,11 +218,7 @@ fn levenshtein_distance(s: &str, t: &str) -> usize {
 }
 
 fn min3(s: usize, t: usize, u: usize) -> usize {
-    if s <= t {
-        min(s, u)
-    } else {
-        min(t, u)
-    }
+    if s <= t { min(s, u) } else { min(t, u) }
 }
 
 #[cfg(test)]
@@ -294,7 +290,7 @@ mod tests {
         assert!(!is_similar_text(&e1.title, &e2.title, 0.1, 0)); // more than one character changed
         assert!(is_similar_text(&e3.title, &e4.title, 0.0, 2)); // only 2 words changed
         assert!(!is_similar_text(&e3.title, &e4.title, 0.0, 1)); // more than 1
-                                                                 // word changed
+        // word changed
     }
     #[test]
     fn test_is_duplicate_of() {

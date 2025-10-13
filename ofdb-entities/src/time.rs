@@ -5,8 +5,8 @@ use std::{
 
 use thiserror::Error;
 use time::{
-    format_description::FormatItem, macros::format_description, Duration, OffsetDateTime,
-    PrimitiveDateTime,
+    Duration, OffsetDateTime, PrimitiveDateTime, format_description::FormatItem,
+    macros::format_description,
 };
 
 /// A primitive unix timestamp without time zone.

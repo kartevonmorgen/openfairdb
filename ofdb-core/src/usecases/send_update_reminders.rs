@@ -1,11 +1,14 @@
-use super::prelude::*;
+use std::{ops::Not, time::Instant};
+
+use anyhow::anyhow;
+use time::Duration;
+
 use crate::{
     gateways::notify::{NotificationEvent, NotificationGateway},
     repositories,
 };
-use anyhow::anyhow;
-use std::{ops::Not, time::Instant};
-use time::Duration;
+
+use super::prelude::*;
 
 const DEFAULT_STEP_WIDTH: u64 = 100;
 
@@ -301,10 +304,14 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::usecases::{self, tests::*, NewPlace};
+    use std::slice;
+
     use ofdb_entities::builders::*;
     use time::Duration;
+
+    use crate::usecases::{self, NewPlace, tests::*};
+
+    use super::*;
 
     #[test]
     fn scouts_subscribed_to_a_place() {
@@ -421,7 +428,7 @@ mod tests {
             resent_period
         ));
         mock_db
-            .save_sent_reminders(&place.id, &[email_address.clone()], now)
+            .save_sent_reminders(&place.id, slice::from_ref(&email_address), now)
             .unwrap();
         assert!(!sending_new_reminder_is_needed(
             &mock_db,

@@ -12,9 +12,9 @@ pub mod prelude {
     use std::collections::HashSet;
 
     pub use crate::web::{
+        Cfg,
         api::captcha::tests::get_valid_captcha_cookie as get_captcha_cookie,
         tests::prelude::{LocalResponse as Response, *},
-        Cfg,
     };
 
     pub fn setup() -> (Client, sqlite::Connections) {
@@ -254,12 +254,16 @@ fn get_multiple_places() {
     assert_eq!(body_str.as_str().chars().next().unwrap(), '[');
     let entries: Vec<json::Entry> = serde_json::from_str(&body_str).unwrap();
     assert_eq!(entries.len(), 2);
-    assert!(entries
-        .iter()
-        .any(|x| *x == json::entry_from_place_with_ratings(one.clone(), vec![])));
-    assert!(entries
-        .iter()
-        .any(|x| *x == json::entry_from_place_with_ratings(two.clone(), vec![])));
+    assert!(
+        entries
+            .iter()
+            .any(|x| *x == json::entry_from_place_with_ratings(one.clone(), vec![]))
+    );
+    assert!(
+        entries
+            .iter()
+            .any(|x| *x == json::entry_from_place_with_ratings(two.clone(), vec![]))
+    );
 }
 
 fn default_new_entry() -> usecases::NewPlace {
@@ -1406,10 +1410,12 @@ fn login_with_invalid_credentials() {
         .header(ContentType::JSON)
         .body(r#"{"email": "foo", "password": "bar"}"#);
     let response = req.dispatch();
-    assert!(!response
-        .headers()
-        .iter()
-        .any(|h| h.name.as_str() == "Set-Cookie"));
+    assert!(
+        !response
+            .headers()
+            .iter()
+            .any(|h| h.name.as_str() == "Set-Cookie")
+    );
     assert_eq!(response.status(), Status::BadRequest);
 }
 

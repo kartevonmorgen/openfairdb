@@ -292,16 +292,18 @@ fn should_deny_creation_of_place_with_moderated_tags_if_not_allowed() -> Result<
         tags: vec![tag.clone()],
         ..default_new_place()
     };
-    assert!(flows::create_place(
-        &fixture.backend.db_connections,
-        fixture.backend.search_engine.get_mut(),
-        &fixture.backend.notify,
-        new_place,
-        None,
-        None,
-        &accepted_licenses()
-    )
-    .is_err());
+    assert!(
+        flows::create_place(
+            &fixture.backend.db_connections,
+            fixture.backend.search_engine.get_mut(),
+            &fixture.backend.notify,
+            new_place,
+            None,
+            None,
+            &accepted_licenses()
+        )
+        .is_err()
+    );
     // No pending clearances created
     assert_eq!(
         0,
@@ -397,17 +399,19 @@ fn should_deny_adding_of_moderated_tag_to_place_if_not_allowed() -> Result<()> {
     let mut update_place = usecases::UpdatePlace::from(old_place.clone());
     update_place.version = new_revision.into();
     update_place.tags.push(tag.clone());
-    assert!(flows::update_place(
-        &fixture.backend.db_connections,
-        fixture.backend.search_engine.get_mut(),
-        &fixture.backend.notify,
-        place_id.clone(),
-        update_place,
-        None,
-        None,
-        &accepted_licenses(),
-    )
-    .is_err());
+    assert!(
+        flows::update_place(
+            &fixture.backend.db_connections,
+            fixture.backend.search_engine.get_mut(),
+            &fixture.backend.notify,
+            place_id.clone(),
+            update_place,
+            None,
+            None,
+            &accepted_licenses(),
+        )
+        .is_err()
+    );
     // No pending clearances created
     assert_eq!(
         0,
@@ -441,17 +445,19 @@ fn should_deny_removing_of_moderated_tag_from_place_if_not_allowed() -> Result<(
         .filter(|place_tag| *place_tag != tag)
         .cloned()
         .collect();
-    assert!(flows::update_place(
-        &fixture.backend.db_connections,
-        fixture.backend.search_engine.get_mut(),
-        &fixture.backend.notify,
-        place_id.clone(),
-        update_place,
-        None,
-        None,
-        &accepted_licenses(),
-    )
-    .is_err());
+    assert!(
+        flows::update_place(
+            &fixture.backend.db_connections,
+            fixture.backend.search_engine.get_mut(),
+            &fixture.backend.notify,
+            place_id.clone(),
+            update_place,
+            None,
+            None,
+            &accepted_licenses(),
+        )
+        .is_err()
+    );
     // No pending clearances created
     assert_eq!(
         0,
@@ -468,8 +474,8 @@ fn should_deny_removing_of_moderated_tag_from_place_if_not_allowed() -> Result<(
 }
 
 #[test]
-fn should_create_pending_clearance_when_updating_an_archived_place_with_moderated_tags(
-) -> Result<()> {
+fn should_create_pending_clearance_when_updating_an_archived_place_with_moderated_tags()
+-> Result<()> {
     let mut fixture = PlaceClearanceFixture::new();
     let org = fixture.organization_with_add_remove_clearance_tag;
     let tag = &org.moderated_tags.first().unwrap().label;
@@ -868,15 +874,17 @@ fn should_fail_when_trying_to_clear_future_revisions_of_places() -> Result<()> {
             .unwrap()
     );
     // Try to clear the next, non-existent revision of the place
-    assert!(usecases::clearance::place::update_pending_clearances(
-        &fixture.backend.db_connections.exclusive()?,
-        &org,
-        &[ClearanceForPlace {
-            place_id: place_id.clone(),
-            cleared_revision: Some(new_revision.next()),
-        }],
-    )
-    .is_err());
+    assert!(
+        usecases::clearance::place::update_pending_clearances(
+            &fixture.backend.db_connections.exclusive()?,
+            &org,
+            &[ClearanceForPlace {
+                place_id: place_id.clone(),
+                cleared_revision: Some(new_revision.next()),
+            }],
+        )
+        .is_err()
+    );
     // Still pending
     assert_eq!(
         1,

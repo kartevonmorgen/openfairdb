@@ -1,6 +1,6 @@
 use leptos::*;
 use leptos_router::*;
-use time::{format_description::FormatItem, macros::format_description, Duration, OffsetDateTime};
+use time::{Duration, OffsetDateTime, format_description::FormatItem, macros::format_description};
 
 use ofdb_frontend_api::{EventQuery, PublicApi, UserApi};
 

@@ -1,9 +1,9 @@
 use anyhow::Result as Fallible;
 use ofdb_db_sqlite::{Connections as ConnectionPool, DbReadOnly, DbReadWrite};
 use rocket::{
+    Request, State,
     outcome::try_outcome,
     request::{FromRequest, Outcome},
-    Request, State,
 };
 use std::ops::Deref;
 
@@ -12,11 +12,11 @@ use std::ops::Deref;
 pub struct Connections(ConnectionPool);
 
 impl Connections {
-    pub fn shared(&self) -> Fallible<DbReadOnly> {
+    pub fn shared(&self) -> Fallible<DbReadOnly<'_>> {
         self.0.shared()
     }
 
-    pub fn exclusive(&self) -> Fallible<DbReadWrite> {
+    pub fn exclusive(&self) -> Fallible<DbReadWrite<'_>> {
         self.0.exclusive()
     }
 }

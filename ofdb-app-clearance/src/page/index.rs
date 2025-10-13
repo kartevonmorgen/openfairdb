@@ -519,10 +519,7 @@ fn contact_cs(lastrev: Option<&PlaceRevision>, currrev: &PlaceRevision) -> Chang
                 .clone()
                 .and_then(|c| c.email.map(EmailAddress::into_string))
                 .unwrap_or_default(),
-            phone = c
-                .clone()
-                .and_then(|c| c.phone.map(String::from))
-                .unwrap_or_default(),
+            phone = c.clone().and_then(|c| c.phone).unwrap_or_default(),
         )
     })
 }

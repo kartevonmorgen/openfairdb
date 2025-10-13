@@ -698,14 +698,15 @@ fn create_bbox_subscription() {
         MapPoint::from_lat_lng_deg(88.2, -160),
     );
 
-    assert!(db
-        .create_user(&User {
+    assert!(
+        db.create_user(&User {
             email: "abc@abc.de".parse().unwrap(),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::Guest,
         })
-        .is_ok());
+        .is_ok()
+    );
     assert!(usecases::subscribe_to_bbox(&db, "abc@abc.de".parse().unwrap(), bbox_new).is_ok());
 
     let bbox_subscription = db.all_bbox_subscriptions().unwrap()[0].clone();
@@ -729,14 +730,15 @@ fn modify_bbox_subscription() {
         MapPoint::from_lat_lng_deg(10.0, 10.0),
     );
 
-    assert!(db
-        .create_user(&User {
+    assert!(
+        db.create_user(&User {
             email: "abc@abc.de".parse().unwrap(),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::Guest,
         })
-        .is_ok());
+        .is_ok()
+    );
 
     let bbox_subscription = BboxSubscription {
         id: "123".into(),
@@ -775,14 +777,15 @@ fn get_bbox_subscriptions() {
         MapPoint::from_lat_lng_deg(10.0, 10.0),
     );
 
-    assert!(db
-        .create_user(&User {
+    assert!(
+        db.create_user(&User {
             email: "a@abc.de".parse().unwrap(),
             email_confirmed: true,
             password: "secret1".parse::<Password>().unwrap(),
             role: Role::Guest,
         })
-        .is_ok());
+        .is_ok()
+    );
     let bbox_subscription = BboxSubscription {
         id: "1".into(),
         user_email: "a@abc.de".parse().unwrap(),
@@ -790,14 +793,15 @@ fn get_bbox_subscriptions() {
     };
     assert!(db.create_bbox_subscription(&bbox_subscription).is_ok());
 
-    assert!(db
-        .create_user(&User {
+    assert!(
+        db.create_user(&User {
             email: "b@abc.de".parse().unwrap(),
             email_confirmed: true,
             password: "secret2".parse::<Password>().unwrap(),
             role: Role::Guest,
         })
-        .is_ok());
+        .is_ok()
+    );
     let bbox_subscription2 = BboxSubscription {
         id: "2".into(),
         user_email: EmailAddress::new_unchecked("b@abc.de".to_string()),
@@ -845,30 +849,34 @@ fn email_addresses_by_coordinate() {
 #[test]
 fn delete_user() {
     let db = MockDb::default();
-    assert!(db
-        .create_user(&User {
+    assert!(
+        db.create_user(&User {
             email: EmailAddress::new_unchecked("abc@abc.de".to_string()),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::Guest,
         })
-        .is_ok());
-    assert!(db
-        .create_user(&User {
+        .is_ok()
+    );
+    assert!(
+        db.create_user(&User {
             email: EmailAddress::new_unchecked("abcd@abcd.de".to_string()),
             email_confirmed: true,
             password: "secret".parse::<Password>().unwrap(),
             role: Role::Guest,
         })
-        .is_ok());
+        .is_ok()
+    );
     assert_eq!(db.count_users().unwrap(), 2);
 
-    assert!(usecases::delete_user(
-        &db,
-        &EmailAddress::new_unchecked("abc@abc.de".to_string()),
-        &EmailAddress::new_unchecked("abc@abc.de".to_string())
-    )
-    .is_ok());
+    assert!(
+        usecases::delete_user(
+            &db,
+            &EmailAddress::new_unchecked("abc@abc.de".to_string()),
+            &EmailAddress::new_unchecked("abc@abc.de".to_string())
+        )
+        .is_ok()
+    );
     assert_eq!(db.count_users().unwrap(), 1);
 }
 

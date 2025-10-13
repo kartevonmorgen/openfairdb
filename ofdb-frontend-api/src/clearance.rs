@@ -1,7 +1,7 @@
 use gloo_net::http::Request;
 use ofdb_boundary::{ClearanceForPlace, PendingClearanceForPlace, PlaceHistory, ResultCount};
 
-use crate::{into_json, Result};
+use crate::{Result, into_json};
 
 /// OpenFairDB Clearance API
 #[derive(Clone)]

@@ -75,25 +75,29 @@ mod tests {
             password: "secret1".into(),
         };
         assert!(create_new_user(&db, u).is_ok());
-        assert!(db
-            .get_user_by_email(&EmailAddress::new_unchecked("foo@bar.de".to_string()))
-            .is_ok());
-        assert!(db
-            .try_get_user_by_email(&EmailAddress::new_unchecked("baz@bar.de".to_string()))
-            .unwrap()
-            .is_none());
+        assert!(
+            db.get_user_by_email(&EmailAddress::new_unchecked("foo@bar.de".to_string()))
+                .is_ok()
+        );
+        assert!(
+            db.try_get_user_by_email(&EmailAddress::new_unchecked("baz@bar.de".to_string()))
+                .unwrap()
+                .is_none()
+        );
 
         let u = NewUser {
             email: "baz@bar.de".parse().unwrap(),
             password: "secret2".into(),
         };
         assert!(create_new_user(&db, u).is_ok());
-        assert!(db
-            .get_user_by_email(&EmailAddress::new_unchecked("foo@bar.de".to_string()))
-            .is_ok());
-        assert!(db
-            .get_user_by_email(&EmailAddress::new_unchecked("baz@bar.de".to_string()))
-            .is_ok());
+        assert!(
+            db.get_user_by_email(&EmailAddress::new_unchecked("foo@bar.de".to_string()))
+                .is_ok()
+        );
+        assert!(
+            db.get_user_by_email(&EmailAddress::new_unchecked("baz@bar.de".to_string()))
+                .is_ok()
+        );
     }
 
     #[test]

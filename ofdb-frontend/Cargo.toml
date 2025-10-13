@@ -2,27 +2,27 @@
 name = "ofdb-app"
 version = "0.0.0" # will stay 0.0.0 until published
 authors = ["slowtec GmbH <post@slowtec.de>"]
-edition = "2021"
+edition = "2024"
 publish = false
-rust-version = "1.83.0"
+rust-version = "1.90.0"
 
 [dependencies]
 # Project dependencies
 ofdb-frontend-api = "=0.0.0"
 
 # External dependencies
-anyhow = "1.0.95"
+anyhow = "1.0.100"
 console_error_panic_hook = "0.1.7"
 console_log = "1.0.0"
 gloo-storage = "0.3.0"
 leptos = { version = "0.6.15", features = ["csr"] }
 leptos_router = { version = "0.6.15", features = ["csr"] }
-log = "0.4.22"
-wasm-bindgen-futures = "0.4.49"
-web-sys = { version = "0.3.76", features = ["Clipboard", "Navigator"] }
+log = "0.4.28"
+wasm-bindgen-futures = "0.4.54"
+web-sys = { version = "0.3.81", features = ["Clipboard", "Navigator"] }
 
 [dependencies.time]
-version = "0.3.37"
+version = "0.3.44"
 default-features = false
 features = ["macros", "formatting", "wasm-bindgen"]
 

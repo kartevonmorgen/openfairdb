@@ -7,7 +7,7 @@ use time::OffsetDateTime;
 
 use crate::{
     core::repositories::PlaceRepo,
-    web::{sqlite, MostPopularTagsParams, Pagination},
+    web::{MostPopularTagsParams, Pagination, sqlite},
 };
 
 type Request = (MostPopularTagsParams, Pagination);
@@ -60,11 +60,11 @@ impl PopularTagsCache {
         Ok(results)
     }
 
-    fn read(&self) -> RwLockReadGuard<Cache> {
+    fn read(&self) -> RwLockReadGuard<'_, Cache> {
         self.0.read()
     }
 
-    fn write(&self) -> RwLockWriteGuard<Cache> {
+    fn write(&self) -> RwLockWriteGuard<'_, Cache> {
         self.0.write()
     }
 }

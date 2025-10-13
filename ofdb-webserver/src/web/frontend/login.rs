@@ -1,13 +1,13 @@
 use maud::Markup;
 use rocket::{
-    self,
+    self, FromForm,
     form::Form,
     get,
     http::{Cookie, CookieJar, SameSite},
     post,
     request::FlashMessage,
     response::{Flash, Redirect},
-    uri, FromForm,
+    uri,
 };
 
 use super::{super::guards::*, view};

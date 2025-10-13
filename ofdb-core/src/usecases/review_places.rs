@@ -69,7 +69,9 @@ where
     }
 
     let activity = Activity::now(None);
-    log::info!("Changing review status of place {place_id} (rev: {place_revision:?}) from {old_status:?} to {new_status:?}",);
+    log::info!(
+        "Changing review status of place {place_id} (rev: {place_revision:?}) from {old_status:?} to {new_status:?}",
+    );
     let comment = None;
     let context = Some("Reviewed with review token".to_string());
     let activity_log = ActivityLog {

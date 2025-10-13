@@ -17,11 +17,11 @@ mailparse = "0.15.0"
 num-derive = "0.4.2"
 num-traits = "0.2.19"
 pwhash = "1.0.0"
-uuid = { version = "1.11.0", features = ["v4"] }
-url = { version = "2.5.4", optional = true }
+uuid = { version = "1.18.1", features = ["v4"] }
+url = { version = "2.5.7", optional = true }
 strum = { version = "0.26.3", features = ["derive"] }
-thiserror = "2.0.9"
-time = { version = "0.3.37", features = ["formatting", "macros"] }
+thiserror = "2.0.17"
+time = { version = "0.3.44", features = ["formatting", "macros"] }
 
 [features]
 default = []

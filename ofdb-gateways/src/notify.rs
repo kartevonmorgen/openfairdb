@@ -118,7 +118,11 @@ impl NotificationGateway for Notify {
                     user_communication::user_registration_email(confirmation_url.as_ref());
                 {
                     log::info!("Sending confirmation e-mail to user {}", user.email);
-                    compose_and_send_emails(&*self.email_gw, &[user.email.clone()], &content);
+                    compose_and_send_emails(
+                        &*self.email_gw,
+                        std::slice::from_ref(&user.email),
+                        &content,
+                    );
                 }
             }
             E::UserResetPasswordRequested { email_nonce } => {

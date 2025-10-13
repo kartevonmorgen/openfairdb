@@ -1,15 +1,16 @@
 #[macro_use]
 extern crate diesel;
 
-use anyhow::Result as Fallible;
-use diesel::{r2d2, sqlite::SqliteConnection};
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
-use ofdb_core::{repositories as repo, usecases as uc};
-use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 use std::{
     cell::{RefCell, RefMut},
     sync::Arc,
 };
+
+use anyhow::Result as Fallible;
+use diesel::{r2d2, sqlite::SqliteConnection};
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
+use ofdb_core::{repositories as repo, usecases as uc};
+use parking_lot::{RwLock, RwLockReadGuard, RwLockWriteGuard};
 
 mod models;
 mod repo_impl;
@@ -110,7 +111,7 @@ impl<'a> DbReadWrite<'a> {
             })
     }
 
-    fn sqlite_conn(&self) -> RefMut<PooledConnection> {
+    fn sqlite_conn(&self) -> RefMut<'_, PooledConnection> {
         self.conn.borrow_mut()
     }
 }
@@ -176,11 +177,11 @@ impl Connections {
         }
     }
 
-    pub fn shared(&self) -> Fallible<DbReadOnly> {
+    pub fn shared(&self) -> Fallible<DbReadOnly<'_>> {
         DbReadOnly::try_new(&self.pool)
     }
 
-    pub fn exclusive(&self) -> Fallible<DbReadWrite> {
+    pub fn exclusive(&self) -> Fallible<DbReadWrite<'_>> {
         DbReadWrite::try_new(&self.pool)
     }
 }

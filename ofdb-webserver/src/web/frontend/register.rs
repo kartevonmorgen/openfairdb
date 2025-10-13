@@ -1,11 +1,11 @@
 use maud::Markup;
 use rocket::{
-    self,
+    self, State,
     form::Form,
     get, post,
     request::FlashMessage,
     response::{Flash, Redirect},
-    uri, State,
+    uri,
 };
 
 use super::{login::LoginCredentials, view};

@@ -7,7 +7,7 @@ use clap::{Parser, Subcommand};
 use dotenvy::dotenv;
 
 use ofdb_core::{
-    entities::MapPoint, gateways::geocode::GeoCodingGateway, repositories::EventRepo, RepoError,
+    RepoError, entities::MapPoint, gateways::geocode::GeoCodingGateway, repositories::EventRepo,
 };
 
 use ofdb_db_sqlite::Connections;
@@ -37,10 +37,13 @@ where
             continue;
         };
         if pos.is_valid() {
-            if let Err(err) = repo.update_event(&e) {
-                log::warn!("Failed to update location of event {}: {err}", e.id);
-            } else {
-                log::info!("Updated location of event {}", e.id);
+            match repo.update_event(&e) {
+                Err(err) => {
+                    log::warn!("Failed to update location of event {}: {err}", e.id);
+                }
+                _ => {
+                    log::info!("Updated location of event {}", e.id);
+                }
             }
         }
     }
@@ -74,7 +77,8 @@ const FALLBACK_RUST_LOG_CONFIG: &str = "info,tantivy=warn";
 pub async fn main() -> anyhow::Result<()> {
     dotenv().ok();
     if env::var(ENV_NAME_RUST_LOG) == Err(env::VarError::NotPresent) {
-        env::set_var(ENV_NAME_RUST_LOG, FALLBACK_RUST_LOG_CONFIG);
+        // TODO: Audit that the environment access only happens in single-threaded code.
+        unsafe { env::set_var(ENV_NAME_RUST_LOG, FALLBACK_RUST_LOG_CONFIG) };
     }
     env_logger::init();
 

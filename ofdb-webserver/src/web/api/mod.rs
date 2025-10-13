@@ -3,11 +3,11 @@ use std::{fmt::Display, result};
 use ofdb_boundary::Error as JsonErrorResponse;
 use rocket::serde::json::{Error as JsonError, Json};
 use rocket::{
-    self, delete, get,
+    self, Route, State, delete, get,
     http::{ContentType, Cookie, CookieJar, Status},
     post,
     response::{self, Responder},
-    routes, Route, State,
+    routes,
 };
 
 use super::guards::*;

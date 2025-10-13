@@ -5,8 +5,8 @@ use time::Date;
 use crate::{
     repositories::Error as RepoError,
     usecases::{
-        authorize::authorize_editing_of_tagged_entry, parse_custom_link_param, prelude::*,
-        CustomLinkParam,
+        CustomLinkParam, authorize::authorize_editing_of_tagged_entry, parse_custom_link_param,
+        prelude::*,
     },
     util::{parse::parse_url_param, validate::Validate},
 };
@@ -76,7 +76,7 @@ impl From<Place> for UpdatePlace {
             custom_links: custom_links.into_iter().map(Into::into).collect(),
             description,
             contact_name,
-            email: email.map(Into::into),
+            email,
             homepage: homepage_url.map(|url| url.to_string()),
             image_link_url: image_link_url.map(|url| url.to_string()),
             image_url: image_url.map(|url| url.to_string()),
@@ -210,7 +210,7 @@ where
         location: Location { pos, address },
         contact: Some(Contact {
             name: contact_name,
-            email: email.map(Into::into),
+            email,
             phone,
         }),
         opening_hours: opening_hours
@@ -264,7 +264,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::usecases::tests::{accepted_licenses, MockDb};
+    use crate::usecases::tests::{MockDb, accepted_licenses};
 
     #[test]
     fn update_place_valid() {

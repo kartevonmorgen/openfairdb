@@ -10,8 +10,8 @@ homepage = "https://github.com/kartevonmorgen/openfairdb"
 keywords = ["geo", "fair", "sustainability"]
 authors = ["slowtec GmbH <post@slowtec.de>"]
 license = "AGPL-3.0-or-later"
-edition = "2021"
-rust-version = "1.83.0"
+edition = "2024"
+rust-version = "1.90.0"
 
 [workspace]
 members = [
@@ -49,17 +49,17 @@ ofdb-webserver    = "=0.0.0"
 
 ofdb-entities     =  "*"
 
-anyhow = "1.0.95"
-clap = { version = "4.5.23", features = ["cargo", "derive"] }
+anyhow = "1.0.100"
+clap = { version = "4.5.49", features = ["cargo", "derive"] }
 dotenvy = "0.15.7"
 duration-str = { version = "0.12.0", default-features = false, features = ["serde"] }
-env_logger = "0.11.6"
-log = "0.4.22"
-serde = { version = "1.0.217", features = ["derive"] }
-thiserror = "2.0.9"
-time = "0.3.37"
-tokio = "1.42.0"
-toml = "0.8.19"
+env_logger = "0.11.8"
+log = "0.4.28"
+serde = { version = "1.0.228", features = ["derive"] }
+thiserror = "2.0.17"
+time = "0.3.44"
+tokio = "1.47.1"
+toml = "0.8.23"
 
 [patch.crates-io.geocoding]
 # TODO: use upstream as soon as https://github.com/georust/geocoding/pull/58 is merged.

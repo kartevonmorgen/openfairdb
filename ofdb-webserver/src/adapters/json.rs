@@ -357,7 +357,7 @@ pub fn entry_from_place_with_ratings(place: e::Place, ratings: Vec<e::Rating>) -
         telephone,
         homepage: homepage_url.map(Into::into),
         opening_hours: opening_hours.map(Into::into),
-        founded_on: founded_on.map(Into::into),
+        founded_on,
         categories: categories.into_iter().map(|c| c.id.to_string()).collect(),
         tags,
         ratings: ratings.into_iter().map(|r| r.id.to_string()).collect(),

@@ -4,7 +4,7 @@ use std::{
     process::{Command, Stdio},
 };
 use std::{
-    io::{Error, ErrorKind, Result},
+    io::{Error, Result},
     thread,
 };
 
@@ -42,7 +42,7 @@ fn send_raw(mail: &str) -> Result<()> {
     child
         .stdin
         .as_mut()
-        .ok_or_else(|| Error::new(ErrorKind::Other, "Could not get stdin"))?
+        .ok_or_else(|| Error::other("Could not get stdin"))?
         .write_all(mail.as_bytes())?;
     child.wait_with_output()?;
     Ok(())
@@ -98,7 +98,7 @@ fn encode_header_field_partially(input: &str, encoded_max_len: usize) -> (String
         }
         let encoded = format!(
             "=?UTF-8?Q?{}?=",
-            quoted_printable::encode_to_str(input[..input_len].as_bytes())
+            quoted_printable::encode_to_str(&input.as_bytes()[..input_len])
         );
         if encoded.len() <= encoded_max_len {
             if input_len == input_min_len {
@@ -150,10 +150,7 @@ pub fn compose(
         .collect();
 
     if to.is_empty() {
-        return Err(Error::new(
-            ErrorKind::Other,
-            "No valid email addresses specified",
-        ));
+        return Err(Error::other("No valid email addresses specified"));
     }
 
     let EmailContent { subject, body } = email_content;
@@ -215,17 +212,21 @@ mod tests {
             subject: "foo".to_string(),
             body: "bar".to_string(),
         };
-        assert!(compose(
-            &"from@mail.org".parse::<EmailAddress>().unwrap(),
-            &[],
-            &content
-        )
-        .is_err());
-        assert!(compose(
-            &EmailAddress::new_unchecked("from".to_string()),
-            &[&EmailAddress::new_unchecked("not-valid".to_string())],
-            &content
-        )
-        .is_err());
+        assert!(
+            compose(
+                &"from@mail.org".parse::<EmailAddress>().unwrap(),
+                &[],
+                &content
+            )
+            .is_err()
+        );
+        assert!(
+            compose(
+                &EmailAddress::new_unchecked("from".to_string()),
+                &[&EmailAddress::new_unchecked("not-valid".to_string())],
+                &content
+            )
+            .is_err()
+        );
     }
 }

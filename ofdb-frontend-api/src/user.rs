@@ -1,11 +1,11 @@
 use gloo_net::http::{Request, RequestBuilder};
-use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
-use serde::{de::DeserializeOwned, Serialize};
+use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
+use serde::{Serialize, de::DeserializeOwned};
 use web_sys::RequestCredentials;
 
 use ofdb_boundary::{BboxSubscription, JwtToken, MapBbox, NewPlace, Review, UpdatePlace, User};
 
-use crate::{bbox_string, into_json, Result};
+use crate::{Result, bbox_string, into_json};
 
 /// Authorized OpenFairDB API
 #[derive(Clone)]

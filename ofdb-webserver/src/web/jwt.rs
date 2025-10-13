@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::core::entities::EmailAddress;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use jwt_service::JwtService;
 use parking_lot::{Mutex, MutexGuard};
 use serde::{Deserialize, Serialize};
@@ -71,7 +71,7 @@ impl JwtState {
         }
     }
 
-    fn lock(&self) -> MutexGuard<HashSet<String>> {
+    fn lock(&self) -> MutexGuard<'_, HashSet<String>> {
         self.blacklist.lock()
     }
 }
@@ -79,7 +79,7 @@ impl JwtState {
 #[cfg(feature = "jwt")]
 mod jwt_service {
     use base64::Engine;
-    use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
+    use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 
     use super::{Claims, Result};
 

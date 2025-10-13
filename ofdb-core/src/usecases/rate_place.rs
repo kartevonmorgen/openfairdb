@@ -88,19 +88,21 @@ mod tests {
     #[test]
     fn rate_non_existing_entry() {
         let db = MockDb::default();
-        assert!(prepare_new_rating(
-            &db,
-            NewPlaceRating {
-                entry: "does_not_exist".into(),
-                title: "title".into(),
-                comment: "a comment".into(),
-                context: RatingContext::Fairness,
-                user: None,
-                value: RatingValue::from(2),
-                source: Some("source".into()),
-            },
-        )
-        .is_err());
+        assert!(
+            prepare_new_rating(
+                &db,
+                NewPlaceRating {
+                    entry: "does_not_exist".into(),
+                    title: "title".into(),
+                    comment: "a comment".into(),
+                    context: RatingContext::Fairness,
+                    user: None,
+                    value: RatingValue::from(2),
+                    source: Some("source".into()),
+                },
+            )
+            .is_err()
+        );
     }
 
     #[test]
@@ -108,19 +110,21 @@ mod tests {
         let mut db = MockDb::default();
         let place = Place::build().id("foo").finish();
         db.entries = vec![(place, ReviewStatus::Created)].into();
-        assert!(prepare_new_rating(
-            &db,
-            NewPlaceRating {
-                entry: "foo".into(),
-                comment: "".into(),
-                title: "title".into(),
-                context: RatingContext::Fairness,
-                user: None,
-                value: RatingValue::from(2),
-                source: Some("source".into()),
-            },
-        )
-        .is_err());
+        assert!(
+            prepare_new_rating(
+                &db,
+                NewPlaceRating {
+                    entry: "foo".into(),
+                    comment: "".into(),
+                    title: "title".into(),
+                    context: RatingContext::Fairness,
+                    user: None,
+                    value: RatingValue::from(2),
+                    source: Some("source".into()),
+                },
+            )
+            .is_err()
+        );
     }
 
     #[test]
@@ -128,32 +132,36 @@ mod tests {
         let mut db = MockDb::default();
         let p = Place::build().id("foo").finish();
         db.entries = vec![(p, ReviewStatus::Created)].into();
-        assert!(prepare_new_rating(
-            &db,
-            NewPlaceRating {
-                entry: "foo".into(),
-                comment: "comment".into(),
-                title: "title".into(),
-                context: RatingContext::Fairness,
-                user: None,
-                value: RatingValue::from(3),
-                source: Some("source".into()),
-            },
-        )
-        .is_err());
-        assert!(prepare_new_rating(
-            &db,
-            NewPlaceRating {
-                entry: "foo".into(),
-                title: "title".into(),
-                comment: "comment".into(),
-                context: RatingContext::Fairness,
-                user: None,
-                value: RatingValue::from(-2),
-                source: Some("source".into()),
-            },
-        )
-        .is_err());
+        assert!(
+            prepare_new_rating(
+                &db,
+                NewPlaceRating {
+                    entry: "foo".into(),
+                    comment: "comment".into(),
+                    title: "title".into(),
+                    context: RatingContext::Fairness,
+                    user: None,
+                    value: RatingValue::from(3),
+                    source: Some("source".into()),
+                },
+            )
+            .is_err()
+        );
+        assert!(
+            prepare_new_rating(
+                &db,
+                NewPlaceRating {
+                    entry: "foo".into(),
+                    title: "title".into(),
+                    comment: "comment".into(),
+                    context: RatingContext::Fairness,
+                    user: None,
+                    value: RatingValue::from(-2),
+                    source: Some("source".into()),
+                },
+            )
+            .is_err()
+        );
     }
 
     #[test]

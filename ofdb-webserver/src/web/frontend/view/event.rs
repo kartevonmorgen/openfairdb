@@ -1,4 +1,4 @@
-use maud::{html, Markup};
+use maud::{Markup, html};
 use time::{format_description::FormatItem, macros::format_description};
 
 const DATE_TIME_FORMAT: &[FormatItem] = format_description!("[year]-[month]-[day] [hour]:[minute]");
@@ -55,7 +55,7 @@ pub fn event(user: Option<User>, ev: Event) -> Markup {
                 }
                 @if let Some(contact) = ev.contact{
                     @if !contact.is_empty(){
-                        @if let Some(ref org) = &contact.name {
+                        @if let Some(org) = &contact.name {
                             h4{"Veranstalter"}
                             p{(org)}
                         }

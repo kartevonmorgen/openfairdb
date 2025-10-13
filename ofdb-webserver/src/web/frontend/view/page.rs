@@ -1,4 +1,4 @@
-use maud::{html, Markup, DOCTYPE};
+use maud::{DOCTYPE, Markup, html};
 use ofdb_core::entities::EmailAddress;
 use rocket::request::FlashMessage;
 

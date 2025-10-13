@@ -1,22 +1,22 @@
 use maud::Markup;
 use num_traits::FromPrimitive;
 use rocket::{
-    self,
+    self, FromForm, Route,
     form::Form,
     get,
     http::Status,
     post,
     response::{
-        content::{RawCss, RawJavaScript},
         Flash, Redirect,
+        content::{RawCss, RawJavaScript},
     },
-    routes, uri, FromForm, Route,
+    routes, uri,
 };
 
 use crate::{
     core::{prelude::*, usecases},
     web::{
-        api::{events::EventQuery, ApiError},
+        api::{ApiError, events::EventQuery},
         guards::*,
         sqlite,
         tantivy::SearchEngine,

@@ -1,7 +1,7 @@
 use rocket::{
+    Request, State,
     outcome::try_outcome,
     request::{FromRequest, Outcome},
-    Request, State,
 };
 use std::ops::{Deref, DerefMut};
 

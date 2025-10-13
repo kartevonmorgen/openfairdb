@@ -36,11 +36,13 @@ where
         .collect();
     let mut cleared_results = Vec::with_capacity(results.len());
     for mut place in results.into_iter() {
-        debug_assert!(place
-            .tags
-            .iter()
-            .map(String::as_str)
-            .any(|tag| tag == org_tag));
+        debug_assert!(
+            place
+                .tags
+                .iter()
+                .map(String::as_str)
+                .any(|tag| tag == org_tag)
+        );
         let pending_clearance = pending_clearances.get(&place.id);
         if let Some(pending_clearance) = pending_clearance {
             if let Some(last_cleared_revision) = &pending_clearance.last_cleared_revision {
@@ -140,13 +142,15 @@ where
     let mut visible_places = index
         .query_places(&visible_places_query, limit)
         .map_err(RepoError::Other)?;
-    debug_assert!(visible_places
-        .iter()
-        .all(|e| visible_bbox.contains_point(e.pos)));
-    if let Some(org_tag) = org_tag {
-        if let Some(org_id) = repo.map_tag_to_clearance_org_id(org_tag)? {
-            visible_places = clear_search_results(repo, &org_id, org_tag, visible_places)?;
-        }
+    debug_assert!(
+        visible_places
+            .iter()
+            .all(|e| visible_bbox.contains_point(e.pos))
+    );
+    if let Some(org_tag) = org_tag
+        && let Some(org_id) = repo.map_tag_to_clearance_org_id(org_tag)?
+    {
+        visible_places = clear_search_results(repo, &org_id, org_tag, visible_places)?;
     }
 
     // 2nd query: Search for remaining invisible results
@@ -162,13 +166,15 @@ where
     } else {
         vec![]
     };
-    debug_assert!(!invisible_places
-        .iter()
-        .any(|e| visible_bbox.contains_point(e.pos)));
-    if let Some(org_tag) = org_tag {
-        if let Some(org_id) = repo.map_tag_to_clearance_org_id(org_tag)? {
-            invisible_places = clear_search_results(repo, &org_id, org_tag, invisible_places)?;
-        }
+    debug_assert!(
+        !invisible_places
+            .iter()
+            .any(|e| visible_bbox.contains_point(e.pos))
+    );
+    if let Some(org_tag) = org_tag
+        && let Some(org_id) = repo.map_tag_to_clearance_org_id(org_tag)?
+    {
+        invisible_places = clear_search_results(repo, &org_id, org_tag, invisible_places)?;
     }
 
     Ok((visible_places, invisible_places))

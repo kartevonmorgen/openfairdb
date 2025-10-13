@@ -1,5 +1,5 @@
 use crate::usecases::{
-    create_new_user::{create_new_user, NewUser},
+    create_new_user::{NewUser, create_new_user},
     login::Credentials,
     prelude::*,
 };

@@ -1,6 +1,6 @@
 use time::Duration;
 
-use ofdb_application::prelude::{send_update_reminders, SendReminderParams};
+use ofdb_application::prelude::{SendReminderParams, send_update_reminders};
 use ofdb_core::{entities::Timestamp, usecases::RecipientRole};
 use ofdb_db_sqlite::Connections;
 use ofdb_gateways::notify::Notify;

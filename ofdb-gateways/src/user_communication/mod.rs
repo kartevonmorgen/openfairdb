@@ -19,11 +19,11 @@ fn subject_entry_updated(entry_title: &str) -> String {
 fn address_line(address: Option<&Address>) -> String {
     if let Some(address) = address {
         let Address {
-            ref street,
-            ref zip,
-            ref city,
-            ref country,
-            ref state,
+            street,
+            zip,
+            city,
+            country,
+            state,
         } = address;
         [
             street.as_deref().unwrap_or(""),

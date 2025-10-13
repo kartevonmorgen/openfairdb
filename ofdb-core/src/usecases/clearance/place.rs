@@ -58,11 +58,13 @@ pub fn clear_repo_results<R: PlaceRepo + PlaceClearanceRepo>(
         .collect();
     let mut cleared_results = Vec::with_capacity(results.len());
     for (mut place, mut review_status) in results.into_iter() {
-        debug_assert!(place
-            .tags
-            .iter()
-            .map(String::as_str)
-            .any(|tag| tag == org_tag));
+        debug_assert!(
+            place
+                .tags
+                .iter()
+                .map(String::as_str)
+                .any(|tag| tag == org_tag)
+        );
         let pending_clearance = pending_clearances.get(place.id.as_str());
         if let Some(pending_clearance) = pending_clearance {
             if let Some(last_cleared_revision) = &pending_clearance.last_cleared_revision {

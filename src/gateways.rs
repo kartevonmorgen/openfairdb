@@ -6,7 +6,7 @@ use ofdb_core::{
 };
 use ofdb_gateways::{
     email::{
-        mailgun::Mailgun, send_to_json_file::SendToJsonFile, sendmail::Sendmail, EmailGateway,
+        EmailGateway, mailgun::Mailgun, send_to_json_file::SendToJsonFile, sendmail::Sendmail,
     },
     notify::Notify,
     opencage::OpenCage,

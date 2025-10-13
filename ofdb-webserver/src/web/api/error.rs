@@ -66,7 +66,7 @@ impl<'r, 'o: 'r> Responder<'r, 'o> for Error {
             Error::App(err) => {
                 if let AppError::Business(err) = &err {
                     match err {
-                        BError::Parameter(ref err) => {
+                        BError::Parameter(err) => {
                             return match *err {
                                 ParameterError::Credentials | ParameterError::Unauthorized => {
                                     json_error_response(req, err, Status::Unauthorized)

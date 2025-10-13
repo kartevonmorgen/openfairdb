@@ -1,5 +1,5 @@
 use gloo_net::http::Request;
-use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
+use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
 use web_sys::RequestCredentials;
 
 use ofdb_boundary::{
@@ -7,7 +7,7 @@ use ofdb_boundary::{
     SearchResponse, TagFrequency, UpdatePlace,
 };
 
-use crate::{bbox_string, into_json, Result, UserApi};
+use crate::{Result, UserApi, bbox_string, into_json};
 
 /// Public OpenFairDB API
 #[derive(Clone)]

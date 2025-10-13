@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use maud::{html, Markup};
+use maud::{Markup, html};
 
 use super::{address_to_html, leaflet_css_link, map_scripts, page};
 use crate::core::prelude::*;

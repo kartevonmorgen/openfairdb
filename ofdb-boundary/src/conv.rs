@@ -147,8 +147,8 @@ impl From<e::tag::TagFrequency> for TagFrequency {
 
 impl From<e::rating::RatingContext> for RatingContext {
     fn from(from: e::rating::RatingContext) -> Self {
-        use e::rating::RatingContext as E;
         use RatingContext as C;
+        use e::rating::RatingContext as E;
         match from {
             E::Diversity => C::Diversity,
             E::Renewable => C::Renewable,
@@ -162,8 +162,8 @@ impl From<e::rating::RatingContext> for RatingContext {
 
 impl From<RatingContext> for e::rating::RatingContext {
     fn from(from: RatingContext) -> Self {
-        use e::rating::RatingContext as E;
         use RatingContext as C;
+        use e::rating::RatingContext as E;
         match from {
             C::Diversity => E::Diversity,
             C::Renewable => E::Renewable,
@@ -249,7 +249,7 @@ impl From<e::event::Event> for Event {
         });
 
         let start = start.into();
-        let end = end.map(e::time::Timestamp::from).map(Into::into);
+        let end = end.map(Into::into);
 
         Event {
             id: id.into(),
@@ -525,7 +525,7 @@ impl From<e::place::PlaceRevision> for PlaceRevision {
             location: location.into(),
             contact: contact.map(Into::into).unwrap_or_default(),
             opening_hours: opening_hours.map(Into::into),
-            founded_on: founded_on.map(Into::into),
+            founded_on,
             links: links.map(Into::into).unwrap_or_default(),
             tags,
         }
@@ -566,7 +566,7 @@ impl TryFrom<PlaceRevision> for e::place::PlaceRevision {
             location: location.into(),
             contact: Some(contact.try_into()?),
             opening_hours: opening_hours.map(Into::into),
-            founded_on: founded_on.map(Into::into),
+            founded_on,
             links: Some(links.into()),
             tags,
         })

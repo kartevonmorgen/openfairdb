@@ -8,11 +8,11 @@ where
     // TODO: Pass an authentication token with user id and role to
     // check if the user is authorized to perform this use case
     let user = repo.try_get_user_by_email(&user_email)?;
-    if let Some(user) = user {
-        if user.role >= Role::Scout {
-            let archived = Activity::now(Some(user_email));
-            return Ok(repo.archive_comments(ids, &archived)?);
-        }
+    if let Some(user) = user
+        && user.role >= Role::Scout
+    {
+        let archived = Activity::now(Some(user_email));
+        return Ok(repo.archive_comments(ids, &archived)?);
     }
     Err(Error::Forbidden)
 }
