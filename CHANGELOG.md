@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.12.12 (2025-11-17)
+
+- new: configure base URL (e.g. for emails)
+- chore: Update dependencies
+
 ## v0.12.11 (2025-01-07)
 
 - new: Add option to copy API token to clipboard in the frontend
