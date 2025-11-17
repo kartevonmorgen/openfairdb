@@ -199,8 +199,8 @@ fn levenshtein_distance(s: &str, t: &str) -> usize {
 
     // target (t) prefixes can be reached from empty source prefix
     // by inserting every character
-    for j in 1..max_t {
-        d[0][j] = j;
+    for (j, item) in d[0].iter_mut().enumerate().take(max_t).skip(1) {
+        *item = j;
     }
 
     for j in 1..max_t {

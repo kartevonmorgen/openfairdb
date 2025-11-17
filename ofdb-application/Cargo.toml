@@ -12,7 +12,7 @@ ofdb-db-sqlite = "=0.0.0" # TODO: remove
 ofdb-entities = { version = "0.12.7", features = ["url"] }
 
 anyhow = "1.0.100"
-csv = "1.3.1"
+csv = "1.4.0"
 log = "0.4.28"
 pwhash = "1.0.0"
 r2d2 = ">=0.8.10,<0.9" # TODO: remove

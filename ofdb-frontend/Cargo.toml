@@ -4,7 +4,7 @@ version = "0.0.0" # will stay 0.0.0 until published
 authors = ["slowtec GmbH <post@slowtec.de>"]
 edition = "2024"
 publish = false
-rust-version = "1.90.0"
+rust-version = "1.91.1"
 
 [dependencies]
 # Project dependencies
@@ -18,8 +18,8 @@ gloo-storage = "0.3.0"
 leptos = { version = "0.6.15", features = ["csr"] }
 leptos_router = { version = "0.6.15", features = ["csr"] }
 log = "0.4.28"
-wasm-bindgen-futures = "0.4.54"
-web-sys = { version = "0.3.81", features = ["Clipboard", "Navigator"] }
+wasm-bindgen-futures = "0.4.55"
+web-sys = { version = "0.3.82", features = ["Clipboard", "Navigator"] }
 
 [dependencies.time]
 version = "0.3.44"
