@@ -26,7 +26,7 @@ jobs:
           python-version: "3.x"
 
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install Rust toolchain
         uses: dsherret/rust-toolchain-file@v1

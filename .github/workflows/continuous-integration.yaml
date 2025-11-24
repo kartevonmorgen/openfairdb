@@ -36,7 +36,7 @@ jobs:
           sudo apt -y install musl-tools
 
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install Rust toolchains for both native target and WASM
         uses: dsherret/rust-toolchain-file@v1
