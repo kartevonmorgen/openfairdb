@@ -87,11 +87,10 @@ fn App() -> impl IntoView {
                             http_status,
                             ..
                         }) = err
+                            && http_status == 401
                         {
-                            if http_status == 401 {
-                                set_token.update(|v| *v = None);
-                                invalid_token.update(|v| *v = true);
-                            }
+                            set_token.update(|v| *v = None);
+                            invalid_token.update(|v| *v = true);
                         }
                     }
                 }

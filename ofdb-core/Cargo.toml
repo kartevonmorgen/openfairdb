@@ -11,20 +11,20 @@ rust-version.workspace = true
 ofdb-entities = { version = "0.12.7", features = ["url"] }
 
 # External dependencies
-anyhow = "1.0.100"
+anyhow = "1.0.103"
 fast_chemail = "0.9.6"
 lazy_static = "1.5.0"
-log = "0.4.28"
-passwords = "3.1.16"
-regex = "1.12.2"
-thiserror = "2.0.17"
-time = "0.3.44"
-url = "2.5.7"
+log = "0.4.33"
+passwords = "3.1.18"
+regex = "1.13.0"
+thiserror = "2.0.18"
+time = "0.3.53"
+url = "2.5.8"
 
 [dev-dependencies]
-brunch = "0.8.1"
+brunch = "0.11.1"
 ofdb-entities = { version = "*", features = ["builders"] }
-time = "0.3.44"
+time = "0.3.53"
 
 [[bench]]
 name = "calc_avg_rating"

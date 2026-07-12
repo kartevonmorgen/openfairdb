@@ -329,7 +329,7 @@ impl EventRepo for MockDb {
             .filter(|e| e.archived.is_none())
             .cloned()
             .collect();
-        events.sort_by(|a, b| a.start.cmp(&b.start));
+        events.sort_by_key(|a| a.start);
         Ok(events)
     }
 
@@ -342,7 +342,7 @@ impl EventRepo for MockDb {
             .filter(|e| e.archived.is_none())
             .cloned()
             .collect();
-        events.sort_by(|a, b| a.start.cmp(&b.start));
+        events.sort_by_key(|a| a.start);
         Ok(events)
     }
 

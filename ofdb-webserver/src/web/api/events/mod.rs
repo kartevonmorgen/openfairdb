@@ -206,10 +206,11 @@ impl<'r> FromForm<'r> for EventQuery {
                 }
             }
             "limit" => {
-                let result = value.parse().map_err(Error::from).and_then(|limit| {
-                    validate_and_adjust_query_limit(limit)
-                        .map_err(|_| Error::from(ErrorKind::Validation("Invalid limit".into())))
-                });
+                let result = value
+                    .parse()
+                    .map_err(|_| ())
+                    .and_then(|limit| validate_and_adjust_query_limit(limit).map_err(|_| ()))
+                    .map_err(|()| Error::from(ErrorKind::Validation("Invalid limit".into())));
                 match result {
                     Ok(limit) => {
                         ctx.query.limit = Some(limit);
@@ -220,13 +221,15 @@ impl<'r> FromForm<'r> for EventQuery {
                 }
             }
             "start_max" => {
-                let result = value.parse().map_err(Error::from).and_then(|seconds| {
-                    Timestamp::try_from_secs(seconds).map_err(|_| {
+                let result = value
+                    .parse()
+                    .map_err(|_| ())
+                    .and_then(|seconds| Timestamp::try_from_secs(seconds).map_err(|_| ()))
+                    .map_err(|()| {
                         Error::from(ErrorKind::Validation(
                             "Invalid value for 'start_max'".into(),
                         ))
-                    })
-                });
+                    });
                 match result {
                     Ok(max) => {
                         ctx.query.start_max = Some(max);
@@ -237,13 +240,15 @@ impl<'r> FromForm<'r> for EventQuery {
                 }
             }
             "start_min" => {
-                let result = value.parse().map_err(Error::from).and_then(|seconds| {
-                    Timestamp::try_from_secs(seconds).map_err(|_| {
+                let result = value
+                    .parse()
+                    .map_err(|_| ())
+                    .and_then(|seconds| Timestamp::try_from_secs(seconds).map_err(|_| ()))
+                    .map_err(|()| {
                         Error::from(ErrorKind::Validation(
                             "Invalid value for 'start_min'".into(),
                         ))
-                    })
-                });
+                    });
                 match result {
                     Ok(min) => {
                         ctx.query.start_min = Some(min);
@@ -254,11 +259,13 @@ impl<'r> FromForm<'r> for EventQuery {
                 }
             }
             "end_max" => {
-                let result = value.parse().map_err(Error::from).and_then(|seconds| {
-                    Timestamp::try_from_secs(seconds).map_err(|_| {
+                let result = value
+                    .parse()
+                    .map_err(|_| ())
+                    .and_then(|seconds| Timestamp::try_from_secs(seconds).map_err(|_| ()))
+                    .map_err(|()| {
                         Error::from(ErrorKind::Validation("Invalid value for 'end_max'".into()))
-                    })
-                });
+                    });
                 match result {
                     Ok(max) => {
                         ctx.query.end_max = Some(max);
@@ -269,11 +276,13 @@ impl<'r> FromForm<'r> for EventQuery {
                 }
             }
             "end_min" => {
-                let result = value.parse().map_err(Error::from).and_then(|seconds| {
-                    Timestamp::try_from_secs(seconds).map_err(|_| {
+                let result = value
+                    .parse()
+                    .map_err(|_| ())
+                    .and_then(|seconds| Timestamp::try_from_secs(seconds).map_err(|_| ()))
+                    .map_err(|()| {
                         Error::from(ErrorKind::Validation("Invalid value for 'end_min'".into()))
-                    })
-                });
+                    });
                 match result {
                     Ok(min) => {
                         ctx.query.end_min = Some(min);

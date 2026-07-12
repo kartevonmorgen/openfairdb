@@ -11,23 +11,18 @@ rust-version.workspace = true
 ofdb-core = "=0.0.0"
 ofdb-entities = "0.12.7"
 
-anyhow = "1.0.100"
-askama = "0.12.1"
+anyhow = "1.0.103"
+askama = "0.16.0"
 fast_chemail = "0.9.6"
-itertools = "0.14.0"
+itertools = "0.15.0"
 jfs = "0.9.0"
-log = "0.4.28"
-quoted_printable = "0.5.1"
+log = "0.4.33"
+quoted_printable = "0.5.2"
 serde = { version = "1.0.228", features = ["derive"] }
-time = { version = "0.3.44", features = ["macros", "formatting", "local-offset"] }
-thiserror = "2.0.17"
-
-[dependencies.geocoding]
-version = "0.4.0"
-default-features = false
-features = ["rustls-tls"]
+time = { version = "0.3.53", features = ["macros", "formatting", "local-offset"] }
+thiserror = "2.0.18"
 
 [dependencies.reqwest]
-version = "0.12.24"
+version = "0.12.28"
 default-features = false
 features = ["blocking", "rustls-tls", "json"]

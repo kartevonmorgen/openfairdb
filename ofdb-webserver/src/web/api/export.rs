@@ -153,7 +153,7 @@ fn event_to_ical(event: Event) -> Option<icalendar::Event> {
     let Some(start_calendar_date_time) = start_calendar_date_time else {
         log::warn!(
             "Invalid start date time for event '{}' (ID={})",
-            &title,
+            title,
             id.as_str()
         );
         return None;
@@ -200,7 +200,7 @@ fn event_to_ical(event: Event) -> Option<icalendar::Event> {
         let Some(end) = end_calendar_date_time else {
             log::warn!(
                 "Invalid end date time for event '{}' (ID={})",
-                &title,
+                title,
                 id.as_str()
             );
             return None;

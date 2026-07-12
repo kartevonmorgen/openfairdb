@@ -11,14 +11,14 @@ ofdb-core = "=0.0.0"
 ofdb-db-sqlite = "=0.0.0" # TODO: remove
 ofdb-entities = { version = "0.12.7", features = ["url"] }
 
-anyhow = "1.0.100"
+anyhow = "1.0.103"
 csv = "1.4.0"
-log = "0.4.28"
+log = "0.4.33"
 pwhash = "1.0.0"
 r2d2 = ">=0.8.10,<0.9" # TODO: remove
-serde_json = "1.0.145"
-thiserror = "2.0.17"
-time = "0.3.44"
+serde_json = "1.0.150"
+thiserror = "2.0.18"
+time = "0.3.53"
 
 [dev-dependencies]
 ofdb-db-tantivy = "=0.0.0" # TODO: remove

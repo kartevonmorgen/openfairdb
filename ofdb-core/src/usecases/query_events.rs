@@ -76,13 +76,10 @@ where
         }
     }
 
-    let text = text.as_deref().map(remove_hash_tags).and_then(|text| {
-        if text.trim().is_empty() {
-            None
-        } else {
-            Some(text)
-        }
-    });
+    let text = text
+        .as_deref()
+        .map(remove_hash_tags)
+        .filter(|text| !text.trim().is_empty());
 
     let text_tags = text
         .as_deref()

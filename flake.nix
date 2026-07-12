@@ -78,6 +78,7 @@
             buildInputs = [
               rust
               cargo-edit
+              cargo-audit
               cargo-zigbuild   # required for static musl builds
               trunk            # required to bundle the frontend
               binaryen         # required to minify WASM files with wasm-opt

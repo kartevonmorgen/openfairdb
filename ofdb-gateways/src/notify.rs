@@ -141,7 +141,7 @@ impl NotificationGateway for Notify {
                     );
                     compose_and_send_emails(
                         &*self.email_gw,
-                        &[email_nonce.email.to_owned()],
+                        std::slice::from_ref(&email_nonce.email),
                         &content,
                     );
                 }

@@ -156,92 +156,85 @@ impl IndexedFields {
         let mut lng: Option<LngCoord> = Default::default();
         let mut place = IndexedPlace::default();
         place.tags.reserve(32);
-        for field_value in doc.field_values() {
-            match field_value {
-                fv if fv.field() == self.status => {
-                    place.status = fv
-                        .value()
+        for (field, value) in doc.field_values() {
+            match field {
+                f if f == self.status => {
+                    place.status = value
                         .as_i64()
                         .and_then(|v| ReviewStatus::try_from(v as ReviewStatusPrimitive).ok());
                 }
-                fv if fv.field() == self.lat => {
+                f if f == self.lat => {
                     debug_assert!(lat.is_none());
-                    lat = fv.value().as_f64().map(LatCoord::from_deg);
+                    lat = value.as_f64().map(LatCoord::from_deg);
                 }
-                fv if fv.field() == self.lng => {
+                f if f == self.lng => {
                     debug_assert!(lng.is_none());
-                    lng = fv.value().as_f64().map(LngCoord::from_deg);
+                    lng = value.as_f64().map(LngCoord::from_deg);
                 }
-                fv if fv.field() == self.id => {
+                f if f == self.id => {
                     debug_assert!(place.id.is_empty());
-                    if let Some(id) = fv.value().as_str() {
+                    if let Some(id) = value.as_str() {
                         place.id = id.into();
                     } else {
-                        log::error!("Invalid id value: {:?}", fv.value());
+                        log::error!("Invalid id value: {:?}", value);
                     }
                 }
-                fv if fv.field() == self.title => {
+                f if f == self.title => {
                     debug_assert!(place.title.is_empty());
-                    if let Some(title) = fv.value().as_str() {
+                    if let Some(title) = value.as_str() {
                         title.clone_into(&mut place.title);
                     } else {
-                        log::error!("Invalid title value: {:?}", fv.value());
+                        log::error!("Invalid title value: {:?}", value);
                     }
                 }
-                fv if fv.field() == self.description => {
+                f if f == self.description => {
                     debug_assert!(place.description.is_empty());
-                    if let Some(description) = fv.value().as_str() {
+                    if let Some(description) = value.as_str() {
                         description.clone_into(&mut place.description);
                     } else {
-                        log::error!("Invalid description value: {:?}", fv.value());
+                        log::error!("Invalid description value: {:?}", value);
                     }
                 }
-                fv if fv.field() == self.tag => {
-                    if let Some(tag) = fv.value().as_str() {
+                f if f == self.tag => {
+                    if let Some(tag) = value.as_str() {
                         place.tags.push(tag.to_owned());
                     } else {
-                        log::error!("Invalid tag value: {:?}", fv.value());
+                        log::error!("Invalid tag value: {:?}", value);
                     }
                 }
-                fv if fv.field() == self.ratings_diversity => {
+                f if f == self.ratings_diversity => {
                     debug_assert!(place.ratings.diversity == Default::default());
-                    place.ratings.diversity =
-                        fv.value().as_f64().map(Into::into).unwrap_or_default();
+                    place.ratings.diversity = value.as_f64().map(Into::into).unwrap_or_default();
                 }
-                fv if fv.field() == self.ratings_fairness => {
+                f if f == self.ratings_fairness => {
                     debug_assert!(place.ratings.fairness == Default::default());
-                    place.ratings.fairness =
-                        fv.value().as_f64().map(Into::into).unwrap_or_default();
+                    place.ratings.fairness = value.as_f64().map(Into::into).unwrap_or_default();
                 }
-                fv if fv.field() == self.ratings_humanity => {
+                f if f == self.ratings_humanity => {
                     debug_assert!(place.ratings.humanity == Default::default());
-                    place.ratings.humanity =
-                        fv.value().as_f64().map(Into::into).unwrap_or_default();
+                    place.ratings.humanity = value.as_f64().map(Into::into).unwrap_or_default();
                 }
-                fv if fv.field() == self.ratings_renewable => {
+                f if f == self.ratings_renewable => {
                     debug_assert!(place.ratings.renewable == Default::default());
-                    place.ratings.renewable =
-                        fv.value().as_f64().map(Into::into).unwrap_or_default();
+                    place.ratings.renewable = value.as_f64().map(Into::into).unwrap_or_default();
                 }
-                fv if fv.field() == self.ratings_solidarity => {
+                f if f == self.ratings_solidarity => {
                     debug_assert!(place.ratings.solidarity == Default::default());
-                    place.ratings.solidarity =
-                        fv.value().as_f64().map(Into::into).unwrap_or_default();
+                    place.ratings.solidarity = value.as_f64().map(Into::into).unwrap_or_default();
                 }
-                fv if fv.field() == self.ratings_transparency => {
+                f if f == self.ratings_transparency => {
                     debug_assert!(place.ratings.transparency == Default::default());
-                    place.ratings.transparency =
-                        fv.value().as_f64().map(Into::into).unwrap_or_default();
+                    place.ratings.transparency = value.as_f64().map(Into::into).unwrap_or_default();
                 }
-                fv if fv.field() == self.total_rating => (),
+                f if f == self.total_rating => (),
                 // Address fields are currently not stored
-                //fv if fv.field() == self.address_street => (),
-                //fv if fv.field() == self.address_city => (),
-                //fv if fv.field() == self.address_zip => (),
-                //fv if fv.field() == self.address_country => (),
-                //fv if fv.field() == self.address_state => (),
-                fv => {
-                    log::error!("Unexpected field value: {:?}", fv);
+                //f if f == self.address_street => (),
+                //f if f == self.address_city => (),
+                //f if f == self.address_zip => (),
+                //f if f == self.address_country => (),
+                //f if f == self.address_state => (),
+                f => {
+                    log::error!("Unexpected field value: {:?} = {:?}", f, value);
                 }
             }
         }
@@ -326,6 +319,28 @@ fn u64_to_avg_rating(val: u64) -> AvgRatingValue {
         AvgRatingValue::max().into(),
     )
     .into()
+}
+
+fn map_bound<T>(bound: Bound<T>, f: impl Fn(T) -> Term) -> Bound<Term> {
+    match bound {
+        Bound::Included(v) => Bound::Included(f(v)),
+        Bound::Excluded(v) => Bound::Excluded(f(v)),
+        Bound::Unbounded => Bound::Unbounded,
+    }
+}
+
+fn i64_range_query(field: Field, lower: Bound<i64>, upper: Bound<i64>) -> RangeQuery {
+    RangeQuery::new(
+        map_bound(lower, |v| Term::from_field_i64(field, v)),
+        map_bound(upper, |v| Term::from_field_i64(field, v)),
+    )
+}
+
+fn f64_range_query(field: Field, lower: Bound<f64>, upper: Bound<f64>) -> RangeQuery {
+    RangeQuery::new(
+        map_bound(lower, |v| Term::from_field_f64(field, v)),
+        map_bound(upper, |v| Term::from_field_f64(field, v)),
+    )
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -476,8 +491,8 @@ impl TantivyIndex {
                 .into_iter()
                 .map(|(occur, status)| {
                     let status = status.to_i64().unwrap();
-                    let boxed_query: Box<dyn Query> = Box::new(RangeQuery::new_i64_bounds(
-                        FIELD_NAME_STATUS.to_string(),
+                    let boxed_query: Box<dyn Query> = Box::new(i64_range_query(
+                        self.fields.status,
                         Bound::Included(status),
                         Bound::Included(status),
                     ));
@@ -492,8 +507,8 @@ impl TantivyIndex {
             log::debug!("Query bbox (include): {}", bbox);
             debug_assert!(bbox.is_valid());
             debug_assert!(!bbox.is_empty());
-            let lat_query = RangeQuery::new_f64_bounds(
-                FIELD_NAME_LAT.to_string(),
+            let lat_query = f64_range_query(
+                self.fields.lat,
                 Bound::Included(bbox.southwest().lat().to_deg()),
                 Bound::Included(bbox.northeast().lat().to_deg()),
             );
@@ -502,16 +517,16 @@ impl TantivyIndex {
             // Longitude query: Either inclusive or exclusive (wrap around)
             if bbox.southwest().lng() <= bbox.northeast().lng() {
                 // regular (inclusive)
-                let lng_query = RangeQuery::new_f64_bounds(
-                    FIELD_NAME_LNG.to_string(),
+                let lng_query = f64_range_query(
+                    self.fields.lng,
                     Bound::Included(bbox.southwest().lng().to_deg()),
                     Bound::Included(bbox.northeast().lng().to_deg()),
                 );
                 sub_queries.push((Occur::Must, Box::new(lng_query)));
             } else {
                 // inverse (exclusive)
-                let lng_query = RangeQuery::new_f64_bounds(
-                    FIELD_NAME_LNG.to_string(),
+                let lng_query = f64_range_query(
+                    self.fields.lng,
                     Bound::Excluded(bbox.northeast().lng().to_deg()),
                     Bound::Excluded(bbox.southwest().lng().to_deg()),
                 );
@@ -524,8 +539,8 @@ impl TantivyIndex {
             log::debug!("Query bbox (exclude): {}", bbox);
             debug_assert!(bbox.is_valid());
             debug_assert!(!bbox.is_empty());
-            let lat_query = RangeQuery::new_f64_bounds(
-                FIELD_NAME_LAT.to_string(),
+            let lat_query = f64_range_query(
+                self.fields.lat,
                 Bound::Included(bbox.southwest().lat().to_deg()),
                 Bound::Included(bbox.northeast().lat().to_deg()),
             );
@@ -534,16 +549,16 @@ impl TantivyIndex {
             // Longitude query: Either exclusive or inclusive (wrap around)
             if bbox.southwest().lng() <= bbox.northeast().lng() {
                 // regular (exclusive)
-                let lng_query = RangeQuery::new_f64_bounds(
-                    FIELD_NAME_LNG.to_string(),
+                let lng_query = f64_range_query(
+                    self.fields.lng,
                     Bound::Included(bbox.southwest().lng().to_deg()),
                     Bound::Included(bbox.northeast().lng().to_deg()),
                 );
                 sub_queries.push((Occur::MustNot, Box::new(lng_query)));
             } else {
                 // inverse (inclusive)
-                let lng_query = RangeQuery::new_f64_bounds(
-                    FIELD_NAME_LNG.to_string(),
+                let lng_query = f64_range_query(
+                    self.fields.lng,
                     Bound::Excluded(bbox.northeast().lng().to_deg()),
                     Bound::Excluded(bbox.southwest().lng().to_deg()),
                 );
@@ -668,8 +683,7 @@ impl TantivyIndex {
             .map(|x| Bound::Included(x.as_secs()))
             .unwrap_or(Bound::Unbounded);
         if (ts_min_lb, ts_min_ub) != (Bound::Unbounded, Bound::Unbounded) {
-            let ts_min_query =
-                RangeQuery::new_i64_bounds(FIELD_NAME_TS_MIN.to_string(), ts_min_lb, ts_min_ub);
+            let ts_min_query = i64_range_query(self.fields.ts_min, ts_min_lb, ts_min_ub);
             sub_queries.push((Occur::Must, Box::new(ts_min_query)));
         }
 
@@ -683,8 +697,7 @@ impl TantivyIndex {
             .map(|x| Bound::Included(x.as_secs()))
             .unwrap_or(Bound::Unbounded);
         if (ts_max_lb, ts_max_ub) != (Bound::Unbounded, Bound::Unbounded) {
-            let ts_max_query =
-                RangeQuery::new_i64_bounds(FIELD_NAME_TS_MAX.to_string(), ts_max_lb, ts_max_ub);
+            let ts_max_query = i64_range_query(self.fields.ts_max, ts_max_lb, ts_max_ub);
             sub_queries.push((Occur::Must, Box::new(ts_max_query)));
         }
 
@@ -731,10 +744,10 @@ impl TantivyIndex {
         // TODO: Try to combine redundant code from different search strategies
         match top_docs_mode {
             TopDocsMode::Score => {
-                let collector = TopDocs::with_limit(limit);
+                let collector = TopDocs::with_limit(limit).order_by_score();
                 let top_docs = searcher.search(&search_query, &collector)?;
                 for (_, doc_addr) in top_docs {
-                    match searcher.doc(doc_addr) {
+                    match searcher.doc::<TantivyDocument>(doc_addr) {
                         Ok(doc) => {
                             doc_collector.collect_document(doc_addr, doc);
                         }
@@ -748,10 +761,9 @@ impl TantivyIndex {
             TopDocsMode::Rating => {
                 let collector = TopDocs::with_limit(limit)
                     .order_by_fast_field(FIELD_NAME_TOTAL_RATING, Order::Desc);
-                searcher.search(&search_query, &collector)?;
-                let top_docs: Vec<(u64, _)> = searcher.search(&search_query, &collector)?;
+                let top_docs: Vec<(Option<u64>, _)> = searcher.search(&search_query, &collector)?;
                 for (_, doc_addr) in top_docs {
-                    match searcher.doc(doc_addr) {
+                    match searcher.doc::<TantivyDocument>(doc_addr) {
                         Ok(doc) => {
                             doc_collector.collect_document(doc_addr, doc);
                         }
@@ -773,7 +785,7 @@ impl TantivyIndex {
 
                         move |doc: DocId, original_score: Score| {
                             let total_rating = f64::from(u64_to_avg_rating(
-                                total_rating_reader.values.get_val(doc),
+                                total_rating_reader.first(doc).unwrap_or_default(),
                             ));
                             let boost_factor =
                                 if total_rating < f64::from(AvgRatingValue::default()) {
@@ -801,7 +813,7 @@ impl TantivyIndex {
                 };
                 let top_docs = searcher.search(&search_query, &collector)?;
                 for (_, doc_addr) in top_docs {
-                    match searcher.doc(doc_addr) {
+                    match searcher.doc::<TantivyDocument>(doc_addr) {
                         Ok(doc) => {
                             doc_collector.collect_document(doc_addr, doc);
                         }

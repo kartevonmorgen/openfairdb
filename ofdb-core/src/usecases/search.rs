@@ -111,13 +111,9 @@ where
         hash_tags.push(org_tag.to_owned());
     }
 
-    let text = text.map(util::remove_hash_tags).and_then(|text| {
-        if text.trim().is_empty() {
-            None
-        } else {
-            Some(text)
-        }
-    });
+    let text = text
+        .map(util::remove_hash_tags)
+        .filter(|text| !text.trim().is_empty());
 
     let text_tags = text
         .as_deref()

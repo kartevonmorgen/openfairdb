@@ -530,7 +530,7 @@ fn opening_cs(lastrev: Option<&PlaceRevision>, currrev: &PlaceRevision) -> Chang
             r#"
         {hours}
         "#,
-            hours = &r
+            hours = r
                 .opening_hours
                 .clone()
                 .map(String::from)

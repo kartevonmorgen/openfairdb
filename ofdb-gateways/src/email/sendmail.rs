@@ -174,7 +174,7 @@ pub fn compose(
          {body}",
     );
 
-    log::debug!("composed email: {}", &email);
+    log::debug!("composed email: {}", email);
 
     Ok(email)
 }

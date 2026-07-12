@@ -1,6 +1,6 @@
 use std::{collections::HashSet, path::PathBuf, time::Duration};
 
-use duration_str::{deserialize_duration, deserialize_option_duration};
+use duration_str::deserialize_duration;
 use serde::{Deserialize, Serialize};
 
 const DEFAULT_CONFIG_FILE: &str = include_str!("openfairdb.default.toml");
@@ -156,14 +156,14 @@ pub struct EmailToJsonFile {
 #[derive(Clone, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub struct Reminders {
-    #[serde(deserialize_with = "deserialize_option_duration")]
+    #[serde(deserialize_with = "deserialize_duration")]
     pub task_interval_time: Option<Duration>,
     pub send_max: Option<u32>,
     pub send_to: Option<Vec<RecipientRole>>,
     pub send_bcc: Option<Vec<String>>,
     pub scouts: Option<ScoutReminders>,
     pub owners: Option<OwnerReminders>,
-    #[serde(deserialize_with = "deserialize_option_duration")]
+    #[serde(deserialize_with = "deserialize_duration")]
     pub token_expire_in: Option<Duration>,
 }
 

@@ -39,12 +39,12 @@ clippy:
 
 # Fix lint warnings
 fix:
-    cargo fix --locked --workspace --all-features --all-targets
-    cargo clippy --locked --workspace --no-deps --all-features --all-targets --fix
-    cd ofdb-app-clearance && cargo fix --locked --target wasm32-unknown-unknown --all-features --all-targets
-    cd ofdb-app-clearance && cargo clippy --locked --no-deps --target wasm32-unknown-unknown --all-features --all-targets --fix
-    cd ofdb-frontend && cargo fix --locked --target wasm32-unknown-unknown --all-features --all-targets
-    cd ofdb-frontend && cargo clippy --locked --no-deps --target wasm32-unknown-unknown --all-features --all-targets --fix
+    cargo fix --locked --workspace --all-features --all-targets --allow-dirty
+    cargo clippy --locked --workspace --no-deps --all-features --all-targets --fix --allow-dirty
+    cd ofdb-app-clearance && cargo fix --locked --target wasm32-unknown-unknown --all-features --all-targets --allow-dirty
+    cd ofdb-app-clearance && cargo clippy --locked --no-deps --target wasm32-unknown-unknown --all-features --all-targets --fix --allow-dirty
+    cd ofdb-frontend && cargo fix --locked --target wasm32-unknown-unknown --all-features --all-targets --allow-dirty
+    cd ofdb-frontend && cargo clippy --locked --no-deps --target wasm32-unknown-unknown --all-features --all-targets --fix --allow-dirty
 
 # Run tests
 test:

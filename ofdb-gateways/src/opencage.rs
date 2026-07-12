@@ -1,7 +1,10 @@
-use ::geocoding::{Forward, Opencage};
 use itertools::Itertools;
+use serde::Deserialize;
+
 use ofdb_core::gateways::geocode::GeoCodingGateway;
 use ofdb_entities::address::Address;
+
+const OPENCAGE_FORWARD_URL: &str = "https://api.opencagedata.com/geocode/v1/json";
 
 pub struct OpenCage {
     api_key: Option<String>,
@@ -18,22 +21,50 @@ fn address_to_forward_query_string(addr: &Address) -> String {
     addr_parts.iter().filter_map(|x| x.as_ref()).join(",")
 }
 
-fn oc_resolve_address_lat_lng(oc_api_key: String, addr: &Address) -> Option<(f64, f64)> {
-    let oc_req = Opencage::new(oc_api_key);
+// Minimal subset of the OpenCage forward geocoding response.
+// See https://opencagedata.com/api#forward-resp
+#[derive(Debug, Deserialize)]
+struct OpencageResponse {
+    results: Vec<OpencageResult>,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpencageResult {
+    geometry: OpencageGeometry,
+}
+
+#[derive(Debug, Deserialize)]
+struct OpencageGeometry {
+    lat: f64,
+    lng: f64,
+}
+
+fn oc_resolve_address_lat_lng(oc_api_key: &str, addr: &Address) -> Option<(f64, f64)> {
     let addr_str = address_to_forward_query_string(addr);
-    match oc_req.forward(&addr_str) {
+    match request_forward_geocoding(oc_api_key, &addr_str) {
         Ok(res) => {
-            if !res.is_empty() {
-                let point = &res[0];
-                log::debug!("Resolved address location '{}': {:?}", addr_str, point);
-                return Some((point.y(), point.x()));
+            if let Some(geometry) = res.results.into_iter().next().map(|r| r.geometry) {
+                log::debug!("Resolved address location '{addr_str}': {geometry:?}");
+                return Some((geometry.lat, geometry.lng));
             }
         }
         Err(err) => {
-            log::warn!("Failed to resolve address location '{}': {}", addr_str, err);
+            log::warn!("Failed to resolve address location '{addr_str}': {err}");
         }
     }
     None
+}
+
+fn request_forward_geocoding(
+    oc_api_key: &str,
+    query: &str,
+) -> Result<OpencageResponse, reqwest::Error> {
+    reqwest::blocking::Client::new()
+        .get(OPENCAGE_FORWARD_URL)
+        .query(&[("q", query), ("key", oc_api_key)])
+        .send()?
+        .error_for_status()?
+        .json()
 }
 
 impl GeoCodingGateway for OpenCage {
@@ -43,7 +74,7 @@ impl GeoCodingGateway for OpenCage {
         } else {
             self.api_key
                 .as_ref()
-                .and_then(|key| oc_resolve_address_lat_lng(key.clone(), addr))
+                .and_then(|key| oc_resolve_address_lat_lng(key, addr))
         }
     }
 }

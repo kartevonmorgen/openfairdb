@@ -11,7 +11,7 @@ keywords = ["geo", "fair", "sustainability"]
 authors = ["slowtec GmbH <post@slowtec.de>"]
 license = "AGPL-3.0-or-later"
 edition = "2024"
-rust-version = "1.91.1"
+rust-version = "1.97.0"
 
 [workspace]
 members = [
@@ -49,25 +49,20 @@ ofdb-webserver    = "=0.0.0"
 
 ofdb-entities     =  "*"
 
-anyhow = "1.0.100"
-clap = { version = "4.5.52", features = ["cargo", "derive"] }
+anyhow = "1.0.103"
+clap = { version = "4.6.1", features = ["cargo", "derive"] }
 dotenvy = "0.15.7"
-duration-str = { version = "0.12.0", default-features = false, features = ["serde"] }
-env_logger = "0.11.8"
-log = "0.4.28"
+duration-str = { version = "0.21.0", default-features = false, features = ["serde"] }
+env_logger = "0.11.11"
+log = "0.4.33"
 serde = { version = "1.0.228", features = ["derive"] }
-thiserror = "2.0.17"
-time = "0.3.44"
-tokio = "1.48.0"
-toml = "0.8.23"
-
-[patch.crates-io.geocoding]
-# TODO: use upstream as soon as https://github.com/georust/geocoding/pull/58 is merged.
-git = "https://github.com/slowtec/geocoding"
-branch = "remove-reqwest-default-tls-feature"
+thiserror = "2.0.18"
+time = "0.3.53"
+tokio = "1.52.3"
+toml = "1.1.2"
 
 [dev-dependencies]
-rand = "0.8.5"
+rand = "0.10.2"
 ofdb-entities = { version = "*", features = ["builders"] }
 
 [profile.dev]
