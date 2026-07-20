@@ -65,7 +65,7 @@ jobs:
           cargo install --locked trunk
 
       - name: Install just
-        uses: extractions/setup-just@v3
+        uses: extractions/setup-just@v4
 
       - name: Build ofdb-app-clearance
         run: just build-clearance
